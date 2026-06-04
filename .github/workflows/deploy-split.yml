@@ -1,9 +1,11 @@
-# push 到 main 后自动部署双机
+# push → GitHub Actions 编译 → 热替换 jar（不 rsync 全仓库、不 docker compose build）
 #
-# Secrets: DEPLOY_SSH_KEY, MW_HOST, WORKER_HOST
-# Variables（可选）: DEPLOY_BRANCH = main
+# 一次性配置 Secrets（Settings → Secrets and variables → Actions）:
+#   DEPLOY_SSH_KEY  能 SSH 到 MW/Worker 的私钥（与服务器 authorized_keys 对应）
+#   MW_HOST         107.150.112.140
+#   WORKER_HOST     47.80.80.224
 #
-name: Deploy Split Stack
+name: Deploy Hot (Split)
 
 on:
   push:
@@ -11,7 +13,6 @@ on:
     paths:
       - 'novel-agent/**'
       - 'frontend/**'
-      - 'python-ai/**'
       - '.github/workflows/deploy-split.yml'
   workflow_dispatch:
     inputs:
@@ -29,22 +30,16 @@ on:
           - frontend
 
 concurrency:
-  group: deploy-split
+  group: deploy-hot
   cancel-in-progress: true
 
 jobs:
-  changes:
+  deploy:
     runs-on: ubuntu-latest
-    outputs:
-      gateway: ${{ steps.filter.outputs.gateway }}
-      auth: ${{ steps.filter.outputs.auth }}
-      pyai: ${{ steps.filter.outputs.pyai }}
-      content: ${{ steps.filter.outputs.content }}
-      consumer: ${{ steps.filter.outputs.consumer }}
-      frontend: ${{ steps.filter.outputs.frontend }}
-      common: ${{ steps.filter.outputs.common }}
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
+
       - uses: dorny/paths-filter@v3
         id: filter
         with:
@@ -65,12 +60,11 @@ jobs:
               - 'novel-agent/agent-common/**'
               - 'novel-agent/pom.xml'
 
-  deploy:
-    needs: changes
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-    steps:
-      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
 
       - name: Setup SSH
         run: |
@@ -80,60 +74,18 @@ jobs:
           ssh-keyscan -H "${{ secrets.MW_HOST }}" >> ~/.ssh/known_hosts
           ssh-keyscan -H "${{ secrets.WORKER_HOST }}" >> ~/.ssh/known_hosts
 
-      - name: Rsync to MW
-        run: |
-          rsync -az --delete \
-            --exclude .git --exclude node_modules --exclude frontend/node_modules \
-            --exclude '**/target' --exclude .dev-logs --exclude .cursor \
-            --exclude claude-code-ref --exclude python-ai/.venv \
-            -e "ssh -i ~/.ssh/deploy_key" \
-            ./ "root@${{ secrets.MW_HOST }}:/opt/novel-agent/"
-
-      - name: Rsync to Worker
-        run: |
-          rsync -az --delete \
-            --exclude .git --exclude node_modules --exclude frontend/node_modules \
-            --exclude '**/target' --exclude .dev-logs --exclude .cursor \
-            --exclude claude-code-ref --exclude python-ai/.venv \
-            -e "ssh -i ~/.ssh/deploy_key" \
-            ./ "root@${{ secrets.WORKER_HOST }}:/opt/novel-agent/"
-
-      - name: Deploy MW services
+      - name: Hot deploy changed services
         env:
-          FORCE: ${{ github.event.inputs.service }}
-          GATEWAY: ${{ needs.changes.outputs.gateway }}
-          AUTH: ${{ needs.changes.outputs.auth }}
-          COMMON: ${{ needs.changes.outputs.common }}
-        run: |
-          deploy() {
-            ssh -i ~/.ssh/deploy_key "root@${{ secrets.MW_HOST }}" \
-              "bash /opt/novel-agent/novel-agent/docs/deploy/scripts/_server-deploy.sh mw $1"
-          }
-          if [[ -n "$FORCE" ]]; then
-            case "$FORCE" in gateway|auth) deploy "$FORCE" ;; esac
-            exit 0
-          fi
-          [[ "$GATEWAY" == true || "$COMMON" == true ]] && deploy gateway
-          [[ "$AUTH" == true || "$COMMON" == true ]] && deploy auth
-
-      - name: Deploy Worker services
-        env:
-          FORCE: ${{ github.event.inputs.service }}
-          PYAI: ${{ needs.changes.outputs.pyai }}
-          CONTENT: ${{ needs.changes.outputs.content }}
-          CONSUMER: ${{ needs.changes.outputs.consumer }}
-          FRONTEND: ${{ needs.changes.outputs.frontend }}
-          COMMON: ${{ needs.changes.outputs.common }}
-        run: |
-          deploy() {
-            ssh -i ~/.ssh/deploy_key "root@${{ secrets.WORKER_HOST }}" \
-              "bash /opt/novel-agent/novel-agent/docs/deploy/scripts/_server-deploy.sh worker $1"
-          }
-          if [[ -n "$FORCE" ]]; then
-            case "$FORCE" in pyai|content|consumer|frontend) deploy "$FORCE" ;; esac
-            exit 0
-          fi
-          [[ "$PYAI" == true || "$COMMON" == true ]] && deploy pyai
-          [[ "$CONTENT" == true || "$COMMON" == true ]] && deploy content
-          [[ "$CONSUMER" == true || "$COMMON" == true ]] && deploy consumer
-          [[ "$FRONTEND" == true ]] && deploy frontend
+          MW_HOST: ${{ secrets.MW_HOST }}
+          WORKER_HOST: ${{ secrets.WORKER_HOST }}
+          DEPLOY_SSH_OPTS: -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes
+          DEPLOY_SCP_OPTS: -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes
+          CHANGED_GATEWAY: ${{ steps.filter.outputs.gateway }}
+          CHANGED_AUTH: ${{ steps.filter.outputs.auth }}
+          CHANGED_PYAI: ${{ steps.filter.outputs.pyai }}
+          CHANGED_CONTENT: ${{ steps.filter.outputs.content }}
+          CHANGED_CONSUMER: ${{ steps.filter.outputs.consumer }}
+          CHANGED_FRONTEND: ${{ steps.filter.outputs.frontend }}
+          CHANGED_COMMON: ${{ steps.filter.outputs.common }}
+          FORCE_SERVICE: ${{ github.event.inputs.service }}
+        run: bash novel-agent/docs/deploy/scripts/ci-hot-deploy.sh

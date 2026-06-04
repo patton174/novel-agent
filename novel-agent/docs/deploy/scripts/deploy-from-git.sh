@@ -22,7 +22,7 @@ SPLIT_ENV="${DEPLOY_SPLIT_ENV:-$SCRIPT_DIR/../docker/.env.split}"
 # shellcheck disable=SC1090
 source "$SPLIT_ENV"
 
-GIT_BRANCH="${GIT_BRANCH:-main}"
+GIT_BRANCH="${GIT_BRANCH:-master}"
 SERVICE="${1:-}"
 TARGET="${2:-}"
 

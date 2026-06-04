@@ -104,7 +104,7 @@ NACOS_RENDER="$DEPLOY_DIR/nacos-split-rendered"
 rm -rf "$NACOS_RENDER"
 mkdir -p "$NACOS_RENDER"
 for f in "$DEPLOY_DIR/nacos-split"/*.yaml; do
-  sed "s/WORKER_HOST_PLACEHOLDER/${WORKER_HOST}/g" "$f" > "$NACOS_RENDER/$(basename "$f")"
+  sed -e "s/WORKER_HOST_PLACEHOLDER/${WORKER_HOST}/g" -e "s/YOUR_MW_HOST/${MW_HOST}/g" "$f" > "$NACOS_RENDER/$(basename "$f")"
 done
 
 if [[ ! -f "$REPO_ROOT/python-ai/.env" ]]; then

@@ -26,8 +26,12 @@ SPLIT_ENV="${DEPLOY_SPLIT_ENV:-$SCRIPT_DIR/../docker/.env.split}"
 
 # shellcheck source=/dev/null
 source "$SCRIPT_DIR/_deploy-lib.sh"
-# shellcheck disable=SC1090
-source "$SPLIT_ENV"
+if [[ -f "$SPLIT_ENV" ]]; then
+  # shellcheck disable=SC1090
+  source "$SPLIT_ENV"
+fi
+: "${MW_HOST:?MW_HOST 未设置（.env.split 或环境变量）}"
+: "${WORKER_HOST:?WORKER_HOST 未设置（.env.split 或环境变量）}"
 
 SERVICE="${1:?用法: deploy-fast.sh <gateway|auth|pyai|content|frontend|compose服务名> <mw|worker>}"
 TARGET="${2:?用法: deploy-fast.sh <service> <mw|worker>}"
@@ -58,13 +62,13 @@ case "$SERVICE" in
     fi
     (cd "$REPO_ROOT/frontend" && pnpm run build)
     REMOTE_DIST="/tmp/novel-fe-dist-$$"
-    ssh "$REMOTE_SSH" "rm -rf '$REMOTE_DIST' && mkdir -p '$REMOTE_DIST'"
+    deploy_ssh "$REMOTE_SSH" "rm -rf '$REMOTE_DIST' && mkdir -p '$REMOTE_DIST'"
     if command -v rsync >/dev/null 2>&1; then
-      rsync -avz --delete "$REPO_ROOT/frontend/dist/" "$REMOTE_SSH:$REMOTE_DIST/"
+      rsync -avz --delete -e "${DEPLOY_RSYNC_SSH:-ssh ${DEPLOY_SSH_OPTS:-}}" "$REPO_ROOT/frontend/dist/" "$REMOTE_SSH:$REMOTE_DIST/"
     else
-      scp -r "$REPO_ROOT/frontend/dist/"* "$REMOTE_SSH:$REMOTE_DIST/"
+      deploy_scp -r "$REPO_ROOT/frontend/dist/"* "$REMOTE_SSH:$REMOTE_DIST/"
     fi
-    ssh "$REMOTE_SSH" bash -s <<EOF
+    deploy_ssh "$REMOTE_SSH" bash -s <<EOF
 set -euo pipefail
 cd '$REMOTE_DIR'
 COMPOSE="docker compose"
@@ -100,12 +104,12 @@ if [[ "${REMOTE_BUILD:-0}" == "1" ]]; then
   echo "[deploy-fast] REMOTE_BUILD=1：同步源码并在 $TARGET 上 Docker Maven 编译 ..."
   if command -v rsync >/dev/null 2>&1; then
     rsync -az --exclude target "$REPO_ROOT/novel-agent/$MODULE" "$REPO_ROOT/novel-agent/agent-common" "$REPO_ROOT/novel-agent/pom.xml" \
-      "$REMOTE_SSH:$REMOTE_DIR/novel-agent/"
+      -e "${DEPLOY_RSYNC_SSH:-ssh ${DEPLOY_SSH_OPTS:-}}" "$REMOTE_SSH:$REMOTE_DIR/novel-agent/"
   else
-    scp -r "$REPO_ROOT/novel-agent/$MODULE" "$REPO_ROOT/novel-agent/agent-common" "$REPO_ROOT/novel-agent/pom.xml" \
+    deploy_scp -r "$REPO_ROOT/novel-agent/$MODULE" "$REPO_ROOT/novel-agent/agent-common" "$REPO_ROOT/novel-agent/pom.xml" \
       "$REMOTE_SSH:$REMOTE_DIR/novel-agent/"
   fi
-  ssh "$REMOTE_SSH" "bash '$REMOTE_DIR/novel-agent/docs/deploy/scripts/_server-deploy.sh' '$TARGET' '$SERVICE'"
+  deploy_ssh "$REMOTE_SSH" "bash '$REMOTE_DIR/novel-agent/docs/deploy/scripts/_server-deploy.sh' '$TARGET' '$SERVICE'"
   exit 0
 fi
 
@@ -122,10 +126,10 @@ if [[ ! -f "$LOCAL_JAR" ]]; then
 fi
 
 echo "[deploy-fast] 上传 jar ($(du -h "$LOCAL_JAR" | cut -f1)) ..."
-scp "$LOCAL_JAR" "$REMOTE_SSH:$REMOTE_JAR"
+deploy_scp "$LOCAL_JAR" "$REMOTE_SSH:$REMOTE_JAR"
 
 echo "[deploy-fast] 热替换 $COMPOSE_SVC @ $TARGET（不 down 整栈）..."
-ssh "$REMOTE_SSH" bash -s <<EOF
+deploy_ssh "$REMOTE_SSH" bash -s <<EOF
 set -euo pipefail
 cd '$REMOTE_DIR'
 COMPOSE="docker compose"
