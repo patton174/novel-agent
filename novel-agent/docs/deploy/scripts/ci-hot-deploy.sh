@@ -71,8 +71,13 @@ PIDS=()
 hot() {
   local svc="$1" target="$2"
   echo "[ci-hot] deploy-fast $svc $target"
-  SKIP_BUILD=1 bash "$SCRIPT_DIR/deploy-fast.sh" "$svc" "$target" &
-  PIDS+=($!)
+  if [[ "${GITHUB_ACTIONS:-}" == "true" && "${CI_PARALLEL_DEPLOY:-0}" != "1" ]]; then
+    # CI 串行部署，避免多路 scp/ssh 残留导致 Post job cleanup 挂死
+    SKIP_BUILD=1 bash "$SCRIPT_DIR/deploy-fast.sh" "$svc" "$target"
+  else
+    SKIP_BUILD=1 bash "$SCRIPT_DIR/deploy-fast.sh" "$svc" "$target" &
+    PIDS+=($!)
+  fi
 }
 
 want "${CHANGED_GATEWAY:-false}" && hot gateway mw
@@ -92,4 +97,15 @@ for pid in "${PIDS[@]}"; do
   wait "$pid" || FAIL=1
 done
 [[ "$FAIL" -eq 0 ]] || exit 1
+
+# 确保 CI runner 无残留 ssh/scp（否则 Post job cleanup 会长时间等待）
+if [[ "${GITHUB_ACTIONS:-}" == "true" ]]; then
+  for _ in 1 2 3; do
+    pgrep -f 'ssh.*deploy_key|scp.*deploy_key' >/dev/null || break
+    sleep 2
+  done
+  pkill -f 'ssh.*deploy_key' 2>/dev/null || true
+  pkill -f 'scp.*deploy_key' 2>/dev/null || true
+fi
+
 echo "[ci-hot] 全部热部署完成"

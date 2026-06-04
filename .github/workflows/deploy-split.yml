@@ -64,7 +64,7 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
-          cache: maven
+          # 不开 maven cache：post job 上传 ~/.m2 常卡 10+ 分钟
 
       - name: Validate deploy secrets
         run: |
@@ -93,8 +93,8 @@ jobs:
         env:
           MW_HOST: ${{ secrets.MW_HOST }}
           WORKER_HOST: ${{ secrets.WORKER_HOST }}
-          DEPLOY_SSH_OPTS: -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes
-          DEPLOY_SCP_OPTS: -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes
+          DEPLOY_SSH_OPTS: -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes -o ConnectTimeout=30 -o ServerAliveInterval=30 -o ServerAliveCountMax=6 -o BatchMode=yes
+          DEPLOY_SCP_OPTS: -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes -o ConnectTimeout=30 -o BatchMode=yes
           CHANGED_GATEWAY: ${{ steps.filter.outputs.gateway }}
           CHANGED_AUTH: ${{ steps.filter.outputs.auth }}
           CHANGED_PYAI: ${{ steps.filter.outputs.pyai }}
