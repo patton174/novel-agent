@@ -1,0 +1,144 @@
+name: novel-agent
+
+x-java-env: &java-env
+  SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
+  NACOS_SERVER_ADDR: ${NACOS_SERVER_ADDR}
+  NACOS_USERNAME: ${NACOS_USERNAME}
+  NACOS_PASSWORD: ${NACOS_PASSWORD}
+  NACOS_NAMESPACE: ${NACOS_NAMESPACE}
+  NACOS_DISCOVERY_IP: ${HOST_IP}
+  HOST_IP: ${HOST_IP}
+  MW_HOST: ${MW_HOST}
+  JAVA_OPTS: -Xms256m -Xmx768m -Dfile.encoding=UTF-8
+
+services:
+  python-ai:
+    build:
+      context: ../../../../
+      dockerfile: novel-agent/docs/deploy/docker/Dockerfile.python-ai
+    image: novel-agent/python-ai:latest
+    restart: unless-stopped
+    env_file:
+      - ../../../../python-ai/.env
+    environment:
+      LOG_LEVEL: ${PYTHON_LOG_LEVEL:-INFO}
+    networks:
+      - novel-net
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health')\""]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 30s
+
+  agent-auth:
+    build:
+      context: ../../../../
+      dockerfile: novel-agent/docs/deploy/docker/Dockerfile.java
+      args:
+        MODULE: agent-auth
+        JAR: agent-auth-1.0.0-SNAPSHOT.jar
+    image: novel-agent/auth:latest
+    restart: unless-stopped
+    environment: *java-env
+    ports:
+      - "8081:8081"
+    networks:
+      - novel-net
+    depends_on:
+      python-ai:
+        condition: service_started
+
+  agent-content:
+    build:
+      context: ../../../../
+      dockerfile: novel-agent/docs/deploy/docker/Dockerfile.java
+      args:
+        MODULE: agent-content
+        JAR: agent-content-1.0.0-SNAPSHOT.jar
+    image: novel-agent/content:latest
+    restart: unless-stopped
+    environment: *java-env
+    ports:
+      - "8091:8091"
+    networks:
+      - novel-net
+    depends_on:
+      python-ai:
+        condition: service_healthy
+
+  agent-pyai:
+    build:
+      context: ../../../../
+      dockerfile: novel-agent/docs/deploy/docker/Dockerfile.java
+      args:
+        MODULE: agent-pyai
+        JAR: agent-pyai-1.0.0-SNAPSHOT.jar
+    image: novel-agent/pyai:latest
+    restart: unless-stopped
+    environment: *java-env
+    ports:
+      - "8082:8082"
+    networks:
+      - novel-net
+    depends_on:
+      python-ai:
+        condition: service_healthy
+      agent-content:
+        condition: service_started
+
+  agent-consumer:
+    build:
+      context: ../../../../
+      dockerfile: novel-agent/docs/deploy/docker/Dockerfile.java
+      args:
+        MODULE: agent-consumer
+        JAR: agent-consumer-1.0.0-SNAPSHOT.jar
+    image: novel-agent/consumer:latest
+    restart: unless-stopped
+    environment: *java-env
+    networks:
+      - novel-net
+    depends_on:
+      agent-content:
+        condition: service_started
+
+  agent-gateway:
+    build:
+      context: ../../../../
+      dockerfile: novel-agent/docs/deploy/docker/Dockerfile.java
+      args:
+        MODULE: agent-gateway
+        JAR: agent-gateway-1.0.0-SNAPSHOT.jar
+    image: novel-agent/gateway:latest
+    restart: unless-stopped
+    environment: *java-env
+    ports:
+      - "${GATEWAY_PORT:-8080}:8080"
+    networks:
+      - novel-net
+    depends_on:
+      agent-auth:
+        condition: service_started
+      agent-pyai:
+        condition: service_started
+      agent-content:
+        condition: service_started
+
+  frontend:
+    build:
+      context: ../../../../
+      dockerfile: novel-agent/docs/deploy/docker/Dockerfile.frontend
+    image: novel-agent/frontend:latest
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"
+    networks:
+      - novel-net
+    depends_on:
+      agent-gateway:
+        condition: service_started
+
+networks:
+  novel-net:
+    driver: bridge

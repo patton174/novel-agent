@@ -1,0 +1,33 @@
+# 上传到 Nacos：Data ID = agent-consumer.yaml，Group = NOVEL_AGENT_GROUP，Namespace = dev
+server:
+  port: 8090
+
+spring:
+  cloud:
+    nacos:
+      discovery:
+        ip: YOUR_MW_HOST
+    inetutils:
+      ignored-interfaces:
+        - VMware.*
+      preferred-networks:
+        - 107.150.
+  data:
+    redis:
+      host: YOUR_MW_HOST
+      port: 6379
+      password: changeme
+      database: 0
+  rabbitmq:
+    host: YOUR_MW_HOST
+    port: 5672
+    username: novel_agent
+    password: changeme
+
+logging:
+  level:
+    com.novel.agent: info
+
+agent:
+  content:
+    base-url: http://127.0.0.1:8091

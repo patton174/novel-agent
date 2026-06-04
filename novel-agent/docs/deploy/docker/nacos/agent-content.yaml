@@ -1,0 +1,39 @@
+server:
+  port: 8091
+
+spring:
+  cloud:
+    nacos:
+      discovery:
+        ip: YOUR_MW_HOST
+    inetutils:
+      ignored-interfaces:
+        - docker0
+      preferred-networks:
+        - 107.150.
+  datasource:
+    url: jdbc:postgresql://YOUR_MW_HOST:5432/novel_agent?sslmode=disable
+    username: postgres
+    password: changeme
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  data:
+    redis:
+      host: YOUR_MW_HOST
+      port: 6379
+      password: changeme
+      database: 0
+
+agent:
+  python:
+    base-url: http://python-ai:8000
+
+logging:
+  level:
+    com.novel.agent: info

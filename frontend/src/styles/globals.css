@@ -1,0 +1,132 @@
+:root {
+  /* 浅色新拟态 — 与 src/styles/theme.ts 保持同步 */
+  --color-bg: #e8e8e8;
+  --color-bg-page: #f0f0f0;
+  --color-bg-sidebar: #e0e0e0;
+  --color-bg-elevated: #f0f0f0;
+  --color-bg-hover: #d8d8d8;
+
+  --color-text: #1a1a1a;
+  --color-text-secondary: #555555;
+  --color-text-muted: #888888;
+  --color-text-body: #2c2c2c;
+
+  --color-accent: #e9b50b;
+  --color-accent-hover: #d4a00a;
+  --color-accent-muted: rgba(233, 181, 11, 0.18);
+  --color-accent-soft: rgba(233, 181, 11, 0.12);
+
+  --color-success: #7fba00;
+  --color-warning: #d4a44c;
+  --color-error: #c45c5c;
+
+  --color-border: rgba(0, 0, 0, 0.08);
+  --color-border-strong: rgba(0, 0, 0, 0.12);
+
+  --font-display: 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC', Georgia, serif;
+  --font-body: 'Noto Sans SC', 'Source Han Sans SC', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Code', monospace;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+  --text-4xl: 2.25rem;
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+
+  --shadow-out: 4px 4px 10px #c5c5c5, -4px -4px 10px #ffffff;
+  --shadow-in-soft: inset 1px 1px 3px rgba(0, 0, 0, 0.06), inset -1px -1px 2px rgba(255, 255, 255, 0.4);
+  --shadow-glow: 0 0 20px rgba(233, 181, 11, 0.2);
+
+  --transition-fast: 150ms ease;
+  --transition-base: 0.25s ease;
+  --transition-slow: 0.38s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+}
+
+body {
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  background: var(--color-bg-page);
+  color: var(--color-text);
+  line-height: 1.6;
+  letter-spacing: 0.01em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-body);
+  color: var(--color-text);
+  line-height: 1.25;
+}
+
+p {
+  margin: 0 0 0.75em;
+}
+
+p:last-child {
+  margin-bottom: 0;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #c5c5c5 var(--color-bg);
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c5c5c5;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #b0b0b0;
+}
+
+::-webkit-scrollbar-corner {
+  background: var(--color-bg);
+}
+
+::selection {
+  background: var(--color-accent-muted);
+  color: var(--color-accent);
+}

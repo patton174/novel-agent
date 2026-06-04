@@ -1,0 +1,33 @@
+---
+description: Agent SSE 时间线中 think 工具与模型推理（reasoning）的展示边界
+globs: frontend/src/**/*agent*,python-ai/app/agent_step/**/*
+alwaysApply: false
+---
+
+# Think 工具 vs 模型推理（reasoning）
+
+二者是**不同通道**，禁止混用或互相复制内容。
+
+| 概念 | SSE 事件 | 展示位置 |
+|------|----------|----------|
+| **think 工具** | `think.started` / `think.delta` / `think.completed` | 顶层独立块（`AssistantStreamTimeline` primary segment） |
+| **模型推理** | `reasoning.started` / `reasoning.delta` / `reasoning.completed` | 编排块（planning unit）内的「思考内容」 |
+
+## 前端（`agentStreamTimeline.ts`）
+
+- `mergePlanningInsightBlocks` **只**合并 `kind === 'reasoning'` 的块。
+- `absorbLeadingReasoningIntoPlanning` **只**把紧邻 planning 前的 `reasoning` 收进编排块；**不得**移动或复制 `think` 块。
+- think 块完成后的内容仍留在顶层 segment，编排块标题可显示「编排中…」，但编排内思考面板只反映 plan LLM 的 `reasoning.*` 流。
+
+## 后端（`python-ai/app/agent_step`）
+
+- think 步骤走 think 工具与 `think.*` 事件（`executor` / think 流）。
+- plan / 工具执行阶段的模型推理走 `reasoning.*`（如 `planner._stream_resolve_plan_from_llm`）。
+- plan 开始时立即发 `reasoning.started`（不等 LLM 首包）；**不要**发 `planning.invoking` 或占位 `reasoning.delta`（如「正在调用编排模型…」）。
+- 不要把 think 工具输出写入 `reasoning.delta`，也不要把 plan 推理写入 `think.delta`。
+
+## 反模式
+
+- 把首轮 think 摘要复制进 planning 以「填补等待空白」。
+- 在编排块内同时展示 think + reasoning 合并面板。
+- 用 `think` 块充当 plan 阶段的推理 UI。

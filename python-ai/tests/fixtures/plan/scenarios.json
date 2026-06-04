@@ -1,0 +1,26 @@
+[
+  {
+    "id": "glob_read_edit",
+    "description": "Glob chapters then Read one",
+    "tool_calls": [
+      {"tool": "Glob", "input": {"pattern": "**/*.md", "path": "/novel/{novelId}/chapters"}},
+      {"tool": "Read", "input": {"file_path": "/novel/{novelId}/chapters/{chapterId}.md"}}
+    ],
+    "expect": {"valid": true}
+  },
+  {
+    "id": "unknown_legacy_tool",
+    "description": "Legacy chapter_list rejected",
+    "tool_calls": [{"tool": "chapter_list", "input": {}}],
+    "expect": {"valid": false, "codes": ["unknown_tool"]}
+  },
+  {
+    "id": "ask_user_terminal",
+    "description": "AskUser reordered last",
+    "tool_calls": [
+      {"tool": "AskUser", "input": {"questions": [{"prompt": "ok?"}]}},
+      {"tool": "Read", "input": {"file_path": "/novel/{novelId}/meta.json"}}
+    ],
+    "expect": {"valid": true, "order_last": "AskUser"}
+  }
+]

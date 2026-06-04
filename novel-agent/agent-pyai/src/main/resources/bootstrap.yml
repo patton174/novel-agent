@@ -1,0 +1,24 @@
+spring:
+  application:
+    name: agent-pyai
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
+  cloud:
+    nacos:
+      server-addr: ${NACOS_SERVER_ADDR:10.8.0.107:8848}
+      username: ${NACOS_USERNAME:nacos}
+      password: ${NACOS_PASSWORD:changeme}
+      config:
+        namespace: ${NACOS_NAMESPACE:dev}
+        group: NOVEL_AGENT_GROUP
+        file-extension: yaml
+        refresh-enabled: true
+      discovery:
+        ip: ${NACOS_DISCOVERY_IP:192.168.6.24}
+        namespace: ${NACOS_NAMESPACE:dev}
+        group: NOVEL_AGENT_GROUP
+    inetutils:
+      ignored-interfaces:
+        - VMware.*
+      preferred-networks:
+        - 192.168.6.

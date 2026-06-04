@@ -1,0 +1,2 @@
+com.novel.agent.common.mq.config.RabbitMQConfig
+com.novel.agent.common.mq.config.MqAutoConfiguration

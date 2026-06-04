@@ -1,0 +1,36 @@
+server:
+  port: 8082
+
+spring:
+  cloud:
+    nacos:
+      discovery:
+        ip: YOUR_MW_HOST
+    inetutils:
+      ignored-interfaces:
+        - docker0
+      preferred-networks:
+        - 107.150.
+  main:
+    web-application-type: reactive
+  data:
+    redis:
+      host: YOUR_MW_HOST
+      port: 6379
+      password: changeme
+      database: 0
+  rabbitmq:
+    host: YOUR_MW_HOST
+    port: 5672
+    username: novel_agent
+    password: changeme
+
+agent:
+  python:
+    base-url: http://python-ai:8000
+  content:
+    base-url: http://agent-content:8091
+
+logging:
+  level:
+    com.novel.agent: info

@@ -1,0 +1,97 @@
+# MW 机（2C4G）：中间件 + python-lb + Gateway + Auth（python-ai 已迁至 Worker）
+# 容器 mem_limit 合计 ~632m，CPU 压力主要在 PG/Nacos/Redis/MQ
+name: novel-agent-mw
+
+x-java-env: &java-env
+  SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
+  NACOS_SERVER_ADDR: ${NACOS_SERVER_ADDR}
+  NACOS_USERNAME: ${NACOS_USERNAME}
+  NACOS_PASSWORD: ${NACOS_PASSWORD}
+  NACOS_NAMESPACE: ${NACOS_NAMESPACE}
+  NACOS_DISCOVERY_IP: ${HOST_IP}
+  MW_HOST: ${MW_HOST}
+  SPRING_DATA_REDIS_HOST: ${SPRING_DATA_REDIS_HOST}
+  SPRING_DATA_REDIS_PASSWORD: ${SPRING_DATA_REDIS_PASSWORD}
+  SPRING_RABBITMQ_HOST: ${SPRING_RABBITMQ_HOST}
+  SPRING_RABBITMQ_USERNAME: ${SPRING_RABBITMQ_USERNAME}
+  SPRING_RABBITMQ_PASSWORD: ${SPRING_RABBITMQ_PASSWORD}
+
+services:
+  entry-nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - "${ENTRY_PORT:-80}:80"
+    volumes:
+      - ./nginx-entry-mw.conf:/etc/nginx/conf.d/default.conf:ro
+    mem_limit: 32m
+    networks:
+      - novel-net
+    depends_on:
+      agent-gateway:
+        condition: service_started
+
+  python-lb:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - "${PYTHON_LB_PORT:-8000}:8000"
+    volumes:
+      - ./nginx-python-lb.conf:/etc/nginx/conf.d/default.conf:ro
+    mem_limit: 32m
+    networks:
+      - novel-net
+
+  agent-auth:
+    build:
+      context: ../../../../
+      dockerfile: novel-agent/docs/deploy/docker/Dockerfile.java
+      args:
+        MODULE: agent-auth
+        JAR: agent-auth-1.0.0-SNAPSHOT.jar
+    image: novel-agent/auth:latest
+    restart: unless-stopped
+    environment:
+      <<: *java-env
+      JAVA_OPTS: ${JAVA_OPTS_AUTH:--Xms96m -Xmx256m -Dfile.encoding=UTF-8}
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      # 同机 Docker 内走容器名，避免公网 IP 回环导致 9848 gRPC 超时
+      NACOS_SERVER_ADDR: ${NACOS_SERVER_ADDR_DOCKER:-nacos-standalone:8848}
+    mem_limit: ${JAVA_MEM_LIMIT_MW:-300m}
+    ports:
+      - "8081:8081"
+    networks:
+      - novel-net
+      - nacos_default
+
+  agent-gateway:
+    build:
+      context: ../../../../
+      dockerfile: novel-agent/docs/deploy/docker/Dockerfile.java
+      args:
+        MODULE: agent-gateway
+        JAR: agent-gateway-1.0.0-SNAPSHOT.jar
+    image: novel-agent/gateway:latest
+    restart: unless-stopped
+    environment:
+      <<: *java-env
+      JAVA_OPTS: ${JAVA_OPTS_GATEWAY:--Xms96m -Xmx256m -Dfile.encoding=UTF-8}
+      SPRING_MAIN_WEB_APPLICATION_TYPE: reactive
+      NACOS_SERVER_ADDR: ${NACOS_SERVER_ADDR_DOCKER:-nacos-standalone:8848}
+    mem_limit: ${JAVA_MEM_LIMIT_MW:-300m}
+    ports:
+      - "${GATEWAY_PORT:-8080}:8080"
+    networks:
+      - novel-net
+      - nacos_default
+    depends_on:
+      agent-auth:
+        condition: service_started
+
+networks:
+  novel-net:
+    driver: bridge
+  nacos_default:
+    external: true

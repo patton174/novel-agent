@@ -1,0 +1,38 @@
+# 上传到 Nacos：Data ID = agent-pyai.yaml，Group = NOVEL_AGENT_GROUP，Namespace = dev
+# 与 Python AI 同机部署时用 127.0.0.1；若 Python 在其它机器请改 base-url
+server:
+  port: 8082
+
+spring:
+  cloud:
+    nacos:
+      discovery:
+        ip: YOUR_MW_HOST
+    inetutils:
+      ignored-interfaces:
+        - VMware.*
+      preferred-networks:
+        - 107.150.
+  main:
+    web-application-type: reactive
+  data:
+    redis:
+      host: YOUR_MW_HOST
+      port: 6379
+      password: changeme
+      database: 0
+  rabbitmq:
+    host: YOUR_MW_HOST
+    port: 5672
+    username: novel_agent
+    password: changeme
+
+agent:
+  python:
+    base-url: http://127.0.0.1:8000
+  content:
+    base-url: http://127.0.0.1:8091
+
+logging:
+  level:
+    com.novel.agent: info

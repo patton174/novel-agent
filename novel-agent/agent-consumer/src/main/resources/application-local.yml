@@ -1,0 +1,23 @@
+server:
+  port: ${SERVER_PORT:8090}
+
+spring:
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:changeme}
+      database: ${REDIS_DB:0}
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+
+agent:
+  content:
+    base-url: ${CONTENT_SERVICE_BASE_URL:http://127.0.0.1:8091}
+
+logging:
+  level:
+    com.novel.agent: debug

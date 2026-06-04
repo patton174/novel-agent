@@ -1,0 +1,31 @@
+# 双机：Worker 机 Consumer
+server:
+  port: 8090
+
+spring:
+  cloud:
+    nacos:
+      discovery:
+        ip: WORKER_HOST_PLACEHOLDER
+    inetutils:
+      ignored-interfaces:
+        - docker0
+  data:
+    redis:
+      host: YOUR_MW_HOST
+      port: 6379
+      password: changeme
+      database: 0
+  rabbitmq:
+    host: YOUR_MW_HOST
+    port: 5672
+    username: novel_agent
+    password: changeme
+
+logging:
+  level:
+    com.novel.agent: info
+
+agent:
+  content:
+    base-url: http://agent-content:8091

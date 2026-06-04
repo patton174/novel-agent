@@ -1,0 +1,38 @@
+---
+description: 本地开发栈架构与重启规范（仅 restart-dev.sh）
+alwaysApply: true
+---
+
+# 本地开发重启规范
+
+## 唯一重启方式
+
+本地开发栈**只允许**用 Git Bash 执行：
+
+```bash
+bash novel-agent/docs/deploy/windows/restart-dev.sh
+```
+
+**禁止**使用 `start-dev.bat`、`start-dev-all.bat` 等 bat 来启动或重启开发栈（用户明确要求）。
+
+## 架构速查
+
+| 端口 | 服务 | 目录 |
+|------|------|------|
+| 3000 | Frontend | `frontend/` |
+| 8000 | Python AI | `python-ai/` |
+| 8082 | PyAI（Agent SSE） | `novel-agent/agent-pyai/` |
+| 8091 | Content | `novel-agent/agent-content/` |
+| 8090 | Consumer | `novel-agent/agent-consumer/` |
+| 8081/8080 | Auth/Gateway | 远程服务器，本地脚本不启 |
+
+日志：`.dev-logs/`。环境：`novel-agent/docs/deploy/windows/env.bat`。
+
+## 改代码后何时重启
+
+- 改了 `python-ai/` 或 `novel-agent/` → **必须** `restart-dev.sh`
+- 改了 Agent 工具、registry、planner、SSE、Java SideEffect → **必须**全栈重启
+- 前端仅 UI 小改 → Vite HMR；新增依赖或改 env → **必须**重启
+- 跨多服务的大改 → **一律** `restart-dev.sh`，不要只让用户刷新浏览器
+
+完成实质性后端/Agent 改动后，主动帮用户跑 `restart-dev.sh`，不要建议 `start-dev.bat`。

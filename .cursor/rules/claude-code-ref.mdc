@@ -1,0 +1,45 @@
+---
+description: 本地 Claude Code 参考源码路径；对齐 structured output / agent loop 时优先查此目录
+alwaysApply: true
+---
+
+# Claude Code 本地参考仓库
+
+**路径（只读对照，勿改）：**
+
+```
+C:\Users\JZJ\.cursor\projects\d-Users-JZJ-Desktop-agent\claude-code-ref\src\
+```
+
+## 何时查
+
+- 对齐 **StructuredOutput / SyntheticOutputTool**、schema 校验、retry
+- 对齐 **tool_use_error**、Stop hook 强制 structured output
+- 对齐 Agent loop、QueryEngine、toolExecution 行为
+- 用户问「CC 怎么做」→ **先 grep/读此目录**，不要凭记忆或只搜 `agent/` 业务代码
+
+## 关键文件速查
+
+| 主题 | 路径 |
+|------|------|
+| SyntheticOutputTool + Ajv | `tools/SyntheticOutputTool/SyntheticOutputTool.ts` |
+| Stop hook 强制 StructuredOutput | `utils/hooks/hookHelpers.ts` → `registerStructuredOutputEnforcement` |
+| structured output retry 上限 | `QueryEngine.ts`（`MAX_STRUCTURED_OUTPUT_RETRIES`） |
+| 未知工具 / 校验失败 | `services/tools/toolExecution.ts`（`No such tool available`、`InputValidationError`） |
+| **模型 vs UI 工具结果** | `toolExecution.ts`（`addToolResult`）、`utils/toolResultStorage.ts`、`utils/transcriptSearch.ts`；各工具 `mapToolResultToToolResultBlockParam` + `UI.tsx` `renderToolResultMessage` |
+| CLI 注入 jsonSchema | `main.tsx`（`createSyntheticOutputTool`） |
+| 子 agent hook 过滤重复 StructuredOutput | `utils/hooks/execAgentHook.ts` |
+
+## 与本项目映射
+
+| CC | 本项目 |
+|----|--------|
+| `StructuredOutput` 工具 | `PlanResult` / `StepResult` forced tool（`structured_llm.py`） |
+| Ajv validate in `tool.call()` | Pydantic `PlanResult.model_validate` + `normalize_plan_dict` |
+| Stop hook 未调 StructuredOutput | plan retry_feedback + `invoke_structured_with_retry` |
+| `tool_use_error` 回灌模型 | retry HumanMessage 含 schema / wrong-tool 错误 |
+| CC 不 salvage 误调工具 | 同上：误调 `memory_read` 等 → retry，不包装进 PlanResult |
+| `mapToolResultToToolResultBlockParam` | `ToolCallResult.content` → `tool_result_routing.build_model_step_payload` |
+| `toolUseResult` + `renderToolResultMessage` | `events.build_tool_completed_sse_payload` + `tool_display.format_tool_display_excerpt` |
+| `processToolResultBlock` | `run_tool_use` + `truncate_tool_result` |
+| `renderToolResultMessage` / `extractSearchText` | `tools/tool.py` `ui_excerpt` + `tool_ui.py` |

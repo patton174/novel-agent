@@ -1,0 +1,51 @@
+# 上传到 Nacos：Data ID = agent-gateway.yaml，Group = NOVEL_AGENT_GROUP，Namespace = dev
+# 服务器部署：网关只做鉴权 + 路由，不直连 Python
+server:
+  port: 8080
+
+spring:
+  main:
+    web-application-type: reactive
+  cloud:
+    nacos:
+      discovery:
+        ip: YOUR_MW_HOST
+    inetutils:
+      ignored-interfaces:
+        - VMware.*
+      preferred-networks:
+        - 107.150.
+    gateway:
+      discovery:
+        locator:
+          enabled: false
+      routes:
+        - id: auth-route
+          uri: lb://agent-auth
+          predicates:
+            - Path=/api/auth/**
+        - id: pyai-route
+          uri: lb://agent-pyai
+          predicates:
+            - Path=/api/agent/**
+        - id: content-route
+          uri: lb://agent-content
+          predicates:
+            - Path=/api/content/**
+  data:
+    redis:
+      host: YOUR_MW_HOST
+      port: 6379
+      password: changeme
+      database: 0
+
+sa-token:
+  token-name: Authorization
+  timeout: 2592000
+  is-concurrent: true
+  is-share: false
+
+logging:
+  level:
+    com.novel.agent: info
+    org.springframework.cloud.gateway: info

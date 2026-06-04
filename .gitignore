@@ -1,0 +1,54 @@
+# ========== 密钥与环境（绝不提交）==========
+.env
+.env.*
+!.env.example
+python-ai/.env
+infra/.env
+novel-agent/docs/deploy/docker/.env
+novel-agent/docs/deploy/docker/.env.mw
+novel-agent/docs/deploy/docker/.env.worker
+novel-agent/docs/deploy/docker/.env.split
+novel-agent/docs/deploy/windows/env.bat
+
+# ========== 构建与依赖 ==========
+**/node_modules/
+**/target/
+frontend/dist/
+**/__pycache__/
+**/.pytest_cache/
+**/.venv/
+*.pyc
+*.pyo
+*.class
+
+# ========== 日志与 IDE ==========
+.dev-logs/
+*.log
+.idea/
+.vscode/
+*.iml
+.claude/
+.cursor/*
+!.cursor/rules/
+!.cursor/rules/**
+
+# ========== 部署生成物（由 envsubst / setup-split-config 生成）==========
+novel-agent/docs/deploy/windows.zip
+novel-agent/docs/deploy/docker/nacos-split-rendered/
+novel-agent/docs/deploy/docker/nginx-entry-mw.conf
+novel-agent/docs/deploy/docker/nginx-frontend-worker.conf
+novel-agent/docs/deploy/docker/nginx-python-lb.conf
+
+# ========== 本地 Windows 产物 ==========
+novel-agent/docs/deploy/windows/dist/
+novel-agent/docs/deploy/windows/logs/
+
+# ========== 临时 / 个人 ==========
+.tmp_*
+*.tmp
+*.bak
+.DS_Store
+Thumbs.db
+
+# ========== 外部参考 clone（勿入库）==========
+claude-code-ref/

@@ -1,0 +1,139 @@
+# push 到 main 后自动部署双机
+#
+# Secrets: DEPLOY_SSH_KEY, MW_HOST, WORKER_HOST
+# Variables（可选）: DEPLOY_BRANCH = main
+#
+name: Deploy Split Stack
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'novel-agent/**'
+      - 'frontend/**'
+      - 'python-ai/**'
+      - '.github/workflows/deploy-split.yml'
+  workflow_dispatch:
+    inputs:
+      service:
+        description: '强制只部署该服务（留空=按变更路径）'
+        required: false
+        type: choice
+        options:
+          - ''
+          - gateway
+          - auth
+          - pyai
+          - content
+          - consumer
+          - frontend
+
+concurrency:
+  group: deploy-split
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      gateway: ${{ steps.filter.outputs.gateway }}
+      auth: ${{ steps.filter.outputs.auth }}
+      pyai: ${{ steps.filter.outputs.pyai }}
+      content: ${{ steps.filter.outputs.content }}
+      consumer: ${{ steps.filter.outputs.consumer }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+      common: ${{ steps.filter.outputs.common }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            gateway:
+              - 'novel-agent/agent-gateway/**'
+            auth:
+              - 'novel-agent/agent-auth/**'
+            pyai:
+              - 'novel-agent/agent-pyai/**'
+            content:
+              - 'novel-agent/agent-content/**'
+            consumer:
+              - 'novel-agent/agent-consumer/**'
+            frontend:
+              - 'frontend/**'
+            common:
+              - 'novel-agent/agent-common/**'
+              - 'novel-agent/pom.xml'
+
+  deploy:
+    needs: changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "${{ secrets.MW_HOST }}" >> ~/.ssh/known_hosts
+          ssh-keyscan -H "${{ secrets.WORKER_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Rsync to MW
+        run: |
+          rsync -az --delete \
+            --exclude .git --exclude node_modules --exclude frontend/node_modules \
+            --exclude '**/target' --exclude .dev-logs --exclude .cursor \
+            --exclude claude-code-ref --exclude python-ai/.venv \
+            -e "ssh -i ~/.ssh/deploy_key" \
+            ./ "root@${{ secrets.MW_HOST }}:/opt/novel-agent/"
+
+      - name: Rsync to Worker
+        run: |
+          rsync -az --delete \
+            --exclude .git --exclude node_modules --exclude frontend/node_modules \
+            --exclude '**/target' --exclude .dev-logs --exclude .cursor \
+            --exclude claude-code-ref --exclude python-ai/.venv \
+            -e "ssh -i ~/.ssh/deploy_key" \
+            ./ "root@${{ secrets.WORKER_HOST }}:/opt/novel-agent/"
+
+      - name: Deploy MW services
+        env:
+          FORCE: ${{ github.event.inputs.service }}
+          GATEWAY: ${{ needs.changes.outputs.gateway }}
+          AUTH: ${{ needs.changes.outputs.auth }}
+          COMMON: ${{ needs.changes.outputs.common }}
+        run: |
+          deploy() {
+            ssh -i ~/.ssh/deploy_key "root@${{ secrets.MW_HOST }}" \
+              "bash /opt/novel-agent/novel-agent/docs/deploy/scripts/_server-deploy.sh mw $1"
+          }
+          if [[ -n "$FORCE" ]]; then
+            case "$FORCE" in gateway|auth) deploy "$FORCE" ;; esac
+            exit 0
+          fi
+          [[ "$GATEWAY" == true || "$COMMON" == true ]] && deploy gateway
+          [[ "$AUTH" == true || "$COMMON" == true ]] && deploy auth
+
+      - name: Deploy Worker services
+        env:
+          FORCE: ${{ github.event.inputs.service }}
+          PYAI: ${{ needs.changes.outputs.pyai }}
+          CONTENT: ${{ needs.changes.outputs.content }}
+          CONSUMER: ${{ needs.changes.outputs.consumer }}
+          FRONTEND: ${{ needs.changes.outputs.frontend }}
+          COMMON: ${{ needs.changes.outputs.common }}
+        run: |
+          deploy() {
+            ssh -i ~/.ssh/deploy_key "root@${{ secrets.WORKER_HOST }}" \
+              "bash /opt/novel-agent/novel-agent/docs/deploy/scripts/_server-deploy.sh worker $1"
+          }
+          if [[ -n "$FORCE" ]]; then
+            case "$FORCE" in pyai|content|consumer|frontend) deploy "$FORCE" ;; esac
+            exit 0
+          fi
+          [[ "$PYAI" == true || "$COMMON" == true ]] && deploy pyai
+          [[ "$CONTENT" == true || "$COMMON" == true ]] && deploy content
+          [[ "$CONSUMER" == true || "$COMMON" == true ]] && deploy consumer
+          [[ "$FRONTEND" == true ]] && deploy frontend

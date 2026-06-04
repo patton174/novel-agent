@@ -1,0 +1,35 @@
+# 双机：Worker 机 PyAI（与 Content 同机，走容器网络）
+server:
+  port: 8082
+
+spring:
+  cloud:
+    nacos:
+      discovery:
+        ip: WORKER_HOST_PLACEHOLDER
+    inetutils:
+      ignored-interfaces:
+        - docker0
+  main:
+    web-application-type: reactive
+  data:
+    redis:
+      host: YOUR_MW_HOST
+      port: 6379
+      password: changeme
+      database: 0
+  rabbitmq:
+    host: YOUR_MW_HOST
+    port: 5672
+    username: novel_agent
+    password: changeme
+
+agent:
+  python:
+    base-url: http://YOUR_MW_HOST:8000
+  content:
+    base-url: http://agent-content:8091
+
+logging:
+  level:
+    com.novel.agent: info

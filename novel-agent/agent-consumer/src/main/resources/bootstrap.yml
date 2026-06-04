@@ -1,0 +1,23 @@
+spring:
+  application:
+    name: agent-consumer
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
+  cloud:
+    nacos:
+      server-addr: ${NACOS_SERVER_ADDR:10.8.0.107:8848}
+      username: ${NACOS_USERNAME:nacos}
+      password: ${NACOS_PASSWORD:changeme}
+      config:
+        namespace: ${NACOS_NAMESPACE:dev}
+        group: NOVEL_AGENT_GROUP
+        file-extension: yaml
+        refresh-enabled: true
+      discovery:
+        namespace: ${NACOS_NAMESPACE:dev}
+        group: NOVEL_AGENT_GROUP
+    inetutils:
+      ignored-interfaces:
+        - VMware.*
+      preferred-networks:
+        - 192.168.6.

@@ -1,0 +1,10 @@
+.git
+**/node_modules
+**/target
+.dev-logs
+claude-code-ref
+.cursor
+**/__pycache__
+**/.venv
+python-ai/.env
+infra/

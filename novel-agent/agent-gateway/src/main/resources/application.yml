@@ -1,0 +1,11 @@
+spring:
+  main:
+    web-application-type: reactive
+  banner:
+    location: classpath:banner.txt
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true

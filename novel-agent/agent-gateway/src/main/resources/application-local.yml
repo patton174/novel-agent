@@ -1,0 +1,36 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  main:
+    web-application-type: reactive
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: false
+      routes:
+        - id: auth-local
+          uri: http://127.0.0.1:8081
+          predicates:
+            - Path=/api/auth/**
+        - id: pyai-local
+          uri: http://127.0.0.1:8082
+          predicates:
+            - Path=/api/agent/**
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:changeme}
+      database: ${REDIS_DB:0}
+
+sa-token:
+  token-name: Authorization
+  timeout: 2592000
+  is-concurrent: true
+  is-share: false
+
+logging:
+  level:
+    com.novel.agent: debug

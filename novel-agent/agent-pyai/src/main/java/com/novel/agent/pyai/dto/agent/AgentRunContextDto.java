@@ -1,0 +1,30 @@
+package com.novel.agent.pyai.dto.agent;
+
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.fasterxml.jackson.databind.annotation.JsonNaming;
+
+import java.util.List;
+import java.util.Map;
+
+@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+public record AgentRunContextDto(
+    String runId,
+    String sessionId,
+    String messageId,
+    Long userId,
+    String mode,
+    String userMessage,
+    String chapterText,
+    List<Map<String, String>> history,
+    String storyMemory,
+    Map<String, Object> preferences,
+    Map<String, Object> project,
+    List<Map<String, Object>> chapters,
+    String currentChapterId,
+    String novelId,
+    int stepIndex,
+    String lastTool,
+    String lastReason,
+    Map<String, Object> contextPatch,
+    Map<String, Object> selectedChoice
+) {}

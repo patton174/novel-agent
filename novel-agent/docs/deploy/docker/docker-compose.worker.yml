@@ -1,0 +1,150 @@
+# Worker 机（2C2G）：Python×2 + Content + PyAI + Consumer + 前端
+# python-ai 双实例承担 LLM CPU；Java 服务内存略压缩以适配 2G
+name: novel-agent-worker
+
+x-java-env: &java-env
+  SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
+  NACOS_SERVER_ADDR: ${NACOS_SERVER_ADDR}
+  NACOS_USERNAME: ${NACOS_USERNAME}
+  NACOS_PASSWORD: ${NACOS_PASSWORD}
+  NACOS_NAMESPACE: ${NACOS_NAMESPACE}
+  NACOS_DISCOVERY_IP: ${HOST_IP}
+  MW_HOST: ${MW_HOST}
+  SPRING_DATA_REDIS_HOST: ${SPRING_DATA_REDIS_HOST}
+  SPRING_DATA_REDIS_PASSWORD: ${SPRING_DATA_REDIS_PASSWORD}
+  SPRING_RABBITMQ_HOST: ${SPRING_RABBITMQ_HOST}
+  SPRING_RABBITMQ_USERNAME: ${SPRING_RABBITMQ_USERNAME}
+  SPRING_RABBITMQ_PASSWORD: ${SPRING_RABBITMQ_PASSWORD}
+
+services:
+  python-ai:
+    build:
+      context: ../../../../
+      dockerfile: novel-agent/docs/deploy/docker/Dockerfile.python-ai
+    image: novel-agent/python-ai:latest
+    restart: unless-stopped
+    env_file:
+      - ../../../../python-ai/.env
+    environment:
+      LOG_LEVEL: ${PYTHON_LOG_LEVEL:-INFO}
+    mem_limit: ${PYTHON_MEM_LIMIT:-320m}
+    ports:
+      - "8000:8000"
+    networks:
+      - novel-net
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health')\""]
+      interval: 20s
+      timeout: 5s
+      retries: 6
+      start_period: 40s
+
+  python-ai-2:
+    image: novel-agent/python-ai:latest
+    restart: unless-stopped
+    env_file:
+      - ../../../../python-ai/.env
+    environment:
+      LOG_LEVEL: ${PYTHON_LOG_LEVEL:-INFO}
+    mem_limit: ${PYTHON_MEM_LIMIT_2:-320m}
+    ports:
+      - "8001:8000"
+    networks:
+      - novel-net
+    depends_on:
+      python-ai:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health')\""]
+      interval: 20s
+      timeout: 5s
+      retries: 6
+      start_period: 40s
+
+  agent-content:
+    build:
+      context: ../../../../
+      dockerfile: novel-agent/docs/deploy/docker/Dockerfile.java
+      args:
+        MODULE: agent-content
+        JAR: agent-content-1.0.0-SNAPSHOT.jar
+    image: novel-agent/content:latest
+    restart: unless-stopped
+    environment:
+      <<: *java-env
+      JAVA_OPTS: ${JAVA_OPTS_CONTENT:--Xms96m -Xmx256m -Dfile.encoding=UTF-8}
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      AGENT_PYTHON_BASE_URL: ${AGENT_PYTHON_BASE_URL}
+    mem_limit: ${JAVA_MEM_LIMIT:-288m}
+    ports:
+      - "8091:8091"
+    networks:
+      - novel-net
+    depends_on:
+      python-ai:
+        condition: service_started
+
+  agent-pyai:
+    build:
+      context: ../../../../
+      dockerfile: novel-agent/docs/deploy/docker/Dockerfile.java
+      args:
+        MODULE: agent-pyai
+        JAR: agent-pyai-1.0.0-SNAPSHOT.jar
+    image: novel-agent/pyai:latest
+    restart: unless-stopped
+    environment:
+      <<: *java-env
+      JAVA_OPTS: ${JAVA_OPTS_PYAI:--Xms96m -Xmx256m -Dfile.encoding=UTF-8}
+      SPRING_MAIN_WEB_APPLICATION_TYPE: reactive
+      AGENT_PYTHON_BASE_URL: ${AGENT_PYTHON_BASE_URL}
+      AGENT_CONTENT_BASE_URL: ${AGENT_CONTENT_BASE_URL}
+    mem_limit: ${JAVA_MEM_LIMIT:-288m}
+    ports:
+      - "8082:8082"
+    networks:
+      - novel-net
+    depends_on:
+      agent-content:
+        condition: service_started
+
+  agent-consumer:
+    build:
+      context: ../../../../
+      dockerfile: novel-agent/docs/deploy/docker/Dockerfile.java
+      args:
+        MODULE: agent-consumer
+        JAR: agent-consumer-1.0.0-SNAPSHOT.jar
+    image: novel-agent/consumer:latest
+    restart: unless-stopped
+    environment:
+      <<: *java-env
+      JAVA_OPTS: ${JAVA_OPTS_CONSUMER:--Xms96m -Xmx192m -Dfile.encoding=UTF-8}
+      AGENT_CONTENT_BASE_URL: ${AGENT_CONTENT_BASE_URL}
+    mem_limit: 224m
+    networks:
+      - novel-net
+    depends_on:
+      agent-content:
+        condition: service_started
+
+  frontend:
+    build:
+      context: ../../../../
+      dockerfile: novel-agent/docs/deploy/docker/Dockerfile.frontend-worker
+    image: novel-agent/frontend-worker:latest
+    restart: unless-stopped
+    mem_limit: 64m
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"
+    networks:
+      - novel-net
+    depends_on:
+      agent-content:
+        condition: service_started
+
+networks:
+  novel-net:
+    driver: bridge

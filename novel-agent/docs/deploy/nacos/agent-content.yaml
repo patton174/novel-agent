@@ -1,0 +1,40 @@
+# 上传到 Nacos：Data ID = agent-content.yaml，Group = NOVEL_AGENT_GROUP，Namespace = dev
+server:
+  port: 8091
+
+spring:
+  cloud:
+    nacos:
+      discovery:
+        ip: YOUR_MW_HOST
+    inetutils:
+      ignored-interfaces:
+        - VMware.*
+      preferred-networks:
+        - 107.150.
+  datasource:
+    url: jdbc:postgresql://YOUR_MW_HOST:5432/novel_agent?sslmode=disable
+    username: postgres
+    password: changeme
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  data:
+    redis:
+      host: YOUR_MW_HOST
+      port: 6379
+      password: changeme
+      database: 0
+
+agent:
+  python:
+    base-url: http://127.0.0.1:8000
+
+logging:
+  level:
+    com.novel.agent: info
