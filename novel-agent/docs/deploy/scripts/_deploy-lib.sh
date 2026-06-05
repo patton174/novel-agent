@@ -105,3 +105,31 @@ fi
 \$COMPOSE -f '$compose_file' --env-file '$env_rel' ps
 EOF
 }
+
+# 在远端探测 Java 服务端口是否已监听（POST login 返回任意 HTTP 即视为就绪）
+deploy_wait_http_port() {
+  local remote_ssh="$1"
+  local port="$2"
+  local label="${3:-service}"
+  local max_attempts="${4:-45}"
+  deploy_ssh "$remote_ssh" bash -s <<EOF
+set -euo pipefail
+ok=0
+for i in \$(seq 1 $max_attempts); do
+  code=\$(curl -s -o /dev/null -w '%{http_code}' --connect-timeout 2 \
+    -X POST "http://127.0.0.1:${port}/api/auth/login" \
+    -H 'Content-Type: application/json' \
+    -d '{"username":"_probe","password":"_probe"}' 2>/dev/null || echo 000)
+  if [[ "\$code" != "000" ]]; then
+    echo "[deploy] ${label} :${port} ready (probe HTTP \$code, attempt \$i)"
+    ok=1
+    break
+  fi
+  sleep 2
+done
+if [[ "\$ok" -ne 1 ]]; then
+  echo "[deploy] ERROR: ${label} :${port} not ready after $max_attempts attempts"
+  exit 1
+fi
+EOF
+}

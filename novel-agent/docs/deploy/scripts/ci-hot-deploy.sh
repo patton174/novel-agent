@@ -65,9 +65,10 @@ fi
 
 # 部署脚本/workflow 变更：补发 MW 安全栈，修复半升级
 if want "${CHANGED_DEPLOY_CI:-false}"; then
-  echo "[ci-hot] deploy/ci changed → sync MW auth + gateway"
+  echo "[ci-hot] deploy/ci changed → sync MW auth + gateway (rebuild)"
   CHANGED_AUTH=true
   CHANGED_GATEWAY=true
+  export MW_JAVA_REBUILD=1
 fi
 
 if want "${CHANGED_COMMON:-false}"; then
@@ -172,6 +173,12 @@ if [[ "${GITHUB_ACTIONS:-}" == "true" ]]; then
   done
   pkill -f 'ssh.*deploy_key' 2>/dev/null || true
   pkill -f 'scp.*deploy_key' 2>/dev/null || true
+fi
+
+if want "${CHANGED_AUTH:-false}" || want "${CHANGED_GATEWAY:-false}"; then
+  # shellcheck source=/dev/null
+  source "$SCRIPT_DIR/_deploy-lib.sh"
+  deploy_wait_http_port "$MW_SSH" 8080 "gateway" 30
 fi
 
 echo "[ci-hot] 全部热部署完成"

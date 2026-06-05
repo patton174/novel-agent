@@ -135,10 +135,40 @@ if [[ -z "\$CID" ]]; then
   \$COMPOSE -f '$COMPOSE_FILE' --env-file '$ENV_REL' up -d '$COMPOSE_SVC'
   CID=\$(\$COMPOSE -f '$COMPOSE_FILE' --env-file '$ENV_REL' ps -q '$COMPOSE_SVC')
 fi
+if docker exec "\$CID" test -f /app/app.jar; then
+  docker cp "\$CID:/app/app.jar" "/tmp/deploy-fast-${COMPOSE_SVC}-bak.jar" 2>/dev/null || true
+fi
 docker cp '$REMOTE_JAR' "\$CID:/app/app.jar"
 rm -f '$REMOTE_JAR'
 docker restart "\$CID"
-sleep 12
+echo "[deploy-fast] 等待 $COMPOSE_SVC 启动..."
+sleep 5
+PORT=8080
+if [[ '$COMPOSE_SVC' == 'agent-auth' ]]; then PORT=8081; fi
+ok=0
+for i in \$(seq 1 45); do
+  code=\$(curl -s -o /dev/null -w '%{http_code}' --connect-timeout 2 \
+    -X POST "http://127.0.0.1:\${PORT}/api/auth/login" \
+    -H 'Content-Type: application/json' \
+    -d '{"username":"_probe","password":"_probe"}' 2>/dev/null || echo 000)
+  if [[ "\$code" != "000" ]]; then
+    echo "[deploy-fast] $COMPOSE_SVC 就绪 (HTTP \$code, attempt \$i)"
+    ok=1
+    break
+  fi
+  sleep 2
+done
+if [[ "\$ok" -ne 1 ]]; then
+  echo "[deploy-fast] ERROR: $COMPOSE_SVC 启动超时，最近日志："
+  docker logs "\$CID" --tail 80 2>&1 || true
+  if [[ -f "/tmp/deploy-fast-${COMPOSE_SVC}-bak.jar" ]]; then
+    echo "[deploy-fast] 回滚上一版 jar ..."
+    docker cp "/tmp/deploy-fast-${COMPOSE_SVC}-bak.jar" "\$CID:/app/app.jar"
+    docker restart "\$CID"
+    sleep 15
+  fi
+  exit 1
+fi
 \$COMPOSE -f '$COMPOSE_FILE' --env-file '$ENV_REL' ps '$COMPOSE_SVC'
 docker logs "\$CID" --tail 8 2>&1
 EOF
