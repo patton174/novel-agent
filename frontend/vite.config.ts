@@ -48,36 +48,6 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
-    build: {
-      rollupOptions: {
-        output: {
-          manualChunks(id) {
-            if (!id.includes('node_modules')) {
-              if (id.includes('/pages/marketing/') || id.includes('/components/marketing/')) {
-                return 'marketing'
-              }
-              if (id.includes('/pages/Editor') || id.includes('/components/editor/')) {
-                return 'editor'
-              }
-              if (id.includes('/components/agent/') || id.includes('/hooks/editor/')) {
-                return 'agent'
-              }
-              return undefined
-            }
-            if (id.includes('react-dom') || id.includes('react-router') || id.includes('/react/')) {
-              return 'vendor-react'
-            }
-            if (id.includes('styled-components') || id.includes('framer-motion') || id.includes('gsap')) {
-              return 'vendor-ui'
-            }
-            if (id.includes('react-markdown') || id.includes('remark-') || id.includes('micromark')) {
-              return 'vendor-markdown'
-            }
-            return 'vendor'
-          },
-        },
-      },
-    },
     test: {
       globals: false,
       environment: 'jsdom',
