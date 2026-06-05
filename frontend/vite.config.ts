@@ -4,6 +4,10 @@ import path from 'path'
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
+  const securityAes =
+    env.VITE_SECURITY_AES ||
+    process.env.VITE_SECURITY_AES ||
+    (mode === 'production' ? 'true' : 'false')
   const directPython =
     env.VITE_DIRECT_PYTHON === 'true' || env.VITE_DIRECT_PYTHON === '1'
   const remoteGateway = env.VITE_REMOTE_GATEWAY?.replace(/\/$/, '')
@@ -48,6 +52,9 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
+    define: {
+      'import.meta.env.VITE_SECURITY_AES': JSON.stringify(securityAes),
+    },
     test: {
       globals: false,
       environment: 'jsdom',

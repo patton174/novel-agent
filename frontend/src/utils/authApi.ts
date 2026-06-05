@@ -3,6 +3,7 @@ import { secureFetch } from '../security/secureFetch'
 import { collectFullEnv } from '../security/envCollect'
 import { getFingerprint } from '../security/fingerprint'
 import { startHeartbeatWorker, stopHeartbeatWorker } from '../security/heartbeat'
+import { primeSessionFromLogin } from '../security/sessionBootstrap'
 
 export interface LoginResult {
   token: string
@@ -68,7 +69,7 @@ export async function login(username: string, password: string): Promise<LoginRe
   }
 
   const data = (await response.json()) as LoginResult
-  applyLoginSession(data)
+  primeSessionFromLogin(data)
   if (data.userId == null) {
     await syncUserIdFromServer()
   }
@@ -116,7 +117,7 @@ export async function refreshSession(): Promise<boolean> {
     return false
   }
   const data = (await response.json()) as LoginResult
-  applyLoginSession(data)
+  primeSessionFromLogin(data)
   startHeartbeatWorker()
   return true
 }

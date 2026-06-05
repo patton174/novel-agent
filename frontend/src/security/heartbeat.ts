@@ -1,7 +1,6 @@
 import { DIRECT_PYTHON } from '../config/runtime'
 import { getAuthHeaders, isLoggedIn } from '../utils/auth'
 import { secureFetch } from './secureFetch'
-import { getAccessToken } from './sessionStore'
 import { getCachedFingerprint, getFingerprint } from './fingerprint'
 import { collectEnvDelta } from './envCollect'
 import {
@@ -86,15 +85,7 @@ export function stopHeartbeatWorker(): void {
 
 /** 页面刷新后 token 在内存丢失时，尝试 silent refresh 再启心跳 */
 export async function ensureSessionAndHeartbeat(): Promise<void> {
-  if (DIRECT_PYTHON) {
-    return
-  }
-  if (!getAccessToken() && !isLoggedIn()) {
-    const { refreshSession } = await import('../utils/authApi')
-    const ok = await refreshSession()
-    if (!ok) {
-      return
-    }
-  }
+  const { startSessionBootstrap } = await import('./sessionBootstrap')
+  await startSessionBootstrap()
   startHeartbeatWorker()
 }
