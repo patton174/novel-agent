@@ -79,6 +79,11 @@ if want "${CHANGED_COMMON:-false}"; then
   CHANGED_CONSUMER=true
 fi
 
+# 前端已切到 /api/content/auth/*；仅发 frontend 时 Worker content 若未升级会整站 404
+if want "${CHANGED_FRONTEND:-false}"; then
+  CHANGED_CONTENT=true
+fi
+
 MODULES=()
 want "${CHANGED_GATEWAY:-false}" && MODULES+=(agent-gateway)
 want "${CHANGED_AUTH:-false}" && MODULES+=(agent-auth)
