@@ -5,12 +5,11 @@ import com.novel.agent.common.core.exception.BizException;
 import com.novel.agent.common.core.exception.ForbiddenException;
 import com.novel.agent.common.core.exception.UnauthorizedException;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
 
 /**
  * 服务间 internal API 鉴权（X-Internal-Service-Key）。
+ * 由 {@link com.novel.agent.common.service.config.CommonServiceAutoConfiguration} 注册。
  */
-@Component
 public class InternalServiceGuard {
 
     @Value("${agent.internal.service-key:dev-internal-key-change-me}")
