@@ -38,20 +38,25 @@ public class EncryptedRouteWebFilter implements WebFilter {
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
+        ServerHttpRequest request = exchange.getRequest();
+        String path = request.getURI().getPath();
+        if (!path.startsWith("/g/")) {
+            return chain.filter(exchange);
+        }
+
         var runtimeOpt = bootstrapRuntimeSupport.current();
         if (runtimeOpt.isEmpty()) {
-            return chain.filter(exchange);
+            return staleCrypto(exchange, "bootstrap runtime missing");
         }
         BootstrapRuntimeSupport.BootstrapRuntime runtime = runtimeOpt.get();
         String prefix = runtime.apiPathPrefix();
         if (prefix == null || prefix.isBlank()) {
-            return chain.filter(exchange);
+            return staleCrypto(exchange, "api path prefix missing");
         }
         String normalizedPrefix = prefix.startsWith("/") ? prefix : "/" + prefix;
-        ServerHttpRequest request = exchange.getRequest();
-        String path = request.getURI().getPath();
         if (!path.startsWith(normalizedPrefix + "/")) {
-            return chain.filter(exchange);
+            log.warn("route prefix stale: path={} expectedPrefix={}", path, normalizedPrefix);
+            return staleCrypto(exchange, "route prefix stale");
         }
         String segment = path.substring(normalizedPrefix.length() + 1);
         int slash = segment.indexOf('/');
@@ -59,13 +64,13 @@ public class EncryptedRouteWebFilter implements WebFilter {
             segment = segment.substring(0, slash);
         }
         if (segment.isBlank()) {
-            return notFound(exchange, "missing route cipher");
+            return staleCrypto(exchange, "missing route cipher");
         }
         try {
             AesGcmCodec codec = AesGcmCodec.fromBase64Key(runtime.aesKeyB64());
             RoutePathCodec.RouteSpec spec = RoutePathCodec.decode(segment, codec);
             if (!spec.method().equalsIgnoreCase(request.getMethod().name())) {
-                return notFound(exchange, "method mismatch");
+                return staleCrypto(exchange, "method mismatch");
             }
             String realTarget = spec.path();
             int q = realTarget.indexOf('?');
@@ -88,14 +93,15 @@ public class EncryptedRouteWebFilter implements WebFilter {
             return chain.filter(exchange.mutate().request(mutated).build());
         } catch (Exception ex) {
             log.warn("route decrypt failed: {}", ex.getMessage());
-            return notFound(exchange, "invalid route cipher");
+            return staleCrypto(exchange, "invalid route cipher");
         }
     }
 
-    private Mono<Void> notFound(ServerWebExchange exchange, String message) {
+    private Mono<Void> staleCrypto(ServerWebExchange exchange, String message) {
         exchange.getResponse().setStatusCode(HttpStatus.NOT_FOUND);
         exchange.getResponse().getHeaders().set("Content-Type", "application/json;charset=UTF-8");
-        String body = "{\"code\":404,\"message\":\"" + message.replace("\"", "'") + "\"}";
+        exchange.getResponse().getHeaders().set("X-Crypto-Stale", "1");
+        String body = "{\"code\":404,\"message\":\"" + message.replace("\"", "'") + "\",\"cryptoStale\":true}";
         return exchange.getResponse().writeWith(
             Mono.just(exchange.getResponse().bufferFactory().wrap(body.getBytes(StandardCharsets.UTF_8)))
         );

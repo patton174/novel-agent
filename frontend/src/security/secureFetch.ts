@@ -147,7 +147,13 @@ export async function secureFetch(input: RequestInfo | URL, init?: RequestInit):
 
   if (response.status >= 400 && isSecurityCryptoEnabled()) {
     const bodyText = await response.clone().text().catch(() => '')
-    if (isCryptoStaleError(response.status, bodyText) || bodyText.includes('invalid sign') || bodyText.includes('sign required')) {
+    const cryptoStaleHeader = response.headers.get('X-Crypto-Stale') === '1'
+    if (
+      cryptoStaleHeader ||
+      isCryptoStaleError(response.status, bodyText) ||
+      bodyText.includes('invalid sign') ||
+      bodyText.includes('sign required')
+    ) {
       if (isBootstrapAuthPath(logicalUrl)) {
         setSessionCrypto(null)
       }

@@ -82,7 +82,7 @@ export function getBootstrapCryptoMaterial(): SessionCryptoMaterial | null {
 }
 
 export function isCryptoStaleError(status: number, bodyText: string): boolean {
-  if (status !== 400 && status !== 401) {
+  if (status !== 400 && status !== 401 && status !== 404 && status !== 500) {
     return false
   }
   const t = bodyText.toLowerCase()
@@ -91,6 +91,11 @@ export function isCryptoStaleError(status: number, bodyText: string): boolean {
     t.includes('decrypt') ||
     t.includes('aes envelope') ||
     t.includes('key_stale') ||
+    t.includes('cryptostale') ||
+    t.includes('route prefix') ||
+    t.includes('invalid route') ||
+    t.includes('route cipher') ||
+    t.includes('bootstrap runtime') ||
     t.includes('crypto')
   )
 }

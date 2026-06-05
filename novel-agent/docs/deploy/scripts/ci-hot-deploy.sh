@@ -180,10 +180,35 @@ if [[ "${GITHUB_ACTIONS:-}" == "true" ]]; then
   pkill -f 'scp.*deploy_key' 2>/dev/null || true
 fi
 
+sync_crypto_register() {
+  echo "[ci-hot] crypto register（同步 Redis bootstrap + Worker crypto-runtime.json）"
+  local key
+  key=$(deploy_ssh "$MW_SSH" \
+    "grep -E '^AGENT_INTERNAL_SERVICE_KEY=' '${MW_REMOTE_DIR:-/opt/novel-agent}/novel-agent/docs/deploy/docker/.env.mw' 2>/dev/null | head -1 | cut -d= -f2-" \
+    2>/dev/null || true)
+  if [[ -z "$key" ]]; then
+    echo "[ci-hot] WARN: skip crypto register — MW .env.mw 无 AGENT_INTERNAL_SERVICE_KEY"
+    return 0
+  fi
+  export AGENT_INTERNAL_SERVICE_KEY="$key"
+  export MW_HOST="${MW_HOST:?}"
+  export WORKER_HOST="${WORKER_HOST:?}"
+  export MW_SSH="${MW_SSH:-root@${MW_HOST}}"
+  export WORKER_SSH="${WORKER_SSH:-root@${WORKER_HOST}}"
+  bash "$SCRIPT_DIR/register-frontend-crypto.sh" || {
+    echo "[ci-hot] WARN: crypto register 失败，/g/ 路由可能 stale"
+    return 0
+  }
+}
+
 if want "${CHANGED_AUTH:-false}" || want "${CHANGED_GATEWAY:-false}"; then
   # shellcheck source=/dev/null
   source "$SCRIPT_DIR/_deploy-lib.sh"
   deploy_wait_http_port "$MW_SSH" 8080 "gateway" 30
+fi
+
+if want "${CHANGED_AUTH:-false}" || want "${CHANGED_GATEWAY:-false}" || want "${CHANGED_FRONTEND:-false}" || want "${CHANGED_SECURITY:-false}"; then
+  sync_crypto_register
 fi
 
 echo "[ci-hot] 全部热部署完成"
