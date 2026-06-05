@@ -33,8 +33,10 @@ public class GatewayAuthSupport {
         "/actuator/health"
     );
 
+    /** 验签/解密/重放豁免：无密钥即可访问的 bootstrap（GET 无法先验签再拿密钥） */
     private static final List<String> CRYPTO_EXEMPT = Arrays.asList(
-        "/actuator/health"
+        "/actuator/health",
+        "/api/auth/crypto-config"
     );
 
     private static final List<String> WS_PATHS = Arrays.asList(

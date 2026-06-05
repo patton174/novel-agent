@@ -39,8 +39,8 @@ async function fetchRuntime(force: boolean): Promise<CryptoRuntimeConfig | null>
     return runtime
   }
 
-  // 优先走 Gateway→Auth（与 Redis bootstrap 同步）；静态 json 作兜底
-  const sources = ['/api/auth/crypto-config', '/crypto-runtime.json']
+  // 主路径：Worker nginx 静态文件（不经 Gateway 验签）；失败再兜底 Auth API
+  const sources = ['/crypto-runtime.json', '/api/auth/crypto-config']
   for (const url of sources) {
     try {
       const response = await fetch(url, { credentials: 'include', cache: 'no-store' })
