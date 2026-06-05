@@ -446,7 +446,6 @@ export function useEditorSessions({
     toggleSessionSelected,
     requestBatchDelete,
     selectAllSessionsInBatch,
-    setBatchMode,
     confirmBatchDeleteSessions,
     titlePendingSessionIds,
     markSessionTitlePending,

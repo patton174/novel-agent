@@ -54,7 +54,6 @@ export function CcToolRow({
 }) {
   const interactive = collapsible && Boolean(onToggle)
   const showBody = expanded && (Boolean(branch) || Boolean(children))
-  const HeadlineWrap = interactive ? CcToolHeadlineButton : CcToolHeadlineStatic
 
   const headline = (
     <CcToolHeadline>
@@ -109,16 +108,16 @@ export function CcToolRow({
         ) : null}
         <CcToolMain>
           {interactive ? (
-            <HeadlineWrap
+            <CcToolHeadlineButton
               type="button"
               aria-expanded={expanded}
               onClick={onToggle}
               data-testid={testId ? `${testId}-toggle` : undefined}
             >
               {headline}
-            </HeadlineWrap>
+            </CcToolHeadlineButton>
           ) : (
-            <HeadlineWrap>{headline}</HeadlineWrap>
+            <CcToolHeadlineStatic>{headline}</CcToolHeadlineStatic>
           )}
         </CcToolMain>
       </CcToolHeadlineRow>

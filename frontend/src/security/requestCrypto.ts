@@ -27,7 +27,7 @@ function base64ToBytes(value: string): Uint8Array {
 async function importAesKey(aesKeyB64: string): Promise<CryptoKey> {
   return crypto.subtle.importKey(
     'raw',
-    base64ToBytes(aesKeyB64),
+    base64ToBytes(aesKeyB64) as BufferSource,
     { name: 'AES-GCM' },
     false,
     ['encrypt'],

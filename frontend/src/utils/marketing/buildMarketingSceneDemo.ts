@@ -9,13 +9,6 @@ import { deriveAssistantStreamPhase } from '../agentStreamPhase'
 
 export type MarketingSceneId = 'orchestrate' | 'subagent'
 
-function eventsForProgress(events: Array<[string, string]>, progress: number): Array<[string, string]> {
-  if (progress >= 0.995) {
-    return events
-  }
-  return events.filter(([name]) => name !== 'stream-end')
-}
-
 /** 滚动进度 → 已播放事件数（每步占等长区间，避免 ceil 一次跳多步） */
 export function sceneEventCountForProgress(progress: number, total: number): number {
   if (total <= 0 || progress <= 0.06) {
@@ -28,21 +21,6 @@ export function sceneEventCountForProgress(progress: number, total: number): num
   const end = 0.94
   const t = Math.max(0, Math.min(1, (progress - start) / (end - start)))
   return Math.min(total, 1 + Math.floor(t * total))
-}
-
-function eventCountForProgress(progress: number, total: number): number {
-  return sceneEventCountForProgress(progress, total)
-}
-
-function applyEvents(events: Array<[string, string]>, progress: number): AgentStreamUiState {
-  const playable = eventsForProgress(events, progress)
-  const count = eventCountForProgress(progress, playable.length)
-  let state = createInitialAgentStreamUiState()
-  for (let i = 0; i < count; i++) {
-    const [event, raw] = playable[i]!
-    state = applyAgentEvent(state, event, raw)
-  }
-  return state
 }
 
 function assistantFromState(state: AgentStreamUiState, id: string): EditorMessage {

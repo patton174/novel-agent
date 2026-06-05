@@ -7,7 +7,7 @@ import {
   planningPrepTitle,
 } from './agentOrchestration'
 import { isHiddenUiTool } from './agentHiddenTools'
-import { isAskUserTool, normalizeToolName } from './agentToolNames'
+import { isAskUserTool } from './agentToolNames'
 import { sanitizeMessageDeltaChunk, sanitizeThinkText } from './sanitizeAgentText'
 
 export { PLANNING_GENERIC_TITLES } from './agentOrchestration'
@@ -725,7 +725,7 @@ function pushThinkRoundItem(
 ): void {
   const last = items[items.length - 1]
   if (last?.kind === item.kind) {
-    last.blocks.push(...item.blocks)
+    ;(last.blocks as AgentTimelineBlock[]).push(...item.blocks)
     return
   }
   items.push({ kind: item.kind, blocks: [...item.blocks] } as ThinkRoundItem)
@@ -1409,7 +1409,6 @@ export function groupTimelineUnits(
   while (i < timeline.length) {
     const block = timeline[i]
     if (block.kind === 'transition') {
-      const transition = block
       const children: AgentTimelineBlock[] = []
       i += 1
       while (i < timeline.length && timeline[i].kind !== 'transition') {

@@ -22,7 +22,7 @@ export function PlanReasoningBlock({
   /** @deprecated 推理完成后始终自动折叠，不再随编排层保持展开 */
   orchestrationActive?: boolean
 }) {
-  const { displayText, isTyping, liveStream, isThinking } = useTimelineBlockStreamText(
+  const { displayText, isThinking } = useTimelineBlockStreamText(
     block,
     messageKey,
     streamLive,
@@ -72,7 +72,7 @@ export function ThinkBlock({
   orchestrationActive?: boolean
 }) {
   const visible = shouldRenderThinkBlock(block, { streamLive, streamFinished })
-  const { displayText, isTyping, liveStream, isThinking } = useTimelineBlockStreamText(
+  const { displayText, isThinking } = useTimelineBlockStreamText(
     block,
     messageKey,
     streamLive,

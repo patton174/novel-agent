@@ -1,5 +1,6 @@
 import { DIRECT_PYTHON } from '../config/runtime'
 import { getAuthHeaders } from '../utils/auth'
+import { secureFetch } from './secureFetch'
 
 export interface WsTicketResult {
   ticket: string

@@ -713,12 +713,6 @@ const SubagentPanelCard = styled.div<{ $active?: boolean }>`
     $active ? `0 0 0 1px ${palette.accentBorderLight}` : 'none'};
 `
 
-const SubagentPanelHeader = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-`
-
 const SubagentStatusChip = styled.span<{ $kind: ToolVisualStatus }>`
   display: inline-flex;
   align-items: center;

@@ -130,7 +130,7 @@ export const DemoThinkLine = styled.p`
   margin: 0;
   ${textStyle('uiSm')}
   line-height: 1.55;
-  color: ${editorTheme.textBody};
+  color: ${palette.textBody};
   will-change: opacity, transform;
 `
 

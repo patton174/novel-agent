@@ -27,7 +27,7 @@ export async function secureFetch(input: RequestInfo | URL, init?: RequestInit):
     ['POST', 'PUT', 'PATCH'].includes(method)
 
   if (canEncrypt) {
-    const envelope = await encryptRequestBody(body, getSessionCrypto())
+    const envelope = await encryptRequestBody(body as string, getSessionCrypto())
     if (envelope) {
       body = JSON.stringify(envelope)
       headers['Content-Type'] = ENC_CONTENT_TYPE

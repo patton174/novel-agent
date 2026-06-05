@@ -283,7 +283,9 @@ export function NovelCursorMock({ variant }: { variant: NovelCursorMockVariant }
   if (variant === 'parallel') {
     return (
       <div className="demo-app-mock demo-agent-console" data-variant={variant} style={{ padding: '1.25rem' }}>
-        <CursorDesktopMock variant="parallel" style={{ position: 'relative', width: '100%', boxShadow: 'none' }} />
+        <div style={{ position: 'relative', width: '100%', boxShadow: 'none' }}>
+          <CursorDesktopMock variant="parallel" />
+        </div>
       </div>
     )
   }
@@ -294,8 +296,12 @@ export function NovelCursorMock({ variant }: { variant: NovelCursorMockVariant }
         data-variant={variant}
         style={{ padding: '1.25rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}
       >
-        <CursorDesktopMock variant="stream" style={{ position: 'relative', width: '100%', boxShadow: 'none' }} />
-        <CursorPreviewMock style={{ position: 'relative', width: '100%', boxShadow: 'none' }} />
+        <div style={{ position: 'relative', width: '100%', boxShadow: 'none' }}>
+          <CursorDesktopMock variant="stream" />
+        </div>
+        <div style={{ position: 'relative', width: '100%', boxShadow: 'none' }}>
+          <CursorPreviewMock />
+        </div>
       </div>
     )
   }

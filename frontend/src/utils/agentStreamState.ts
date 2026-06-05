@@ -21,7 +21,6 @@ import { ccToolHumanSubtitle, ccToolHumanSubtitleFromPayload } from './ccToolDis
 import {
   applyTimelineEvent,
   appendChoiceSelected,
-  appendTimelineTextDelta,
   finalizeTimeline,
   normalizeTimelineBlockIds,
 } from './agentStreamTimeline'
@@ -299,7 +298,7 @@ function choicesFromPayload(event: AgentEventEnvelope): AgentChoiceOption[] | un
   }
   const interaction = event.payload.interaction
   if (interaction && typeof interaction === 'object') {
-    const row = interaction as Record<string, unknown>
+    const row = interaction as unknown as Record<string, unknown>
     const fromOptions = choiceOptionsFromRaw(row.options, 'opt')
     if (fromOptions.length > 0) {
       return fromOptions
@@ -1170,7 +1169,6 @@ export function applyAgentEvent(
         toolInputText: merged.toolInputText ?? prev.toolInputText,
         toolOutputDetail: merged.toolOutputDetail ?? prev.toolOutputDetail,
         displayExcerpt: merged.displayExcerpt ?? prev.displayExcerpt,
-        detail: merged.detail ?? prev.detail,
         outputSummary:
           event.type === 'tool.completed'
             ? outputSummary
@@ -1262,34 +1260,6 @@ export function applyAgentEvent(
   }
 
   return next
-}
-
-function normalizeAssistantCompareText(text: string): string {
-  return text.replace(/\s+/g, ' ').trim()
-}
-
-function assistantTextAlreadyInTimeline(
-  timeline: AgentTimelineBlock[],
-  body: string,
-): boolean {
-  const fromTimeline = timeline
-    .filter((b): b is Extract<AgentTimelineBlock, { kind: 'text' }> => b.kind === 'text')
-    .map((b) => b.content)
-    .join('')
-  const normTimeline = normalizeAssistantCompareText(fromTimeline)
-  const normBody = normalizeAssistantCompareText(body)
-  if (!normTimeline || !normBody) {
-    return false
-  }
-  if (normTimeline.includes(normBody) || normBody.includes(normTimeline)) {
-    return true
-  }
-  const probeLen = Math.min(160, normBody.length, normTimeline.length)
-  if (probeLen < 48) {
-    return false
-  }
-  const probe = normBody.slice(0, probeLen)
-  return normTimeline.includes(probe)
 }
 
 function mergeAssistantTextFromTimeline(state: AgentStreamUiState): string {

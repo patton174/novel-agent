@@ -30,5 +30,5 @@ export function randomUUID(): string {
 /** 启动时补丁，避免第三方库直接调 crypto.randomUUID 崩溃 */
 export function installRandomUUIDPolyfill(): void {
   if (!cryptoRef || nativeRandomUUID) return
-  cryptoRef.randomUUID = generateRandomUUIDFallback
+  cryptoRef.randomUUID = generateRandomUUIDFallback as Crypto['randomUUID']
 }

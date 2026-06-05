@@ -291,19 +291,20 @@ export function TimelineToolBlock({
     Boolean(chapterResultSummary) ||
     (chapterWriteTool && resolved && toolDetailHasExpandableContent(step))
 
-  const showBodySummary =
+  const showBodySummary = Boolean(
     !readLabel &&
-    !memoryActionLabel &&
-    !deleteSummary &&
-    !vfsRead &&
-    !chapterWriteTool &&
-    !vfsInventoryTool &&
-    !todoWriteTool &&
-    !hasTodoList &&
-    !isAsk &&
-    resolved &&
-    summary &&
-    !showInteraction
+      !memoryActionLabel &&
+      !deleteSummary &&
+      !vfsRead &&
+      !chapterWriteTool &&
+      !vfsInventoryTool &&
+      !todoWriteTool &&
+      !hasTodoList &&
+      !isAsk &&
+      resolved &&
+      summary &&
+      !showInteraction,
+  )
 
   const showDetailPeek =
     !toolErrorText &&
@@ -390,7 +391,6 @@ export function TimelineToolBlock({
       hasExpandableDetail={hasExpandableDetail}
       showVerboseSummary={showVerboseSummary}
       showBodySummary={showBodySummary}
-      showDetailPeek={showDetailPeek}
       showFailedDetail={showFailedDetail}
       toolErrorText={toolErrorText}
       summary={summary}
@@ -424,7 +424,6 @@ function ExpandableTimelineToolRow({
   hasExpandableDetail,
   showVerboseSummary,
   showBodySummary,
-  showDetailPeek,
   showFailedDetail,
   toolErrorText,
   summary,
@@ -449,7 +448,6 @@ function ExpandableTimelineToolRow({
   hasExpandableDetail: boolean
   showVerboseSummary: boolean
   showBodySummary: boolean
-  showDetailPeek: boolean
   showFailedDetail: boolean
   toolErrorText: string | undefined
   summary: string | undefined

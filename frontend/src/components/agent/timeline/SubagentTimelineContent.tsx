@@ -8,6 +8,7 @@ import { OrchestrationLayer } from './OrchestrationLayer'
 import { TimelineDeliveryBlock } from './TimelineDeliveryBlock'
 import { TimelineToolBlock } from './TimelineToolBlock'
 import { TimelineBodyDivider } from './timelineStyles'
+import { editorTheme } from '../../../styles/editorTheme'
 import { palette } from '../../../styles/theme'
 
 /** 子 Agent 完整运行时间线：编排层 + 流式正文，与主 Agent 一致 */
@@ -120,7 +121,7 @@ const ContentWrap = styled.div`
 const TurnMeta = styled.div`
   margin-top: 0.2rem;
   font-size: 0.72rem;
-  color: ${({ theme }) => theme?.editorTheme?.textMuted ?? 'rgba(0,0,0,0.45)'};
+  color: ${editorTheme.textMuted};
 `
 
 const ErrorBox = styled.div`
