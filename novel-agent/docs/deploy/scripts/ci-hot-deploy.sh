@@ -112,11 +112,12 @@ if want "${CHANGED_SECURITY:-false}"; then
   echo "[ci-hot] security paths changed → sync MW auth + gateway"
 fi
 
-# 部署脚本/workflow 变更：补发 MW 安全栈，修复半升级
+# 部署脚本/workflow 变更：补发 MW 安全栈 + Worker content（探针/路径对齐）
 if want "${CHANGED_DEPLOY_CI:-false}"; then
-  echo "[ci-hot] deploy/ci changed → sync MW auth + gateway (rebuild)"
+  echo "[ci-hot] deploy/ci changed → sync MW auth + gateway + worker content"
   CHANGED_AUTH=true
   CHANGED_GATEWAY=true
+  CHANGED_CONTENT=true
   export MW_JAVA_REBUILD=1
 fi
 
@@ -223,6 +224,28 @@ for pid in "${PIDS[@]}"; do
   wait "$pid" || FAIL=1
 done
 [[ "$FAIL" -eq 0 ]] || exit 1
+
+if want "${CHANGED_CONTENT:-false}"; then
+  echo "[ci-hot] smoke: Worker content /api/content/auth/novels 必须非 404"
+  # shellcheck source=/dev/null
+  source "$SCRIPT_DIR/_deploy-lib.sh"
+  smoke_ok=0
+  for i in $(seq 1 20); do
+    code=$(deploy_ssh "$WORKER_SSH" \
+      "curl -s -o /dev/null -w '%{http_code}' --connect-timeout 2 http://127.0.0.1:8091/api/content/auth/novels" \
+      2>/dev/null || echo 000)
+    if [[ "$code" != "404" && "$code" != "000" ]]; then
+      echo "[ci-hot] content smoke OK (HTTP $code, attempt $i)"
+      smoke_ok=1
+      break
+    fi
+    sleep 3
+  done
+  if [[ "$smoke_ok" -ne 1 ]]; then
+    echo "[ci-hot] ERROR: content 仍是旧版或未启动（/api/content/auth/novels → 404）"
+    exit 1
+  fi
+fi
 
 # 确保 CI runner 无残留 ssh/scp（否则 Post job cleanup 会长时间等待）
 if [[ "${GITHUB_ACTIONS:-}" == "true" ]]; then
