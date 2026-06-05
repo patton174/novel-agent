@@ -93,8 +93,13 @@ if [[ ${#MODULES[@]} -gt 0 ]]; then
 fi
 
 if want "${CHANGED_FRONTEND:-false}"; then
-  echo "[ci-hot] frontend build (AES enabled)"
-  (cd "$REPO_ROOT/frontend" && corepack enable && corepack prepare pnpm@9.15.9 --activate && pnpm install --frozen-lockfile && VITE_SECURITY_AES=true pnpm run build)
+  echo "[ci-hot] frontend build (AES + route/field crypto enabled)"
+  (
+    cd "$REPO_ROOT/frontend"
+    corepack enable && corepack prepare pnpm@9.15.9 --activate
+    pnpm install --frozen-lockfile
+    VITE_SECURITY_AES=true VITE_ROUTE_OBFUSCATION=true VITE_FIELD_ENCRYPTION=true pnpm run build
+  )
 fi
 
 PIDS=()
