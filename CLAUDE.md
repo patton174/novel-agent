@@ -103,3 +103,26 @@ cd frontend && npm run dev -- --host
 - 章节续写/改写、大纲、角色对话、风格模仿、智能校对
 - RAG 世界观一致性；Agent 工具：`output` / `write_chapter` / `chapter_*` / `memory_*`
 - API Key 仅环境变量，禁止硬编码
+
+## 客户端安全（Phase 0e）
+
+| 能力 | 关键路径 |
+|------|----------|
+| AES 传输层 | `RequestCryptoEnvelope`、Gateway `RequestDecrypt` |
+| 路由脱敏 | `EncryptedRouteWebFilter`、`routePathCrypto.ts` |
+| 字段加密 | 内层 `__sec`/`e[]` k/v |
+| 请求签名 | `RequestSignCodec.java`、`requestSign.ts`、`RequestSignGatewayFilter` |
+| 前端混淆 | `frontend/config/obfuscator.ts`，env `VITE_CODE_OBFUSCATION` |
+| 401 跳转 | `secureFetch.ts`、`authSession.ts`、`authRefresh.ts` |
+| 邮箱验证 | Auth `CaptchaController`、`EmailVerificationController`、Mailtrap |
+
+**Sign 规则**：POST+envelope → body.sign；GET/无 body POST → URL `_na_t/_na_n/_na_k/_na_s`。不用 `X-Novel-Agent-*` 头。
+
+**部署**：见 `novel-agent/docs/deploy/README.md`；`.cursor/rules/security-deploy.mdc` 速查。
+
+**注意**：
+
+- `docker compose --force-recreate agent-auth` 后必须再 `deploy-fast.sh auth mw`
+- `MAILTRAP_TOKEN`、`nacos-split-rendered-*` 含密钥，勿提交
+- 本地重启只用 `restart-dev.sh`
+

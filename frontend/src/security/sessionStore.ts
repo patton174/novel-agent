@@ -68,6 +68,11 @@ export function getAccessToken(): string | null {
   return accessToken
 }
 
+export function isLoggedIn(): boolean {
+  hydrateSessionFromStorage()
+  return Boolean(getAccessToken())
+}
+
 export function setSessionUserId(id: string | number | null): void {
   userId = id == null ? null : String(id)
 }
@@ -117,4 +122,8 @@ export function clearAuthSession(): void {
   sessionStorage?.removeItem(CRYPTO_STORAGE_KEY)
   sessionStorage?.removeItem(TOKEN_STORAGE_KEY)
   sessionStorage?.removeItem(SESSION_ID_STORAGE_KEY)
+}
+
+if (typeof sessionStorage !== 'undefined') {
+  hydrateSessionFromStorage()
 }

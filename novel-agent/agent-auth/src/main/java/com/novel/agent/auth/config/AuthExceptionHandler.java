@@ -43,6 +43,16 @@ public class AuthExceptionHandler {
         if (message.contains("已被禁用")) {
             return HttpStatus.FORBIDDEN;
         }
+        if (message.contains("过于频繁")
+            || message.contains("发送过于频繁")
+            || message.contains("次数已达上限")) {
+            return HttpStatus.TOO_MANY_REQUESTS;
+        }
+        if (message.contains("验证码")
+            || message.contains("滑块")
+            || message.contains("验证邮箱")) {
+            return HttpStatus.BAD_REQUEST;
+        }
         return HttpStatus.INTERNAL_SERVER_ERROR;
     }
 

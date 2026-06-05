@@ -64,6 +64,11 @@ case "$SERVICE" in
       (
         cd "$REPO_ROOT/frontend"
         export VITE_SECURITY_AES="${VITE_SECURITY_AES:-true}"
+        export VITE_CODE_OBFUSCATION="${VITE_CODE_OBFUSCATION:-true}"
+        if [[ ! -d node_modules/javascript-obfuscator ]]; then
+          echo "[deploy-fast] 安装前端依赖（含 javascript-obfuscator / terser）..."
+          COREPACK_ENABLE_STRICT=0 pnpm install || npm install --legacy-peer-deps
+        fi
         if ! pnpm run build 2>/dev/null; then
           echo "[deploy-fast] pnpm 不可用，回退 npx vite build"
           npx vite build

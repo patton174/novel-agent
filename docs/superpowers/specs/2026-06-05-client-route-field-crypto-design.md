@@ -1,7 +1,7 @@
 # 客户端路由脱敏 + 字段/值加密 + 密钥轮换
 
 > 日期：2026-06-05  
-> 状态：**Phase 0e 设计**  
+> 状态：**已上线（Phase 0e + Sign v2 + 邮箱验证）**  
 > 依赖：Phase 0c AES 传输层（`RequestCryptoEnvelope`）
 
 ## 1. 目标
@@ -38,6 +38,8 @@ Browser
 | 落盘 | Worker 脚本 | 写入 **Worker** env + runtime.json（不是 MW env） |
 | 使用 | 浏览器 | 读 runtime，加密请求 |
 | 轮换 | 失败/过期 | 热拉新密钥 + 静默重试 |
+
+**Gateway 不重启**：bootstrap 密钥 / manifest 写入 Redis → 每请求 `SessionAesKeySupport` / `CryptoManifestSupport` 热读；Nacos feature flag 走 `@RefreshScope` 动态刷新。
 
 Worker cron：`0 3 * * * bash .../register-frontend-crypto.sh`
 
@@ -92,9 +94,29 @@ Manifest 示例：
 -108 RequestDecrypt（外层 AES）
 -107 FieldPayloadExpand（内层 k/v）
 -106 ReplayGuard
+-105 RequestSign（body.sign 或 URL _na_*）
 -100 Auth
  ...
 ```
+
+### 3.5 请求签名（Sign v2）
+
+| 场景 | 签名位置 |
+|------|----------|
+| POST + AES envelope | envelope 内 `sign`、`ts`、`nonce`、`kid` |
+| POST 无 body / 无 envelope | URL query `_na_t/_na_n/_na_k/_na_s` |
+| GET / PUT / DELETE | 同上 query |
+
+Canonical 串：`METHOD|/api/path?businessQuery|ts|nonce|sha256(bodyBytes)`
+
+实现：`RequestSignCodec`（Java）、`requestSign.ts`（前端）、`RequestSignGatewayFilter`（Gateway）。  
+**废弃** `X-Novel-Agent-*` 请求头。
+
+### 3.6 前端代码混淆
+
+生产构建默认 `VITE_CODE_OBFUSCATION=true`（Terser + javascript-obfuscator）。  
+含动态 `import()`、`__vite__mapDeps`、entry chunk **不混淆**，避免 lazy route 404。
+
 
 ## 4. 部署
 
@@ -119,6 +141,9 @@ auth:
 
 ## 6. 实施阶段
 
-- **0e-a**（本 PR）：manifest + 路由脱敏 + 字段 k/v + 部署发布脚本
-- **0e-b**：login password RSA bootstrap
-- **0e-c**：响应体字段加密（双向）
+- **0e-a**：manifest + 路由脱敏 + 字段 k/v + 部署发布脚本 ✅
+- **0e-b**：login/register bootstrap AES ✅
+- **0e-c**：响应体字段加密（双向）— 待定
+- **Sign v2**：全方法签名，query/body 分流 ✅
+- **邮箱验证**：滑块 + Mailtrap + 注册必填 emailCode ✅
+- **401**：refresh 失败跳转登录 ✅

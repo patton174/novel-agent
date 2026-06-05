@@ -5,6 +5,7 @@ export interface RequestCryptoEnvelope {
   nonce: string
   iv: string
   ct: string
+  sign?: string
 }
 
 function bytesToBase64(bytes: Uint8Array): string {
@@ -69,6 +70,7 @@ export function isSecurityCryptoEnabled(): boolean {
 export async function encryptRequestBody(
   plaintext: string,
   material: { keyId: string; aesKeyB64: string } | null,
+  opts?: { ts?: number; nonce?: string },
 ): Promise<RequestCryptoEnvelope | null> {
   if (!material?.aesKeyB64 || !material.keyId) {
     return null
@@ -83,8 +85,8 @@ export async function encryptRequestBody(
   return {
     v: 1,
     kid: material.keyId,
-    ts: Date.now(),
-    nonce: crypto.randomUUID(),
+    ts: opts?.ts ?? Date.now(),
+    nonce: opts?.nonce ?? crypto.randomUUID(),
     iv: bytesToBase64(iv),
     ct: bytesToBase64(new Uint8Array(ciphertext)),
   }

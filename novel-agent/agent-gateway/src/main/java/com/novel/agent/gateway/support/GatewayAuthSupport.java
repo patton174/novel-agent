@@ -27,6 +27,8 @@ public class GatewayAuthSupport {
         "/api/auth/register",
         "/api/auth/refresh",
         "/api/auth/crypto-config",
+        "/api/auth/captcha",
+        "/api/auth/send-email-code",
         "/actuator/health"
     );
 

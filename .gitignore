@@ -45,8 +45,13 @@ novel-agent/docs/deploy/windows/logs/
 
 # ========== 临时 / 个人 ==========
 .tmp_*
+.tmp-*
+.crypto-*
 *.tmp
 *.bak
+novel-agent/config/crypto-manifest.generated.json
+novel-agent/docs/deploy/docker/nacos-split-rendered-0e/
+novel-agent/docs/deploy/docker/nacos-split-rendered-aes/
 .DS_Store
 Thumbs.db
 

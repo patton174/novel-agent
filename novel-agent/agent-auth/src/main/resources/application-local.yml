@@ -49,6 +49,18 @@ auth:
     enforce-fingerprint: false
     enforce-heartbeat: false
     enforce-csrf: false
+  verification:
+    email-code-ttl-seconds: 600
+    email-cooldown-seconds: 60
+    email-daily-limit: 5
+    captcha-challenge-ttl-seconds: 300
+    captcha-token-ttl-seconds: 600
+    captcha-tolerance-px: 6
+
+mailtrap:
+  token: ${MAILTRAP_TOKEN:}
+  from-email: hello@noreply.novel-agent.cn
+  from-name: Novel Agent
 
 logging:
   level:

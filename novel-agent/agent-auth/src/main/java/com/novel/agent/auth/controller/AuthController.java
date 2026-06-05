@@ -8,7 +8,9 @@ import com.novel.agent.auth.dto.LoginResponse;
 import com.novel.agent.auth.dto.RegisterRequest;
 import com.novel.agent.auth.security.JwtAuthService;
 import com.novel.agent.auth.service.AuthService;
+import com.novel.agent.auth.service.RateLimitService;
 import com.novel.agent.auth.service.impl.AuthServiceImpl;
+import com.novel.agent.auth.support.ClientRequestSupport;
 import com.novel.agent.common.security.SecurityCookieNames;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -32,17 +34,37 @@ public class AuthController {
     @Autowired
     private JwtAuthService jwtAuthService;
 
+    @Autowired
+    private ClientRequestSupport clientRequestSupport;
+
+    @Autowired
+    private RateLimitService rateLimitService;
+
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
+    public ResponseEntity<LoginResponse> login(
+        @Valid @RequestBody LoginRequest request,
+        HttpServletRequest httpRequest
+    ) {
         log.info("登录请求: username={}", request.getUsername());
+        rateLimitService.checkComposite(
+            "login",
+            clientRequestSupport.clientIp(httpRequest),
+            request.getFingerprint() != null ? request.getFingerprint() : clientRequestSupport.fingerprint(httpRequest),
+            20,
+            java.time.Duration.ofMinutes(15)
+        );
         JwtAuthService.AuthSessionBundle bundle = authService.login(request);
         return withAuthCookies(AuthServiceImpl.toResponse(bundle), bundle);
     }
 
     @PostMapping("/register")
-    public void register(@Valid @RequestBody RegisterRequest request) {
+    public void register(@Valid @RequestBody RegisterRequest request, HttpServletRequest httpRequest) {
         log.info("注册请求: username={}", request.getUsername());
-        authService.register(request);
+        authService.register(
+            request,
+            clientRequestSupport.clientIp(httpRequest),
+            clientRequestSupport.fingerprint(httpRequest)
+        );
     }
 
     @PostMapping("/refresh")

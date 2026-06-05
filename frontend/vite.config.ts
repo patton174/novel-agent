@@ -1,9 +1,16 @@
-import { defineConfig, loadEnv } from 'vite'
+import { defineConfig, loadEnv, type PluginOption } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
+import {
+  isCodeObfuscationEnabled,
+  javascriptObfuscatorOptions,
+  terserMinifyOptions,
+} from './config/obfuscator'
+import { viteObfuscatorPlugin } from './config/viteObfuscatorPlugin'
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
+  const codeObfuscation = isCodeObfuscationEnabled(mode, env)
   const securityAes =
     env.VITE_SECURITY_AES ||
     process.env.VITE_SECURITY_AES ||
@@ -58,8 +65,19 @@ export default defineConfig(({ mode }) => {
         },
       }
 
+  const plugins: PluginOption[] = [react()]
+  if (codeObfuscation) {
+    plugins.push(viteObfuscatorPlugin(javascriptObfuscatorOptions()))
+  }
+
   return {
-    plugins: [react()],
+    plugins,
+    build: {
+      sourcemap: !codeObfuscation,
+      minify: codeObfuscation ? 'terser' : 'esbuild',
+      terserOptions: codeObfuscation ? terserMinifyOptions() : undefined,
+      chunkSizeWarningLimit: codeObfuscation ? 1200 : 500,
+    },
     define: {
       'import.meta.env.VITE_SECURITY_AES': JSON.stringify(securityAes),
       'import.meta.env.VITE_ROUTE_OBFUSCATION': JSON.stringify(routeObfuscation),

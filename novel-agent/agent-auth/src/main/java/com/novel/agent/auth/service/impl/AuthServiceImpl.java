@@ -13,6 +13,8 @@ import com.novel.agent.auth.security.JwtAuthService;
 import com.novel.agent.auth.security.WsTicketService;
 import com.novel.agent.common.security.JwtPrincipal;
 import com.novel.agent.auth.service.AuthService;
+import com.novel.agent.auth.service.EmailVerificationService;
+import com.novel.agent.auth.service.RateLimitService;
 import com.novel.agent.common.mq.constant.MqTopic;
 import com.novel.agent.common.mq.producer.IMessageProducer;
 import lombok.extern.slf4j.Slf4j;
@@ -40,6 +42,12 @@ public class AuthServiceImpl implements AuthService {
     @Autowired
     private WsTicketService wsTicketService;
 
+    @Autowired
+    private EmailVerificationService emailVerificationService;
+
+    @Autowired
+    private RateLimitService rateLimitService;
+
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder(12);
 
     @Override
@@ -55,6 +63,10 @@ public class AuthServiceImpl implements AuthService {
             throw new RuntimeException("账号已被禁用");
         }
 
+        if (Boolean.FALSE.equals(user.getEmailVerified())) {
+            throw new RuntimeException("请先验证邮箱后再登录");
+        }
+
         try {
             messageProducer.send(MqTopic.PERMISSION, user.getId());
         } catch (Exception e) {
@@ -66,7 +78,9 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public void register(RegisterRequest request) {
+    public void register(RegisterRequest request, String ip, String fingerprint) {
+        rateLimitService.checkComposite("register", ip, fingerprint, 3, java.time.Duration.ofHours(1));
+
         if (authUserRepository.existsByUsername(request.getUsername())) {
             throw new RuntimeException("用户名已存在");
         }
@@ -75,12 +89,15 @@ public class AuthServiceImpl implements AuthService {
             throw new RuntimeException("邮箱已被注册");
         }
 
+        emailVerificationService.verifyRegisterCode(request.getEmail(), request.getEmailCode());
+
         AuthUser user = new AuthUser();
         user.setUsername(request.getUsername());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setEmail(request.getEmail());
         user.setRole("user");
         user.setPermissions("[\"novel:read\", \"novel:write\"]");
+        user.setEmailVerified(true);
 
         authUserRepository.save(user);
     }

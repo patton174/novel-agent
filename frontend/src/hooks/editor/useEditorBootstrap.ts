@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { isLoggedIn } from '../../utils/auth'
+import { useAuthReady } from '../../security/useAuthReady'
 import { api } from '../../utils/api'
 import { listSessions, upsertSession } from '../../utils/chatSessionStore'
 import { useNovelStore } from '../../stores/novelStore'
@@ -62,12 +63,16 @@ export function useEditorBootstrap({
   statusWsSessionIdRef,
 }: UseEditorBootstrapOptions) {
   const navigate = useNavigate()
+  const authReady = useAuthReady()
 
   useEffect(() => {
+    if (!authReady) {
+      return
+    }
     if (!isLoggedIn()) {
       navigate('/login', { replace: true })
     }
-  }, [navigate])
+  }, [authReady, navigate])
 
   useEffect(() => {
     if (!hostModeEnabled || !isLoading) {

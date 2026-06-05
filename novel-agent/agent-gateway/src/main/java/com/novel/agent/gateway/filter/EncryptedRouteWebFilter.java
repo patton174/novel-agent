@@ -2,9 +2,10 @@ package com.novel.agent.gateway.filter;
 
 import com.novel.agent.common.security.AesGcmCodec;
 import com.novel.agent.common.security.RoutePathCodec;
-import com.novel.agent.gateway.config.GatewayClientSecurityProperties;
+import com.novel.agent.common.security.RequestSignCodec;
 import com.novel.agent.gateway.support.BootstrapRuntimeSupport;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cloud.gateway.support.ServerWebExchangeUtils;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
@@ -13,33 +14,30 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
+import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
 
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.util.LinkedHashSet;
+
 /**
- * 动态入口 {@code /{apiPathPrefix}/{base64url(aes(method|path))}} → 还原真实 /api/... 路径。
- * 路由映射表仅存服务端 Redis，浏览器只拿到 prefix + 加密密钥。
+ * 在 SCG 路由匹配之前还原 {@code /g/{prefix}/{cipher}} → /api/...。
+ * GlobalFilter 太晚（路由已按 /g/ 判 404）；必须 WebFilter + GATEWAY_REQUEST_URL_ATTR。
  */
 @Slf4j
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE + 50)
 public class EncryptedRouteWebFilter implements WebFilter {
 
-    private final GatewayClientSecurityProperties properties;
     private final BootstrapRuntimeSupport bootstrapRuntimeSupport;
 
-    public EncryptedRouteWebFilter(
-        GatewayClientSecurityProperties properties,
-        BootstrapRuntimeSupport bootstrapRuntimeSupport
-    ) {
-        this.properties = properties;
+    public EncryptedRouteWebFilter(BootstrapRuntimeSupport bootstrapRuntimeSupport) {
         this.bootstrapRuntimeSupport = bootstrapRuntimeSupport;
     }
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
-        if (!properties.routeObfuscation()) {
-            return chain.filter(exchange);
-        }
         var runtimeOpt = bootstrapRuntimeSupport.current();
         if (runtimeOpt.isEmpty()) {
             return chain.filter(exchange);
@@ -69,8 +67,24 @@ public class EncryptedRouteWebFilter implements WebFilter {
             if (!spec.method().equalsIgnoreCase(request.getMethod().name())) {
                 return notFound(exchange, "method mismatch");
             }
-            String realPath = spec.path();
-            ServerHttpRequest mutated = request.mutate().path(realPath).build();
+            String realTarget = spec.path();
+            int q = realTarget.indexOf('?');
+            String pathPart = q >= 0 ? realTarget.substring(0, q) : realTarget;
+            String queryPart = q >= 0 ? realTarget.substring(q + 1) : null;
+            String mergedQuery = RequestSignCodec.mergeBusinessAndSignQuery(
+                queryPart,
+                RequestSignCodec.parseQuery(request.getURI().getRawQuery())
+            );
+            URI newUri = UriComponentsBuilder.fromUri(request.getURI())
+                .replacePath(pathPart)
+                .replaceQuery(mergedQuery)
+                .build(true)
+                .toUri();
+            ServerHttpRequest mutated = request.mutate().uri(newUri).build();
+            LinkedHashSet<URI> gatewayUrls = new LinkedHashSet<>();
+            gatewayUrls.add(newUri);
+            exchange.getAttributes().put(ServerWebExchangeUtils.GATEWAY_REQUEST_URL_ATTR, gatewayUrls);
+            ServerWebExchangeUtils.addOriginalRequestUrl(exchange, request.getURI());
             return chain.filter(exchange.mutate().request(mutated).build());
         } catch (Exception ex) {
             log.warn("route decrypt failed: {}", ex.getMessage());
@@ -80,10 +94,10 @@ public class EncryptedRouteWebFilter implements WebFilter {
 
     private Mono<Void> notFound(ServerWebExchange exchange, String message) {
         exchange.getResponse().setStatusCode(HttpStatus.NOT_FOUND);
-        exchange.getResponse().getHeaders().add("Content-Type", "application/json;charset=UTF-8");
+        exchange.getResponse().getHeaders().set("Content-Type", "application/json;charset=UTF-8");
         String body = "{\"code\":404,\"message\":\"" + message.replace("\"", "'") + "\"}";
         return exchange.getResponse().writeWith(
-            Mono.just(exchange.getResponse().bufferFactory().wrap(body.getBytes()))
+            Mono.just(exchange.getResponse().bufferFactory().wrap(body.getBytes(StandardCharsets.UTF_8)))
         );
     }
 }

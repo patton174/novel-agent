@@ -12,7 +12,8 @@ public record RequestCryptoEnvelope(
     String nonce,
     String iv,
     String ct,
-    Map<String, Object> fields
+    Map<String, Object> fields,
+    String sign
 ) {
     public boolean looksEncrypted() {
         return kid != null && !kid.isBlank() && iv != null && !iv.isBlank() && ct != null && !ct.isBlank();

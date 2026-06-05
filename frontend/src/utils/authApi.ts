@@ -77,16 +77,75 @@ export async function login(username: string, password: string): Promise<LoginRe
   return data
 }
 
+export async function refreshSession(): Promise<boolean> {
+  const { refreshSessionInternal } = await import('../security/authRefresh')
+  return refreshSessionInternal()
+}
+
+/** @deprecated 请用 authRefresh.refreshSessionInternal */
+export async function refreshSessionInternal(): Promise<boolean> {
+  const { refreshSessionInternal: refresh } = await import('../security/authRefresh')
+  return refresh()
+}
+
+export interface SliderCaptchaChallenge {
+  captchaId: string
+  backgroundImage: string
+  puzzleImage: string
+  puzzleY: number
+  sliderWidth: number
+}
+
+export async function fetchSliderCaptcha(): Promise<SliderCaptchaChallenge> {
+  const response = await secureFetch('/api/auth/captcha/slider', { method: 'POST' })
+  if (!response.ok) {
+    throw new Error(await readErrorMessage(response))
+  }
+  return response.json() as Promise<SliderCaptchaChallenge>
+}
+
+export async function verifySliderCaptcha(captchaId: string, offsetX: number): Promise<string> {
+  const response = await secureFetch('/api/auth/captcha/slider/verify', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ captchaId, offsetX }),
+  })
+  if (!response.ok) {
+    throw new Error(await readErrorMessage(response))
+  }
+  const data = (await response.json()) as { captchaToken: string }
+  return data.captchaToken
+}
+
+export async function sendEmailCode(
+  email: string,
+  captchaToken: string,
+  fingerprint: string,
+): Promise<void> {
+  const response = await secureFetch('/api/auth/send-email-code', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Fingerprint': fingerprint,
+    },
+    body: JSON.stringify({ email, captchaToken, fingerprint }),
+  })
+  if (!response.ok) {
+    throw new Error(await readErrorMessage(response))
+  }
+}
+
 export async function register(
   username: string,
   password: string,
   email: string,
+  emailCode: string,
 ): Promise<void> {
   const response = await secureFetch('/api/auth/register', {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, password, email }),
+    body: JSON.stringify({ username, password, email, emailCode }),
   })
 
   if (!response.ok) {
@@ -105,19 +164,4 @@ export async function logout(): Promise<void> {
     stopHeartbeatWorker()
     clearToken()
   }
-}
-
-export async function refreshSession(): Promise<boolean> {
-  const response = await secureFetch('/api/auth/refresh', {
-    method: 'POST',
-    credentials: 'include',
-  })
-  if (!response.ok) {
-    clearToken()
-    return false
-  }
-  const data = (await response.json()) as LoginResult
-  primeSessionFromLogin(data)
-  startHeartbeatWorker()
-  return true
 }

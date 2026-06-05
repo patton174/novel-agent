@@ -3,6 +3,7 @@ import {
   clearAuthSession,
   getAccessToken,
   getSessionUserId,
+  hydrateSessionFromStorage,
   setAccessToken,
   setHeartbeatIntervalSec,
   setSessionCrypto,
@@ -52,6 +53,7 @@ export function isLoggedIn(): boolean {
   if (DIRECT_PYTHON) {
     return true
   }
+  hydrateSessionFromStorage()
   return Boolean(getAccessToken())
 }
 

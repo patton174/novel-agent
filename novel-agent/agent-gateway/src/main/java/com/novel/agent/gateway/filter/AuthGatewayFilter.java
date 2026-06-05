@@ -40,9 +40,12 @@ public class AuthGatewayFilter implements GlobalFilter, Ordered {
     }
 
     private Mono<Void> unauthorized(ServerWebExchange exchange, String message) {
+        if (exchange.getResponse().isCommitted()) {
+            return Mono.empty();
+        }
         ServerHttpResponse response = exchange.getResponse();
         response.setStatusCode(HttpStatus.UNAUTHORIZED);
-        response.getHeaders().add("Content-Type", "application/json;charset=UTF-8");
+        response.getHeaders().set("Content-Type", "application/json;charset=UTF-8");
         String safe = message == null ? "登录已过期，请重新登录" : message.replace("\"", "'");
         String body = "{\"code\":401,\"message\":\"" + safe + "\"}";
         return response.writeWith(Mono.just(response.bufferFactory().wrap(body.getBytes())));

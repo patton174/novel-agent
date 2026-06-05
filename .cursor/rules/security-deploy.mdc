@@ -1,0 +1,52 @@
+---
+description: 客户端安全、Sign、邮箱验证与生产部署注意事项
+globs:
+  - frontend/src/security/**
+  - novel-agent/agent-gateway/**
+  - novel-agent/agent-auth/**
+  - novel-agent/docs/deploy/**
+---
+
+# 安全与部署速查
+
+## 请求签名（v2）
+
+| 场景 | 位置 |
+|------|------|
+| POST + AES envelope | body：`sign`, `ts`, `nonce`, `kid` |
+| POST 无 body、GET/PUT/DELETE | URL query：`_na_t`, `_na_n`, `_na_k`, `_na_s` |
+
+Canonical：`METHOD|path?bizQuery|ts|nonce|sha256(body)`  
+前端：`requestSign.ts`；后端：`RequestSignCodec.java`、`RequestSignGatewayFilter.java`  
+**不用** `X-Novel-Agent-*` 头。
+
+## 路由脱敏 + 字段加密
+
+- Nacos：`route-obfuscation: true`, `field-encryption: true`
+- 前端 env：`VITE_ROUTE_OBFUSCATION`, `VITE_FIELD_ENCRYPTION`（生产默认 true）
+- 模板：`docker/nacos-split/agent-gateway.yaml`；渲染目录含密码，**不入库**
+
+## 前端混淆
+
+- `VITE_CODE_OBFUSCATION` 生产默认 true
+- `frontend/config/obfuscator.ts`：跳过 entry、`__vite__mapDeps`、动态 import chunk
+
+## Auth 邮箱验证
+
+- 白名单：`/api/auth/captcha/**`, `/api/auth/send-email-code`
+- `MAILTRAP_TOKEN` 仅服务器 env，勿提交
+- 注册需 `emailCode`；老用户 `emailVerified=null` 可登录
+
+## 401
+
+- `secureFetch.ts` → `authRefresh.ts` → 失败 `forceLogoutRedirect` → `/login?reason=session_expired`
+
+## 部署
+
+```bash
+bash novel-agent/docs/deploy/scripts/deploy-fast.sh {gateway|auth|frontend} {mw|worker}
+```
+
+- **force-recreate auth 后必须再 deploy-fast auth**
+- frontend deploy 自动 `register-frontend-crypto.sh` 轮换 prefix
+- 本地重启只用 `restart-dev.sh`，禁止 bat 启动脚本

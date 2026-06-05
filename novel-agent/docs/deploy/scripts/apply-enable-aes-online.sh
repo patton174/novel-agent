@@ -54,17 +54,6 @@ export NACOS_AUTH_IDENTITY_KEY="${NACOS_AUTH_IDENTITY_KEY:-root}"
 export NACOS_AUTH_IDENTITY_VALUE="${NACOS_AUTH_IDENTITY_VALUE:?}"
 python "$REPO_ROOT/novel-agent/scripts/publish_nacos_config.py"
 
-echo "[aes] Step 3/3 — 重启 MW auth + gateway ..."
-COMPOSE_FILE="novel-agent/docs/deploy/docker/docker-compose.mw.yml"
-ENV_REL="novel-agent/docs/deploy/docker/.env.mw"
-deploy_ssh "$MW_SSH" bash -s <<EOF
-set -euo pipefail
-cd '$REMOTE_DIR'
-COMPOSE="docker compose"
-if ! docker compose version >/dev/null 2>&1; then COMPOSE="docker-compose"; fi
-\$COMPOSE -f '$COMPOSE_FILE' --env-file '$ENV_REL' restart agent-auth agent-gateway
-sleep 20
-EOF
-
+echo "[aes] Step 3/3 — Nacos 已发布（Gateway @RefreshScope 热刷新，无需 restart）"
 deploy_wait_http_port "$MW_SSH" 8080 "gateway" 45
 echo "[aes] 完成。登录后 DevTools 应看到 Content-Type: application/vnd.novel-agent.enc+json"

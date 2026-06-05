@@ -11,7 +11,7 @@ public interface AuthService {
 
     JwtAuthService.AuthSessionBundle login(LoginRequest request);
 
-    void register(RegisterRequest request);
+    void register(RegisterRequest request, String ip, String fingerprint);
 
     JwtAuthService.AuthSessionBundle refresh(String refreshToken);
 

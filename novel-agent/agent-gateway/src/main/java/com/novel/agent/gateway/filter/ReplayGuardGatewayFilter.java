@@ -69,8 +69,11 @@ public class ReplayGuardGatewayFilter implements GlobalFilter, Ordered {
     }
 
     private Mono<Void> reject(ServerWebExchange exchange, String code) {
+        if (exchange.getResponse().isCommitted()) {
+            return Mono.empty();
+        }
         exchange.getResponse().setStatusCode(HttpStatus.BAD_REQUEST);
-        exchange.getResponse().getHeaders().add("Content-Type", "application/json;charset=UTF-8");
+        exchange.getResponse().getHeaders().set("Content-Type", "application/json;charset=UTF-8");
         String body = "{\"code\":400,\"message\":\"" + code + "\"}";
         return exchange.getResponse().writeWith(
             Mono.just(exchange.getResponse().bufferFactory().wrap(body.getBytes()))

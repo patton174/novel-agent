@@ -1,6 +1,7 @@
-import React, { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import React, { useMemo, useState } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { login } from '../utils/authApi'
+import { setSessionCrypto } from '../security/sessionStore'
 import {
   AuthPageWrapper,
   AuthBackgroundPattern,
@@ -21,6 +22,13 @@ import { palette } from '../styles/theme'
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const sessionHint = useMemo(() => {
+    if (searchParams.get('reason') === 'session_expired') {
+      return '登录已过期，请重新登录'
+    }
+    return ''
+  }, [searchParams])
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
@@ -34,6 +42,7 @@ const LoginPage: React.FC = () => {
     }
     setSubmitting(true)
     setErrorMessage('')
+    setSessionCrypto(null)
     try {
       await login(username.trim(), password)
       navigate('/editor')
@@ -85,6 +94,7 @@ const LoginPage: React.FC = () => {
                   onChange={(e) => setPassword(e.target.value)}
                 />
               </AuthFieldGroup>
+              {sessionHint ? <AuthErrorText>{sessionHint}</AuthErrorText> : null}
               {errorMessage ? <AuthErrorText>{errorMessage}</AuthErrorText> : null}
               <AuthSubmitButton type="submit" disabled={submitting}>
                 {submitting ? '登录中…' : '登录'}

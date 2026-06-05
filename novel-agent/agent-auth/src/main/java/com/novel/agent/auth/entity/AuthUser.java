@@ -29,4 +29,7 @@ public class AuthUser {
 
     @Column(name = "is_active")
     private Boolean isActive = true;
+
+    @Column(name = "email_verified")
+    private Boolean emailVerified = false;
 }
