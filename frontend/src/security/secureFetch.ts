@@ -6,7 +6,6 @@ import { getActiveCryptoMaterial } from './cryptoMaterial'
 import { ensureCryptoRuntime, invalidateCryptoRuntime, isCryptoStaleError } from './cryptoRuntime'
 import {
   encryptRequestBody,
-  isCryptoExemptUrl,
   isSecurityCryptoEnabled,
   isStreamUrl,
 } from './requestCrypto'
@@ -20,12 +19,16 @@ async function buildRequest(
 ): Promise<{ fetchUrl: string; headers: Record<string, string>; body: BodyInit | null | undefined }> {
   const mayNeedCrypto =
     isSecurityCryptoEnabled() &&
-    !isCryptoExemptUrl(logicalUrl) &&
     bodyMayEncrypt(method, init?.body)
 
-  if (mayNeedCrypto) {
-    await ensureCryptoReady()
+  if (isSecurityCryptoEnabled()) {
     await ensureCryptoRuntime(false)
+    if (isRouteObfuscationEnabled()) {
+      await ensureCryptoManifest()
+    }
+    if (mayNeedCrypto) {
+      await ensureCryptoReady()
+    }
   }
 
   let fetchUrl = logicalUrl
@@ -42,7 +45,6 @@ async function buildRequest(
   let body = init?.body
   const canEncrypt =
     isSecurityCryptoEnabled() &&
-    !isCryptoExemptUrl(logicalUrl) &&
     !(isStreamUrl(logicalUrl) && import.meta.env.VITE_SECURITY_ENCRYPT_STREAM !== 'true') &&
     body != null &&
     typeof body === 'string' &&

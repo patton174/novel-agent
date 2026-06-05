@@ -30,9 +30,6 @@ public class GatewayAuthSupport {
     );
 
     private static final List<String> CRYPTO_EXEMPT = Arrays.asList(
-        "/api/auth/login",
-        "/api/auth/register",
-        "/api/auth/refresh",
         "/actuator/health"
     );
 

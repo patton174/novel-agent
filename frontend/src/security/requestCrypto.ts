@@ -90,13 +90,9 @@ export async function encryptRequestBody(
   }
 }
 
-export function isCryptoExemptUrl(url: string): boolean {
-  // 登录前无 sessionCrypto，仅 auth 引导接口豁免；heartbeat 登录后走 session AES
-  return (
-    url.includes('/api/auth/login') ||
-    url.includes('/api/auth/register') ||
-    url.includes('/api/auth/refresh')
-  )
+export function isCryptoExemptUrl(_url: string): boolean {
+  // Phase 0e-b：login/register/refresh 使用 Worker bootstrap AES，不再豁免
+  return false
 }
 
 export function isStreamUrl(url: string): boolean {

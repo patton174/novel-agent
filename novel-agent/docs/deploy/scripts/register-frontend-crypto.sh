@@ -32,41 +32,55 @@ if [[ -z "$AGENT_INTERNAL_SERVICE_KEY" ]]; then
   exit 1
 fi
 
-echo "[crypto-register] 1/4 生成 route manifest ..."
-python "$REPO_ROOT/novel-agent/scripts/generate_crypto_manifest.py"
+PYTHON="${PYTHON:-python}"
+if ! command -v "$PYTHON" >/dev/null 2>&1; then
+  PYTHON=python3
+fi
 
-PAYLOAD_TMP="$(mktemp)"
-RUNTIME_TMP="$(mktemp)"
-python3 -c "
-import json, pathlib
-m = json.loads(pathlib.Path('$REPO_ROOT/novel-agent/config/crypto-manifest.generated.json').read_text())
-print(json.dumps({'host': '$WORKER_HOST', 'ttlSec': 172800, 'manifest': m}))
+echo "[crypto-register] 1/4 生成 route manifest ..."
+"$PYTHON" "$REPO_ROOT/novel-agent/scripts/generate_crypto_manifest.py"
+
+PAYLOAD_TMP="$(mktemp "${TMPDIR:-/tmp}/crypto-payload.XXXXXX.json")"
+RUNTIME_TMP="$(mktemp "${TMPDIR:-/tmp}/crypto-runtime.XXXXXX.json")"
+
+python_read_json() {
+  local file="$1" key="$2"
+  RUNTIME_FILE="$file" JSON_KEY="$key" "$PYTHON" -c "
+import json, os
+print(json.load(open(os.environ['RUNTIME_FILE'], encoding='utf-8'))[os.environ['JSON_KEY']])
+"
+}
+export REPO_ROOT WORKER_HOST
+"$PYTHON" -c "
+import json, os, pathlib
+repo = os.environ['REPO_ROOT']
+m = json.loads(pathlib.Path(repo, 'novel-agent/config/crypto-manifest.generated.json').read_text(encoding='utf-8'))
+print(json.dumps({'host': os.environ['WORKER_HOST'], 'ttlSec': 172800, 'manifest': m}))
 " > "$PAYLOAD_TMP"
 
 echo "[crypto-register] 2/4 MW Auth 注册 bootstrap 密钥 ..."
 deploy_scp "$PAYLOAD_TMP" "$MW_SSH:/tmp/crypto-register-payload.json"
-deploy_ssh "$MW_SSH" bash -s <<EOF
+deploy_ssh "$MW_SSH" bash -s > "$RUNTIME_TMP" <<EOF
 set -euo pipefail
 curl -sf -X POST "http://127.0.0.1:8081/internal/crypto/register-frontend-server" \\
   -H "Content-Type: application/json" \\
   -H "X-Internal-Service-Key: ${AGENT_INTERNAL_SERVICE_KEY}" \\
-  --data-binary @/tmp/crypto-register-payload.json \\
-  -o /tmp/crypto-runtime.json
-cat /tmp/crypto-runtime.json
+  --data-binary @/tmp/crypto-register-payload.json
 rm -f /tmp/crypto-register-payload.json
 EOF
-> "$RUNTIME_TMP"
 
-deploy_scp "$MW_SSH:/tmp/crypto-runtime.json" "$RUNTIME_TMP" 2>/dev/null || true
+if [[ ! -s "$RUNTIME_TMP" ]]; then
+  deploy_scp "$MW_SSH:/tmp/crypto-runtime.json" "$RUNTIME_TMP" 2>/dev/null || true
+fi
 if [[ ! -s "$RUNTIME_TMP" ]]; then
   echo "[crypto-register] 注册失败：无 runtime 响应"
   exit 1
 fi
 
-KEY_ID="$(python3 -c "import json;print(json.load(open('$RUNTIME_TMP'))['keyId'])")"
-AES_KEY="$(python3 -c "import json;print(json.load(open('$RUNTIME_TMP'))['aesKeyB64'])")"
-VERSION="$(python3 -c "import json;print(json.load(open('$RUNTIME_TMP'))['version'])")"
-EXPIRES="$(python3 -c "import json;print(json.load(open('$RUNTIME_TMP'))['expiresAtEpochMs'])")"
+KEY_ID="$(python_read_json "$RUNTIME_TMP" keyId)"
+AES_KEY="$(python_read_json "$RUNTIME_TMP" aesKeyB64)"
+VERSION="$(python_read_json "$RUNTIME_TMP" version)"
+EXPIRES="$(python_read_json "$RUNTIME_TMP" expiresAtEpochMs)"
 
 echo "[crypto-register] 3/4 更新 Worker env + crypto-runtime.json ..."
 deploy_scp "$RUNTIME_TMP" "$WORKER_SSH:/tmp/crypto-runtime.json"

@@ -78,9 +78,11 @@ Manifest 示例：
 
 ### 3.3 豁免（仍走 TLS）
 
-- `/api/auth/login`, `/api/auth/register`, `/api/auth/refresh` — 无 SK 前无法字段加密；login 的 password 可走 Bootstrap RSA（Phase 2）
-- `/api/auth/crypto-manifest` — 明文 manifest（仅 opaque id，无业务数据）
+- `/actuator/health` — 探活
+- `/api/auth/crypto-manifest`、`/crypto-runtime.json` — 引导配置（GET / 静态，无业务 body）
 - SSE stream — 默认不字段加密（与 Phase 0c 一致）
+
+**Phase 0e-b**：`/api/auth/login|register|refresh` 已改为 **bootstrap AES 加密**（Worker 注册的 `bf_*` 密钥），DevTools 不再见明文 password。
 
 ### 3.4 过滤器顺序
 
