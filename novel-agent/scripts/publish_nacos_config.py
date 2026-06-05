@@ -45,11 +45,15 @@ def _login(client: httpx.Client) -> str:
     return token
 
 
-def publish(data_id: str, client: httpx.Client, token: str) -> None:
+PROFILE = os.environ.get("SPRING_PROFILES_ACTIVE", "dev").strip()
+
+
+def publish(data_id: str, client: httpx.Client, token: str, content: str | None = None) -> None:
     path = ROOT / data_id
-    if not path.is_file():
-        raise FileNotFoundError(path)
-    content = path.read_text(encoding="utf-8")
+    if content is None:
+        if not path.is_file():
+            raise FileNotFoundError(path)
+        content = path.read_text(encoding="utf-8")
     # Nacos 3.x 配置 API（8848）；v1/cs/configs 已不可用
     url = f"{NACOS}/nacos/v3/admin/cs/config"
     payload = {
@@ -83,4 +87,9 @@ if __name__ == "__main__":
             "agent-content.yaml",
             "agent-consumer.yaml",
         ):
-            publish(name, client, token)
+            content = (ROOT / name).read_text(encoding="utf-8")
+            publish(name, client, token, content)
+            if PROFILE:
+                profile_id = name.replace(".yaml", f"-{PROFILE}.yaml")
+                publish(profile_id, client, token, content)
+                print(f"[OK] mirrored {name} -> {profile_id}")

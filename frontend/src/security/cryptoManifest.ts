@@ -51,13 +51,23 @@ export async function ensureCryptoManifest(force = false): Promise<CryptoManifes
       return cached
     }
   }
-  const response = await fetch('/api/auth/crypto-manifest', { credentials: 'include' })
-  if (!response.ok) {
-    return cached ?? readStored()
+  const sources = ['/crypto-manifest.json', '/api/auth/crypto-manifest']
+  for (const url of sources) {
+    try {
+      const response = await fetch(url, { credentials: 'include', cache: 'no-store' })
+      if (!response.ok) {
+        continue
+      }
+      const manifest = (await response.json()) as CryptoManifest
+      if (manifest?.routes && manifest.version) {
+        store(manifest)
+        return manifest
+      }
+    } catch {
+      // try next
+    }
   }
-  const manifest = (await response.json()) as CryptoManifest
-  store(manifest)
-  return manifest
+  return cached ?? readStored()
 }
 
 export function resolveObfuscatedUrl(url: string, method: string, manifest: CryptoManifest | null): string {

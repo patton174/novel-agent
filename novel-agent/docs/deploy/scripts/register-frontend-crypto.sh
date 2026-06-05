@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # 前端服务器（Worker）密钥注册：向 MW Auth 注册 → 更新 Worker .env.worker → crypto-runtime.json
+# Gateway 从 Redis 按 kid 热读密钥，manifest 亦在 Redis；本脚本不 restart Gateway。
 #
 # 每日 cron（Worker 上）：
 #   0 3 * * * cd /opt/novel-agent && bash novel-agent/docs/deploy/scripts/register-frontend-crypto.sh >> /var/log/crypto-register.log 2>&1
@@ -82,8 +83,10 @@ AES_KEY="$(python_read_json "$RUNTIME_TMP" aesKeyB64)"
 VERSION="$(python_read_json "$RUNTIME_TMP" version)"
 EXPIRES="$(python_read_json "$RUNTIME_TMP" expiresAtEpochMs)"
 
-echo "[crypto-register] 3/4 更新 Worker env + crypto-runtime.json ..."
+echo "[crypto-register] 3/4 更新 Worker env + crypto-runtime.json + crypto-manifest.json ..."
+MANIFEST_LOCAL="$REPO_ROOT/novel-agent/config/crypto-manifest.generated.json"
 deploy_scp "$RUNTIME_TMP" "$WORKER_SSH:/tmp/crypto-runtime.json"
+deploy_scp "$MANIFEST_LOCAL" "$WORKER_SSH:/tmp/crypto-manifest.json"
 deploy_ssh "$WORKER_SSH" bash -s <<EOF
 set -euo pipefail
 cd '$REMOTE_DIR'
@@ -108,9 +111,10 @@ if ! docker compose version >/dev/null 2>&1; then COMPOSE="docker-compose"; fi
 CID=\$(\$COMPOSE -f '$COMPOSE_FILE' --env-file "\$ENV_FILE" ps -q frontend 2>/dev/null || true)
 if [[ -n "\$CID" ]]; then
   docker cp /tmp/crypto-runtime.json "\$CID:/usr/share/nginx/html/crypto-runtime.json"
+  docker cp /tmp/crypto-manifest.json "\$CID:/usr/share/nginx/html/crypto-manifest.json"
 fi
-rm -f /tmp/crypto-runtime.json
-echo "[crypto-register] Worker env + runtime.json 已更新"
+rm -f /tmp/crypto-runtime.json /tmp/crypto-manifest.json
+echo "[crypto-register] Worker env + runtime.json + manifest.json 已更新"
 EOF
 
 deploy_ssh "$MW_SSH" "rm -f /tmp/crypto-runtime.json" 2>/dev/null || true

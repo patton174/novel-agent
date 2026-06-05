@@ -69,22 +69,9 @@ export NACOS_PASSWORD="${NACOS_PASSWORD:?}"
 export NACOS_NAMESPACE="${NACOS_NAMESPACE:?}"
 export NACOS_AUTH_IDENTITY_KEY="${NACOS_AUTH_IDENTITY_KEY:-root}"
 export NACOS_AUTH_IDENTITY_VALUE="${NACOS_AUTH_IDENTITY_VALUE:?}"
+export SPRING_PROFILES_ACTIVE="${SPRING_PROFILES_ACTIVE:-dev}"
 python "$REPO_ROOT/novel-agent/scripts/publish_nacos_config.py"
 
-echo "[0e] 5/5 — 重启 gateway 使 Nacos 生效 ..."
-MW_SSH="${MW_SSH:-root@${MW_HOST}}"
-REMOTE_DIR="${MW_REMOTE_DIR:-/opt/novel-agent}"
-COMPOSE_FILE="novel-agent/docs/deploy/docker/docker-compose.mw.yml"
-ENV_REL="novel-agent/docs/deploy/docker/.env.mw"
-deploy_ssh "$MW_SSH" bash -s <<EOF
-set -euo pipefail
-cd '$REMOTE_DIR'
-COMPOSE="docker compose"
-if ! docker compose version >/dev/null 2>&1; then COMPOSE="docker-compose"; fi
-\$COMPOSE -f '$COMPOSE_FILE' --env-file '$ENV_REL' restart agent-gateway
-sleep 15
-EOF
-
-deploy_wait_http_port "$MW_SSH" 8080 "gateway" 45
+echo "[0e] 5/5 — Nacos 已发布（Gateway refresh-enabled + @RefreshScope，无需 restart）"
 bash "$SCRIPT_DIR/install-crypto-register-cron.sh"
-echo "[0e] 完成。登录后 API 应走 /api/x/{token}，body 内层 __sec 字段加密。"
+echo "[0e] 完成。密钥/manifest 轮换走 Redis 热读；Worker cron 只更新 Worker env + runtime.json。"

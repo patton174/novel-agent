@@ -8,6 +8,14 @@ export default defineConfig(({ mode }) => {
     env.VITE_SECURITY_AES ||
     process.env.VITE_SECURITY_AES ||
     (mode === 'production' ? 'true' : 'false')
+  const routeObfuscation =
+    env.VITE_ROUTE_OBFUSCATION ||
+    process.env.VITE_ROUTE_OBFUSCATION ||
+    (mode === 'production' ? 'true' : 'false')
+  const fieldEncryption =
+    env.VITE_FIELD_ENCRYPTION ||
+    process.env.VITE_FIELD_ENCRYPTION ||
+    (mode === 'production' ? 'true' : 'false')
   const directPython =
     env.VITE_DIRECT_PYTHON === 'true' || env.VITE_DIRECT_PYTHON === '1'
   const remoteGateway = env.VITE_REMOTE_GATEWAY?.replace(/\/$/, '')
@@ -54,6 +62,8 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     define: {
       'import.meta.env.VITE_SECURITY_AES': JSON.stringify(securityAes),
+      'import.meta.env.VITE_ROUTE_OBFUSCATION': JSON.stringify(routeObfuscation),
+      'import.meta.env.VITE_FIELD_ENCRYPTION': JSON.stringify(fieldEncryption),
     },
     test: {
       globals: false,

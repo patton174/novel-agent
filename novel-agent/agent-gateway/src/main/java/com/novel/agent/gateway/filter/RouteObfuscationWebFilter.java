@@ -3,25 +3,30 @@ package com.novel.agent.gateway.filter;
 import com.novel.agent.gateway.config.GatewayClientSecurityProperties;
 import com.novel.agent.gateway.support.CryptoManifestSupport;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cloud.gateway.filter.GatewayFilterChain;
-import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
+import org.springframework.web.server.WebFilter;
+import org.springframework.web.server.WebFilterChain;
 import reactor.core.publisher.Mono;
 
+/**
+ * 须在 Spring Cloud Gateway 路由匹配之前还原 /api/x/{token}，否则 /api/x/** 无 route 会直接 404。
+ */
 @Slf4j
 @Component
-public class RouteObfuscationGatewayFilter implements GlobalFilter, Ordered {
+@Order(Ordered.HIGHEST_PRECEDENCE + 50)
+public class RouteObfuscationWebFilter implements WebFilter {
 
     private static final String OPAQUE_PREFIX = "/api/x/";
 
     private final GatewayClientSecurityProperties properties;
     private final CryptoManifestSupport manifestSupport;
 
-    public RouteObfuscationGatewayFilter(
+    public RouteObfuscationWebFilter(
         GatewayClientSecurityProperties properties,
         CryptoManifestSupport manifestSupport
     ) {
@@ -30,7 +35,7 @@ public class RouteObfuscationGatewayFilter implements GlobalFilter, Ordered {
     }
 
     @Override
-    public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+    public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
         if (!properties.routeObfuscation()) {
             return chain.filter(exchange);
         }
@@ -66,10 +71,5 @@ public class RouteObfuscationGatewayFilter implements GlobalFilter, Ordered {
         return exchange.getResponse().writeWith(
             Mono.just(exchange.getResponse().bufferFactory().wrap(body.getBytes()))
         );
-    }
-
-    @Override
-    public int getOrder() {
-        return -115;
     }
 }
