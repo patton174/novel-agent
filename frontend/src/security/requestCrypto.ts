@@ -66,11 +66,11 @@ export async function encryptRequestBody(
 }
 
 export function isCryptoExemptUrl(url: string): boolean {
+  // 登录前无 sessionCrypto，仅 auth 引导接口豁免；heartbeat 登录后走 session AES
   return (
     url.includes('/api/auth/login') ||
     url.includes('/api/auth/register') ||
-    url.includes('/api/auth/refresh') ||
-    url.includes('/api/auth/heartbeat')
+    url.includes('/api/auth/refresh')
   )
 }
 

@@ -41,6 +41,8 @@ export async function secureFetch(input: RequestInfo | URL, init?: RequestInit):
     if (envelope) {
       body = JSON.stringify(envelope)
       headers['Content-Type'] = ENC_CONTENT_TYPE
+    } else if (isSecurityCryptoEnabled()) {
+      throw new Error('会话加密密钥缺失，请重新登录')
     }
   } else if (body != null && !headers['Content-Type'] && !headers['content-type']) {
     headers['Content-Type'] = 'application/json'
