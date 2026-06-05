@@ -1,5 +1,6 @@
-# 参与路由脱敏的 API 清单（deploy 时生成 manifest 写入 Redis）
+# 参与路由脱敏的 API 清单（与 frontend/src/utils/api.ts、authApi 对齐）
 routes:
+  # auth
   - method: POST
     path: /api/auth/login
   - method: POST
@@ -15,6 +16,12 @@ routes:
   - method: GET
     path: /api/auth/info
   - method: GET
+    path: /api/auth/crypto-manifest
+  - method: GET
+    path: /api/auth/crypto-config
+
+  # content — novels
+  - method: GET
     path: /api/content/novels
   - method: POST
     path: /api/content/novels
@@ -24,7 +31,67 @@ routes:
     path: /api/content/novels/{novelId}
   - method: DELETE
     path: /api/content/novels/{novelId}
+  - method: GET
+    path: /api/content/novels/{novelId}/chapters
+  - method: POST
+    path: /api/content/novels/{novelId}/chapters
+  - method: POST
+    path: /api/content/novels/{novelId}/chapters/reorder
+  - method: POST
+    path: /api/content/novels/{novelId}/reindex
+  - method: GET
+    path: /api/content/novels/{novelId}/reindex/status
+  - method: GET
+    path: /api/content/novels/{novelId}/sessions
+
+  # content — volumes / chapters
+  - method: GET
+    path: /api/content/novels/{novelId}/volumes
+  - method: POST
+    path: /api/content/novels/{novelId}/volumes
+  - method: POST
+    path: /api/content/novels/{novelId}/volumes/reorder
+  - method: DELETE
+    path: /api/content/volumes/{volumeId}
+  - method: POST
+    path: /api/content/volumes/{volumeId}/chapters/reorder
+  - method: GET
+    path: /api/content/chapters/{chapterId}
+  - method: PUT
+    path: /api/content/chapters/{chapterId}
+  - method: DELETE
+    path: /api/content/chapters/{chapterId}
+  - method: GET
+    path: /api/content/chapters/{chapterId}/versions
+  - method: POST
+    path: /api/content/chapters/{chapterId}/versions/{versionId}/restore
+
+  # content — sessions（编辑器会话）
+  - method: GET
+    path: /api/content/sessions
+  - method: POST
+    path: /api/content/sessions/upsert
+  - method: PUT
+    path: /api/content/sessions/{sessionId}
+  - method: DELETE
+    path: /api/content/sessions/{sessionId}
+  - method: POST
+    path: /api/content/sessions/batch-delete
+  - method: GET
+    path: /api/content/sessions/{sessionId}/messages
+  - method: PUT
+    path: /api/content/sessions/{sessionId}/runs/{runId}/trace
+
+  # agent / pyai
   - method: POST
     path: /api/agent/chat/stream
+  - method: POST
+    path: /api/agent/session/title
   - method: GET
-    path: /api/auth/crypto-manifest
+    path: /api/agent/memory/novel/{novelId}
+  - method: POST
+    path: /api/agent/memory/novel/{novelId}/patch
+  - method: POST
+    path: /api/agent/memory/novel/{novelId}/delete
+  - method: POST
+    path: /api/agent/memory/novel/{novelId}/clear

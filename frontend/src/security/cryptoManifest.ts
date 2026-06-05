@@ -48,9 +48,23 @@ export async function ensureCryptoManifest(force = false): Promise<CryptoManifes
   if (!force) {
     cached = cached ?? readStored()
     if (cached && cached.expiresAtEpochMs > Date.now()) {
+      const remote = await fetchRemoteManifest()
+      if (remote && remote.version > cached.version) {
+        store(remote)
+        return remote
+      }
       return cached
     }
   }
+  const manifest = await fetchRemoteManifest()
+  if (manifest) {
+    store(manifest)
+    return manifest
+  }
+  return cached ?? readStored()
+}
+
+async function fetchRemoteManifest(): Promise<CryptoManifest | null> {
   const sources = ['/crypto-manifest.json', '/api/auth/crypto-manifest']
   for (const url of sources) {
     try {
@@ -60,14 +74,13 @@ export async function ensureCryptoManifest(force = false): Promise<CryptoManifes
       }
       const manifest = (await response.json()) as CryptoManifest
       if (manifest?.routes && manifest.version) {
-        store(manifest)
         return manifest
       }
     } catch {
       // try next
     }
   }
-  return cached ?? readStored()
+  return null
 }
 
 export function resolveObfuscatedUrl(url: string, method: string, manifest: CryptoManifest | null): string {
