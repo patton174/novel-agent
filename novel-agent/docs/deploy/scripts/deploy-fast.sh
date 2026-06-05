@@ -178,13 +178,13 @@ probe_ready() {
         'http://127.0.0.1:8082/' 2>/dev/null || echo 000
       ;;
     agent-content)
-      code=$(curl -s -o /dev/null -w '%{http_code}' --connect-timeout 2 \
+      code=\$(curl -s -o /dev/null -w '%{http_code}' --connect-timeout 2 \
         'http://127.0.0.1:8091/api/content/auth/novels' 2>/dev/null || echo 000)
       # Phase C0 新路径；旧 jar 返回 404，有路由则 400/401/500 等
-      if [[ "$code" == "404" || "$code" == "000" ]]; then
+      if [[ "\$code" == "404" || "\$code" == "000" ]]; then
         echo 000
       else
-        echo "$code"
+        echo "\$code"
       fi
       ;;
     agent-consumer)
