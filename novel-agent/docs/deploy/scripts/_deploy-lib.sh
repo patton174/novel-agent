@@ -20,6 +20,27 @@ deploy_scp() {
   fi
 }
 
+# CI 无 .env.split 时，从 MW .env.mw 读取 internal key
+load_internal_service_key_from_mw() {
+  if [[ -n "${AGENT_INTERNAL_SERVICE_KEY:-${INTERNAL_SERVICE_KEY:-}}" ]]; then
+    export AGENT_INTERNAL_SERVICE_KEY="${AGENT_INTERNAL_SERVICE_KEY:-${INTERNAL_SERVICE_KEY:-}}"
+    return 0
+  fi
+  : "${MW_HOST:?MW_HOST required to load AGENT_INTERNAL_SERVICE_KEY}"
+  local mw_ssh="${MW_SSH:-root@${MW_HOST}}"
+  local mw_env="${MW_REMOTE_DIR:-/opt/novel-agent}/novel-agent/docs/deploy/docker/.env.mw"
+  local key
+  key=$(deploy_ssh "$mw_ssh" \
+    "grep -E '^AGENT_INTERNAL_SERVICE_KEY=' '$mw_env' 2>/dev/null | head -1 | cut -d= -f2-" \
+    2>/dev/null || true)
+  if [[ -n "$key" ]]; then
+    export AGENT_INTERNAL_SERVICE_KEY="$key"
+    echo "[deploy] 已从 MW .env.mw 加载 AGENT_INTERNAL_SERVICE_KEY"
+    return 0
+  fi
+  return 1
+}
+
 deploy_remote_has_rsync() {
   local remote_ssh="$1"
   deploy_ssh "$remote_ssh" "command -v rsync >/dev/null 2>&1" >/dev/null 2>&1

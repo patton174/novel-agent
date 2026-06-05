@@ -28,8 +28,10 @@ COMPOSE_FILE="novel-agent/docs/deploy/docker/docker-compose.worker.yml"
 
 AGENT_INTERNAL_SERVICE_KEY="${AGENT_INTERNAL_SERVICE_KEY:-${INTERNAL_SERVICE_KEY:-}}"
 if [[ -z "$AGENT_INTERNAL_SERVICE_KEY" ]]; then
-  echo "[crypto-register] 请在 .env.split 设置 AGENT_INTERNAL_SERVICE_KEY"
-  exit 1
+  if ! load_internal_service_key_from_mw; then
+    echo "[crypto-register] 请在 .env.split 或 MW .env.mw 设置 AGENT_INTERNAL_SERVICE_KEY"
+    exit 1
+  fi
 fi
 
 PYTHON="${PYTHON:-python}"
