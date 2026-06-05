@@ -1,6 +1,7 @@
 package com.novel.agent.auth.controller.internal;
 
 import com.novel.agent.auth.service.CryptoManifestService;
+import com.novel.agent.auth.service.FrontendCryptoRegisterService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -21,6 +22,9 @@ public class InternalCryptoManifestController {
     @Autowired
     private CryptoManifestService cryptoManifestService;
 
+    @Autowired
+    private FrontendCryptoRegisterService frontendCryptoRegisterService;
+
     @Value("${agent.internal-service-key:}")
     private String internalServiceKey;
 
@@ -29,11 +33,31 @@ public class InternalCryptoManifestController {
         @RequestHeader(value = "X-Internal-Service-Key", required = false) String key,
         @Valid @RequestBody PublishManifestRequest request
     ) {
+        verifyInternal(key);
+        cryptoManifestService.publish(request.getManifest(), request.getTtlSec());
+    }
+
+    /**
+     * 前端服务器（Worker）每日 cron / 部署时调用：后端签发 bootstrap 密钥，Worker 写入 env + runtime.json。
+     */
+    @PostMapping("/register-frontend-server")
+    public FrontendCryptoRegisterService.CryptoRuntimeView registerFrontendServer(
+        @RequestHeader(value = "X-Internal-Service-Key", required = false) String key,
+        @RequestBody(required = false) RegisterFrontendServerRequest request
+    ) {
+        verifyInternal(key);
+        RegisterFrontendServerRequest body = request == null ? new RegisterFrontendServerRequest() : request;
+        if (body.getManifest() != null) {
+            cryptoManifestService.publish(body.getManifest(), body.getTtlSec());
+        }
+        return frontendCryptoRegisterService.registerFromFrontendServer(body.getHost(), body.getTtlSec());
+    }
+
+    private void verifyInternal(String key) {
         if (internalServiceKey == null || internalServiceKey.isBlank()
             || key == null || !internalServiceKey.equals(key)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "forbidden");
         }
-        cryptoManifestService.publish(request.getManifest(), request.getTtlSec());
     }
 
     @Data
@@ -41,5 +65,12 @@ public class InternalCryptoManifestController {
         @NotNull
         private CryptoManifestService.CryptoManifestView manifest;
         private long ttlSec = 86400L * 2;
+    }
+
+    @Data
+    public static class RegisterFrontendServerRequest {
+        private String host = "worker";
+        private long ttlSec = 86400L * 2;
+        private CryptoManifestService.CryptoManifestView manifest;
     }
 }

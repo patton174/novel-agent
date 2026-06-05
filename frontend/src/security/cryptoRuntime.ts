@@ -1,0 +1,100 @@
+import type { SessionCryptoMaterial } from '../types/authSecurity'
+
+export interface CryptoRuntimeConfig {
+  keyId: string
+  aesKeyB64: string
+  version: number
+  expiresAtEpochMs: number
+  manifestVersion?: number
+  registeredBy?: string
+}
+
+let runtime: CryptoRuntimeConfig | null = null
+let loadPromise: Promise<CryptoRuntimeConfig | null> | null = null
+
+const REFRESH_MARGIN_MS = 60 * 60 * 1000
+
+function isExpired(cfg: CryptoRuntimeConfig | null): boolean {
+  if (!cfg) {
+    return true
+  }
+  return cfg.expiresAtEpochMs <= Date.now() + REFRESH_MARGIN_MS
+}
+
+function toMaterial(cfg: CryptoRuntimeConfig | null): SessionCryptoMaterial | null {
+  if (!cfg?.aesKeyB64 || !cfg.keyId) {
+    return null
+  }
+  return {
+    keyId: cfg.keyId,
+    aesKeyB64: cfg.aesKeyB64,
+    keyVersion: cfg.version,
+    expiresAt: cfg.expiresAtEpochMs,
+  }
+}
+
+async function fetchRuntime(force: boolean): Promise<CryptoRuntimeConfig | null> {
+  if (!force && runtime && !isExpired(runtime)) {
+    return runtime
+  }
+
+  const sources = ['/crypto-runtime.json', '/api/auth/crypto-config']
+  for (const url of sources) {
+    try {
+      const response = await fetch(url, { credentials: 'include', cache: 'no-store' })
+      if (!response.ok) {
+        continue
+      }
+      const data = (await response.json()) as CryptoRuntimeConfig
+      if (data?.keyId && data?.aesKeyB64) {
+        runtime = data
+        if (typeof sessionStorage !== 'undefined') {
+          sessionStorage.setItem('na_crypto_runtime_version', String(data.version))
+        }
+        return runtime
+      }
+    } catch {
+      // try next source
+    }
+  }
+  return runtime
+}
+
+/** Worker 每日注册后写入的 bootstrap 密钥；浏览器启动/失效时热更新 */
+export async function ensureCryptoRuntime(force = false): Promise<CryptoRuntimeConfig | null> {
+  if (!force && runtime && !isExpired(runtime)) {
+    return runtime
+  }
+  if (!loadPromise) {
+    loadPromise = fetchRuntime(force).finally(() => {
+      loadPromise = null
+    })
+  }
+  return loadPromise
+}
+
+export function getBootstrapCryptoMaterial(): SessionCryptoMaterial | null {
+  if (isExpired(runtime)) {
+    return null
+  }
+  return toMaterial(runtime)
+}
+
+export function isCryptoStaleError(status: number, bodyText: string): boolean {
+  if (status !== 400 && status !== 401) {
+    return false
+  }
+  const t = bodyText.toLowerCase()
+  return (
+    t.includes('unknown key') ||
+    t.includes('decrypt') ||
+    t.includes('aes envelope') ||
+    t.includes('key_stale') ||
+    t.includes('crypto')
+  )
+}
+
+export async function invalidateCryptoRuntime(): Promise<void> {
+  runtime = null
+  await ensureCryptoRuntime(true)
+}

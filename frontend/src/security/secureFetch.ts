@@ -1,8 +1,9 @@
 import { getAuthHeaders } from '../utils/auth'
-import { getSessionCrypto } from './sessionStore'
 import { ensureCryptoReady } from './sessionBootstrap'
 import { ensureCryptoManifest, isRouteObfuscationEnabled, resolveObfuscatedUrl } from './cryptoManifest'
 import { wrapFieldPayload, isFieldEncryptionEnabled } from './fieldPayload'
+import { getActiveCryptoMaterial } from './cryptoMaterial'
+import { ensureCryptoRuntime, invalidateCryptoRuntime, isCryptoStaleError } from './cryptoRuntime'
 import {
   encryptRequestBody,
   isCryptoExemptUrl,
@@ -12,9 +13,11 @@ import {
 
 const ENC_CONTENT_TYPE = 'application/vnd.novel-agent.enc+json'
 
-export async function secureFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
-  const logicalUrl = typeof input === 'string' ? input : input.toString()
-  const method = (init?.method ?? 'GET').toUpperCase()
+async function buildRequest(
+  logicalUrl: string,
+  method: string,
+  init?: RequestInit,
+): Promise<{ fetchUrl: string; headers: Record<string, string>; body: BodyInit | null | undefined }> {
   const mayNeedCrypto =
     isSecurityCryptoEnabled() &&
     !isCryptoExemptUrl(logicalUrl) &&
@@ -22,6 +25,7 @@ export async function secureFetch(input: RequestInfo | URL, init?: RequestInit):
 
   if (mayNeedCrypto) {
     await ensureCryptoReady()
+    await ensureCryptoRuntime(false)
   }
 
   let fetchUrl = logicalUrl
@@ -44,31 +48,72 @@ export async function secureFetch(input: RequestInfo | URL, init?: RequestInit):
     typeof body === 'string' &&
     ['POST', 'PUT', 'PATCH'].includes(method)
 
-  if (canEncrypt && isFieldEncryptionEnabled()) {
-    body = await wrapFieldPayload(body as string, getSessionCrypto())
+  const material = canEncrypt ? await getActiveCryptoMaterial() : null
+
+  if (canEncrypt && isFieldEncryptionEnabled() && material) {
+    body = await wrapFieldPayload(body as string, material)
   }
 
-  if (canEncrypt) {
-    const envelope = await encryptRequestBody(body as string, getSessionCrypto())
+  if (canEncrypt && material) {
+    const envelope = await encryptRequestBody(body as string, material)
     if (envelope) {
       body = JSON.stringify(envelope)
       headers['Content-Type'] = ENC_CONTENT_TYPE
     } else if (isSecurityCryptoEnabled()) {
-      throw new Error('会话加密密钥缺失，请重新登录')
+      throw new Error('加密密钥缺失，正在热更新…')
     }
   } else if (body != null && !headers['Content-Type'] && !headers['content-type']) {
     headers['Content-Type'] = 'application/json'
   }
 
-  const target = typeof input === 'string' ? fetchUrl : input instanceof URL ? new URL(fetchUrl) : input
-  return fetch(target, {
-    ...init,
-    credentials: init?.credentials ?? 'include',
-    headers,
-    body,
-  })
+  return { fetchUrl, headers, body }
+}
+
+export async function secureFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  const logicalUrl = typeof input === 'string' ? input : input.toString()
+  const method = (init?.method ?? 'GET').toUpperCase()
+
+  const exec = async () => {
+    const { fetchUrl, headers, body } = await buildRequest(logicalUrl, method, init)
+    const target =
+      typeof input === 'string' ? fetchUrl : input instanceof URL ? new URL(fetchUrl) : input
+    return fetch(target, {
+      ...init,
+      credentials: init?.credentials ?? 'include',
+      headers,
+      body,
+    })
+  }
+
+  let response = await exec()
+
+  if (response.status >= 400 && isSecurityCryptoEnabled()) {
+    const bodyText = await response.clone().text().catch(() => '')
+    if (isCryptoStaleError(response.status, bodyText)) {
+      await invalidateCryptoRuntime()
+      response = await exec()
+    }
+  }
+
+  const ver = response.headers.get('X-Crypto-Key-Version')
+  if (ver && runtimeVersionMismatch(ver)) {
+    void invalidateCryptoRuntime()
+  }
+
+  return response
 }
 
 function bodyMayEncrypt(method: string, body: BodyInit | null | undefined): boolean {
   return body != null && typeof body === 'string' && ['POST', 'PUT', 'PATCH'].includes(method)
+}
+
+function runtimeVersionMismatch(headerVersion: string): boolean {
+  // 异步热更，不阻塞当前响应
+  try {
+    const remote = Number(headerVersion)
+    const local = Number(sessionStorage.getItem('na_crypto_runtime_version') ?? '0')
+    return remote > 0 && local > 0 && remote !== local
+  } catch {
+    return false
+  }
 }

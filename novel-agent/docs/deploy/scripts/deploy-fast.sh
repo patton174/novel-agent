@@ -88,11 +88,8 @@ rm -rf '$REMOTE_DIST'
 docker restart "\$CID"
 echo "[deploy-fast] 前端已更新，硬刷新浏览器"
 EOF
-    echo "[deploy-fast] 生成并发布 crypto manifest → Redis@MW ..."
-    python "$REPO_ROOT/novel-agent/scripts/generate_crypto_manifest.py"
-    export SPRING_DATA_REDIS_HOST="${MW_HOST}"
-    export SPRING_DATA_REDIS_PASSWORD="${SPRING_DATA_REDIS_PASSWORD:?}"
-    python "$REPO_ROOT/novel-agent/scripts/publish_crypto_manifest.py"
+    echo "[crypto-register] 注册前端 crypto 密钥（Worker env + runtime.json）..."
+    bash "$SCRIPT_DIR/register-frontend-crypto.sh"
     exit 0
     ;;
   novel-agent-*)
