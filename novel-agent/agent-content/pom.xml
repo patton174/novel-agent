@@ -13,7 +13,7 @@
     <artifactId>agent-content</artifactId>
     <packaging>jar</packaging>
 
-    <description>内容服务 - 会话与消息存储</description>
+    <description>内容服务 - 会话与消息存储（/api/content/auth/*）</description>
 
     <dependencies>
         <dependency>
