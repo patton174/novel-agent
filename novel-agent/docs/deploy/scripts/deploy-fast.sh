@@ -60,7 +60,16 @@ case "$SERVICE" in
       echo "[deploy-fast] 前端只在 worker 上，请: deploy-fast.sh frontend worker"
       exit 1
     fi
-    (cd "$REPO_ROOT/frontend" && pnpm run build)
+    if [[ "${SKIP_FRONTEND_BUILD:-0}" != "1" ]]; then
+      (
+        cd "$REPO_ROOT/frontend"
+        export VITE_SECURITY_AES="${VITE_SECURITY_AES:-true}"
+        if ! pnpm run build 2>/dev/null; then
+          echo "[deploy-fast] pnpm 不可用，回退 npx vite build"
+          npx vite build
+        fi
+      )
+    fi
     REMOTE_DIST="/tmp/novel-fe-dist-$$"
     deploy_sync_dir "$REPO_ROOT/frontend/dist/" "$REMOTE_SSH" "$REMOTE_DIST"
     deploy_ssh "$REMOTE_SSH" bash -s <<EOF

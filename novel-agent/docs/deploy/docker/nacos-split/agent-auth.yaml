@@ -46,8 +46,8 @@ auth:
     secure: true
     domain: .novel-agent.cn
   client-security:
-    enabled: false
-    aes-required: false
+    enabled: true
+    aes-required: true
     encrypt-stream: false
     replay-window-seconds: 120
     ws-ticket-ttl-seconds: 60

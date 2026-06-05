@@ -29,7 +29,8 @@
 ## Phase 0c — AES 请求加密
 
 - [x] `requestCrypto.ts` + Gateway 解密链
-- [x] `client-security.aes-required` feature flag（默认 false）
+- [x] `client-security.aes-required` feature flag
+- [x] 生产 `VITE_SECURITY_AES=true` + Nacos `aes-required: true`（见 `apply-enable-aes-online.sh`）
 
 ## Phase 0d — WS ticket
 

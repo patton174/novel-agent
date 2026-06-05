@@ -479,8 +479,9 @@ export const api = {
     assistant_snippet?: string
     novel_title?: string
   }) {
-    const response = await fetch(`${PYTHON_API_BASE}/agent/session/title`, {
+    const response = await secureFetch(`${PYTHON_API_BASE}/agent/session/title`, {
       method: 'POST',
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
         ...(DIRECT_PYTHON ? {} : getAuthHeaders()),
@@ -503,13 +504,17 @@ export const api = {
       chapters: Record<string, Record<string, string>>
     }
   }> {
-    const response = await fetch(`${PYTHON_API_BASE}/agent/memory/novel/${encodeURIComponent(novelId)}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(DIRECT_PYTHON ? {} : getAuthHeaders()),
+    const response = await secureFetch(
+      `${PYTHON_API_BASE}/agent/memory/novel/${encodeURIComponent(novelId)}`,
+      {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(DIRECT_PYTHON ? {} : getAuthHeaders()),
+        },
       },
-    })
+    )
     if (!response.ok) {
       throw new Error(`Agent memory error: ${response.status}`)
     }
@@ -520,14 +525,18 @@ export const api = {
     novelId: string,
     payload: { scope: string; key: string; value: string; item_id?: string },
   ): Promise<{ memory: StoryMemoryWire }> {
-    const response = await fetch(`${PYTHON_API_BASE}/agent/memory/novel/${encodeURIComponent(novelId)}/patch`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(DIRECT_PYTHON ? {} : getAuthHeaders()),
+    const response = await secureFetch(
+      `${PYTHON_API_BASE}/agent/memory/novel/${encodeURIComponent(novelId)}/patch`,
+      {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(DIRECT_PYTHON ? {} : getAuthHeaders()),
+        },
+        body: JSON.stringify(payload),
       },
-      body: JSON.stringify(payload),
-    })
+    )
     if (!response.ok) {
       throw new Error(`Agent memory patch error: ${response.status}`)
     }
@@ -538,14 +547,18 @@ export const api = {
     novelId: string,
     payload: { scope: string; key: string; item_id?: string },
   ): Promise<{ memory: StoryMemoryWire }> {
-    const response = await fetch(`${PYTHON_API_BASE}/agent/memory/novel/${encodeURIComponent(novelId)}/delete`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(DIRECT_PYTHON ? {} : getAuthHeaders()),
+    const response = await secureFetch(
+      `${PYTHON_API_BASE}/agent/memory/novel/${encodeURIComponent(novelId)}/delete`,
+      {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(DIRECT_PYTHON ? {} : getAuthHeaders()),
+        },
+        body: JSON.stringify(payload),
       },
-      body: JSON.stringify(payload),
-    })
+    )
     if (!response.ok) {
       throw new Error(`Agent memory delete error: ${response.status}`)
     }
@@ -556,14 +569,18 @@ export const api = {
     novelId: string,
     payload: { scope: string },
   ): Promise<{ memory: StoryMemoryWire }> {
-    const response = await fetch(`${PYTHON_API_BASE}/agent/memory/novel/${encodeURIComponent(novelId)}/clear`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(DIRECT_PYTHON ? {} : getAuthHeaders()),
+    const response = await secureFetch(
+      `${PYTHON_API_BASE}/agent/memory/novel/${encodeURIComponent(novelId)}/clear`,
+      {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(DIRECT_PYTHON ? {} : getAuthHeaders()),
+        },
+        body: JSON.stringify(payload),
       },
-      body: JSON.stringify(payload),
-    })
+    )
     if (!response.ok) {
       throw new Error(`Agent memory clear error: ${response.status}`)
     }
