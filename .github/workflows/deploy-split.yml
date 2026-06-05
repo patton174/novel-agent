@@ -5,6 +5,11 @@
 #   MW_HOST         107.150.112.140
 #   WORKER_HOST     47.80.80.224
 #
+# workflow_dispatch 手动运行：
+#   - 勾选下方服务（可多选）→ 仅部署勾选项
+#   - 或填写 services 文本框（逗号分隔，优先于勾选）
+#   - 全部不勾且 services 为空 → 按本次 commit 变更路径自动判断
+#
 name: Deploy Hot (Split)
 
 on:
@@ -17,20 +22,51 @@ on:
       - '.github/workflows/deploy-split.yml'
   workflow_dispatch:
     inputs:
-      service:
-        description: '强制只部署该服务（留空=按变更路径）'
+      services:
+        description: '逗号分隔（优先于勾选）：gateway,auth,mw-auth,pyai,content,consumer,frontend,python-ai'
         required: false
-        type: choice
-        options:
-          - ''
-          - gateway
-          - auth
-          - mw-auth
-          - pyai
-          - content
-          - consumer
-          - frontend
-          - python-ai
+        type: string
+        default: ''
+      deploy_mw_auth:
+        description: 'MW — gateway + auth'
+        required: false
+        type: boolean
+        default: false
+      deploy_gateway:
+        description: 'MW — gateway'
+        required: false
+        type: boolean
+        default: false
+      deploy_auth:
+        description: 'MW — auth'
+        required: false
+        type: boolean
+        default: false
+      deploy_pyai:
+        description: 'Worker — pyai'
+        required: false
+        type: boolean
+        default: false
+      deploy_content:
+        description: 'Worker — content'
+        required: false
+        type: boolean
+        default: false
+      deploy_consumer:
+        description: 'Worker — consumer'
+        required: false
+        type: boolean
+        default: false
+      deploy_frontend:
+        description: 'Worker — frontend'
+        required: false
+        type: boolean
+        default: false
+      deploy_python_ai:
+        description: 'Worker — python-ai'
+        required: false
+        type: boolean
+        default: false
 
 concurrency:
   group: deploy-hot
@@ -120,7 +156,15 @@ jobs:
           CHANGED_SECURITY: ${{ steps.filter.outputs.security }}
           CHANGED_DEPLOY_CI: ${{ steps.filter.outputs.deploy_ci }}
           CHANGED_PYTHON_AI: ${{ steps.filter.outputs.python-ai }}
-          FORCE_SERVICE: ${{ github.event.inputs.service }}
+          FORCE_SERVICES: ${{ github.event.inputs.services }}
+          FORCE_DEPLOY_MW_AUTH: ${{ github.event.inputs.deploy_mw_auth }}
+          FORCE_DEPLOY_GATEWAY: ${{ github.event.inputs.deploy_gateway }}
+          FORCE_DEPLOY_AUTH: ${{ github.event.inputs.deploy_auth }}
+          FORCE_DEPLOY_PYAI: ${{ github.event.inputs.deploy_pyai }}
+          FORCE_DEPLOY_CONTENT: ${{ github.event.inputs.deploy_content }}
+          FORCE_DEPLOY_CONSUMER: ${{ github.event.inputs.deploy_consumer }}
+          FORCE_DEPLOY_FRONTEND: ${{ github.event.inputs.deploy_frontend }}
+          FORCE_DEPLOY_PYTHON_AI: ${{ github.event.inputs.deploy_python_ai }}
         run: bash novel-agent/docs/deploy/scripts/ci-hot-deploy.sh
 
       - name: Smoke test MW gateway
@@ -129,9 +173,12 @@ jobs:
           steps.filter.outputs.gateway == 'true' ||
           steps.filter.outputs.security == 'true' ||
           steps.filter.outputs.deploy_ci == 'true' ||
-          github.event.inputs.service == 'mw-auth' ||
-          github.event.inputs.service == 'auth' ||
-          github.event.inputs.service == 'gateway'
+          github.event.inputs.deploy_mw_auth == 'true' ||
+          github.event.inputs.deploy_gateway == 'true' ||
+          github.event.inputs.deploy_auth == 'true' ||
+          contains(github.event.inputs.services, 'auth') ||
+          contains(github.event.inputs.services, 'gateway') ||
+          contains(github.event.inputs.services, 'mw-auth')
         env:
           MW_HOST: ${{ secrets.MW_HOST }}
           DEPLOY_SSH_OPTS: -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes -o ConnectTimeout=10 -o BatchMode=yes

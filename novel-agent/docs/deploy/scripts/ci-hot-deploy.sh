@@ -8,7 +8,10 @@
 # 变更开关 (true/false):
 #   CHANGED_GATEWAY CHANGED_AUTH CHANGED_PYAI CHANGED_CONTENT CHANGED_CONSUMER CHANGED_FRONTEND CHANGED_COMMON
 #   CHANGED_SECURITY CHANGED_DEPLOY_CI
-#   FORCE_SERVICE (workflow_dispatch: gateway|auth|mw-auth|pyai|content|consumer|frontend|python-ai)
+#   手动多选（任一非空即覆盖路径过滤，可组合）:
+#     FORCE_SERVICES   逗号分隔: gateway,auth,mw-auth,pyai,content,consumer,frontend,python-ai
+#     FORCE_SERVICE    兼容旧版单服务
+#     FORCE_DEPLOY_*   workflow_dispatch 布尔: MW_AUTH GATEWAY AUTH PYAI CONTENT CONSUMER FRONTEND PYTHON_AI
 #
 set -euo pipefail
 
@@ -30,26 +33,72 @@ want() {
   [[ "$flag" == "true" || "$flag" == "1" ]]
 }
 
-if [[ -n "${FORCE_SERVICE:-}" ]]; then
-  case "$FORCE_SERVICE" in
-    gateway) CHANGED_GATEWAY=true; CHANGED_AUTH=false; CHANGED_PYAI=false; CHANGED_CONTENT=false; CHANGED_CONSUMER=false; CHANGED_FRONTEND=false ;;
-    auth) CHANGED_GATEWAY=false; CHANGED_AUTH=true; CHANGED_PYAI=false; CHANGED_CONTENT=false; CHANGED_CONSUMER=false; CHANGED_FRONTEND=false ;;
-    mw-auth)
-      CHANGED_GATEWAY=true
-      CHANGED_AUTH=true
-      CHANGED_PYAI=false
-      CHANGED_CONTENT=false
-      CHANGED_CONSUMER=false
-      CHANGED_FRONTEND=false
-      CHANGED_PYTHON_AI=false
+reset_deploy_flags() {
+  CHANGED_GATEWAY=false
+  CHANGED_AUTH=false
+  CHANGED_PYAI=false
+  CHANGED_CONTENT=false
+  CHANGED_CONSUMER=false
+  CHANGED_FRONTEND=false
+  CHANGED_PYTHON_AI=false
+  CHANGED_SECURITY=false
+  CHANGED_DEPLOY_CI=false
+  CHANGED_COMMON=false
+}
+
+enable_force_service() {
+  case "$1" in
+    gateway) CHANGED_GATEWAY=true ;;
+    auth) CHANGED_AUTH=true ;;
+    mw-auth) CHANGED_GATEWAY=true; CHANGED_AUTH=true ;;
+    pyai) CHANGED_PYAI=true ;;
+    content) CHANGED_CONTENT=true ;;
+    consumer) CHANGED_CONSUMER=true ;;
+    frontend) CHANGED_FRONTEND=true ;;
+    python-ai) CHANGED_PYTHON_AI=true ;;
+    *)
+      echo "[ci-hot] 未知服务: $1（可用: gateway auth mw-auth pyai content consumer frontend python-ai）"
+      exit 1
       ;;
-    pyai) CHANGED_GATEWAY=false; CHANGED_AUTH=false; CHANGED_PYAI=true; CHANGED_CONTENT=false; CHANGED_CONSUMER=false; CHANGED_FRONTEND=false ;;
-    content) CHANGED_GATEWAY=false; CHANGED_AUTH=false; CHANGED_PYAI=false; CHANGED_CONTENT=true; CHANGED_CONSUMER=false; CHANGED_FRONTEND=false ;;
-    consumer) CHANGED_GATEWAY=false; CHANGED_AUTH=false; CHANGED_PYAI=false; CHANGED_CONTENT=false; CHANGED_CONSUMER=true; CHANGED_FRONTEND=false ;;
-    frontend) CHANGED_GATEWAY=false; CHANGED_AUTH=false; CHANGED_PYAI=false; CHANGED_CONTENT=false; CHANGED_CONSUMER=false; CHANGED_FRONTEND=true; CHANGED_PYTHON_AI=false ;;
-    python-ai) CHANGED_GATEWAY=false; CHANGED_AUTH=false; CHANGED_PYAI=false; CHANGED_CONTENT=false; CHANGED_CONSUMER=false; CHANGED_FRONTEND=false; CHANGED_PYTHON_AI=true ;;
-    *) echo "[ci-hot] 未知 FORCE_SERVICE=$FORCE_SERVICE"; exit 1 ;;
   esac
+}
+
+# 返回 0=已进入手动模式并设置 CHANGED_*；1=未选手动，沿用路径过滤 env
+apply_manual_deploy_selection() {
+  local -a services=()
+  local raw item
+
+  if [[ -n "${FORCE_SERVICES:-}" ]]; then
+    raw="${FORCE_SERVICES// /}"
+    IFS=',' read -r -a services <<< "$raw"
+  elif [[ -n "${FORCE_SERVICE:-}" ]]; then
+    services=("$FORCE_SERVICE")
+  else
+    want "${FORCE_DEPLOY_MW_AUTH:-false}" && services+=(mw-auth)
+    want "${FORCE_DEPLOY_GATEWAY:-false}" && services+=(gateway)
+    want "${FORCE_DEPLOY_AUTH:-false}" && services+=(auth)
+    want "${FORCE_DEPLOY_PYAI:-false}" && services+=(pyai)
+    want "${FORCE_DEPLOY_CONTENT:-false}" && services+=(content)
+    want "${FORCE_DEPLOY_CONSUMER:-false}" && services+=(consumer)
+    want "${FORCE_DEPLOY_FRONTEND:-false}" && services+=(frontend)
+    want "${FORCE_DEPLOY_PYTHON_AI:-false}" && services+=(python-ai)
+  fi
+
+  if [[ ${#services[@]} -eq 0 ]]; then
+    return 1
+  fi
+
+  reset_deploy_flags
+  for item in "${services[@]}"; do
+    [[ -n "$item" ]] || continue
+    enable_force_service "$item"
+  done
+  echo "[ci-hot] 手动部署服务: ${services[*]}"
+  return 0
+}
+
+if apply_manual_deploy_selection; then
+  :
 fi
 
 # JWT 安全栈：auth 与 gateway 必须同版本发布
