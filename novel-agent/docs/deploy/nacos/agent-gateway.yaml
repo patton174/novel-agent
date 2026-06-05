@@ -45,6 +45,13 @@ auth:
     secret: ${JWT_SECRET:YOUR_JWT_SECRET_MIN_32_CHARS}
     access-ttl-seconds: 3600
   client-security:
+    enabled: true
+    aes-required: true
+    route-obfuscation: true
+    field-encryption: true
+    encrypt-stream: false
+    replay-window-seconds: 120
+    enforce-csrf: false
     heartbeat-max-silence-seconds: 180
     fingerprint-tolerance: 0.15
     enforce-fingerprint: false

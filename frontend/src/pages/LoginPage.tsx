@@ -47,8 +47,17 @@ const LoginPage: React.FC = () => {
     setSessionCrypto(null)
     try {
       await login(username.trim(), password)
-      const profile = await fetchUserInfo()
-      useUserStore.getState().setProfile(profile)
+      try {
+        const profile = await fetchUserInfo()
+        useUserStore.getState().setProfile(profile)
+      } catch (profileErr) {
+        setErrorMessage(
+          profileErr instanceof Error
+            ? `登录成功，但加载用户信息失败：${profileErr.message}`
+            : '登录成功，但加载用户信息失败',
+        )
+        return
+      }
       navigate('/dashboard')
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : '登录失败')

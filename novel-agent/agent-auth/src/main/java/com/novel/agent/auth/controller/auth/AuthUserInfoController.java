@@ -1,5 +1,6 @@
 package com.novel.agent.auth.controller.auth;
 
+import com.novel.agent.auth.security.JwtAuthService;
 import com.novel.agent.auth.service.auth.biz.AuthUserInfoBiz;
 import com.novel.agent.auth.service.auth.resp.AuthUserInfoResp;
 import com.novel.agent.common.core.base.Result;
@@ -16,9 +17,21 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthUserInfoController extends BaseController {
 
     private final AuthUserInfoBiz biz;
+    private final JwtAuthService jwtAuthService;
 
     @GetMapping("/info")
-    public Result<AuthUserInfoResp> info(@RequestHeader("X-User-Id") String userId) {
-        return biz.getInfo(parseUserId(userId));
+    public Result<AuthUserInfoResp> info(
+        @RequestHeader(value = "X-User-Id", required = false) String userIdHeader,
+        @RequestHeader(value = "Authorization", required = false) String authorization
+    ) {
+        Long userId = resolveUserId(userIdHeader, authorization);
+        return biz.getInfo(userId);
+    }
+
+    private Long resolveUserId(String userIdHeader, String authorization) {
+        if (userIdHeader != null && !userIdHeader.isBlank()) {
+            return parseUserId(userIdHeader);
+        }
+        return jwtAuthService.parseAccessUserId(authorization);
     }
 }
