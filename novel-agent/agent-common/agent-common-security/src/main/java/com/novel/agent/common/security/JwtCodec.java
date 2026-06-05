@@ -59,8 +59,12 @@ public final class JwtCodec {
         if (token == null || token.isBlank()) {
             throw new AuthUnauthorizedException("未登录或登录已过期");
         }
+        String normalized = token.trim();
+        if (normalized.regionMatches(true, 0, "Bearer ", 0, 7)) {
+            normalized = normalized.substring(7).trim();
+        }
         try {
-            SignedJWT jwt = SignedJWT.parse(token.trim());
+            SignedJWT jwt = SignedJWT.parse(normalized);
             if (!jwt.verify(new MACVerifier(secret))) {
                 throw new AuthUnauthorizedException("登录已过期，请重新登录");
             }

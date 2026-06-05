@@ -10,6 +10,7 @@ import com.novel.agent.content.repository.agent.AgentRunRepository;
 import com.novel.agent.content.service.auth.resp.AuthDashboardSummaryResp;
 import com.novel.agent.content.service.auth.resp.AuthRecentNovelResp;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
@@ -18,6 +19,7 @@ import java.util.List;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class AuthDashboardBiz extends BaseBiz {
 
     private static final int RECENT_NOVEL_LIMIT = 6;
@@ -31,8 +33,17 @@ public class AuthDashboardBiz extends BaseBiz {
         long novelCount = novelRepository.countByUserId(userId);
         long chapterCount = chapterRepository.countByUserId(userId);
         long weeklyWordCount = chapterRepository.sumWordCountByUserIdSince(userId, weekAgo);
-        long agentRunCount = agentRunRepository.countByUserId(userId);
+        long agentRunCount = countAgentRunsSafe(userId);
         return ok(new AuthDashboardSummaryResp(novelCount, chapterCount, weeklyWordCount, agentRunCount));
+    }
+
+    private long countAgentRunsSafe(Long userId) {
+        try {
+            return agentRunRepository.countByUserId(userId);
+        } catch (Exception ex) {
+            log.warn("agent run count failed userId={}: {}", userId, ex.getMessage());
+            return 0L;
+        }
     }
 
     public Result<List<AuthRecentNovelResp>> recentNovels(Long userId) {
