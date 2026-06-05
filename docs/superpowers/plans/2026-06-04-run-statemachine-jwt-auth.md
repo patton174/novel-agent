@@ -32,6 +32,13 @@
 - [x] `client-security.aes-required` feature flag
 - [x] 生产 `VITE_SECURITY_AES=true` + Nacos `aes-required: true`（见 `apply-enable-aes-online.sh`）
 
+## Phase 0e — 路由脱敏 + 字段/值加密
+
+- [x] 设计：`docs/superpowers/specs/2026-06-05-client-route-field-crypto-design.md`
+- [x] Gateway `RouteObfuscationFilter` + `FieldPayloadExpandFilter`
+- [x] `GET /api/auth/crypto-manifest` + Redis manifest 发布脚本
+- [ ] Nacos 开启 `route-obfuscation` / `field-encryption` + 前端 env 对齐后线上验收
+
 ## Phase 0d — WS ticket
 
 - [x] `POST /api/auth/ws-ticket`；前端 WS 改 ticket

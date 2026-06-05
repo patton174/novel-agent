@@ -5,6 +5,7 @@ import {
   getSessionCrypto,
   hydrateSessionFromStorage,
 } from './sessionStore'
+import { isRouteObfuscationEnabled } from './cryptoManifest'
 
 let bootstrapPromise: Promise<void> | null = null
 
@@ -17,6 +18,11 @@ async function runBootstrap(): Promise<void> {
 
   if (getAccessToken() && getSessionCrypto()) {
     return
+  }
+
+  if (isRouteObfuscationEnabled()) {
+    const { ensureCryptoManifest } = await import('./cryptoManifest')
+    await ensureCryptoManifest()
   }
 
   if (!getAccessToken()) {

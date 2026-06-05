@@ -33,6 +33,12 @@ public class GatewayClientSecurityProperties {
     @Value("${auth.client-security.enforce-heartbeat:false}")
     private boolean enforceHeartbeat;
 
+    @Value("${auth.client-security.route-obfuscation:false}")
+    private boolean routeObfuscation;
+
+    @Value("${auth.client-security.field-encryption:false}")
+    private boolean fieldEncryption;
+
     public boolean enabled() {
         return enabled;
     }
@@ -67,5 +73,13 @@ public class GatewayClientSecurityProperties {
 
     public boolean enforceHeartbeat() {
         return enforceHeartbeat;
+    }
+
+    public boolean routeObfuscation() {
+        return routeObfuscation;
+    }
+
+    public boolean fieldEncryption() {
+        return fieldEncryption;
     }
 }

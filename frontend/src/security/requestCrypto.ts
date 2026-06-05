@@ -34,6 +34,31 @@ async function importAesKey(aesKeyB64: string): Promise<CryptoKey> {
   )
 }
 
+/** iv+ct 合并 base64，与 Java AesGcmCodec.encryptToBase64 对齐 */
+async function encryptFieldPartWithKey(plaintext: string, aesKeyB64: string): Promise<string> {
+  const key = await importAesKey(aesKeyB64)
+  const iv = crypto.getRandomValues(new Uint8Array(12))
+  const ciphertext = await crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv },
+    key,
+    new TextEncoder().encode(plaintext),
+  )
+  const combined = new Uint8Array(iv.length + ciphertext.byteLength)
+  combined.set(iv, 0)
+  combined.set(new Uint8Array(ciphertext), iv.length)
+  return bytesToBase64(combined)
+}
+
+export async function encryptFieldPart(
+  plaintext: string,
+  material: { aesKeyB64: string } | null,
+): Promise<string> {
+  if (!material?.aesKeyB64) {
+    throw new Error('session crypto required for field encryption')
+  }
+  return encryptFieldPartWithKey(plaintext, material.aesKeyB64)
+}
+
 export function isSecurityCryptoEnabled(): boolean {
   if (import.meta.env.VITE_SECURITY_BYPASS === 'true' || import.meta.env.VITE_SECURITY_BYPASS === '1') {
     return false

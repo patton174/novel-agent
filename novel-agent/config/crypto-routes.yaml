@@ -1,0 +1,30 @@
+# 参与路由脱敏的 API 清单（deploy 时生成 manifest 写入 Redis）
+routes:
+  - method: POST
+    path: /api/auth/login
+  - method: POST
+    path: /api/auth/register
+  - method: POST
+    path: /api/auth/refresh
+  - method: POST
+    path: /api/auth/logout
+  - method: POST
+    path: /api/auth/heartbeat
+  - method: POST
+    path: /api/auth/ws-ticket
+  - method: GET
+    path: /api/auth/info
+  - method: GET
+    path: /api/content/novels
+  - method: POST
+    path: /api/content/novels
+  - method: GET
+    path: /api/content/novels/{novelId}
+  - method: PUT
+    path: /api/content/novels/{novelId}
+  - method: DELETE
+    path: /api/content/novels/{novelId}
+  - method: POST
+    path: /api/agent/chat/stream
+  - method: GET
+    path: /api/auth/crypto-manifest

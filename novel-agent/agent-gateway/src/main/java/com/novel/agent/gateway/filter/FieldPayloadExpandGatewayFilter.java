@@ -2,7 +2,7 @@ package com.novel.agent.gateway.filter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.novel.agent.common.security.AesGcmCodec;
-import com.novel.agent.common.security.RequestCryptoEnvelope;
+import com.novel.agent.common.security.FieldSecurePayload;
 import com.novel.agent.gateway.config.GatewayClientSecurityProperties;
 import com.novel.agent.gateway.support.GatewayAuthSupport;
 import com.novel.agent.gateway.support.SessionAesKeySupport;
@@ -26,44 +26,50 @@ import java.util.Set;
 
 @Slf4j
 @Component
-public class RequestDecryptGatewayFilter implements GlobalFilter, Ordered {
+public class FieldPayloadExpandGatewayFilter implements GlobalFilter, Ordered {
 
     private static final Set<HttpMethod> BODY_METHODS = Set.of(
         HttpMethod.POST, HttpMethod.PUT, HttpMethod.PATCH
     );
 
-    private final GatewayAuthSupport gatewayAuthSupport;
     private final GatewayClientSecurityProperties properties;
+    private final GatewayAuthSupport gatewayAuthSupport;
     private final SessionAesKeySupport sessionAesKeySupport;
     private final ObjectMapper objectMapper;
 
-    public RequestDecryptGatewayFilter(
-        GatewayAuthSupport gatewayAuthSupport,
+    public FieldPayloadExpandGatewayFilter(
         GatewayClientSecurityProperties properties,
+        GatewayAuthSupport gatewayAuthSupport,
         SessionAesKeySupport sessionAesKeySupport,
         ObjectMapper objectMapper
     ) {
-        this.gatewayAuthSupport = gatewayAuthSupport;
         this.properties = properties;
+        this.gatewayAuthSupport = gatewayAuthSupport;
         this.sessionAesKeySupport = sessionAesKeySupport;
         this.objectMapper = objectMapper;
     }
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
-        ServerHttpRequest request = exchange.getRequest();
-        String path = request.getURI().getPath();
-        if (gatewayAuthSupport.isCryptoExemptPath(path)) {
+        if (!properties.fieldEncryption()) {
             return chain.filter(exchange);
         }
-        if (!properties.enabled() && !properties.aesRequired()) {
+        ServerHttpRequest request = exchange.getRequest();
+        if (gatewayAuthSupport.isCryptoExemptPath(request.getURI().getPath())) {
             return chain.filter(exchange);
         }
         if (!BODY_METHODS.contains(request.getMethod())) {
             return chain.filter(exchange);
         }
-        if (isStreamPath(path) && !properties.encryptStream()) {
+
+        Object kidObj = exchange.getAttribute(GatewayExchangeAttributes.CRYPTO_KID);
+        if (kidObj == null) {
             return chain.filter(exchange);
+        }
+        String kid = String.valueOf(kidObj);
+        var keyOpt = sessionAesKeySupport.loadKeyBase64(kid);
+        if (keyOpt.isEmpty()) {
+            return badRequest(exchange, "unknown key for field expand");
         }
 
         return DataBufferUtils.join(request.getBody())
@@ -71,61 +77,24 @@ public class RequestDecryptGatewayFilter implements GlobalFilter, Ordered {
                 byte[] raw = new byte[buffer.readableByteCount()];
                 buffer.read(raw);
                 DataBufferUtils.release(buffer);
-                if (raw.length == 0) {
+                if (raw.length == 0 || !FieldSecurePayload.looksSecure(objectMapper, raw)) {
                     return chain.filter(exchange);
-                }
-                String text = new String(raw, StandardCharsets.UTF_8);
-                RequestCryptoEnvelope envelope;
-                try {
-                    envelope = objectMapper.readValue(text, RequestCryptoEnvelope.class);
-                } catch (Exception ex) {
-                    if (properties.aesRequired()) {
-                        return badRequest(exchange, "AES envelope required");
-                    }
-                    return replayWithBody(exchange, chain, raw);
-                }
-                if (!envelope.looksEncrypted()) {
-                    if (properties.aesRequired()) {
-                        return badRequest(exchange, "AES envelope required");
-                    }
-                    return replayWithBody(exchange, chain, raw);
-                }
-                var keyOpt = sessionAesKeySupport.loadKeyBase64(envelope.kid());
-                if (keyOpt.isEmpty()) {
-                    return badRequest(exchange, "unknown key id");
                 }
                 try {
                     AesGcmCodec codec = AesGcmCodec.fromBase64Key(keyOpt.get());
-                    String plaintext = codec.decryptIvAndCt(envelope.iv(), envelope.ct());
-                    byte[] decrypted = plaintext.getBytes(StandardCharsets.UTF_8);
-                    ServerWebExchange mutated = exchange.mutate()
-                        .request(decorateRequest(request, decrypted, exchange.getResponse().bufferFactory()))
-                        .build();
-                    if (envelope.nonce() != null) {
-                        mutated.getAttributes().put(GatewayExchangeAttributes.CRYPTO_NONCE, envelope.nonce());
-                    }
-                    if (envelope.ts() != null) {
-                        mutated.getAttributes().put(GatewayExchangeAttributes.CRYPTO_TS, envelope.ts());
-                    }
-                    if (envelope.kid() != null) {
-                        mutated.getAttributes().put(GatewayExchangeAttributes.CRYPTO_KID, envelope.kid());
-                    }
-                    return chain.filter(mutated);
+                    byte[] expanded = FieldSecurePayload.expand(objectMapper, raw, codec);
+                    ServerHttpRequest decorated = decorateRequest(
+                        request,
+                        expanded,
+                        exchange.getResponse().bufferFactory()
+                    );
+                    return chain.filter(exchange.mutate().request(decorated).build());
                 } catch (Exception ex) {
-                    log.warn("request decrypt failed kid={}: {}", envelope.kid(), ex.getMessage());
-                    return badRequest(exchange, "decrypt failed");
+                    log.warn("field payload expand failed: {}", ex.getMessage());
+                    return badRequest(exchange, "field expand failed");
                 }
             })
             .switchIfEmpty(chain.filter(exchange));
-    }
-
-    private Mono<Void> replayWithBody(ServerWebExchange exchange, GatewayFilterChain chain, byte[] raw) {
-        ServerHttpRequest decorated = decorateRequest(
-            exchange.getRequest(),
-            raw,
-            exchange.getResponse().bufferFactory()
-        );
-        return chain.filter(exchange.mutate().request(decorated).build());
     }
 
     private ServerHttpRequest decorateRequest(
@@ -150,15 +119,10 @@ public class RequestDecryptGatewayFilter implements GlobalFilter, Ordered {
         };
     }
 
-    private boolean isStreamPath(String path) {
-        return path.contains("/chat/stream");
-    }
-
     private Mono<Void> badRequest(ServerWebExchange exchange, String message) {
         exchange.getResponse().setStatusCode(org.springframework.http.HttpStatus.BAD_REQUEST);
         exchange.getResponse().getHeaders().add("Content-Type", "application/json;charset=UTF-8");
-        String safe = message.replace("\"", "'");
-        String body = "{\"code\":400,\"message\":\"" + safe + "\"}";
+        String body = "{\"code\":400,\"message\":\"" + message.replace("\"", "'") + "\"}";
         return exchange.getResponse().writeWith(
             Mono.just(exchange.getResponse().bufferFactory().wrap(body.getBytes(StandardCharsets.UTF_8)))
         );
@@ -166,6 +130,6 @@ public class RequestDecryptGatewayFilter implements GlobalFilter, Ordered {
 
     @Override
     public int getOrder() {
-        return -108;
+        return -107;
     }
 }

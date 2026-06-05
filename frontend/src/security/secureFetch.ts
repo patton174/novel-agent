@@ -1,6 +1,8 @@
 import { getAuthHeaders } from '../utils/auth'
 import { getSessionCrypto } from './sessionStore'
 import { ensureCryptoReady } from './sessionBootstrap'
+import { ensureCryptoManifest, isRouteObfuscationEnabled, resolveObfuscatedUrl } from './cryptoManifest'
+import { wrapFieldPayload, isFieldEncryptionEnabled } from './fieldPayload'
 import {
   encryptRequestBody,
   isCryptoExemptUrl,
@@ -11,15 +13,21 @@ import {
 const ENC_CONTENT_TYPE = 'application/vnd.novel-agent.enc+json'
 
 export async function secureFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
-  const url = typeof input === 'string' ? input : input.toString()
+  const logicalUrl = typeof input === 'string' ? input : input.toString()
   const method = (init?.method ?? 'GET').toUpperCase()
   const mayNeedCrypto =
     isSecurityCryptoEnabled() &&
-    !isCryptoExemptUrl(url) &&
+    !isCryptoExemptUrl(logicalUrl) &&
     bodyMayEncrypt(method, init?.body)
 
   if (mayNeedCrypto) {
     await ensureCryptoReady()
+  }
+
+  let fetchUrl = logicalUrl
+  if (isRouteObfuscationEnabled()) {
+    const manifest = await ensureCryptoManifest()
+    fetchUrl = resolveObfuscatedUrl(logicalUrl, method, manifest)
   }
 
   const headers: Record<string, string> = {
@@ -30,11 +38,15 @@ export async function secureFetch(input: RequestInfo | URL, init?: RequestInit):
   let body = init?.body
   const canEncrypt =
     isSecurityCryptoEnabled() &&
-    !isCryptoExemptUrl(url) &&
-    !(isStreamUrl(url) && import.meta.env.VITE_SECURITY_ENCRYPT_STREAM !== 'true') &&
+    !isCryptoExemptUrl(logicalUrl) &&
+    !(isStreamUrl(logicalUrl) && import.meta.env.VITE_SECURITY_ENCRYPT_STREAM !== 'true') &&
     body != null &&
     typeof body === 'string' &&
     ['POST', 'PUT', 'PATCH'].includes(method)
+
+  if (canEncrypt && isFieldEncryptionEnabled()) {
+    body = await wrapFieldPayload(body as string, getSessionCrypto())
+  }
 
   if (canEncrypt) {
     const envelope = await encryptRequestBody(body as string, getSessionCrypto())
@@ -48,7 +60,8 @@ export async function secureFetch(input: RequestInfo | URL, init?: RequestInit):
     headers['Content-Type'] = 'application/json'
   }
 
-  return fetch(input, {
+  const target = typeof input === 'string' ? fetchUrl : input instanceof URL ? new URL(fetchUrl) : input
+  return fetch(target, {
     ...init,
     credentials: init?.credentials ?? 'include',
     headers,

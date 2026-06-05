@@ -72,6 +72,15 @@ public final class AesGcmCodec {
         }
     }
 
+    /** 字段级加密：iv+ct 合并 base64（与 encryptToBase64 对称） */
+    public String encryptFieldPart(String plaintext) {
+        return encryptToBase64(plaintext);
+    }
+
+    public String decryptFieldPart(String ciphertextB64) {
+        return decryptFromBase64(ciphertextB64);
+    }
+
     private String decryptBytes(byte[] iv, byte[] ct) throws Exception {
         Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
         cipher.init(Cipher.DECRYPT_MODE, keySpec, new GCMParameterSpec(TAG_BITS, iv));

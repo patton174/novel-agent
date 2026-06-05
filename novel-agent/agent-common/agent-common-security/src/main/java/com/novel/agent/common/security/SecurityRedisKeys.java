@@ -6,6 +6,7 @@ public final class SecurityRedisKeys {
     public static final String NONCE_PREFIX = "auth:nonce:";
     public static final String WS_TICKET_PREFIX = "auth:ws-ticket:";
     public static final String DEVICE_PREFIX = "auth:device:";
+    public static final String CRYPTO_MANIFEST_KEY = "crypto:manifest:current";
 
     private SecurityRedisKeys() {
     }

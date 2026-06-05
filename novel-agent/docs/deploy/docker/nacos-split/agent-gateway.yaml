@@ -46,6 +46,8 @@ auth:
   client-security:
     enabled: true
     aes-required: true
+    route-obfuscation: false
+    field-encryption: false
     encrypt-stream: false
     replay-window-seconds: 120
     enforce-csrf: false
