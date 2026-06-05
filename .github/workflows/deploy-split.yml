@@ -25,6 +25,7 @@ on:
           - ''
           - gateway
           - auth
+          - mw-auth
           - pyai
           - content
           - consumer
@@ -61,6 +62,15 @@ jobs:
             common:
               - 'novel-agent/agent-common/**'
               - 'novel-agent/pom.xml'
+            security:
+              - 'novel-agent/agent-auth/**'
+              - 'novel-agent/agent-gateway/**'
+              - 'novel-agent/agent-common/agent-common-security/**'
+              - 'frontend/src/security/**'
+              - 'frontend/src/utils/authApi.ts'
+            deploy_ci:
+              - 'novel-agent/docs/deploy/scripts/**'
+              - '.github/workflows/deploy-split.yml'
             python-ai:
               - 'python-ai/**'
 
@@ -106,6 +116,8 @@ jobs:
           CHANGED_CONSUMER: ${{ steps.filter.outputs.consumer }}
           CHANGED_FRONTEND: ${{ steps.filter.outputs.frontend }}
           CHANGED_COMMON: ${{ steps.filter.outputs.common }}
+          CHANGED_SECURITY: ${{ steps.filter.outputs.security }}
+          CHANGED_DEPLOY_CI: ${{ steps.filter.outputs.deploy_ci }}
           CHANGED_PYTHON_AI: ${{ steps.filter.outputs.python-ai }}
           FORCE_SERVICE: ${{ github.event.inputs.service }}
         run: bash novel-agent/docs/deploy/scripts/ci-hot-deploy.sh

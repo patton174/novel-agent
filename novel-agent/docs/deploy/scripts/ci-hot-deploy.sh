@@ -7,7 +7,8 @@
 #
 # 变更开关 (true/false):
 #   CHANGED_GATEWAY CHANGED_AUTH CHANGED_PYAI CHANGED_CONTENT CHANGED_CONSUMER CHANGED_FRONTEND CHANGED_COMMON
-#   FORCE_SERVICE (workflow_dispatch 手动指定: gateway|auth|pyai|content|consumer|frontend)
+#   CHANGED_SECURITY CHANGED_DEPLOY_CI
+#   FORCE_SERVICE (workflow_dispatch: gateway|auth|mw-auth|pyai|content|consumer|frontend|python-ai)
 #
 set -euo pipefail
 
@@ -33,6 +34,15 @@ if [[ -n "${FORCE_SERVICE:-}" ]]; then
   case "$FORCE_SERVICE" in
     gateway) CHANGED_GATEWAY=true; CHANGED_AUTH=false; CHANGED_PYAI=false; CHANGED_CONTENT=false; CHANGED_CONSUMER=false; CHANGED_FRONTEND=false ;;
     auth) CHANGED_GATEWAY=false; CHANGED_AUTH=true; CHANGED_PYAI=false; CHANGED_CONTENT=false; CHANGED_CONSUMER=false; CHANGED_FRONTEND=false ;;
+    mw-auth)
+      CHANGED_GATEWAY=true
+      CHANGED_AUTH=true
+      CHANGED_PYAI=false
+      CHANGED_CONTENT=false
+      CHANGED_CONSUMER=false
+      CHANGED_FRONTEND=false
+      CHANGED_PYTHON_AI=false
+      ;;
     pyai) CHANGED_GATEWAY=false; CHANGED_AUTH=false; CHANGED_PYAI=true; CHANGED_CONTENT=false; CHANGED_CONSUMER=false; CHANGED_FRONTEND=false ;;
     content) CHANGED_GATEWAY=false; CHANGED_AUTH=false; CHANGED_PYAI=false; CHANGED_CONTENT=true; CHANGED_CONSUMER=false; CHANGED_FRONTEND=false ;;
     consumer) CHANGED_GATEWAY=false; CHANGED_AUTH=false; CHANGED_PYAI=false; CHANGED_CONTENT=false; CHANGED_CONSUMER=true; CHANGED_FRONTEND=false ;;
@@ -40,6 +50,24 @@ if [[ -n "${FORCE_SERVICE:-}" ]]; then
     python-ai) CHANGED_GATEWAY=false; CHANGED_AUTH=false; CHANGED_PYAI=false; CHANGED_CONTENT=false; CHANGED_CONSUMER=false; CHANGED_FRONTEND=false; CHANGED_PYTHON_AI=true ;;
     *) echo "[ci-hot] 未知 FORCE_SERVICE=$FORCE_SERVICE"; exit 1 ;;
   esac
+fi
+
+# JWT 安全栈：auth 与 gateway 必须同版本发布
+if want "${CHANGED_AUTH:-false}" || want "${CHANGED_GATEWAY:-false}" || want "${CHANGED_SECURITY:-false}"; then
+  CHANGED_AUTH=true
+  CHANGED_GATEWAY=true
+fi
+
+# 前端安全层变更时同步 MW（避免 gateway 新 / auth 旧）
+if want "${CHANGED_SECURITY:-false}"; then
+  echo "[ci-hot] security paths changed → sync MW auth + gateway"
+fi
+
+# 部署脚本/workflow 变更：补发 MW 安全栈，修复半升级
+if want "${CHANGED_DEPLOY_CI:-false}"; then
+  echo "[ci-hot] deploy/ci changed → sync MW auth + gateway"
+  CHANGED_AUTH=true
+  CHANGED_GATEWAY=true
 fi
 
 if want "${CHANGED_COMMON:-false}"; then
@@ -81,8 +109,8 @@ hot() {
   fi
 }
 
-want "${CHANGED_GATEWAY:-false}" && hot gateway mw
 want "${CHANGED_AUTH:-false}" && hot auth mw
+want "${CHANGED_GATEWAY:-false}" && hot gateway mw
 want "${CHANGED_PYAI:-false}" && hot pyai worker
 want "${CHANGED_CONTENT:-false}" && hot content worker
 want "${CHANGED_CONSUMER:-false}" && hot consumer worker
@@ -123,8 +151,11 @@ if want "${CHANGED_PYTHON_AI:-false}"; then
 fi
 
 if [[ ${#PIDS[@]} -eq 0 ]] && ! want "${CHANGED_PYTHON_AI:-false}"; then
-  echo "[ci-hot] 无匹配变更，跳过部署"
-  exit 0
+  if ! want "${CHANGED_AUTH:-false}" && ! want "${CHANGED_GATEWAY:-false}"; then
+    echo "[ci-hot] 无匹配变更，跳过部署"
+    exit 0
+  fi
+  echo "[ci-hot] MW 安全栈已串行部署"
 fi
 
 FAIL=0
