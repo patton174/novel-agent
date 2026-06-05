@@ -1,6 +1,7 @@
 import { getAuthHeaders } from '../utils/auth'
 import { ensureCryptoReady } from './sessionBootstrap'
-import { ensureCryptoManifest, isRouteObfuscationEnabled, resolveObfuscatedUrl } from './cryptoManifest'
+import { isRouteObfuscationEnabled } from './cryptoManifest'
+import { buildEncryptedRouteUrl } from './routePathCrypto'
 import { wrapFieldPayload, isFieldEncryptionEnabled } from './fieldPayload'
 import { getActiveCryptoMaterial } from './cryptoMaterial'
 import { ensureCryptoRuntime, invalidateCryptoRuntime, isCryptoStaleError } from './cryptoRuntime'
@@ -23,9 +24,6 @@ async function buildRequest(
 
   if (isSecurityCryptoEnabled()) {
     await ensureCryptoRuntime(false)
-    if (isRouteObfuscationEnabled()) {
-      await ensureCryptoManifest()
-    }
     if (mayNeedCrypto) {
       await ensureCryptoReady()
     }
@@ -33,8 +31,7 @@ async function buildRequest(
 
   let fetchUrl = logicalUrl
   if (isRouteObfuscationEnabled()) {
-    const manifest = await ensureCryptoManifest()
-    fetchUrl = resolveObfuscatedUrl(logicalUrl, method, manifest)
+    fetchUrl = await buildEncryptedRouteUrl(logicalUrl, method)
   }
 
   const headers: Record<string, string> = {

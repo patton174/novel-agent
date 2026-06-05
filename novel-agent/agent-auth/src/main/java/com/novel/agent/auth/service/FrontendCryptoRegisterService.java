@@ -22,22 +22,20 @@ public class FrontendCryptoRegisterService {
 
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
-    private final CryptoManifestService cryptoManifestService;
 
     public FrontendCryptoRegisterService(
         StringRedisTemplate redisTemplate,
-        ObjectMapper objectMapper,
-        CryptoManifestService cryptoManifestService
+        ObjectMapper objectMapper
     ) {
         this.redisTemplate = redisTemplate;
         this.objectMapper = objectMapper;
-        this.cryptoManifestService = cryptoManifestService;
     }
 
     public CryptoRuntimeView registerFromFrontendServer(String hostLabel, long ttlSeconds) {
         long ttl = ttlSeconds > 0 ? ttlSeconds : 86400L * 2;
         String kid = "bf_" + UUID.randomUUID().toString().replace("-", "").substring(0, 16);
         String aesKeyB64 = AesGcmCodec.randomKeyBase64();
+        String apiPathPrefix = "g/" + UUID.randomUUID().toString().replace("-", "").substring(0, 8);
         long version = Instant.now().getEpochSecond();
         long expiresAt = Instant.now().plusSeconds(ttl).toEpochMilli();
 
@@ -52,7 +50,7 @@ public class FrontendCryptoRegisterService {
             aesKeyB64,
             version,
             expiresAt,
-            cryptoManifestService.current().map(CryptoManifestService.CryptoManifestView::version).orElse(0L),
+            apiPathPrefix,
             hostLabel == null ? "worker" : hostLabel
         );
 
@@ -88,7 +86,7 @@ public class FrontendCryptoRegisterService {
         String aesKeyB64,
         long version,
         long expiresAtEpochMs,
-        long manifestVersion,
+        String apiPathPrefix,
         String registeredBy
     ) {
     }

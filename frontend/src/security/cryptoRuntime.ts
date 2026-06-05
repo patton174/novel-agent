@@ -5,7 +5,8 @@ export interface CryptoRuntimeConfig {
   aesKeyB64: string
   version: number
   expiresAtEpochMs: number
-  manifestVersion?: number
+  /** 动态 API 入口前缀，如 g/x7k2m9q1（每日 Worker 注册轮换） */
+  apiPathPrefix?: string
   registeredBy?: string
 }
 

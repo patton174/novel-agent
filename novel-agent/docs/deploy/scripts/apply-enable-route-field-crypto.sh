@@ -36,20 +36,17 @@ fi
 echo "[0e] 0/5 — 同步 internal service key ..."
 bash "$SCRIPT_DIR/ensure-internal-service-key.sh"
 
-echo "[0e] 1/5 — 生成 manifest ..."
-python "$REPO_ROOT/novel-agent/scripts/generate_crypto_manifest.py"
-
-echo "[0e] 2/5 — 部署 gateway + auth ..."
+echo "[0e] 1/4 — 部署 gateway + auth ..."
 bash "$SCRIPT_DIR/deploy-fast.sh" gateway mw
 bash "$SCRIPT_DIR/deploy-fast.sh" auth mw
 
-echo "[0e] 3/5 — 部署前端（VITE_ROUTE_OBFUSCATION=true VITE_FIELD_ENCRYPTION=true）..."
+echo "[0e] 2/4 — 部署前端（VITE_ROUTE_OBFUSCATION=true VITE_FIELD_ENCRYPTION=true）..."
 export VITE_SECURITY_AES=true
 export VITE_ROUTE_OBFUSCATION=true
 export VITE_FIELD_ENCRYPTION=true
 bash "$SCRIPT_DIR/deploy-fast.sh" frontend worker
 
-echo "[0e] 4/5 — 发布 Nacos（route-obfuscation + field-encryption=true）..."
+echo "[0e] 3/4 — 发布 Nacos（route-obfuscation + field-encryption=true）..."
 NACOS_RENDER="$DEPLOY_DIR/nacos-split-rendered-0e"
 rm -rf "$NACOS_RENDER" && mkdir -p "$NACOS_RENDER"
 for f in "$DEPLOY_DIR/nacos-split"/*.yaml; do
@@ -72,6 +69,6 @@ export NACOS_AUTH_IDENTITY_VALUE="${NACOS_AUTH_IDENTITY_VALUE:?}"
 export SPRING_PROFILES_ACTIVE="${SPRING_PROFILES_ACTIVE:-dev}"
 python "$REPO_ROOT/novel-agent/scripts/publish_nacos_config.py"
 
-echo "[0e] 5/5 — Nacos 已发布（Gateway refresh-enabled + @RefreshScope，无需 restart）"
+echo "[0e] 4/4 — Nacos 已发布；Worker register 写入 crypto-runtime（含 apiPathPrefix）"
 bash "$SCRIPT_DIR/install-crypto-register-cron.sh"
 echo "[0e] 完成。密钥/manifest 轮换走 Redis 热读；Worker cron 只更新 Worker env + runtime.json。"

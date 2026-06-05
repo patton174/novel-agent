@@ -35,7 +35,7 @@ async function importAesKey(aesKeyB64: string): Promise<CryptoKey> {
 }
 
 /** iv+ct 合并 base64，与 Java AesGcmCodec.encryptToBase64 对齐 */
-async function encryptFieldPartWithKey(plaintext: string, aesKeyB64: string): Promise<string> {
+export async function encryptFieldPartWithKey(plaintext: string, aesKeyB64: string): Promise<string> {
   const key = await importAesKey(aesKeyB64)
   const iv = crypto.getRandomValues(new Uint8Array(12))
   const ciphertext = await crypto.subtle.encrypt(
