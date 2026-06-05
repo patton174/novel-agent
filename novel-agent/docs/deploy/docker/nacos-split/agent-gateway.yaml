@@ -41,7 +41,7 @@ spring:
 auth:
   jwt:
     issuer: novel-agent
-    secret: ${JWT_SECRET:YOUR_JWT_SECRET_MIN_32_CHARS}
+    secret: ${JWT_SECRET:novel-agent-dev-secret-change-in-production-32}
     access-ttl-seconds: 3600
   client-security:
     enabled: false

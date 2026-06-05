@@ -39,16 +39,16 @@
 
 见 spec 第 8 节（PG Run 表、MQ、Worker、Redis session 退役）。
 
-## Phase 1 — PG 表 + Content API（进行中）
+## Phase 1 — PG 表 + Content API
 
 - [x] JPA Entity：`agent_session/message/run/event/checkpoint/command`
 - [x] `AgentRunStateMachine` + `AgentRunService`（lease / transition / events / commands）
 - [x] Internal API `/internal/agent/**`（`X-Internal-Service-Key`）
 - [x] Public API `/api/content/agent/runs/**`、`active-run`
 - [x] Redis→PG 双写开关 `agent.runtime.pg-session-dual-write`
-- [ ] PyAI 全量 queued 模式（Phase 3 Worker 接管执行）
+- [ ] PyAI 全量 queued 模式（需 Nacos `agent.runtime.mode=queued` 已发布 + 验收）
 
-## Phase 2 — 事件管道（进行中）
+## Phase 2 — 事件管道
 
 - [x] MQ Topic：`AGENT_RUN_DISPATCH` / `AGENT_RUN_EVENTS` / `AGENT_RUN_COMMAND`
 - [x] Consumer：`AgentRunEventsListener` 落库 + Redis `run:live:{runId}` pub
@@ -58,5 +58,15 @@
 
 ## Phase 3 — 队列 + 无状态 Worker
 
-- [ ] Python slice + checkpoint Worker 消费 dispatch
-- [ ] 下线内存 RunSession / AgentRunRegistry
+- [x] Python slice + checkpoint Worker（`python-ai/app/agent_step/worker/`）
+- [x] Consumer `AgentRunDispatchListener` → Python Worker
+- [x] PyAI queued 模式代码路径（`PgRunStreamService` / `RunWorkerContextStore`）
+- [ ] 线上 Nacos queued 配置稳定发布 + E2E 验收
+- [ ] 下线内存 RunSession / AgentRunRegistry（legacy 双轨仍保留）
+
+## 线上部署状态（2026-06-05）
+
+- [x] 前端 JWT 安全客户端 + CI 热部署
+- [x] MW auth/gateway JWT 版 jar（需 `JWT_SECRET` ≥32 字符，见 `apply-mw-jwt-env.sh`）
+- [x] Worker content/pyai/consumer/python-ai Phase3 手动部署过
+- [ ] CI 全绿 + 登录/Agent 流 E2E 通过

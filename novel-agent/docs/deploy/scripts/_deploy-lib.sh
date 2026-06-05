@@ -120,7 +120,7 @@ for i in \$(seq 1 $max_attempts); do
     -X POST "http://127.0.0.1:${port}/api/auth/login" \
     -H 'Content-Type: application/json' \
     -d '{"username":"_probe","password":"_probe"}' 2>/dev/null || echo 000)
-  if [[ "\$code" != "000" ]]; then
+  if [[ "\$code" =~ ^[0-9]{3}\$ && "\$code" != "000" ]]; then
     echo "[deploy] ${label} :${port} ready (probe HTTP \$code, attempt \$i)"
     ok=1
     break
