@@ -62,7 +62,7 @@ public class AuthDashboardBiz extends BaseBiz {
             novel.getId(),
             novel.getTitle(),
             lastChapterId,
-            novel.getUpdatedAt()
+            novel.getUpdatedAt().toEpochMilli()
         );
     }
 }
