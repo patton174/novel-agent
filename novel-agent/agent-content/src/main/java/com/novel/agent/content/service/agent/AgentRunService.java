@@ -5,6 +5,8 @@ import com.novel.agent.content.agent.AgentRunStatus;
 import com.novel.agent.content.config.AgentRuntimeProperties;
 import com.novel.agent.content.dto.agent.*;
 import com.novel.agent.content.entity.agent.*;
+import com.novel.agent.common.core.tools.IdWorker;
+import com.novel.agent.content.support.ContentExceptions;
 import com.novel.agent.content.repository.agent.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -12,7 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -29,9 +30,9 @@ public class AgentRunService {
 
     @Transactional
     public AgentRunDTO createRun(CreateAgentRunRequest request) {
-        String runId = blankOr(request.getRunId(), "run_" + UUID.randomUUID());
-        String userMessageId = blankOr(request.getUserMessageId(), "message_" + UUID.randomUUID());
-        String assistantMessageId = blankOr(request.getAssistantMessageId(), "message_" + UUID.randomUUID());
+        String runId = blankOr(request.getRunId(), IdWorker.prefixed("run_"));
+        String userMessageId = blankOr(request.getUserMessageId(), IdWorker.prefixed("message_"));
+        String assistantMessageId = blankOr(request.getAssistantMessageId(), IdWorker.prefixed("message_"));
 
         sessionPgService.upsertSession(request.getUserId(), request.getSessionId(), "新对话", null);
         sessionPgService.appendMessage(
@@ -88,7 +89,7 @@ public class AgentRunService {
     @Transactional
     public AgentRunDTO transition(String runId, TransitionAgentRunRequest request) {
         AgentRunEntity run = runRepository.findById(runId)
-            .orElseThrow(() -> new IllegalArgumentException("run not found"));
+            .orElseThrow(ContentExceptions::agentRunNotFound);
         AgentRunStatus target = request.getStatus();
         stateMachine.assertTransition(run.getStatus(), target);
         run.setStatus(target);
@@ -190,10 +191,10 @@ public class AgentRunService {
             }
         }
         AgentRunEntity run = runRepository.findById(runId)
-            .orElseThrow(() -> new IllegalArgumentException("run not found"));
+            .orElseThrow(ContentExceptions::agentRunNotFound);
         int sequence = eventRepository.countByRunId(runId);
         AgentRunEventEntity event = new AgentRunEventEntity();
-        event.setId(blankOr(request.getEventId(), "evt_" + UUID.randomUUID()));
+        event.setId(blankOr(request.getEventId(), IdWorker.prefixed("evt_")));
         event.setRunId(runId);
         event.setSessionId(run.getSessionId());
         event.setSequence(sequence);
@@ -216,7 +217,7 @@ public class AgentRunService {
     @Transactional
     public AgentCommandDTO recordCommand(String runId, RecordAgentCommandRequest request) {
         if (request.getCommandId() == null || request.getCommandId().isBlank()) {
-            throw new IllegalArgumentException("commandId required");
+            throw ContentExceptions.commandIdRequired();
         }
         var existing = commandRepository.findByRunIdAndId(runId, request.getCommandId());
         if (existing.isPresent()) {

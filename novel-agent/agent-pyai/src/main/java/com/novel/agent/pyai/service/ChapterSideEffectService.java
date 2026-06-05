@@ -1,8 +1,10 @@
 package com.novel.agent.pyai.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.novel.agent.common.core.enums.ResultCode;
+import com.novel.agent.common.core.exception.BizException;
 import com.novel.agent.pyai.support.BlockingWebSupport;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
@@ -17,11 +19,11 @@ public class ChapterSideEffectService {
     private final BlockingWebSupport blockingWebSupport;
 
     public ChapterSideEffectService(
-        @Value("${agent.content.base-url:http://127.0.0.1:8091}") String contentBaseUrl,
+        @Qualifier("contentWebClient") WebClient contentClient,
         ObjectMapper objectMapper,
         BlockingWebSupport blockingWebSupport
     ) {
-        this.contentClient = WebClient.builder().baseUrl(contentBaseUrl).build();
+        this.contentClient = contentClient;
         this.objectMapper = objectMapper;
         this.blockingWebSupport = blockingWebSupport;
     }
@@ -76,7 +78,10 @@ public class ChapterSideEffectService {
             } else if (novelId != null && !novelId.isBlank()) {
                 postChapter(userHeader, novelId, body);
             } else {
-                throw new IllegalStateException(formatPersistMessage(write, "chapter_write missing novel context"));
+                throw BizException.of(
+                    ResultCode.BAD_REQUEST,
+                    formatPersistMessage(write, "chapter_write missing novel context")
+                );
             }
         } catch (WebClientResponseException ex) {
             throw formatPersistException(write, ex);
@@ -85,7 +90,7 @@ public class ChapterSideEffectService {
     }
 
     private RuntimeException formatPersistException(Map<String, Object> write, Exception ex) {
-        return new IllegalStateException(formatPersistMessage(write, ex.getMessage()), ex);
+        return BizException.of(ResultCode.ERROR, formatPersistMessage(write, ex.getMessage()));
     }
 
     /** AI-facing error: which chapter (title vs list index) failed. */
@@ -106,7 +111,7 @@ public class ChapterSideEffectService {
 
     private void putChapter(String userHeader, String chapterId, Map<String, Object> body) {
         blockingWebSupport.call(() -> contentClient.put()
-            .uri("/api/content/chapters/{chapterId}", chapterId)
+            .uri("/api/content/auth/chapters/{chapterId}", chapterId)
             .header("X-User-Id", userHeader)
             .header("X-Edit-Source", "ai")
             .bodyValue(body)
@@ -117,7 +122,7 @@ public class ChapterSideEffectService {
 
     private void postChapter(String userHeader, String novelId, Map<String, Object> body) {
         blockingWebSupport.call(() -> contentClient.post()
-            .uri("/api/content/novels/{novelId}/chapters", novelId)
+            .uri("/api/content/auth/novels/{novelId}/chapters", novelId)
             .header("X-User-Id", userHeader)
             .bodyValue(body)
             .retrieve()

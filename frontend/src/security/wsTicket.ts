@@ -1,5 +1,6 @@
 import { DIRECT_PYTHON } from '../config/runtime'
 import { getAuthHeaders } from '../utils/auth'
+import { parseResultResponse } from '../utils/resultApi'
 import { secureFetch } from './secureFetch'
 
 export interface WsTicketResult {
@@ -15,7 +16,7 @@ export async function fetchWsTicket(params: {
   if (DIRECT_PYTHON) {
     return null
   }
-  const response = await secureFetch('/api/auth/ws-ticket', {
+  const response = await secureFetch('/api/auth/auth/ws-ticket', {
     method: 'POST',
     credentials: 'include',
     headers: {
@@ -31,5 +32,5 @@ export async function fetchWsTicket(params: {
   if (!response.ok) {
     return null
   }
-  return (await response.json()) as WsTicketResult
+  return parseResultResponse<WsTicketResult>(response)
 }

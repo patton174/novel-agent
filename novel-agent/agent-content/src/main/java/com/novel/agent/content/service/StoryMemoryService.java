@@ -9,15 +9,16 @@ import com.novel.agent.content.entity.NovelStoryMemoryEntity;
 import com.novel.agent.content.entity.StoryMemoryEntity;
 import com.novel.agent.content.repository.NovelRepository;
 import com.novel.agent.content.repository.NovelStoryMemoryRepository;
+import com.novel.agent.common.core.enums.ResultCode;
+import com.novel.agent.common.core.exception.BizException;
 import com.novel.agent.content.repository.StoryMemoryRepository;
+import com.novel.agent.content.support.ContentExceptions;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -222,7 +223,7 @@ public class StoryMemoryService {
             log.debug("小说记忆已落 PostgreSQL userId={}, novelId={}", uid, novelId);
         } catch (Exception ex) {
             log.error("小说记忆落 PostgreSQL 失败 userId={}, novelId={}", uid, novelId, ex);
-            throw new IllegalStateException("persist novel story memory failed", ex);
+            throw BizException.of(ResultCode.ERROR, "persist novel story memory failed");
         }
     }
 
@@ -274,7 +275,7 @@ public class StoryMemoryService {
             log.debug("故事记忆已落 PostgreSQL userId={}, sessionId={}", uid, sessionId);
         } catch (Exception ex) {
             log.error("故事记忆落 PostgreSQL 失败 userId={}, sessionId={}", uid, sessionId, ex);
-            throw new IllegalStateException("persist story memory failed", ex);
+            throw BizException.of(ResultCode.ERROR, "persist story memory failed");
         }
     }
 
@@ -591,10 +592,10 @@ public class StoryMemoryService {
     private void assertNovelOwned(String userId, String novelId) {
         Long uid = parseUserId(userId);
         if (uid == null || novelId == null || novelId.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "invalid user/novel");
+            throw ContentExceptions.badRequest(ResultCode.CONTENT_INVALID_OWNER, "invalid user/novel");
         }
         novelRepository.findByIdAndUserId(novelId, uid)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "小说不存在"));
+            .orElseThrow(ContentExceptions::novelNotFound);
     }
 
     private static boolean isMemoryEmpty(Map<String, Object> memory) {
@@ -672,7 +673,7 @@ public class StoryMemoryService {
             Map<String, Object> characters = (Map<String, Object>) memory.computeIfAbsent("characters", k -> new LinkedHashMap<>());
             String id = itemId == null || itemId.isBlank() ? "" : itemId.trim();
             if (id.isBlank()) {
-                throw new IllegalArgumentException("item_id required for character scope");
+                throw ContentExceptions.badRequest("item_id required for character scope");
             }
             return (Map<String, Object>) characters.computeIfAbsent(id, k -> new LinkedHashMap<>());
         }
@@ -680,7 +681,7 @@ public class StoryMemoryService {
             Map<String, Object> chapters = (Map<String, Object>) memory.computeIfAbsent("chapters", k -> new LinkedHashMap<>());
             String id = itemId == null || itemId.isBlank() ? "" : itemId.trim();
             if (id.isBlank()) {
-                throw new IllegalArgumentException("item_id required for chapter scope");
+                throw ContentExceptions.badRequest("item_id required for chapter scope");
             }
             return (Map<String, Object>) chapters.computeIfAbsent(id, k -> new LinkedHashMap<>());
         }
@@ -798,10 +799,7 @@ public class StoryMemoryService {
     ) {
         String scopeNorm = normalizeScope(scope);
         if (!isValidScope(scopeNorm)) {
-            throw new ResponseStatusException(
-                HttpStatus.BAD_REQUEST,
-                "unsupported scope: " + scope
-            );
+            throw ContentExceptions.badRequest(ResultCode.CONTENT_SCOPE_INVALID, "unsupported scope: " + scope);
         }
         String formatted = StoryMemoryAgentReadFormatter.format(memory, scope, key, itemId);
         String entryKey = resolveMemoryEntryKey(scopeNorm, key, itemId);

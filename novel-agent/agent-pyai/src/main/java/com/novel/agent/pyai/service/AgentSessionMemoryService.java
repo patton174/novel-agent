@@ -1,6 +1,7 @@
 package com.novel.agent.pyai.service;
 
-import org.springframework.beans.factory.annotation.Value;
+import com.novel.agent.common.core.support.ResultJsonSupport;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.core.ParameterizedTypeReference;
@@ -20,9 +21,9 @@ public class AgentSessionMemoryService {
     private final WebClient contentClient;
 
     public AgentSessionMemoryService(
-        @Value("${agent.content.base-url:http://127.0.0.1:8091}") String contentBaseUrl
+        @Qualifier("contentWebClient") WebClient contentClient
     ) {
-        this.contentClient = WebClient.builder().baseUrl(contentBaseUrl).build();
+        this.contentClient = contentClient;
     }
 
     public List<HistoryTurn> loadHistory(Long userId, String sessionId, int limit) {
@@ -38,16 +39,17 @@ public class AgentSessionMemoryService {
 
     private List<HistoryTurn> loadHistoryBlocking(Long userId, String sessionId, int limit) {
         int effectiveLimit = limit > 0 ? limit : DEFAULT_LIMIT;
-        List<Map<String, Object>> items = contentClient.get()
-            .uri(uriBuilder -> uriBuilder.path("/api/content/sessions/{sessionId}/messages")
+        Map<String, Object> itemsBody = contentClient.get()
+            .uri(uriBuilder -> uriBuilder.path("/api/content/auth/sessions/{sessionId}/messages")
                 .queryParam("limit", effectiveLimit)
                 .build(sessionId))
             .accept(MediaType.APPLICATION_JSON)
             .header("X-User-Id", Long.toString(userId))
             .retrieve()
-            .bodyToMono(new ParameterizedTypeReference<List<Map<String, Object>>>() {})
+            .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
             .timeout(HTTP_TIMEOUT)
             .block();
+        List<Map<String, Object>> items = itemsBody == null ? null : ResultJsonSupport.unwrap(itemsBody);
         if (items == null || items.isEmpty()) {
             return List.of();
         }
@@ -67,7 +69,7 @@ public class AgentSessionMemoryService {
         }
         try {
             Map<String, Object> body = contentClient.get()
-                .uri("/api/content/sessions/{sessionId}", sessionId)
+                .uri("/api/content/auth/sessions/{sessionId}", sessionId)
                 .accept(MediaType.APPLICATION_JSON)
                 .header("X-User-Id", Long.toString(userId))
                 .retrieve()
@@ -77,7 +79,8 @@ public class AgentSessionMemoryService {
             if (body == null) {
                 return "新对话";
             }
-            Object title = body.get("title");
+            Map<String, Object> session = ResultJsonSupport.unwrap(body);
+            Object title = session.get("title");
             return title == null ? "新对话" : String.valueOf(title).trim();
         } catch (Exception ex) {
             return "新对话";
@@ -96,14 +99,15 @@ public class AgentSessionMemoryService {
     }
 
     private boolean isSessionOwnedByUserBlocking(Long userId, String sessionId) {
-        List<Map<String, Object>> sessions = contentClient.get()
-            .uri(uriBuilder -> uriBuilder.path("/api/content/sessions").queryParam("limit", 200).build())
+        Map<String, Object> sessionsBody = contentClient.get()
+            .uri(uriBuilder -> uriBuilder.path("/api/content/auth/sessions").queryParam("limit", 200).build())
             .accept(MediaType.APPLICATION_JSON)
             .header("X-User-Id", Long.toString(userId))
             .retrieve()
-            .bodyToMono(new ParameterizedTypeReference<List<Map<String, Object>>>() {})
+            .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
             .timeout(HTTP_TIMEOUT)
             .block();
+        List<Map<String, Object>> sessions = sessionsBody == null ? null : ResultJsonSupport.unwrap(sessionsBody);
         if (sessions == null) {
             return false;
         }
@@ -124,7 +128,7 @@ public class AgentSessionMemoryService {
     private void ensureSessionBlocking(Long userId, String sessionId, String seedTitle) {
         String title = inferTitle(seedTitle);
         contentClient.post()
-            .uri("/api/content/sessions/upsert")
+            .uri("/api/content/auth/sessions/upsert")
             .contentType(MediaType.APPLICATION_JSON)
             .header("X-User-Id", Long.toString(userId))
             .bodyValue(Map.of("sessionId", sessionId, "title", title))

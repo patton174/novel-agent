@@ -2,6 +2,7 @@ package com.novel.agent.auth.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.novel.agent.auth.support.AuthExceptions;
 import com.novel.agent.common.security.AesGcmCodec;
 import com.novel.agent.common.security.SecurityRedisKeys;
 import lombok.extern.slf4j.Slf4j;
@@ -61,7 +62,7 @@ public class FrontendCryptoRegisterService {
                 Duration.ofSeconds(ttl)
             );
         } catch (JsonProcessingException ex) {
-            throw new IllegalStateException(ex);
+            throw AuthExceptions.internalError("加密配置写入失败");
         }
 
         log.info("frontend crypto registered kid={} version={} host={}", kid, version, hostLabel);

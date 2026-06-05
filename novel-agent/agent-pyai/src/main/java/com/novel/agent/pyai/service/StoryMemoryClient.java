@@ -2,9 +2,10 @@ package com.novel.agent.pyai.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.novel.agent.common.core.support.ResultJsonSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -26,10 +27,10 @@ public class StoryMemoryClient {
 
     public StoryMemoryClient(
         ObjectMapper objectMapper,
-        @Value("${agent.content.base-url:http://127.0.0.1:8091}") String contentBaseUrl
+        @Qualifier("contentWebClient") WebClient contentClient
     ) {
         this.objectMapper = objectMapper;
-        this.contentClient = WebClient.builder().baseUrl(contentBaseUrl).build();
+        this.contentClient = contentClient;
     }
 
     public Map<String, Object> loadMemory(Long userId, String novelId) {
@@ -114,26 +115,26 @@ public class StoryMemoryClient {
 
     private Map<String, Object> loadNovelMemoryBlocking(Long userId, String novelId) {
         Map<String, Object> body = contentClient.get()
-            .uri("/api/content/novels/{novelId}/story-memory", novelId)
+            .uri("/api/content/auth/novels/{novelId}/story-memory", novelId)
             .accept(MediaType.APPLICATION_JSON)
             .header("X-User-Id", Long.toString(userId))
             .retrieve()
             .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
             .timeout(HTTP_TIMEOUT)
             .block();
-        return extractMemory(body);
+        return extractMemory(ResultJsonSupport.unwrap(body));
     }
 
     private Map<String, Object> loadSessionMemoryBlocking(Long userId, String sessionId) {
         Map<String, Object> body = contentClient.get()
-            .uri("/api/content/sessions/{sessionId}/story-memory", sessionId)
+            .uri("/api/content/auth/sessions/{sessionId}/story-memory", sessionId)
             .accept(MediaType.APPLICATION_JSON)
             .header("X-User-Id", Long.toString(userId))
             .retrieve()
             .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
             .timeout(HTTP_TIMEOUT)
             .block();
-        return extractMemory(body);
+        return extractMemory(ResultJsonSupport.unwrap(body));
     }
 
     private Map<String, Object> patchNovelMemoryBlocking(
@@ -142,7 +143,7 @@ public class StoryMemoryClient {
         Map<String, Object> payload
     ) {
         Map<String, Object> body = contentClient.post()
-            .uri("/api/content/novels/{novelId}/story-memory/patch", novelId)
+            .uri("/api/content/auth/novels/{novelId}/story-memory/patch", novelId)
             .contentType(MediaType.APPLICATION_JSON)
             .accept(MediaType.APPLICATION_JSON)
             .header("X-User-Id", Long.toString(userId))
@@ -151,7 +152,7 @@ public class StoryMemoryClient {
             .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
             .timeout(HTTP_TIMEOUT)
             .block();
-        return body == null ? Map.of("ok", false, "reason", "empty response") : body;
+        return body == null ? Map.of("ok", false, "reason", "empty response") : ResultJsonSupport.unwrap(body);
     }
 
     private Map<String, Object> deleteNovelMemoryBlocking(
@@ -160,7 +161,7 @@ public class StoryMemoryClient {
         Map<String, Object> payload
     ) {
         Map<String, Object> body = contentClient.post()
-            .uri("/api/content/novels/{novelId}/story-memory/delete", novelId)
+            .uri("/api/content/auth/novels/{novelId}/story-memory/delete", novelId)
             .contentType(MediaType.APPLICATION_JSON)
             .accept(MediaType.APPLICATION_JSON)
             .header("X-User-Id", Long.toString(userId))
@@ -169,7 +170,7 @@ public class StoryMemoryClient {
             .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
             .timeout(HTTP_TIMEOUT)
             .block();
-        return body == null ? Map.of("ok", false, "reason", "empty response") : body;
+        return body == null ? Map.of("ok", false, "reason", "empty response") : ResultJsonSupport.unwrap(body);
     }
 
     private Map<String, Object> clearNovelMemoryBlocking(
@@ -178,7 +179,7 @@ public class StoryMemoryClient {
         Map<String, Object> payload
     ) {
         Map<String, Object> body = contentClient.post()
-            .uri("/api/content/novels/{novelId}/story-memory/clear", novelId)
+            .uri("/api/content/auth/novels/{novelId}/story-memory/clear", novelId)
             .contentType(MediaType.APPLICATION_JSON)
             .accept(MediaType.APPLICATION_JSON)
             .header("X-User-Id", Long.toString(userId))
@@ -187,7 +188,7 @@ public class StoryMemoryClient {
             .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
             .timeout(HTTP_TIMEOUT)
             .block();
-        return body == null ? Map.of("ok", false, "reason", "empty response") : body;
+        return body == null ? Map.of("ok", false, "reason", "empty response") : ResultJsonSupport.unwrap(body);
     }
 
     private Map<String, Object> extractMemory(Map<String, Object> body) {

@@ -1,6 +1,7 @@
 package com.novel.agent.pyai.client;
 
 import com.novel.agent.pyai.config.AgentRuntimeProperties;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
@@ -15,9 +16,12 @@ public class ContentInternalClient {
     private final RestClient restClient;
     private final AgentRuntimeProperties runtimeProperties;
 
-    public ContentInternalClient(AgentRuntimeProperties runtimeProperties) {
+    public ContentInternalClient(
+        @Qualifier("contentRestClient") RestClient restClient,
+        AgentRuntimeProperties runtimeProperties
+    ) {
+        this.restClient = restClient;
         this.runtimeProperties = runtimeProperties;
-        this.restClient = RestClient.builder().baseUrl(runtimeProperties.contentBaseUrl()).build();
     }
 
     public void createRun(

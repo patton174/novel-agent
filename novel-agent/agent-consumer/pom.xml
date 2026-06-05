@@ -58,6 +58,10 @@
             <artifactId>agent-common-mq</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.novel.agent</groupId>
+            <artifactId>agent-common-security</artifactId>
+        </dependency>
 
         <!-- Lombok -->
         <dependency>

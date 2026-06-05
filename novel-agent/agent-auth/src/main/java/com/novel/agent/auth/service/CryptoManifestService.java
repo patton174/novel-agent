@@ -1,6 +1,8 @@
 package com.novel.agent.auth.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.novel.agent.common.core.enums.ResultCode;
+import com.novel.agent.common.core.exception.BizException;
 import com.novel.agent.common.security.SecurityRedisKeys;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -48,7 +50,7 @@ public class CryptoManifestService {
                 redisTemplate.opsForValue().set(SecurityRedisKeys.CRYPTO_MANIFEST_KEY, json);
             }
         } catch (Exception ex) {
-            throw new IllegalStateException("publish crypto manifest failed", ex);
+            throw BizException.of(ResultCode.ERROR, "publish crypto manifest failed");
         }
     }
 

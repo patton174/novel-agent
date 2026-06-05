@@ -9,7 +9,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.Instant;
-import java.util.UUID;
+import com.novel.agent.common.core.tools.IdWorker;
 
 @Entity
 @Table(name = "chapter_version")
@@ -45,7 +45,7 @@ public class ChapterVersionEntity {
     @PrePersist
     void onCreate() {
         if (id == null || id.isBlank()) {
-            id = UUID.randomUUID().toString();
+            id = IdWorker.nextIdStr();
         }
         if (createdAt == null) {
             createdAt = Instant.now();

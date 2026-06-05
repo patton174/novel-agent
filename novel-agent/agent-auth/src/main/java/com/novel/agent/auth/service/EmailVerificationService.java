@@ -2,6 +2,10 @@ package com.novel.agent.auth.service;
 
 import com.novel.agent.auth.config.VerificationProperties;
 import com.novel.agent.auth.repository.AuthUserRepository;
+import com.novel.agent.common.core.enums.ResultCode;
+import com.novel.agent.common.core.exception.BizException;
+import com.novel.agent.common.core.exception.TooManyRequestsException;
+import com.novel.agent.common.core.exception.ValidationException;
 import com.novel.agent.common.security.SecurityRedisKeys;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -41,7 +45,7 @@ public class EmailVerificationService {
     public void sendRegisterCode(String email, String captchaToken, String ip, String fingerprint) {
         String normalized = normalizeEmail(email);
         if (authUserRepository.existsByEmail(normalized)) {
-            throw new RuntimeException("邮箱已被注册");
+            throw BizException.of(ResultCode.AUTH_EMAIL_EXISTS);
         }
         sliderCaptchaService.consumeCaptchaToken(captchaToken);
 
@@ -50,7 +54,7 @@ public class EmailVerificationService {
 
         String cooldownKey = SecurityRedisKeys.EMAIL_COOLDOWN_PREFIX + normalized;
         if (Boolean.TRUE.equals(redisTemplate.hasKey(cooldownKey))) {
-            throw new RuntimeException("发送过于频繁，请稍后再试");
+            throw new TooManyRequestsException(ResultCode.EMAIL_SEND_TOO_FREQUENT, "发送过于频繁，请稍后再试");
         }
 
         String code = String.format("%06d", random.nextInt(1_000_000));
@@ -71,16 +75,16 @@ public class EmailVerificationService {
     public void verifyRegisterCode(String email, String code) {
         String normalized = normalizeEmail(email);
         if (code == null || !code.matches("\\d{6}")) {
-            throw new RuntimeException("验证码格式不正确");
+            throw new ValidationException(ResultCode.EMAIL_CODE_INVALID, "验证码格式不正确");
         }
         String key = SecurityRedisKeys.EMAIL_CODE_PREFIX + normalized;
         String expected = redisTemplate.opsForValue().get(key);
         if (expected == null) {
-            throw new RuntimeException("验证码已过期，请重新获取");
+            throw new ValidationException(ResultCode.EMAIL_CODE_INVALID, "验证码已过期，请重新获取");
         }
         rateLimitService.check("verify-email-code:" + normalized, normalized, 8, Duration.ofMinutes(10));
         if (!expected.equals(code.trim())) {
-            throw new RuntimeException("验证码错误");
+            throw new ValidationException(ResultCode.EMAIL_CODE_INVALID, "验证码错误");
         }
         redisTemplate.delete(key);
     }
@@ -92,7 +96,7 @@ public class EmailVerificationService {
             redisTemplate.expire(dayKey, Duration.ofDays(1));
         }
         if (count != null && count > properties.getEmailDailyLimit()) {
-            throw new RuntimeException("该邮箱今日发送次数已达上限");
+            throw new TooManyRequestsException(ResultCode.EMAIL_SEND_TOO_FREQUENT, "该邮箱今日发送次数已达上限");
         }
     }
 

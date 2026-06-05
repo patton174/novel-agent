@@ -1,5 +1,6 @@
 package com.novel.agent.content.agent;
 
+import com.novel.agent.content.support.ContentExceptions;
 import org.springframework.stereotype.Component;
 
 import java.util.EnumSet;
@@ -30,7 +31,7 @@ public class AgentRunStateMachine {
         }
         Set<AgentRunStatus> allowed = TRANSITIONS.getOrDefault(from, Set.of());
         if (!allowed.contains(to)) {
-            throw new IllegalStateException("非法 Run 状态迁移: " + from + " -> " + to);
+            throw ContentExceptions.agentRunTransitionInvalid(from, to);
         }
     }
 

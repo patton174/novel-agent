@@ -5,11 +5,10 @@ import com.novel.agent.content.dto.NovelDTO;
 import com.novel.agent.content.dto.UpdateNovelRequest;
 import com.novel.agent.content.entity.NovelEntity;
 import com.novel.agent.content.repository.NovelRepository;
+import com.novel.agent.content.support.ContentExceptions;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -76,7 +75,7 @@ public class NovelService {
 
     private NovelEntity findOwned(Long userId, String novelId) {
         return novelRepository.findByIdAndUserId(novelId, userId)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "小说不存在"));
+            .orElseThrow(ContentExceptions::novelNotFound);
     }
 
     private NovelDTO toDto(NovelEntity entity) {

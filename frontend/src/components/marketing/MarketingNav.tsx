@@ -60,13 +60,13 @@ const NavPrimaryBtn = styled(Link)`
   border-radius: 999px;
   font-size: 0.88rem;
   font-weight: 600;
-  color: ${cursorTheme.cardElevated};
-  background: ${cursorTheme.text};
+  color: ${cursorTheme.accentText};
+  background: ${cursorTheme.accent};
   text-decoration: none;
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  transition: background 0.15s ease, transform 0.15s ease;
 
   &:hover {
-    opacity: 0.92;
+    background: ${cursorTheme.accentHover};
     transform: translateY(-1px);
   }
 `

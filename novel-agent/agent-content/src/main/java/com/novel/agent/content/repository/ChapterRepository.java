@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -43,4 +44,23 @@ public interface ChapterRepository extends JpaRepository<ChapterEntity, String> 
         @Param("novelId") String novelId,
         @Param("query") String query
     );
+
+    Optional<ChapterEntity> findFirstByNovelIdOrderByUpdatedAtDesc(String novelId);
+
+    @Query("""
+        SELECT COUNT(c) FROM ChapterEntity c
+        JOIN NovelEntity n ON c.novelId = n.id
+        WHERE n.userId = :userId
+        """)
+    long countByUserId(@Param("userId") Long userId);
+
+    @Query("""
+        SELECT COALESCE(SUM(COALESCE(c.wordCount, 0)), 0) FROM ChapterEntity c
+        JOIN NovelEntity n ON c.novelId = n.id
+        WHERE n.userId = :userId AND c.updatedAt >= :since
+        """)
+    long sumWordCountByUserIdSince(@Param("userId") Long userId, @Param("since") Instant since);
+
+    @Query("SELECT COUNT(c) FROM ChapterEntity c")
+    long countAll();
 }

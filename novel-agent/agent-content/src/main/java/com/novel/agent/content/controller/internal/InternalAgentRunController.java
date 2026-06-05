@@ -1,8 +1,8 @@
 package com.novel.agent.content.controller.internal;
 
+import com.novel.agent.common.service.BaseController;
 import com.novel.agent.content.dto.agent.*;
-import com.novel.agent.content.service.agent.AgentRunService;
-import com.novel.agent.content.service.agent.AgentSessionPgService;
+import com.novel.agent.content.service.internal.InternalAgentRunBiz;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -13,58 +13,44 @@ import java.util.Map;
 @RestController
 @RequestMapping("/internal/agent")
 @RequiredArgsConstructor
-public class InternalAgentRunController {
+public class InternalAgentRunController extends BaseController {
 
-    private final AgentRunService agentRunService;
-    private final AgentSessionPgService agentSessionPgService;
+    private final InternalAgentRunBiz biz;
 
     @PostMapping("/runs")
     public AgentRunDTO createRun(@RequestBody CreateAgentRunRequest request) {
-        return agentRunService.createRun(request);
+        return biz.createRun(request);
     }
 
     @GetMapping("/runs/{runId}")
     public ResponseEntity<AgentRunDTO> getRun(@PathVariable String runId) {
-        AgentRunDTO run = agentRunService.getRun(runId);
-        return run == null ? ResponseEntity.notFound().build() : ResponseEntity.ok(run);
+        return biz.getRun(runId);
     }
 
     @PostMapping("/runs/{runId}/transition")
     public AgentRunDTO transition(@PathVariable String runId, @RequestBody TransitionAgentRunRequest request) {
-        return agentRunService.transition(runId, request);
+        return biz.transition(runId, request);
     }
 
     @PostMapping("/runs/{runId}/lease")
-    public AgentRunLeaseDTO lease(
-        @PathVariable String runId,
-        @RequestBody AgentRunLeaseRequest request
-    ) {
-        return agentRunService.tryLease(runId, request.getWorkerId());
+    public AgentRunLeaseDTO lease(@PathVariable String runId, @RequestBody AgentRunLeaseRequest request) {
+        return biz.lease(runId, request);
     }
 
     @PostMapping("/runs/{runId}/lease/renew")
-    public AgentRunLeaseDTO renewLease(
-        @PathVariable String runId,
-        @RequestBody AgentRunLeaseRequest request
-    ) {
-        return agentRunService.renewLease(runId, request.getWorkerId());
+    public AgentRunLeaseDTO renewLease(@PathVariable String runId, @RequestBody AgentRunLeaseRequest request) {
+        return biz.renewLease(runId, request);
     }
 
     @DeleteMapping("/runs/{runId}/lease")
-    public ResponseEntity<Void> releaseLease(
-        @PathVariable String runId,
-        @RequestParam String workerId
-    ) {
-        agentRunService.releaseLease(runId, workerId);
+    public ResponseEntity<Void> releaseLease(@PathVariable String runId, @RequestParam String workerId) {
+        biz.releaseLease(runId, workerId);
         return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/runs/{runId}/events")
-    public AgentEventDTO appendEvent(
-        @PathVariable String runId,
-        @RequestBody AppendAgentEventRequest request
-    ) {
-        return agentRunService.appendEvent(runId, request);
+    public AgentEventDTO appendEvent(@PathVariable String runId, @RequestBody AppendAgentEventRequest request) {
+        return biz.appendEvent(runId, request);
     }
 
     @GetMapping("/runs/{runId}/events")
@@ -72,60 +58,32 @@ public class InternalAgentRunController {
         @PathVariable String runId,
         @RequestParam(name = "after_sequence", defaultValue = "-1") int afterSequence
     ) {
-        return agentRunService.listEvents(runId, afterSequence);
+        return biz.listEvents(runId, afterSequence);
     }
 
     @PostMapping("/runs/{runId}/commands")
-    public AgentCommandDTO recordCommand(
-        @PathVariable String runId,
-        @RequestBody RecordAgentCommandRequest request
-    ) {
-        return agentRunService.recordCommand(runId, request);
+    public AgentCommandDTO recordCommand(@PathVariable String runId, @RequestBody RecordAgentCommandRequest request) {
+        return biz.recordCommand(runId, request);
     }
 
     @GetMapping("/runs/{runId}/checkpoint")
     public ResponseEntity<AgentCheckpointDTO> getCheckpoint(@PathVariable String runId) {
-        AgentCheckpointDTO dto = agentRunService.getCheckpoint(runId);
-        return dto == null ? ResponseEntity.notFound().build() : ResponseEntity.ok(dto);
+        return biz.getCheckpoint(runId);
     }
 
     @PutMapping("/runs/{runId}/checkpoint")
-    public AgentCheckpointDTO upsertCheckpoint(
-        @PathVariable String runId,
-        @RequestBody UpsertAgentCheckpointRequest request
-    ) {
-        return agentRunService.upsertCheckpoint(runId, request);
+    public AgentCheckpointDTO upsertCheckpoint(@PathVariable String runId, @RequestBody UpsertAgentCheckpointRequest request) {
+        return biz.upsertCheckpoint(runId, request);
     }
 
     @GetMapping("/runs/{runId}/commands/{commandId}")
-    public ResponseEntity<AgentCommandDTO> getCommand(
-        @PathVariable String runId,
-        @PathVariable String commandId
-    ) {
-        AgentCommandDTO cmd = agentRunService.getCommand(runId, commandId);
-        return cmd == null ? ResponseEntity.notFound().build() : ResponseEntity.ok(cmd);
+    public ResponseEntity<AgentCommandDTO> getCommand(@PathVariable String runId, @PathVariable String commandId) {
+        return biz.getCommand(runId, commandId);
     }
 
     @PostMapping("/sessions/{sessionId}/upsert")
-    public ResponseEntity<Void> upsertSession(
-        @PathVariable String sessionId,
-        @RequestBody Map<String, Object> body
-    ) {
-        Long userId = longVal(body.get("userId"));
-        String title = stringVal(body.get("title"));
-        String novelId = stringVal(body.get("novelId"));
-        agentSessionPgService.upsertSession(userId, sessionId, title, novelId);
+    public ResponseEntity<Void> upsertSession(@PathVariable String sessionId, @RequestBody Map<String, Object> body) {
+        biz.upsertSession(sessionId, body);
         return ResponseEntity.noContent().build();
-    }
-
-    private static Long longVal(Object raw) {
-        if (raw == null) {
-            return null;
-        }
-        return Long.parseLong(String.valueOf(raw));
-    }
-
-    private static String stringVal(Object raw) {
-        return raw == null ? null : String.valueOf(raw);
     }
 }

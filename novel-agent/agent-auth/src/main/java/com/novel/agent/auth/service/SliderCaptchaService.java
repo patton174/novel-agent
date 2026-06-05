@@ -2,6 +2,8 @@ package com.novel.agent.auth.service;
 
 import com.novel.agent.auth.config.VerificationProperties;
 import com.novel.agent.auth.dto.SliderCaptchaChallengeResponse;
+import com.novel.agent.common.core.enums.ResultCode;
+import com.novel.agent.common.core.exception.ValidationException;
 import com.novel.agent.common.security.SecurityRedisKeys;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -79,17 +81,17 @@ public class SliderCaptchaService {
 
     public String verifyAndIssueToken(String captchaId, int offsetX) {
         if (captchaId == null || captchaId.isBlank()) {
-            throw new RuntimeException("验证码无效");
+            throw new ValidationException(ResultCode.CAPTCHA_INVALID, "验证码无效");
         }
         String key = SecurityRedisKeys.CAPTCHA_CHALLENGE_PREFIX + captchaId;
         String raw = redisTemplate.opsForValue().get(key);
         if (raw == null) {
-            throw new RuntimeException("验证码已过期，请刷新");
+            throw new ValidationException(ResultCode.CAPTCHA_INVALID, "验证码已过期，请刷新");
         }
         redisTemplate.delete(key);
         int targetX = Integer.parseInt(raw.trim());
         if (Math.abs(offsetX - targetX) > properties.getCaptchaTolerancePx()) {
-            throw new RuntimeException("滑块验证失败，请重试");
+            throw new ValidationException(ResultCode.CAPTCHA_INVALID, "滑块验证失败，请重试");
         }
         String token = UUID.randomUUID().toString().replace("-", "");
         redisTemplate.opsForValue().set(
@@ -102,12 +104,12 @@ public class SliderCaptchaService {
 
     public void consumeCaptchaToken(String token) {
         if (token == null || token.isBlank()) {
-            throw new RuntimeException("请先完成滑块验证");
+            throw new ValidationException(ResultCode.CAPTCHA_INVALID, "请先完成滑块验证");
         }
         String key = SecurityRedisKeys.CAPTCHA_TOKEN_PREFIX + token;
         Boolean deleted = redisTemplate.delete(key);
         if (deleted == null || !deleted) {
-            throw new RuntimeException("滑块验证已失效，请重新验证");
+            throw new ValidationException(ResultCode.CAPTCHA_INVALID, "滑块验证已失效，请重新验证");
         }
     }
 
@@ -143,7 +145,7 @@ public class SliderCaptchaService {
             ImageIO.write(image, "png", out);
             return Base64.getEncoder().encodeToString(out.toByteArray());
         } catch (Exception ex) {
-            throw new RuntimeException("验证码图片生成失败");
+            throw new ValidationException(ResultCode.ERROR, "验证码图片生成失败");
         }
     }
 }

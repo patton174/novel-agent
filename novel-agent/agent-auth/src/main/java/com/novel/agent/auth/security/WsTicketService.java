@@ -2,6 +2,7 @@ package com.novel.agent.auth.security;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.novel.agent.auth.support.AuthExceptions;
 import com.novel.agent.common.security.SecurityRedisKeys;
 import com.novel.agent.common.security.WsTicketRecord;
 import lombok.extern.slf4j.Slf4j;
@@ -40,7 +41,7 @@ public class WsTicketService {
                 Duration.ofSeconds(ticketTtlSeconds)
             );
         } catch (JsonProcessingException ex) {
-            throw new IllegalStateException(ex);
+            throw AuthExceptions.internalError("WebSocket 票据存储失败");
         }
         return ticket;
     }

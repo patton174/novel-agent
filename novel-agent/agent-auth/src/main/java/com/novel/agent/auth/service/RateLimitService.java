@@ -1,5 +1,6 @@
 package com.novel.agent.auth.service;
 
+import com.novel.agent.common.core.exception.TooManyRequestsException;
 import com.novel.agent.common.security.SecurityRedisKeys;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -25,7 +26,7 @@ public class RateLimitService {
             redisTemplate.expire(key, window);
         }
         if (count != null && count > maxAttempts) {
-            throw new RuntimeException("请求过于频繁，请稍后再试");
+            throw new TooManyRequestsException("请求过于频繁，请稍后再试");
         }
     }
 

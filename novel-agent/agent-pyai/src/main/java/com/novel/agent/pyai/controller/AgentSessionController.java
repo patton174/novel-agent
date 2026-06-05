@@ -2,44 +2,29 @@ package com.novel.agent.pyai.controller;
 
 import com.novel.agent.pyai.dto.agent.SessionTitleRequest;
 import com.novel.agent.pyai.dto.agent.SessionTitleResponse;
-import com.novel.agent.pyai.service.PythonSessionTitleClient;
+import com.novel.agent.pyai.service.biz.AgentSessionBiz;
+import com.novel.agent.pyai.support.BlockingWebSupport;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import reactor.core.publisher.Mono;
 
 @RestController
 @RequestMapping("/api/agent/session")
 public class AgentSessionController {
 
-    private final PythonSessionTitleClient titleClient;
+    private final AgentSessionBiz biz;
+    private final BlockingWebSupport blockingWebSupport;
 
-    public AgentSessionController(PythonSessionTitleClient titleClient) {
-        this.titleClient = titleClient;
+    public AgentSessionController(AgentSessionBiz biz, BlockingWebSupport blockingWebSupport) {
+        this.biz = biz;
+        this.blockingWebSupport = blockingWebSupport;
     }
 
     @PostMapping("/title")
-    public SessionTitleResponse generateTitle(@Valid @RequestBody SessionTitleRequest request) {
-        String title = titleClient.generateTitle(
-            request.userMessage(),
-            request.assistantSnippet() == null ? "" : request.assistantSnippet(),
-            request.novelTitle() == null ? "" : request.novelTitle()
-        );
-        if (title == null || title.isBlank()) {
-            title = fallbackTitle(request.userMessage());
-        }
-        return new SessionTitleResponse(title);
-    }
-
-    private static String fallbackTitle(String userMessage) {
-        String clean = userMessage == null ? "" : userMessage.trim().replaceAll("\\s+", " ");
-        if (clean.isBlank()) {
-            return "新对话";
-        }
-        if (clean.length() > 18) {
-            return clean.substring(0, 18) + "…";
-        }
-        return clean;
+    public Mono<SessionTitleResponse> generateTitle(@Valid @RequestBody SessionTitleRequest request) {
+        return blockingWebSupport.mono(() -> biz.generateTitle(request));
     }
 }

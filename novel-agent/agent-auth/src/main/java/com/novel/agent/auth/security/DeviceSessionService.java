@@ -1,6 +1,7 @@
 package com.novel.agent.auth.security;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.novel.agent.auth.support.AuthExceptions;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.novel.agent.common.security.DeviceSessionRecord;
 import com.novel.agent.common.security.SecurityRedisKeys;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
+import java.util.Set;
 
 @Slf4j
 @Service
@@ -96,6 +98,23 @@ public class DeviceSessionService {
         redisTemplate.delete(DEVICE_PREFIX + sessionId);
     }
 
+    public void revokeSessionsForUser(Long userId) {
+        if (userId == null) {
+            return;
+        }
+        Set<String> keys = redisTemplate.keys(DEVICE_PREFIX + "*");
+        if (keys == null || keys.isEmpty()) {
+            return;
+        }
+        for (String key : keys) {
+            String sessionId = key.substring(DEVICE_PREFIX.length());
+            DeviceSessionRecord record = load(sessionId);
+            if (record != null && userId.equals(record.userId())) {
+                revokeSession(sessionId);
+            }
+        }
+    }
+
     public DeviceSessionRecord load(String sessionId) {
         if (sessionId == null || sessionId.isBlank()) {
             return null;
@@ -120,7 +139,7 @@ public class DeviceSessionService {
                 Duration.ofSeconds(sessionTtlSeconds)
             );
         } catch (JsonProcessingException ex) {
-            throw new IllegalStateException(ex);
+            throw AuthExceptions.internalError("设备会话存储失败");
         }
     }
 

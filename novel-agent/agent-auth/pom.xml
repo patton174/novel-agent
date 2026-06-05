@@ -76,6 +76,18 @@
             <groupId>com.novel.agent</groupId>
             <artifactId>agent-common-security</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.novel.agent</groupId>
+            <artifactId>agent-common-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.novel.agent</groupId>
+            <artifactId>agent-common-service</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.novel.agent</groupId>
+            <artifactId>agent-feign-auth</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

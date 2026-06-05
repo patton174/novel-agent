@@ -1,5 +1,6 @@
 import { motion, useReducedMotion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
+import { isLoggedIn } from '../../../utils/auth'
 import { ArrowIcon } from '../icons'
 import { MarketingHeroDemo } from '../demo/MarketingHeroDemo'
 import {
@@ -16,7 +17,7 @@ export function HomeHeroSection() {
   const navigate = useNavigate()
   const reduced = useReducedMotion()
 
-  const goEditor = () => navigate('/editor')
+  const goStart = () => navigate(isLoggedIn() ? '/dashboard' : '/login')
 
   const content = (
     <>
@@ -25,7 +26,7 @@ export function HomeHeroSection() {
         从世界观到章节续写 — 思维链、编排、子代理、流式成稿，一站完成。
       </CursorHeroSubtitle>
       <CursorHeroActions>
-        <CursorPrimaryBtn type="button" onClick={goEditor}>
+        <CursorPrimaryBtn type="button" onClick={goStart}>
           开始创作
           <ArrowIcon />
         </CursorPrimaryBtn>

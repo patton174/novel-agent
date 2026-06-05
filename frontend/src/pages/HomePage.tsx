@@ -19,7 +19,7 @@ export default function HomePage() {
 
   useEffect(() => {
     if (authReady && isLoggedIn()) {
-      navigate('/editor', { replace: true })
+      navigate('/dashboard', { replace: true })
     }
   }, [authReady, navigate])
 

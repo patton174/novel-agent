@@ -13,11 +13,10 @@ import com.novel.agent.content.entity.VolumeEntity;
 import com.novel.agent.content.repository.ChapterRepository;
 import com.novel.agent.content.repository.NovelRepository;
 import com.novel.agent.content.repository.VolumeRepository;
+import com.novel.agent.content.support.ContentExceptions;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Map;
@@ -50,7 +49,7 @@ public class ChapterService {
 
     public ChapterDTO getChapter(Long userId, String chapterId) {
         ChapterEntity entity = chapterRepository.findById(chapterId)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "章节不存在"));
+            .orElseThrow(ContentExceptions::chapterNotFound);
         assertNovelOwned(userId, entity.getNovelId());
         if (entity.getVolumeId() == null || entity.getVolumeId().isBlank()) {
             VolumeEntity defaultVolume = volumeService.ensureDefaultVolume(entity.getNovelId());
@@ -164,7 +163,7 @@ public class ChapterService {
         String source
     ) {
         ChapterEntity entity = chapterRepository.findById(chapterId)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "章节不存在"));
+            .orElseThrow(ContentExceptions::chapterNotFound);
         assertNovelOwned(userId, entity.getNovelId());
         return applyUpdate(
             entity,
@@ -180,7 +179,7 @@ public class ChapterService {
     public ChapterDTO restoreVersion(Long userId, String chapterId, String versionId) {
         ChapterVersionEntity version = versionService.findOwnedVersion(userId, chapterId, versionId);
         ChapterEntity entity = chapterRepository.findById(chapterId)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "章节不存在"));
+            .orElseThrow(ContentExceptions::chapterNotFound);
         return applyUpdate(entity, version.getTitle(), version.getContent(), null, null, "restore");
     }
 
@@ -218,7 +217,7 @@ public class ChapterService {
     @Transactional
     public void deleteChapter(Long userId, String chapterId) {
         ChapterEntity entity = chapterRepository.findById(chapterId)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "章节不存在"));
+            .orElseThrow(ContentExceptions::chapterNotFound);
         assertNovelOwned(userId, entity.getNovelId());
         indexClient.removeChapter(chapterId);
         chapterRepository.delete(entity);
@@ -262,9 +261,9 @@ public class ChapterService {
         String novelId = volume.getNovelId();
         for (int i = 0; i < chapterIds.size(); i++) {
             ChapterEntity entity = chapterRepository.findById(chapterIds.get(i))
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "章节不存在"));
+                .orElseThrow(ContentExceptions::chapterNotFound);
             if (!novelId.equals(entity.getNovelId())) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "章节与卷不属于同一小说");
+                throw ContentExceptions.badRequest("章节与卷不属于同一小说");
             }
             entity.setVolumeId(volumeId);
             entity.setSortOrder(i + 1);
@@ -277,13 +276,13 @@ public class ChapterService {
     public List<ChapterSummaryDTO> reorderNovelChapters(Long userId, String novelId, List<String> chapterIds) {
         assertNovelOwned(userId, novelId);
         if (chapterIds == null || chapterIds.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "chapter_ids 不能为空");
+            throw ContentExceptions.badRequest("chapter_ids 不能为空");
         }
         for (int i = 0; i < chapterIds.size(); i++) {
             ChapterEntity entity = chapterRepository.findById(chapterIds.get(i))
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "章节不存在"));
+                .orElseThrow(ContentExceptions::chapterNotFound);
             if (!novelId.equals(entity.getNovelId())) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "章节不属于该小说");
+                throw ContentExceptions.badRequest("章节不属于该小说");
             }
             entity.setSortOrder(i + 1);
             chapterRepository.save(entity);
@@ -316,7 +315,7 @@ public class ChapterService {
 
     private void assertNovelOwned(Long userId, String novelId) {
         novelRepository.findByIdAndUserId(novelId, userId)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "小说不存在"));
+            .orElseThrow(ContentExceptions::novelNotFound);
     }
 
     private ChapterSummaryDTO toSummary(ChapterEntity entity, String volumeTitle) {

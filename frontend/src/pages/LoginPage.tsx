@@ -1,5 +1,7 @@
 import React, { useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { fetchUserInfo } from '../api/userApi'
+import { useUserStore } from '../stores/userStore'
 import { login } from '../utils/authApi'
 import { setSessionCrypto } from '../security/sessionStore'
 import {
@@ -45,7 +47,9 @@ const LoginPage: React.FC = () => {
     setSessionCrypto(null)
     try {
       await login(username.trim(), password)
-      navigate('/editor')
+      const profile = await fetchUserInfo()
+      useUserStore.getState().setProfile(profile)
+      navigate('/dashboard')
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : '登录失败')
     } finally {

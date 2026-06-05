@@ -1,5 +1,6 @@
 package com.novel.agent.content.agent;
 
+import com.novel.agent.common.core.exception.ValidationException;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -18,7 +19,7 @@ class AgentRunStateMachineTest {
     @Test
     void completedIsTerminal() {
         assertTrue(machine.isTerminal(AgentRunStatus.COMPLETED));
-        assertThrows(IllegalStateException.class, () ->
+        assertThrows(ValidationException.class, () ->
             machine.assertTransition(AgentRunStatus.COMPLETED, AgentRunStatus.RUNNING));
     }
 

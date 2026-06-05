@@ -6,11 +6,10 @@ import com.novel.agent.content.entity.ChapterVersionEntity;
 import com.novel.agent.content.repository.ChapterRepository;
 import com.novel.agent.content.repository.ChapterVersionRepository;
 import com.novel.agent.content.repository.NovelRepository;
+import com.novel.agent.content.support.ContentExceptions;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -35,9 +34,9 @@ public class ChapterVersionService {
     public ChapterVersionEntity findOwnedVersion(Long userId, String chapterId, String versionId) {
         assertChapterOwned(userId, chapterId);
         ChapterVersionEntity version = versionRepository.findById(versionId)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "版本不存在"));
+            .orElseThrow(ContentExceptions::versionNotFound);
         if (!chapterId.equals(version.getChapterId())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "版本与章节不匹配");
+            throw ContentExceptions.badRequest("版本与章节不匹配");
         }
         return version;
     }
@@ -55,9 +54,9 @@ public class ChapterVersionService {
 
     private void assertChapterOwned(Long userId, String chapterId) {
         ChapterEntity entity = chapterRepository.findById(chapterId)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "章节不存在"));
+            .orElseThrow(ContentExceptions::chapterNotFound);
         novelRepository.findByIdAndUserId(entity.getNovelId(), userId)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "小说不存在"));
+            .orElseThrow(ContentExceptions::novelNotFound);
     }
 
     private ChapterVersionDTO toDto(ChapterVersionEntity entity) {

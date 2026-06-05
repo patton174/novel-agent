@@ -1,5 +1,6 @@
 package com.novel.agent.pyai.orchestration;
 
+import com.novel.agent.pyai.support.PyaiExceptions;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -20,7 +21,7 @@ public final class SseEventCodec {
         try {
             return "event: agent-event\ndata: " + mapper.writeValueAsString(event) + "\n\n";
         } catch (Exception ex) {
-            throw new IllegalStateException("encode sse failed", ex);
+            throw PyaiExceptions.internalError("SSE 编码失败");
         }
     }
 

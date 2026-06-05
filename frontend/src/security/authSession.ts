@@ -1,13 +1,14 @@
 import { DIRECT_PYTHON } from '../config/runtime'
+import { useUserStore } from '../stores/userStore'
 import { clearToken } from '../utils/auth'
 import { stopHeartbeatWorker } from './heartbeat'
 
 const AUTH_SELF_PREFIXES = [
-  '/api/auth/login',
-  '/api/auth/register',
-  '/api/auth/refresh',
-  '/api/auth/captcha',
-  '/api/auth/send-email-code',
+  '/api/auth/api/login',
+  '/api/auth/api/register',
+  '/api/auth/api/refresh',
+  '/api/auth/api/captcha',
+  '/api/auth/api/send-email-code',
 ]
 
 let redirecting = false
@@ -31,6 +32,7 @@ export function forceLogoutRedirect(reason?: string): void {
   redirecting = true
   stopHeartbeatWorker()
   clearToken()
+  useUserStore.getState().clear()
   const query = reason ? `?reason=${encodeURIComponent(reason)}` : ''
   window.location.replace(`/login${query}`)
 }

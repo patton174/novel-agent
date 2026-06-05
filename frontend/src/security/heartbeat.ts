@@ -25,7 +25,7 @@ async function sendHeartbeat(): Promise<void> {
     envDelta: collectEnvDelta(),
   }
   try {
-    await secureFetch('/api/auth/heartbeat', {
+    await secureFetch('/api/auth/auth/heartbeat', {
       method: 'POST',
       credentials: 'include',
       headers: {

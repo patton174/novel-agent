@@ -15,6 +15,7 @@ public final class SecurityRedisKeys {
     public static final String CAPTCHA_CHALLENGE_PREFIX = "auth:captcha:challenge:";
     public static final String CAPTCHA_TOKEN_PREFIX = "auth:captcha:token:";
     public static final String RATE_LIMIT_PREFIX = "auth:ratelimit:";
+    public static final String USER_ROLE_PREFIX = "user:role:";
 
     private SecurityRedisKeys() {
     }

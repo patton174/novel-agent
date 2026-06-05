@@ -1,9 +1,11 @@
 package com.novel.agent.content.service;
 
+import com.novel.agent.common.core.enums.ResultCode;
+import com.novel.agent.common.core.exception.BizException;
 import com.novel.agent.content.dto.ChapterDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -22,10 +24,10 @@ public class ChapterIndexClient {
     private final ReindexJobService reindexJobService;
 
     public ChapterIndexClient(
-        @Value("${agent.python.base-url:http://127.0.0.1:8000}") String pythonBaseUrl,
+        @Qualifier("pythonRestClient") RestClient restClient,
         ReindexJobService reindexJobService
     ) {
-        this.restClient = RestClient.builder().baseUrl(pythonBaseUrl).build();
+        this.restClient = restClient;
         this.reindexJobService = reindexJobService;
     }
 
@@ -59,7 +61,7 @@ public class ChapterIndexClient {
                 .retrieve()
                 .toBodilessEntity();
         } catch (Exception ex) {
-            throw new IllegalStateException("清空向量索引失败: " + ex.getMessage(), ex);
+            throw BizException.of(ResultCode.ERROR, "清空向量索引失败: " + ex.getMessage());
         }
     }
 

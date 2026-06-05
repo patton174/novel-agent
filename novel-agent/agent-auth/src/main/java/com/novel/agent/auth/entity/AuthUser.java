@@ -2,6 +2,9 @@ package com.novel.agent.auth.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import org.hibernate.annotations.CreationTimestamp;
+
+import java.time.Instant;
 
 @Data
 @Entity
@@ -9,7 +12,6 @@ import lombok.Data;
 public class AuthUser {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(nullable = false, unique = true, length = 50)
@@ -32,4 +34,8 @@ public class AuthUser {
 
     @Column(name = "email_verified")
     private Boolean emailVerified = false;
+
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
+    private Instant createdAt;
 }

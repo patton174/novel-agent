@@ -1,45 +1,61 @@
 package com.novel.agent.consumer.listener;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.novel.agent.common.mq.dto.PermissionSyncMessage;
+import com.novel.agent.common.security.SecurityRedisKeys;
+import com.novel.agent.consumer.support.MqListenerSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
-/**
- * 权限同步消息监听器
- */
+import java.time.Duration;
+
 @Component
 public class PermissionListener {
 
     private static final Logger log = LoggerFactory.getLogger(PermissionListener.class);
+    private static final Duration ROLE_TTL = Duration.ofDays(7);
 
     private final StringRedisTemplate redisTemplate;
+    private final ObjectMapper objectMapper;
 
-    public PermissionListener(StringRedisTemplate redisTemplate) {
+    public PermissionListener(StringRedisTemplate redisTemplate, ObjectMapper objectMapper) {
         this.redisTemplate = redisTemplate;
+        this.objectMapper = objectMapper;
     }
-
-    private static final String PERMISSION_KEY_PREFIX = "user:permissions:";
-    private static final String ROLE_KEY_PREFIX = "user:role:";
 
     @RabbitListener(queuesToDeclare = @org.springframework.amqp.rabbit.annotation.Queue(name = "permission.queue", durable = "true"))
     public void handlePermissionSync(String message) {
+        MqListenerSupport.safeHandle(log, message, "处理权限同步消息失败", this::handle);
+    }
+
+    private void handle(String message) throws Exception {
         log.info("收到权限同步消息: {}", message);
-
-        try {
-            // 解析 userId（生产者发的是 userId 的 JSON）
-            Long userId = Long.parseLong(message.trim());
-
-            // TODO: RPC 调用 auth 服务获取用户权限信息
-
-            // 临时模拟：存一个默认值
-            redisTemplate.opsForValue().set(PERMISSION_KEY_PREFIX + userId, "[\"novel:read\", \"novel:write\"]");
-            redisTemplate.opsForValue().set(ROLE_KEY_PREFIX + userId, "user");
-
-            log.info("权限已存入Redis: userId={}", userId);
-        } catch (Exception e) {
-            log.error("处理权限同步消息失败: message={}", message, e);
+        PermissionSyncMessage payload = parseMessage(message);
+        if (payload.userId() == null) {
+            log.warn("权限同步消息缺少 userId: {}", message);
+            return;
         }
+        String role = payload.role() == null || payload.role().isBlank() ? "user" : payload.role().trim();
+        redisTemplate.opsForValue().set(
+            SecurityRedisKeys.USER_ROLE_PREFIX + payload.userId(),
+            role,
+            ROLE_TTL
+        );
+        log.info("角色已存入 Redis: userId={}, role={}", payload.userId(), role);
+    }
+
+    private PermissionSyncMessage parseMessage(String message) throws Exception {
+        String trimmed = message == null ? "" : message.trim();
+        if (trimmed.startsWith("{")) {
+            JsonNode node = objectMapper.readTree(trimmed);
+            Long userId = node.hasNonNull("userId") ? node.get("userId").asLong() : null;
+            String role = node.has("role") && !node.get("role").isNull() ? node.get("role").asText() : "user";
+            return new PermissionSyncMessage(userId, role);
+        }
+        return new PermissionSyncMessage(Long.parseLong(trimmed), "user");
     }
 }

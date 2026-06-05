@@ -59,16 +59,16 @@ export const CursorPrimaryBtn = styled.button`
   padding: 0.65rem 1.35rem;
   border: none;
   border-radius: 999px;
-  background: ${cursorTheme.text};
-  color: ${cursorTheme.cardElevated};
+  background: ${cursorTheme.accent};
+  color: ${cursorTheme.accentText};
   font-size: 0.92rem;
   font-weight: 600;
   cursor: pointer;
-  transition: transform 0.2s ease, opacity 0.2s ease;
+  transition: transform 0.2s ease, background 0.2s ease;
 
   &:hover {
     transform: translateY(-1px);
-    opacity: 0.92;
+    background: ${cursorTheme.accentHover};
   }
 
   svg {

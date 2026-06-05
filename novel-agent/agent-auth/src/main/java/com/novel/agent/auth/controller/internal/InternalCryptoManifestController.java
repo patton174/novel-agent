@@ -2,39 +2,27 @@ package com.novel.agent.auth.controller.internal;
 
 import com.novel.agent.auth.service.CryptoManifestService;
 import com.novel.agent.auth.service.FrontendCryptoRegisterService;
+import com.novel.agent.auth.service.internal.InternalCryptoBiz;
+import com.novel.agent.common.service.BaseController;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/internal/crypto")
-public class InternalCryptoManifestController {
+@RequiredArgsConstructor
+public class InternalCryptoManifestController extends BaseController {
 
-    @Autowired
-    private CryptoManifestService cryptoManifestService;
-
-    @Autowired
-    private FrontendCryptoRegisterService frontendCryptoRegisterService;
-
-    @Value("${agent.internal-service-key:}")
-    private String internalServiceKey;
+    private final InternalCryptoBiz biz;
 
     @PostMapping("/manifest")
-    public void publish(
-        @RequestHeader(value = "X-Internal-Service-Key", required = false) String key,
-        @Valid @RequestBody PublishManifestRequest request
-    ) {
-        verifyInternal(key);
-        cryptoManifestService.publish(request.getManifest(), request.getTtlSec());
+    public void publish(@Valid @RequestBody PublishManifestRequest request) {
+        biz.publishManifest(request.getManifest(), request.getTtlSec());
     }
 
     /**
@@ -42,22 +30,10 @@ public class InternalCryptoManifestController {
      */
     @PostMapping("/register-frontend-server")
     public FrontendCryptoRegisterService.CryptoRuntimeView registerFrontendServer(
-        @RequestHeader(value = "X-Internal-Service-Key", required = false) String key,
         @RequestBody(required = false) RegisterFrontendServerRequest request
     ) {
-        verifyInternal(key);
         RegisterFrontendServerRequest body = request == null ? new RegisterFrontendServerRequest() : request;
-        if (body.getManifest() != null) {
-            cryptoManifestService.publish(body.getManifest(), body.getTtlSec());
-        }
-        return frontendCryptoRegisterService.registerFromFrontendServer(body.getHost(), body.getTtlSec());
-    }
-
-    private void verifyInternal(String key) {
-        if (internalServiceKey == null || internalServiceKey.isBlank()
-            || key == null || !internalServiceKey.equals(key)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "forbidden");
-        }
+        return biz.registerFrontendServer(body.getHost(), body.getTtlSec(), body.getManifest());
     }
 
     @Data

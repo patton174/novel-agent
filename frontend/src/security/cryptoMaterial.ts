@@ -5,11 +5,11 @@ import type { SessionCryptoMaterial } from '../types/authSecurity'
 export function isBootstrapAuthPath(url: string): boolean {
   const path = url.split('?')[0] ?? url
   return (
-    path.startsWith('/api/auth/login') ||
-    path.startsWith('/api/auth/register') ||
-    path.startsWith('/api/auth/refresh') ||
-    path.startsWith('/api/auth/captcha') ||
-    path.startsWith('/api/auth/send-email-code')
+    path.startsWith('/api/auth/api/login') ||
+    path.startsWith('/api/auth/api/register') ||
+    path.startsWith('/api/auth/api/refresh') ||
+    path.startsWith('/api/auth/api/captcha') ||
+    path.startsWith('/api/auth/api/send-email-code')
   )
 }
 

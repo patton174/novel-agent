@@ -1,86 +1,122 @@
-# 参与路由脱敏的 API 清单（与 frontend/src/utils/api.ts、authApi 对齐）
+# 统一 API 路由清单（/api/{service}/{audience}/... + Result<T>）
 routes:
-  # auth
+  # auth — 公开 api
   - method: POST
-    path: /api/auth/login
+    path: /api/auth/api/login
   - method: POST
-    path: /api/auth/register
+    path: /api/auth/api/register
   - method: POST
-    path: /api/auth/refresh
+    path: /api/auth/api/refresh
   - method: POST
-    path: /api/auth/logout
+    path: /api/auth/api/logout
   - method: POST
-    path: /api/auth/heartbeat
+    path: /api/auth/api/captcha/slider
   - method: POST
-    path: /api/auth/ws-ticket
-  - method: GET
-    path: /api/auth/info
+    path: /api/auth/api/captcha/slider/verify
+  - method: POST
+    path: /api/auth/api/send-email-code
   - method: GET
     path: /api/auth/crypto-manifest
   - method: GET
     path: /api/auth/crypto-config
 
-  # content — novels
-  - method: GET
-    path: /api/content/novels
+  # auth — 用户 auth
   - method: POST
-    path: /api/content/novels
-  - method: GET
-    path: /api/content/novels/{novelId}
-  - method: PUT
-    path: /api/content/novels/{novelId}
-  - method: DELETE
-    path: /api/content/novels/{novelId}
-  - method: GET
-    path: /api/content/novels/{novelId}/chapters
+    path: /api/auth/auth/heartbeat
   - method: POST
-    path: /api/content/novels/{novelId}/chapters
-  - method: POST
-    path: /api/content/novels/{novelId}/chapters/reorder
-  - method: POST
-    path: /api/content/novels/{novelId}/reindex
+    path: /api/auth/auth/ws-ticket
   - method: GET
-    path: /api/content/novels/{novelId}/reindex/status
-  - method: GET
-    path: /api/content/novels/{novelId}/sessions
+    path: /api/auth/auth/info
 
-  # content — volumes / chapters
+  # auth — 管理 crm
   - method: GET
-    path: /api/content/novels/{novelId}/volumes
-  - method: POST
-    path: /api/content/novels/{novelId}/volumes
-  - method: POST
-    path: /api/content/novels/{novelId}/volumes/reorder
-  - method: DELETE
-    path: /api/content/volumes/{volumeId}
-  - method: POST
-    path: /api/content/volumes/{volumeId}/chapters/reorder
+    path: /api/auth/crm/stats/overview
   - method: GET
-    path: /api/content/chapters/{chapterId}
+    path: /api/auth/crm/user/page
+  - method: GET
+    path: /api/auth/crm/user/{id}
   - method: PUT
-    path: /api/content/chapters/{chapterId}
-  - method: DELETE
-    path: /api/content/chapters/{chapterId}
-  - method: GET
-    path: /api/content/chapters/{chapterId}/versions
-  - method: POST
-    path: /api/content/chapters/{chapterId}/versions/{versionId}/restore
+    path: /api/auth/crm/user/{id}
 
-  # content — sessions（编辑器会话）
+  # content — 用户 auth novels / chapters / volumes
   - method: GET
-    path: /api/content/sessions
+    path: /api/content/auth/novels
   - method: POST
-    path: /api/content/sessions/upsert
+    path: /api/content/auth/novels
+  - method: GET
+    path: /api/content/auth/novels/{novelId}
   - method: PUT
-    path: /api/content/sessions/{sessionId}
+    path: /api/content/auth/novels/{novelId}
   - method: DELETE
-    path: /api/content/sessions/{sessionId}
-  - method: POST
-    path: /api/content/sessions/batch-delete
+    path: /api/content/auth/novels/{novelId}
   - method: GET
-    path: /api/content/sessions/{sessionId}/messages
+    path: /api/content/auth/novels/{novelId}/chapters
+  - method: POST
+    path: /api/content/auth/novels/{novelId}/chapters
+  - method: POST
+    path: /api/content/auth/novels/{novelId}/chapters/reorder
+  - method: POST
+    path: /api/content/auth/novels/{novelId}/reindex
+  - method: GET
+    path: /api/content/auth/novels/{novelId}/reindex/status
+  - method: GET
+    path: /api/content/auth/novels/{novelId}/sessions
+  - method: GET
+    path: /api/content/auth/novels/{novelId}/volumes
+  - method: POST
+    path: /api/content/auth/novels/{novelId}/volumes
+  - method: POST
+    path: /api/content/auth/novels/{novelId}/volumes/reorder
+  - method: GET
+    path: /api/content/auth/novels/{novelId}/search
+  - method: GET
+    path: /api/content/auth/novels/{novelId}/agent-context
+  - method: DELETE
+    path: /api/content/auth/volumes/{volumeId}
   - method: PUT
-    path: /api/content/sessions/{sessionId}/runs/{runId}/trace
+    path: /api/content/auth/volumes/{volumeId}
+  - method: POST
+    path: /api/content/auth/volumes/{volumeId}/chapters/reorder
+  - method: GET
+    path: /api/content/auth/chapters/{chapterId}
+  - method: PUT
+    path: /api/content/auth/chapters/{chapterId}
+  - method: DELETE
+    path: /api/content/auth/chapters/{chapterId}
+  - method: GET
+    path: /api/content/auth/chapters/{chapterId}/versions
+  - method: POST
+    path: /api/content/auth/chapters/{chapterId}/versions/{versionId}/restore
+
+  # content — dashboard
+  - method: GET
+    path: /api/content/auth/dashboard/summary
+  - method: GET
+    path: /api/content/auth/dashboard/recent-novels
+
+  # content — sessions
+  - method: GET
+    path: /api/content/auth/sessions
+  - method: POST
+    path: /api/content/auth/sessions/upsert
+  - method: GET
+    path: /api/content/auth/sessions/{sessionId}
+  - method: PUT
+    path: /api/content/auth/sessions/{sessionId}
+  - method: DELETE
+    path: /api/content/auth/sessions/{sessionId}
+  - method: POST
+    path: /api/content/auth/sessions/batch-delete
+  - method: GET
+    path: /api/content/auth/sessions/{sessionId}/messages
+  - method: PUT
+    path: /api/content/auth/sessions/{sessionId}/runs/{runId}/trace
+
+  # content — crm
+  - method: GET
+    path: /api/content/crm/stats/overview
+  - method: GET
+    path: /api/content/crm/stats/trends
 
   # agent / pyai
   - method: POST

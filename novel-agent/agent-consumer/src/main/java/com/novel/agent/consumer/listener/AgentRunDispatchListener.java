@@ -6,10 +6,13 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.novel.agent.common.mq.agent.AgentRunDispatchMessage;
 import com.novel.agent.common.mq.constant.MqTopic;
 import com.novel.agent.common.mq.producer.IMessageProducer;
+import com.novel.agent.consumer.support.ContentRestSupport;
+import com.novel.agent.consumer.support.MqListenerSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.annotation.Queue;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.MediaType;
@@ -23,50 +26,49 @@ import java.util.UUID;
 public class AgentRunDispatchListener {
 
     private static final Logger log = LoggerFactory.getLogger(AgentRunDispatchListener.class);
-    private static final String INTERNAL_KEY_HEADER = "X-Internal-Service-Key";
     private static final String WORKER_CTX_PREFIX = "run:worker:ctx:";
 
     private final ObjectMapper objectMapper;
-    private final RestClient contentClient;
-    private final RestClient pythonClient;
+    private final ContentRestSupport contentRestSupport;
+    private final RestClient pythonRestClient;
     private final StringRedisTemplate redisTemplate;
     private final String internalServiceKey;
     private final IMessageProducer messageProducer;
 
     public AgentRunDispatchListener(
         ObjectMapper objectMapper,
+        ContentRestSupport contentRestSupport,
+        @Qualifier("pythonRestClient") RestClient pythonRestClient,
         StringRedisTemplate redisTemplate,
         IMessageProducer messageProducer,
-        @Value("${agent.content.base-url:http://127.0.0.1:8091}") String contentBaseUrl,
-        @Value("${agent.python.base-url:http://127.0.0.1:8000}") String pythonBaseUrl,
         @Value("${agent.internal.service-key:dev-internal-key-change-me}") String internalServiceKey
     ) {
         this.objectMapper = objectMapper;
+        this.contentRestSupport = contentRestSupport;
+        this.pythonRestClient = pythonRestClient;
         this.redisTemplate = redisTemplate;
         this.messageProducer = messageProducer;
         this.internalServiceKey = internalServiceKey;
-        this.contentClient = RestClient.builder().baseUrl(contentBaseUrl).build();
-        this.pythonClient = RestClient.builder().baseUrl(pythonBaseUrl).build();
     }
 
     @RabbitListener(queuesToDeclare = @Queue(name = "agent.run.dispatch.queue", durable = "true"))
     public void onDispatch(String message) {
-        try {
-            AgentRunDispatchMessage payload = objectMapper.readValue(message, AgentRunDispatchMessage.class);
-            log.info(
-                "run.dispatch received runId={} action={} jobId={} attempt={}",
-                payload.runId(),
-                payload.action(),
-                payload.jobId(),
-                payload.attempt()
-            );
-            executeWorker(payload);
-        } catch (Exception ex) {
-            log.error("run.dispatch failed: {}", message, ex);
-        }
+        MqListenerSupport.safeHandle(log, message, "run.dispatch failed", this::handle);
     }
 
-    private void executeWorker(AgentRunDispatchMessage payload) {
+    private void handle(String message) throws Exception {
+        AgentRunDispatchMessage payload = objectMapper.readValue(message, AgentRunDispatchMessage.class);
+        log.info(
+            "run.dispatch received runId={} action={} jobId={} attempt={}",
+            payload.runId(),
+            payload.action(),
+            payload.jobId(),
+            payload.attempt()
+        );
+        executeWorker(payload);
+    }
+
+    private void executeWorker(AgentRunDispatchMessage payload) throws Exception {
         String runId = payload.runId();
         if (runId == null || runId.isBlank()) {
             return;
@@ -100,10 +102,10 @@ public class AgentRunDispatchListener {
             body.set("resume_interaction", interaction);
         }
 
-        Map<?, ?> response = pythonClient.post()
+        Map<?, ?> response = pythonRestClient.post()
             .uri("/internal/worker/run/execute")
             .contentType(MediaType.APPLICATION_JSON)
-            .header(INTERNAL_KEY_HEADER, internalServiceKey)
+            .header(ContentRestSupport.INTERNAL_KEY_HEADER, internalServiceKey)
             .body(body)
             .retrieve()
             .body(Map.class);
@@ -118,7 +120,7 @@ public class AgentRunDispatchListener {
         }
     }
 
-    private JsonNode loadCommandPayload(String runId, String commandId) {
+    private JsonNode loadCommandPayload(String runId, String commandId) throws Exception {
         if (commandId == null || commandId.isBlank()) {
             return null;
         }
@@ -137,13 +139,14 @@ public class AgentRunDispatchListener {
         return null;
     }
 
-    private JsonNode fetchCommandPayload(String runId, String commandId) {
+    private JsonNode fetchCommandPayload(String runId, String commandId) throws Exception {
         try {
-            Map<?, ?> cmd = contentClient.get()
-                .uri("/internal/agent/runs/{runId}/commands/{commandId}", runId, commandId)
-                .header(INTERNAL_KEY_HEADER, internalServiceKey)
-                .retrieve()
-                .body(Map.class);
+            Map<?, ?> cmd = contentRestSupport.getInternal(
+                "/internal/agent/runs/{runId}/commands/{commandId}",
+                Map.class,
+                runId,
+                commandId
+            );
             if (cmd == null) {
                 return null;
             }

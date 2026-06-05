@@ -62,6 +62,10 @@ mailtrap:
   from-email: hello@noreply.novel-agent.cn
   from-name: Novel Agent
 
+agent:
+  internal:
+    service-key: ${INTERNAL_SERVICE_KEY:dev-internal-key-change-me}
+
 logging:
   level:
     com.novel.agent: debug

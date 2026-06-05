@@ -3,7 +3,12 @@ package com.novel.agent.auth.security;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.novel.agent.auth.entity.AuthUser;
+import com.novel.agent.auth.support.AuthExceptions;
+import com.novel.agent.common.core.enums.ResultCode;
+import com.novel.agent.common.core.exception.UnauthorizedException;
+import com.novel.agent.common.core.tools.IdWorker;
 import com.novel.agent.common.security.AesGcmCodec;
+import com.novel.agent.auth.support.AuthExceptions;
 import com.novel.agent.common.security.JwtCodec;
 import com.novel.agent.common.security.SecurityCookieNames;
 import com.novel.agent.common.security.SecurityRedisKeys;
@@ -60,7 +65,7 @@ public class JwtAuthService {
     }
 
     public AuthSessionBundle login(AuthUser user, String fingerprint, java.util.Map<String, Object> envSnapshot) {
-        String sessionId = "sess_" + UUID.randomUUID();
+        String sessionId = IdWorker.prefixed("sess_");
         String refreshToken = UUID.randomUUID().toString();
         String csrf = UUID.randomUUID().toString().replace("-", "");
 
@@ -95,7 +100,7 @@ public class JwtAuthService {
     public AuthSessionBundle refresh(String refreshToken, AuthUser user, String fingerprint, java.util.Map<String, Object> envSnapshot) {
         RefreshRecord record = loadRefresh(refreshToken);
         if (record == null || user == null || !record.userId().equals(user.getId())) {
-            throw new RuntimeException("登录已过期，请重新登录");
+            throw new UnauthorizedException(ResultCode.AUTH_TOKEN_EXPIRED, "登录已过期，请重新登录");
         }
         redisTemplate.delete(REFRESH_PREFIX + refreshToken);
         deviceSessionService.revokeSession(record.sessionId());
@@ -119,14 +124,14 @@ public class JwtAuthService {
 
     public com.novel.agent.common.security.JwtPrincipal parseAccessPrincipal(String authorizationHeader) {
         if (authorizationHeader == null || authorizationHeader.isBlank()) {
-            throw new RuntimeException("未登录");
+            throw new UnauthorizedException("未登录");
         }
         return jwtCodec.parseAccessToken(authorizationHeader.trim());
     }
 
     public Long parseAccessUserId(String authorizationHeader) {
         if (authorizationHeader == null || authorizationHeader.isBlank()) {
-            throw new RuntimeException("未登录");
+            throw new UnauthorizedException("未登录");
         }
         return jwtCodec.parseAccessToken(authorizationHeader.trim()).userId();
     }
@@ -197,7 +202,7 @@ public class JwtAuthService {
                 Duration.ofSeconds(refreshTtlSeconds)
             );
         } catch (JsonProcessingException ex) {
-            throw new IllegalStateException(ex);
+            throw AuthExceptions.internalError("刷新令牌存储失败");
         }
     }
 

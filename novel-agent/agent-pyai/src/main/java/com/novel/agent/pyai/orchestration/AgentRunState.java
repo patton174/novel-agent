@@ -206,7 +206,7 @@ public class AgentRunState {
                 return Map.of();
             }
             Thread.currentThread().interrupt();
-            throw new IllegalStateException("interaction wait failed", ex.getCause());
+            throw com.novel.agent.pyai.support.PyaiExceptions.internalError("交互等待失败");
         }
     }
 
@@ -235,7 +235,7 @@ public class AgentRunState {
                 return;
             }
             Thread.currentThread().interrupt();
-            throw new IllegalStateException("resume wait failed", ex.getCause());
+            throw com.novel.agent.pyai.support.PyaiExceptions.internalError("恢复等待失败");
         }
     }
 

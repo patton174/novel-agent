@@ -14,6 +14,7 @@ import { getAuthHeaders, getUserId } from './auth'
 import { secureFetch } from '../security/secureFetch'
 import { fetchWsTicket } from '../security/wsTicket'
 import { toStreamRequestBody } from './agentStreamPayload'
+import { parseResultResponse, throwOnErrorResponse } from './resultApi'
 import { parseSseFrame, splitSseBuffer } from './sse'
 
 export type AgentStreamEventHandler = (eventName: string, data: string) => void
@@ -50,6 +51,7 @@ export async function openAgentStream(
     if (response.status === 401) {
       throw new Error('未登录或登录已过期，请重新登录')
     }
+    await throwOnErrorResponse(response)
     throw new Error(`Agent stream error: ${response.status}`)
   }
 
@@ -252,95 +254,75 @@ export const api = {
       },
     })
 
-    if (!response.ok) {
-      throw new Error(`API Error: ${response.status}`)
-    }
-
-    return response.json()
-  },
-
-  async callAI<T>(endpoint: string, data: unknown): Promise<T> {
-    const response = await secureFetch(`${this.baseUrl}${endpoint}`, {
-      method: 'POST',
-      headers: {
-        ...getAuthHeaders(),
-      },
-      body: JSON.stringify(data),
-    })
-
-    if (!response.ok) {
-      throw new Error(`AI Service Error: ${response.status}`)
-    }
-
-    return response.json()
+    return parseResultResponse<T>(response)
   },
 
   // Novel APIs
   listNovels() {
-    return this.request<Novel[]>('/content/novels')
+    return this.request<Novel[]>('/content/auth/novels')
   },
 
   createNovel(data: CreateNovelPayload) {
-    return this.request<Novel>('/content/novels', {
+    return this.request<Novel>('/content/auth/novels', {
       method: 'POST',
       body: JSON.stringify(data),
     })
   },
 
   getNovel(novelId: string) {
-    return this.request<Novel>(`/content/novels/${novelId}`)
+    return this.request<Novel>(`/content/auth/novels/${novelId}`)
   },
 
   updateNovel(novelId: string, data: Partial<CreateNovelPayload>) {
-    return this.request<Novel>(`/content/novels/${novelId}`, {
+    return this.request<Novel>(`/content/auth/novels/${novelId}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     })
   },
 
   deleteNovel(novelId: string) {
-    return this.request<{ ok: boolean }>(`/content/novels/${novelId}`, {
+    return this.request<{ ok: boolean }>(`/content/auth/novels/${novelId}`, {
       method: 'DELETE',
     })
   },
 
   listChapters(novelId: string) {
-    return this.request<ChapterSummary[]>(`/content/novels/${novelId}/chapters`)
+    return this.request<ChapterSummary[]>(`/content/auth/novels/${novelId}/chapters`)
   },
 
   listVolumes(novelId: string) {
-    return this.request<Volume[]>(`/content/novels/${novelId}/volumes`)
+    return this.request<Volume[]>(`/content/auth/novels/${novelId}/volumes`)
   },
 
   createVolume(novelId: string, data: { title: string; description?: string }) {
-    return this.request<Volume>(`/content/novels/${novelId}/volumes`, {
+    return this.request<Volume>(`/content/auth/novels/${novelId}/volumes`, {
       method: 'POST',
       body: JSON.stringify(data),
     })
   },
 
   deleteVolume(volumeId: string) {
-    return this.request<{ ok: boolean }>(`/content/volumes/${volumeId}`, {
+    return this.request<{ ok: boolean }>(`/content/auth/volumes/${volumeId}`, {
       method: 'DELETE',
     })
   },
 
   reorderVolumes(novelId: string, ids: string[]) {
-    return this.request<Volume[]>(`/content/novels/${novelId}/volumes/reorder`, {
+    return this.request<Volume[]>(`/content/auth/novels/${novelId}/volumes/reorder`, {
       method: 'POST',
       body: JSON.stringify({ ids }),
     })
   },
 
   reorderVolumeChapters(volumeId: string, ids: string[]) {
-    return this.request<ChapterSummary[]>(`/content/volumes/${volumeId}/chapters/reorder`, {
+    return this.request<ChapterSummary[]>(`/content/auth/volumes/${volumeId}/chapters/reorder`, {
       method: 'POST',
       body: JSON.stringify({ ids }),
     })
   },
 
   reorderNovelChapters(novelId: string, ids: string[]) {
-    return this.request<ChapterSummary[]>(`/content/novels/${novelId}/chapters/reorder`, {
+    return this.request<ChapterSummary[]>(`/content/auth/novels/${novelId}/chapters/reorder`, {
       method: 'POST',
       body: JSON.stringify({ ids }),
     })
@@ -350,107 +332,83 @@ export const api = {
     novelId: string,
     data: { title: string; content?: string; summary?: string; volumeId?: string },
   ) {
-    return this.request<Chapter>(`/content/novels/${novelId}/chapters`, {
+    return this.request<Chapter>(`/content/auth/novels/${novelId}/chapters`, {
       method: 'POST',
       body: JSON.stringify(data),
     })
   },
 
   getChapter(chapterId: string) {
-    return this.request<Chapter>(`/content/chapters/${chapterId}`)
+    return this.request<Chapter>(`/content/auth/chapters/${chapterId}`)
   },
 
   updateChapter(chapterId: string, data: { title?: string; content?: string; summary?: string }) {
-    return this.request<Chapter>(`/content/chapters/${chapterId}`, {
+    return this.request<Chapter>(`/content/auth/chapters/${chapterId}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     })
   },
 
   deleteChapter(chapterId: string) {
-    return this.request<{ ok: boolean }>(`/content/chapters/${chapterId}`, {
+    return this.request<{ ok: boolean }>(`/content/auth/chapters/${chapterId}`, {
       method: 'DELETE',
     })
   },
 
   listChapterVersions(chapterId: string, limit = 20) {
-    return this.request<ChapterVersion[]>(`/content/chapters/${chapterId}/versions?limit=${limit}`)
+    return this.request<ChapterVersion[]>(`/content/auth/chapters/${chapterId}/versions?limit=${limit}`)
   },
 
   restoreChapterVersion(chapterId: string, versionId: string) {
-    return this.request<Chapter>(`/content/chapters/${chapterId}/versions/${versionId}/restore`, {
+    return this.request<Chapter>(`/content/auth/chapters/${chapterId}/versions/${versionId}/restore`, {
       method: 'POST',
     })
   },
 
   reindexNovel(novelId: string) {
     return this.request<ReindexJobStatus>(
-      `/content/novels/${novelId}/reindex`,
+      `/content/auth/novels/${novelId}/reindex`,
       { method: 'POST' },
     )
   },
 
   getReindexStatus(novelId: string) {
-    return this.request<ReindexJobStatus>(`/content/novels/${novelId}/reindex/status`)
+    return this.request<ReindexJobStatus>(`/content/auth/novels/${novelId}/reindex/status`)
   },
 
   listNovelSessions(novelId: string, limit = 50) {
     return this.request<Array<{ id: string; title: string; updatedAt: number; novelId?: string }>>(
-      `/content/novels/${novelId}/sessions?limit=${limit}`,
+      `/content/auth/novels/${novelId}/sessions?limit=${limit}`,
     )
   },
 
   upsertContentSession(sessionId: string, title: string, novelId?: string) {
-    return this.request<void>('/content/sessions/upsert', {
+    return this.request<void>('/content/auth/sessions/upsert', {
       method: 'POST',
       body: JSON.stringify({ sessionId, title, novelId }),
     })
   },
 
   deleteContentSession(sessionId: string) {
-    return this.request<void>(`/content/sessions/${encodeURIComponent(sessionId)}`, {
+    return this.request<void>(`/content/auth/sessions/${encodeURIComponent(sessionId)}`, {
       method: 'DELETE',
     })
   },
 
   batchDeleteContentSessions(sessionIds: string[]) {
-    return this.request<{ ok: boolean; deleted: number }>('/content/sessions/batch-delete', {
+    return this.request<{ ok: boolean; deleted: number }>('/content/auth/sessions/batch-delete', {
       method: 'POST',
       body: JSON.stringify({ sessionIds }),
     })
-  },
-
-  // Legacy project APIs (deprecated)
-  getProjects() {
-    return this.request<any>('/projects')
-  },
-
-  createProject(data: any) {
-    return this.request<any>('/projects', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    })
-  },
-
-  getChapters(projectId: string) {
-    return this.request<any>(`/projects/${projectId}/chapters`)
   },
 
   saveChapter(chapterId: string, content: string) {
     return this.updateChapter(chapterId, { content })
   },
 
-  // AI Generation APIs
-  generate(data: any) {
-    return this.request<any>('/ai/generate', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    })
-  },
-
   listContentSessions(limit = 50) {
     return this.request<Array<{ id: string; title: string; updatedAt: number; novelId?: string }>>(
-      `/content/sessions?limit=${limit}`,
+      `/content/auth/sessions?limit=${limit}`,
     )
   },
 
@@ -464,11 +422,11 @@ export const api = {
         runId?: string
         agentTraceJson?: string
       }>
-    >(`/content/sessions/${sessionId}/messages?limit=${limit}`)
+    >(`/content/auth/sessions/${sessionId}/messages?limit=${limit}`)
   },
 
   saveAgentRunTrace(sessionId: string, runId: string, traceJson: string) {
-    return this.request<void>(`/content/sessions/${sessionId}/runs/${encodeURIComponent(runId)}/trace`, {
+    return this.request<void>(`/content/auth/sessions/${sessionId}/runs/${encodeURIComponent(runId)}/trace`, {
       method: 'PUT',
       body: JSON.stringify({ runId, traceJson }),
     })
@@ -488,9 +446,7 @@ export const api = {
       },
       body: JSON.stringify(payload),
     })
-    if (!response.ok) {
-      throw new Error(`Session title error: ${response.status}`)
-    }
+    await throwOnErrorResponse(response)
     return response.json() as Promise<{ title: string }>
   },
 
@@ -515,9 +471,7 @@ export const api = {
         },
       },
     )
-    if (!response.ok) {
-      throw new Error(`Agent memory error: ${response.status}`)
-    }
+    await throwOnErrorResponse(response)
     return response.json()
   },
 
@@ -537,9 +491,7 @@ export const api = {
         body: JSON.stringify(payload),
       },
     )
-    if (!response.ok) {
-      throw new Error(`Agent memory patch error: ${response.status}`)
-    }
+    await throwOnErrorResponse(response)
     return response.json()
   },
 
@@ -559,9 +511,7 @@ export const api = {
         body: JSON.stringify(payload),
       },
     )
-    if (!response.ok) {
-      throw new Error(`Agent memory delete error: ${response.status}`)
-    }
+    await throwOnErrorResponse(response)
     return response.json()
   },
 
@@ -581,9 +531,7 @@ export const api = {
         body: JSON.stringify(payload),
       },
     )
-    if (!response.ok) {
-      throw new Error(`Agent memory clear error: ${response.status}`)
-    }
+    await throwOnErrorResponse(response)
     return response.json()
   },
 }

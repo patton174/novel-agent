@@ -1,9 +1,10 @@
 package com.novel.agent.pyai.service;
 
+import com.novel.agent.common.core.support.ResultJsonSupport;
 import com.novel.agent.pyai.support.BlockingWebSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -22,10 +23,10 @@ public class NovelContextClient {
     private final BlockingWebSupport blockingWebSupport;
 
     public NovelContextClient(
-        @Value("${agent.content.base-url:http://127.0.0.1:8091}") String contentBaseUrl,
+        @Qualifier("contentWebClient") WebClient contentClient,
         BlockingWebSupport blockingWebSupport
     ) {
-        this.contentClient = WebClient.builder().baseUrl(contentBaseUrl).build();
+        this.contentClient = contentClient;
         this.blockingWebSupport = blockingWebSupport;
     }
 
@@ -52,7 +53,7 @@ public class NovelContextClient {
         Map<String, Object> body = contentClient.get()
             .uri(uriBuilder -> {
                 var builder = uriBuilder
-                    .path("/api/content/novels/{novelId}/agent-context");
+                    .path("/api/content/auth/novels/{novelId}/agent-context");
                 if (chapterId != null && !chapterId.isBlank()) {
                     builder.queryParam("chapterId", chapterId);
                 }
@@ -67,7 +68,7 @@ public class NovelContextClient {
             log.warn("fetchAgentContext empty body userId={} novelId={}", userId, novelId);
             return fallbackProjectContext(userId, novelId);
         }
-        return body;
+        return ResultJsonSupport.unwrap(body);
     }
 
     private Map<String, Object> fallbackProjectContext(Long userId, String novelId) {
@@ -81,13 +82,14 @@ public class NovelContextClient {
 
     @SuppressWarnings("unchecked")
     private Map<String, Object> fallbackProjectContextBlocking(Long userId, String novelId) {
-        List<Map<String, Object>> novels = contentClient.get()
-            .uri("/api/content/novels")
+        Map<String, Object> result = contentClient.get()
+            .uri("/api/content/auth/novels")
             .header("X-User-Id", String.valueOf(userId))
             .retrieve()
-            .bodyToMono(List.class)
+            .bodyToMono(Map.class)
             .timeout(HTTP_TIMEOUT)
             .block();
+        List<Map<String, Object>> novels = result == null ? null : ResultJsonSupport.unwrap(result);
         if (novels == null) {
             return Map.of();
         }

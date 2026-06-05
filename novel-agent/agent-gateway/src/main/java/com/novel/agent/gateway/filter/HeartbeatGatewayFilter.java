@@ -37,7 +37,7 @@ public class HeartbeatGatewayFilter implements GlobalFilter, Ordered {
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         ServerHttpRequest request = exchange.getRequest();
         String path = request.getURI().getPath();
-        if (gatewayAuthSupport.isWhitePath(path) || path.startsWith("/api/auth/heartbeat")) {
+        if (gatewayAuthSupport.isWhitePath(path) || path.startsWith("/api/auth/auth/heartbeat")) {
             return chain.filter(exchange);
         }
 

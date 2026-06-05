@@ -16,6 +16,8 @@
     <description>公共模块 - 存放各服务通用代码</description>
 
     <modules>
+        <module>agent-common-core</module>
+        <module>agent-common-service</module>
         <module>agent-common-mq</module>
         <module>agent-common-security</module>
     </modules>

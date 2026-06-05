@@ -16,7 +16,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
+import com.novel.agent.common.core.tools.IdWorker;
 import java.util.stream.Collectors;
 
 @Service
@@ -205,7 +205,7 @@ public class ContentSessionService {
         }
         upsertSession(userId, sessionId, inferTitle(content), readNovelId(userId, sessionId));
         ContentMessageDTO dto = new ContentMessageDTO(
-            UUID.randomUUID().toString(),
+            IdWorker.nextIdStr(),
             sessionId,
             role,
             content,

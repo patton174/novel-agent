@@ -2,6 +2,7 @@ package com.novel.agent.common.mq.producer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.novel.agent.common.mq.constant.MqTopic;
+import com.novel.agent.common.mq.support.MqExceptions;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 
 /**
@@ -23,7 +24,7 @@ public class RabbitMessageProducer implements IMessageProducer {
             String json = objectMapper.writeValueAsString(message);
             rabbitTemplate.convertAndSend(topic.getExchange(), topic.getRoutingKey(), json);
         } catch (Exception e) {
-            throw new IllegalStateException("发送 MQ 消息失败: " + topic.name(), e);
+            throw MqExceptions.sendFailed(topic.name());
         }
     }
 }

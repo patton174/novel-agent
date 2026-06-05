@@ -1,5 +1,6 @@
 package com.novel.agent.pyai.support;
 
+import com.novel.agent.common.core.exception.BizException;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -25,13 +26,16 @@ public class BlockingWebSupport {
             return mono(supplier).toFuture().get();
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
-            throw new IllegalStateException("blocking web call interrupted", ex);
+            throw PyaiExceptions.internalError("请求被中断");
         } catch (ExecutionException ex) {
             Throwable cause = ex.getCause() == null ? ex : ex.getCause();
+            if (cause instanceof BizException biz) {
+                throw biz;
+            }
             if (cause instanceof RuntimeException runtime) {
                 throw runtime;
             }
-            throw new IllegalStateException("blocking web call failed", cause);
+            throw PyaiExceptions.internalError("请求处理失败");
         }
     }
 }

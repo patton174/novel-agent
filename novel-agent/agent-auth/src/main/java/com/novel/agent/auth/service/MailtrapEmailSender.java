@@ -1,6 +1,8 @@
 package com.novel.agent.auth.service;
 
 import com.novel.agent.auth.config.MailtrapProperties;
+import com.novel.agent.common.core.enums.ResultCode;
+import com.novel.agent.common.core.exception.BizException;
 import io.mailtrap.client.MailtrapClient;
 import io.mailtrap.config.MailtrapConfig;
 import io.mailtrap.factory.MailtrapClientFactory;
@@ -41,7 +43,7 @@ public class MailtrapEmailSender {
             client.send(mail);
         } catch (Exception ex) {
             log.error("Mailtrap 发信失败 email={}: {}", maskEmail(toEmail), ex.getMessage());
-            throw new RuntimeException("邮件发送失败，请稍后再试");
+            throw BizException.of(ResultCode.EMAIL_SEND_FAILED);
         }
     }
 

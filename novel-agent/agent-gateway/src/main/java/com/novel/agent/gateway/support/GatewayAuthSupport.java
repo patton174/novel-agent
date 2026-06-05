@@ -18,17 +18,18 @@ public class GatewayAuthSupport {
     public static final String USER_ID_HEADER = "X-User-Id";
     public static final String USER_NAME_HEADER = "X-User-Name";
     public static final String SESSION_ID_HEADER = "X-Session-Id";
+    public static final String USER_ROLES_HEADER = "X-User-Roles";
     public static final String TOKEN_HEADER = "Authorization";
     public static final String LEGACY_TOKEN_HEADER = "satoken";
     public static final String WS_TICKET_PARAM = "ticket";
 
     private static final List<String> WHITE_LIST = Arrays.asList(
-        "/api/auth/login",
-        "/api/auth/register",
-        "/api/auth/refresh",
+        "/api/auth/api/login",
+        "/api/auth/api/register",
+        "/api/auth/api/refresh",
         "/api/auth/crypto-config",
-        "/api/auth/captcha",
-        "/api/auth/send-email-code",
+        "/api/auth/api/captcha",
+        "/api/auth/api/send-email-code",
         "/actuator/health"
     );
 
@@ -129,10 +130,18 @@ public class GatewayAuthSupport {
     public ServerHttpRequest injectUserHeaders(ServerHttpRequest request, JwtPrincipal principal) {
         ServerHttpRequest.Builder builder = request.mutate()
             .header(USER_ID_HEADER, String.valueOf(principal.userId()))
-            .header(USER_NAME_HEADER, principal.username() == null ? String.valueOf(principal.userId()) : principal.username());
+            .header(USER_NAME_HEADER, principal.username() == null ? String.valueOf(principal.userId()) : principal.username())
+            .header(USER_ROLES_HEADER, formatRolesHeader(principal.roles()));
         if (principal.sessionId() != null && !principal.sessionId().isBlank()) {
             builder.header(SESSION_ID_HEADER, principal.sessionId());
         }
         return builder.build();
+    }
+
+    private static String formatRolesHeader(List<String> roles) {
+        if (roles == null || roles.isEmpty()) {
+            return "user";
+        }
+        return String.join(",", roles);
     }
 }

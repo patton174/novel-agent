@@ -8,11 +8,10 @@ import com.novel.agent.content.entity.VolumeEntity;
 import com.novel.agent.content.repository.ChapterRepository;
 import com.novel.agent.content.repository.NovelRepository;
 import com.novel.agent.content.repository.VolumeRepository;
+import com.novel.agent.content.support.ContentExceptions;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -70,17 +69,17 @@ public class VolumeService {
         ensureDefaultVolume(novelId);
         List<VolumeEntity> existing = volumeRepository.findByNovelIdOrderBySortOrderAscCreatedAtAsc(novelId);
         if (volumeIds.size() != existing.size()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "卷列表不完整");
+            throw ContentExceptions.badRequest("卷列表不完整");
         }
         java.util.Set<String> expected = existing.stream()
             .map(VolumeEntity::getId)
             .collect(java.util.stream.Collectors.toSet());
         if (!expected.equals(new java.util.HashSet<>(volumeIds))) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "卷 ID 不匹配");
+            throw ContentExceptions.badRequest("卷 ID 不匹配");
         }
         for (int i = 0; i < volumeIds.size(); i++) {
             VolumeEntity entity = volumeRepository.findByIdAndNovelId(volumeIds.get(i), novelId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "卷不存在"));
+                .orElseThrow(ContentExceptions::volumeNotFound);
             entity.setSortOrder(i + 1);
             volumeRepository.save(entity);
         }
@@ -91,13 +90,13 @@ public class VolumeService {
     public void deleteVolume(Long userId, String volumeId) {
         VolumeEntity entity = findOwnedVolume(userId, volumeId);
         if (volumeRepository.countByNovelId(entity.getNovelId()) <= 1) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "至少保留一卷");
+            throw ContentExceptions.badRequest("至少保留一卷");
         }
         VolumeEntity fallback = volumeRepository.findByNovelIdOrderBySortOrderAscCreatedAtAsc(entity.getNovelId())
             .stream()
             .filter(v -> !v.getId().equals(volumeId))
             .findFirst()
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "至少保留一卷"));
+            .orElseThrow(() -> ContentExceptions.badRequest("至少保留一卷"));
         for (ChapterEntity chapter : chapterRepository.findByVolumeIdOrderBySortOrderAscCreatedAtAsc(volumeId)) {
             chapter.setVolumeId(fallback.getId());
             chapterRepository.save(chapter);
@@ -150,14 +149,14 @@ public class VolumeService {
 
     private VolumeEntity findOwnedVolume(Long userId, String volumeId) {
         VolumeEntity entity = volumeRepository.findById(volumeId)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "卷不存在"));
+            .orElseThrow(ContentExceptions::volumeNotFound);
         assertNovelOwned(userId, entity.getNovelId());
         return entity;
     }
 
     private void assertNovelOwned(Long userId, String novelId) {
         novelRepository.findByIdAndUserId(novelId, userId)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "小说不存在"));
+            .orElseThrow(ContentExceptions::novelNotFound);
     }
 
     private VolumeDTO toDto(VolumeEntity entity) {
