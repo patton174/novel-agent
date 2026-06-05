@@ -1,8 +1,9 @@
 package com.novel.agent.gateway.support;
 
-import cn.dev33.satoken.exception.NotLoginException;
-import cn.dev33.satoken.stp.StpUtil;
-import org.springframework.data.redis.core.StringRedisTemplate;
+import com.novel.agent.common.security.AuthUnauthorizedException;
+import com.novel.agent.common.security.JwtCodec;
+import com.novel.agent.common.security.JwtPrincipal;
+import com.novel.agent.common.security.WsTicketRecord;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
@@ -16,11 +17,10 @@ public class GatewayAuthSupport {
 
     public static final String USER_ID_HEADER = "X-User-Id";
     public static final String USER_NAME_HEADER = "X-User-Name";
-    /** 与 auth 服务 sa-token.token-name 保持一致 */
+    public static final String SESSION_ID_HEADER = "X-Session-Id";
     public static final String TOKEN_HEADER = "Authorization";
     public static final String LEGACY_TOKEN_HEADER = "satoken";
-    /** sa-token Redis 键：{token-name}:login:token:{tokenValue} → loginId */
-    private static final String TOKEN_REDIS_KEY_PREFIX = TOKEN_HEADER + ":login:token:";
+    public static final String WS_TICKET_PARAM = "ticket";
 
     private static final List<String> WHITE_LIST = Arrays.asList(
         "/api/auth/login",
@@ -29,14 +29,37 @@ public class GatewayAuthSupport {
         "/actuator/health"
     );
 
-    private final StringRedisTemplate redisTemplate;
+    private static final List<String> CRYPTO_EXEMPT = Arrays.asList(
+        "/api/auth/login",
+        "/api/auth/register",
+        "/api/auth/refresh",
+        "/api/auth/heartbeat",
+        "/actuator/health"
+    );
 
-    public GatewayAuthSupport(StringRedisTemplate redisTemplate) {
-        this.redisTemplate = redisTemplate;
+    private static final List<String> WS_PATHS = Arrays.asList(
+        "/api/agent/run/ws",
+        "/api/agent/chat/status/ws"
+    );
+
+    private final JwtCodec jwtCodec;
+    private final WsTicketSupport wsTicketSupport;
+
+    public GatewayAuthSupport(JwtCodec jwtCodec, WsTicketSupport wsTicketSupport) {
+        this.jwtCodec = jwtCodec;
+        this.wsTicketSupport = wsTicketSupport;
     }
 
     public boolean isWhitePath(String path) {
         return WHITE_LIST.stream().anyMatch(path::startsWith);
+    }
+
+    public boolean isCryptoExemptPath(String path) {
+        return CRYPTO_EXEMPT.stream().anyMatch(path::startsWith);
+    }
+
+    public boolean isWsPath(String path) {
+        return WS_PATHS.stream().anyMatch(path::endsWith);
     }
 
     public String resolveToken(ServerHttpRequest request) {
@@ -49,7 +72,6 @@ public class GatewayAuthSupport {
                 return request.getCookies().getFirst(header).getValue();
             }
         }
-        // 浏览器 WebSocket 无法自定义 Header，允许 query 传 token（与 sa-token.token-name 一致）
         var query = request.getQueryParams();
         for (String key : List.of(TOKEN_HEADER, LEGACY_TOKEN_HEADER, "token")) {
             String token = query.getFirst(key);
@@ -60,30 +82,58 @@ public class GatewayAuthSupport {
         return null;
     }
 
-    public Mono<Long> resolveUserId(ServerHttpRequest request) {
-        return Mono.fromCallable(() -> authenticate(request))
+    public Mono<JwtPrincipal> resolvePrincipal(ServerHttpRequest request) {
+        return Mono.fromCallable(() -> resolvePrincipalBlocking(request))
             .subscribeOn(Schedulers.boundedElastic());
     }
 
-    /**
-     * WebFlux 网关不能依赖 StpUtil 上下文；直接从 Redis 读取 sa-token 写入的 loginId。
-     */
-    private Long authenticate(ServerHttpRequest request) {
+    private JwtPrincipal resolvePrincipalBlocking(ServerHttpRequest request) {
+        String path = request.getURI().getPath();
+        String ticket = request.getQueryParams().getFirst(WS_TICKET_PARAM);
+        if (isWsPath(path) && ticket != null && !ticket.isBlank()) {
+            WsTicketRecord record = wsTicketSupport.consume(ticket);
+            if (record == null) {
+                throw new AuthUnauthorizedException("无效或已过期的 WS ticket");
+            }
+            validateWsTicketBinding(request, record);
+            return new JwtPrincipal(
+                record.userId(),
+                record.sessionId(),
+                String.valueOf(record.userId()),
+                List.of("user"),
+                ticket
+            );
+        }
         String token = resolveToken(request);
-        if (token == null || token.isBlank()) {
-            throw NotLoginException.newInstance(StpUtil.getLoginType(), NotLoginException.NOT_TOKEN, null, null);
-        }
-        String loginId = redisTemplate.opsForValue().get(TOKEN_REDIS_KEY_PREFIX + token);
-        if (loginId == null || loginId.isBlank()) {
-            throw NotLoginException.newInstance(StpUtil.getLoginType(), NotLoginException.INVALID_TOKEN, null, null);
-        }
-        return Long.parseLong(loginId.trim());
+        return jwtCodec.parseAccessToken(token);
     }
 
-    public ServerHttpRequest injectUserHeaders(ServerHttpRequest request, Long userId) {
-        return request.mutate()
-            .header(USER_ID_HEADER, String.valueOf(userId))
-            .header(USER_NAME_HEADER, String.valueOf(userId))
-            .build();
+    private void validateWsTicketBinding(ServerHttpRequest request, WsTicketRecord record) {
+        if ("run".equalsIgnoreCase(record.purpose())) {
+            String runId = request.getQueryParams().getFirst("runId");
+            if (record.resourceId() != null && runId != null && !record.resourceId().equals(runId)) {
+                throw new AuthUnauthorizedException("WS ticket 与 runId 不匹配");
+            }
+        }
+        if ("status".equalsIgnoreCase(record.purpose())) {
+            String sessionId = request.getQueryParams().getFirst("sessionId");
+            if (record.resourceId() != null && sessionId != null && !record.resourceId().equals(sessionId)) {
+                throw new AuthUnauthorizedException("WS ticket 与 sessionId 不匹配");
+            }
+        }
+    }
+
+    public Mono<Long> resolveUserId(ServerHttpRequest request) {
+        return resolvePrincipal(request).map(JwtPrincipal::userId);
+    }
+
+    public ServerHttpRequest injectUserHeaders(ServerHttpRequest request, JwtPrincipal principal) {
+        ServerHttpRequest.Builder builder = request.mutate()
+            .header(USER_ID_HEADER, String.valueOf(principal.userId()))
+            .header(USER_NAME_HEADER, principal.username() == null ? String.valueOf(principal.userId()) : principal.username());
+        if (principal.sessionId() != null && !principal.sessionId().isBlank()) {
+            builder.header(SESSION_ID_HEADER, principal.sessionId());
+        }
+        return builder.build();
     }
 }

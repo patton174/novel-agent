@@ -13,7 +13,7 @@ spring:
   datasource:
     url: jdbc:postgresql://YOUR_MW_HOST:5432/novel_agent?sslmode=disable
     username: postgres
-    password: changeme
+    password: YOUR_DB_PASSWORD
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -26,12 +26,18 @@ spring:
     redis:
       host: YOUR_MW_HOST
       port: 6379
-      password: changeme
+      password: YOUR_REDIS_PASSWORD
       database: 0
 
 agent:
   python:
-    base-url: http://YOUR_MW_HOST:8000
+    base-url: http://python-ai:8000
+  internal:
+    service-key: prod-internal-key-novel-agent
+  runtime:
+    pg-session-dual-write: false
+    read-pg-session-first: false
+    lease-ttl-seconds: 900
 
 logging:
   level:

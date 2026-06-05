@@ -4,6 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.novel.agent.content.dto.ContentMessageDTO;
 import com.novel.agent.content.dto.SessionDTO;
+import com.novel.agent.content.config.AgentRuntimeProperties;
+import com.novel.agent.content.service.agent.AgentSessionPgService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -29,6 +31,8 @@ public class ContentSessionService {
 
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
+    private final AgentSessionPgService agentSessionPgService;
+    private final AgentRuntimeProperties runtimeProperties;
 
     public void upsertSession(String userId, String sessionId, String title) {
         upsertSession(userId, sessionId, title, null);
@@ -44,6 +48,18 @@ public class ContentSessionService {
             redisTemplate.opsForZSet().add(SESSION_NOVEL_INDEX_PREFIX + userId + ":" + novelId, sessionId, now);
         }
         redisTemplate.opsForZSet().add(SESSION_SET_KEY_PREFIX + userId, sessionId, now);
+        mirrorSessionToPg(userId, sessionId, title, novelId);
+    }
+
+    private void mirrorSessionToPg(String userId, String sessionId, String title, String novelId) {
+        if (!runtimeProperties.isPgSessionDualWrite()) {
+            return;
+        }
+        try {
+            agentSessionPgService.upsertSession(Long.parseLong(userId), sessionId, title, novelId);
+        } catch (NumberFormatException ignored) {
+            // skip invalid user id
+        }
     }
 
     public List<SessionDTO> listSessionsByNovel(String userId, String novelId, int limit) {
@@ -77,6 +93,12 @@ public class ContentSessionService {
     }
 
     public SessionDTO getSession(String userId, String sessionId) {
+        if (runtimeProperties.isReadPgSessionFirst()) {
+            SessionDTO pg = readSessionFromPg(userId, sessionId);
+            if (pg != null) {
+                return pg;
+            }
+        }
         if (!isSessionOwnedByUser(userId, sessionId)) {
             return null;
         }
@@ -104,7 +126,29 @@ public class ContentSessionService {
     }
 
     public boolean isSessionOwnedByUser(String userId, String sessionId) {
+        if (runtimeProperties.isReadPgSessionFirst()) {
+            Boolean pgOwned = isSessionOwnedByUserPg(userId, sessionId);
+            if (pgOwned != null) {
+                return pgOwned;
+            }
+        }
         return redisTemplate.opsForZSet().score(SESSION_SET_KEY_PREFIX + userId, sessionId) != null;
+    }
+
+    private SessionDTO readSessionFromPg(String userId, String sessionId) {
+        try {
+            return agentSessionPgService.getSession(Long.parseLong(userId), sessionId);
+        } catch (NumberFormatException ex) {
+            return null;
+        }
+    }
+
+    private Boolean isSessionOwnedByUserPg(String userId, String sessionId) {
+        try {
+            return agentSessionPgService.isSessionOwnedByUser(Long.parseLong(userId), sessionId);
+        } catch (NumberFormatException ex) {
+            return null;
+        }
     }
 
     public boolean deleteSession(String userId, String sessionId) {
@@ -173,6 +217,35 @@ public class ContentSessionService {
         try {
             redisTemplate.opsForList().rightPush(MESSAGE_LIST_KEY_PREFIX + userId + ":" + sessionId, objectMapper.writeValueAsString(dto));
         } catch (JsonProcessingException ignored) {
+        }
+        mirrorMessageToPg(userId, sessionId, role, content, runId, messageId, dto.id());
+    }
+
+    private void mirrorMessageToPg(
+        String userId,
+        String sessionId,
+        String role,
+        String content,
+        String runId,
+        String messageId,
+        String fallbackMessageId
+    ) {
+        if (!runtimeProperties.isPgSessionDualWrite()) {
+            return;
+        }
+        try {
+            String pgMessageId = messageId != null && !messageId.isBlank() ? messageId : fallbackMessageId;
+            agentSessionPgService.appendMessage(
+                Long.parseLong(userId),
+                sessionId,
+                pgMessageId,
+                role,
+                content,
+                "completed",
+                runId
+            );
+        } catch (NumberFormatException ignored) {
+            // skip
         }
     }
 

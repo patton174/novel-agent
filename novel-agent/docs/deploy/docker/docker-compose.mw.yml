@@ -22,8 +22,11 @@ services:
     restart: unless-stopped
     ports:
       - "${ENTRY_PORT:-80}:80"
+      - "${ENTRY_SSL_PORT:-443}:443"
     volumes:
       - ./nginx-entry-mw.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./letsencrypt:/etc/letsencrypt:ro
+      - ./certbot-www:/var/www/certbot:ro
     mem_limit: 32m
     networks:
       - novel-net

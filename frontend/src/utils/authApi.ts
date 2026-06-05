@@ -1,4 +1,8 @@
-import { clearToken, getAuthHeaders, setToken, setUserId } from './auth'
+import { applyLoginSession, clearToken, getAuthHeaders } from './auth'
+import { secureFetch } from '../security/secureFetch'
+import { collectFullEnv } from '../security/envCollect'
+import { getFingerprint } from '../security/fingerprint'
+import { startHeartbeatWorker, stopHeartbeatWorker } from '../security/heartbeat'
 
 export interface LoginResult {
   token: string
@@ -6,6 +10,14 @@ export interface LoginResult {
   role: string
   expiresIn: number
   userId?: number
+  sessionCrypto?: {
+    keyId: string
+    aesKeyB64: string
+    keyVersion: number
+    expiresAtEpochMs?: number
+  }
+  heartbeatIntervalSec?: number
+  sessionId?: string
 }
 
 async function readErrorMessage(response: Response): Promise<string> {
@@ -20,9 +32,9 @@ async function readErrorMessage(response: Response): Promise<string> {
   return `请求失败 (${response.status})`
 }
 
-/** 登录后解析用户 ID（供本机 PyAI 的 X-User-Id）；兼容旧版 auth 未返回 userId */
 async function syncUserIdFromServer(): Promise<void> {
-  const response = await fetch('/api/auth/info', {
+  const response = await secureFetch('/api/auth/info', {
+    credentials: 'include',
     headers: { ...getAuthHeaders() },
   })
   if (!response.ok) {
@@ -30,20 +42,25 @@ async function syncUserIdFromServer(): Promise<void> {
   }
   const data = (await response.json()) as { userId?: number; username?: string }
   if (data.userId != null) {
-    setUserId(data.userId)
-    return
-  }
-  // 旧版 /info 把 userId 放在 username 字段
-  if (data.username) {
-    setUserId(data.username)
+    applyLoginSession({ userId: data.userId })
+  } else if (data.username) {
+    applyLoginSession({ userId: Number(data.username) || undefined })
   }
 }
 
 export async function login(username: string, password: string): Promise<LoginResult> {
-  const response = await fetch('/api/auth/login', {
+  const [fingerprint, envSnapshot] = await Promise.all([
+    getFingerprint(),
+    Promise.resolve(collectFullEnv()),
+  ])
+  const response = await secureFetch('/api/auth/login', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, password }),
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Fingerprint': fingerprint,
+    },
+    body: JSON.stringify({ username, password, fingerprint, envSnapshot }),
   })
 
   if (!response.ok) {
@@ -51,12 +68,11 @@ export async function login(username: string, password: string): Promise<LoginRe
   }
 
   const data = (await response.json()) as LoginResult
-  setToken(data.token)
-  if (data.userId != null) {
-    setUserId(data.userId)
-  } else {
+  applyLoginSession(data)
+  if (data.userId == null) {
     await syncUserIdFromServer()
   }
+  startHeartbeatWorker()
   return data
 }
 
@@ -65,8 +81,9 @@ export async function register(
   password: string,
   email: string,
 ): Promise<void> {
-  const response = await fetch('/api/auth/register', {
+  const response = await secureFetch('/api/auth/register', {
     method: 'POST',
+    credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username, password, email }),
   })
@@ -76,6 +93,30 @@ export async function register(
   }
 }
 
-export function logout(): void {
-  clearToken()
+export async function logout(): Promise<void> {
+  try {
+    await secureFetch('/api/auth/logout', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { ...getAuthHeaders() },
+    })
+  } finally {
+    stopHeartbeatWorker()
+    clearToken()
+  }
+}
+
+export async function refreshSession(): Promise<boolean> {
+  const response = await secureFetch('/api/auth/refresh', {
+    method: 'POST',
+    credentials: 'include',
+  })
+  if (!response.ok) {
+    clearToken()
+    return false
+  }
+  const data = (await response.json()) as LoginResult
+  applyLoginSession(data)
+  startHeartbeatWorker()
+  return true
 }

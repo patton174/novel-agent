@@ -46,22 +46,15 @@
             <artifactId>spring-cloud-starter-loadbalancer</artifactId>
         </dependency>
 
-        <!-- Redis（分布式会话） -->
+        <!-- Redis（refresh 校验等后续扩展） -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-redis</artifactId>
         </dependency>
 
-        <!-- sa-token -->
         <dependency>
-            <groupId>cn.dev33</groupId>
-            <artifactId>sa-token-spring-boot3-starter</artifactId>
-        </dependency>
-
-        <!-- sa-token Redis 存储 -->
-        <dependency>
-            <groupId>cn.dev33</groupId>
-            <artifactId>sa-token-redis-jackson</artifactId>
+            <groupId>com.novel.agent</groupId>
+            <artifactId>agent-common-security</artifactId>
         </dependency>
 
         <!-- Lombok -->

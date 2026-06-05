@@ -1,11 +1,17 @@
 package com.novel.agent.auth.service.impl;
 
-import cn.dev33.satoken.stp.StpUtil;
+import com.novel.agent.auth.dto.HeartbeatRequest;
+import com.novel.agent.auth.dto.WsTicketRequest;
+import com.novel.agent.auth.dto.WsTicketResponse;
 import com.novel.agent.auth.dto.LoginRequest;
 import com.novel.agent.auth.dto.LoginResponse;
 import com.novel.agent.auth.dto.RegisterRequest;
 import com.novel.agent.auth.entity.AuthUser;
 import com.novel.agent.auth.repository.AuthUserRepository;
+import com.novel.agent.auth.security.DeviceSessionService;
+import com.novel.agent.auth.security.JwtAuthService;
+import com.novel.agent.auth.security.WsTicketService;
+import com.novel.agent.common.security.JwtPrincipal;
 import com.novel.agent.auth.service.AuthService;
 import com.novel.agent.common.mq.constant.MqTopic;
 import com.novel.agent.common.mq.producer.IMessageProducer;
@@ -25,12 +31,21 @@ public class AuthServiceImpl implements AuthService {
     @Autowired
     private IMessageProducer messageProducer;
 
+    @Autowired
+    private JwtAuthService jwtAuthService;
+
+    @Autowired
+    private DeviceSessionService deviceSessionService;
+
+    @Autowired
+    private WsTicketService wsTicketService;
+
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder(12);
 
     @Override
-    public LoginResponse login(LoginRequest request) {
+    public JwtAuthService.AuthSessionBundle login(LoginRequest request) {
         AuthUser user = authUserRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new RuntimeException("用户名或密码错误"));
+            .orElseThrow(() -> new RuntimeException("用户名或密码错误"));
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new RuntimeException("用户名或密码错误");
@@ -40,25 +55,13 @@ public class AuthServiceImpl implements AuthService {
             throw new RuntimeException("账号已被禁用");
         }
 
-        // sa-token 自动存 token 到 Redis
-        StpUtil.login(user.getId());
-        String token = StpUtil.getTokenValue();
-
-        // 异步发送权限同步消息（不阻塞登录）
         try {
-            Long userId = user.getId();
-            messageProducer.send(MqTopic.PERMISSION, userId);
+            messageProducer.send(MqTopic.PERMISSION, user.getId());
         } catch (Exception e) {
             log.warn("异步发送权限消息失败，不影响登录: {}", e.getMessage());
         }
 
-        return LoginResponse.builder()
-                .token(token)
-                .userId(user.getId())
-                .username(user.getUsername())
-                .role(user.getRole())
-                .expiresIn(StpUtil.getTokenTimeout())
-                .build();
+        return jwtAuthService.login(user, request.getFingerprint(), request.getEnvSnapshot());
     }
 
     @Override
@@ -83,12 +86,91 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public void logout() {
-        StpUtil.logout();
+    public JwtAuthService.AuthSessionBundle refresh(String refreshToken) {
+        return refresh(refreshToken, null, null);
+    }
+
+    public JwtAuthService.AuthSessionBundle refresh(
+        String refreshToken,
+        String fingerprint,
+        java.util.Map<String, Object> envSnapshot
+    ) {
+        Long userId = jwtAuthService.userIdFromRefresh(refreshToken);
+        if (userId == null) {
+            throw new RuntimeException("登录已过期，请重新登录");
+        }
+        AuthUser user = authUserRepository.findById(userId)
+            .orElseThrow(() -> new RuntimeException("登录已过期，请重新登录"));
+        return jwtAuthService.refresh(refreshToken, user, fingerprint, envSnapshot);
     }
 
     @Override
-    public Long getCurrentUserId() {
-        return StpUtil.getLoginIdAsLong();
+    public void logout(String refreshToken) {
+        jwtAuthService.logout(refreshToken);
+    }
+
+    @Override
+    public Long getCurrentUserId(String authorizationHeader) {
+        return jwtAuthService.parseAccessUserId(authorizationHeader);
+    }
+
+    @Override
+    public void heartbeat(String authorizationHeader, HeartbeatRequest request) {
+        JwtPrincipal principal = jwtAuthService.parseAccessPrincipal(authorizationHeader);
+        String sessionId = request != null && request.getSid() != null && !request.getSid().isBlank()
+            ? request.getSid()
+            : principal.sessionId();
+        String fingerprint = request == null ? null : request.getFingerprint();
+        java.util.Map<String, Object> envDelta = request == null ? null : request.getEnvDelta();
+        deviceSessionService.touchHeartbeat(sessionId, principal.userId(), fingerprint, envDelta);
+    }
+
+    @Override
+    public WsTicketResponse issueWsTicket(String authorizationHeader, WsTicketRequest request) {
+        JwtPrincipal principal = jwtAuthService.parseAccessPrincipal(authorizationHeader);
+        if (request == null || request.getPurpose() == null || request.getPurpose().isBlank()) {
+            throw new RuntimeException("purpose 不能为空");
+        }
+        String purpose = request.getPurpose().trim().toLowerCase();
+        String resourceId;
+        switch (purpose) {
+            case "run" -> {
+                if (request.getRunId() == null || request.getRunId().isBlank()) {
+                    throw new RuntimeException("runId 不能为空");
+                }
+                resourceId = request.getRunId().trim();
+            }
+            case "status" -> {
+                if (request.getSessionId() == null || request.getSessionId().isBlank()) {
+                    throw new RuntimeException("sessionId 不能为空");
+                }
+                resourceId = request.getSessionId().trim();
+            }
+            default -> throw new RuntimeException("不支持的 purpose: " + purpose);
+        }
+        String ticket = wsTicketService.issue(
+            principal.userId(),
+            principal.sessionId(),
+            purpose,
+            resourceId
+        );
+        return WsTicketResponse.builder()
+            .ticket(ticket)
+            .expiresIn(wsTicketService.ticketTtlSeconds())
+            .build();
+    }
+
+    public static LoginResponse toResponse(JwtAuthService.AuthSessionBundle bundle) {
+        AuthUser user = bundle.user();
+        return LoginResponse.builder()
+            .token(bundle.accessToken())
+            .userId(user.getId())
+            .username(user.getUsername())
+            .role(user.getRole())
+            .expiresIn(bundle.expiresIn())
+            .sessionCrypto(bundle.sessionCrypto())
+            .heartbeatIntervalSec(bundle.heartbeatIntervalSec())
+            .sessionId(bundle.sessionId())
+            .build();
     }
 }

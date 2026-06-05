@@ -1,16 +1,25 @@
 package com.novel.agent.auth.service;
 
+import com.novel.agent.auth.dto.HeartbeatRequest;
+import com.novel.agent.auth.dto.WsTicketRequest;
+import com.novel.agent.auth.dto.WsTicketResponse;
 import com.novel.agent.auth.dto.LoginRequest;
-import com.novel.agent.auth.dto.LoginResponse;
 import com.novel.agent.auth.dto.RegisterRequest;
+import com.novel.agent.auth.security.JwtAuthService;
 
 public interface AuthService {
 
-    LoginResponse login(LoginRequest request);
+    JwtAuthService.AuthSessionBundle login(LoginRequest request);
 
     void register(RegisterRequest request);
 
-    void logout();
+    JwtAuthService.AuthSessionBundle refresh(String refreshToken);
 
-    Long getCurrentUserId();
+    void logout(String refreshToken);
+
+    Long getCurrentUserId(String authorizationHeader);
+
+    void heartbeat(String authorizationHeader, HeartbeatRequest request);
+
+    WsTicketResponse issueWsTicket(String authorizationHeader, WsTicketRequest request);
 }

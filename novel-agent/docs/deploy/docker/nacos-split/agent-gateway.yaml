@@ -35,14 +35,24 @@ spring:
     redis:
       host: YOUR_MW_HOST
       port: 6379
-      password: changeme
+      password: YOUR_REDIS_PASSWORD
       database: 0
 
-sa-token:
-  token-name: Authorization
-  timeout: 2592000
-  is-concurrent: true
-  is-share: false
+auth:
+  jwt:
+    issuer: novel-agent
+    secret: ${JWT_SECRET:YOUR_JWT_SECRET_MIN_32_CHARS}
+    access-ttl-seconds: 3600
+  client-security:
+    enabled: false
+    aes-required: false
+    encrypt-stream: false
+    replay-window-seconds: 120
+    enforce-csrf: false
+    heartbeat-max-silence-seconds: 180
+    fingerprint-tolerance: 0.15
+    enforce-fingerprint: false
+    enforce-heartbeat: false
 
 logging:
   level:

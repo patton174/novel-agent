@@ -36,7 +36,8 @@ if [[ -n "${FORCE_SERVICE:-}" ]]; then
     pyai) CHANGED_GATEWAY=false; CHANGED_AUTH=false; CHANGED_PYAI=true; CHANGED_CONTENT=false; CHANGED_CONSUMER=false; CHANGED_FRONTEND=false ;;
     content) CHANGED_GATEWAY=false; CHANGED_AUTH=false; CHANGED_PYAI=false; CHANGED_CONTENT=true; CHANGED_CONSUMER=false; CHANGED_FRONTEND=false ;;
     consumer) CHANGED_GATEWAY=false; CHANGED_AUTH=false; CHANGED_PYAI=false; CHANGED_CONTENT=false; CHANGED_CONSUMER=true; CHANGED_FRONTEND=false ;;
-    frontend) CHANGED_GATEWAY=false; CHANGED_AUTH=false; CHANGED_PYAI=false; CHANGED_CONTENT=false; CHANGED_CONSUMER=false; CHANGED_FRONTEND=true ;;
+    frontend) CHANGED_GATEWAY=false; CHANGED_AUTH=false; CHANGED_PYAI=false; CHANGED_CONTENT=false; CHANGED_CONSUMER=false; CHANGED_FRONTEND=true; CHANGED_PYTHON_AI=false ;;
+    python-ai) CHANGED_GATEWAY=false; CHANGED_AUTH=false; CHANGED_PYAI=false; CHANGED_CONTENT=false; CHANGED_CONSUMER=false; CHANGED_FRONTEND=false; CHANGED_PYTHON_AI=true ;;
     *) echo "[ci-hot] 未知 FORCE_SERVICE=$FORCE_SERVICE"; exit 1 ;;
   esac
 fi
@@ -87,7 +88,33 @@ want "${CHANGED_CONTENT:-false}" && hot content worker
 want "${CHANGED_CONSUMER:-false}" && hot consumer worker
 want "${CHANGED_FRONTEND:-false}" && hot frontend worker
 
-if [[ ${#PIDS[@]} -eq 0 ]]; then
+hot_python() {
+  echo "[ci-hot] python-ai rsync + docker rebuild on worker"
+  # shellcheck source=/dev/null
+  source "$SCRIPT_DIR/_deploy-lib.sh"
+  deploy_ssh "$WORKER_SSH" "mkdir -p '$WORKER_REMOTE_DIR/python-ai'"
+  rsync -avz \
+    -e "${DEPLOY_RSYNC_SSH}" \
+    "$REPO_ROOT/python-ai/app" \
+    "$REPO_ROOT/python-ai/requirements.txt" \
+    "$WORKER_SSH:$WORKER_REMOTE_DIR/python-ai/"
+  deploy_ssh "$WORKER_SSH" bash -s <<EOF
+set -euo pipefail
+cd '$WORKER_REMOTE_DIR'
+COMPOSE='docker compose'
+if ! docker compose version >/dev/null 2>&1; then COMPOSE='docker-compose'; fi
+CF='novel-agent/docs/deploy/docker/docker-compose.worker.yml'
+ENV='novel-agent/docs/deploy/docker/.env.worker'
+\$COMPOSE -f "\$CF" --env-file "\$ENV" build python-ai
+\$COMPOSE -f "\$CF" --env-file "\$ENV" up -d --no-deps python-ai python-ai-2
+EOF
+}
+
+if want "${CHANGED_PYTHON_AI:-false}"; then
+  hot_python
+fi
+
+if [[ ${#PIDS[@]} -eq 0 ]] && ! want "${CHANGED_PYTHON_AI:-false}"; then
   echo "[ci-hot] 无匹配变更，跳过部署"
   exit 0
 fi

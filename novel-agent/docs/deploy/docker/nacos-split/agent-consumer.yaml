@@ -14,13 +14,13 @@ spring:
     redis:
       host: YOUR_MW_HOST
       port: 6379
-      password: changeme
+      password: YOUR_REDIS_PASSWORD
       database: 0
   rabbitmq:
     host: YOUR_MW_HOST
     port: 5672
     username: novel_agent
-    password: changeme
+    password: YOUR_RMQ_PASSWORD
 
 logging:
   level:
@@ -29,3 +29,7 @@ logging:
 agent:
   content:
     base-url: http://agent-content:8091
+  python:
+    base-url: http://python-ai:8000
+  internal:
+    service-key: prod-internal-key-novel-agent

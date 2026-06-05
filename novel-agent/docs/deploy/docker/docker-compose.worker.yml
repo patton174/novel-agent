@@ -27,6 +27,7 @@ services:
       - ../../../../python-ai/.env
     environment:
       LOG_LEVEL: ${PYTHON_LOG_LEVEL:-INFO}
+      CONTENT_BASE_URL: http://agent-content:8091
     mem_limit: ${PYTHON_MEM_LIMIT:-320m}
     ports:
       - "8000:8000"
@@ -46,6 +47,7 @@ services:
       - ../../../../python-ai/.env
     environment:
       LOG_LEVEL: ${PYTHON_LOG_LEVEL:-INFO}
+      CONTENT_BASE_URL: http://agent-content:8091
     mem_limit: ${PYTHON_MEM_LIMIT_2:-320m}
     ports:
       - "8001:8000"
@@ -77,7 +79,7 @@ services:
       SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
       SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
       AGENT_PYTHON_BASE_URL: ${AGENT_PYTHON_BASE_URL}
-    mem_limit: ${JAVA_MEM_LIMIT:-288m}
+    mem_limit: ${JAVA_MEM_LIMIT_CONTENT:-384m}
     ports:
       - "8091:8091"
     networks:
@@ -101,7 +103,7 @@ services:
       SPRING_MAIN_WEB_APPLICATION_TYPE: reactive
       AGENT_PYTHON_BASE_URL: ${AGENT_PYTHON_BASE_URL}
       AGENT_CONTENT_BASE_URL: ${AGENT_CONTENT_BASE_URL}
-    mem_limit: ${JAVA_MEM_LIMIT:-288m}
+    mem_limit: ${JAVA_MEM_LIMIT_PYAI:-288m}
     ports:
       - "8082:8082"
     networks:
@@ -123,7 +125,7 @@ services:
       <<: *java-env
       JAVA_OPTS: ${JAVA_OPTS_CONSUMER:--Xms96m -Xmx192m -Dfile.encoding=UTF-8}
       AGENT_CONTENT_BASE_URL: ${AGENT_CONTENT_BASE_URL}
-    mem_limit: 224m
+    mem_limit: ${JAVA_MEM_LIMIT_CONSUMER:-256m}
     networks:
       - novel-net
     depends_on:

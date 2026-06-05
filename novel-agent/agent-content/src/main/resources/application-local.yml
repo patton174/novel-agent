@@ -29,6 +29,12 @@ spring:
 agent:
   python:
     base-url: ${AGENT_PYTHON_BASE_URL:http://127.0.0.1:8000}
+  runtime:
+    pg-session-dual-write: false
+    read-pg-session-first: false
+    lease-ttl-seconds: 900
+  internal:
+    service-key: ${INTERNAL_SERVICE_KEY:dev-internal-key-change-me}
 
 logging:
   level:

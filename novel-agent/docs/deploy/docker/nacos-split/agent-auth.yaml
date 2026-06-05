@@ -15,7 +15,7 @@ spring:
   datasource:
     url: jdbc:postgresql://YOUR_MW_HOST:5432/novel_agent?sslmode=disable
     username: postgres
-    password: changeme
+    password: YOUR_DB_PASSWORD
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -28,19 +28,35 @@ spring:
     redis:
       host: YOUR_MW_HOST
       port: 6379
-      password: changeme
+      password: YOUR_REDIS_PASSWORD
       database: 0
   rabbitmq:
     host: YOUR_MW_HOST
     port: 5672
     username: novel_agent
-    password: changeme
+    password: YOUR_RMQ_PASSWORD
 
-sa-token:
-  token-name: Authorization
-  timeout: 2592000
-  is-concurrent: true
-  is-share: false
+auth:
+  jwt:
+    issuer: novel-agent
+    secret: ${JWT_SECRET:YOUR_JWT_SECRET_MIN_32_CHARS}
+    access-ttl-seconds: 3600
+    refresh-ttl-seconds: 2592000
+  cookie:
+    secure: true
+    domain: .novel-agent.cn
+  client-security:
+    enabled: false
+    aes-required: false
+    encrypt-stream: false
+    replay-window-seconds: 120
+    ws-ticket-ttl-seconds: 60
+    heartbeat-interval-seconds: 60
+    heartbeat-max-silence-seconds: 180
+    fingerprint-tolerance: 0.15
+    enforce-fingerprint: false
+    enforce-heartbeat: false
+    enforce-csrf: false
 
 logging:
   level:

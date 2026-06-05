@@ -1,0 +1,19 @@
+package com.novel.agent.content.dto.agent;
+
+import lombok.Builder;
+import lombok.Data;
+
+import java.time.Instant;
+
+@Data
+@Builder
+public class AgentEventDTO {
+    private String id;
+    private String runId;
+    private String sessionId;
+    private int sequence;
+    private String eventType;
+    private String source;
+    private String payloadJson;
+    private Instant createdAt;
+}

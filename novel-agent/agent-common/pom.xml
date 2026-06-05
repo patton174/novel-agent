@@ -17,5 +17,6 @@
 
     <modules>
         <module>agent-common-mq</module>
+        <module>agent-common-security</module>
     </modules>
 </project>

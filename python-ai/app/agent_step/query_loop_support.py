@@ -14,7 +14,7 @@ from app.agent_step.orchestration_contract import (
     QUERY_LOOP_END_RUN_TOOLS as _END_RUN_TOOLS,
     QUERY_LOOP_INTERACTION_TOOLS as _INTERACTION_TOOLS,
 )
-from app.agent_step.run_session import RunSession
+from app.agent_step.run_session import RunSession, WorkerSliceSession
 from app.agent_step.schemas import AgentRunContext, StepRequest, StepResult
 from app.agent_step.tool_execution import (
     RETRYABLE_TOOLS,
@@ -349,18 +349,20 @@ def build_open_todos_blocking_message(context_patch: dict[str, Any] | None) -> s
 
 async def wait_for_user_interaction(
     state: RunLoopState,
-    session: RunSession,
+    session: RunSession | WorkerSliceSession,
 ) -> AsyncIterator[dict[str, Any]]:
-    yield build_event(
-        event_type="run.waiting",
-        run_id=state.ctx.run_id,
-        session_id=state.ctx.session_id,
-        message_id=state.ctx.message_id,
-        step_id=f"step_{uuid4().hex[:8]}",
-        sequence=state.sequence,
-        payload={"reason": "waiting for user interaction"},
-    )
-    state.sequence += 1
+    has_resume = isinstance(session, WorkerSliceSession) and session._resume_payload is not None
+    if not has_resume:
+        yield build_event(
+            event_type="run.waiting",
+            run_id=state.ctx.run_id,
+            session_id=state.ctx.session_id,
+            message_id=state.ctx.message_id,
+            step_id=f"step_{uuid4().hex[:8]}",
+            sequence=state.sequence,
+            payload={"reason": "waiting for user interaction"},
+        )
+        state.sequence += 1
     interaction = await session.wait_interaction()
     if session.aborted:
         state.terminal = True

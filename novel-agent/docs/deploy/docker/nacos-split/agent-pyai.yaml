@@ -16,19 +16,26 @@ spring:
     redis:
       host: YOUR_MW_HOST
       port: 6379
-      password: changeme
+      password: YOUR_REDIS_PASSWORD
       database: 0
   rabbitmq:
     host: YOUR_MW_HOST
     port: 5672
     username: novel_agent
-    password: changeme
+    password: YOUR_RMQ_PASSWORD
 
 agent:
   python:
-    base-url: http://YOUR_MW_HOST:8000
+    # Worker 上 PyAI 与 python-ai 同 Docker 网络，必须直连固定实例（run session 不能经 MW lb 漂移）
+    base-url: http://python-ai:8000
   content:
     base-url: http://agent-content:8091
+  internal:
+    service-key: prod-internal-key-novel-agent
+  runtime:
+    # legacy=直连 Python stream + PG 双写；queued=Worker 接管（Phase 3 线上验证）
+    mode: queued
+    pg-run-enabled: true
 
 logging:
   level:

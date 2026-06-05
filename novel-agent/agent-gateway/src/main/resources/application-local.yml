@@ -25,11 +25,12 @@ spring:
       password: ${REDIS_PASSWORD:changeme}
       database: ${REDIS_DB:0}
 
-sa-token:
-  token-name: Authorization
-  timeout: 2592000
-  is-concurrent: true
-  is-share: false
+auth:
+  jwt:
+    issuer: novel-agent
+    secret: ${JWT_SECRET:novel-agent-dev-secret-change-in-production-32}
+    access-ttl-seconds: 3600
+    refresh-ttl-seconds: 2592000
 
 logging:
   level:

@@ -34,6 +34,8 @@ class Settings(BaseSettings):
     milvus_password: str = ""
 
     content_base_url: str = "http://127.0.0.1:8091"
+    internal_service_key: str = "dev-internal-key-change-me"
+    worker_id: str = ""
     log_level: str = "INFO"
     agent_llm_trace: bool = True
     agent_llm_trace_file: str = ""

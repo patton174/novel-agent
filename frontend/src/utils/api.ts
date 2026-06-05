@@ -10,7 +10,9 @@ import type {
   Volume,
 } from '../types/novel'
 import { DIRECT_PYTHON, PYTHON_API_BASE } from '../config/runtime'
-import { getAuthHeaders, getToken, getUserId } from './auth'
+import { getAuthHeaders, getUserId } from './auth'
+import { secureFetch } from '../security/secureFetch'
+import { fetchWsTicket } from '../security/wsTicket'
 import { toStreamRequestBody } from './agentStreamPayload'
 import { parseSseFrame, splitSseBuffer } from './sse'
 
@@ -32,10 +34,9 @@ export async function openAgentStream(
   throwIfAborted(signal)
 
   const streamUrl = `${PYTHON_API_BASE}/agent/chat/stream`
-  const response = await fetch(streamUrl, {
+  const response = await secureFetch(streamUrl, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json',
       ...(DIRECT_PYTHON ? {} : getAuthHeaders()),
       ...init?.headers,
     },
@@ -126,24 +127,43 @@ export async function openAgentStream(
   }
 }
 
-function buildAgentWsUrl(path: string, params: Record<string, string>): string | null {
+async function buildAgentWsUrl(path: string, params: Record<string, string>): Promise<string | null> {
   const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
   const wsBase = `${wsProtocol}//${window.location.host}`
   const pathBase = PYTHON_API_BASE.startsWith('/') ? PYTHON_API_BASE : `/${PYTHON_API_BASE}`
-  const token = getToken()
-  if (!token) {
+  const userId = getUserId()
+  if (!userId) {
     return null
   }
-  const qs = new URLSearchParams({ ...params, Authorization: token })
+
+  if (DIRECT_PYTHON) {
+    const qs = new URLSearchParams({ ...params, userId })
+    return `${wsBase}${pathBase}${path}?${qs.toString()}`
+  }
+
+  const purpose = path.includes('/run/ws') ? 'run' : 'status'
+  const ticketResult = await fetchWsTicket({
+    purpose,
+    runId: params.runId,
+    sessionId: params.sessionId,
+  })
+  if (!ticketResult?.ticket) {
+    return null
+  }
+  const qs = new URLSearchParams({
+    ...params,
+    userId,
+    ticket: ticketResult.ticket,
+  })
   return `${wsBase}${pathBase}${path}?${qs.toString()}`
 }
 
-export function openAgentRunSocket(runId: string): WebSocket | null {
+export async function openAgentRunSocket(runId: string): Promise<WebSocket | null> {
   const userId = getUserId()
   if (!userId || !runId) {
     return null
   }
-  const url = buildAgentWsUrl('/agent/run/ws', {
+  const url = await buildAgentWsUrl('/agent/run/ws', {
     runId,
     userId,
   })
@@ -196,15 +216,15 @@ export function sendAgentRunAbort(ws: WebSocket, runId: string): void {
   ws.send(JSON.stringify({ type: 'run.abort', run_id: runId }))
 }
 
-export function openAgentStatusSocket(
+export async function openAgentStatusSocket(
   sessionId: string,
   onStatus: AgentStreamEventHandler,
-): WebSocket | null {
+): Promise<WebSocket | null> {
   const userId = getUserId()
   if (!userId || !sessionId) {
     return null
   }
-  const url = buildAgentWsUrl('/agent/chat/status/ws', {
+  const url = await buildAgentWsUrl('/agent/chat/status/ws', {
     sessionId,
     userId,
   })
@@ -224,10 +244,9 @@ export const api = {
   baseUrl: '/api',
 
   async request<T>(endpoint: string, options?: RequestInit): Promise<T> {
-    const response = await fetch(`${this.baseUrl}${endpoint}`, {
+    const response = await secureFetch(`${this.baseUrl}${endpoint}`, {
       ...options,
       headers: {
-        'Content-Type': 'application/json',
         ...getAuthHeaders(),
         ...options?.headers,
       },
@@ -241,10 +260,9 @@ export const api = {
   },
 
   async callAI<T>(endpoint: string, data: unknown): Promise<T> {
-    const response = await fetch(`${this.baseUrl}${endpoint}`, {
+    const response = await secureFetch(`${this.baseUrl}${endpoint}`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
         ...getAuthHeaders(),
       },
       body: JSON.stringify(data),

@@ -1,6 +1,6 @@
 package com.novel.agent.gateway.filter;
 
-import cn.dev33.satoken.exception.NotLoginException;
+import com.novel.agent.common.security.AuthUnauthorizedException;
 import com.novel.agent.gateway.support.GatewayAuthSupport;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
@@ -12,14 +12,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
-/**
- * 统一鉴权过滤器
- *
- * 功能：
- * 1. 放行登录注册接口
- * 2. 其他接口验证 satoken token
- * 3. 验证通过后，把 userId 放到 header 传给下游服务
- */
 @Component
 public class AuthGatewayFilter implements GlobalFilter, Ordered {
 
@@ -38,12 +30,12 @@ public class AuthGatewayFilter implements GlobalFilter, Ordered {
             return chain.filter(exchange);
         }
 
-        return gatewayAuthSupport.resolveUserId(request)
-            .flatMap(userId -> {
-                ServerHttpRequest modifiedRequest = gatewayAuthSupport.injectUserHeaders(request, userId);
+        return gatewayAuthSupport.resolvePrincipal(request)
+            .flatMap(principal -> {
+                ServerHttpRequest modifiedRequest = gatewayAuthSupport.injectUserHeaders(request, principal);
                 return chain.filter(exchange.mutate().request(modifiedRequest).build());
             })
-            .onErrorResume(NotLoginException.class, ex -> unauthorized(exchange, "登录已过期，请重新登录"))
+            .onErrorResume(AuthUnauthorizedException.class, ex -> unauthorized(exchange, ex.getMessage()))
             .onErrorResume(NumberFormatException.class, ex -> unauthorized(exchange, "登录已过期，请重新登录"));
     }
 
@@ -51,7 +43,8 @@ public class AuthGatewayFilter implements GlobalFilter, Ordered {
         ServerHttpResponse response = exchange.getResponse();
         response.setStatusCode(HttpStatus.UNAUTHORIZED);
         response.getHeaders().add("Content-Type", "application/json;charset=UTF-8");
-        String body = "{\"code\":401,\"message\":\"" + message + "\"}";
+        String safe = message == null ? "登录已过期，请重新登录" : message.replace("\"", "'");
+        String body = "{\"code\":401,\"message\":\"" + safe + "\"}";
         return response.writeWith(Mono.just(response.bufferFactory().wrap(body.getBytes())));
     }
 

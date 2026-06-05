@@ -30,6 +30,7 @@
         <spring-boot.version>3.2.5</spring-boot.version>
         <spring-cloud-alibaba.version>2023.0.1.0</spring-cloud-alibaba.version>
         <sa-token.version>1.37.0</sa-token.version>
+        <nimbus-jose-jwt.version>9.37.3</nimbus-jose-jwt.version>
     </properties>
 
     <dependencyManagement>
@@ -59,6 +60,21 @@
                 <groupId>cn.dev33</groupId>
                 <artifactId>sa-token-spring-boot3-starter</artifactId>
                 <version>${sa-token.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.dev33</groupId>
+                <artifactId>sa-token-reactor-spring-boot3-starter</artifactId>
+                <version>${sa-token.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.nimbusds</groupId>
+                <artifactId>nimbus-jose-jwt</artifactId>
+                <version>${nimbus-jose-jwt.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.novel.agent</groupId>
+                <artifactId>agent-common-security</artifactId>
+                <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>cn.dev33</groupId>

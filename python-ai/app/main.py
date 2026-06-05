@@ -10,6 +10,7 @@ from app.core.logging_setup import setup_logging
 from app.api.routes import router
 from app.api.rag_routes import router as rag_router
 from app.agent_step.router import router as agent_step_router
+from app.agent_step.worker.router import router as worker_router
 from app import __version__
 
 
@@ -36,6 +37,7 @@ app.add_middleware(
 app.include_router(router, prefix="/api", tags=["AI"])
 app.include_router(rag_router, prefix="/api", tags=["RAG"])
 app.include_router(agent_step_router, prefix="/api", tags=["Agent Step"])
+app.include_router(worker_router, prefix="/internal", tags=["Worker Internal"])
 
 
 @app.on_event("startup")

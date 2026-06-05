@@ -284,7 +284,9 @@ export function useEditorAgentStream({
           type = parsed.type
           if (parsed.type === 'run.started' && parsed.run_id) {
             runWsRef.current?.close()
-            runWsRef.current = openAgentRunSocket(parsed.run_id)
+            void openAgentRunSocket(parsed.run_id).then((ws) => {
+              runWsRef.current = ws
+            })
           }
           if (parsed.type === 'chapter.stream.started') {
             const title =
@@ -439,7 +441,9 @@ export function useEditorAgentStream({
       statusWsRef.current.readyState === WebSocket.CLOSED
     if (statusWsSessionIdRef.current !== targetSessionId || wsClosed) {
       statusWsRef.current?.close()
-      statusWsRef.current = openAgentStatusSocket(targetSessionId, handleStatusEvent)
+      void openAgentStatusSocket(targetSessionId, handleStatusEvent).then((ws) => {
+        statusWsRef.current = ws
+      })
       statusWsSessionIdRef.current = targetSessionId
     }
 
@@ -631,10 +635,12 @@ export function useEditorAgentStream({
           syncStreamState()
         }
         statusWsRef.current?.close()
-        statusWsRef.current = openAgentStatusSocket(
+        void openAgentStatusSocket(
           agentSessionIdRef.current,
           handleStatusEvent,
-        )
+        ).then((ws) => {
+          statusWsRef.current = ws
+        })
         statusWsSessionIdRef.current = agentSessionIdRef.current
       } else {
         setIsLoading(false)
@@ -680,7 +686,7 @@ export function useEditorAgentStream({
   ) => {
     const live = liveStreamRef.current
     const runId = activeStreamStateRef.current.runId
-    let ws = runWsRef.current
+    const ws = runWsRef.current
     const pendingInteraction =
       live?.state.awaitingInteraction ||
       hasPendingUserInteraction(live?.state.stepStates ?? [])
@@ -692,26 +698,34 @@ export function useEditorAgentStream({
     ) {
       return false
     }
+
+    const deliverInteraction = (socket: WebSocket) => {
+      live.state = applyChoiceSelection(
+        live.state,
+        displayChoice,
+        findPendingInteractionStepId(live.state.stepStates),
+      )
+      activeStreamStateRef.current = live.state
+      streamSyncRef.current?.()
+      const deliver = () => sendAgentRunInteraction(socket, runId, wsPayload)
+      if (socket.readyState === WebSocket.OPEN) {
+        deliver()
+      } else {
+        socket.addEventListener('open', deliver, { once: true })
+      }
+    }
+
     if (!ws || ws.readyState === WebSocket.CLOSED || ws.readyState === WebSocket.CLOSING) {
-      ws = openAgentRunSocket(runId)
-      runWsRef.current = ws
+      void openAgentRunSocket(runId).then((opened) => {
+        if (!opened) {
+          return
+        }
+        runWsRef.current = opened
+        deliverInteraction(opened)
+      })
+      return true
     }
-    if (!ws) {
-      return false
-    }
-    live.state = applyChoiceSelection(
-      live.state,
-      displayChoice,
-      findPendingInteractionStepId(live.state.stepStates),
-    )
-    activeStreamStateRef.current = live.state
-    streamSyncRef.current?.()
-    const deliver = () => sendAgentRunInteraction(ws!, runId, wsPayload)
-    if (ws.readyState === WebSocket.OPEN) {
-      deliver()
-    } else {
-      ws.addEventListener('open', deliver, { once: true })
-    }
+    deliverInteraction(ws)
     return true
   }
 

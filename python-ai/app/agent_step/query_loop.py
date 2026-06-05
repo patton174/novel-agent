@@ -57,7 +57,12 @@ from app.agent_step.query_loop_support import (
     wait_for_user_interaction,
     yield_visible_assistant_message,
 )
-from app.agent_step.run_session import register_run_session, unregister_run_session
+from app.agent_step.run_session import (
+    RunSession,
+    WorkerSliceSession,
+    register_run_session,
+    unregister_run_session,
+)
 from app.agent_step.tool_result_routing import tool_message_text
 from app.agent_step.schemas import AgentRunContext, PlanRequest, PlanToolCall, RunRequest
 from app.agent_step.main_loop_llm import stream_bind_tools_turn
@@ -282,17 +287,30 @@ _tool_batch_end_run = tool_batch_end_run_for_loop
 _should_end_run_after_batch = should_end_run_after_batch
 
 
-async def run_query_loop(req: RunRequest) -> AsyncIterator[dict[str, Any]]:
+async def run_query_loop(
+    req: RunRequest,
+    *,
+    worker_mode: bool = False,
+    worker_session: RunSession | WorkerSliceSession | None = None,
+    initial_state: RunLoopState | None = None,
+) -> AsyncIterator[dict[str, Any]]:
     base_ctx = _enrich_context(req.context, refresh_story_memory=True)
     base_ctx = await refresh_chapters_from_content_api(base_ctx)
-    base_ctx = _fresh_run_context(base_ctx)
-    state = RunLoopState(
-        ctx=base_ctx,
-        transcript=AgentTranscript(),
-        think_content="",
-        sequence=0,
-    )
-    session = register_run_session(state.ctx.run_id)
+    if initial_state is None:
+        base_ctx = _fresh_run_context(base_ctx)
+        state = RunLoopState(
+            ctx=base_ctx,
+            transcript=AgentTranscript(),
+            think_content="",
+            sequence=0,
+        )
+    else:
+        state = initial_state
+        state.ctx = await refresh_chapters_from_content_api(state.ctx)
+    if worker_mode:
+        session = worker_session or WorkerSliceSession(state.ctx.run_id)
+    else:
+        session = register_run_session(state.ctx.run_id)
     messages = _build_messages(state.ctx, state.transcript)
 
     llm = llm_provider.get_llm(profile="default").bind_tools(
@@ -922,5 +940,6 @@ async def run_query_loop(req: RunRequest) -> AsyncIterator[dict[str, Any]]:
                 payload={"error": state.last_run_error},
             )
     finally:
-        session.abort()
-        unregister_run_session(state.ctx.run_id)
+        if not worker_mode:
+            session.abort()
+            unregister_run_session(state.ctx.run_id)

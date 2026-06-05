@@ -37,11 +37,16 @@ spring:
     username: novel_agent
     password: changeme
 
-sa-token:
-  token-name: Authorization
-  timeout: 2592000
-  is-concurrent: true
-  is-share: false
+auth:
+  jwt:
+    issuer: novel-agent
+    secret: ${JWT_SECRET:YOUR_JWT_SECRET_MIN_32_CHARS}
+    access-ttl-seconds: 3600
+    refresh-ttl-seconds: 2592000
+  cookie:
+    secure: true
+  client-security:
+    heartbeat-interval-seconds: 60
 
 logging:
   level:

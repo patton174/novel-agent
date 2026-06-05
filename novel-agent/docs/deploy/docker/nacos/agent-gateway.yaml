@@ -37,11 +37,16 @@ spring:
       password: changeme
       database: 0
 
-sa-token:
-  token-name: Authorization
-  timeout: 2592000
-  is-concurrent: true
-  is-share: false
+auth:
+  jwt:
+    issuer: novel-agent
+    secret: ${JWT_SECRET:YOUR_JWT_SECRET_MIN_32_CHARS}
+    access-ttl-seconds: 3600
+  client-security:
+    heartbeat-max-silence-seconds: 180
+    fingerprint-tolerance: 0.15
+    enforce-fingerprint: false
+    enforce-heartbeat: false
 
 logging:
   level:

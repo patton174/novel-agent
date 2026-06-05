@@ -176,9 +176,10 @@ const EditorPage: React.FC = () => {
         hostModeEnabled={editor.hostModeEnabled}
         onHostModeChange={editor.handleHostModeChange}
         onLogout={() => {
-          logout()
-          setSettingsOpen(false)
-          navigate('/login')
+          void logout().finally(() => {
+            setSettingsOpen(false)
+            navigate('/login')
+          })
         }}
       />
     </EditorPageWrapper>

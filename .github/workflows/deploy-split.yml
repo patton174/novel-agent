@@ -13,6 +13,7 @@ on:
     paths:
       - 'novel-agent/**'
       - 'frontend/**'
+      - 'python-ai/**'
       - '.github/workflows/deploy-split.yml'
   workflow_dispatch:
     inputs:
@@ -28,6 +29,7 @@ on:
           - content
           - consumer
           - frontend
+          - python-ai
 
 concurrency:
   group: deploy-hot
@@ -59,6 +61,8 @@ jobs:
             common:
               - 'novel-agent/agent-common/**'
               - 'novel-agent/pom.xml'
+            python-ai:
+              - 'python-ai/**'
 
       - uses: actions/setup-java@v4
         with:
@@ -102,5 +106,6 @@ jobs:
           CHANGED_CONSUMER: ${{ steps.filter.outputs.consumer }}
           CHANGED_FRONTEND: ${{ steps.filter.outputs.frontend }}
           CHANGED_COMMON: ${{ steps.filter.outputs.common }}
+          CHANGED_PYTHON_AI: ${{ steps.filter.outputs.python-ai }}
           FORCE_SERVICE: ${{ github.event.inputs.service }}
         run: bash novel-agent/docs/deploy/scripts/ci-hot-deploy.sh
