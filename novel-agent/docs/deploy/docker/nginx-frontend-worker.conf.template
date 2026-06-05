@@ -27,6 +27,12 @@ server {
         proxy_send_timeout 3600s;
     }
 
+    location = /crypto-runtime.json {
+        default_type application/json;
+        add_header Cache-Control "no-store";
+        try_files /crypto-runtime.json =404;
+    }
+
     location / {
         try_files $uri $uri/ /index.html;
     }

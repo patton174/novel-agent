@@ -104,8 +104,11 @@ COMPOSE="docker compose"
 if ! docker compose version >/dev/null 2>&1; then COMPOSE="docker-compose"; fi
 CID=\$(\$COMPOSE -f '$COMPOSE_FILE' --env-file "\$ENV_FILE" ps -q frontend 2>/dev/null || true)
 if [[ -n "\$CID" ]]; then
+  chmod 644 /tmp/crypto-runtime.json
   docker cp /tmp/crypto-runtime.json "\$CID:/usr/share/nginx/html/crypto-runtime.json"
-  rm -f "\$CID:/usr/share/nginx/html/crypto-manifest.json" 2>/dev/null || true
+  # docker cp 常保留 600，nginx worker 无法读 → 403
+  docker exec "\$CID" chmod 644 /usr/share/nginx/html/crypto-runtime.json
+  docker exec "\$CID" rm -f /usr/share/nginx/html/crypto-manifest.json 2>/dev/null || true
 fi
 rm -f /tmp/crypto-runtime.json
 echo "[crypto-register] Worker env + runtime.json 已更新"
