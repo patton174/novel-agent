@@ -12,7 +12,7 @@ public class FeignInternalClientConfig {
     private final AgentRuntimeProperties runtimeProperties;
 
     @Bean
-    public RequestInterceptor internalServiceKeyInterceptor() {
+    public RequestInterceptor feignInternalServiceKeyInterceptor() {
         return template -> {
             String internalServiceKey = runtimeProperties.internalServiceKey();
             if (internalServiceKey != null && !internalServiceKey.isBlank()) {
