@@ -39,11 +39,11 @@ AU=\$(\$COMPOSE -f "\$CF" --env-file "\$ENV" ps -q agent-auth || true)
 if [[ -n "\${AU:-}" ]]; then docker logs "\$AU" --tail 40 2>&1; fi
 echo "--- probe ---"
 curl -s -o /dev/null -w "gateway8080 HTTP %{http_code}\\n" --connect-timeout 3 \\
-  -X POST http://127.0.0.1:8080/api/auth/login \\
+  -X POST http://127.0.0.1:8080/api/auth/api/login \\
   -H 'Content-Type: application/json' \\
   -d '{"username":"_probe","password":"_probe"}' || echo "gateway8080 HTTP 000"
 curl -s -o /dev/null -w "auth8081 HTTP %{http_code}\\n" --connect-timeout 3 \\
-  -X POST http://127.0.0.1:8081/api/auth/login \\
+  -X POST http://127.0.0.1:8081/api/auth/api/login \\
   -H 'Content-Type: application/json' \\
   -d '{"username":"_probe","password":"_probe"}' || echo "auth8081 HTTP 000"
 EOF

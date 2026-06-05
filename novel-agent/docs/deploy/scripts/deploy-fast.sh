@@ -159,14 +159,43 @@ rm -f '$REMOTE_JAR'
 docker restart "\$CID"
 echo "[deploy-fast] 等待 $COMPOSE_SVC 启动..."
 sleep 5
-PORT=8080
-if [[ '$COMPOSE_SVC' == 'agent-auth' ]]; then PORT=8081; fi
+probe_ready() {
+  case '$COMPOSE_SVC' in
+    agent-auth)
+      curl -s -o /dev/null -w '%{http_code}' --connect-timeout 2 \
+        -X POST 'http://127.0.0.1:8081/api/auth/api/login' \
+        -H 'Content-Type: application/json' \
+        -d '{"username":"_probe","password":"_probe"}' 2>/dev/null || echo 000
+      ;;
+    agent-gateway)
+      curl -s -o /dev/null -w '%{http_code}' --connect-timeout 2 \
+        -X POST 'http://127.0.0.1:8080/api/auth/api/login' \
+        -H 'Content-Type: application/json' \
+        -d '{"username":"_probe","password":"_probe"}' 2>/dev/null || echo 000
+      ;;
+    agent-pyai)
+      curl -s -o /dev/null -w '%{http_code}' --connect-timeout 2 \
+        'http://127.0.0.1:8082/' 2>/dev/null || echo 000
+      ;;
+    agent-content)
+      curl -s -o /dev/null -w '%{http_code}' --connect-timeout 2 \
+        'http://127.0.0.1:8091/' 2>/dev/null || echo 000
+      ;;
+    agent-consumer)
+      curl -s -o /dev/null -w '%{http_code}' --connect-timeout 2 \
+        'http://127.0.0.1:8090/' 2>/dev/null || echo 000
+      ;;
+    *)
+      curl -s -o /dev/null -w '%{http_code}' --connect-timeout 2 \
+        -X POST 'http://127.0.0.1:8080/api/auth/api/login' \
+        -H 'Content-Type: application/json' \
+        -d '{"username":"_probe","password":"_probe"}' 2>/dev/null || echo 000
+      ;;
+  esac
+}
 ok=0
 for i in \$(seq 1 45); do
-  code=\$(curl -s -o /dev/null -w '%{http_code}' --connect-timeout 2 \
-    -X POST "http://127.0.0.1:\${PORT}/api/auth/login" \
-    -H 'Content-Type: application/json' \
-    -d '{"username":"_probe","password":"_probe"}' 2>/dev/null || echo 000)
+  code=\$(probe_ready)
   if [[ "\$code" =~ ^[0-9]{3}\$ && "\$code" != "000" ]]; then
     echo "[deploy-fast] $COMPOSE_SVC 就绪 (HTTP \$code, attempt \$i)"
     ok=1

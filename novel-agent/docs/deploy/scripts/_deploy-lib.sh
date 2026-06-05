@@ -106,20 +106,30 @@ fi
 EOF
 }
 
-# 在远端探测 Java 服务端口是否已监听（POST login 返回任意 HTTP 即视为就绪）
+# 在远端探测 Java 服务端口是否已监听（任意 3 位 HTTP 码视为就绪）
 deploy_wait_http_port() {
   local remote_ssh="$1"
   local port="$2"
   local label="${3:-service}"
   local max_attempts="${4:-45}"
+  local probe_curl
+  case "$port" in
+    8080|8081)
+      probe_curl="curl -s -o /dev/null -w '%{http_code}' --connect-timeout 2 \\
+    -X POST \"http://127.0.0.1:${port}/api/auth/api/login\" \\
+    -H 'Content-Type: application/json' \\
+    -d '{\"username\":\"_probe\",\"password\":\"_probe\"}' 2>/dev/null || echo 000"
+      ;;
+    *)
+      probe_curl="curl -s -o /dev/null -w '%{http_code}' --connect-timeout 2 \\
+    \"http://127.0.0.1:${port}/\" 2>/dev/null || echo 000"
+      ;;
+  esac
   deploy_ssh "$remote_ssh" bash -s <<EOF
 set -euo pipefail
 ok=0
 for i in \$(seq 1 $max_attempts); do
-  code=\$(curl -s -o /dev/null -w '%{http_code}' --connect-timeout 2 \
-    -X POST "http://127.0.0.1:${port}/api/auth/login" \
-    -H 'Content-Type: application/json' \
-    -d '{"username":"_probe","password":"_probe"}' 2>/dev/null || echo 000)
+  code=\$($probe_curl)
   if [[ "\$code" =~ ^[0-9]{3}\$ && "\$code" != "000" ]]; then
     echo "[deploy] ${label} :${port} ready (probe HTTP \$code, attempt \$i)"
     ok=1
