@@ -11,7 +11,6 @@ import com.novel.agent.common.core.exception.ValidationException;
 import com.novel.agent.common.security.AuthUnauthorizedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -68,13 +67,6 @@ public class HandlerException {
     public ResponseEntity<Result<Void>> handleMissingHeader(MissingRequestHeaderException ex) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
             .body(Result.fail(ResultCode.UNAUTHORIZED.getCode(), "未登录或登录已过期"));
-    }
-
-    @ExceptionHandler(DataAccessException.class)
-    public ResponseEntity<Result<Void>> handleDataAccess(DataAccessException ex) {
-        log.error("DataAccessException: {}", ex.getMessage(), ex);
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-            .body(Result.fail(ResultCode.ERROR));
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
