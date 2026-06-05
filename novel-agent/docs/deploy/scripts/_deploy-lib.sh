@@ -20,6 +20,33 @@ deploy_scp() {
   fi
 }
 
+deploy_remote_has_rsync() {
+  local remote_ssh="$1"
+  deploy_ssh "$remote_ssh" "command -v rsync >/dev/null 2>&1" >/dev/null 2>&1
+}
+
+deploy_can_rsync() {
+  local remote_ssh="$1"
+  command -v rsync >/dev/null 2>&1 && deploy_remote_has_rsync "$remote_ssh"
+}
+
+# 同步本地目录内容到远端目录（优先 rsync，远端无 rsync 时 tar+scp）
+deploy_sync_dir() {
+  local local_dir="$1"
+  local remote_ssh="$2"
+  local remote_dir="$3"
+  deploy_ssh "$remote_ssh" "rm -rf '$remote_dir' && mkdir -p '$remote_dir'"
+  if deploy_can_rsync "$remote_ssh"; then
+    rsync -avz --delete -e "${DEPLOY_RSYNC_SSH:-ssh ${DEPLOY_SSH_OPTS:-}}" "$local_dir" "$remote_ssh:$remote_dir/"
+    return
+  fi
+  local tar="/tmp/novel-agent-sync-$$.tar.gz"
+  tar -czf "$tar" -C "$local_dir" .
+  deploy_scp "$tar" "$remote_ssh:/tmp/novel-agent-sync-$$.tar.gz"
+  deploy_ssh "$remote_ssh" "tar -xzf /tmp/novel-agent-sync-$$.tar.gz -C '$remote_dir' && rm -f /tmp/novel-agent-sync-$$.tar.gz"
+  rm -f "$tar"
+}
+
 deploy_rsync_to() {
   local repo_root="$1"
   local remote_ssh="$2"
@@ -36,7 +63,7 @@ deploy_rsync_to() {
     --exclude 'python-ai/__pycache__'
     --exclude 'python-ai/.venv'
   )
-  if command -v rsync >/dev/null 2>&1; then
+  if deploy_can_rsync "$remote_ssh"; then
     rsync -avz --delete "${excludes[@]}" -e "${DEPLOY_RSYNC_SSH:-ssh ${DEPLOY_SSH_OPTS:-}}" "$repo_root/" "$remote_ssh:$remote_dir/"
   else
     local tar="/tmp/novel-agent-deploy-$$.tar.gz"

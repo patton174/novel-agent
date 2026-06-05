@@ -62,12 +62,7 @@ case "$SERVICE" in
     fi
     (cd "$REPO_ROOT/frontend" && pnpm run build)
     REMOTE_DIST="/tmp/novel-fe-dist-$$"
-    deploy_ssh "$REMOTE_SSH" "rm -rf '$REMOTE_DIST' && mkdir -p '$REMOTE_DIST'"
-    if command -v rsync >/dev/null 2>&1; then
-      rsync -avz --delete -e "${DEPLOY_RSYNC_SSH:-ssh ${DEPLOY_SSH_OPTS:-}}" "$REPO_ROOT/frontend/dist/" "$REMOTE_SSH:$REMOTE_DIST/"
-    else
-      deploy_scp -r "$REPO_ROOT/frontend/dist/"* "$REMOTE_SSH:$REMOTE_DIST/"
-    fi
+    deploy_sync_dir "$REPO_ROOT/frontend/dist/" "$REMOTE_SSH" "$REMOTE_DIST"
     deploy_ssh "$REMOTE_SSH" bash -s <<EOF
 set -euo pipefail
 cd '$REMOTE_DIR'
@@ -102,7 +97,7 @@ REMOTE_JAR="/tmp/deploy-fast-${COMPOSE_SVC}-$$.jar"
 
 if [[ "${REMOTE_BUILD:-0}" == "1" ]]; then
   echo "[deploy-fast] REMOTE_BUILD=1：同步源码并在 $TARGET 上 Docker Maven 编译 ..."
-  if command -v rsync >/dev/null 2>&1; then
+  if deploy_can_rsync "$REMOTE_SSH"; then
     rsync -az --exclude target "$REPO_ROOT/novel-agent/$MODULE" "$REPO_ROOT/novel-agent/agent-common" "$REPO_ROOT/novel-agent/pom.xml" \
       -e "${DEPLOY_RSYNC_SSH:-ssh ${DEPLOY_SSH_OPTS:-}}" "$REMOTE_SSH:$REMOTE_DIR/novel-agent/"
   else

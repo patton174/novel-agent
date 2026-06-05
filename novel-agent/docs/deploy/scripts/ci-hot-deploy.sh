@@ -89,15 +89,23 @@ want "${CHANGED_CONSUMER:-false}" && hot consumer worker
 want "${CHANGED_FRONTEND:-false}" && hot frontend worker
 
 hot_python() {
-  echo "[ci-hot] python-ai rsync + docker rebuild on worker"
+  echo "[ci-hot] python-ai sync + docker rebuild on worker"
   # shellcheck source=/dev/null
   source "$SCRIPT_DIR/_deploy-lib.sh"
   deploy_ssh "$WORKER_SSH" "mkdir -p '$WORKER_REMOTE_DIR/python-ai'"
-  rsync -avz \
-    -e "${DEPLOY_RSYNC_SSH}" \
-    "$REPO_ROOT/python-ai/app" \
-    "$REPO_ROOT/python-ai/requirements.txt" \
-    "$WORKER_SSH:$WORKER_REMOTE_DIR/python-ai/"
+  if deploy_can_rsync "$WORKER_SSH"; then
+    rsync -avz \
+      -e "${DEPLOY_RSYNC_SSH}" \
+      "$REPO_ROOT/python-ai/app" \
+      "$REPO_ROOT/python-ai/requirements.txt" \
+      "$WORKER_SSH:$WORKER_REMOTE_DIR/python-ai/"
+  else
+    local tar="/tmp/python-ai-sync-$$.tar.gz"
+    tar -czf "$tar" -C "$REPO_ROOT/python-ai" app requirements.txt
+    deploy_scp "$tar" "$WORKER_SSH:/tmp/python-ai-sync-$$.tar.gz"
+    deploy_ssh "$WORKER_SSH" "tar -xzf /tmp/python-ai-sync-$$.tar.gz -C '$WORKER_REMOTE_DIR/python-ai' && rm -f /tmp/python-ai-sync-$$.tar.gz"
+    rm -f "$tar"
+  fi
   deploy_ssh "$WORKER_SSH" bash -s <<EOF
 set -euo pipefail
 cd '$WORKER_REMOTE_DIR'
