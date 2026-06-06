@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { BookOpen, Plus, MoreVertical, Clock, FileText } from 'lucide-react'
+import { BookOpen, Plus, MoreVertical, Clock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import type { Novel } from '@/types/novel'
-import { fetchNovels } from '@/api/dashboardApi'
+import { fetchNovels, type DashboardNovel } from '@/api/dashboardApi'
 
 function formatDate(ts: number): string {
   const date = new Date(ts)
@@ -19,7 +18,7 @@ function formatDate(ts: number): string {
 }
 
 export default function NovelsPage() {
-  const [novels, setNovels] = useState<Novel[] | null>(null)
+  const [novels, setNovels] = useState<DashboardNovel[] | null>(null)
   const [error, setError] = useState(false)
 
   useEffect(() => {
@@ -27,7 +26,7 @@ export default function NovelsPage() {
     void fetchNovels()
       .then((list) => {
         if (!cancelled) {
-          setNovels(list as Novel[])
+          setNovels(list)
           setError(false)
         }
       })
@@ -116,10 +115,6 @@ export default function NovelsPage() {
                   <div className="flex items-center text-xs text-muted-foreground">
                     <Clock className="w-3.5 h-3.5 mr-1.5" />
                     更新于 {formatDate(novel.updatedAt)}
-                  </div>
-                  <div className="flex items-center text-xs text-muted-foreground">
-                    <FileText className="w-3.5 h-3.5 mr-1.5" />
-                    {novel.chapterCount || 0} 个章节
                   </div>
                 </div>
               </div>

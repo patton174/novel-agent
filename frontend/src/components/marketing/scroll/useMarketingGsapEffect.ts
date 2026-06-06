@@ -1,5 +1,4 @@
 import { gsap } from 'gsap'
-import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { useLayoutEffect, type DependencyList, type RefObject } from 'react'
 import { scheduleScrollTriggerRefresh, useMarketingScroll } from '../MarketingScrollProvider'
 

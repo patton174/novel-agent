@@ -108,7 +108,7 @@ export function AgentThinkPanel({
   doneTitle = '思考',
   autoCollapseWhenDone = true,
   markdown = true,
-  showCursor = false,
+  showCursor: _showCursor = false,
   nested = false,
   hideHeader = false,
   inThinkRound = false,

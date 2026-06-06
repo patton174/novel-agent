@@ -35,14 +35,6 @@ export function AppSidebar() {
       ? [{ label: '管理后台', to: '/admin', icon: Shield, external: true }]
       : []
 
-  const linkClass = ({ isActive }: { isActive: boolean }) =>
-    cn(
-      'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-      isActive
-        ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-        : 'text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground',
-    )
-
   return (
     <aside className="flex h-full w-64 shrink-0 flex-col border-r border-border bg-surface text-foreground">
       <div className="flex h-16 items-center gap-3 px-6 border-b border-border">

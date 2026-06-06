@@ -7,7 +7,6 @@ import {
   type DashboardSummary,
   type RecentNovel,
 } from '@/api/dashboardApi'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 

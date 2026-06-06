@@ -23,7 +23,7 @@ const RegisterPage: React.FC = () => {
   const [cooldown, setCooldown] = useState(0)
 
   const handleChange = (name: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [name]: value }))
+    setFormData({ ...formData, [name]: value })
     if (errorMessage) setErrorMessage('')
   }
 
