@@ -8,7 +8,6 @@ import com.novel.agent.common.image.config.ImageClientProperties;
 import com.novel.agent.content.dto.CoverPromptResponse;
 import com.novel.agent.content.dto.NovelDTO;
 import com.novel.agent.content.entity.NovelEntity;
-import com.novel.agent.content.entity.NovelEntity;
 import com.novel.agent.content.repository.NovelRepository;
 import com.novel.agent.content.support.ContentExceptions;
 import lombok.RequiredArgsConstructor;
@@ -67,10 +66,6 @@ public class NovelCoverService {
         if (draft != null && !draft.isBlank()) {
             return draft.trim();
         }
-        return buildCoverPrompt(entity);
-    }
-
-    private String buildCoverPrompt(NovelEntity entity) {
         StringBuilder sb = new StringBuilder();
         sb.append("Professional book cover illustration for a novel titled \"")
             .append(entity.getTitle().trim())
