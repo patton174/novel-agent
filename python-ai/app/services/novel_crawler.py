@@ -44,18 +44,15 @@ async def execute_crawl_job(
     _require_llm()
     client = CrawlContentClient()
     try:
-        job = await client.get_job(job_id)
-        if not job:
-            logger.warning("crawl job missing jobId=%s", job_id)
-            return
-        status = str(job.get("status") or "").upper()
-        if status in {"CANCELLED", "PAUSED"}:
+        job = await _wait_job_runnable(client, job_id)
+        if job is None:
             return
         await run_crawl_agent(
             job_id=job_id,
             source_url=source_url,
             site_config=site_config,
             client=client,
+            job_snapshot=job,
         )
     except Exception as exc:
         logger.exception("crawl job failed jobId=%s", job_id)
@@ -66,3 +63,39 @@ async def execute_crawl_job(
             pass
     finally:
         await client.close()
+
+
+async def _wait_job_runnable(
+    client: CrawlContentClient,
+    job_id: str,
+    *,
+    attempts: int = 8,
+    delay_sec: float = 0.4,
+) -> dict[str, Any] | None:
+    """等待 DB 事务提交后再读状态，避免 startJob 派发 race 导致静默跳过。"""
+    import asyncio
+
+    last_status = ""
+    for attempt in range(attempts):
+        job = await client.get_job(job_id)
+        if not job:
+            logger.warning("crawl job missing jobId=%s", job_id)
+            return None
+        last_status = str(job.get("status") or "").upper()
+        if last_status == "RUNNING":
+            return job
+        if last_status in {"CANCELLED", "PAUSED"} and attempt + 1 < attempts:
+            await asyncio.sleep(delay_sec)
+            continue
+        break
+    if last_status in {"CANCELLED", "PAUSED"}:
+        msg = f"派发跳过：任务状态为 {last_status}（可能 MQ 早于 DB 提交或任务已暂停）"
+        logger.warning("crawl job %s skipped: %s", job_id, msg)
+        try:
+            await client.append_log(job_id, level="WARN", message=msg)
+        except Exception:
+            pass
+        return None
+    if last_status != "RUNNING":
+        logger.warning("crawl job %s unexpected status=%s", job_id, last_status)
+    return job

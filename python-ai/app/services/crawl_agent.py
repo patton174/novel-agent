@@ -78,9 +78,26 @@ async def run_crawl_agent(
     source_url: str,
     site_config: dict[str, Any] | None,
     client: CrawlContentClient,
+    job_snapshot: dict[str, Any] | None = None,
 ) -> None:
     ctx = _build_context(job_id, source_url, site_config, client)
+    snap = job_snapshot or {}
+    ctx.catalog_novel_id = str(snap.get("catalogNovelId") or "")
+    ctx.novel_title = str(snap.get("title") or "")
+    ctx.chapters_saved = int(snap.get("chaptersDone") or 0)
+    total = int(snap.get("chaptersTotal") or 0)
     await client.update_progress(job_id, status="RUNNING")
+    if ctx.chapters_saved > 0:
+        await client.append_log(
+            job_id,
+            level="INFO",
+            message=(
+                f"续爬：已入库 {ctx.chapters_saved}"
+                f"{f'/{total}' if total else ''} 章"
+                f"{f' · 《{ctx.novel_title}》' if ctx.novel_title else ''}"
+                " — 请 FetchPage 目录后 QueueChapters，SaveQueuedChapters 从下一章继续"
+            ),
+        )
     try:
         result = await run_crawl_tool_loop(ctx, preview_mode=False)
         if not result.ok and not ctx.end_run:
