@@ -21,8 +21,45 @@ from app.crawl_agent.tools.schemas import (
 from app.crawl_agent.tools.tool import CrawlTool, CrawlToolResult
 from app.services.crawl_ai_extractor import discover_catalog, extract_chapter
 from app.services.crawl_scrapling import fetch_page, page_links, page_text
+from app.services.crawl_site_resolver import (
+    _heuristic_book_urls,
+    _heuristic_ranking_urls,
+    resolve_site_for_goal,
+)
+from urllib.parse import urljoin, urlparse
 
 _REGISTERED = False
+
+
+def _same_site(page_url: str, candidate: str) -> bool:
+    pa, pb = urlparse(page_url), urlparse(candidate)
+    if pa.netloc and pb.netloc and pa.netloc != pb.netloc:
+        return False
+    return True
+
+
+def _normalize_url(base: str, url: str) -> str:
+    return urljoin(base, (url or "").strip())
+
+
+def _register_allowed(ctx: CrawlAgentContext, base: str, *urls: str) -> None:
+    for raw in urls:
+        u = _normalize_url(base, raw)
+        if u and _same_site(base, u):
+            ctx.allowed_nav_urls.add(u)
+
+
+def _url_allowed(ctx: CrawlAgentContext, url: str) -> bool:
+    target = _normalize_url(ctx.entry_url, url)
+    if not target:
+        return False
+    if target == _normalize_url(ctx.entry_url, ctx.entry_url):
+        return True
+    if target in ctx.allowed_nav_urls:
+        return True
+    if ctx.chapters_queue:
+        return True
+    return False
 
 
 async def _append_log(ctx: CrawlAgentContext, level: str, message: str) -> None:
@@ -50,18 +87,90 @@ def _json_err(message: str, **payload: Any) -> str:
 
 async def _fetch_page_tool(ctx: CrawlAgentContext, inp: FetchPageInput) -> CrawlToolResult:
     stealth = ctx.use_stealth if inp.use_stealth is None else inp.use_stealth
-    await _append_log(ctx, "INFO", f"FetchPage: {inp.url}")
-    page = await asyncio.to_thread(fetch_page, inp.url, stealth=stealth)
-    ctx.last_fetched_url = inp.url
-    links = page_links(page, inp.url, limit=80)
+    target = _normalize_url(ctx.entry_url, inp.url)
+    if not _url_allowed(ctx, target):
+        nav = ctx.last_navigation or {}
+        return CrawlToolResult(
+            content=_json_err(
+                "禁止猜测 URL 路径。只能从上一页 FetchPage 返回的 links / navigation 里选择。",
+                rejected_url=target,
+                use_instead={
+                    "next_urls": nav.get("next_urls") or [],
+                    "novel_urls": nav.get("novel_urls") or [],
+                    "ranking_links": nav.get("ranking_links") or [],
+                    "book_links": nav.get("book_links") or [],
+                },
+                allowed_sample=sorted(ctx.allowed_nav_urls)[:25],
+            ),
+            is_error=True,
+        )
+
+    await _append_log(ctx, "INFO", f"FetchPage: {target}")
+    page = await asyncio.to_thread(fetch_page, target, stealth=stealth)
+    ctx.last_fetched_url = target
+    links = page_links(page, target, limit=200)
     body = page_text(page, 6000)
+
+    ranking_urls = _heuristic_ranking_urls(links, target, limit=8)
+    ranking_links: list[dict[str, str]] = []
+    for u in ranking_urls:
+        title = u.rsplit("/", 1)[-1]
+        for item in links:
+            if urljoin(target, str(item.get("url") or "")) == u:
+                title = str(item.get("title") or title)
+                break
+        ranking_links.append({"title": title, "url": u})
+
+    book_urls = _heuristic_book_urls(links, target, limit=12)
+    book_links: list[dict[str, str]] = []
+    for u in book_urls:
+        title = u.rsplit("/", 1)[-1]
+        for item in links:
+            if urljoin(target, str(item.get("url") or "")) == u:
+                title = str(item.get("title") or title)
+                break
+        book_links.append({"title": title, "url": u})
+
+    nav = await resolve_site_for_goal(page, target, links, ctx.goal)
+    ctx.last_navigation = {
+        **nav,
+        "ranking_links": ranking_links,
+        "book_links": book_links,
+    }
+
+    for item in links:
+        _register_allowed(ctx, target, str(item.get("url") or ""))
+    for key in ("novel_urls", "next_urls"):
+        for u in nav.get(key) or []:
+            _register_allowed(ctx, target, str(u))
+
+    reason = str(nav.get("reason") or "").strip()
+    next_urls = list(nav.get("next_urls") or [])[:3]
+    novel_urls = list(nav.get("novel_urls") or [])[:3]
+    if reason:
+        hint = reason
+        if novel_urls:
+            hint += f" → 书籍: {novel_urls[0]}"
+        elif next_urls:
+            hint += f" → 下一步: {next_urls[0]}"
+        await _append_log(ctx, "INFO", f"页面分析: {hint}")
+
     return CrawlToolResult(
         content=_json_ok(
-            url=inp.url,
-            text_excerpt=body[:5000],
-            links=links[:40],
+            url=target,
+            page_type=nav.get("page_type") or "unknown",
+            navigation={
+                "reason": reason,
+                "next_urls": next_urls,
+                "novel_urls": novel_urls,
+                "selected_title": nav.get("selected_title") or "",
+                "ranking_links": ranking_links[:8],
+                "book_links": book_links[:12],
+            },
+            text_excerpt=body[:3500],
+            links=links[:30],
             link_count=len(links),
-            hint="根据链接与文本决定下一步：继续 FetchPage 导航，或 DiscoverChapters 解析目录",
+            rule="禁止猜测路径；下一跳必须来自 navigation.next_urls / novel_urls 或 links 中已有 URL",
         )
     )
 

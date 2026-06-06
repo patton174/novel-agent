@@ -33,6 +33,8 @@ class CrawlAgentContext:
     chapters_queue: list[ChapterItem] = field(default_factory=list)
     chapters_saved: int = 0
     last_fetched_url: str = ""
+    allowed_nav_urls: set[str] = field(default_factory=set)
+    last_navigation: dict[str, Any] = field(default_factory=dict)
 
     end_run: bool = False
     end_success: bool = False
