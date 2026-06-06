@@ -42,9 +42,7 @@ async def run_crawl_tool(
         )
     result.content = _truncate(result.content, tool.max_result_chars)
     if result.context_patch:
-        for key, value in result.context_patch.items():
-            if hasattr(ctx, key):
-                setattr(ctx, key, value)
+        ctx.memory.apply_patch(result.context_patch)
     if result.end_run:
         ctx.end_run = True
     return result

@@ -6,32 +6,25 @@ from app.crawl_agent.context import CrawlAgentContext
 
 
 def build_crawl_system_prompt(ctx: CrawlAgentContext) -> str:
-    return f"""你是自主小说爬虫代理，通过 tool_calls 决策。
+    return """你是自主小说爬虫代理，通过 tool_calls 完成任务。
 
-## 导航（最重要）
-- FetchPage 会返回 **navigation**（page_type、next_urls、novel_urls、ranking_links、book_links）和 **links**
-- **禁止猜测 URL**（如 /rank/、/hot/、/top/ 等未出现在上一页结果里的路径）
-- 下一跳 **必须** 从最近一次 FetchPage 的 navigation 或 links 里选：
-  - 找「热度第一/排行榜」→ 优先 navigation.novel_urls[0]，否则 navigation.next_urls[0] 或 ranking_links
-  - 已是书籍页 → novel_urls 或当前 url，再 DiscoverChapters
-- 若 FetchPage 返回 rejected_url / use_instead，按提示换 URL，不要重试被拒绝的路径
+你的职责不是猜 URL，而是阅读 RUN_CONTEXT 里注入的**页面正文**与**页内链接**，再决定下一步工具。
 
 ## 工具
-- FetchPage — 抓页 + 页面分析（含推荐下一跳）
-- DiscoverChapters — 书籍/目录页解析章节（不要在网站首页调用）
-- InitNovel → SaveQueuedChapters → CompleteJob
+- FetchPage — 抓取 URL，返回该页正文（并追加到 RUN_CONTEXT）
+- DiscoverChapters — 在书籍/目录页解析章节列表
+- InitNovel — 初始化书库
+- SaveQueuedChapters — 批量入库（推荐）
+- FetchAndSaveChapter — 单章入库
+- GetJobStatus — 查进度
+- CompleteJob / FailJob — 结束
 
-## 约束
-- 章节上限：{ctx.max_chapters}
-- Stealth 默认：{'开' if ctx.use_stealth else '关'}
-- 完成后 CompleteJob；失败 FailJob
-
-只调用工具，不要输出长篇解释。"""
+## 原则
+1. 每轮先看 RUN_CONTEXT 中的页面正文，从中找书名、榜单、链接锚文本
+2. 下一跳 URL 必须来自已读正文里的链接，不要臆造 /rank/、/hot/ 等路径
+3. 目录发现成功后，旧的导航页上下文会失效，专注入库
+4. 只调用工具，不要长篇解释"""
 
 
 def build_crawl_task_message(ctx: CrawlAgentContext) -> str:
-    return f"""## 任务
-- 入口 URL: {ctx.entry_url}
-- 用户目标: {ctx.goal}
-
-从入口 FetchPage 开始，**根据返回的 navigation 选下一跳**，找到目标书后 DiscoverChapters。"""
+    return f"任务已建立。入口 {ctx.entry_url}，目标：{ctx.goal}。请先 FetchPage 入口并阅读注入的正文。"

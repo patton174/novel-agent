@@ -12,6 +12,7 @@ from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, Tool
 from app.core.llm import llm_provider
 from app.crawl_agent.context import CrawlAgentContext
 from app.crawl_agent.prompts import build_crawl_system_prompt, build_crawl_task_message
+from app.crawl_agent.prompting.run_context import refresh_crawl_run_context
 from app.crawl_agent.tools import impl  # noqa: F401 — register tools
 from app.crawl_agent.tools.langchain_bind import build_crawl_langchain_tools
 from app.crawl_agent.tools.run_tool import run_crawl_tool
@@ -66,6 +67,7 @@ async def run_crawl_tool_loop(
         SystemMessage(content=build_crawl_system_prompt(ctx)),
         HumanMessage(content=build_crawl_task_message(ctx)),
     ]
+    refresh_crawl_run_context(messages, ctx)
 
     if preview_mode:
         messages.append(
@@ -86,6 +88,7 @@ async def run_crawl_tool_loop(
             break
 
         try:
+            refresh_crawl_run_context(messages, ctx)
             ai: AIMessage = await llm.ainvoke(messages)
         except Exception as exc:
             logger.warning("crawl agent llm turn failed: %s", exc)
@@ -124,6 +127,7 @@ async def run_crawl_tool_loop(
 
         for tool_call_id, name, args in calls:
             result = await run_crawl_tool(ctx, name, args)
+            refresh_crawl_run_context(messages, ctx)
             messages.append(
                 ToolMessage(content=result.content, tool_call_id=tool_call_id)
             )

@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
+from app.crawl_agent.memory import CrawlContextMemory
 from app.services.crawl_content_client import CrawlContentClient
 
 
@@ -33,8 +34,8 @@ class CrawlAgentContext:
     chapters_queue: list[ChapterItem] = field(default_factory=list)
     chapters_saved: int = 0
     last_fetched_url: str = ""
-    allowed_nav_urls: set[str] = field(default_factory=set)
-    last_navigation: dict[str, Any] = field(default_factory=dict)
+
+    memory: CrawlContextMemory = field(default_factory=CrawlContextMemory)
 
     end_run: bool = False
     end_success: bool = False
@@ -53,4 +54,5 @@ class CrawlAgentContext:
             "chapters_saved": self.chapters_saved,
             "chapters_remaining": max(0, len(self.chapters_queue) - self.chapters_saved),
             "last_fetched_url": self.last_fetched_url,
+            "memory": self.memory.snapshot_json(),
         }
