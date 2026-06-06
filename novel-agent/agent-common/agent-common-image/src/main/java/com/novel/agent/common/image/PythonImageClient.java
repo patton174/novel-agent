@@ -108,7 +108,6 @@ public class PythonImageClient {
                 .uri(URI.create(pythonBaseUrl + path))
                 .timeout(Duration.ofSeconds(Math.max(30, properties.getTimeoutSeconds())))
                 .header("Content-Type", "application/json; charset=UTF-8")
-                .header("Content-Length", String.valueOf(requestBody.length))
                 .POST(HttpRequest.BodyPublishers.ofByteArray(requestBody))
                 .build();
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
