@@ -103,25 +103,25 @@ public class PythonImageClient {
     private GeneratedImage postImage(String path, Map<String, Object> body) {
         try {
             String json = objectMapper.writeValueAsString(body);
-            byte[] payload = json.getBytes(StandardCharsets.UTF_8);
+            byte[] requestBody = json.getBytes(StandardCharsets.UTF_8);
             HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(pythonBaseUrl + path))
                 .timeout(Duration.ofSeconds(Math.max(30, properties.getTimeoutSeconds())))
                 .header("Content-Type", "application/json; charset=UTF-8")
-                .header("Content-Length", String.valueOf(payload.length))
-                .POST(HttpRequest.BodyPublishers.ofByteArray(payload))
+                .header("Content-Length", String.valueOf(requestBody.length))
+                .POST(HttpRequest.BodyPublishers.ofByteArray(requestBody))
                 .build();
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
                 log.warn("python-ai 生图失败 status={} body={}", response.statusCode(), truncate(response.body(), 500));
                 throw BizException.of(ResultCode.IMAGE_GENERATION_FAILED);
             }
-            GeneratedImageBody payload = objectMapper.readValue(response.body(), GeneratedImageBody.class);
-            if ((payload.url() == null || payload.url().isBlank())
-                && (payload.b64Json() == null || payload.b64Json().isBlank())) {
+            GeneratedImageBody imageBody = objectMapper.readValue(response.body(), GeneratedImageBody.class);
+            if ((imageBody.url() == null || imageBody.url().isBlank())
+                && (imageBody.b64Json() == null || imageBody.b64Json().isBlank())) {
                 throw BizException.of(ResultCode.IMAGE_GENERATION_FAILED);
             }
-            return new GeneratedImage(payload.url(), payload.b64Json());
+            return new GeneratedImage(imageBody.url(), imageBody.b64Json());
         } catch (BizException ex) {
             throw ex;
         } catch (Exception ex) {
