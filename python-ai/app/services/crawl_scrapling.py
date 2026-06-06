@@ -121,7 +121,7 @@ def page_links(page: Any, base_url: str, limit: int = 600) -> list[dict[str, str
     return items
 
 
-def _build_meta(page: Any, url: str, *, used_stealth: bool) -> PageFetchMeta:
+def _build_meta(page: Any, url: str, *, used_stealth: bool, proxy: str | None = None) -> PageFetchMeta:
     status = page_http_status(page)
     text = page_text(page, 12_000)
     links = page_links(page, url, limit=120)
@@ -131,7 +131,12 @@ def _build_meta(page: Any, url: str, *, used_stealth: bool) -> PageFetchMeta:
     blocked = status >= 400 or (content_chars < 80 and link_count < 2)
     hint = ""
     if status == 403:
-        hint = "目标站返回 403 Forbidden，Worker 出口 IP 可能被书友社等 WAF 封禁，Stealth 无法绕过 IP 黑名单"
+        if proxy:
+            hint = (
+                "HTTP 403：当前代理出口仍被目标站拒绝，请更换住宅/动态代理或检查账号流量"
+            )
+        else:
+            hint = "目标站返回 403 Forbidden，Worker 出口 IP 可能被 WAF 封禁，请配置 CRAWL_HTTP_PROXY"
     elif status >= 400:
         hint = f"HTTP {status}，页面不可用"
     elif blocked:
@@ -147,7 +152,7 @@ def _build_meta(page: Any, url: str, *, used_stealth: bool) -> PageFetchMeta:
     )
 
 
-def fetch_page(url: str, *, stealth: bool = False):
+def fetch_page(url: str, *, stealth: bool = False, proxy: str | None = None):
     try:
         from scrapling.fetchers import Fetcher
 
@@ -155,7 +160,15 @@ def fetch_page(url: str, *, stealth: bool = False):
             try:
                 from scrapling.fetchers import StealthyFetcher
 
-                return StealthyFetcher.fetch(url, headless=True, network_idle=True)
+                kwargs: dict[str, Any] = {
+                    "headless": True,
+                    "network_idle": True,
+                }
+                if proxy:
+                    kwargs["proxy"] = proxy
+                    kwargs["geoip"] = True
+                    kwargs["block_webrtc"] = True
+                return StealthyFetcher.fetch(url, **kwargs)
             except Exception as exc:
                 if _browser_unavailable(exc):
                     logger.warning(
@@ -165,6 +178,8 @@ def fetch_page(url: str, *, stealth: bool = False):
                     )
                 else:
                     raise
+        if proxy:
+            return Fetcher.get(url, stealthy_headers=True, proxy=proxy)
         return Fetcher.get(url, stealthy_headers=True)
     except ImportError as exc:
         raise RuntimeError("Scrapling 未安装，请执行 pip install scrapling[fetchers]") from exc
@@ -175,16 +190,17 @@ def fetch_page_with_retry(
     *,
     stealth: bool = False,
     auto_stealth: bool = True,
+    proxy: str | None = None,
 ) -> tuple[Any, PageFetchMeta]:
     """抓取页面；HTTP 被拦或空壳时自动尝试 Stealth 一次。"""
-    page = fetch_page(url, stealth=stealth)
-    meta = _build_meta(page, url, used_stealth=stealth)
+    page = fetch_page(url, stealth=stealth, proxy=proxy)
+    meta = _build_meta(page, url, used_stealth=stealth, proxy=proxy)
 
     if auto_stealth and not stealth and meta.blocked:
         logger.info("FetchPage auto stealth retry url=%s status=%s", url, meta.http_status)
         try:
-            stealth_page = fetch_page(url, stealth=True)
-            stealth_meta = _build_meta(stealth_page, url, used_stealth=True)
+            stealth_page = fetch_page(url, stealth=True, proxy=proxy)
+            stealth_meta = _build_meta(stealth_page, url, used_stealth=True, proxy=proxy)
             if not stealth_meta.blocked:
                 return stealth_page, stealth_meta
             page, meta = stealth_page, stealth_meta

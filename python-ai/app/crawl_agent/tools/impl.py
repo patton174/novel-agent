@@ -20,8 +20,9 @@ from app.crawl_agent.tools.schemas import (
 )
 from app.crawl_agent.tools.tool import CrawlTool, CrawlToolResult
 from app.services.crawl_ai_extractor import discover_catalog, extract_chapter
-from app.services.crawl_scrapling import fetch_page, fetch_page_with_retry, page_links, page_text
-from urllib.parse import urljoin
+from app.services.crawl_fetch import fetch_for_crawl, fetch_page_only, resolve_crawl_url
+from app.services.crawl_proxy import mask_proxy_url, pick_crawl_proxy
+from app.services.crawl_scrapling import page_links, page_text
 
 _REGISTERED = False
 
@@ -49,16 +50,25 @@ def _json_err(message: str, **payload: Any) -> str:
     return json.dumps({"ok": False, "error": message, **payload}, ensure_ascii=False)
 
 
+def _crawl_proxy(ctx: CrawlAgentContext) -> str | None:
+    return pick_crawl_proxy(ctx.site_config)
+
+
 async def _fetch_page_tool(ctx: CrawlAgentContext, inp: FetchPageInput) -> CrawlToolResult:
-    stealth = ctx.use_stealth if inp.use_stealth is None else inp.use_stealth
-    target = urljoin(ctx.entry_url, inp.url.strip())
-    await _append_log(ctx, "INFO", f"FetchPage: {target}")
+    stealth_override = inp.use_stealth
+    target = resolve_crawl_url(ctx, inp.url.strip())
+    proxy = _crawl_proxy(ctx)
+    proxy_hint = mask_proxy_url(proxy)
+    log_suffix = f" · 代理 {proxy_hint}" if proxy_hint else ""
+    await _append_log(ctx, "INFO", f"FetchPage: {target}{log_suffix}")
 
     page, meta = await asyncio.to_thread(
-        fetch_page_with_retry,
+        fetch_for_crawl,
+        ctx,
         target,
-        stealth=stealth,
-        auto_stealth=inp.use_stealth is None,
+        stealth=stealth_override,
+        auto_stealth=stealth_override is None,
+        use_cache=False,
     )
     ctx.last_fetched_url = target
     links = page_links(page, target, limit=120)
@@ -86,8 +96,8 @@ async def _fetch_page_tool(ctx: CrawlAgentContext, inp: FetchPageInput) -> Crawl
             },
         )
 
-    if meta.used_stealth and not stealth:
-        await _append_log(ctx, "INFO", "已自动切换 Stealth 浏览器抓取")
+    if meta.used_stealth and stealth_override is None:
+        await _append_log(ctx, "INFO", "已自动切换 Stealth 浏览器抓取（后续抓取将沿用）")
     elif meta.http_status >= 300:
         await _append_log(ctx, "WARN", f"FetchPage HTTP {meta.http_status} · {len(body)} 字 · {len(links)} 链接")
 
@@ -113,12 +123,38 @@ async def _fetch_page_tool(ctx: CrawlAgentContext, inp: FetchPageInput) -> Crawl
 
 async def _discover_chapters_tool(ctx: CrawlAgentContext, inp: DiscoverChaptersInput) -> CrawlToolResult:
     limit = inp.max_chapters or ctx.max_chapters
-    await _append_log(ctx, "INFO", f"DiscoverChapters: {inp.url}")
+    target = resolve_crawl_url(ctx, inp.url.strip())
+    await _append_log(ctx, "INFO", f"DiscoverChapters: {target}")
+
+    if ctx.chapters_queue and ctx.source_url and resolve_crawl_url(ctx, ctx.source_url) == target:
+        preview = [
+            {"sort_order": c.sort_order, "title": c.title, "url": c.url}
+            for c in ctx.chapters_queue[:15]
+        ]
+        await _append_log(ctx, "INFO", f"章节队列已存在，跳过重复解析（共 {len(ctx.chapters_queue)} 章）")
+        return CrawlToolResult(
+            content=_json_ok(
+                novel_title=ctx.novel_title,
+                author=ctx.novel_author,
+                chapter_count=len(ctx.chapters_queue),
+                chapters_preview=preview,
+                next_step="调用 InitNovel，再 SaveQueuedChapters",
+                reused=True,
+            ),
+        )
 
     def fetch_fn(url: str):
-        return fetch_page(url, stealth=ctx.use_stealth)
+        return fetch_page_only(ctx, url)
 
-    page = await asyncio.to_thread(fetch_page, inp.url, stealth=ctx.use_stealth)
+    page, meta = await asyncio.to_thread(fetch_for_crawl, ctx, target, use_cache=True)
+    if meta.blocked:
+        msg = meta.hint or f"HTTP {meta.http_status}，无法解析目录"
+        await _append_log(ctx, "ERROR", f"DiscoverChapters 抓取失败 · {msg}")
+        return CrawlToolResult(
+            content=_json_err(msg, url=target, http_status=meta.http_status),
+            is_error=True,
+            context_patch={"append_note": f"DiscoverChapters 失败: {msg}"},
+        )
 
     async def on_hop(msg: str) -> None:
         await _append_log(ctx, "INFO", msg)
@@ -126,19 +162,33 @@ async def _discover_chapters_tool(ctx: CrawlAgentContext, inp: DiscoverChaptersI
     try:
         catalog = await discover_catalog(
             page,
-            inp.url,
+            target,
             max_chapters=limit,
             fetch_page=fetch_fn,
             on_hop=on_hop,
         )
     except ValueError as exc:
-        return CrawlToolResult(content=_json_err(str(exc)), is_error=True)
+        await _append_log(ctx, "ERROR", f"DiscoverChapters 未识别章节 · {exc}")
+        return CrawlToolResult(
+            content=_json_err(str(exc)),
+            is_error=True,
+            context_patch={"append_note": f"DiscoverChapters 失败: {exc}"},
+        )
 
     chapters = catalog.chapters[:limit]
+    if not chapters:
+        msg = "未解析到任何章节链接，请 FetchPage 打开「目录/开始阅读」后再试"
+        await _append_log(ctx, "ERROR", f"DiscoverChapters · {msg}")
+        return CrawlToolResult(
+            content=_json_err(msg, url=target),
+            is_error=True,
+            context_patch={"append_note": msg},
+        )
+
     ctx.novel_title = catalog.novel_title
     ctx.novel_author = catalog.author
     ctx.novel_description = catalog.description
-    ctx.source_url = inp.url
+    ctx.source_url = target
     ctx.chapters_queue = [
         ChapterItem(title=c.title, url=c.url, sort_order=i)
         for i, c in enumerate(chapters, start=1)
@@ -166,7 +216,7 @@ async def _discover_chapters_tool(ctx: CrawlAgentContext, inp: DiscoverChaptersI
         ),
         context_patch={
             "append_catalog": {
-                "url": inp.url,
+                "url": target,
                 "title": catalog.novel_title,
                 "author": catalog.author,
                 "chapter_count": len(chapters),
@@ -208,7 +258,11 @@ async def _fetch_and_save_chapter_tool(
     total = len(ctx.chapters_queue) or inp.sort_order
     await _append_log(ctx, "INFO", f"[{inp.sort_order}/{total}] FetchAndSaveChapter: {inp.title_hint or inp.url}")
 
-    page = await asyncio.to_thread(fetch_page, inp.url, stealth=ctx.use_stealth)
+    page, meta = await asyncio.to_thread(fetch_for_crawl, ctx, inp.url)
+    if meta.blocked:
+        msg = meta.hint or f"HTTP {meta.http_status}，章节页不可用"
+        await _append_log(ctx, "ERROR", f"[{inp.sort_order}/{total}] 抓取失败 · {msg}")
+        return CrawlToolResult(content=_json_err(msg, url=inp.url), is_error=True)
     extracted = await extract_chapter(page, inp.url, fallback_title=inp.title_hint)
     result = await ctx.client.import_chapter(
         ctx.job_id,
@@ -272,7 +326,9 @@ async def _save_queued_chapters_tool(
         if await _job_cancelled(ctx):
             break
         try:
-            page = await asyncio.to_thread(fetch_page, ch.url, stealth=ctx.use_stealth)
+            page, meta = await asyncio.to_thread(fetch_for_crawl, ctx, ch.url)
+            if meta.blocked:
+                raise ValueError(meta.hint or f"HTTP {meta.http_status}")
             extracted = await extract_chapter(page, ch.url, fallback_title=ch.title)
             if ctx.job_id != "preview":
                 result = await ctx.client.import_chapter(
@@ -353,7 +409,7 @@ def register_crawl_tools() -> None:
             name="FetchPage",
             description=(
                 "抓取 URL 对应页面的正文与页内链接；正文会追加注入 RUN_CONTEXT。"
-                "决策前必须先阅读返回的 content。"
+                "url 必须来自 RUN_CONTEXT 页内 links 或入口 URL，禁止猜测路径。"
             ),
             input_model=FetchPageInput,
             call=_fetch_page_tool,
@@ -363,8 +419,8 @@ def register_crawl_tools() -> None:
         CrawlTool(
             name="DiscoverChapters",
             description=(
-                "在书籍/目录/章节列表页识别元数据与章节 URL 列表，写入任务队列。"
-                "若当前页无章节，会尝试 AI 跳转目录页。"
+                "在书籍/目录页识别元数据与章节 URL 列表，写入任务队列。"
+                "调用前应先 FetchPage 同一页或目录页；若队列已存在勿重复调用。"
             ),
             input_model=DiscoverChaptersInput,
             call=_discover_chapters_tool,

@@ -48,6 +48,7 @@ def _build_context(
     client: CrawlContentClient,
 ) -> CrawlAgentContext:
     opts = CrawlOptions.from_config(site_config)
+    cfg = options_from_config(site_config)
     return CrawlAgentContext(
         job_id=job_id,
         entry_url=source_url,
@@ -55,6 +56,7 @@ def _build_context(
         client=client,
         max_chapters=opts.max_chapters,
         use_stealth=opts.use_stealth,
+        site_config=cfg,
     )
 
 
@@ -103,6 +105,7 @@ async def preview_with_agent(
         client=client,
         max_chapters=opts.max_chapters,
         use_stealth=opts.use_stealth,
+        site_config=options_from_config(site_config),
     )
     try:
         loop = await run_crawl_tool_loop(ctx, max_turns=12, preview_mode=True)

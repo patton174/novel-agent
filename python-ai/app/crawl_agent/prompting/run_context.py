@@ -36,8 +36,9 @@ def build_crawl_run_context(ctx: CrawlAgentContext) -> str:
     parts.extend(
         [
             "## 决策要求",
-            "- 下一步必须基于上方**页面正文**与**页内链接锚文本**判断，不要凭空拼路径",
-            "- 导航：FetchPage 打开候选 URL；目录已就绪后 DiscoverChapters / InitNovel / SaveQueuedChapters",
+            "- 下一 URL 必须来自上方页内链接（锚文本 → URL），禁止凭空拼路径",
+            "- FetchPage 后再 DiscoverChapters；章节队列就绪后 InitNovel → SaveQueuedChapters",
+            "- 同一工具连续失败两次：换策略或 FailJob，不要重复相同参数",
             "- 完成：CompleteJob；无法完成：FailJob",
         ]
     )

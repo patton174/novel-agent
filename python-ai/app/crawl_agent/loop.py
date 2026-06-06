@@ -11,6 +11,8 @@ from app.core.llm import llm_provider
 from app.crawl_agent.context import CrawlAgentContext
 from app.crawl_agent.loop_support import (
     invoke_llm_with_pairing_retry,
+    record_tool_outcome,
+    repeat_failure_hint,
     run_crawl_tool_with_retry,
     tool_calls_from_ai,
 )
@@ -109,9 +111,13 @@ async def run_crawl_tool_loop(
 
         for call in calls:
             result = await run_crawl_tool_with_retry(ctx, call.name, call.args)
+            record_tool_outcome(ctx, call.name, call.args, result)
             messages.append(
                 ToolMessage(content=result.content, tool_call_id=call.tool_call_id)
             )
+            hint = repeat_failure_hint(ctx, call.name, call.args)
+            if hint and result.is_error:
+                messages.append(HumanMessage(content=hint))
             if preview_mode and ctx.chapters_queue and call.name == "DiscoverChapters":
                 sample = [
                     {"title": c.title, "url": c.url}

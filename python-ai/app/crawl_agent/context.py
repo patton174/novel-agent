@@ -7,6 +7,7 @@ from typing import Any
 
 from app.crawl_agent.memory import CrawlContextMemory
 from app.services.crawl_content_client import CrawlContentClient
+from app.services.crawl_proxy import mask_proxy_url, pick_crawl_proxy
 
 
 @dataclass
@@ -24,6 +25,7 @@ class CrawlAgentContext:
     client: CrawlContentClient
     max_chapters: int = 200
     use_stealth: bool = False
+    site_config: dict[str, Any] = field(default_factory=dict)
 
     novel_title: str = ""
     novel_author: str = ""
@@ -34,6 +36,9 @@ class CrawlAgentContext:
     chapters_queue: list[ChapterItem] = field(default_factory=list)
     chapters_saved: int = 0
     last_fetched_url: str = ""
+    last_cached_page: Any = None
+    last_cached_meta: Any = None
+    failed_tool_counts: dict[str, int] = field(default_factory=dict)
 
     memory: CrawlContextMemory = field(default_factory=CrawlContextMemory)
 
@@ -48,6 +53,7 @@ class CrawlAgentContext:
             "goal": self.goal,
             "max_chapters": self.max_chapters,
             "use_stealth": self.use_stealth,
+            "proxy": mask_proxy_url(pick_crawl_proxy(self.site_config)) or None,
             "novel_title": self.novel_title,
             "catalog_novel_id": self.catalog_novel_id,
             "chapters_discovered": len(self.chapters_queue),

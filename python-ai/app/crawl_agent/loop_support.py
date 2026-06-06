@@ -1,8 +1,8 @@
-"""Crawl loop helpers — tool pairing repair, LLM/tool silent retry."""
+"""Crawl loop helpers — tool pairing repair, retry policy, repeat-call guard."""
 
 from __future__ import annotations
 
-import asyncio
+import json
 import logging
 from dataclasses import dataclass
 from typing import Any
@@ -29,12 +29,56 @@ _PAIRING_RETRY_HINT = (
     "不要重复已成功完成的工具调用。"
 )
 
+_NON_RETRYABLE_TOOLS = frozenset(
+    {"DiscoverChapters", "InitNovel", "GetJobStatus", "CompleteJob", "FailJob"}
+)
+
+_REPEAT_FAILURE_HINTS: dict[str, str] = {
+    "DiscoverChapters": (
+        "DiscoverChapters 已多次失败：不要重复同一 URL。"
+        "请 FetchPage 打开 RUN_CONTEXT 页内链接中的「目录/开始阅读/全部章节」，"
+        "在新页上再 DiscoverChapters；仍无法识别则 FailJob。"
+    ),
+    "FetchPage": (
+        "FetchPage 已多次失败：禁止拼接 /read/、/1.html 等猜测路径。"
+        "下一 URL 必须来自 RUN_CONTEXT 页内链接；无可用链接则 FailJob。"
+    ),
+}
+
 
 @dataclass(frozen=True)
 class AiToolCall:
     tool_call_id: str
     name: str
     args: dict[str, Any]
+
+
+def tool_call_fingerprint(name: str, args: dict[str, Any]) -> str:
+    return f"{name}:{json.dumps(args, sort_keys=True, ensure_ascii=False)}"
+
+
+def is_retryable_crawl_tool_error(tool_name: str, result: CrawlToolResult) -> bool:
+    if result.end_run or not result.is_error:
+        return False
+    if tool_name in _NON_RETRYABLE_TOOLS:
+        return False
+    return tool_name in {"FetchPage", "FetchAndSaveChapter", "SaveQueuedChapters"}
+
+
+def repeat_failure_hint(ctx: CrawlAgentContext, tool_name: str, args: dict[str, Any]) -> str | None:
+    fp = tool_call_fingerprint(tool_name, args)
+    count = ctx.failed_tool_counts.get(fp, 0)
+    if count < 2:
+        return None
+    return _REPEAT_FAILURE_HINTS.get(tool_name)
+
+
+def record_tool_outcome(ctx: CrawlAgentContext, tool_name: str, args: dict[str, Any], result: CrawlToolResult) -> None:
+    fp = tool_call_fingerprint(tool_name, args)
+    if result.is_error:
+        ctx.failed_tool_counts[fp] = ctx.failed_tool_counts.get(fp, 0) + 1
+    else:
+        ctx.failed_tool_counts.pop(fp, None)
 
 
 def tool_calls_from_ai(message: AIMessage) -> list[AiToolCall]:
@@ -102,6 +146,8 @@ async def run_crawl_tool_with_retry(
         result = await run_crawl_tool(ctx, tool_name, raw_input)
         last = result
         if not result.is_error or result.end_run:
+            return result
+        if not is_retryable_crawl_tool_error(tool_name, result):
             return result
         if attempt >= TOOL_EXECUTION_MAX_ATTEMPTS:
             break
