@@ -7,19 +7,11 @@ TEMPLATES_DIR="$(cd "$SCRIPT_DIR/../../../agent-common/agent-common-mail/email-t
 
 cd "$TEMPLATES_DIR"
 
-if command -v corepack >/dev/null 2>&1; then
-  corepack enable >/dev/null 2>&1 || true
-  corepack prepare pnpm@9.15.9 --activate >/dev/null 2>&1 || true
-fi
-
-if command -v pnpm >/dev/null 2>&1; then
-  pnpm install --frozen-lockfile 2>/dev/null || pnpm install
-  pnpm run build
-elif command -v npm >/dev/null 2>&1; then
-  npm install
+if command -v npm >/dev/null 2>&1; then
+  npm ci 2>/dev/null || npm install
   npm run build
 else
-  echo "[email-templates] 需要 Node.js + pnpm/npm"
+  echo "[email-templates] 需要 Node.js + npm"
   exit 1
 fi
 

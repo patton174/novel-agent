@@ -11,8 +11,8 @@ import java.security.SecureRandom;
 import java.util.Base64;
 
 /**
- * 邮箱验证链接 HMAC 密钥：部署时 internal API 注册到 Redis，并同步 MW .env.mw。
- * 运行时优先读 Redis，冷启动可从环境变量回填。
+ * 邮箱验证链接 HMAC 密钥：部署时 internal API 写入 Redis；.env.mw 仅冷启动备份。
+ * 运行中始终优先读 Redis，无需重启 Auth。
  */
 @Slf4j
 @Service

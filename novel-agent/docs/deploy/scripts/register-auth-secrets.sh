@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# MW Auth 注册邮箱验证链接密钥 → Redis + .env.mw（幂等，不轮换 bootstrap）
+# MW Auth 注册邮箱验证链接密钥 → Redis + .env.mw（幂等，不重启进程）
 #
+# 运行时 Auth 直接读 Redis（EmailLinkSecretService）；.env.mw 仅作冷启动备份。
 # 由 register-frontend-crypto.sh / ci-hot-deploy / deploy-fast auth 调用
 #
 set -euo pipefail
@@ -83,15 +84,7 @@ upsert_env() {
 }
 upsert_env AUTH_EMAIL_LINK_SECRET '$EMAIL_LINK_SECRET'
 grep '^AUTH_EMAIL_LINK_SECRET=' "\$ENV" | sed 's/=.*/=***masked***/'
-
-COMPOSE="docker compose"
-if ! docker compose version >/dev/null 2>&1; then COMPOSE="docker-compose"; fi
-CID=\$(\$COMPOSE -f '$COMPOSE_FILE' --env-file "\$ENV" ps -q agent-auth 2>/dev/null || true)
-if [[ -n "\$CID" ]]; then
-  # 密钥已写入 Redis，重启 auth 以同步 env 冷启动备份（jar 热重载，不 force-recreate 整栈）
-  docker restart "\$CID" >/dev/null
-  echo "[auth-secrets] agent-auth 已热重启（env 备份已同步）"
-fi
+echo "[auth-secrets] Redis 已就绪，跳过 agent-auth 重启（运行时直读 Redis）"
 EOF
 
 echo "[auth-secrets] 完成"
