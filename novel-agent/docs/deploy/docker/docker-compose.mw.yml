@@ -59,13 +59,13 @@ services:
     restart: unless-stopped
     environment:
       <<: *java-env
-      JAVA_OPTS: ${JAVA_OPTS_AUTH:--Xms96m -Xmx256m -Dfile.encoding=UTF-8}
+      JAVA_OPTS: ${JAVA_OPTS_AUTH:--Xms96m -Xmx192m -Dfile.encoding=UTF-8}
       SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
       SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
       SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
       MAILTRAP_TOKEN: ${MAILTRAP_TOKEN:-}
       NACOS_SERVER_ADDR: ${NACOS_SERVER_ADDR_DOCKER:-nacos-standalone:8848}
-    mem_limit: ${JAVA_MEM_LIMIT_MW:-300m}
+    mem_limit: ${JAVA_MEM_LIMIT_MW:-448m}
     ports:
       - "8081:8081"
     networks:
@@ -86,7 +86,7 @@ services:
       JAVA_OPTS: ${JAVA_OPTS_GATEWAY:--Xms96m -Xmx256m -Dfile.encoding=UTF-8}
       SPRING_MAIN_WEB_APPLICATION_TYPE: reactive
       NACOS_SERVER_ADDR: ${NACOS_SERVER_ADDR_DOCKER:-nacos-standalone:8848}
-    mem_limit: ${JAVA_MEM_LIMIT_MW:-300m}
+    mem_limit: ${JAVA_MEM_LIMIT_MW:-448m}
     ports:
       - "${GATEWAY_PORT:-8080}:8080"
     networks:
