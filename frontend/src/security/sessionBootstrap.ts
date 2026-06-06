@@ -16,11 +16,12 @@ async function runBootstrap(): Promise<void> {
 
   hydrateSessionFromStorage()
 
+  // 部署会轮换 apiPathPrefix；已登录用户也必须拉最新 runtime，否则 /g/ 路由 404
+  await ensureCryptoRuntime(true)
+
   if (getAccessToken() && getSessionCrypto()) {
     return
   }
-
-  await ensureCryptoRuntime(false)
 
   if (!getAccessToken()) {
     const { refreshSession } = await import('../utils/authApi')

@@ -13,6 +13,9 @@ const GATEWAY_SECURITY_MESSAGES: Record<string, string> = {
   'AES envelope required': '请求加密异常，请刷新页面后重试',
   'decrypt failed': '请求解密失败，请刷新页面后重试',
   'unknown key id': '加密密钥已更新，请刷新页面后重试',
+  'route prefix stale': '页面加密配置已过期，请刷新页面后重试',
+  'invalid route cipher': '页面加密配置已过期，请刷新页面后重试',
+  'bootstrap runtime missing': '页面加密配置缺失，请刷新页面后重试',
 }
 
 function isResultFailed(result: ApiResult<unknown>): boolean {
@@ -22,7 +25,7 @@ function isResultFailed(result: ApiResult<unknown>): boolean {
   return result.code !== 200
 }
 
-function resolveErrorMessage(json: unknown, httpStatus: number): string {
+export function resolveErrorMessage(json: unknown, httpStatus: number): string {
   if (json != null && typeof json === 'object') {
     const body = json as { msg?: string; message?: string; code?: number }
     const raw = body.msg || body.message

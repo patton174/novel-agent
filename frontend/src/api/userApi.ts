@@ -1,5 +1,5 @@
 import { secureFetch } from '../security/secureFetch'
-import { parseResultResponse } from '../utils/resultApi'
+import { parseResultResponse, resolveErrorMessage } from '../utils/resultApi'
 import type { UserProfile, UserRole } from '../stores/userStore'
 
 interface UserInfoWire {
@@ -42,17 +42,13 @@ export async function fetchUserInfo(): Promise<UserProfile> {
 export async function sendEmailVerifyLink(): Promise<void> {
   const res = await secureFetch('/api/auth/auth/send-email-verify', { method: 'POST' })
   if (!res.ok) {
-    let message = '发送验证邮件失败'
+    let json: unknown = null
     try {
-      const json = await res.json()
-      if (json != null && typeof json === 'object') {
-        const body = json as { msg?: string; message?: string }
-        message = body.msg || body.message || message
-      }
+      json = await res.json()
     } catch {
-      // ignore
+      json = null
     }
-    throw new Error(message)
+    throw new Error(resolveErrorMessage(json, res.status))
   }
   await parseResultResponse<null>(res)
 }

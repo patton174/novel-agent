@@ -40,7 +40,8 @@ async function fetchRuntime(force: boolean): Promise<CryptoRuntimeConfig | null>
   }
 
   // 主路径：Worker nginx 静态文件（不经 Gateway 验签）；失败再兜底 Auth API
-  const sources = ['/crypto-runtime.json', '/api/auth/crypto-config']
+  const cacheBust = force ? `?v=${Date.now()}` : ''
+  const sources = [`/crypto-runtime.json${cacheBust}`, '/api/auth/crypto-config']
   for (const url of sources) {
     try {
       const response = await fetch(url, { credentials: 'include', cache: 'no-store' })

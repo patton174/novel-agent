@@ -153,20 +153,29 @@ export async function secureFetch(input: RequestInfo | URL, init?: SecureFetchIn
   let response = await exec()
 
   if (response.status >= 400 && isSecurityCryptoEnabled()) {
-    const bodyText = await response.clone().text().catch(() => '')
-    const cryptoStaleHeader = response.headers.get('X-Crypto-Stale') === '1'
-    if (
-      cryptoStaleHeader ||
-      isCryptoStaleError(response.status, bodyText) ||
-      bodyText.includes('invalid sign') ||
-      bodyText.includes('sign required')
-    ) {
+    for (let cryptoRetried = 0; cryptoRetried < 2; cryptoRetried += 1) {
+      const bodyText = await response.clone().text().catch(() => '')
+      const cryptoStaleHeader = response.headers.get('X-Crypto-Stale') === '1'
+      const cryptoStale =
+        cryptoStaleHeader ||
+        isCryptoStaleError(response.status, bodyText) ||
+        bodyText.includes('invalid sign') ||
+        bodyText.includes('sign required')
+      if (!cryptoStale) {
+        break
+      }
       if (isBootstrapAuthPath(logicalUrl)) {
         setSessionCrypto(null)
       }
       await invalidateCryptoRuntime()
       response = await exec()
-    } else if (
+      if (response.ok) {
+        break
+      }
+    }
+
+    const bodyText = await response.clone().text().catch(() => '')
+    if (
       response.status === 400 &&
       !signRetried &&
       (bodyText.includes('REPLAY_NONCE') || bodyText.includes('REPLAY_WINDOW'))
