@@ -56,11 +56,12 @@ public class CrawlDispatchListener {
         if (!siteConfig.isEmpty()) {
             body.set("site_config", objectMapper.valueToTree(siteConfig));
         }
+        String jsonBody = objectMapper.writeValueAsString(body);
         pythonRestClient.post()
             .uri("/internal/crawl/execute")
             .contentType(MediaType.APPLICATION_JSON)
             .header("X-Internal-Service-Key", internalServiceKey)
-            .body(body.toString())
+            .body(jsonBody)
             .retrieve()
             .toBodilessEntity();
     }

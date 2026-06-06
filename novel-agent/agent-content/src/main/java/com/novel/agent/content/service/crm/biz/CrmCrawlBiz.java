@@ -65,11 +65,15 @@ public class CrmCrawlBiz extends BaseBiz {
     }
 
     public Result<Map<String, Object>> preview(CrawlPreviewRequest request) {
-        Map<String, Object> config = crawlJobService.parseConfigJson(request.configJson());
-        if ((config == null || config.isEmpty()) && request.siteId() != null && !request.siteId().isBlank()) {
-            config = crawlJobService.parseConfigJson(crawlJobService.getSite(request.siteId()).getConfigJson());
+        try {
+            Map<String, Object> config = crawlJobService.parseConfigJson(request.configJson());
+            if ((config == null || config.isEmpty()) && request.siteId() != null && !request.siteId().isBlank()) {
+                config = crawlJobService.parseConfigJson(crawlJobService.getSite(request.siteId()).getConfigJson());
+            }
+            return ok(pythonCrawlClient.preview(request.sourceUrl(), config));
+        } catch (Exception ex) {
+            return ok(Map.of("ok", false, "message", ex.getMessage() == null ? "预览失败" : ex.getMessage()));
         }
-        return ok(pythonCrawlClient.preview(request.sourceUrl(), config));
     }
 
     public Result<List<CrawlSiteDTO>> listSites() {

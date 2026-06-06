@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Bot, Loader2, Pause, Play, Plus, RefreshCw, Square, Wand2 } from 'lucide-react'
 import {
   cancelCrawlJob,
@@ -8,10 +8,12 @@ import {
   previewCrawl,
   startCrawlJob,
   type CrawlJob,
+  type CrawlPreviewResult,
 } from '@/api/crawlAdminApi'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
+import { cn } from '@/lib/utils'
 import { appToast } from '@/stores/appToastStore'
 
 const DEFAULT_CONFIG = `{
@@ -31,16 +33,30 @@ function statusLabel(status: CrawlJob['status']): string {
   return map[status] ?? status
 }
 
+function progressPercent(job: CrawlJob): number | null {
+  const total = job.chaptersTotal
+  const done = job.chaptersDone ?? 0
+  if (total == null || total <= 0) {
+    return null
+  }
+  return Math.min(100, Math.round((done / total) * 100))
+}
+
 export default function CrawlerPage() {
   const [jobs, setJobs] = useState<CrawlJob[] | null>(null)
   const [loading, setLoading] = useState(true)
   const [actingId, setActingId] = useState<string | null>(null)
   const [previewing, setPreviewing] = useState(false)
+  const [previewResult, setPreviewResult] = useState<CrawlPreviewResult | null>(null)
   const [sourceUrl, setSourceUrl] = useState('')
   const [configJson, setConfigJson] = useState(DEFAULT_CONFIG)
 
+  const hasRunningJob = useMemo(
+    () => (jobs ?? []).some((job) => job.status === 'RUNNING' || job.status === 'PENDING'),
+    [jobs],
+  )
+
   const load = useCallback(async () => {
-    setLoading(true)
     try {
       const jobPage = await fetchCrawlJobs(1, 50)
       setJobs(jobPage.list)
@@ -54,9 +70,10 @@ export default function CrawlerPage() {
 
   useEffect(() => {
     void load()
-    const timer = window.setInterval(() => void load(), 8000)
+    const intervalMs = hasRunningJob ? 2500 : 8000
+    const timer = window.setInterval(() => void load(), intervalMs)
     return () => window.clearInterval(timer)
-  }, [load])
+  }, [load, hasRunningJob])
 
   const handlePreview = async () => {
     if (!sourceUrl.trim()) {
@@ -64,8 +81,10 @@ export default function CrawlerPage() {
       return
     }
     setPreviewing(true)
+    setPreviewResult(null)
     try {
       const result = await previewCrawl({ sourceUrl: sourceUrl.trim() })
+      setPreviewResult(result)
       if (result.ok) {
         appToast.success(
           `AI 识别：${result.title || '未知'}${result.author ? ` · ${result.author}` : ''}，约 ${result.chapter_count ?? 0} 章`,
@@ -166,6 +185,47 @@ export default function CrawlerPage() {
               创建并启动
             </Button>
           </div>
+
+          {previewing ? (
+            <div className="rounded-xl border border-dashed border-border bg-muted/30 px-4 py-6 text-center text-sm text-muted-foreground">
+              <Loader2 className="mx-auto mb-2 size-5 animate-spin text-primary" />
+              AI 正在解析目录页…
+            </div>
+          ) : previewResult ? (
+            <div
+              className={cn(
+                'rounded-xl border px-4 py-3 text-sm',
+                previewResult.ok
+                  ? 'border-emerald-500/30 bg-emerald-500/5'
+                  : 'border-destructive/30 bg-destructive/5',
+              )}
+            >
+              {previewResult.ok ? (
+                <>
+                  <p className="font-semibold text-foreground">
+                    {previewResult.title || '未知书名'}
+                    {previewResult.author ? (
+                      <span className="font-normal text-muted-foreground"> · {previewResult.author}</span>
+                    ) : null}
+                  </p>
+                  <p className="mt-1 text-muted-foreground">
+                    识别到约 {previewResult.chapter_count ?? 0} 章
+                  </p>
+                  {previewResult.sample_chapters && previewResult.sample_chapters.length > 0 ? (
+                    <ul className="mt-3 space-y-1 border-t border-border/60 pt-3 text-xs text-muted-foreground">
+                      {previewResult.sample_chapters.map((chapter, index) => (
+                        <li key={`${chapter.url}-${index}`} className="truncate">
+                          {index + 1}. {chapter.title}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                </>
+              ) : (
+                <p className="text-destructive">{previewResult.message || '预览失败'}</p>
+              )}
+            </div>
+          ) : null}
         </div>
       </section>
 
@@ -181,36 +241,68 @@ export default function CrawlerPage() {
           <p className="text-sm text-muted-foreground">暂无爬虫任务</p>
         ) : (
           <div className="space-y-3">
-            {jobs!.map((job) => (
-              <div
-                key={job.id}
-                className="flex flex-col gap-3 rounded-xl border border-border/80 p-4 lg:flex-row lg:items-center lg:justify-between"
-              >
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-medium">{job.title || '解析中…'}</span>
-                    <span className="rounded-full bg-muted px-2 py-0.5 text-xs">{statusLabel(job.status)}</span>
+            {jobs!.map((job) => {
+              const percent = progressPercent(job)
+              return (
+                <div
+                  key={job.id}
+                  className={cn(
+                    'flex flex-col gap-3 rounded-xl border p-4 lg:flex-row lg:items-center lg:justify-between',
+                    job.status === 'RUNNING'
+                      ? 'border-primary/30 bg-primary/[0.03]'
+                      : 'border-border/80',
+                  )}
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-medium">{job.title || '解析中…'}</span>
+                      <span
+                        className={cn(
+                          'rounded-full px-2 py-0.5 text-xs',
+                          job.status === 'RUNNING'
+                            ? 'bg-primary/15 text-primary'
+                            : 'bg-muted text-foreground/80',
+                        )}
+                      >
+                        {statusLabel(job.status)}
+                      </span>
+                    </div>
+                    <p className="mt-1 truncate text-xs text-muted-foreground">{job.sourceUrl}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      进度 {job.chaptersDone ?? 0}/{job.chaptersTotal ?? '?'}
+                      {job.catalogNovelId ? ` · 书库 ID ${job.catalogNovelId}` : ''}
+                    </p>
+                    {percent != null ? (
+                      <div className="mt-2 h-1.5 w-full max-w-xs overflow-hidden rounded-full bg-muted">
+                        <div
+                          className="h-full rounded-full bg-primary transition-all duration-500"
+                          style={{ width: `${percent}%` }}
+                        />
+                      </div>
+                    ) : job.status === 'RUNNING' ? (
+                      <div className="mt-2 flex items-center gap-2 text-xs text-primary">
+                        <Loader2 className="size-3.5 animate-spin" />
+                        正在抓取目录或章节…
+                      </div>
+                    ) : null}
+                    {job.errorMessage ? (
+                      <p className="mt-1 text-xs text-destructive">{job.errorMessage}</p>
+                    ) : null}
                   </div>
-                  <p className="mt-1 truncate text-xs text-muted-foreground">{job.sourceUrl}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    进度 {job.chaptersDone ?? 0}/{job.chaptersTotal ?? '?'}
-                    {job.catalogNovelId ? ` · 书库 ID ${job.catalogNovelId}` : ''}
-                  </p>
-                  {job.errorMessage ? <p className="mt-1 text-xs text-destructive">{job.errorMessage}</p> : null}
+                  <div className="flex flex-wrap gap-2">
+                    <Button size="sm" variant="outline" disabled={actingId === job.id} onClick={() => void runAction(job.id, 'start')}>
+                      <Play className="mr-1 size-3.5" />启动
+                    </Button>
+                    <Button size="sm" variant="outline" disabled={actingId === job.id} onClick={() => void runAction(job.id, 'pause')}>
+                      <Pause className="mr-1 size-3.5" />暂停
+                    </Button>
+                    <Button size="sm" variant="outline" disabled={actingId === job.id} onClick={() => void runAction(job.id, 'cancel')}>
+                      <Square className="mr-1 size-3.5" />取消
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  <Button size="sm" variant="outline" disabled={actingId === job.id} onClick={() => void runAction(job.id, 'start')}>
-                    <Play className="mr-1 size-3.5" />启动
-                  </Button>
-                  <Button size="sm" variant="outline" disabled={actingId === job.id} onClick={() => void runAction(job.id, 'pause')}>
-                    <Pause className="mr-1 size-3.5" />暂停
-                  </Button>
-                  <Button size="sm" variant="outline" disabled={actingId === job.id} onClick={() => void runAction(job.id, 'cancel')}>
-                    <Square className="mr-1 size-3.5" />取消
-                  </Button>
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </section>

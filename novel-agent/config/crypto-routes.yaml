@@ -127,6 +127,26 @@ routes:
     path: /api/content/crm/stats/overview
   - method: GET
     path: /api/content/crm/stats/trends
+  - method: GET
+    path: /api/content/crm/crawl/jobs/page
+  - method: GET
+    path: /api/content/crm/crawl/jobs/{jobId}
+  - method: POST
+    path: /api/content/crm/crawl/jobs
+  - method: POST
+    path: /api/content/crm/crawl/jobs/{jobId}/start
+  - method: POST
+    path: /api/content/crm/crawl/jobs/{jobId}/pause
+  - method: POST
+    path: /api/content/crm/crawl/jobs/{jobId}/cancel
+  - method: POST
+    path: /api/content/crm/crawl/preview
+  - method: GET
+    path: /api/content/crm/crawl/sites
+  - method: POST
+    path: /api/content/crm/crawl/sites
+  - method: PUT
+    path: /api/content/crm/crawl/sites/{siteId}
 
   # agent / pyai
   - method: POST

@@ -1,5 +1,6 @@
 package com.novel.agent.content.service.crawl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -37,7 +38,7 @@ public class PythonCrawlClient {
         JsonNode response = restClient.post()
             .uri("/api/crawl/preview")
             .contentType(MediaType.APPLICATION_JSON)
-            .body(body.toString())
+            .body(toJson(body))
             .retrieve()
             .body(JsonNode.class);
         if (response == null) {
@@ -57,9 +58,17 @@ public class PythonCrawlClient {
             .uri("/internal/crawl/execute")
             .contentType(MediaType.APPLICATION_JSON)
             .header("X-Internal-Service-Key", internalKey)
-            .body(body.toString())
+            .body(toJson(body))
             .retrieve()
             .toBodilessEntity();
+    }
+
+    private String toJson(ObjectNode body) {
+        try {
+            return objectMapper.writeValueAsString(body);
+        } catch (JsonProcessingException ex) {
+            throw new IllegalStateException("序列化爬虫请求失败", ex);
+        }
     }
 
     public static CrawlJobDTO toDto(CrawlJobEntity entity) {

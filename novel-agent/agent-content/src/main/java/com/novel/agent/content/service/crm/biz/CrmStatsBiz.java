@@ -86,7 +86,7 @@ public class CrmStatsBiz extends BaseBiz {
     }
 
     private CrmTrendPointResp toTrendPoint(FeignTrendPointDto point) {
-        return new CrmTrendPointResp(point.date(), point.count());
+        return new CrmTrendPointResp(point.date() == null ? "" : point.date().toString(), point.count());
     }
 
     private List<CrmTrendPointResp> buildDailySeries(
@@ -97,7 +97,7 @@ public class CrmStatsBiz extends BaseBiz {
         List<CrmTrendPointResp> series = new ArrayList<>(trendDays);
         for (int i = 0; i < trendDays; i++) {
             LocalDate date = startDate.plusDays(i);
-            series.add(new CrmTrendPointResp(date, countsByDate.getOrDefault(date, 0L)));
+            series.add(new CrmTrendPointResp(date.toString(), countsByDate.getOrDefault(date, 0L)));
         }
         return series;
     }
