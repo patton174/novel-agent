@@ -20,7 +20,7 @@ from app.crawl_agent.tools.schemas import (
 )
 from app.crawl_agent.tools.tool import CrawlTool, CrawlToolResult
 from app.services.crawl_ai_extractor import discover_catalog, extract_chapter
-from app.services.crawl_scrapling import fetch_page, page_links, page_text
+from app.services.crawl_scrapling import fetch_page, fetch_page_with_retry, page_links, page_text
 from urllib.parse import urljoin
 
 _REGISTERED = False
@@ -53,14 +53,49 @@ async def _fetch_page_tool(ctx: CrawlAgentContext, inp: FetchPageInput) -> Crawl
     stealth = ctx.use_stealth if inp.use_stealth is None else inp.use_stealth
     target = urljoin(ctx.entry_url, inp.url.strip())
     await _append_log(ctx, "INFO", f"FetchPage: {target}")
-    page = await asyncio.to_thread(fetch_page, target, stealth=stealth)
+
+    page, meta = await asyncio.to_thread(
+        fetch_page_with_retry,
+        target,
+        stealth=stealth,
+        auto_stealth=inp.use_stealth is None,
+    )
     ctx.last_fetched_url = target
     links = page_links(page, target, limit=120)
     body = page_text(page, 12_000)
 
+    if meta.blocked:
+        msg = meta.hint or f"HTTP {meta.http_status}，无法获取有效页面内容"
+        await _append_log(
+            ctx,
+            "ERROR",
+            f"FetchPage 失败 · HTTP {meta.http_status} · {msg}",
+        )
+        return CrawlToolResult(
+            content=_json_err(
+                msg,
+                url=target,
+                http_status=meta.http_status,
+                used_stealth=meta.used_stealth,
+                content=body[:1500],
+                links=links,
+            ),
+            is_error=True,
+            context_patch={
+                "append_note": f"FetchPage 失败 ({target}): {msg}",
+            },
+        )
+
+    if meta.used_stealth and not stealth:
+        await _append_log(ctx, "INFO", "已自动切换 Stealth 浏览器抓取")
+    elif meta.http_status >= 300:
+        await _append_log(ctx, "WARN", f"FetchPage HTTP {meta.http_status} · {len(body)} 字 · {len(links)} 链接")
+
     return CrawlToolResult(
         content=_json_ok(
             url=target,
+            http_status=meta.http_status,
+            used_stealth=meta.used_stealth,
             content=body,
             links=links,
             link_count=len(links),

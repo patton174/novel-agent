@@ -22,6 +22,7 @@ def build_crawl_system_prompt(ctx: CrawlAgentContext) -> str:
 ## 原则
 1. 每轮先看 RUN_CONTEXT 中的页面正文，从中找书名、榜单、链接锚文本
 2. 下一跳 URL 必须来自已读正文里的链接，不要臆造 /rank/、/hot/ 等路径
+3. FetchPage 若返回 http_status≥400 或 blocked，不要继续猜 URL，应 FailJob 并说明原因（如 403 IP 被封）
 3. 目录发现成功后，旧的导航页上下文会失效，专注入库
 4. 只调用工具，不要长篇解释"""
 
