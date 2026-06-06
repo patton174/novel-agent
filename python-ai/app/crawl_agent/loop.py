@@ -2,20 +2,22 @@
 
 from __future__ import annotations
 
-import json
 import logging
 from dataclasses import dataclass
-from uuid import uuid4
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 
 from app.core.llm import llm_provider
 from app.crawl_agent.context import CrawlAgentContext
+from app.crawl_agent.loop_support import (
+    invoke_llm_with_pairing_retry,
+    run_crawl_tool_with_retry,
+    tool_calls_from_ai,
+)
 from app.crawl_agent.prompts import build_crawl_system_prompt, build_crawl_task_message
 from app.crawl_agent.prompting.run_context import refresh_crawl_run_context
 from app.crawl_agent.tools import impl  # noqa: F401 — register tools
 from app.crawl_agent.tools.langchain_bind import build_crawl_langchain_tools
-from app.crawl_agent.tools.run_tool import run_crawl_tool
 
 logger = logging.getLogger(__name__)
 
@@ -31,25 +33,6 @@ class CrawlLoopResult:
     author: str = ""
     chapter_count: int = 0
     sample_chapters: list[dict[str, str]] | None = None
-
-
-def _tool_calls_from_ai(message: AIMessage) -> list[tuple[str, str, dict]]:
-    out: list[tuple[str, str, dict]] = []
-    for tc in message.tool_calls or []:
-        if isinstance(tc, dict):
-            name = str(tc.get("name") or "").strip()
-            args = tc.get("args") or {}
-            tid = str(tc.get("id") or "") or str(uuid4())
-        else:
-            name = str(getattr(tc, "name", "") or "").strip()
-            args = getattr(tc, "args", None) or {}
-            tid = str(getattr(tc, "id", "") or "") or str(uuid4())
-        if not name:
-            continue
-        if not isinstance(args, dict):
-            args = {}
-        out.append((tid, name, args))
-    return out
 
 
 async def run_crawl_tool_loop(
@@ -88,17 +71,16 @@ async def run_crawl_tool_loop(
             break
 
         try:
-            refresh_crawl_run_context(messages, ctx)
-            ai: AIMessage = await llm.ainvoke(messages)
+            ai: AIMessage = await invoke_llm_with_pairing_retry(llm, messages, ctx)
         except Exception as exc:
             logger.warning("crawl agent llm turn failed: %s", exc)
             if ctx.job_id != "preview":
-                await ctx.client.append_log(ctx.job_id, level="ERROR", message=f"LLM 调用失败: {exc}")
+                await ctx.client.append_log(ctx.job_id, level="ERROR", message=f"LLM 调用失败: {str(exc)[:500]}")
                 await ctx.client.fail_job(ctx.job_id, error_message=str(exc)[:500])
             return CrawlLoopResult(ok=False, message=str(exc))
 
         messages.append(ai)
-        calls = _tool_calls_from_ai(ai)
+        calls = tool_calls_from_ai(ai)
 
         if not calls:
             if (
@@ -125,13 +107,12 @@ async def run_crawl_tool_loop(
             )
             continue
 
-        for tool_call_id, name, args in calls:
-            result = await run_crawl_tool(ctx, name, args)
-            refresh_crawl_run_context(messages, ctx)
+        for call in calls:
+            result = await run_crawl_tool_with_retry(ctx, call.name, call.args)
             messages.append(
-                ToolMessage(content=result.content, tool_call_id=tool_call_id)
+                ToolMessage(content=result.content, tool_call_id=call.tool_call_id)
             )
-            if preview_mode and ctx.chapters_queue and name == "DiscoverChapters":
+            if preview_mode and ctx.chapters_queue and call.name == "DiscoverChapters":
                 sample = [
                     {"title": c.title, "url": c.url}
                     for c in ctx.chapters_queue[:5]
@@ -146,9 +127,6 @@ async def run_crawl_tool_loop(
                 )
             if ctx.end_run:
                 break
-
-        if len(messages) > 40:
-            messages = [messages[0], messages[1]] + messages[-30:]
 
     if ctx.end_success:
         return CrawlLoopResult(
