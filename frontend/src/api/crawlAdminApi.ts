@@ -41,6 +41,7 @@ export interface CrawlPreviewResult {
   chapter_count?: number
   sample_chapters?: Array<{ title: string; url: string }>
   message?: string
+  goal_summary?: string
 }
 
 export type CrawlLogLevel = 'DEBUG' | 'INFO' | 'SUCCESS' | 'WARN' | 'ERROR'
@@ -110,7 +111,10 @@ export async function cancelCrawlJob(jobId: string): Promise<CrawlJob> {
   return parseResponse<CrawlJob>(res)
 }
 
-export async function previewCrawl(payload: { sourceUrl: string }): Promise<CrawlPreviewResult> {
+export async function previewCrawl(payload: {
+  sourceUrl: string
+  configJson?: string
+}): Promise<CrawlPreviewResult> {
   const res = await secureFetch('/api/content/crm/crawl/preview', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -130,4 +134,20 @@ export async function fetchCrawlLogs(jobId: string, afterSeq = 0): Promise<Crawl
     throw new Error('加载日志失败')
   }
   return parseResponse<CrawlLogsResponse>(res)
+}
+
+export function buildCrawlConfigJson(goal: string): string {
+  return JSON.stringify({ goal: goal.trim() })
+}
+
+export function parseCrawlJobGoal(configJson?: string | null): string | null {
+  if (!configJson?.trim()) {
+    return null
+  }
+  try {
+    const parsed = JSON.parse(configJson) as { goal?: string }
+    return parsed.goal?.trim() || null
+  } catch {
+    return null
+  }
 }

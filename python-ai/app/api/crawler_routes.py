@@ -29,6 +29,7 @@ class CrawlPreviewResponse(BaseModel):
     chapter_count: int = 0
     sample_chapters: list[dict[str, str]] = Field(default_factory=list)
     message: str = ""
+    goal_summary: str = ""
 
 
 class CrawlExecuteRequest(BaseModel):
@@ -58,6 +59,7 @@ async def crawl_preview(body: CrawlPreviewRequest):
         chapter_count=result.chapter_count,
         sample_chapters=result.sample_chapters,
         message=result.message,
+        goal_summary=getattr(result, "goal_summary", "") or "",
     )
 
 

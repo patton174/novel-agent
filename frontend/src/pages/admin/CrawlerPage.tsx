@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Bot, Loader2, Pause, Play, Plus, RefreshCw, Square, Wand2 } from 'lucide-react'
 import {
+  buildCrawlConfigJson,
   cancelCrawlJob,
   createCrawlJob,
   fetchCrawlJobs,
+  parseCrawlJobGoal,
   pauseCrawlJob,
   previewCrawl,
   startCrawlJob,
@@ -17,10 +19,8 @@ import { CrawlLogTerminal } from '@/components/admin/CrawlLogTerminal'
 import { cn } from '@/lib/utils'
 import { appToast } from '@/stores/appToastStore'
 
-const DEFAULT_CONFIG = `{
-  "maxChapters": 200,
-  "useStealth": false
-}`
+const DEFAULT_GOAL =
+  '把链接中的小说全部章节抓取并清洗正文，入库公共书库（书籍页、目录页、章节页均可）'
 
 function statusLabel(status: CrawlJob['status']): string {
   const map: Record<CrawlJob['status'], string> = {
@@ -50,7 +50,7 @@ export default function CrawlerPage() {
   const [previewing, setPreviewing] = useState(false)
   const [previewResult, setPreviewResult] = useState<CrawlPreviewResult | null>(null)
   const [sourceUrl, setSourceUrl] = useState('')
-  const [configJson, setConfigJson] = useState(DEFAULT_CONFIG)
+  const [goal, setGoal] = useState(DEFAULT_GOAL)
 
   const hasRunningJob = useMemo(
     () => (jobs ?? []).some((job) => job.status === 'RUNNING' || job.status === 'PENDING'),
@@ -78,18 +78,23 @@ export default function CrawlerPage() {
 
   const handlePreview = async () => {
     if (!sourceUrl.trim()) {
-      appToast.error('请输入小说目录页 URL')
+      appToast.error('请输入链接')
+      return
+    }
+    if (!goal.trim()) {
+      appToast.error('请描述爬取目标')
       return
     }
     setPreviewing(true)
     setPreviewResult(null)
     try {
-      const result = await previewCrawl({ sourceUrl: sourceUrl.trim() })
+      const result = await previewCrawl({
+        sourceUrl: sourceUrl.trim(),
+        configJson: buildCrawlConfigJson(goal),
+      })
       setPreviewResult(result)
       if (result.ok) {
-        appToast.success(
-          `AI 识别：${result.title || '未知'}${result.author ? ` · ${result.author}` : ''}，约 ${result.chapter_count ?? 0} 章`,
-        )
+        appToast.success(result.message || '预览成功')
       } else {
         appToast.error(result.message || '预览失败')
       }
@@ -102,17 +107,21 @@ export default function CrawlerPage() {
 
   const handleCreate = async () => {
     if (!sourceUrl.trim()) {
-      appToast.error('请输入小说目录页 URL')
+      appToast.error('请输入链接')
+      return
+    }
+    if (!goal.trim()) {
+      appToast.error('请描述爬取目标')
       return
     }
     setActingId('create')
     try {
       const job = await createCrawlJob({
         sourceUrl: sourceUrl.trim(),
-        configJson,
+        configJson: buildCrawlConfigJson(goal),
       })
       await startCrawlJob(job.id)
-      appToast.success('AI 爬虫已启动，完成后可在用户端「书库」浏览')
+      appToast.success('AI 代理已启动，可在下方日志查看执行过程')
       await load()
     } catch (err) {
       appToast.error(err instanceof Error ? err.message : '创建任务失败')
@@ -142,7 +151,16 @@ export default function CrawlerPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">AI 自动爬虫</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Scrapling 抓取 + LLM 自动解析目录与正文，入库公共书库；用户自行浏览添加
+            基于{' '}
+            <a
+              href="https://github.com/d4vinci/Scrapling"
+              target="_blank"
+              rel="noreferrer"
+              className="text-primary underline-offset-2 hover:underline"
+            >
+              Scrapling
+            </a>{' '}
+            抓取网页，AI 根据你的目标自主导航、解析并持续执行至完成
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={() => void load()} disabled={loading}>
@@ -154,28 +172,30 @@ export default function CrawlerPage() {
       <section className="rounded-2xl border border-border bg-surface p-5 shadow-soft">
         <div className="mb-4 flex items-center gap-2">
           <Bot className="size-5 text-primary" />
-          <h2 className="text-lg font-semibold">新建爬取任务</h2>
+          <h2 className="text-lg font-semibold">新建任务</h2>
         </div>
         <div className="space-y-3">
-          <Input
-            value={sourceUrl}
-            onChange={(e) => setSourceUrl(e.target.value)}
-            placeholder="小说目录页 URL（AI 自动识别章节，无需配置选择器）"
-          />
-          <details className="rounded-lg border border-border/80 p-3 text-sm">
-            <summary className="cursor-pointer font-medium text-muted-foreground">
-              高级选项（可选）
-            </summary>
-            <textarea
-              value={configJson}
-              onChange={(e) => setConfigJson(e.target.value)}
-              rows={4}
-              className="mt-3 w-full rounded-md border border-input bg-background px-3 py-2 font-mono text-xs"
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-muted-foreground">链接</label>
+            <Input
+              value={sourceUrl}
+              onChange={(e) => setSourceUrl(e.target.value)}
+              placeholder="任意小说相关 URL（书籍页 / 目录 / 章节 / 阅读页）"
             />
-            <p className="mt-2 text-xs text-muted-foreground">
-              仅需 maxChapters / useStealth；无需 CSS 选择器
+          </div>
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-muted-foreground">目标（自然语言）</label>
+            <textarea
+              value={goal}
+              onChange={(e) => setGoal(e.target.value)}
+              rows={3}
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm leading-relaxed"
+              placeholder="例如：把这本小说全部章节抓下来入库；或：只抓前 50 章，反爬严的话用浏览器模式"
+            />
+            <p className="mt-1.5 text-xs text-muted-foreground">
+              无需配置 CSS 选择器。AI 会理解目标并自动跳转目录、逐章 Scrapling 抓取、LLM 清洗正文。
             </p>
-          </details>
+          </div>
           <div className="flex flex-wrap gap-2">
             <Button type="button" variant="secondary" disabled={previewing} onClick={() => void handlePreview()}>
               {previewing ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Wand2 className="mr-2 size-4" />}
@@ -183,14 +203,14 @@ export default function CrawlerPage() {
             </Button>
             <Button type="button" disabled={actingId === 'create'} onClick={() => void handleCreate()}>
               {actingId === 'create' ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Plus className="mr-2 size-4" />}
-              创建并启动
+              启动 AI 代理
             </Button>
           </div>
 
           {previewing ? (
             <div className="rounded-xl border border-dashed border-border bg-muted/30 px-4 py-6 text-center text-sm text-muted-foreground">
               <Loader2 className="mx-auto mb-2 size-5 animate-spin text-primary" />
-              AI 正在解析目录页…
+              AI 正在理解目标并探测页面…
             </div>
           ) : previewResult ? (
             <div
@@ -203,14 +223,17 @@ export default function CrawlerPage() {
             >
               {previewResult.ok ? (
                 <>
-                  <p className="font-semibold text-foreground">
+                  {previewResult.goal_summary ? (
+                    <p className="text-xs text-muted-foreground">执行计划：{previewResult.goal_summary}</p>
+                  ) : null}
+                  <p className="mt-1 font-semibold text-foreground">
                     {previewResult.title || '未知书名'}
                     {previewResult.author ? (
                       <span className="font-normal text-muted-foreground"> · {previewResult.author}</span>
                     ) : null}
                   </p>
                   <p className="mt-1 text-muted-foreground">
-                    识别到约 {previewResult.chapter_count ?? 0} 章
+                    预计抓取约 {previewResult.chapter_count ?? 0} 章
                   </p>
                   {previewResult.sample_chapters && previewResult.sample_chapters.length > 0 ? (
                     <ul className="mt-3 space-y-1 border-t border-border/60 pt-3 text-xs text-muted-foreground">
@@ -244,6 +267,7 @@ export default function CrawlerPage() {
           <div className="space-y-3">
             {jobs!.map((job) => {
               const percent = progressPercent(job)
+              const jobGoal = parseCrawlJobGoal(job.configJson)
               return (
                 <div
                   key={job.id}
@@ -269,6 +293,9 @@ export default function CrawlerPage() {
                       </span>
                     </div>
                     <p className="mt-1 truncate text-xs text-muted-foreground">{job.sourceUrl}</p>
+                    {jobGoal ? (
+                      <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">目标：{jobGoal}</p>
+                    ) : null}
                     <p className="mt-1 text-xs text-muted-foreground">
                       进度 {job.chaptersDone ?? 0}/{job.chaptersTotal ?? '?'}
                       {job.catalogNovelId ? ` · 书库 ID ${job.catalogNovelId}` : ''}
@@ -283,7 +310,7 @@ export default function CrawlerPage() {
                     ) : job.status === 'RUNNING' ? (
                       <div className="mt-2 flex items-center gap-2 text-xs text-primary">
                         <Loader2 className="size-3.5 animate-spin" />
-                        正在抓取目录或章节…
+                        AI 代理执行中…
                       </div>
                     ) : null}
                     {job.errorMessage ? (
