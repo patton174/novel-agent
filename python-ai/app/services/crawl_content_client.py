@@ -118,3 +118,14 @@ class CrawlContentClient:
             headers=self._headers(),
             json={"errorMessage": error_message},
         )
+
+    async def append_log(self, job_id: str, *, level: str, message: str) -> None:
+        try:
+            resp = await self._client.post(
+                f"{self._base}/internal/crawl/jobs/{job_id}/logs",
+                headers=self._headers(),
+                json={"level": level, "message": message},
+            )
+            resp.raise_for_status()
+        except Exception as exc:
+            logger.debug("append crawl log failed jobId=%s: %s", job_id, exc)

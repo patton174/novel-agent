@@ -13,6 +13,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 @Component
@@ -38,7 +39,7 @@ public class PythonCrawlClient {
         JsonNode response = restClient.post()
             .uri("/api/crawl/preview")
             .contentType(MediaType.APPLICATION_JSON)
-            .body(toJson(body))
+            .body(toJson(body).getBytes(StandardCharsets.UTF_8))
             .retrieve()
             .body(JsonNode.class);
         if (response == null) {
@@ -58,7 +59,7 @@ public class PythonCrawlClient {
             .uri("/internal/crawl/execute")
             .contentType(MediaType.APPLICATION_JSON)
             .header("X-Internal-Service-Key", internalKey)
-            .body(toJson(body))
+            .body(toJson(body).getBytes(StandardCharsets.UTF_8))
             .retrieve()
             .toBodilessEntity();
     }

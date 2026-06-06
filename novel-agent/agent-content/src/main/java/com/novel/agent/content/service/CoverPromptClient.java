@@ -8,6 +8,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -37,7 +38,7 @@ public class CoverPromptClient {
             CoverPromptBody body = pythonRestClient.post()
                 .uri("/api/images/cover-prompt")
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(objectMapper.writeValueAsString(payload))
+                .body(objectMapper.writeValueAsString(payload).getBytes(StandardCharsets.UTF_8))
                 .retrieve()
                 .body(CoverPromptBody.class);
             if (body != null && body.prompt() != null && !body.prompt().isBlank()) {

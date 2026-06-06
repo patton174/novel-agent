@@ -9,6 +9,7 @@ import com.novel.agent.common.mq.constant.MqTopic;
 import com.novel.agent.common.mq.crawl.CrawlDispatchMessage;
 import com.novel.agent.common.mq.producer.IMessageProducer;
 import com.novel.agent.content.crawl.CrawlJobStatus;
+import com.novel.agent.content.crawl.CrawlLogLevel;
 import com.novel.agent.content.entity.CrawlCatalogNovelEntity;
 import com.novel.agent.content.entity.CrawlJobEntity;
 import com.novel.agent.content.entity.CrawlSiteEntity;
@@ -42,6 +43,7 @@ public class CrawlJobService {
     private final CatalogService catalogService;
     private final IMessageProducer messageProducer;
     private final ObjectMapper objectMapper;
+    private final CrawlJobLogService crawlJobLogService;
 
     public CrawlJobEntity getJob(String jobId) {
         return crawlJobRepository.findById(jobId)
@@ -88,6 +90,7 @@ public class CrawlJobService {
                 1
             )
         );
+        crawlJobLogService.append(saved.getId(), CrawlLogLevel.INFO, "任务已启动，正在派发至执行队列…");
         return saved;
     }
 
@@ -98,7 +101,9 @@ public class CrawlJobService {
             throw new ValidationException(ResultCode.BAD_REQUEST, "当前状态不可暂停");
         }
         entity.setStatus(CrawlJobStatus.PAUSED);
-        return crawlJobRepository.save(entity);
+        CrawlJobEntity saved = crawlJobRepository.save(entity);
+        crawlJobLogService.append(saved.getId(), CrawlLogLevel.WARN, "任务已暂停");
+        return saved;
     }
 
     @Transactional
@@ -106,7 +111,9 @@ public class CrawlJobService {
         CrawlJobEntity entity = getJob(jobId);
         entity.setStatus(CrawlJobStatus.CANCELLED);
         entity.setCompletedAt(Instant.now());
-        return crawlJobRepository.save(entity);
+        CrawlJobEntity saved = crawlJobRepository.save(entity);
+        crawlJobLogService.append(saved.getId(), CrawlLogLevel.WARN, "任务已取消");
+        return saved;
     }
 
     @Transactional

@@ -13,6 +13,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
+import { CrawlLogTerminal } from '@/components/admin/CrawlLogTerminal'
 import { cn } from '@/lib/utils'
 import { appToast } from '@/stores/appToastStore'
 
@@ -288,6 +289,11 @@ export default function CrawlerPage() {
                     {job.errorMessage ? (
                       <p className="mt-1 text-xs text-destructive">{job.errorMessage}</p>
                     ) : null}
+                    <CrawlLogTerminal
+                      jobId={job.id}
+                      jobStatus={job.status}
+                      defaultOpen={job.status === 'RUNNING'}
+                    />
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <Button size="sm" variant="outline" disabled={actingId === job.id} onClick={() => void runAction(job.id, 'start')}>

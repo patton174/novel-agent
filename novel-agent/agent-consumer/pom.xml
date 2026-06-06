@@ -62,6 +62,10 @@
             <groupId>com.novel.agent</groupId>
             <artifactId>agent-common-security</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.novel.agent</groupId>
+            <artifactId>agent-common-service</artifactId>
+        </dependency>
 
         <!-- Lombok -->
         <dependency>

@@ -5,6 +5,7 @@ import com.novel.agent.common.core.base.Result;
 import com.novel.agent.common.service.BaseController;
 import com.novel.agent.content.service.crawl.dto.CreateCrawlJobRequest;
 import com.novel.agent.content.service.crawl.dto.CrawlJobDTO;
+import com.novel.agent.content.service.crawl.dto.CrawlLogsResponse;
 import com.novel.agent.content.service.crawl.dto.CrawlPreviewRequest;
 import com.novel.agent.content.service.crawl.dto.CrawlSiteDTO;
 import com.novel.agent.content.service.crawl.dto.UpsertCrawlSiteRequest;
@@ -65,6 +66,14 @@ public class CrmCrawlController extends BaseController {
     @PostMapping("/jobs/{jobId}/cancel")
     public Result<CrawlJobDTO> cancelJob(@PathVariable String jobId) {
         return biz.cancelJob(jobId);
+    }
+
+    @GetMapping("/jobs/{jobId}/logs")
+    public Result<CrawlLogsResponse> listLogs(
+        @PathVariable String jobId,
+        @RequestParam(defaultValue = "0") long afterSeq
+    ) {
+        return biz.listLogs(jobId, afterSeq);
     }
 
     @PostMapping("/preview")

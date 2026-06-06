@@ -1,5 +1,6 @@
 package com.novel.agent.consumer.config;
 
+import com.novel.agent.common.service.http.PythonRestClientSupport;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,6 +20,6 @@ public class ConsumerRestConfig {
     RestClient pythonRestClient(
         @Value("${agent.python.base-url:http://127.0.0.1:8000}") String pythonBaseUrl
     ) {
-        return RestClient.builder().baseUrl(pythonBaseUrl).build();
+        return PythonRestClientSupport.create(pythonBaseUrl);
     }
 }

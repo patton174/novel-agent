@@ -1,5 +1,6 @@
 package com.novel.agent.content.controller.internal;
 
+import com.novel.agent.content.service.crawl.dto.AppendCrawlLogRequest;
 import com.novel.agent.content.service.crawl.dto.CrawlImportChapterRequest;
 import com.novel.agent.content.service.crawl.dto.CrawlJobDTO;
 import com.novel.agent.content.service.crawl.dto.CrawlProgressRequest;
@@ -66,5 +67,14 @@ public class InternalCrawlController {
         @RequestBody Map<String, String> body
     ) {
         return biz.failJob(jobId, body.get("errorMessage"));
+    }
+
+    @PostMapping("/{jobId}/logs")
+    public Map<String, Object> appendLog(
+        @PathVariable String jobId,
+        @Valid @RequestBody AppendCrawlLogRequest request
+    ) {
+        biz.appendLog(jobId, request);
+        return Map.of("ok", true);
     }
 }

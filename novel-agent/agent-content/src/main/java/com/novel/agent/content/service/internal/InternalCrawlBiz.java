@@ -1,13 +1,16 @@
 package com.novel.agent.content.service.internal;
 
 import com.novel.agent.content.entity.CrawlCatalogNovelEntity;
+import com.novel.agent.content.service.crawl.CrawlJobLogService;
 import com.novel.agent.content.service.crawl.CrawlJobService;
 import com.novel.agent.content.service.crawl.PythonCrawlClient;
+import com.novel.agent.content.service.crawl.dto.AppendCrawlLogRequest;
 import com.novel.agent.content.service.crawl.dto.CrawlImportChapterRequest;
 import com.novel.agent.content.service.crawl.dto.CrawlJobDTO;
 import com.novel.agent.content.service.crawl.dto.CrawlProgressRequest;
 import com.novel.agent.content.service.crawl.dto.InitCatalogRequest;
 import com.novel.agent.content.crawl.CrawlJobStatus;
+import com.novel.agent.content.crawl.CrawlLogLevel;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -18,6 +21,7 @@ import java.util.Map;
 public class InternalCrawlBiz {
 
     private final CrawlJobService crawlJobService;
+    private final CrawlJobLogService crawlJobLogService;
 
     public CrawlJobDTO getJob(String jobId) {
         return PythonCrawlClient.toDto(crawlJobService.getJob(jobId));
@@ -64,5 +68,15 @@ public class InternalCrawlBiz {
 
     public CrawlJobDTO failJob(String jobId, String errorMessage) {
         return PythonCrawlClient.toDto(crawlJobService.failJob(jobId, errorMessage));
+    }
+
+    public void appendLog(String jobId, AppendCrawlLogRequest request) {
+        CrawlLogLevel level;
+        try {
+            level = CrawlLogLevel.valueOf(request.level().trim().toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            level = CrawlLogLevel.INFO;
+        }
+        crawlJobLogService.append(jobId, level, request.message());
     }
 }

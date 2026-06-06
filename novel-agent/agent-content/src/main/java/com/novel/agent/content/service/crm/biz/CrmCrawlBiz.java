@@ -8,10 +8,12 @@ import com.novel.agent.common.service.utils.SpringPageSupport;
 import com.novel.agent.content.entity.CrawlJobEntity;
 import com.novel.agent.content.entity.CrawlSiteEntity;
 import com.novel.agent.content.repository.CrawlJobRepository;
+import com.novel.agent.content.service.crawl.CrawlJobLogService;
 import com.novel.agent.content.service.crawl.CrawlJobService;
 import com.novel.agent.content.service.crawl.PythonCrawlClient;
 import com.novel.agent.content.service.crawl.dto.CreateCrawlJobRequest;
 import com.novel.agent.content.service.crawl.dto.CrawlJobDTO;
+import com.novel.agent.content.service.crawl.dto.CrawlLogsResponse;
 import com.novel.agent.content.service.crawl.dto.CrawlPreviewRequest;
 import com.novel.agent.content.service.crawl.dto.CrawlSiteDTO;
 import com.novel.agent.content.service.crawl.dto.UpsertCrawlSiteRequest;
@@ -29,6 +31,7 @@ public class CrmCrawlBiz extends BaseBiz {
     private final CrawlJobService crawlJobService;
     private final CrawlJobRepository crawlJobRepository;
     private final PythonCrawlClient pythonCrawlClient;
+    private final CrawlJobLogService crawlJobLogService;
 
     public Result<Page<CrawlJobDTO>> pageJobs(int pageCurrent, int pageSize) {
         PageQuery query = pageQuery(pageCurrent, pageSize);
@@ -62,6 +65,11 @@ public class CrmCrawlBiz extends BaseBiz {
 
     public Result<CrawlJobDTO> cancelJob(String jobId) {
         return ok(PythonCrawlClient.toDto(crawlJobService.cancelJob(jobId)));
+    }
+
+    public Result<CrawlLogsResponse> listLogs(String jobId, long afterSeq) {
+        crawlJobService.getJob(jobId);
+        return ok(crawlJobLogService.listAfter(jobId, Math.max(0L, afterSeq)));
     }
 
     public Result<Map<String, Object>> preview(CrawlPreviewRequest request) {

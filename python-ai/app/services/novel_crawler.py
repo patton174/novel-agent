@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Literal
 from urllib.parse import urlparse
 
 from app.config import settings
@@ -16,6 +16,7 @@ from app.services.crawl_content_client import CrawlContentClient
 logger = logging.getLogger(__name__)
 
 CANCELLED = {"CANCELLED", "PAUSED"}
+CrawlLogLevel = Literal["DEBUG", "INFO", "SUCCESS", "WARN", "ERROR"]
 
 
 @dataclass
@@ -41,6 +42,10 @@ class PreviewResult:
     chapter_count: int = 0
     sample_chapters: list[dict[str, str]] = field(default_factory=list)
     message: str = ""
+
+
+async def _log(client: CrawlContentClient, job_id: str, level: CrawlLogLevel, message: str) -> None:
+    await client.append_log(job_id, level=level, message=message)
 
 
 def _fetch_page(url: str, *, stealth: bool = False):
@@ -99,16 +104,32 @@ async def execute_crawl_job(
         if status in CANCELLED:
             return
 
+        await _log(client, job_id, "INFO", "python-ai 已接收任务，开始执行")
+        stealth_hint = "（Stealth 模式）" if opts.use_stealth else ""
+        await _log(client, job_id, "INFO", f"抓取目录页{stealth_hint}: {source_url}")
+
         await client.update_progress(job_id, status="RUNNING")
         page = await asyncio.to_thread(_fetch_page, source_url, stealth=opts.use_stealth)
+        await _log(client, job_id, "INFO", "目录页下载完成，AI 解析章节列表…")
+
         catalog = await extract_catalog(page, source_url, max_chapters=opts.max_chapters)
+        total = len(catalog.chapters)
+        await _log(
+            client,
+            job_id,
+            "SUCCESS",
+            f"识别书目《{catalog.novel_title}》"
+            + (f" · 作者 {catalog.author}" if catalog.author else "")
+            + f"，共 {total} 章（上限 {opts.max_chapters}）",
+        )
 
         await client.update_progress(
             job_id,
             title=catalog.novel_title,
-            chapters_total=len(catalog.chapters),
+            chapters_total=total,
             chapters_done=0,
         )
+        await _log(client, job_id, "INFO", "初始化书库记录…")
         await client.init_catalog(
             job_id,
             title=catalog.novel_title,
@@ -124,15 +145,27 @@ async def execute_crawl_job(
                 break
             current_status = str(current.get("status") or "").upper()
             if current_status in CANCELLED:
+                await _log(client, job_id, "WARN", f"任务已停止（{current_status}），退出执行")
                 logger.info("crawl job stopped jobId=%s status=%s", job_id, current_status)
                 return
+
+            await _log(client, job_id, "INFO", f"[{index}/{total}] 抓取章节: {link.title}")
 
             chapter_page = await asyncio.to_thread(
                 _fetch_page,
                 link.url,
                 stealth=opts.use_stealth,
             )
+            await _log(client, job_id, "DEBUG", f"[{index}/{total}] 页面已下载，AI 提取正文…")
+
             extracted = await extract_chapter(chapter_page, link.url, fallback_title=link.title)
+            content_len = len(extracted.content or "")
+            await _log(
+                client,
+                job_id,
+                "INFO",
+                f"[{index}/{total}] 正文解析完成（{content_len} 字）",
+            )
 
             result = await client.import_chapter(
                 job_id,
@@ -143,19 +176,23 @@ async def execute_crawl_job(
             )
             catalog_id = str(result.get("catalogNovelId") or catalog_id)
             await client.update_progress(job_id, chapters_done=index)
+            await _log(client, job_id, "SUCCESS", f"[{index}/{total}] 已入库: {extracted.title}")
             await asyncio.sleep(max(0, settings.crawl_request_delay_ms) / 1000.0)
 
         if catalog_id:
+            await _log(client, job_id, "SUCCESS", f"全部章节处理完成，书库 ID: {catalog_id}")
             await client.complete_job(
                 job_id,
                 catalog_novel_id=catalog_id,
                 title=catalog.novel_title,
             )
         else:
+            await _log(client, job_id, "ERROR", "未入库任何章节")
             await client.fail_job(job_id, error_message="未入库任何章节")
     except Exception as exc:
         logger.exception("crawl job failed jobId=%s", job_id)
         try:
+            await _log(client, job_id, "ERROR", f"执行失败: {str(exc)[:500]}")
             await client.fail_job(job_id, error_message=str(exc)[:500])
         except Exception:
             pass

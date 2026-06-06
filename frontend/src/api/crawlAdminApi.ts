@@ -43,6 +43,20 @@ export interface CrawlPreviewResult {
   message?: string
 }
 
+export type CrawlLogLevel = 'DEBUG' | 'INFO' | 'SUCCESS' | 'WARN' | 'ERROR'
+
+export interface CrawlLogEntry {
+  seq: number
+  level: CrawlLogLevel | string
+  message: string
+  ts: number
+}
+
+export interface CrawlLogsResponse {
+  logs: CrawlLogEntry[]
+  maxSeq: number
+}
+
 async function parseResponse<T>(res: Response): Promise<T> {
   return parseResultResponse<T>(res)
 }
@@ -106,4 +120,14 @@ export async function previewCrawl(payload: { sourceUrl: string }): Promise<Craw
     throw new Error('预览失败')
   }
   return parseResponse<CrawlPreviewResult>(res)
+}
+
+export async function fetchCrawlLogs(jobId: string, afterSeq = 0): Promise<CrawlLogsResponse> {
+  const res = await secureFetch(
+    `/api/content/crm/crawl/jobs/${encodeURIComponent(jobId)}/logs?afterSeq=${afterSeq}`,
+  )
+  if (!res.ok) {
+    throw new Error('加载日志失败')
+  }
+  return parseResponse<CrawlLogsResponse>(res)
 }

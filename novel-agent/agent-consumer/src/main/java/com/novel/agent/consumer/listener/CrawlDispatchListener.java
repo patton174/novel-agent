@@ -14,6 +14,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 @Component
@@ -61,7 +62,7 @@ public class CrawlDispatchListener {
             .uri("/internal/crawl/execute")
             .contentType(MediaType.APPLICATION_JSON)
             .header("X-Internal-Service-Key", internalServiceKey)
-            .body(jsonBody)
+            .body(jsonBody.getBytes(StandardCharsets.UTF_8))
             .retrieve()
             .toBodilessEntity();
     }
