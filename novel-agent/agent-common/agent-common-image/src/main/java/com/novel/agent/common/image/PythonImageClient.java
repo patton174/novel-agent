@@ -13,6 +13,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -40,8 +41,10 @@ public class PythonImageClient {
         this.pythonBaseUrl = pythonBaseUrl.replaceAll("/+$", "");
         this.properties = properties;
         this.objectMapper = objectMapper;
+        // uvicorn 对 HTTP/2 upgrade / Expect:100-continue 支持不完整，会导致 POST body 丢失 → FastAPI 422
         this.httpClient = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(15))
+            .version(HttpClient.Version.HTTP_1_1)
             .build();
     }
 
@@ -100,11 +103,13 @@ public class PythonImageClient {
     private GeneratedImage postImage(String path, Map<String, Object> body) {
         try {
             String json = objectMapper.writeValueAsString(body);
+            byte[] payload = json.getBytes(StandardCharsets.UTF_8);
             HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(pythonBaseUrl + path))
                 .timeout(Duration.ofSeconds(Math.max(30, properties.getTimeoutSeconds())))
-                .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(json))
+                .header("Content-Type", "application/json; charset=UTF-8")
+                .header("Content-Length", String.valueOf(payload.length))
+                .POST(HttpRequest.BodyPublishers.ofByteArray(payload))
                 .build();
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
