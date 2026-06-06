@@ -7,6 +7,7 @@ import com.novel.agent.content.dto.ChapterSummaryDTO;
 import com.novel.agent.content.dto.CoverPromptRequest;
 import com.novel.agent.content.dto.CoverPromptResponse;
 import com.novel.agent.content.dto.GenerateCoverRequest;
+import com.novel.agent.content.dto.CreateChapterRequest;
 import com.novel.agent.content.dto.CreateNovelRequest;
 import com.novel.agent.content.dto.NovelDTO;
 import com.novel.agent.content.dto.ReindexStatusDTO;
