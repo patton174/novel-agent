@@ -39,8 +39,8 @@ public class MailtrapEmailSender {
 
     public void send(String toEmail, RenderedEmail rendered, String category) {
         if (!properties.enabled()) {
-            log.warn("Mailtrap token 未配置，跳过发信 email={} subject={}", maskEmail(toEmail), rendered.subject());
-            return;
+            log.error("Mailtrap token 未配置，无法发信 email={} subject={}", maskEmail(toEmail), rendered.subject());
+            throw BizException.of(ResultCode.EMAIL_SEND_FAILED);
         }
         MailtrapConfig config = new MailtrapConfig.Builder()
             .token(properties.getToken())

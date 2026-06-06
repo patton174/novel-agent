@@ -126,10 +126,17 @@ async function handleUnauthorized(logicalUrl: string, retried: boolean): Promise
   forceLogoutRedirect('session_expired')
 }
 
-export async function secureFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+type SecureFetchInit = RequestInit & {
+  __authRetried?: boolean
+  /** 防重放 nonce 冲突后仅重试一次 */
+  __signRetried?: boolean
+}
+
+export async function secureFetch(input: RequestInfo | URL, init?: SecureFetchInit): Promise<Response> {
   const logicalUrl = typeof input === 'string' ? input : input.toString()
   const method = (init?.method ?? 'GET').toUpperCase()
-  const retried = Boolean((init as RequestInit & { __authRetried?: boolean } | undefined)?.__authRetried)
+  const retried = Boolean(init?.__authRetried)
+  const signRetried = Boolean(init?.__signRetried)
 
   const exec = async () => {
     const { fetchUrl, headers, body } = await buildRequest(logicalUrl, method, init)
@@ -159,6 +166,12 @@ export async function secureFetch(input: RequestInfo | URL, init?: RequestInit):
       }
       await invalidateCryptoRuntime()
       response = await exec()
+    } else if (
+      response.status === 400 &&
+      !signRetried &&
+      (bodyText.includes('REPLAY_NONCE') || bodyText.includes('REPLAY_WINDOW'))
+    ) {
+      response = await secureFetch(input, { ...init, __signRetried: true })
     }
   }
 
@@ -166,7 +179,7 @@ export async function secureFetch(input: RequestInfo | URL, init?: RequestInit):
     if (!retried) {
       const ok = await tryRefreshSessionOnce()
       if (ok) {
-        return secureFetch(input, { ...init, __authRetried: true } as RequestInit)
+        return secureFetch(input, { ...init, __authRetried: true })
       }
     }
     await handleUnauthorized(logicalUrl, retried)

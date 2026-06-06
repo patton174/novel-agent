@@ -66,6 +66,7 @@ public class EmailVerificationService {
         }
 
         String code = String.format("%06d", random.nextInt(1_000_000));
+        mailtrapEmailSender.sendVerificationCode(normalized, code, properties.getEmailCodeTtlSeconds());
         redisTemplate.opsForValue().set(
             SecurityRedisKeys.EMAIL_CODE_PREFIX + normalized,
             code,
@@ -77,7 +78,6 @@ public class EmailVerificationService {
             Duration.ofSeconds(properties.getEmailCooldownSeconds())
         );
         incrementDailyCounter(normalized);
-        mailtrapEmailSender.sendVerificationCode(normalized, code, properties.getEmailCodeTtlSeconds());
     }
 
     public void verifyRegisterCode(String email, String code) {
@@ -121,17 +121,6 @@ public class EmailVerificationService {
         String linkSecret = requireEmailLinkSecret();
         String sig = EmailVerifyLinkCodec.signBase64(token, userId, expEpochSec, linkSecret);
 
-        redisTemplate.opsForValue().set(
-            SecurityRedisKeys.EMAIL_VERIFY_LINK_PREFIX + token,
-            String.valueOf(userId),
-            Duration.ofSeconds(properties.getEmailVerifyLinkTtlSeconds())
-        );
-        redisTemplate.opsForValue().set(
-            cooldownKey,
-            "1",
-            Duration.ofSeconds(properties.getEmailCooldownSeconds())
-        );
-
         String baseUrl = properties.getFrontendBaseUrl().replaceAll("/+$", "");
         String verifyUrl = baseUrl
             + "/verify-email?token=" + token
@@ -142,6 +131,16 @@ public class EmailVerificationService {
             verifyUrl,
             properties.getEmailVerifyLinkTtlSeconds(),
             properties.getFrontendBaseUrl()
+        );
+        redisTemplate.opsForValue().set(
+            SecurityRedisKeys.EMAIL_VERIFY_LINK_PREFIX + token,
+            String.valueOf(userId),
+            Duration.ofSeconds(properties.getEmailVerifyLinkTtlSeconds())
+        );
+        redisTemplate.opsForValue().set(
+            cooldownKey,
+            "1",
+            Duration.ofSeconds(properties.getEmailCooldownSeconds())
         );
     }
 

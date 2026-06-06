@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { AlertTriangle, Loader2, Mail } from 'lucide-react'
 import { sendEmailVerifyLink, needsEmailVerification } from '@/api/userApi'
 import { Badge } from '@/components/ui/badge'
@@ -21,6 +21,7 @@ interface AccountSettingsPanelProps {
 export function AccountSettingsPanel({ profile, onVerified }: AccountSettingsPanelProps) {
   const [sending, setSending] = useState(false)
   const [cooldown, setCooldown] = useState(0)
+  const inflightRef = useRef(false)
 
   useEffect(() => {
     if (cooldown <= 0) return
@@ -44,7 +45,8 @@ export function AccountSettingsPanel({ profile, onVerified }: AccountSettingsPan
   const unverified = needsEmailVerification(profile)
 
   const handleSendVerify = async () => {
-    if (sending || cooldown > 0) return
+    if (sending || cooldown > 0 || inflightRef.current) return
+    inflightRef.current = true
     setSending(true)
     try {
       await sendEmailVerifyLink()
@@ -54,6 +56,7 @@ export function AccountSettingsPanel({ profile, onVerified }: AccountSettingsPan
     } catch (err) {
       appToast.error(err instanceof Error ? err.message : '发送失败')
     } finally {
+      inflightRef.current = false
       setSending(false)
     }
   }
