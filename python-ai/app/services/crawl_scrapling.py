@@ -2,17 +2,40 @@
 
 from __future__ import annotations
 
+import logging
 from urllib.parse import urljoin
+
+logger = logging.getLogger(__name__)
+
+
+def _browser_unavailable(exc: BaseException) -> bool:
+    msg = str(exc).lower()
+    return (
+        "executable doesn't exist" in msg
+        or "patchright install" in msg
+        or "playwright install" in msg
+        or "browser_type.launch" in msg
+    )
 
 
 def fetch_page(url: str, *, stealth: bool = False):
     try:
-        if stealth:
-            from scrapling.fetchers import StealthyFetcher
-
-            return StealthyFetcher.fetch(url, headless=True, network_idle=True)
         from scrapling.fetchers import Fetcher
 
+        if stealth:
+            try:
+                from scrapling.fetchers import StealthyFetcher
+
+                return StealthyFetcher.fetch(url, headless=True, network_idle=True)
+            except Exception as exc:
+                if _browser_unavailable(exc):
+                    logger.warning(
+                        "Stealth 浏览器未安装或不可用，回退 HTTP Fetcher。"
+                        " Docker 镜像需 patchright install chromium：%s",
+                        exc,
+                    )
+                else:
+                    raise
         return Fetcher.get(url, stealthy_headers=True)
     except ImportError as exc:
         raise RuntimeError("Scrapling 未安装，请执行 pip install scrapling[fetchers]") from exc

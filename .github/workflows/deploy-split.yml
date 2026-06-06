@@ -111,6 +111,7 @@ jobs:
               - '.github/workflows/deploy-split.yml'
             python-ai:
               - 'python-ai/**'
+              - 'novel-agent/docs/deploy/docker/Dockerfile.python-ai'
 
       - uses: actions/setup-java@v4
         with:

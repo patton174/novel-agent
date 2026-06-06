@@ -12,7 +12,7 @@ from app.core.llm import generate_text, llm_provider
 from app.services.crawl_ai_extractor import discover_catalog, extract_chapter
 from app.services.crawl_content_client import CrawlContentClient
 from app.services.crawl_goal import CrawlGoalSpec, DEFAULT_GOAL, goal_from_config, interpret_goal, options_from_config
-from app.services.crawl_scrapling import fetch_page
+from app.services.crawl_scrapling import _browser_unavailable, fetch_page
 
 logger = logging.getLogger(__name__)
 
@@ -82,14 +82,20 @@ async def _discover_catalog(
     except ValueError:
         if use_stealth:
             raise
-        stealth_page = await asyncio.to_thread(fetch_page, source_url, stealth=True)
-        return await discover_catalog(
-            stealth_page,
-            source_url,
-            max_chapters=max_chapters,
-            fetch_page=lambda url: fetch_page(url, stealth=True),
-            on_hop=on_hop,
-        )
+        try:
+            stealth_page = await asyncio.to_thread(fetch_page, source_url, stealth=True)
+            return await discover_catalog(
+                stealth_page,
+                source_url,
+                max_chapters=max_chapters,
+                fetch_page=lambda url: fetch_page(url, stealth=True),
+                on_hop=on_hop,
+            )
+        except Exception as stealth_exc:
+            if _browser_unavailable(stealth_exc):
+                logger.warning("Stealth 不可用，继续使用 HTTP 抓取: %s", stealth_exc)
+                raise
+            raise
 
 
 async def _agent_plan_recovery(

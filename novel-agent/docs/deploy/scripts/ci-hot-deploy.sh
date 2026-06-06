@@ -192,11 +192,19 @@ hot_python() {
       "$REPO_ROOT/python-ai/app" \
       "$REPO_ROOT/python-ai/requirements.txt" \
       "$WORKER_SSH:$WORKER_REMOTE_DIR/python-ai/"
+    deploy_ssh "$WORKER_SSH" "mkdir -p '$WORKER_REMOTE_DIR/novel-agent/docs/deploy/docker'"
+    rsync -avz \
+      -e "${DEPLOY_RSYNC_SSH}" \
+      "$REPO_ROOT/novel-agent/docs/deploy/docker/Dockerfile.python-ai" \
+      "$WORKER_SSH:$WORKER_REMOTE_DIR/novel-agent/docs/deploy/docker/"
   else
     local tar="/tmp/python-ai-sync-$$.tar.gz"
     tar -czf "$tar" -C "$REPO_ROOT/python-ai" app requirements.txt
     deploy_scp "$tar" "$WORKER_SSH:/tmp/python-ai-sync-$$.tar.gz"
     deploy_ssh "$WORKER_SSH" "tar -xzf /tmp/python-ai-sync-$$.tar.gz -C '$WORKER_REMOTE_DIR/python-ai' && rm -f /tmp/python-ai-sync-$$.tar.gz"
+    deploy_ssh "$WORKER_SSH" "mkdir -p '$WORKER_REMOTE_DIR/novel-agent/docs/deploy/docker'"
+    deploy_scp "$REPO_ROOT/novel-agent/docs/deploy/docker/Dockerfile.python-ai" \
+      "$WORKER_SSH:$WORKER_REMOTE_DIR/novel-agent/docs/deploy/docker/Dockerfile.python-ai"
     rm -f "$tar"
   fi
   deploy_ssh "$WORKER_SSH" bash -s <<EOF
