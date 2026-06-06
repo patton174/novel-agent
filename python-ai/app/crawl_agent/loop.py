@@ -72,6 +72,13 @@ async def run_crawl_tool_loop(
         if ctx.end_run:
             break
 
+        if ctx.job_id != "preview":
+            await ctx.client.append_log(
+                ctx.job_id,
+                level="INFO",
+                message=f"AI 推理中…（第 {turn + 1} 轮）",
+            )
+
         try:
             ai: AIMessage = await invoke_llm_with_pairing_retry(llm, messages, ctx)
         except Exception as exc:

@@ -200,6 +200,11 @@ async def _queue_chapters_tool(ctx: CrawlAgentContext, inp: QueueChaptersInput) 
 
 
 async def _init_novel_tool(ctx: CrawlAgentContext, inp: InitNovelInput) -> CrawlToolResult:
+    if not ctx.chapters_queue:
+        return CrawlToolResult(
+            content=_json_err("请先 QueueChapters 登记章节，再 InitNovel"),
+            is_error=True,
+        )
     source = inp.source_url.strip() or ctx.source_url or ctx.entry_url
     await _append_log(ctx, "INFO", "InitNovel: 初始化书库")
     await ctx.client.init_catalog(
@@ -279,7 +284,7 @@ async def _save_queued_chapters_tool(
         ctx.catalog_novel_id = str(job.get("catalogNovelId") or "")
 
     start = max(inp.start_from, ctx.chapters_saved + 1)
-    cap = inp.max_count or ctx.max_chapters
+    cap = inp.max_count or min(20, ctx.max_chapters)
     pending = [c for c in ctx.chapters_queue if c.sort_order >= start][:cap]
     if not pending:
         return CrawlToolResult(
@@ -291,13 +296,22 @@ async def _save_queued_chapters_tool(
         )
 
     total = len(ctx.chapters_queue)
-    await _append_log(ctx, "INFO", f"SaveQueuedChapters: 批量保存 {len(pending)} 章（从第 {start} 章）")
+    await _append_log(
+        ctx,
+        "INFO",
+        f"SaveQueuedChapters: 本批 {len(pending)} 章（从第 {start} 章，每批默认最多 20 章）",
+    )
     saved = 0
     errors: list[str] = []
 
     for ch in pending:
         if await _job_cancelled(ctx):
             break
+        await _append_log(
+            ctx,
+            "INFO",
+            f"[{ch.sort_order}/{total}] 抓取中 · {ch.title or ch.url}",
+        )
         try:
             page, meta = await asyncio.to_thread(fetch_for_crawl, ctx, ch.url)
             if meta.blocked:

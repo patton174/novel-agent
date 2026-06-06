@@ -69,7 +69,7 @@ class SaveQueuedChaptersInput(BaseModel):
     max_count: int | None = Field(
         default=None,
         ge=1,
-        description="最多保存章数；省略则保存至任务上限或队列末尾",
+        description="本批最多保存章数；省略则每批 20 章，避免长时间无日志",
     )
 
 
