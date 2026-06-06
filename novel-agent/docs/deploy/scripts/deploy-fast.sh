@@ -97,7 +97,9 @@ docker restart "\$CID"
 echo "[deploy-fast] 前端已更新，硬刷新浏览器"
 EOF
     echo "[crypto-register] 注册前端 crypto 密钥（Worker env + runtime.json）..."
-    bash "$SCRIPT_DIR/register-frontend-crypto.sh"
+    bash "$SCRIPT_DIR/register-frontend-crypto.sh" || {
+      echo "[deploy-fast] WARN: crypto register 失败，可稍后手动运行 register-frontend-crypto.sh"
+    }
     exit 0
     ;;
   novel-agent-*)

@@ -51,6 +51,7 @@ print(json.load(open(os.environ['RUNTIME_FILE'], encoding='utf-8'))[os.environ['
 }
 
 echo "[crypto-register] 1/3 MW Auth 注册（密钥 + 动态 apiPathPrefix）..."
+deploy_wait_http_port "$MW_SSH" 8081 "auth" 45
 export WORKER_HOST
 "$PYTHON" -c "
 import json, os
@@ -58,7 +59,9 @@ print(json.dumps({'host': os.environ['WORKER_HOST'], 'ttlSec': 172800}))
 " > "$PAYLOAD_TMP"
 
 deploy_scp "$PAYLOAD_TMP" "$MW_SSH:/tmp/crypto-register-payload.json"
-deploy_ssh "$MW_SSH" bash -s > "$RUNTIME_TMP" <<EOF
+register_ok=0
+for attempt in $(seq 1 8); do
+  if deploy_ssh "$MW_SSH" bash -s > "$RUNTIME_TMP" <<EOF
 set -euo pipefail
 curl -sf -X POST "http://127.0.0.1:8081/internal/crypto/register-frontend-server" \\
   -H "Content-Type: application/json" \\
@@ -66,6 +69,17 @@ curl -sf -X POST "http://127.0.0.1:8081/internal/crypto/register-frontend-server
   --data-binary @/tmp/crypto-register-payload.json
 rm -f /tmp/crypto-register-payload.json
 EOF
+  then
+    register_ok=1
+    break
+  fi
+  echo "[crypto-register] Auth 注册未就绪，重试 $attempt/8 ..."
+  sleep 3
+done
+if [[ "$register_ok" -ne 1 ]]; then
+  echo "[crypto-register] 注册失败：Auth internal API 无响应"
+  exit 1
+fi
 
 if [[ ! -s "$RUNTIME_TMP" ]]; then
   echo "[crypto-register] 注册失败：无 runtime 响应"
