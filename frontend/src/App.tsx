@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect } from 'react'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { ThemeProvider } from 'styled-components'
+import { AnimatePresence } from 'framer-motion'
 import { theme } from './styles/theme'
 import { AppToastHost } from './components/ui/AppToastHost'
 import { RequireAuth } from './components/guards/RequireAuth'
@@ -11,10 +12,16 @@ import { primeFingerprint } from './security/fingerprint'
 import { ensureSessionAndHeartbeat } from './security/heartbeat'
 import { startSessionBootstrap } from './security/sessionBootstrap'
 import { useUserStore } from './stores/userStore'
+import { useJourneyTracker } from './hooks/useJourneyTracker'
+import { PageTransition } from './components/PageTransition'
 
 const HomePage = lazy(() => import('./pages/HomePage'))
 const LoginPage = lazy(() => import('./pages/LoginPage'))
 const RegisterPage = lazy(() => import('./pages/RegisterPage'))
+const PricingPage = lazy(() => import('./pages/PricingPage'))
+const FeaturesPage = lazy(() => import('./pages/FeaturesPage'))
+const TestimonialsPage = lazy(() => import('./pages/TestimonialsPage'))
+const GenericContentPage = lazy(() => import('./pages/GenericContentPage'))
 const EditorPage = lazy(() => import('./pages/EditorPage'))
 const DashboardLayout = lazy(() => import('./layouts/DashboardLayout'))
 const DashboardHomePage = lazy(() => import('./pages/dashboard/DashboardHomePage'))
@@ -41,6 +48,56 @@ function RouteFallback() {
   )
 }
 
+function AppRoutes() {
+  const location = useLocation()
+  useJourneyTracker()
+
+  return (
+    <AnimatePresence mode="wait">
+      <Routes location={location} key={location.pathname}>
+        <Route path="/" element={<PageTransition><HomePage /></PageTransition>} />
+        <Route path="/features" element={<PageTransition><FeaturesPage /></PageTransition>} />
+        <Route path="/pricing" element={<PageTransition><PricingPage /></PageTransition>} />
+        <Route path="/testimonials" element={<PageTransition><TestimonialsPage /></PageTransition>} />
+        <Route path="/privacy" element={<PageTransition><GenericContentPage title="隐私政策" /></PageTransition>} />
+        <Route path="/terms" element={<PageTransition><GenericContentPage title="用户协议" /></PageTransition>} />
+        <Route path="/contact" element={<PageTransition><GenericContentPage title="联系我们" /></PageTransition>} />
+        
+        <Route path="/login" element={<PageTransition><LoginPage /></PageTransition>} />
+        <Route path="/register" element={<PageTransition><RegisterPage /></PageTransition>} />
+        
+        <Route path="/editor/:chapterId?" element={<PageTransition><EditorPage /></PageTransition>} />
+        
+        <Route
+          path="/dashboard"
+          element={
+            <RequireAuth>
+              <PageTransition><DashboardLayout /></PageTransition>
+            </RequireAuth>
+          }
+        >
+          <Route index element={<DashboardHomePage />} />
+          <Route path="novels" element={<NovelsPage />} />
+          <Route path="settings" element={<SettingsPage />} />
+        </Route>
+        
+        <Route
+          path="/admin"
+          element={
+            <RequireAdmin>
+              <PageTransition><AdminLayout /></PageTransition>
+            </RequireAdmin>
+          }
+        >
+          <Route index element={<AdminHomePage />} />
+          <Route path="users" element={<UsersPage />} />
+          <Route path="stats" element={<StatsPage />} />
+        </Route>
+      </Routes>
+    </AnimatePresence>
+  )
+}
+
 function App() {
   useEffect(() => {
     migrateLegacyAuthStorage()
@@ -62,36 +119,7 @@ function App() {
       <AppToastHost />
       <BrowserRouter>
         <Suspense fallback={<RouteFallback />}>
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
-            <Route path="/editor/:chapterId?" element={<EditorPage />} />
-            <Route
-              path="/dashboard"
-              element={
-                <RequireAuth>
-                  <DashboardLayout />
-                </RequireAuth>
-              }
-            >
-              <Route index element={<DashboardHomePage />} />
-              <Route path="novels" element={<NovelsPage />} />
-              <Route path="settings" element={<SettingsPage />} />
-            </Route>
-            <Route
-              path="/admin"
-              element={
-                <RequireAdmin>
-                  <AdminLayout />
-                </RequireAdmin>
-              }
-            >
-              <Route index element={<AdminHomePage />} />
-              <Route path="users" element={<UsersPage />} />
-              <Route path="stats" element={<StatsPage />} />
-            </Route>
-          </Routes>
+          <AppRoutes />
         </Suspense>
       </BrowserRouter>
     </ThemeProvider>

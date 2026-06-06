@@ -103,7 +103,7 @@ const Indicator = styled.div`
   position: absolute;
   border-radius: 10px;
   background: ${editorTheme.activeBg};
-  border: 1px solid rgba(233, 181, 11, 0.45);
+  border: 1px solid rgba(79, 70, 229, 0.45);
   box-shadow: ${editorTheme.shadowInSoft};
   ${motionIndicatorCss}
   pointer-events: none;

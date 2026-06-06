@@ -194,7 +194,7 @@ const TriggerButton = styled.button<{
   justify-content: center;
   gap: 6px;
   border: 1px solid
-    ${({ $open }) => ($open ? 'rgba(233, 181, 11, 0.45)' : editorTheme.border)};
+    ${({ $open }) => ($open ? 'rgba(79, 70, 229, 0.45)' : editorTheme.border)};
   background: ${editorTheme.bgElevated};
   color: ${editorTheme.textSecondary};
   font-family: inherit;
@@ -224,7 +224,7 @@ const TriggerButton = styled.button<{
 
   &:hover:not(:disabled) {
     background: ${editorTheme.accentMuted};
-    border-color: rgba(233, 181, 11, 0.35);
+    border-color: rgba(79, 70, 229, 0.35);
     color: ${editorTheme.text};
   }
 
@@ -254,7 +254,7 @@ const MenuOption = styled.button<{ $active?: boolean }>`
   align-items: center;
   gap: 8px;
   padding: 0.55rem 0.7rem;
-  border: 1px solid ${({ $active }) => ($active ? 'rgba(233, 181, 11, 0.45)' : 'transparent')};
+  border: 1px solid ${({ $active }) => ($active ? 'rgba(79, 70, 229, 0.45)' : 'transparent')};
   border-radius: 8px;
   background: ${({ $active }) => ($active ? editorTheme.activeBg : 'transparent')};
   font-family: inherit;

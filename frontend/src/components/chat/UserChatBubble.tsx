@@ -70,7 +70,7 @@ const Bubble = styled.div`
   line-height: 1.65;
   color: ${editorTheme.text};
   background: ${editorTheme.accentSoft};
-  border: 1px solid rgba(233, 181, 11, 0.22);
+  border: 1px solid rgba(79, 70, 229, 0.22);
   border-radius: 18px;
   white-space: pre-wrap;
   word-break: break-word;
@@ -117,6 +117,6 @@ const ActionButton = styled.button`
 
   &:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 2px rgba(233, 181, 11, 0.45);
+    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.45);
   }
 `

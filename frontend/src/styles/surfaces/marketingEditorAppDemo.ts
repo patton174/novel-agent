@@ -18,10 +18,10 @@ const urlShimmer = keyframes`
 const livePulse = keyframes`
   0%,
   100% {
-    box-shadow: 0 0 0 rgba(233, 181, 11, 0);
+    box-shadow: 0 0 0 rgba(79, 70, 229, 0);
   }
   50% {
-    box-shadow: 0 0 0 3px rgba(233, 181, 11, 0.2);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
   }
 `
 

@@ -42,10 +42,10 @@ export const MarketingEditorPin = styled.div`
   box-sizing: border-box;
 `
 
-/** 首页分镜：整块演示区撑满列宽；仅底部输入区缩小 */
+/** 首页分镜：固定高度，避免演示内容增长时撑开页面导致滚动跳动 */
 export const MarketingChatDemoFrame = styled.div`
   width: 100%;
-  height: min(80vh, 720px);
+  height: min(520px, 62vh);
   transform-origin: top center;
   border-radius: 14px;
   overflow: hidden;
@@ -59,11 +59,12 @@ export const MarketingChatDemoFrame = styled.div`
   display: flex;
   flex-direction: column;
   min-height: 0;
+  contain: layout style paint;
 
   ${css`
-    /* 消息区多留给工具时间线，底部留白随输入缩小 */
+    /* 移除之前的 padding-bottom */
     section > div > div:first-of-type {
-      padding-bottom: 6.5rem !important;
+      padding-bottom: 2rem !important;
     }
 
     [data-testid='chat-composer'] {

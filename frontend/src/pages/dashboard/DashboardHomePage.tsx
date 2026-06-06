@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { BookOpen, Bot, FileText, PenLine } from 'lucide-react'
+import { BookOpen, Bot, FileText, PenLine, Activity, CreditCard, BarChart3 } from 'lucide-react'
 import {
   fetchRecentNovels,
   fetchSummary,
@@ -9,13 +9,6 @@ import {
 } from '@/api/dashboardApi'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 
 function formatUpdatedAt(value: string | number): string {
@@ -39,10 +32,10 @@ function formatWordCount(count: number): string {
 }
 
 const STAT_CARDS = [
-  { key: 'novelCount' as const, label: '小说数量', icon: BookOpen },
-  { key: 'chapterCount' as const, label: '章节总数', icon: FileText },
-  { key: 'weeklyWordCount' as const, label: '本周字数', icon: PenLine, format: formatWordCount },
-  { key: 'agentRunCount' as const, label: 'Agent 运行', icon: Bot },
+  { key: 'novelCount' as const, label: '小说数量', icon: BookOpen, color: 'text-blue-500', bg: 'bg-blue-50' },
+  { key: 'chapterCount' as const, label: '章节总数', icon: FileText, color: 'text-emerald-500', bg: 'bg-emerald-50' },
+  { key: 'weeklyWordCount' as const, label: '本周字数', icon: PenLine, format: formatWordCount, color: 'text-violet-500', bg: 'bg-violet-50' },
+  { key: 'agentRunCount' as const, label: 'Agent 运行', icon: Bot, color: 'text-amber-500', bg: 'bg-amber-50' },
 ]
 
 export default function DashboardHomePage() {
@@ -56,9 +49,7 @@ export default function DashboardHomePage() {
 
     void Promise.all([fetchSummary(), fetchRecentNovels()])
       .then(([s, novels]) => {
-        if (cancelled) {
-          return
-        }
+        if (cancelled) return
         setSummary(s)
         setRecentNovels(novels)
       })
@@ -83,90 +74,150 @@ export default function DashboardHomePage() {
   const loading = summary === null || recentNovels === null
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 max-w-6xl mx-auto pb-12">
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold text-foreground tracking-tight">概览</h1>
+      </div>
+
+      {/* Stats Grid */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {STAT_CARDS.map((stat) => (
-          <Card key={stat.key} size="sm">
-            <CardHeader className="pb-0">
-              <div className="flex items-center justify-between">
-                <CardDescription>{stat.label}</CardDescription>
-                <stat.icon className="size-4 text-muted-foreground" />
+          <div key={stat.key} className="bg-white rounded-2xl p-6 border border-border shadow-soft hover:shadow-hover transition-shadow">
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-sm font-medium text-muted-foreground">{stat.label}</span>
+              <div className={`p-2 rounded-xl ${stat.bg}`}>
+                <stat.icon className={`w-5 h-5 ${stat.color}`} />
               </div>
-              <CardTitle className="text-2xl tabular-nums">
-                {loading ? (
-                  <Skeleton className="h-8 w-16" />
-                ) : (
-                  (stat.format
-                    ? stat.format(summary![stat.key])
-                    : summary![stat.key].toLocaleString('zh-CN'))
-                )}
-              </CardTitle>
-            </CardHeader>
-          </Card>
+            </div>
+            <div className="text-3xl font-bold text-foreground tabular-nums">
+              {loading ? (
+                <Skeleton className="h-8 w-16" />
+              ) : (
+                stat.format
+                  ? stat.format(summary![stat.key])
+                  : summary![stat.key].toLocaleString('zh-CN')
+              )}
+            </div>
+          </div>
         ))}
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>最近编辑</CardTitle>
-          <CardDescription>继续你未完成的创作</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {loading ? (
-            Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="flex items-center gap-4 rounded-lg border border-border p-4">
-                <Skeleton className="size-10 rounded-lg" />
-                <div className="flex-1 space-y-2">
-                  <Skeleton className="h-4 w-40" />
-                  <Skeleton className="h-3 w-24" />
+      <div className="grid lg:grid-cols-3 gap-8">
+        {/* Recent Novels */}
+        <div className="lg:col-span-2 space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold text-foreground">最近编辑</h2>
+            <Link to="/dashboard/novels" className="text-sm font-medium text-primary hover:underline">
+              查看全部
+            </Link>
+          </div>
+          
+          <div className="bg-white rounded-2xl border border-border shadow-soft overflow-hidden">
+            <div className="p-2 space-y-1">
+              {loading ? (
+                Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="flex items-center gap-4 p-4">
+                    <Skeleton className="w-12 h-12 rounded-xl" />
+                    <div className="flex-1 space-y-2">
+                      <Skeleton className="h-5 w-40" />
+                      <Skeleton className="h-4 w-24" />
+                    </div>
+                    <Skeleton className="h-9 w-24 rounded-lg" />
+                  </div>
+                ))
+              ) : recentNovels!.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
+                  <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
+                    <BookOpen className="w-8 h-8 text-muted-foreground" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-foreground mb-2">
+                    {loadError ? '加载失败' : '还没有开始创作'}
+                  </h3>
+                  <p className="text-sm text-muted-foreground mb-6 max-w-sm">
+                    {loadError ? '暂时无法加载数据，请稍后重试' : '创建一个新的小说项目，让 AI 助手帮你构建世界观和章节。'}
+                  </p>
+                  <Button asChild className="rounded-xl px-6">
+                    <Link to="/editor">新建小说</Link>
+                  </Button>
                 </div>
-                <Skeleton className="h-8 w-20" />
+              ) : (
+                recentNovels!.map((novel) => (
+                  <div
+                    key={novel.novelId}
+                    className="flex items-center gap-4 p-4 rounded-xl hover:bg-surface-hover transition-colors group"
+                  >
+                    <div className="w-12 h-12 shrink-0 flex items-center justify-center rounded-xl bg-primary/10 text-primary">
+                      <BookOpen className="w-6 h-6" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-base font-semibold text-foreground truncate mb-1">
+                        {novel.title}
+                      </p>
+                      <p className="text-xs text-muted-foreground flex items-center gap-2">
+                        <span>最近编辑 {formatUpdatedAt(novel.updatedAt)}</span>
+                      </p>
+                    </div>
+                    <Button asChild size="sm" variant="outline" className="rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Link
+                        to={
+                          novel.lastChapterId
+                            ? `/editor/${novel.lastChapterId}`
+                            : '/editor'
+                        }
+                      >
+                        继续写作
+                      </Link>
+                    </Button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Usage & Billing Summary */}
+        <div className="space-y-4">
+          <h2 className="text-xl font-bold text-foreground">用量与账单</h2>
+          
+          <div className="bg-white rounded-2xl border border-border shadow-soft p-6 space-y-6">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground font-medium flex items-center gap-2">
+                  <Activity className="w-4 h-4" />
+                  本月 Tokens
+                </span>
+                <span className="font-semibold text-foreground">124,592 / 1M</span>
               </div>
-            ))
-          ) : recentNovels!.length === 0 ? (
-            <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-border py-10 text-center">
-              <BookOpen className="size-8 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground">
-                {loadError ? '暂时无法加载数据，请稍后重试' : '还没有小说，去编辑器开始创作吧'}
-              </p>
-              <Button asChild size="sm">
-                <Link to="/editor">进入编辑器</Link>
+              <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+                <div className="h-full bg-primary rounded-full" style={{ width: '12.4%' }} />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground font-medium flex items-center gap-2">
+                  <BarChart3 className="w-4 h-4" />
+                  API 调用
+                </span>
+                <span className="font-semibold text-foreground">3,402 次</span>
+              </div>
+            </div>
+
+            <div className="pt-4 border-t border-border">
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-muted-foreground font-medium flex items-center gap-2">
+                  <CreditCard className="w-4 h-4" />
+                  预估费用
+                </span>
+                <span className="text-2xl font-bold text-foreground">¥12.45</span>
+              </div>
+              <Button className="w-full rounded-xl" variant="outline">
+                查看详细账单
               </Button>
             </div>
-          ) : (
-            recentNovels!.map((novel) => (
-              <div
-                key={novel.novelId}
-                className="flex items-center gap-4 rounded-lg border border-border p-4"
-              >
-                <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted">
-                  <BookOpen className="size-5 text-muted-foreground" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium">{novel.title}</p>
-                  <p className="text-xs text-muted-foreground">
-                    最近编辑 {formatUpdatedAt(novel.updatedAt)}
-                  </p>
-                </div>
-                <Badge variant="outline" className="hidden sm:inline-flex">
-                  小说
-                </Badge>
-                <Button asChild size="sm" variant="outline">
-                  <Link
-                    to={
-                      novel.lastChapterId
-                        ? `/editor/${novel.lastChapterId}`
-                        : '/editor'
-                    }
-                  >
-                    继续写作
-                  </Link>
-                </Button>
-              </div>
-            ))
-          )}
-        </CardContent>
-      </Card>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

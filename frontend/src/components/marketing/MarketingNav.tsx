@@ -1,89 +1,35 @@
 import { Link } from 'react-router-dom'
-import styled from 'styled-components'
 import { NovelAiWordmark } from './NovelAiWordmark'
-import { cursorTheme } from '../../styles/surfaces/cursorLanding'
 
-const Header = styled.header`
-  padding: 1rem 1.5rem;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 100;
-  background: rgba(247, 247, 244, 0.88);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid ${cursorTheme.border};
-`
-
-const NavRow = styled.nav`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  max-width: 1120px;
-  margin: 0 auto;
-`
-
-const LogoLink = styled(Link)`
-  display: flex;
-  align-items: center;
-  text-decoration: none;
-  color: inherit;
-  transition: opacity 0.15s ease;
-  &:hover {
-    opacity: 0.88;
-  }
-`
-
-const NavActions = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-`
-
-const NavGhostBtn = styled(Link)`
-  padding: 0.5rem 1rem;
-  border-radius: 999px;
-  font-size: 0.88rem;
-  font-weight: 600;
-  color: ${cursorTheme.textMuted};
-  text-decoration: none;
-  transition: color 0.15s ease, background 0.15s ease;
-
-  &:hover {
-    color: ${cursorTheme.text};
-    background: ${cursorTheme.card};
-  }
-`
-
-const NavPrimaryBtn = styled(Link)`
-  padding: 0.5rem 1.15rem;
-  border-radius: 999px;
-  font-size: 0.88rem;
-  font-weight: 600;
-  color: ${cursorTheme.accentText};
-  background: ${cursorTheme.accent};
-  text-decoration: none;
-  transition: background 0.15s ease, transform 0.15s ease;
-
-  &:hover {
-    background: ${cursorTheme.accentHover};
-    transform: translateY(-1px);
-  }
-`
-
-/** 顶栏 — 与 Hero 区 cursor 主题统一 */
 export function MarketingNav() {
   return (
-    <Header>
-      <NavRow aria-label="主导航">
-        <LogoLink to="/" aria-label="Novel AI 首页">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
+      <nav className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between" aria-label="主导航">
+        <Link to="/" className="flex items-center gap-2 transition-opacity hover:opacity-80" aria-label="Novel AI 首页">
           <NovelAiWordmark size="sm" animate={false} />
-        </LogoLink>
-        <NavActions>
-          <NavGhostBtn to="/editor">创作</NavGhostBtn>
-          <NavPrimaryBtn to="/login">登录</NavPrimaryBtn>
-        </NavActions>
-      </NavRow>
-    </Header>
+        </Link>
+        <div className="flex items-center gap-6">
+          <div className="hidden md:flex items-center gap-6 text-sm font-medium text-muted-foreground">
+            <Link to="/features" className="hover:text-foreground transition-colors">功能特性</Link>
+            <Link to="/pricing" className="hover:text-foreground transition-colors">产品定价</Link>
+            <Link to="/testimonials" className="hover:text-foreground transition-colors">用户评价</Link>
+          </div>
+          <div className="flex items-center gap-3">
+            <Link 
+              to="/login" 
+              className="text-sm font-medium text-foreground hover:text-primary transition-colors px-3 py-2"
+            >
+              登录
+            </Link>
+            <Link 
+              to="/register" 
+              className="text-sm font-medium bg-primary text-primary-foreground px-4 py-2 rounded-full hover:bg-primary-hover transition-all hover:-translate-y-0.5 shadow-sm hover:shadow-md"
+            >
+              免费开始
+            </Link>
+          </div>
+        </div>
+      </nav>
+    </header>
   )
 }

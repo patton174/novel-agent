@@ -291,7 +291,7 @@ const NovelCard = styled.div<{ $active?: boolean }>`
   }
   &:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 2px rgba(233, 181, 11, 0.45);
+    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.45);
   }
 `
 

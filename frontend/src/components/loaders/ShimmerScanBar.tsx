@@ -55,9 +55,9 @@ const Beam = styled.div<{ $compact: boolean }>`
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(233, 181, 11, ${({ $compact }) => ($compact ? 0.08 : 0.12)}) 25%,
-    rgba(233, 181, 11, ${({ $compact }) => ($compact ? 0.45 : 0.65)}) 50%,
-    rgba(233, 181, 11, ${({ $compact }) => ($compact ? 0.08 : 0.12)}) 75%,
+    rgba(79, 70, 229, ${({ $compact }) => ($compact ? 0.08 : 0.12)}) 25%,
+    rgba(79, 70, 229, ${({ $compact }) => ($compact ? 0.45 : 0.65)}) 50%,
+    rgba(79, 70, 229, ${({ $compact }) => ($compact ? 0.08 : 0.12)}) 75%,
     transparent 100%
   );
   animation: ${sweep} ${({ $compact }) => ($compact ? 1.2 : 1.5)}s ease-in-out infinite;

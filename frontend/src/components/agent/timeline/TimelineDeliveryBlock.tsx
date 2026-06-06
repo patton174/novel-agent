@@ -1,4 +1,4 @@
-import styled, { keyframes } from 'styled-components'
+import styled from 'styled-components'
 import { AgentMarkdown } from '../AgentMarkdown'
 import { DeliveryBodyWrap } from './timelineStyles'
 import { editorTheme } from '../../../styles/editorTheme'
@@ -20,21 +20,6 @@ export function TimelineDeliveryBlock({
   return (
     <DeliveryBodyWrap data-testid={testId}>
       <AgentMarkdown text={trimmed} variant="chat" />
-      {streamLive ? <StreamCursor aria-hidden /> : null}
     </DeliveryBodyWrap>
   )
 }
-
-const blink = keyframes`
-  50% { opacity: 0; }
-`
-
-const StreamCursor = styled.span`
-  display: inline-block;
-  width: 2px;
-  height: 0.95em;
-  margin-left: 2px;
-  vertical-align: text-bottom;
-  background: ${editorTheme.accent};
-  animation: ${blink} 1s step-end infinite;
-`

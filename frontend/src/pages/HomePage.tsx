@@ -1,6 +1,5 @@
 import { MarketingShell } from '../components/marketing/MarketingShell'
 import { MarketingNav } from '../components/marketing/MarketingNav'
-import { ScrollProgressRail } from '../components/marketing/scroll/ScrollProgressRail'
 import { HomeScrollStory } from '../components/marketing/scroll/HomeScrollStory'
 import { HomeCapabilitiesSection } from '../components/marketing/sections/HomeCapabilitiesSection'
 import { HomeFooterSection } from '../components/marketing/sections/HomeFooterSection'
@@ -26,7 +25,6 @@ export default function HomePage() {
   return (
     <MarketingShell>
       <MarketingNav />
-      <ScrollProgressRail />
       <MarketingMain>
         <HomeHeroSection />
         <HomeScrollStory />

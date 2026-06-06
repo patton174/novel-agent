@@ -89,7 +89,7 @@ export const EditorButtonRoot = styled.button<{
         return css`
           background: ${editorTheme.accent};
           color: ${palette.text};
-          box-shadow: 2px 2px 6px rgba(233, 181, 11, 0.25);
+          box-shadow: 2px 2px 6px rgba(79, 70, 229, 0.25);
           &:hover:not(:disabled) {
             filter: brightness(1.05);
             transform: translateY(-1px);
@@ -370,7 +370,7 @@ export const EditorButtonRoot = styled.button<{
           &:hover:not(:disabled) {
             background: ${editorTheme.accentMuted};
             color: ${editorTheme.text};
-            border-color: rgba(233, 181, 11, 0.25);
+            border-color: rgba(79, 70, 229, 0.25);
             transform: translateY(-1px);
           }
         `

@@ -159,7 +159,7 @@ const SectionTitle = styled.h3`
   font-weight: 600;
   color: ${editorTheme.textSecondary};
   letter-spacing: 0.02em;
-  border-bottom: 1px solid rgba(233, 181, 11, 0.22);
+  border-bottom: 1px solid rgba(79, 70, 229, 0.22);
 `
 
 const ToggleRow = styled.div`

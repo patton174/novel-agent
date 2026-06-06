@@ -1,4 +1,4 @@
-﻿import styled, { css } from 'styled-components'
+import styled, { css } from 'styled-components'
 import { font, palette, radius, shadow, transition } from '../theme'
 import { sectionHeadingCss, sectionSubheadingCss, textStyle } from '../typography'
 
@@ -11,6 +11,7 @@ export const MarketingPageWrapper = styled.div`
   background: #f7f7f4;
   position: relative;
   overflow-x: hidden;
+  overflow-anchor: none;
 `
 
 export const MarketingBackgroundPattern = styled.div`
@@ -35,7 +36,7 @@ export const MarketingShape = styled.div`
   &.shape-1 {
     width: 300px;
     height: 300px;
-    background: radial-gradient(circle, rgba(233, 181, 11, 0.15) 0%, transparent 70%);
+    background: radial-gradient(circle, rgba(79, 70, 229, 0.15) 0%, transparent 70%);
     top: 10%;
     left: -5%;
     animation: float1 8s ease-in-out infinite;
@@ -205,9 +206,9 @@ export const MarketingCardInner = styled.div<{ $glow?: boolean }>`
         padding: 1px;
         background: linear-gradient(
           135deg,
-          rgba(233, 181, 11, 0.55),
+          rgba(79, 70, 229, 0.55),
           rgba(0, 164, 239, 0.25),
-          rgba(233, 181, 11, 0.35)
+          rgba(79, 70, 229, 0.35)
         );
         mask:
           linear-gradient(#fff 0 0) content-box,
@@ -688,7 +689,7 @@ export const MarketingCtaBlock = styled.div`
   border-radius: ${radius.xxl};
   background: linear-gradient(
     135deg,
-    rgba(233, 181, 11, 0.14) 0%,
+    rgba(79, 70, 229, 0.14) 0%,
     rgba(255, 255, 255, 0.35) 45%,
     rgba(0, 164, 239, 0.08) 100%
   );

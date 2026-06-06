@@ -10,50 +10,43 @@ export function useMarketingStoryReveal(rootRef: RefObject<HTMLElement | null>) 
 
     if (prefersReducedMotion()) {
       root
-        .querySelectorAll<HTMLElement>('.story-copy, .demo-app-mock')
-        .forEach((el) => gsap.set(el, { opacity: 1, y: 0, scale: 1, clearProps: 'all' }))
+        .querySelectorAll<HTMLElement>('.story-copy, .demo-app-mock, .demo-agent-console')
+        .forEach((el) => gsap.set(el, { opacity: 1, y: 0, clearProps: 'all' }))
       return
     }
 
     const ctx = gsap.context(() => {
       root.querySelectorAll<HTMLElement>('[data-marketing-scene]').forEach((section) => {
         const copy = section.querySelector<HTMLElement>('.story-copy')
-        const demo = section.querySelector<HTMLElement>('.demo-app-mock')
+        const demo =
+          section.querySelector<HTMLElement>('.demo-app-mock') ??
+          section.querySelector<HTMLElement>('.demo-agent-console')
 
         if (copy) {
-          gsap.fromTo(
-            copy,
-            { opacity: 0, y: 36 },
-            {
-              opacity: 1,
-              y: 0,
-              duration: 0.55,
-              ease: 'power3.out',
-              scrollTrigger: {
-                trigger: section,
-                start: 'top 82%',
-                toggleActions: 'play none none reverse',
-              },
+          gsap.from(copy, {
+            opacity: 0,
+            y: 24,
+            duration: 0.5,
+            ease: 'power2.out',
+            scrollTrigger: {
+              trigger: section,
+              start: 'top 85%',
+              once: true,
             },
-          )
+          })
         }
         if (demo) {
-          gsap.fromTo(
-            demo,
-            { opacity: 0, y: 28, scale: 0.98 },
-            {
-              opacity: 1,
-              y: 0,
-              scale: 1,
-              duration: 0.6,
-              ease: 'power3.out',
-              scrollTrigger: {
-                trigger: section,
-                start: 'top 78%',
-                toggleActions: 'play none none reverse',
-              },
+          gsap.from(demo, {
+            opacity: 0,
+            y: 16,
+            duration: 0.5,
+            ease: 'power2.out',
+            scrollTrigger: {
+              trigger: section,
+              start: 'top 82%',
+              once: true,
             },
-          )
+          })
         }
       })
     }, root)

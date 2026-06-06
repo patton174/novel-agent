@@ -23,12 +23,12 @@ const consoleGlow = keyframes`
   100% {
     box-shadow:
       ${shadow.window},
-      0 0 0 rgba(233, 181, 11, 0);
+      0 0 0 rgba(79, 70, 229, 0);
   }
   50% {
     box-shadow:
       ${shadow.window},
-      0 0 32px rgba(233, 181, 11, 0.12);
+      0 0 32px rgba(79, 70, 229, 0.12);
   }
 `
 

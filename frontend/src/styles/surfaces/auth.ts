@@ -1,4 +1,4 @@
-﻿import styled from 'styled-components'
+import styled from 'styled-components'
 import { palette, radius, shadow, transition } from '../theme'
 import { textStyle } from '../typography'
 
@@ -16,8 +16,8 @@ export const AuthBackgroundPattern = styled.div`
   position: absolute;
   inset: 0;
   background-image:
-    radial-gradient(circle at 20% 30%, rgba(233, 181, 11, 0.1) 0%, transparent 50%),
-    radial-gradient(circle at 80% 70%, rgba(233, 181, 11, 0.08) 0%, transparent 50%);
+    radial-gradient(circle at 20% 30%, rgba(79, 70, 229, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 80% 70%, rgba(79, 70, 229, 0.08) 0%, transparent 50%);
 `
 
 export const AuthCard = styled.div`

@@ -98,7 +98,7 @@ export default function StatsPage() {
                   <Line
                     type="monotone"
                     dataKey="count"
-                    stroke="var(--color-primary, #e9b50b)"
+                    stroke="var(--color-primary, #4f46e5)"
                     strokeWidth={2}
                     dot={false}
                     activeDot={{ r: 4 }}
@@ -142,7 +142,7 @@ export default function StatsPage() {
                   <Line
                     type="monotone"
                     dataKey="count"
-                    stroke="var(--color-primary, #e9b50b)"
+                    stroke="var(--color-primary, #4f46e5)"
                     strokeWidth={2}
                     dot={false}
                     activeDot={{ r: 4 }}

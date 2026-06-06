@@ -1,21 +1,14 @@
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { useLayoutEffect, type DependencyList, type RefObject } from 'react'
-import { useMarketingScroll } from '../MarketingScrollProvider'
+import { scheduleScrollTriggerRefresh, useMarketingScroll } from '../MarketingScrollProvider'
 
 export function prefersReducedMotion() {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches
 }
 
-function refreshScrollTriggers() {
-  requestAnimationFrame(() => {
-    ScrollTrigger.refresh()
-    requestAnimationFrame(() => ScrollTrigger.refresh())
-  })
-}
-
 /**
- * Run GSAP/ScrollTrigger setup only after Lenis + scrollerProxy are ready.
+ * Run GSAP/ScrollTrigger setup only after scroll system is ready.
  */
 export function useMarketingGsapEffect(
   effect: () => void | (() => void),
@@ -36,7 +29,7 @@ export function useMarketingGsapEffect(
       const ctx = gsap.context(() => {
         cleanup = effect()
       }, scope)
-      refreshScrollTriggers()
+      scheduleScrollTriggerRefresh()
       return () => {
         if (typeof cleanup === 'function') cleanup()
         ctx.revert()
@@ -44,7 +37,7 @@ export function useMarketingGsapEffect(
     }
 
     cleanup = effect()
-    refreshScrollTriggers()
+    scheduleScrollTriggerRefresh()
     return () => {
       if (typeof cleanup === 'function') cleanup()
     }

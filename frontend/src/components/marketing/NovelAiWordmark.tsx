@@ -28,10 +28,10 @@ const fillReveal = keyframes`
 const aiGlow = keyframes`
   0%,
   100% {
-    filter: drop-shadow(0 0 0 rgba(233, 181, 11, 0));
+    filter: drop-shadow(0 0 0 rgba(79, 70, 229, 0));
   }
   50% {
-    filter: drop-shadow(0 0 10px rgba(233, 181, 11, 0.45));
+    filter: drop-shadow(0 0 10px rgba(79, 70, 229, 0.45));
   }
 `
 
@@ -99,9 +99,9 @@ export function NovelAiWordmark({
     >
       <defs>
         <linearGradient id={`${uid}-ai-fill`} x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#f5d04a" />
+          <stop offset="0%" stopColor="#818cf8" />
           <stop offset="45%" stopColor={palette.accent} />
-          <stop offset="100%" stopColor="#c99208" />
+          <stop offset="100%" stopColor="#3730a3" />
         </linearGradient>
         <linearGradient id={`${uid}-novel-fill`} x1="0%" y1="0%" x2="0%" y2="100%">
           <stop offset="0%" stopColor="#2a2a2a" />

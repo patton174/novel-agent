@@ -223,9 +223,6 @@ export function AgentThinkPanel({
                 ) : (
                   text.split('\n').filter(Boolean).map((line, i) => <p key={i}>{line}</p>)
                 )}
-                {showCursor || (isThinking && orchestrationActive) ? (
-                  <StreamCursor aria-hidden />
-                ) : null}
               </Body>
             </ThinkBodyInRound>
           ) : (
@@ -242,7 +239,6 @@ export function AgentThinkPanel({
                   ) : (
                     text.split('\n').filter(Boolean).map((line, i) => <p key={i}>{line}</p>)
                   )}
-                  {showCursor ? <StreamCursor aria-hidden /> : null}
                 </Body>
               </CcBranchContent>
             </CcToolBranch>
@@ -269,21 +265,5 @@ const Body = styled.div<{ $nested?: boolean }>`
 
   p:last-child {
     margin-bottom: 0;
-  }
-`
-
-const StreamCursor = styled.span`
-  display: inline-block;
-  width: 2px;
-  height: 0.95em;
-  margin-left: 2px;
-  vertical-align: text-bottom;
-  background: ${editorTheme.accent};
-  animation: blink 1s step-end infinite;
-
-  @keyframes blink {
-    50% {
-      opacity: 0;
-    }
   }
 `

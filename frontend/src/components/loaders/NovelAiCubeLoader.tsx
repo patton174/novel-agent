@@ -43,9 +43,9 @@ const StyledWrapper = styled.div`
 
   .wrapper-grid {
     --animation-duration: 2.1s;
-    --cube-color: rgba(233, 181, 11, 0.06);
+    --cube-color: rgba(79, 70, 229, 0.06);
     --highlight-color: ${ACCENT};
-    --highlight-mid: rgba(233, 181, 11, 0.35);
+    --highlight-mid: rgba(79, 70, 229, 0.35);
     --cube-width: 44px;
     --cube-height: 44px;
     --font-size: 1.05rem;
@@ -213,7 +213,7 @@ const StyledWrapper = styled.div`
     }
     30% {
       color: ${palette.cubeTextDark};
-      filter: drop-shadow(0 10px 8px rgba(233, 181, 11, 0.45));
+      filter: drop-shadow(0 10px 8px rgba(79, 70, 229, 0.45));
     }
   }
 
@@ -228,7 +228,7 @@ const StyledWrapper = styled.div`
     30% {
       box-shadow:
         0 0 0 1px var(--highlight-mid),
-        inset 0 0 8px rgba(233, 181, 11, 0.22);
+        inset 0 0 8px rgba(79, 70, 229, 0.22);
     }
   }
 `

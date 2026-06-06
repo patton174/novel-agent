@@ -4,26 +4,26 @@ import { textStyle } from '../typography'
 
 /** Cursor 官网近似色板 */
 export const cursorTheme = {
-  bg: '#f7f7f4',
-  card: '#f2f1ed',
+  bg: '#f8fafc',
+  card: '#ffffff',
   cardElevated: '#ffffff',
-  text: '#1a1a18',
-  textMuted: '#6b6b67',
-  textFaint: '#9b9b96',
-  accent: '#e9b50b',
-  accentHover: '#d4a00a',
-  accentText: '#1a1a18',
-  border: 'rgba(0, 0, 0, 0.08)',
-  borderStrong: 'rgba(0, 0, 0, 0.12)',
-  green: '#1f8f4e',
-  greenBg: 'rgba(31, 143, 78, 0.12)',
-  red: '#cf2d2d',
-  redBg: 'rgba(207, 45, 45, 0.1)',
+  text: '#0f172a',
+  textMuted: '#64748b',
+  textFaint: '#94a3b8',
+  accent: '#4f46e5',
+  accentHover: '#4338ca',
+  accentText: '#ffffff',
+  border: '#e2e8f0',
+  borderStrong: '#cbd5e1',
+  green: '#10b981',
+  greenBg: 'rgba(16, 185, 129, 0.12)',
+  red: '#ef4444',
+  redBg: 'rgba(239, 68, 68, 0.1)',
   blue: '#3b82f6',
   blueBg: 'rgba(59, 130, 246, 0.12)',
   shadow:
-    '0 2px 8px rgba(0, 0, 0, 0.04), 0 12px 40px rgba(0, 0, 0, 0.08), 0 24px 80px rgba(0, 0, 0, 0.06)',
-  shadowSm: '0 4px 24px rgba(0, 0, 0, 0.06)',
+    '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+  shadowSm: '0 4px 20px -2px rgba(0, 0, 0, 0.05)',
 } as const
 
 const pulse = keyframes`

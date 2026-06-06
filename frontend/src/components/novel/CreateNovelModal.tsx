@@ -30,8 +30,8 @@ const fieldCss = `
   }
 
   &:focus {
-    border-color: rgba(233, 181, 11, 0.45);
-    box-shadow: ${shadow.inInput}, 0 0 0 3px rgba(233, 181, 11, 0.12);
+    border-color: rgba(79, 70, 229, 0.45);
+    box-shadow: ${shadow.inInput}, 0 0 0 3px rgba(79, 70, 229, 0.12);
   }
 `
 

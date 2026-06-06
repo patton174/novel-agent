@@ -47,6 +47,7 @@ export interface EditorChatPanelProps {
   marketingScrubPlaying?: boolean
   /** 首页营销分镜：scrub 时强制展开编排层 */
   marketingPinOrchestration?: boolean
+  hideComposer?: boolean
 }
 
 export function EditorChatPanel({
@@ -73,6 +74,7 @@ export function EditorChatPanel({
   contextUsage,
   marketingScrubPlaying = false,
   marketingPinOrchestration = false,
+  hideComposer = false,
 }: EditorChatPanelProps) {
   const isInitial = isInitialChatView(messages, activeNovel)
   const visibleMessages = filterVisibleChatMessages(messages, activeNovel)
@@ -119,21 +121,23 @@ export function EditorChatPanel({
           <InitialScrollAnchor ref={messagesAreaRef} aria-hidden />
         )}
 
-        <ComposerFloat ref={composerRef} $initial={isInitial}>
-          <ComposerWidthAlign>
-            <ChatComposer
-              value={inputValue}
-              onChange={onInputChange}
-              onSend={onSend}
-              isLoading={isLoading}
-              hostModeEnabled={hostModeEnabled}
-              onHostModeChange={onHostModeChange}
-              streamActive={isLoading}
-              onStreamAbort={onStreamAbort}
-              contextUsage={contextUsage}
-            />
-          </ComposerWidthAlign>
-        </ComposerFloat>
+        {!hideComposer && (
+          <ComposerFloat ref={composerRef} $initial={isInitial}>
+            <ComposerWidthAlign>
+              <ChatComposer
+                value={inputValue}
+                onChange={onInputChange}
+                onSend={onSend}
+                isLoading={isLoading}
+                hostModeEnabled={hostModeEnabled}
+                onHostModeChange={onHostModeChange}
+                streamActive={isLoading}
+                onStreamAbort={onStreamAbort}
+                contextUsage={contextUsage}
+              />
+            </ComposerWidthAlign>
+          </ComposerFloat>
+        )}
       </ChatViewport>
     </ChatSection>
   )
@@ -210,7 +214,7 @@ const HostModeBanner = styled.div<{ $recovering?: boolean }>`
   background: ${({ $recovering }) =>
     $recovering ? 'rgba(255, 196, 0, 0.12)' : editorTheme.accentSoft};
   border: 1px solid ${({ $recovering }) =>
-    $recovering ? 'rgba(255, 196, 0, 0.35)' : 'rgba(233, 181, 11, 0.28)'};
+    $recovering ? 'rgba(255, 196, 0, 0.35)' : 'rgba(79, 70, 229, 0.28)'};
   color: ${({ $recovering }) => ($recovering ? palette.bannerRecovering : palette.bannerHost)};
   font-size: 0.75rem;
   font-weight: 500;
