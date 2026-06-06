@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react'
 import { Link, NavLink } from 'react-router-dom'
 import {
+  BookMarked,
   BookOpen,
   CreditCard,
   LayoutDashboard,
@@ -25,6 +26,7 @@ interface NavItem {
 const mainNav: NavItem[] = [
   { label: '概览', to: '/dashboard', icon: LayoutDashboard, end: true },
   { label: '我的小说', to: '/dashboard/novels', icon: BookOpen },
+  { label: '书库', to: '/dashboard/bookstore', icon: BookMarked },
   { label: '用量与账单', to: '/dashboard/billing', icon: CreditCard },
 ]
 

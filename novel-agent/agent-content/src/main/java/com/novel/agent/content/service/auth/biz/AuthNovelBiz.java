@@ -12,6 +12,7 @@ import com.novel.agent.content.dto.SessionDTO;
 import com.novel.agent.content.dto.UpdateNovelRequest;
 import com.novel.agent.content.service.ChapterService;
 import com.novel.agent.content.service.ContentSessionService;
+import com.novel.agent.content.service.NovelCoverService;
 import com.novel.agent.content.service.NovelService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -24,6 +25,7 @@ import java.util.Map;
 public class AuthNovelBiz extends BaseBiz {
 
     private final NovelService novelService;
+    private final NovelCoverService novelCoverService;
     private final ChapterService chapterService;
     private final ContentSessionService sessionService;
 
@@ -41,6 +43,10 @@ public class AuthNovelBiz extends BaseBiz {
 
     public Result<NovelDTO> update(Long userId, String novelId, UpdateNovelRequest request) {
         return ok(novelService.updateNovel(userId, novelId, request));
+    }
+
+    public Result<NovelDTO> generateCover(Long userId, String novelId) {
+        return ok(novelCoverService.generateCover(userId, novelId));
     }
 
     public Result<Map<String, Object>> delete(Long userId, String novelId) {

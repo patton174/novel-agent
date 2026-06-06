@@ -62,6 +62,14 @@ public class AuthNovelController extends BaseController {
         return biz.update(parseUserId(userId), novelId, request);
     }
 
+    @PostMapping("/{novelId}/cover/generate")
+    public Result<NovelDTO> generateCover(
+        @RequestHeader("X-User-Id") String userId,
+        @PathVariable String novelId
+    ) {
+        return biz.generateCover(parseUserId(userId), novelId);
+    }
+
     @DeleteMapping("/{novelId}")
     public Result<Map<String, Object>> delete(@RequestHeader("X-User-Id") String userId, @PathVariable String novelId) {
         return biz.delete(parseUserId(userId), novelId);

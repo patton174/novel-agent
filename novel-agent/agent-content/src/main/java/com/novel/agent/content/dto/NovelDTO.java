@@ -7,6 +7,7 @@ public record NovelDTO(
     String genre,
     String style,
     int targetChapterWords,
+    String coverUrl,
     long createdAt,
     long updatedAt
 ) {}

@@ -1,29 +1,5 @@
 @echo off
-REM Local dev: Python + PyAI + Content + Consumer + Frontend
-REM Auth/Gateway on server - do not start here
-
-cd /d "%~dp0"
-echo [DEV] python :8000 + pyai :8082 + content :8091 + consumer :8090 + frontend :3000
-echo [DEV] auth use server :8081 - set VITE_REMOTE_AUTH in env.bat
-echo.
-
-call "%~dp0start-python-dev.bat"
-if errorlevel 1 exit /b 1
-timeout /t 5 /nobreak >nul
-
-call "%~dp0start-pyai-dev.bat"
-if errorlevel 1 exit /b 1
-timeout /t 6 /nobreak >nul
-
-call "%~dp0start-content-dev.bat"
-if errorlevel 1 exit /b 1
-timeout /t 3 /nobreak >nul
-
-call "%~dp0start-consumer-dev.bat"
-if errorlevel 1 exit /b 1
-timeout /t 3 /nobreak >nul
-
-call "%~dp0start-frontend-dev.bat"
-echo.
-echo [OK] http://localhost:3000
-exit /b 0
+REM [已废弃 DEPRECATED 2026-06-05]
+REM 本地 Consumer 连生产 MQ 会抢线上 dispatch，导致 Agent 无响应。见 restart-dev.sh
+echo [start-dev.bat] 已废弃。请使用线上 www.novel-agent.cn 或 CI 部署。
+exit /b 1

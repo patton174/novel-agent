@@ -50,6 +50,7 @@ public enum ResultCode {
     STORY_MEMORY_FAILED(2020, 400, "记忆操作失败"),
     CONTENT_SCOPE_INVALID(2021, 400, "不支持的 scope"),
     CONTENT_INVALID_OWNER(2022, 400, "用户或资源标识无效"),
+    IMAGE_GENERATION_FAILED(2030, 503, "图像生成失败"),
 
     // crm 3001-3099
     CRM_USER_NOT_FOUND(3001, 404, "用户不存在");

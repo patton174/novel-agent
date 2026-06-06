@@ -286,6 +286,12 @@ export const api = {
     })
   },
 
+  generateNovelCover(novelId: string) {
+    return this.request<Novel>(`/content/auth/novels/${novelId}/cover/generate`, {
+      method: 'POST',
+    })
+  },
+
   listChapters(novelId: string) {
     return this.request<ChapterSummary[]>(`/content/auth/novels/${novelId}/chapters`)
   },

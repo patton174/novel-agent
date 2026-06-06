@@ -77,6 +77,19 @@ mail:
     support-email: hello@noreply.novel-agent.cn
     frontend-base-url: https://www.novel-agent.cn
 
+mailtrap:
+  token: ${MAILTRAP_TOKEN:}
+  from-email: hello@noreply.novel-agent.cn
+  from-name: Novel Agent
+
+agent:
+  python:
+    base-url: ${AGENT_PYTHON_BASE_URL:http://python-lb:8000}
+  image:
+    timeout-seconds: 120
+    captcha-enabled: true
+    captcha-size: 1024x768
+
 logging:
   level:
     com.novel.agent: info

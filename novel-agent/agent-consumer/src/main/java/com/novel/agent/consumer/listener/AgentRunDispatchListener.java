@@ -102,11 +102,13 @@ public class AgentRunDispatchListener {
             body.set("resume_interaction", interaction);
         }
 
+        // ObjectNode 不能作为 RestClient.body 直接序列化，会发空 body → Python 422
+        String jsonBody = objectMapper.writeValueAsString(body);
         Map<?, ?> response = pythonRestClient.post()
             .uri("/internal/worker/run/execute")
             .contentType(MediaType.APPLICATION_JSON)
             .header(ContentRestSupport.INTERNAL_KEY_HEADER, internalServiceKey)
-            .body(body)
+            .body(jsonBody)
             .retrieve()
             .body(Map.class);
 

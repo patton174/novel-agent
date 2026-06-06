@@ -86,6 +86,7 @@ public class NovelService {
             entity.getGenre(),
             entity.getStyle(),
             entity.getTargetChapterWords() == null ? 3000 : entity.getTargetChapterWords(),
+            entity.getCoverUrl(),
             entity.getCreatedAt().toEpochMilli(),
             entity.getUpdatedAt().toEpochMilli()
         );

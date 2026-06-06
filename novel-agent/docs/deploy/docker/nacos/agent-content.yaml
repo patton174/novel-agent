@@ -33,6 +33,9 @@ spring:
 agent:
   python:
     base-url: http://python-ai:8000
+  image:
+    timeout-seconds: 120
+    cover-size: 768x1024
 
 logging:
   level:

@@ -5,6 +5,7 @@ export interface Novel {
   genre?: string | null
   style?: string | null
   targetChapterWords: number
+  coverUrl?: string | null
   createdAt: number
   updatedAt: number
 }

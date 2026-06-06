@@ -52,6 +52,10 @@
         </dependency>
         <dependency>
             <groupId>com.novel.agent</groupId>
+            <artifactId>agent-common-image</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.novel.agent</groupId>
             <artifactId>agent-feign-auth</artifactId>
         </dependency>
         <dependency>

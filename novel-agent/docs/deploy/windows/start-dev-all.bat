@@ -1,13 +1,5 @@
 @echo off
-REM Full local stack including auth+gateway — only if server is NOT running them.
-cd /d "%~dp0"
-call start-python-dev.bat
-timeout /t 5 /nobreak >nul
-call start-auth-dev.bat
-timeout /t 12 /nobreak >nul
-call start-pyai-dev.bat
-timeout /t 6 /nobreak >nul
-call start-gateway-dev.bat
-timeout /t 6 /nobreak >nul
-call start-frontend-dev.bat
-exit /b 0
+REM [已废弃 DEPRECATED 2026-06-05]
+REM 见 restart-dev.sh
+echo [start-dev-all.bat] 已废弃。请使用线上 www.novel-agent.cn 或 CI 部署。
+exit /b 1

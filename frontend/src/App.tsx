@@ -26,6 +26,7 @@ const EditorPage = lazy(() => import('./pages/EditorPage'))
 const DashboardLayout = lazy(() => import('./layouts/DashboardLayout'))
 const DashboardHomePage = lazy(() => import('./pages/dashboard/DashboardHomePage'))
 const NovelsPage = lazy(() => import('./pages/dashboard/NovelsPage'))
+const BookstorePage = lazy(() => import('./pages/dashboard/BookstorePage'))
 const BillingPage = lazy(() => import('./pages/dashboard/BillingPage'))
 const SettingsPage = lazy(() => import('./pages/dashboard/SettingsPage'))
 const VerifyEmailPage = lazy(() => import('./pages/VerifyEmailPage'))
@@ -33,6 +34,7 @@ const AdminLayout = lazy(() => import('./layouts/AdminLayout'))
 const AdminHomePage = lazy(() => import('./pages/admin/AdminHomePage'))
 const UsersPage = lazy(() => import('./pages/admin/UsersPage'))
 const StatsPage = lazy(() => import('./pages/admin/StatsPage'))
+const CrawlerPage = lazy(() => import('./pages/admin/CrawlerPage'))
 
 function RouteFallback() {
   return (
@@ -81,6 +83,7 @@ function AppRoutes() {
         >
           <Route index element={<DashboardHomePage />} />
           <Route path="novels" element={<NovelsPage />} />
+          <Route path="bookstore" element={<BookstorePage />} />
           <Route path="billing" element={<BillingPage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
@@ -96,6 +99,7 @@ function AppRoutes() {
           <Route index element={<AdminHomePage />} />
           <Route path="users" element={<UsersPage />} />
           <Route path="stats" element={<StatsPage />} />
+          <Route path="crawler" element={<CrawlerPage />} />
         </Route>
       </Routes>
     </AnimatePresence>

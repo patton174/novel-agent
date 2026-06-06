@@ -4,8 +4,6 @@ import com.novel.agent.content.agent.AgentRunStatus;
 import lombok.Builder;
 import lombok.Data;
 
-import java.time.Instant;
-
 @Data
 @Builder
 public class AgentRunDTO {
@@ -18,9 +16,10 @@ public class AgentRunDTO {
     private String mode;
     private String errorMessage;
     private String workerId;
-    private Instant leaseExpiresAt;
-    private Instant startedAt;
-    private Instant completedAt;
-    private Instant createdAt;
-    private Instant updatedAt;
+    /** epoch millis (UTC) */
+    private Long leaseExpiresAt;
+    private Long startedAt;
+    private Long completedAt;
+    private Long createdAt;
+    private Long updatedAt;
 }

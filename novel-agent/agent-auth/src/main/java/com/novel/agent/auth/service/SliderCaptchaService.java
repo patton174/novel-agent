@@ -4,6 +4,9 @@ import com.novel.agent.auth.config.VerificationProperties;
 import com.novel.agent.auth.dto.SliderCaptchaChallengeResponse;
 import com.novel.agent.common.core.enums.ResultCode;
 import com.novel.agent.common.core.exception.ValidationException;
+import com.novel.agent.common.image.PythonImageClient;
+import com.novel.agent.common.image.GeneratedImage;
+import com.novel.agent.common.image.config.ImageClientProperties;
 import com.novel.agent.common.security.SecurityRedisKeys;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -15,26 +18,41 @@ import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.util.Base64;
+import java.util.List;
 import java.util.UUID;
 
 @Slf4j
 @Service
 public class SliderCaptchaService {
 
+    private static final List<String> CAPTCHA_PROMPTS = List.of(
+        "Soft abstract natural landscape, gentle colors, no text, no logos, photographic style, suitable as website background",
+        "Calm ocean horizon at golden hour, subtle waves, no people, no text, high detail background texture",
+        "Minimalist forest path with soft morning light, blurred depth, no text, no watermark, background photo",
+        "Pastel city skyline at dusk, soft bokeh lights, no text, cinematic background suitable for puzzle captcha"
+    );
+
     private final StringRedisTemplate redisTemplate;
     private final VerificationProperties properties;
+    private final ImageClientProperties imageClientProperties;
+    private final PythonImageClient pythonImageClient;
     private final SecureRandom random = new SecureRandom();
 
     public SliderCaptchaService(
         StringRedisTemplate redisTemplate,
-        VerificationProperties properties
+        VerificationProperties properties,
+        ImageClientProperties imageClientProperties,
+        PythonImageClient pythonImageClient
     ) {
         this.redisTemplate = redisTemplate;
         this.properties = properties;
+        this.imageClientProperties = imageClientProperties;
+        this.pythonImageClient = pythonImageClient;
     }
 
     public SliderCaptchaChallengeResponse createChallenge() {
@@ -49,7 +67,9 @@ public class SliderCaptchaService {
         BufferedImage source = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
         Graphics2D g = source.createGraphics();
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        paintBackground(g, width, height);
+        if (!tryPaintAiBackground(g, width, height)) {
+            paintBackground(g, width, height);
+        }
         g.dispose();
 
         BufferedImage puzzleImage = new BufferedImage(puzzle, puzzle, BufferedImage.TYPE_INT_ARGB);
@@ -111,6 +131,55 @@ public class SliderCaptchaService {
         if (deleted == null || !deleted) {
             throw new ValidationException(ResultCode.CAPTCHA_INVALID, "滑块验证已失效，请重新验证");
         }
+    }
+
+    private boolean tryPaintAiBackground(Graphics2D g, int width, int height) {
+        if (!imageClientProperties.isCaptchaEnabled() || !pythonImageClient.enabled()) {
+            return false;
+        }
+        try {
+            String prompt = CAPTCHA_PROMPTS.get(random.nextInt(CAPTCHA_PROMPTS.size()));
+            GeneratedImage image = pythonImageClient.textToImage(
+                prompt,
+                imageClientProperties.getCaptchaSize(),
+                true
+            );
+            BufferedImage ai = decodeImage(image);
+            if (ai == null) {
+                return false;
+            }
+            g.drawImage(ai, 0, 0, width, height, null);
+            return true;
+        } catch (Exception ex) {
+            log.debug("滑块验证码 AI 背景失败，回退本地绘制: {}", ex.getMessage());
+            return false;
+        }
+    }
+
+    private BufferedImage decodeImage(GeneratedImage image) {
+        try {
+            if (image.hasBase64()) {
+                byte[] bytes = Base64.getDecoder().decode(image.base64());
+                return ImageIO.read(new ByteArrayInputStream(bytes));
+            }
+            if (image.hasUrl()) {
+                java.net.http.HttpClient client = java.net.http.HttpClient.newHttpClient();
+                java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
+                    .uri(java.net.URI.create(image.url()))
+                    .GET()
+                    .build();
+                java.net.http.HttpResponse<byte[]> response = client.send(
+                    request,
+                    java.net.http.HttpResponse.BodyHandlers.ofByteArray()
+                );
+                if (response.statusCode() >= 200 && response.statusCode() < 300) {
+                    return ImageIO.read(new ByteArrayInputStream(response.body()));
+                }
+            }
+        } catch (Exception ex) {
+            log.debug("解码 AI 背景图失败: {}", ex.getMessage());
+        }
+        return null;
     }
 
     private void storeChallenge(String captchaId, int targetX) {

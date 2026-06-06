@@ -9,6 +9,8 @@ from app.core.logging_setup import setup_logging
 
 from app.api.routes import router
 from app.api.rag_routes import router as rag_router
+from app.api.image_routes import router as image_router
+from app.api.crawler_routes import router as crawler_router, internal_router as crawler_internal_router
 from app.agent_step.router import router as agent_step_router
 from app.agent_step.worker.router import router as worker_router
 from app import __version__
@@ -36,8 +38,11 @@ app.add_middleware(
 # Include API routes
 app.include_router(router, prefix="/api", tags=["AI"])
 app.include_router(rag_router, prefix="/api", tags=["RAG"])
+app.include_router(image_router, prefix="/api", tags=["Images"])
+app.include_router(crawler_router, prefix="/api", tags=["Crawler"])
 app.include_router(agent_step_router, prefix="/api", tags=["Agent Step"])
 app.include_router(worker_router, prefix="/internal", tags=["Worker Internal"])
+app.include_router(crawler_internal_router, prefix="/internal", tags=["Crawler Internal"])
 
 
 @app.on_event("startup")

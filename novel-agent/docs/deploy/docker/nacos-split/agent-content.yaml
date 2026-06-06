@@ -39,6 +39,11 @@ agent:
     read-pg-session-first: false
     lease-ttl-seconds: 900
 
+agent:
+  image:
+    timeout-seconds: 120
+    cover-size: 768x1024
+
 logging:
   level:
     com.novel.agent: info

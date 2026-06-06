@@ -126,7 +126,7 @@ public class AgentRunService {
                 .acquired(false)
                 .runId(runId)
                 .workerId(run.getWorkerId())
-                .leaseExpiresAt(run.getLeaseExpiresAt())
+                .leaseExpiresAt(toEpochMillis(run.getLeaseExpiresAt()))
                 .message("leased by other worker")
                 .build();
         }
@@ -151,7 +151,7 @@ public class AgentRunService {
             .acquired(true)
             .runId(runId)
             .workerId(workerId)
-            .leaseExpiresAt(leaseExpires)
+            .leaseExpiresAt(toEpochMillis(leaseExpires))
             .build();
     }
 
@@ -168,7 +168,7 @@ public class AgentRunService {
             .acquired(true)
             .runId(runId)
             .workerId(workerId)
-            .leaseExpiresAt(leaseExpires)
+            .leaseExpiresAt(toEpochMillis(leaseExpires))
             .build();
     }
 
@@ -302,12 +302,16 @@ public class AgentRunService {
             .mode(run.getMode())
             .errorMessage(run.getErrorMessage())
             .workerId(run.getWorkerId())
-            .leaseExpiresAt(run.getLeaseExpiresAt())
-            .startedAt(run.getStartedAt())
-            .completedAt(run.getCompletedAt())
-            .createdAt(run.getCreatedAt())
-            .updatedAt(run.getUpdatedAt())
+            .leaseExpiresAt(toEpochMillis(run.getLeaseExpiresAt()))
+            .startedAt(toEpochMillis(run.getStartedAt()))
+            .completedAt(toEpochMillis(run.getCompletedAt()))
+            .createdAt(toEpochMillis(run.getCreatedAt()))
+            .updatedAt(toEpochMillis(run.getUpdatedAt()))
             .build();
+    }
+
+    private static Long toEpochMillis(Instant instant) {
+        return instant == null ? null : instant.toEpochMilli();
     }
 
     private AgentEventDTO toEventDto(AgentRunEventEntity event) {

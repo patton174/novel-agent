@@ -19,6 +19,8 @@ public enum MqTopic {
     AGENT_RUN_EVENTS("agent.run.exchange", "run.events", "agent.run.events.queue"),
     AGENT_RUN_COMMAND("agent.run.exchange", "run.command", "agent.run.command.queue"),
 
+    CRAWL_DISPATCH("agent.crawl.exchange", "crawl.dispatch", "agent.crawl.dispatch.queue"),
+
     ;
 
     private final String exchange;

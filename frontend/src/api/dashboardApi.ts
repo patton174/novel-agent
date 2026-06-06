@@ -63,6 +63,7 @@ export interface DashboardNovel {
   genre?: string | null
   style?: string | null
   targetChapterWords: number
+  coverUrl?: string | null
   createdAt: number
   updatedAt: number
 }
@@ -77,6 +78,20 @@ export async function fetchNovels(): Promise<DashboardNovel[]> {
     return Array.isArray(data) ? data : []
   } catch {
     return []
+  }
+}
+
+export async function generateNovelCover(novelId: string): Promise<DashboardNovel | null> {
+  try {
+    const res = await secureFetch(`/api/content/auth/novels/${novelId}/cover/generate`, {
+      method: 'POST',
+    })
+    if (!res.ok) {
+      return null
+    }
+    return parseResultResponse<DashboardNovel>(res)
+  } catch {
+    return null
   }
 }
 

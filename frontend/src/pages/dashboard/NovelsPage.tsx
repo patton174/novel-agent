@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { BookOpen, Clock, Plus, Sparkles } from 'lucide-react'
+import { BookOpen, Clock, ImagePlus, Loader2, Plus, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { fetchNovels, type DashboardNovel } from '@/api/dashboardApi'
+import { fetchNovels, generateNovelCover, type DashboardNovel } from '@/api/dashboardApi'
 
 function formatDate(ts: number): string {
   const date = new Date(ts)
@@ -20,6 +20,7 @@ function formatDate(ts: number): string {
 export default function NovelsPage() {
   const [novels, setNovels] = useState<DashboardNovel[] | null>(null)
   const [error, setError] = useState(false)
+  const [generatingId, setGeneratingId] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -38,6 +39,20 @@ export default function NovelsPage() {
       })
     return () => {
       cancelled = true
+    }
+  }, [])
+
+  const handleGenerateCover = useCallback(async (novelId: string) => {
+    setGeneratingId(novelId)
+    try {
+      const updated = await generateNovelCover(novelId)
+      if (updated) {
+        setNovels((prev) =>
+          prev ? prev.map((n) => (n.id === novelId ? { ...n, ...updated } : n)) : prev
+        )
+      }
+    } finally {
+      setGeneratingId(null)
     }
   }, [])
 
@@ -75,7 +90,7 @@ export default function NovelsPage() {
               key={i}
               className="rounded-2xl border border-border bg-surface p-5 shadow-soft"
             >
-              <Skeleton className="mb-4 size-12 rounded-xl" />
+              <Skeleton className="mb-4 h-32 w-full rounded-xl" />
               <Skeleton className="mb-2 h-5 w-3/4" />
               <Skeleton className="mb-6 h-4 w-1/2" />
               <Skeleton className="h-10 w-full rounded-xl" />
@@ -116,11 +131,21 @@ export default function NovelsPage() {
                 className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary via-violet-500 to-indigo-400 opacity-80"
                 style={{ opacity: 0.35 + (index % 3) * 0.15 }}
               />
-              <div className="flex flex-1 flex-col p-5 pt-6">
-                <div className="mb-4 flex size-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary/15 to-violet-500/10 text-primary ring-1 ring-primary/10">
-                  <BookOpen className="size-6" />
+              {novel.coverUrl ? (
+                <div className="relative aspect-[3/4] w-full overflow-hidden bg-muted">
+                  <img
+                    src={novel.coverUrl}
+                    alt={`${novel.title} 封面`}
+                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    loading="lazy"
+                  />
                 </div>
-
+              ) : (
+                <div className="flex aspect-[3/4] w-full items-center justify-center bg-gradient-to-br from-primary/10 to-violet-500/10">
+                  <BookOpen className="size-12 text-primary/40" />
+                </div>
+              )}
+              <div className="flex flex-1 flex-col p-5">
                 <h3
                   className="mb-2 line-clamp-2 text-lg font-bold leading-snug text-foreground"
                   title={novel.title}
@@ -140,11 +165,31 @@ export default function NovelsPage() {
                 </div>
               </div>
 
-              <div className="border-t border-border/80 p-4 pt-0">
+              <div className="flex flex-col gap-2 border-t border-border/80 p-4 pt-0">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={generatingId === novel.id}
+                  className="mt-4 w-full rounded-xl text-muted-foreground hover:text-foreground"
+                  onClick={() => void handleGenerateCover(novel.id)}
+                >
+                  {generatingId === novel.id ? (
+                    <>
+                      <Loader2 className="mr-2 size-4 animate-spin" />
+                      生成封面中…
+                    </>
+                  ) : (
+                    <>
+                      <ImagePlus className="mr-2 size-4" />
+                      {novel.coverUrl ? '重新生成封面' : 'AI 生成封面'}
+                    </>
+                  )}
+                </Button>
                 <Button
                   asChild
                   variant="outline"
-                  className="mt-4 w-full rounded-xl border-border/80 transition-colors group-hover:border-primary group-hover:bg-primary group-hover:text-primary-foreground"
+                  className="w-full rounded-xl border-border/80 transition-colors group-hover:border-primary group-hover:bg-primary group-hover:text-primary-foreground"
                 >
                   <Link to="/editor">继续写作</Link>
                 </Button>

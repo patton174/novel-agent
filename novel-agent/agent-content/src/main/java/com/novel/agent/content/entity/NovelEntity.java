@@ -40,6 +40,10 @@ public class NovelEntity {
     @Column(name = "target_chapter_words")
     private Integer targetChapterWords;
 
+    /** AI 生成的封面图 URL（Agnes 返回的公网地址） */
+    @Column(name = "cover_url", length = 1024)
+    private String coverUrl;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 

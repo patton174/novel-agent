@@ -48,6 +48,14 @@ class Settings(BaseSettings):
     agent_subagent_max_turns: int = 20
     agent_subagent_max_depth: int = 1
 
+    crawl_request_delay_ms: int = 800
+
+    # Agnes image generation (OpenAI-compatible Images API)
+    agnes_image_api_key: str = ""
+    agnes_image_base_url: str = "https://apihub.agnes-ai.com"
+    agnes_image_model: str = "agnes-image-2.0-flash"
+    agnes_image_timeout: int = 120
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
