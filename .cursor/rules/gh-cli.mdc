@@ -1,0 +1,31 @@
+---
+description: GitHub 操作一律用 gh CLI（Windows 需用完整路径）
+alwaysApply: true
+---
+
+# GitHub CLI（gh）
+
+本机已安装 GitHub CLI，但 **PowerShell 默认 PATH 里没有 `gh`**。所有 GitHub 相关操作必须用 gh，不要用裸 `curl` 猜 API。
+
+## 调用方式
+
+```powershell
+& "C:\Program Files\GitHub CLI\gh.exe" <子命令>
+```
+
+## 适用场景
+
+- 查看 / 重跑 Actions：`gh run list`、`gh run view <id> --log-failed`
+- PR / Issue：`gh pr create`、`gh pr checks`、`gh issue list`
+- 仓库状态：`gh repo view`
+
+## 禁止
+
+- 不要用 `gh` 裸命令（会 CommandNotFound）
+- 不要用 `curl api.github.com` 代替 gh（除非 gh 不可用且用户同意）
+
+## 部署排查标准流程
+
+1. `gh run list --workflow=deploy-split.yml --limit 5`
+2. `gh run view <run-id> --log-failed`
+3. 修代码 → push → 确认新 run 绿

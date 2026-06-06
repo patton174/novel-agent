@@ -29,9 +29,9 @@ class ChapterLink:
 @dataclass
 class CatalogExtraction:
     novel_title: str
+    chapters: list[ChapterLink]
     author: str = ""
     description: str = ""
-    chapters: list[ChapterLink]
 
 
 @dataclass

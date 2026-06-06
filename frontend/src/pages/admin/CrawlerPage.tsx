@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Loader2, Pause, Play, Plus, RefreshCw, Spider, Square, Wand2 } from 'lucide-react'
+import { Bot, Loader2, Pause, Play, Plus, RefreshCw, Square, Wand2 } from 'lucide-react'
 import {
   cancelCrawlJob,
   createCrawlJob,
@@ -133,7 +133,7 @@ export default function CrawlerPage() {
 
       <section className="rounded-2xl border border-border bg-surface p-5 shadow-soft">
         <div className="mb-4 flex items-center gap-2">
-          <Spider className="size-5 text-primary" />
+          <Bot className="size-5 text-primary" />
           <h2 className="text-lg font-semibold">新建爬取任务</h2>
         </div>
         <div className="space-y-3">
