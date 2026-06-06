@@ -57,8 +57,7 @@ public class EmailVerificationService {
         }
         sliderCaptchaService.consumeCaptchaToken(captchaToken);
 
-        rateLimitService.checkComposite("send-email-code", ip, fingerprint, 10, Duration.ofHours(1));
-        rateLimitService.check("send-email-code:email", normalized, properties.getEmailDailyLimit(), Duration.ofDays(1));
+        assertSendEmailCodeAllowed(normalized, ip, fingerprint);
 
         String cooldownKey = SecurityRedisKeys.EMAIL_COOLDOWN_PREFIX + normalized;
         if (Boolean.TRUE.equals(redisTemplate.hasKey(cooldownKey))) {
@@ -67,6 +66,7 @@ public class EmailVerificationService {
 
         String code = String.format("%06d", random.nextInt(1_000_000));
         mailtrapEmailSender.sendVerificationCode(normalized, code, properties.getEmailCodeTtlSeconds());
+        recordSendEmailCodeSuccess(normalized, ip, fingerprint);
         redisTemplate.opsForValue().set(
             SecurityRedisKeys.EMAIL_CODE_PREFIX + normalized,
             code,
@@ -108,8 +108,7 @@ public class EmailVerificationService {
             throw new ValidationException(ResultCode.BAD_REQUEST, "账户未绑定邮箱");
         }
 
-        rateLimitService.check("send-email-verify:user", String.valueOf(userId), 5, Duration.ofHours(1));
-        rateLimitService.check("send-email-verify:email", email, properties.getEmailDailyLimit(), Duration.ofDays(1));
+        assertSendEmailVerifyAllowed(userId, email);
 
         String cooldownKey = SecurityRedisKeys.EMAIL_COOLDOWN_PREFIX + "verify:" + userId;
         if (Boolean.TRUE.equals(redisTemplate.hasKey(cooldownKey))) {
@@ -132,6 +131,7 @@ public class EmailVerificationService {
             properties.getEmailVerifyLinkTtlSeconds(),
             properties.getFrontendBaseUrl()
         );
+        recordSendEmailVerifySuccess(userId, email);
         redisTemplate.opsForValue().set(
             SecurityRedisKeys.EMAIL_VERIFY_LINK_PREFIX + token,
             String.valueOf(userId),
@@ -174,6 +174,42 @@ public class EmailVerificationService {
 
     private String requireEmailLinkSecret() {
         return emailLinkSecretService.requireSecret();
+    }
+
+    private void assertSendEmailCodeAllowed(String email, String ip, String fingerprint) {
+        rateLimitService.assertUnderLimit("send-email-code:ip", ip, 10, Duration.ofHours(1));
+        if (fingerprint != null && !fingerprint.isBlank()) {
+            rateLimitService.assertUnderLimit("send-email-code:fp", fingerprint, 10, Duration.ofHours(1));
+        }
+        rateLimitService.assertUnderLimit(
+            "send-email-code:email",
+            email,
+            properties.getEmailDailyLimit(),
+            Duration.ofDays(1)
+        );
+    }
+
+    private void recordSendEmailCodeSuccess(String email, String ip, String fingerprint) {
+        rateLimitService.recordSuccess("send-email-code:ip", ip, Duration.ofHours(1));
+        if (fingerprint != null && !fingerprint.isBlank()) {
+            rateLimitService.recordSuccess("send-email-code:fp", fingerprint, Duration.ofHours(1));
+        }
+        rateLimitService.recordSuccess("send-email-code:email", email, Duration.ofDays(1));
+    }
+
+    private void assertSendEmailVerifyAllowed(Long userId, String email) {
+        rateLimitService.assertUnderLimit("send-email-verify:user", String.valueOf(userId), 5, Duration.ofHours(1));
+        rateLimitService.assertUnderLimit(
+            "send-email-verify:email",
+            email,
+            properties.getEmailDailyLimit(),
+            Duration.ofDays(1)
+        );
+    }
+
+    private void recordSendEmailVerifySuccess(Long userId, String email) {
+        rateLimitService.recordSuccess("send-email-verify:user", String.valueOf(userId), Duration.ofHours(1));
+        rateLimitService.recordSuccess("send-email-verify:email", email, Duration.ofDays(1));
     }
 
     private void incrementDailyCounter(String email) {
