@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { Fragment, useMemo, useState } from 'react'
 import { cn } from '@/lib/utils'
 import type { DashboardActivity, DashboardActivityDay } from '@/api/dashboardApi'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -20,12 +20,19 @@ const LEVEL_CLASSES = [
   'bg-emerald-800 dark:bg-emerald-500',
 ]
 
-/** 与 Tailwind size-3 / gap-[3px] 保持一致，月份标签才能对齐列 */
+/** 与网格 gap、标签列宽保持一致 */
+const GRID_GAP_PX = 3
+const WEEKDAY_COL_WIDTH = '1.125rem'
+
 const WEEKDAY_LABELS = [
   { row: 1, label: '一' },
   { row: 3, label: '三' },
   { row: 5, label: '五' },
 ]
+
+function heatmapGridColumns(weekCount: number): string {
+  return `${WEEKDAY_COL_WIDTH} repeat(${weekCount}, minmax(0, 1fr))`
+}
 
 interface HeatCell {
   date: string | null
@@ -225,6 +232,9 @@ export function ActivityHeatmap({ activity, loading }: ActivityHeatmapProps) {
     [monthLabels],
   )
 
+  const weekCount = weeks.length
+  const gridColumns = heatmapGridColumns(weekCount)
+
   return (
     <Card className="py-0 shadow-none">
       <CardHeader className="border-b px-5 py-4 [.border-b]:pb-4">
@@ -261,62 +271,64 @@ export function ActivityHeatmap({ activity, loading }: ActivityHeatmapProps) {
 
       <CardContent className="px-5 py-4">
         {loading ? (
-          <Skeleton className="h-[108px] w-full max-w-2xl rounded-lg" />
+          <Skeleton className="aspect-[7/53] w-full min-h-[88px] max-h-36 rounded-lg" />
+        ) : weekCount === 0 ? (
+          <p className="py-8 text-center text-sm text-muted-foreground">暂无活跃数据</p>
         ) : (
-          <div className="overflow-x-auto pb-1">
-            <div className="inline-flex min-w-0 flex-col gap-1.5">
-              {/* 月份行 — 与下方周列同宽同间距 */}
-              <div className="flex gap-[3px] pl-[18px]">
+          <div className="w-full min-w-0 overflow-x-auto">
+            <div
+              className="w-full min-w-[min(100%,320px)]"
+              style={{ minWidth: weekCount > 26 ? `${18 + weekCount * 11 + (weekCount - 1) * GRID_GAP_PX}px` : undefined }}
+            >
+              {/* 月份标签 — 与下方周列同 grid 模板 */}
+              <div
+                className="mb-1.5 grid gap-[3px]"
+                style={{ gridTemplateColumns: gridColumns }}
+              >
+                <div aria-hidden />
                 {weeks.map((_, weekIndex) => (
                   <div
                     key={weekIndex}
-                    className="w-3 shrink-0 text-[10px] leading-none text-muted-foreground"
+                    className="min-w-0 truncate text-[10px] leading-none text-muted-foreground"
                   >
                     {monthLabelByWeek.get(weekIndex) ?? ''}
                   </div>
                 ))}
               </div>
 
-              <div className="flex gap-[3px]">
-                {/* 星期标签 — 与格子行对齐 */}
-                <div className="flex w-[15px] shrink-0 flex-col gap-[3px] pt-[1px]">
-                  {Array.from({ length: 7 }).map((_, rowIndex) => {
-                    const label = WEEKDAY_LABELS.find((l) => l.row === rowIndex)
-                    return (
-                      <div
-                        key={rowIndex}
-                        className="flex h-3 items-center text-[10px] leading-none text-muted-foreground"
-                      >
-                        {label?.label ?? ''}
-                      </div>
-                    )
-                  })}
-                </div>
-
-                {/* 热力格子 */}
-                <div className="flex gap-[3px]">
-                  {weeks.map((week, weekIndex) => (
-                    <div key={weekIndex} className="flex flex-col gap-[3px]">
-                      {week.map((cell, rowIndex) => {
-                        const level = cell.date ? valueToLevel(cell.value, maxValue) : 0
-                        return (
-                          <div
-                            key={`${weekIndex}-${rowIndex}`}
-                            title={
-                              cell.date
-                                ? formatTooltip(cell.date, cell.value, mode)
-                                : undefined
-                            }
-                            className={cn(
-                              'size-3 shrink-0 rounded-[2px]',
-                              cell.date ? LEVEL_CLASSES[level] : 'bg-transparent',
-                            )}
-                          />
-                        )
-                      })}
+              {/* 7 行 × (星期 + N 周)，格子随容器等比拉伸 */}
+              <div
+                className="grid gap-[3px]"
+                style={{ gridTemplateColumns: gridColumns }}
+              >
+                {Array.from({ length: 7 }).map((_, rowIndex) => (
+                  <Fragment key={rowIndex}>
+                    <div
+                      key={`label-${rowIndex}`}
+                      className="flex min-w-0 items-center text-[10px] leading-none text-muted-foreground"
+                    >
+                      {WEEKDAY_LABELS.find((l) => l.row === rowIndex)?.label ?? ''}
                     </div>
-                  ))}
-                </div>
+                    {weeks.map((week, weekIndex) => {
+                      const cell = week[rowIndex]
+                      const level = cell.date ? valueToLevel(cell.value, maxValue) : 0
+                      return (
+                        <div
+                          key={`${weekIndex}-${rowIndex}`}
+                          title={
+                            cell.date
+                              ? formatTooltip(cell.date, cell.value, mode)
+                              : undefined
+                          }
+                          className={cn(
+                            'aspect-square w-full min-w-0 rounded-[2px]',
+                            cell.date ? LEVEL_CLASSES[level] : 'bg-transparent',
+                          )}
+                        />
+                      )
+                    })}
+                  </Fragment>
+                ))}
               </div>
             </div>
           </div>
