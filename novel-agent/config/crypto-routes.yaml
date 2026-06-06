@@ -93,6 +93,8 @@ routes:
     path: /api/content/auth/dashboard/summary
   - method: GET
     path: /api/content/auth/dashboard/recent-novels
+  - method: GET
+    path: /api/content/auth/dashboard/activity
 
   # content — sessions
   - method: GET

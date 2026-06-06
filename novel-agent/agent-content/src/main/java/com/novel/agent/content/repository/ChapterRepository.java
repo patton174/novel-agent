@@ -61,6 +61,17 @@ public interface ChapterRepository extends JpaRepository<ChapterEntity, String> 
         """)
     long sumWordCountByUserIdSince(@Param("userId") Long userId, @Param("since") Instant since);
 
+    @Query(value = """
+        SELECT DATE(c.updated_at AT TIME ZONE 'UTC') AS edit_day,
+               COALESCE(SUM(COALESCE(c.word_count, 0)), 0) AS word_sum
+        FROM chapter c
+        JOIN novel n ON c.novel_id = n.id
+        WHERE n.user_id = :userId AND c.updated_at >= :since
+        GROUP BY DATE(c.updated_at AT TIME ZONE 'UTC')
+        ORDER BY edit_day
+        """, nativeQuery = true)
+    List<Object[]> sumDailyWordsByUserIdSince(@Param("userId") Long userId, @Param("since") Instant since);
+
     @Query("SELECT COUNT(c) FROM ChapterEntity c")
     long countAll();
 }

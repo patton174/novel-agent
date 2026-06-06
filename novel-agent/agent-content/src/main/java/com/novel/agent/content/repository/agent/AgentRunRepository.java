@@ -32,4 +32,13 @@ public interface AgentRunRepository extends JpaRepository<AgentRunEntity, String
         ORDER BY run_day
         """, nativeQuery = true)
     List<Object[]> countDailySince(@Param("since") Instant since);
+
+    @Query(value = """
+        SELECT DATE(created_at AT TIME ZONE 'UTC') AS run_day, COUNT(*) AS run_count
+        FROM agent_run
+        WHERE user_id = :userId AND created_at >= :since
+        GROUP BY DATE(created_at AT TIME ZONE 'UTC')
+        ORDER BY run_day
+        """, nativeQuery = true)
+    List<Object[]> countDailyByUserIdSince(@Param("userId") Long userId, @Param("since") Instant since);
 }

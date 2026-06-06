@@ -15,6 +15,24 @@ export interface RecentNovel {
   updatedAt: string | number
 }
 
+export interface DashboardActivityDay {
+  date: string
+  writingWords: number
+  agentRuns: number
+}
+
+export interface DashboardActivity {
+  days: DashboardActivityDay[]
+  totalWritingWords: number
+  totalAgentRuns: number
+}
+
+const EMPTY_ACTIVITY: DashboardActivity = {
+  days: [],
+  totalWritingWords: 0,
+  totalAgentRuns: 0,
+}
+
 const EMPTY_SUMMARY: DashboardSummary = {
   novelCount: 0,
   chapterCount: 0,
@@ -72,5 +90,25 @@ export async function fetchRecentNovels(): Promise<RecentNovel[]> {
     return Array.isArray(data) ? data : []
   } catch {
     return []
+  }
+}
+
+export async function fetchActivity(days = 365): Promise<DashboardActivity> {
+  try {
+    const res = await secureFetch(`/api/content/auth/dashboard/activity?days=${days}`)
+    if (!res.ok) {
+      return EMPTY_ACTIVITY
+    }
+    const data = await parseResultResponse<Partial<DashboardActivity>>(res)
+    if (!data || !Array.isArray(data.days)) {
+      return EMPTY_ACTIVITY
+    }
+    return {
+      days: data.days,
+      totalWritingWords: data.totalWritingWords ?? 0,
+      totalAgentRuns: data.totalAgentRuns ?? 0,
+    }
+  } catch {
+    return EMPTY_ACTIVITY
   }
 }

@@ -7,15 +7,23 @@ import com.novel.agent.content.entity.NovelEntity;
 import com.novel.agent.content.repository.ChapterRepository;
 import com.novel.agent.content.repository.NovelRepository;
 import com.novel.agent.content.repository.agent.AgentRunRepository;
+import com.novel.agent.content.service.auth.resp.AuthDashboardActivityDayResp;
+import com.novel.agent.content.service.auth.resp.AuthDashboardActivityResp;
 import com.novel.agent.content.service.auth.resp.AuthDashboardSummaryResp;
 import com.novel.agent.content.service.auth.resp.AuthRecentNovelResp;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import com.novel.agent.common.core.tools.DateParseSupport;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
@@ -23,6 +31,8 @@ import java.util.List;
 public class AuthDashboardBiz extends BaseBiz {
 
     private static final int RECENT_NOVEL_LIMIT = 6;
+    private static final int DEFAULT_ACTIVITY_DAYS = 365;
+    private static final int MAX_ACTIVITY_DAYS = 365;
 
     private final NovelRepository novelRepository;
     private final ChapterRepository chapterRepository;
@@ -52,6 +62,55 @@ public class AuthDashboardBiz extends BaseBiz {
             .limit(RECENT_NOVEL_LIMIT)
             .map(this::toRecentNovel)
             .toList());
+    }
+
+    public Result<AuthDashboardActivityResp> activity(Long userId, int days) {
+        int activityDays = normalizeActivityDays(days);
+        LocalDate startDate = LocalDate.now(ZoneOffset.UTC).minusDays(activityDays - 1L);
+        Instant since = startDate.atStartOfDay(ZoneOffset.UTC).toInstant();
+
+        Map<LocalDate, Long> wordsByDate = toDailyLongMap(
+            chapterRepository.sumDailyWordsByUserIdSince(userId, since)
+        );
+        Map<LocalDate, Long> runsByDate = toDailyLongMap(
+            agentRunRepository.countDailyByUserIdSince(userId, since)
+        );
+
+        List<AuthDashboardActivityDayResp> series = new ArrayList<>(activityDays);
+        long totalWritingWords = 0L;
+        long totalAgentRuns = 0L;
+
+        for (int i = 0; i < activityDays; i++) {
+            LocalDate date = startDate.plusDays(i);
+            long writingWords = wordsByDate.getOrDefault(date, 0L);
+            long agentRuns = runsByDate.getOrDefault(date, 0L);
+            totalWritingWords += writingWords;
+            totalAgentRuns += agentRuns;
+            series.add(new AuthDashboardActivityDayResp(
+                date.toString(),
+                writingWords,
+                agentRuns
+            ));
+        }
+
+        return ok(new AuthDashboardActivityResp(series, totalWritingWords, totalAgentRuns));
+    }
+
+    private int normalizeActivityDays(int days) {
+        if (days <= 0) {
+            return DEFAULT_ACTIVITY_DAYS;
+        }
+        return Math.min(days, MAX_ACTIVITY_DAYS);
+    }
+
+    private Map<LocalDate, Long> toDailyLongMap(List<Object[]> rows) {
+        Map<LocalDate, Long> countsByDate = new HashMap<>();
+        for (Object[] row : rows) {
+            LocalDate date = DateParseSupport.toLocalDateUtc(row[0]);
+            long count = ((Number) row[1]).longValue();
+            countsByDate.put(date, count);
+        }
+        return countsByDate;
     }
 
     private AuthRecentNovelResp toRecentNovel(NovelEntity novel) {
