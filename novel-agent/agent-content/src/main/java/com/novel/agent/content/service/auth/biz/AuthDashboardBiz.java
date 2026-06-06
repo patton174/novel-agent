@@ -121,6 +121,7 @@ public class AuthDashboardBiz extends BaseBiz {
             novel.getId(),
             novel.getTitle(),
             lastChapterId,
+            novel.getCoverUrl(),
             novel.getUpdatedAt().toEpochMilli()
         );
     }

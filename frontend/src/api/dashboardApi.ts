@@ -12,6 +12,7 @@ export interface RecentNovel {
   novelId: string
   title: string
   lastChapterId?: string | null
+  coverUrl?: string | null
   updatedAt: string | number
 }
 
@@ -81,17 +82,46 @@ export async function fetchNovels(): Promise<DashboardNovel[]> {
   }
 }
 
-export async function generateNovelCover(novelId: string): Promise<DashboardNovel | null> {
+export async function suggestNovelCoverPrompt(
+  novelId: string,
+  draft?: string,
+): Promise<string | null> {
   try {
-    const res = await secureFetch(`/api/content/auth/novels/${novelId}/cover/generate`, {
+    const res = await secureFetch(`/api/content/auth/novels/${novelId}/cover/prompt`, {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ draft: draft ?? '' }),
     })
     if (!res.ok) {
       return null
     }
-    return parseResultResponse<DashboardNovel>(res)
+    const data = await parseResultResponse<{ prompt?: string }>(res)
+    return data?.prompt?.trim() || null
   } catch {
     return null
+  }
+}
+
+export async function generateNovelCover(
+  novelId: string,
+  prompt?: string,
+): Promise<DashboardNovel | null> {
+  try {
+    const res = await secureFetch(`/api/content/auth/novels/${novelId}/cover/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt: prompt ?? '' }),
+    })
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => null) as { msg?: string } | null
+      throw new Error(errBody?.msg || '封面生成失败')
+    }
+    return parseResultResponse<DashboardNovel>(res)
+  } catch (err) {
+    if (err instanceof Error) {
+      throw err
+    }
+    throw new Error('封面生成失败')
   }
 }
 

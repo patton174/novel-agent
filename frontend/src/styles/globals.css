@@ -9,7 +9,7 @@
   --color-background: #f0f0f0;
   --color-foreground: #1a1a1a;
   --color-primary: #4f46e5;
-  --color-primary-foreground: #1a1a1a;
+  --color-primary-foreground: #ffffff;
   --color-muted: #e8e8e8;
   --color-muted-foreground: #888888;
   --color-border: rgba(0, 0, 0, 0.08);
@@ -67,7 +67,7 @@
   --popover: #f0f0f0;
   --popover-foreground: #1a1a1a;
   --primary: #4f46e5;
-  --primary-foreground: #1a1a1a;
+  --primary-foreground: #ffffff;
   --secondary: #e8e8e8;
   --secondary-foreground: #1a1a1a;
   --muted: #e8e8e8;
@@ -102,7 +102,7 @@
   --popover: oklch(0.205 0 0);
   --popover-foreground: oklch(0.985 0 0);
   --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.269 0 0);

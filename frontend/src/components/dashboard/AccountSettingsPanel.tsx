@@ -100,12 +100,21 @@ export function AccountSettingsPanel({ profile, onVerified }: AccountSettingsPan
         <InfoRow label="邮箱" value={profile.email || '—'} />
         <div className="flex items-center justify-between rounded-lg border border-border px-4 py-3">
           <span className="text-sm text-muted-foreground">角色</span>
-          <Badge variant="secondary">{ROLE_LABELS[profile.role] ?? profile.role}</Badge>
+          <Badge variant="secondary" className="bg-muted text-foreground ring-1 ring-border/60">
+            {ROLE_LABELS[profile.role] ?? profile.role}
+          </Badge>
         </div>
         {profile.email ? (
           <div className="flex items-center justify-between rounded-lg border border-border px-4 py-3">
             <span className="text-sm text-muted-foreground">邮箱验证</span>
-            <Badge variant={profile.emailVerified === true ? 'default' : 'outline'}>
+            <Badge
+              variant={profile.emailVerified === true ? 'default' : 'outline'}
+              className={
+                profile.emailVerified === true
+                  ? 'border-emerald-600/30 bg-emerald-600 text-white hover:bg-emerald-600'
+                  : 'border-amber-500/50 bg-amber-50 text-amber-900 dark:bg-amber-950/50 dark:text-amber-100'
+              }
+            >
               {profile.emailVerified === true ? '已验证' : '未验证'}
             </Badge>
           </div>

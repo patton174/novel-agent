@@ -199,9 +199,18 @@ export default function DashboardHomePage() {
                     key={novel.novelId}
                     className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-surface-hover"
                   >
-                    <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                      <BookOpen className="size-4" />
-                    </div>
+                    {novel.coverUrl ? (
+                      <img
+                        src={novel.coverUrl}
+                        alt=""
+                        className="size-10 shrink-0 rounded-md object-cover ring-1 ring-border"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary ring-1 ring-border">
+                        <BookOpen className="size-4" />
+                      </div>
+                    )}
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-semibold text-foreground">
                         {novel.title}
@@ -210,7 +219,11 @@ export default function DashboardHomePage() {
                         最近编辑 {formatUpdatedAt(novel.updatedAt)}
                       </p>
                     </div>
-                    <Button asChild size="sm" variant="outline" className="shrink-0 rounded-lg">
+                    <Button
+                      asChild
+                      size="sm"
+                      className="shrink-0 rounded-lg bg-foreground px-3 text-background hover:bg-foreground/90"
+                    >
                       <Link
                         to={
                           novel.lastChapterId ? `/editor/${novel.lastChapterId}` : '/editor'

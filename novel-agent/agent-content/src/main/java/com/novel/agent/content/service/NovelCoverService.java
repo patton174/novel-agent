@@ -5,7 +5,9 @@ import com.novel.agent.common.core.exception.BizException;
 import com.novel.agent.common.image.PythonImageClient;
 import com.novel.agent.common.image.GeneratedImage;
 import com.novel.agent.common.image.config.ImageClientProperties;
+import com.novel.agent.content.dto.CoverPromptResponse;
 import com.novel.agent.content.dto.NovelDTO;
+import com.novel.agent.content.entity.NovelEntity;
 import com.novel.agent.content.entity.NovelEntity;
 import com.novel.agent.content.repository.NovelRepository;
 import com.novel.agent.content.support.ContentExceptions;
@@ -22,16 +24,24 @@ public class NovelCoverService {
     private final NovelRepository novelRepository;
     private final PythonImageClient pythonImageClient;
     private final ImageClientProperties imageClientProperties;
+    private final CoverPromptClient coverPromptClient;
+
+    public CoverPromptResponse suggestCoverPrompt(Long userId, String novelId, String draft) {
+        NovelEntity entity = novelRepository.findByIdAndUserId(novelId, userId)
+            .orElseThrow(ContentExceptions::novelNotFound);
+        String prompt = coverPromptClient.suggestPrompt(entity, draft);
+        return new CoverPromptResponse(prompt);
+    }
 
     @Transactional
-    public NovelDTO generateCover(Long userId, String novelId) {
+    public NovelDTO generateCover(Long userId, String novelId, String customPrompt) {
         if (!pythonImageClient.enabled()) {
             throw BizException.of(ResultCode.IMAGE_GENERATION_FAILED, "图像生成服务未配置");
         }
         NovelEntity entity = novelRepository.findByIdAndUserId(novelId, userId)
             .orElseThrow(ContentExceptions::novelNotFound);
 
-        String prompt = buildCoverPrompt(entity);
+        String prompt = resolveCoverPrompt(entity, customPrompt);
         GeneratedImage image = pythonImageClient.textToImage(
             prompt,
             imageClientProperties.getCoverSize(),
@@ -44,6 +54,20 @@ public class NovelCoverService {
         entity.setCoverUrl(image.url());
         NovelEntity saved = novelRepository.save(entity);
         return toDto(saved);
+    }
+
+    private String resolveCoverPrompt(NovelEntity entity, String customPrompt) {
+        if (customPrompt != null && !customPrompt.isBlank()) {
+            return customPrompt.trim();
+        }
+        return buildDefaultCoverPrompt(entity, null);
+    }
+
+    static String buildDefaultCoverPrompt(NovelEntity entity, String draft) {
+        if (draft != null && !draft.isBlank()) {
+            return draft.trim();
+        }
+        return buildCoverPrompt(entity);
     }
 
     private String buildCoverPrompt(NovelEntity entity) {

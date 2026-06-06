@@ -4,7 +4,7 @@ import com.novel.agent.common.core.base.Result;
 import com.novel.agent.common.core.biz.BaseBiz;
 import com.novel.agent.content.dto.ChapterDTO;
 import com.novel.agent.content.dto.ChapterSummaryDTO;
-import com.novel.agent.content.dto.CreateChapterRequest;
+import com.novel.agent.content.dto.CoverPromptResponse;
 import com.novel.agent.content.dto.CreateNovelRequest;
 import com.novel.agent.content.dto.NovelDTO;
 import com.novel.agent.content.dto.ReindexStatusDTO;
@@ -45,8 +45,12 @@ public class AuthNovelBiz extends BaseBiz {
         return ok(novelService.updateNovel(userId, novelId, request));
     }
 
-    public Result<NovelDTO> generateCover(Long userId, String novelId) {
-        return ok(novelCoverService.generateCover(userId, novelId));
+    public Result<NovelDTO> generateCover(Long userId, String novelId, String prompt) {
+        return ok(novelCoverService.generateCover(userId, novelId, prompt));
+    }
+
+    public Result<CoverPromptResponse> suggestCoverPrompt(Long userId, String novelId, String draft) {
+        return ok(novelCoverService.suggestCoverPrompt(userId, novelId, draft));
     }
 
     public Result<Map<String, Object>> delete(Long userId, String novelId) {

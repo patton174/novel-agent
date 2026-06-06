@@ -4,7 +4,9 @@ import com.novel.agent.common.core.base.Result;
 import com.novel.agent.common.service.BaseController;
 import com.novel.agent.content.dto.ChapterDTO;
 import com.novel.agent.content.dto.ChapterSummaryDTO;
-import com.novel.agent.content.dto.CreateChapterRequest;
+import com.novel.agent.content.dto.CoverPromptRequest;
+import com.novel.agent.content.dto.CoverPromptResponse;
+import com.novel.agent.content.dto.GenerateCoverRequest;
 import com.novel.agent.content.dto.CreateNovelRequest;
 import com.novel.agent.content.dto.NovelDTO;
 import com.novel.agent.content.dto.ReindexStatusDTO;
@@ -62,12 +64,24 @@ public class AuthNovelController extends BaseController {
         return biz.update(parseUserId(userId), novelId, request);
     }
 
+    @PostMapping("/{novelId}/cover/prompt")
+    public Result<CoverPromptResponse> suggestCoverPrompt(
+        @RequestHeader("X-User-Id") String userId,
+        @PathVariable String novelId,
+        @RequestBody(required = false) CoverPromptRequest request
+    ) {
+        String draft = request == null ? null : request.draft();
+        return biz.suggestCoverPrompt(parseUserId(userId), novelId, draft);
+    }
+
     @PostMapping("/{novelId}/cover/generate")
     public Result<NovelDTO> generateCover(
         @RequestHeader("X-User-Id") String userId,
-        @PathVariable String novelId
+        @PathVariable String novelId,
+        @RequestBody(required = false) GenerateCoverRequest request
     ) {
-        return biz.generateCover(parseUserId(userId), novelId);
+        String prompt = request == null ? null : request.prompt();
+        return biz.generateCover(parseUserId(userId), novelId, prompt);
     }
 
     @DeleteMapping("/{novelId}")

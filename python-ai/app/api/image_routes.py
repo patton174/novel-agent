@@ -6,6 +6,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 from app.services.agnes_image import AgnesImageError, is_configured, image_to_image, text_to_image
+from app.services.cover_prompt import CoverPromptRequest, CoverPromptResponse, suggest_cover_prompt
 
 router = APIRouter(prefix="/images", tags=["Images"])
 
@@ -49,6 +50,11 @@ async def generate_text_to_image(body: TextToImageRequest):
     except AgnesImageError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     return GeneratedImageResponse(url=result.get("url"), b64_json=result.get("b64_json"))
+
+
+@router.post("/cover-prompt", response_model=CoverPromptResponse)
+async def generate_cover_prompt(body: CoverPromptRequest):
+    return await suggest_cover_prompt(body)
 
 
 @router.post("/image-to-image", response_model=GeneratedImageResponse)

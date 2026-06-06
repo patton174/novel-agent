@@ -12,27 +12,47 @@ const MODE_OPTIONS: { id: ActivityMode; label: string; metricLabel: string }[] =
   { id: 'agent', label: 'Agent', metricLabel: 'Agent 运行' },
 ]
 
-const LEVEL_CLASSES = [
-  'bg-muted',
-  'bg-emerald-200 dark:bg-emerald-900/50',
-  'bg-emerald-400 dark:bg-emerald-700',
-  'bg-emerald-600 dark:bg-emerald-600',
-  'bg-emerald-800 dark:bg-emerald-500',
-]
-
-/** 与网格 gap、标签列宽、格子尺寸保持一致（GitHub 风格紧凑布局） */
-const WEEKDAY_COL_WIDTH = '1.125rem'
-const CELL_SIZE_PX = 11
-const ACTIVE_WEEK_PAD = 1
+/** 与网格 gap、标签列宽、格子尺寸保持一致 */
+const WEEKDAY_COL_WIDTH = '1.25rem'
+const CELL_SIZE_PX = 14
+const GRID_GAP_PX = 4
+const ACTIVE_WEEK_PAD = 2
+const MIN_VISIBLE_WEEKS = 26
 
 const WEEKDAY_LABELS = [
+  { row: 0, label: '日' },
   { row: 1, label: '一' },
   { row: 3, label: '三' },
   { row: 5, label: '五' },
 ]
 
+const LEVEL_CLASSES = [
+  'bg-muted/50 ring-1 ring-border/40',
+  'bg-indigo-200/90 ring-1 ring-indigo-300/50 dark:bg-indigo-900/45',
+  'bg-indigo-400/90 ring-1 ring-indigo-400/40 dark:bg-indigo-700/70',
+  'bg-indigo-600/95 ring-1 ring-indigo-500/30 dark:bg-indigo-600/85',
+  'bg-indigo-800 ring-1 ring-indigo-700/40 dark:bg-indigo-500/90',
+]
+
 function heatmapGridColumns(weekCount: number): string {
   return `${WEEKDAY_COL_WIDTH} repeat(${weekCount}, ${CELL_SIZE_PX}px)`
+}
+
+function padWeeksToMinimum(
+  weeks: HeatCell[][],
+  monthLabels: { weekIndex: number; label: string }[],
+  minWeeks: number,
+) {
+  if (weeks.length >= minWeeks) {
+    return { weeks, monthLabels }
+  }
+  const pad = minWeeks - weeks.length
+  const emptyWeek: HeatCell[] = Array.from({ length: 7 }, () => ({ date: null, value: 0 }))
+  const paddedWeeks = [...Array.from({ length: pad }, () => emptyWeek.map((c) => ({ ...c }))), ...weeks]
+  return {
+    weeks: paddedWeeks,
+    monthLabels: monthLabels.map((m) => ({ ...m, weekIndex: m.weekIndex + pad })),
+  }
 }
 
 function trimWeeksToActiveRange(
@@ -275,8 +295,10 @@ export function ActivityHeatmap({ activity, loading }: ActivityHeatmapProps) {
 
   const { weeks, maxValue, monthLabels } = useMemo(() => {
     const built = buildHeatmapGrid(days, mode)
+    const trimmed = trimWeeksToActiveRange(built.weeks, built.monthLabels)
+    const padded = padWeeksToMinimum(trimmed.weeks, trimmed.monthLabels, MIN_VISIBLE_WEEKS)
     return {
-      ...trimWeeksToActiveRange(built.weeks, built.monthLabels),
+      ...padded,
       maxValue: built.maxValue,
     }
   }, [days, mode])
@@ -316,8 +338,8 @@ export function ActivityHeatmap({ activity, loading }: ActivityHeatmapProps) {
                 className={cn(
                   'rounded-md px-2.5 py-1 text-xs font-medium transition-colors',
                   mode === option.id
-                    ? 'bg-surface text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground',
+                    ? 'bg-background text-foreground shadow-sm ring-1 ring-border/60'
+                    : 'text-muted-foreground hover:bg-background/60 hover:text-foreground',
                 )}
               >
                 {option.label}
@@ -334,31 +356,35 @@ export function ActivityHeatmap({ activity, loading }: ActivityHeatmapProps) {
           <p className="py-8 text-center text-sm text-muted-foreground">暂无活跃数据</p>
         ) : (
           <div className="w-full overflow-x-auto pb-1">
-            <div className="mx-auto w-fit max-w-full">
-              {/* 月份标签 — 与下方周列同 grid 模板 */}
+            <div className="min-w-fit">
               <div
-                className="mb-1.5 grid gap-[3px]"
-                style={{ gridTemplateColumns: gridColumns }}
+                className="mb-2 grid"
+                style={{
+                  gridTemplateColumns: gridColumns,
+                  gap: GRID_GAP_PX,
+                }}
               >
                 <div aria-hidden />
                 {weeks.map((_, weekIndex) => (
                   <div
                     key={weekIndex}
-                    className="truncate text-[10px] leading-none text-muted-foreground"
+                    className="truncate text-[10px] font-medium leading-none text-muted-foreground"
                   >
-                    {monthLabelByWeek.get(weekIndex) ?? ''}
+                    {monthLabelByWeek.get(weekIndex) ? `${monthLabelByWeek.get(weekIndex)}月` : ''}
                   </div>
                 ))}
               </div>
 
-              {/* 紧凑居中：仅展示有活动区间（±1 周），格子固定 11px */}
               <div
-                className="grid gap-[3px]"
-                style={{ gridTemplateColumns: gridColumns }}
+                className="grid"
+                style={{
+                  gridTemplateColumns: gridColumns,
+                  gap: GRID_GAP_PX,
+                }}
               >
                 {Array.from({ length: 7 }).map((_, rowIndex) => (
                   <Fragment key={rowIndex}>
-                    <div className="flex items-center text-[10px] leading-none text-muted-foreground">
+                    <div className="flex items-center text-[10px] font-medium leading-none text-muted-foreground">
                       {WEEKDAY_LABELS.find((l) => l.row === rowIndex)?.label ?? ''}
                     </div>
                     {weeks.map((week, weekIndex) => {
@@ -373,7 +399,7 @@ export function ActivityHeatmap({ activity, loading }: ActivityHeatmapProps) {
                               : undefined
                           }
                           className={cn(
-                            'size-[11px] shrink-0 rounded-[2px]',
+                            'size-[14px] shrink-0 rounded-[3px] transition-colors',
                             cellClass(cell, level),
                           )}
                         />

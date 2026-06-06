@@ -75,6 +75,10 @@ routes:
     path: /api/content/auth/novels/{novelId}/search
   - method: GET
     path: /api/content/auth/novels/{novelId}/agent-context
+  - method: POST
+    path: /api/content/auth/novels/{novelId}/cover/generate
+  - method: POST
+    path: /api/content/auth/novels/{novelId}/cover/prompt
   - method: DELETE
     path: /api/content/auth/volumes/{volumeId}
   - method: PUT
