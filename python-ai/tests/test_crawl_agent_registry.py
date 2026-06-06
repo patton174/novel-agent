@@ -8,7 +8,7 @@ def test_crawl_tools_registered():
     names = {t.name for t in get_all_tools()}
     expected = {
         "FetchPage",
-        "DiscoverChapters",
+        "QueueChapters",
         "InitNovel",
         "FetchAndSaveChapter",
         "SaveQueuedChapters",

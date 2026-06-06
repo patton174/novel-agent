@@ -14,10 +14,33 @@ class FetchPageInput(BaseModel):
 
 
 class DiscoverChaptersInput(BaseModel):
-    url: str = Field(..., min_length=8, description="书籍页/目录页/章节列表页 URL")
-    max_chapters: int | None = Field(
-        default=None,
-        description="最多识别章数；省略则用任务上限",
+    """Deprecated — use QueueChapters. Kept for schema compatibility."""
+    url: str = Field(..., min_length=8)
+    max_chapters: int | None = None
+
+
+class ChapterQueueItem(BaseModel):
+    title: str = Field(default="", description="章节标题（可选）")
+    url: str = Field(..., min_length=8, description="章节页绝对 URL")
+    sort_order: int = Field(..., ge=1, description="阅读顺序，从 1 开始")
+
+
+class QueueChaptersInput(BaseModel):
+    novel_title: str = Field(..., min_length=1, description="书名（从已读页面归纳）")
+    author: str = Field(default="", description="作者")
+    description: str = Field(default="", description="简介")
+    source_url: str = Field(
+        default="",
+        description="书籍来源页 URL；省略则用入口或最近 FetchPage",
+    )
+    chapters: list[ChapterQueueItem] = Field(
+        ...,
+        min_length=1,
+        description="你在 RUN_CONTEXT 中读到的章节列表（title/url/sort_order）",
+    )
+    append: bool = Field(
+        default=False,
+        description="True 则追加到现有队列；False 则替换",
     )
 
 

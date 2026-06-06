@@ -37,7 +37,7 @@ def build_crawl_run_context(ctx: CrawlAgentContext) -> str:
         [
             "## 决策要求",
             "- 下一 URL 必须来自上方页内链接（锚文本 → URL），禁止凭空拼路径",
-            "- FetchPage 后再 DiscoverChapters；章节队列就绪后 InitNovel → SaveQueuedChapters",
+            "- 你负责读正文决策；FetchPage 收集材料 → QueueChapters 登记章节 → InitNovel → SaveQueuedChapters",
             "- 同一工具连续失败两次：换策略或 FailJob，不要重复相同参数",
             "- 完成：CompleteJob；无法完成：FailJob",
         ]

@@ -56,17 +56,16 @@ def test_repair_orphan_tool_message():
 
 def test_discover_chapters_not_silently_retried():
     err = CrawlToolResult(content='{"ok":false}', is_error=True)
-    assert is_retryable_crawl_tool_error("DiscoverChapters", err) is False
+    assert is_retryable_crawl_tool_error("QueueChapters", err) is False
     assert is_retryable_crawl_tool_error("FetchPage", err) is True
 
 
 def test_repeat_failure_hint_after_two_errors():
     ctx = _ctx()
-    args = {"url": "https://x/book/1/"}
+    args = {"novel_title": "x", "chapters": [{"url": "https://x/1", "sort_order": 1}]}
     err = CrawlToolResult(content='{"ok":false}', is_error=True)
-    record_tool_outcome(ctx, "DiscoverChapters", args, err)
-    assert repeat_failure_hint(ctx, "DiscoverChapters", args) is None
-    record_tool_outcome(ctx, "DiscoverChapters", args, err)
-    hint = repeat_failure_hint(ctx, "DiscoverChapters", args)
+    record_tool_outcome(ctx, "QueueChapters", args, err)
+    assert repeat_failure_hint(ctx, "QueueChapters", args) is None
+    record_tool_outcome(ctx, "QueueChapters", args, err)
+    hint = repeat_failure_hint(ctx, "QueueChapters", args)
     assert hint is not None
-    assert "FailJob" in hint

@@ -10,6 +10,11 @@ from urllib.parse import urljoin
 
 logger = logging.getLogger(__name__)
 
+_ANCHOR_RE = re.compile(
+    r'<a[^>]+href=["\']([^"\']+)["\'][^>]*>(.*?)</a>',
+    flags=re.IGNORECASE | re.DOTALL,
+)
+
 
 @dataclass
 class PageFetchMeta:
@@ -97,10 +102,36 @@ def page_text(page: Any, max_chars: int = 18000) -> str:
     return str(page)[:max_chars]
 
 
+def _anchor_text(raw: str) -> str:
+    text = re.sub(r"(?is)<(script|style)[^>]*>.*?</\1>", " ", raw or "")
+    text = re.sub(r"<[^>]+>", " ", text)
+    return " ".join(text.split())
+
+
+def _links_from_html(html: str, base_url: str, *, limit: int, seen: set[str]) -> list[dict[str, str]]:
+    items: list[dict[str, str]] = []
+    if not html or "<a" not in html.lower():
+        return items
+    for href, inner in _ANCHOR_RE.findall(html):
+        href = href.strip()
+        if not href or href.startswith("#") or href.lower().startswith("javascript:"):
+            continue
+        full = urljoin(base_url, href)
+        if full in seen:
+            continue
+        title = _anchor_text(inner)[:160] or full.rsplit("/", 1)[-1]
+        seen.add(full)
+        items.append({"title": title, "url": full})
+        if len(items) >= limit:
+            break
+    return items
+
+
 def page_links(page: Any, base_url: str, limit: int = 600) -> list[dict[str, str]]:
     items: list[dict[str, str]] = []
     seen: set[str] = set()
-    for anchor in page.css("a"):
+    anchors = page.css("a") if hasattr(page, "css") else []
+    for anchor in anchors:
         href = anchor.attrib.get("href") if hasattr(anchor, "attrib") else None
         if not href or href.startswith("#") or href.lower().startswith("javascript:"):
             continue
@@ -117,7 +148,17 @@ def page_links(page: Any, base_url: str, limit: int = 600) -> list[dict[str, str
         seen.add(full)
         items.append({"title": text or full.rsplit("/", 1)[-1], "url": full})
         if len(items) >= limit:
-            break
+            return items
+
+    if not items:
+        html = _raw_html(page)
+        items = _links_from_html(html, base_url, limit=limit, seen=seen)
+        if items:
+            logger.debug(
+                "page_links html fallback base=%s css=0 html=%s",
+                base_url,
+                len(items),
+            )
     return items
 
 
@@ -128,7 +169,7 @@ def _build_meta(page: Any, url: str, *, used_stealth: bool, proxy: str | None = 
     content_chars = len(text.strip())
     link_count = len(links)
 
-    blocked = status >= 400 or (content_chars < 80 and link_count < 2)
+    blocked = status >= 400 or content_chars < 80
     hint = ""
     if status == 403:
         if proxy:

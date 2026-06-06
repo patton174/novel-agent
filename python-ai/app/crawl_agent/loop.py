@@ -57,7 +57,7 @@ async def run_crawl_tool_loop(
     if preview_mode:
         messages.append(
             HumanMessage(
-                content="【预览模式】只需导航到目标书并 DiscoverChapters，不要 InitNovel/入库/CompleteJob。"
+                content="【预览模式】FetchPage 导航并 QueueChapters 即可，不要 InitNovel/入库/CompleteJob。"
             )
         )
 
@@ -118,7 +118,7 @@ async def run_crawl_tool_loop(
             hint = repeat_failure_hint(ctx, call.name, call.args)
             if hint and result.is_error:
                 messages.append(HumanMessage(content=hint))
-            if preview_mode and ctx.chapters_queue and call.name == "DiscoverChapters":
+            if preview_mode and ctx.chapters_queue and call.name == "QueueChapters":
                 sample = [
                     {"title": c.title, "url": c.url}
                     for c in ctx.chapters_queue[:5]

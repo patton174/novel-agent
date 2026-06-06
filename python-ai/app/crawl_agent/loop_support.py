@@ -30,14 +30,13 @@ _PAIRING_RETRY_HINT = (
 )
 
 _NON_RETRYABLE_TOOLS = frozenset(
-    {"DiscoverChapters", "InitNovel", "GetJobStatus", "CompleteJob", "FailJob"}
+    {"QueueChapters", "InitNovel", "GetJobStatus", "CompleteJob", "FailJob"}
 )
 
 _REPEAT_FAILURE_HINTS: dict[str, str] = {
-    "DiscoverChapters": (
-        "DiscoverChapters 已多次失败：不要重复同一 URL。"
-        "请 FetchPage 打开 RUN_CONTEXT 页内链接中的「目录/开始阅读/全部章节」，"
-        "在新页上再 DiscoverChapters；仍无法识别则 FailJob。"
+    "QueueChapters": (
+        "请先 FetchPage 阅读目录页正文，由你归纳章节 URL 后再 QueueChapters；"
+        "禁止提交未在正文中出现的猜测 URL。"
     ),
     "FetchPage": (
         "FetchPage 已多次失败：禁止拼接 /read/、/1.html 等猜测路径。"
@@ -61,6 +60,8 @@ def is_retryable_crawl_tool_error(tool_name: str, result: CrawlToolResult) -> bo
     if result.end_run or not result.is_error:
         return False
     if tool_name in _NON_RETRYABLE_TOOLS:
+        return False
+    if tool_name == "FetchPage" and ("404" in result.content or "403" in result.content):
         return False
     return tool_name in {"FetchPage", "FetchAndSaveChapter", "SaveQueuedChapters"}
 

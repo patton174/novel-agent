@@ -10,17 +10,17 @@ from app.crawl_agent.context import ChapterItem, CrawlAgentContext
 from app.crawl_agent.tools.registry import register_tool
 from app.crawl_agent.tools.schemas import (
     CompleteJobInput,
-    DiscoverChaptersInput,
     FailJobInput,
     FetchAndSaveChapterInput,
     FetchPageInput,
     GetJobStatusInput,
     InitNovelInput,
+    QueueChaptersInput,
     SaveQueuedChaptersInput,
 )
 from app.crawl_agent.tools.tool import CrawlTool, CrawlToolResult
-from app.services.crawl_ai_extractor import discover_catalog, extract_chapter
-from app.services.crawl_fetch import fetch_for_crawl, fetch_page_only, resolve_crawl_url
+from app.services.crawl_ai_extractor import extract_chapter
+from app.services.crawl_fetch import fetch_for_crawl, resolve_crawl_url
 from app.services.crawl_proxy import mask_proxy_url, pick_crawl_proxy
 from app.services.crawl_scrapling import page_links, page_text
 
@@ -71,8 +71,8 @@ async def _fetch_page_tool(ctx: CrawlAgentContext, inp: FetchPageInput) -> Crawl
         use_cache=False,
     )
     ctx.last_fetched_url = target
-    links = page_links(page, target, limit=120)
-    body = page_text(page, 12_000)
+    links = page_links(page, target, limit=200)
+    body = page_text(page, 16_000)
 
     if meta.blocked:
         msg = meta.hint or f"HTTP {meta.http_status}，无法获取有效页面内容"
@@ -109,7 +109,10 @@ async def _fetch_page_tool(ctx: CrawlAgentContext, inp: FetchPageInput) -> Crawl
             content=body,
             links=links,
             link_count=len(links),
-            note="正文已追加至 RUN_CONTEXT，请阅读 content 与 links 后再决定下一工具",
+            note=(
+                "正文已追加至 RUN_CONTEXT。请阅读 content 决定下一 URL；"
+                "links 仅为辅助索引，可能不完整，不可依赖工具替你解析全站目录。"
+            ),
         ),
         context_patch={
             "append_page": {
@@ -121,105 +124,75 @@ async def _fetch_page_tool(ctx: CrawlAgentContext, inp: FetchPageInput) -> Crawl
     )
 
 
-async def _discover_chapters_tool(ctx: CrawlAgentContext, inp: DiscoverChaptersInput) -> CrawlToolResult:
-    limit = inp.max_chapters or ctx.max_chapters
-    target = resolve_crawl_url(ctx, inp.url.strip())
-    await _append_log(ctx, "INFO", f"DiscoverChapters: {target}")
+async def _queue_chapters_tool(ctx: CrawlAgentContext, inp: QueueChaptersInput) -> CrawlToolResult:
+    limit = ctx.max_chapters
+    incoming = inp.chapters[:limit]
+    if not incoming:
+        return CrawlToolResult(content=_json_err("chapters 不能为空"), is_error=True)
 
-    if ctx.chapters_queue and ctx.source_url and resolve_crawl_url(ctx, ctx.source_url) == target:
-        preview = [
-            {"sort_order": c.sort_order, "title": c.title, "url": c.url}
-            for c in ctx.chapters_queue[:15]
-        ]
-        await _append_log(ctx, "INFO", f"章节队列已存在，跳过重复解析（共 {len(ctx.chapters_queue)} 章）")
-        return CrawlToolResult(
-            content=_json_ok(
-                novel_title=ctx.novel_title,
-                author=ctx.novel_author,
-                chapter_count=len(ctx.chapters_queue),
-                chapters_preview=preview,
-                next_step="调用 InitNovel，再 SaveQueuedChapters",
-                reused=True,
-            ),
+    normalized: list[ChapterItem] = []
+    seen_urls: set[str] = set()
+    for item in incoming:
+        url = resolve_crawl_url(ctx, item.url.strip())
+        if url in seen_urls:
+            continue
+        seen_urls.add(url)
+        normalized.append(
+            ChapterItem(
+                title=(item.title or f"第{item.sort_order}章").strip()[:200],
+                url=url,
+                sort_order=item.sort_order,
+            )
         )
+    normalized.sort(key=lambda c: c.sort_order)
+    if not normalized:
+        return CrawlToolResult(content=_json_err("无有效章节 URL"), is_error=True)
 
-    def fetch_fn(url: str):
-        return fetch_page_only(ctx, url)
+    if inp.append and ctx.chapters_queue:
+        merged = {c.url: c for c in ctx.chapters_queue}
+        for ch in normalized:
+            merged[ch.url] = ch
+        ctx.chapters_queue = sorted(merged.values(), key=lambda c: c.sort_order)
+    else:
+        ctx.chapters_queue = normalized
 
-    page, meta = await asyncio.to_thread(fetch_for_crawl, ctx, target, use_cache=True)
-    if meta.blocked:
-        msg = meta.hint or f"HTTP {meta.http_status}，无法解析目录"
-        await _append_log(ctx, "ERROR", f"DiscoverChapters 抓取失败 · {msg}")
-        return CrawlToolResult(
-            content=_json_err(msg, url=target, http_status=meta.http_status),
-            is_error=True,
-            context_patch={"append_note": f"DiscoverChapters 失败: {msg}"},
-        )
+    ctx.novel_title = inp.novel_title.strip()
+    ctx.novel_author = inp.author.strip()
+    ctx.novel_description = inp.description.strip()
+    source = inp.source_url.strip() or ctx.source_url or ctx.entry_url
+    ctx.source_url = resolve_crawl_url(ctx, source) if source else ctx.entry_url
 
-    async def on_hop(msg: str) -> None:
-        await _append_log(ctx, "INFO", msg)
-
-    try:
-        catalog = await discover_catalog(
-            page,
-            target,
-            max_chapters=limit,
-            fetch_page=fetch_fn,
-            on_hop=on_hop,
-        )
-    except ValueError as exc:
-        await _append_log(ctx, "ERROR", f"DiscoverChapters 未识别章节 · {exc}")
-        return CrawlToolResult(
-            content=_json_err(str(exc)),
-            is_error=True,
-            context_patch={"append_note": f"DiscoverChapters 失败: {exc}"},
-        )
-
-    chapters = catalog.chapters[:limit]
-    if not chapters:
-        msg = "未解析到任何章节链接，请 FetchPage 打开「目录/开始阅读」后再试"
-        await _append_log(ctx, "ERROR", f"DiscoverChapters · {msg}")
-        return CrawlToolResult(
-            content=_json_err(msg, url=target),
-            is_error=True,
-            context_patch={"append_note": msg},
-        )
-
-    ctx.novel_title = catalog.novel_title
-    ctx.novel_author = catalog.author
-    ctx.novel_description = catalog.description
-    ctx.source_url = target
-    ctx.chapters_queue = [
-        ChapterItem(title=c.title, url=c.url, sort_order=i)
-        for i, c in enumerate(chapters, start=1)
-    ]
     if ctx.job_id != "preview":
         await ctx.client.update_progress(
             ctx.job_id,
-            title=catalog.novel_title,
-            chapters_total=len(chapters),
+            title=ctx.novel_title,
+            chapters_total=len(ctx.chapters_queue),
             chapters_done=ctx.chapters_saved,
         )
-    preview = [{"sort_order": c.sort_order, "title": c.title, "url": c.url} for c in ctx.chapters_queue[:15]]
+
+    preview = [
+        {"sort_order": c.sort_order, "title": c.title, "url": c.url}
+        for c in ctx.chapters_queue[:15]
+    ]
     await _append_log(
         ctx,
         "SUCCESS",
-        f"识别《{catalog.novel_title}》共 {len(chapters)} 章",
+        f"QueueChapters: 《{ctx.novel_title}》队列 {len(ctx.chapters_queue)} 章（本次登记 {len(normalized)}）",
     )
     return CrawlToolResult(
         content=_json_ok(
-            novel_title=catalog.novel_title,
-            author=catalog.author,
-            chapter_count=len(chapters),
+            novel_title=ctx.novel_title,
+            author=ctx.novel_author,
+            chapter_count=len(ctx.chapters_queue),
             chapters_preview=preview,
-            next_step="调用 InitNovel，再 SaveQueuedChapters",
+            next_step="InitNovel → SaveQueuedChapters",
         ),
         context_patch={
             "append_catalog": {
-                "url": target,
-                "title": catalog.novel_title,
-                "author": catalog.author,
-                "chapter_count": len(chapters),
+                "url": ctx.source_url,
+                "title": ctx.novel_title,
+                "author": ctx.novel_author,
+                "chapter_count": len(ctx.chapters_queue),
                 "chapters_preview": preview,
             }
         },
@@ -296,7 +269,7 @@ async def _save_queued_chapters_tool(
 ) -> CrawlToolResult:
     """批量保存队列中尚未入库的章节，减少 LLM 轮次。"""
     if not ctx.chapters_queue:
-        return CrawlToolResult(content=_json_err("章节队列为空，请先 DiscoverChapters"), is_error=True)
+        return CrawlToolResult(content=_json_err("章节队列为空，请先 QueueChapters"), is_error=True)
 
     if await _job_cancelled(ctx):
         return CrawlToolResult(content=_json_err("任务已暂停或取消"), is_error=True, end_run=True)
@@ -408,8 +381,8 @@ def register_crawl_tools() -> None:
         CrawlTool(
             name="FetchPage",
             description=(
-                "抓取 URL 对应页面的正文与页内链接；正文会追加注入 RUN_CONTEXT。"
-                "url 必须来自 RUN_CONTEXT 页内 links 或入口 URL，禁止猜测路径。"
+                "抓取 URL，返回正文 content 与参考 links（追加到 RUN_CONTEXT）。"
+                "由你阅读正文决定下一步；工具不会替你解析站点结构。"
             ),
             input_model=FetchPageInput,
             call=_fetch_page_tool,
@@ -417,19 +390,19 @@ def register_crawl_tools() -> None:
     )
     register_tool(
         CrawlTool(
-            name="DiscoverChapters",
+            name="QueueChapters",
             description=(
-                "在书籍/目录页识别元数据与章节 URL 列表，写入任务队列。"
-                "调用前应先 FetchPage 同一页或目录页；若队列已存在勿重复调用。"
+                "登记你从 RUN_CONTEXT 正文中读到的章节列表（title/url/sort_order）。"
+                "不会替你解析网站；必须先 FetchPage 读到目录再提交。"
             ),
-            input_model=DiscoverChaptersInput,
-            call=_discover_chapters_tool,
+            input_model=QueueChaptersInput,
+            call=_queue_chapters_tool,
         )
     )
     register_tool(
         CrawlTool(
             name="InitNovel",
-            description="初始化公共书库作品（DiscoverChapters 之后、Save 之前调用一次）。",
+            description="初始化公共书库作品（书名/作者来自你已读页面；Save 之前调用一次）。",
             input_model=InitNovelInput,
             call=_init_novel_tool,
         )
@@ -446,8 +419,7 @@ def register_crawl_tools() -> None:
         CrawlTool(
             name="SaveQueuedChapters",
             description=(
-                "批量保存 DiscoverChapters 队列中的章节（推荐：InitNovel 后一次调用，"
-                "避免逐章 tool_call 耗尽轮次）。"
+                "批量保存 QueueChapters 队列中的章节（InitNovel 后调用，减少逐章 tool_call）。"
             ),
             input_model=SaveQueuedChaptersInput,
             call=_save_queued_chapters_tool,
