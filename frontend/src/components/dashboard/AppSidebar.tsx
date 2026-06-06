@@ -1,7 +1,8 @@
 import { useCallback, useState } from 'react'
-import { NavLink } from 'react-router-dom'
+import { Link, NavLink } from 'react-router-dom'
 import {
   BookOpen,
+  CreditCard,
   LayoutDashboard,
   PenLine,
   Shield,
@@ -12,6 +13,7 @@ import { useUserStore } from '@/stores/userStore'
 import { Separator } from '@/components/ui/separator'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { AccountSettingsModal } from '@/components/dashboard/AccountSettingsModal'
+import { NovelAiWordmark } from '@/components/marketing/NovelAiWordmark'
 
 interface NavItem {
   label: string
@@ -23,6 +25,7 @@ interface NavItem {
 const mainNav: NavItem[] = [
   { label: '概览', to: '/dashboard', icon: LayoutDashboard, end: true },
   { label: '我的小说', to: '/dashboard/novels', icon: BookOpen },
+  { label: '用量与账单', to: '/dashboard/billing', icon: CreditCard },
 ]
 
 const actionNav: NavItem[] = [
@@ -60,11 +63,10 @@ export function AppSidebar() {
   return (
     <>
       <aside className="flex h-full w-64 shrink-0 flex-col border-r border-border bg-surface text-foreground">
-        <div className="flex h-16 items-center gap-3 border-b border-border px-6">
-          <div className="flex size-8 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
-            <PenLine className="size-4" />
-          </div>
-          <span className="text-base font-bold tracking-tight">Novel Agent</span>
+        <div className="flex h-16 items-center border-b border-border px-5">
+          <Link to="/dashboard" className="flex min-w-0 items-center transition-opacity hover:opacity-90">
+            <NovelAiWordmark size="sm" animate={false} />
+          </Link>
         </div>
 
         <nav className="flex flex-1 flex-col gap-1.5 overflow-y-auto p-4">

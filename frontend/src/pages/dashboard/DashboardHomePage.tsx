@@ -1,12 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  Activity,
   ArrowRight,
-  BarChart3,
   BookOpen,
   Bot,
-  CreditCard,
   FileText,
   PenLine,
 } from 'lucide-react'
@@ -150,7 +147,7 @@ export default function DashboardHomePage() {
 
       <ActivityHeatmap activity={activity} loading={activityLoading} />
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.65fr)_minmax(260px,1fr)] lg:items-start">
+      <div className="grid gap-4">
         <Card className="flex flex-col py-0 shadow-none">
           <CardHeader className="border-b px-5 py-4 [.border-b]:pb-4">
             <CardTitle className="text-sm font-semibold">最近编辑</CardTitle>
@@ -226,48 +223,6 @@ export default function DashboardHomePage() {
                 ))}
               </div>
             )}
-          </CardContent>
-        </Card>
-
-        <Card className="flex flex-col py-0 shadow-none">
-          <CardHeader className="border-b px-5 py-4 [.border-b]:pb-4">
-            <CardTitle className="text-sm font-semibold">用量与账单</CardTitle>
-          </CardHeader>
-
-          <CardContent className="flex flex-col gap-4 px-5 py-4">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span className="flex items-center gap-2 text-muted-foreground">
-                  <Activity className="size-3.5 shrink-0" />
-                  本月 Tokens
-                </span>
-                <span className="font-medium tabular-nums text-foreground">124,592 / 1M</span>
-              </div>
-              <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-                <div className="h-full rounded-full bg-primary" style={{ width: '12.4%' }} />
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between text-sm">
-              <span className="flex items-center gap-2 text-muted-foreground">
-                <BarChart3 className="size-3.5 shrink-0" />
-                API 调用
-              </span>
-              <span className="font-medium tabular-nums text-foreground">3,402 次</span>
-            </div>
-
-            <div className="border-t border-border pt-4">
-              <div className="mb-3 flex items-center justify-between">
-                <span className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <CreditCard className="size-3.5 shrink-0" />
-                  预估费用
-                </span>
-                <span className="text-xl font-bold tabular-nums text-foreground">¥12.45</span>
-              </div>
-              <Button className="h-9 w-full rounded-lg text-sm" variant="outline">
-                查看详细账单
-              </Button>
-            </div>
           </CardContent>
         </Card>
       </div>

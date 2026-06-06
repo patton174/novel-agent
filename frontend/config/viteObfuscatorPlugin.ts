@@ -2,6 +2,10 @@ import JavaScriptObfuscator from 'javascript-obfuscator'
 import type { ObfuscatorOptions } from 'javascript-obfuscator'
 import type { Plugin, RenderedChunk } from 'vite'
 
+/** shadcn / Radix UI 等共享组件 chunk 名前缀（混淆会破坏 React ref / 事件合成） */
+const UI_CHUNK_PREFIX =
+  /^(dialog|badge|button|avatar|separator|select|dropdown-menu|sheet|switch|popover|tooltip|tabs|checkbox|label|input|card|skeleton)-/
+
 /**
  * Vite 路由懒加载依赖 __vite__mapDeps / import() 字符串路径；
  * 对含这些特征的 chunk 跳过 obfuscator，避免 chunk 404 + MIME text/html。
@@ -15,6 +19,17 @@ function shouldSkipChunkObfuscation(code: string, chunk: RenderedChunk): boolean
   }
   // 仍含动态 import("assets/…") 的 chunk 不混淆（stringArray 会破坏 URL）
   if (/import\s*\(\s*['"]/.test(code)) {
+    return true
+  }
+  const baseName = chunk.fileName.split('/').pop() ?? chunk.fileName
+  if (UI_CHUNK_PREFIX.test(baseName)) {
+    return true
+  }
+  // Radix / shadcn 组件库 chunk（含 DialogPrimitive 等）不可混淆
+  if (
+    /data-slot="dialog|DialogPrimitive|@radix-ui|radix-ui|React\.createElement/.test(code) &&
+    /data-slot=/.test(code)
+  ) {
     return true
   }
   return false

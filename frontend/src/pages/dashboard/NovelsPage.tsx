@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { BookOpen, Plus, MoreVertical, Clock } from 'lucide-react'
+import { BookOpen, Clock, Plus, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { fetchNovels, type DashboardNovel } from '@/api/dashboardApi'
@@ -44,85 +44,112 @@ export default function NovelsPage() {
   const loading = novels === null
 
   return (
-    <div className="space-y-8 max-w-6xl mx-auto pb-12">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground tracking-tight mb-2">我的小说</h1>
-          <p className="text-sm text-muted-foreground">
-            {loading ? '加载中…' : `共 ${novels!.length} 部作品`}
-          </p>
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 pb-12">
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-border bg-gradient-to-br from-primary/[0.04] via-surface to-violet-500/[0.06] px-5 py-4">
+        <div className="flex items-center gap-3">
+          <div className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary shadow-sm">
+            <BookOpen className="size-5" />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-muted-foreground">作品库</p>
+            <p className="text-lg font-bold tabular-nums text-foreground">
+              {loading ? '加载中…' : `共 ${novels!.length} 部作品`}
+            </p>
+          </div>
         </div>
-        <Button asChild className="rounded-xl px-6 shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5">
+        <Button
+          asChild
+          className="rounded-xl px-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
+        >
           <Link to="/editor">
-            <Plus className="w-4 h-4 mr-2" />
+            <Plus className="mr-2 size-4" />
             新建小说
           </Link>
         </Button>
       </div>
 
       {loading ? (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="bg-white rounded-2xl border border-border p-5 space-y-4">
-              <div className="w-12 h-12 rounded-xl bg-muted animate-pulse" />
-              <div className="space-y-2">
-                <Skeleton className="h-5 w-3/4" />
-                <Skeleton className="h-4 w-1/2" />
-              </div>
-              <Skeleton className="h-10 w-full rounded-xl mt-4" />
+        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div
+              key={i}
+              className="rounded-2xl border border-border bg-surface p-5 shadow-soft"
+            >
+              <Skeleton className="mb-4 size-12 rounded-xl" />
+              <Skeleton className="mb-2 h-5 w-3/4" />
+              <Skeleton className="mb-6 h-4 w-1/2" />
+              <Skeleton className="h-10 w-full rounded-xl" />
             </div>
           ))}
         </div>
       ) : novels!.length === 0 ? (
-        <div className="bg-white rounded-3xl border border-dashed border-border flex flex-col items-center justify-center py-24 px-4 text-center shadow-sm">
-          <div className="w-20 h-20 bg-primary/5 rounded-full flex items-center justify-center mb-6">
-            <BookOpen className="w-10 h-10 text-primary" />
+        <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-border bg-surface px-6 py-24 text-center shadow-sm">
+          <div className="mb-6 flex size-20 items-center justify-center rounded-full bg-primary/10">
+            <Sparkles className="size-9 text-primary" />
           </div>
-          <h3 className="text-xl font-bold text-foreground mb-2">
+          <h3 className="text-xl font-bold text-foreground">
             {error ? '加载失败' : '开始你的创作之旅'}
           </h3>
-          <p className="text-base text-muted-foreground mb-8 max-w-md">
-            {error ? '暂时无法加载小说列表，请稍后重试' : '创建一个新的小说项目，让 AI 助手帮你构建世界观、大纲和章节。'}
+          <p className="mt-2 max-w-md text-base text-muted-foreground">
+            {error
+              ? '暂时无法加载小说列表，请稍后重试'
+              : '创建一个新的小说项目，让 AI 助手帮你构建世界观、大纲和章节。'}
           </p>
-          <Button asChild className="rounded-xl px-8 py-6 text-base shadow-md hover:shadow-lg transition-all hover:-translate-y-1">
+          <Button
+            asChild
+            className="mt-8 rounded-xl px-8 py-6 text-base shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg"
+          >
             <Link to="/editor">
-              <Plus className="w-5 h-5 mr-2" />
+              <Plus className="mr-2 size-5" />
               创建第一部作品
             </Link>
           </Button>
         </div>
       ) : (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {novels!.map((novel) => (
-            <div 
+        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+          {novels!.map((novel, index) => (
+            <article
               key={novel.id}
-              className="group bg-white rounded-2xl border border-border p-5 shadow-soft hover:shadow-hover hover:border-primary/30 transition-all flex flex-col"
+              className="group relative flex flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-soft transition-all duration-300 hover:-translate-y-1 hover:border-primary/25 hover:shadow-hover"
             >
-              <div className="flex items-start justify-between mb-4">
-                <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-                  <BookOpen className="w-6 h-6" />
+              <div
+                className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary via-violet-500 to-indigo-400 opacity-80"
+                style={{ opacity: 0.35 + (index % 3) * 0.15 }}
+              />
+              <div className="flex flex-1 flex-col p-5 pt-6">
+                <div className="mb-4 flex size-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary/15 to-violet-500/10 text-primary ring-1 ring-primary/10">
+                  <BookOpen className="size-6" />
                 </div>
-                <button className="text-muted-foreground hover:text-foreground p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity">
-                  <MoreVertical className="w-5 h-5" />
-                </button>
-              </div>
-              
-              <div className="flex-1 mb-6">
-                <h3 className="text-lg font-bold text-foreground line-clamp-1 mb-2" title={novel.title}>
+
+                <h3
+                  className="mb-2 line-clamp-2 text-lg font-bold leading-snug text-foreground"
+                  title={novel.title}
+                >
                   {novel.title}
                 </h3>
-                <div className="space-y-1.5">
-                  <div className="flex items-center text-xs text-muted-foreground">
-                    <Clock className="w-3.5 h-3.5 mr-1.5" />
-                    更新于 {formatDate(novel.updatedAt)}
-                  </div>
+
+                {novel.genre ? (
+                  <span className="mb-3 inline-flex w-fit rounded-full bg-muted px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground">
+                    {novel.genre}
+                  </span>
+                ) : null}
+
+                <div className="mt-auto flex items-center text-xs text-muted-foreground">
+                  <Clock className="mr-1.5 size-3.5 shrink-0" />
+                  更新于 {formatDate(novel.updatedAt)}
                 </div>
               </div>
 
-              <Button asChild variant="outline" className="w-full rounded-xl group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary transition-colors">
-                <Link to="/editor">继续写作</Link>
-              </Button>
-            </div>
+              <div className="border-t border-border/80 p-4 pt-0">
+                <Button
+                  asChild
+                  variant="outline"
+                  className="mt-4 w-full rounded-xl border-border/80 transition-colors group-hover:border-primary group-hover:bg-primary group-hover:text-primary-foreground"
+                >
+                  <Link to="/editor">继续写作</Link>
+                </Button>
+              </div>
+            </article>
           ))}
         </div>
       )}

@@ -26,6 +26,7 @@ const EditorPage = lazy(() => import('./pages/EditorPage'))
 const DashboardLayout = lazy(() => import('./layouts/DashboardLayout'))
 const DashboardHomePage = lazy(() => import('./pages/dashboard/DashboardHomePage'))
 const NovelsPage = lazy(() => import('./pages/dashboard/NovelsPage'))
+const BillingPage = lazy(() => import('./pages/dashboard/BillingPage'))
 const SettingsPage = lazy(() => import('./pages/dashboard/SettingsPage'))
 const VerifyEmailPage = lazy(() => import('./pages/VerifyEmailPage'))
 const AdminLayout = lazy(() => import('./layouts/AdminLayout'))
@@ -80,6 +81,7 @@ function AppRoutes() {
         >
           <Route index element={<DashboardHomePage />} />
           <Route path="novels" element={<NovelsPage />} />
+          <Route path="billing" element={<BillingPage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
         

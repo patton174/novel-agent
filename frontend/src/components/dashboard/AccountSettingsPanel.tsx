@@ -99,11 +99,11 @@ export function AccountSettingsPanel({ profile, onVerified }: AccountSettingsPan
           <span className="text-sm text-muted-foreground">角色</span>
           <Badge variant="secondary">{ROLE_LABELS[profile.role] ?? profile.role}</Badge>
         </div>
-        {profile.emailVerified != null ? (
+        {profile.email ? (
           <div className="flex items-center justify-between rounded-lg border border-border px-4 py-3">
             <span className="text-sm text-muted-foreground">邮箱验证</span>
-            <Badge variant={profile.emailVerified ? 'default' : 'outline'}>
-              {profile.emailVerified ? '已验证' : '未验证'}
+            <Badge variant={profile.emailVerified === true ? 'default' : 'outline'}>
+              {profile.emailVerified === true ? '已验证' : '未验证'}
             </Badge>
           </div>
         ) : null}

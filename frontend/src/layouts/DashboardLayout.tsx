@@ -10,6 +10,7 @@ import { useUserStore } from '../stores/userStore'
 const PAGE_META: Record<string, { title: string; description?: string }> = {
   '/dashboard': { title: '概览', description: '创作数据与最近编辑' },
   '/dashboard/novels': { title: '我的小说', description: '管理你的全部作品' },
+  '/dashboard/billing': { title: '用量与账单', description: 'Token 用量与费用概览' },
   '/dashboard/settings': { title: '账户设置', description: '个人信息与邮箱验证' },
 }
 

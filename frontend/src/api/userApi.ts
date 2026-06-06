@@ -80,5 +80,8 @@ export async function confirmEmailVerify(token: string, sig: string, exp: number
 }
 
 export function needsEmailVerification(profile: UserProfile | null | undefined): boolean {
-  return profile?.emailVerified === false
+  if (!profile?.email) {
+    return false
+  }
+  return profile.emailVerified !== true
 }
