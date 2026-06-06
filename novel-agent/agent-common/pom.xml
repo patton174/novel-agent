@@ -20,5 +20,6 @@
         <module>agent-common-service</module>
         <module>agent-common-mq</module>
         <module>agent-common-security</module>
+        <module>agent-common-mail</module>
     </modules>
 </project>

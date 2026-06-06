@@ -1,19 +1,24 @@
 package com.novel.agent.auth.service;
 
+import com.novel.agent.common.mail.sender.MailtrapEmailSender;
 import com.novel.agent.auth.config.VerificationProperties;
+import com.novel.agent.auth.entity.AuthUser;
 import com.novel.agent.auth.repository.AuthUserRepository;
 import com.novel.agent.common.core.enums.ResultCode;
 import com.novel.agent.common.core.exception.BizException;
 import com.novel.agent.common.core.exception.TooManyRequestsException;
 import com.novel.agent.common.core.exception.ValidationException;
+import com.novel.agent.common.security.EmailVerifyLinkCodec;
 import com.novel.agent.common.security.SecurityRedisKeys;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
+import java.time.Instant;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.util.Locale;
+import java.util.UUID;
 
 @Service
 public class EmailVerificationService {
@@ -24,6 +29,7 @@ public class EmailVerificationService {
     private final AuthUserRepository authUserRepository;
     private final SliderCaptchaService sliderCaptchaService;
     private final RateLimitService rateLimitService;
+    private final EmailLinkSecretService emailLinkSecretService;
     private final SecureRandom random = new SecureRandom();
 
     public EmailVerificationService(
@@ -32,7 +38,8 @@ public class EmailVerificationService {
         MailtrapEmailSender mailtrapEmailSender,
         AuthUserRepository authUserRepository,
         SliderCaptchaService sliderCaptchaService,
-        RateLimitService rateLimitService
+        RateLimitService rateLimitService,
+        EmailLinkSecretService emailLinkSecretService
     ) {
         this.redisTemplate = redisTemplate;
         this.properties = properties;
@@ -40,6 +47,7 @@ public class EmailVerificationService {
         this.authUserRepository = authUserRepository;
         this.sliderCaptchaService = sliderCaptchaService;
         this.rateLimitService = rateLimitService;
+        this.emailLinkSecretService = emailLinkSecretService;
     }
 
     public void sendRegisterCode(String email, String captchaToken, String ip, String fingerprint) {
@@ -69,7 +77,7 @@ public class EmailVerificationService {
             Duration.ofSeconds(properties.getEmailCooldownSeconds())
         );
         incrementDailyCounter(normalized);
-        mailtrapEmailSender.sendVerificationCode(normalized, code);
+        mailtrapEmailSender.sendVerificationCode(normalized, code, properties.getEmailCodeTtlSeconds());
     }
 
     public void verifyRegisterCode(String email, String code) {
@@ -87,6 +95,86 @@ public class EmailVerificationService {
             throw new ValidationException(ResultCode.EMAIL_CODE_INVALID, "验证码错误");
         }
         redisTemplate.delete(key);
+    }
+
+    public void sendAccountVerifyLink(Long userId) {
+        AuthUser user = authUserRepository.findById(userId)
+            .orElseThrow(() -> BizException.of(ResultCode.AUTH_USER_NOT_FOUND));
+        if (Boolean.TRUE.equals(user.getEmailVerified())) {
+            throw BizException.of(ResultCode.EMAIL_ALREADY_VERIFIED);
+        }
+        String email = normalizeEmail(user.getEmail());
+        if (email.isBlank()) {
+            throw new ValidationException(ResultCode.BAD_REQUEST, "账户未绑定邮箱");
+        }
+
+        rateLimitService.check("send-email-verify:user", String.valueOf(userId), 5, Duration.ofHours(1));
+        rateLimitService.check("send-email-verify:email", email, properties.getEmailDailyLimit(), Duration.ofDays(1));
+
+        String cooldownKey = SecurityRedisKeys.EMAIL_COOLDOWN_PREFIX + "verify:" + userId;
+        if (Boolean.TRUE.equals(redisTemplate.hasKey(cooldownKey))) {
+            throw new TooManyRequestsException(ResultCode.EMAIL_SEND_TOO_FREQUENT, "发送过于频繁，请稍后再试");
+        }
+
+        String token = UUID.randomUUID().toString().replace("-", "");
+        long expEpochSec = Instant.now().getEpochSecond() + properties.getEmailVerifyLinkTtlSeconds();
+        String linkSecret = requireEmailLinkSecret();
+        String sig = EmailVerifyLinkCodec.signBase64(token, userId, expEpochSec, linkSecret);
+
+        redisTemplate.opsForValue().set(
+            SecurityRedisKeys.EMAIL_VERIFY_LINK_PREFIX + token,
+            String.valueOf(userId),
+            Duration.ofSeconds(properties.getEmailVerifyLinkTtlSeconds())
+        );
+        redisTemplate.opsForValue().set(
+            cooldownKey,
+            "1",
+            Duration.ofSeconds(properties.getEmailCooldownSeconds())
+        );
+
+        String baseUrl = properties.getFrontendBaseUrl().replaceAll("/+$", "");
+        String verifyUrl = baseUrl
+            + "/verify-email?token=" + token
+            + "&exp=" + expEpochSec
+            + "&sig=" + sig;
+        mailtrapEmailSender.sendVerificationLink(
+            email,
+            verifyUrl,
+            properties.getEmailVerifyLinkTtlSeconds(),
+            properties.getFrontendBaseUrl()
+        );
+    }
+
+    public void confirmAccountVerifyLink(String token, String sig, long expEpochSec) {
+        if (token == null || token.isBlank()) {
+            throw new ValidationException(ResultCode.EMAIL_VERIFY_LINK_INVALID, "验证链接无效");
+        }
+        if (sig == null || sig.isBlank()) {
+            throw new ValidationException(ResultCode.EMAIL_VERIFY_LINK_INVALID, "验证链接签名无效");
+        }
+        if (expEpochSec <= 0 || Instant.now().getEpochSecond() > expEpochSec) {
+            throw new ValidationException(ResultCode.EMAIL_VERIFY_LINK_INVALID, "验证链接已过期");
+        }
+
+        String key = SecurityRedisKeys.EMAIL_VERIFY_LINK_PREFIX + token.trim();
+        String userIdRaw = redisTemplate.opsForValue().get(key);
+        if (userIdRaw == null) {
+            throw new ValidationException(ResultCode.EMAIL_VERIFY_LINK_INVALID, "验证链接无效或已过期");
+        }
+        Long userId = Long.parseLong(userIdRaw);
+        if (!EmailVerifyLinkCodec.verify(token.trim(), userId, expEpochSec, requireEmailLinkSecret(), sig)) {
+            throw new ValidationException(ResultCode.EMAIL_VERIFY_LINK_INVALID, "验证链接签名无效");
+        }
+
+        AuthUser user = authUserRepository.findById(userId)
+            .orElseThrow(() -> BizException.of(ResultCode.AUTH_USER_NOT_FOUND));
+        user.setEmailVerified(true);
+        authUserRepository.save(user);
+        redisTemplate.delete(key);
+    }
+
+    private String requireEmailLinkSecret() {
+        return emailLinkSecretService.requireSecret();
     }
 
     private void incrementDailyCounter(String email) {

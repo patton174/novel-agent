@@ -23,13 +23,16 @@ public class FrontendCryptoRegisterService {
 
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
+    private final EmailLinkSecretService emailLinkSecretService;
 
     public FrontendCryptoRegisterService(
         StringRedisTemplate redisTemplate,
-        ObjectMapper objectMapper
+        ObjectMapper objectMapper,
+        EmailLinkSecretService emailLinkSecretService
     ) {
         this.redisTemplate = redisTemplate;
         this.objectMapper = objectMapper;
+        this.emailLinkSecretService = emailLinkSecretService;
     }
 
     public CryptoRuntimeView registerFromFrontendServer(String hostLabel, long ttlSeconds) {
@@ -52,7 +55,8 @@ public class FrontendCryptoRegisterService {
             version,
             expiresAt,
             apiPathPrefix,
-            hostLabel == null ? "worker" : hostLabel
+            hostLabel == null ? "worker" : hostLabel,
+            emailLinkSecretService.ensureSecret()
         );
 
         try {
@@ -88,7 +92,8 @@ public class FrontendCryptoRegisterService {
         long version,
         long expiresAtEpochMs,
         String apiPathPrefix,
-        String registeredBy
+        String registeredBy,
+        String emailLinkSecret
     ) {
     }
 }

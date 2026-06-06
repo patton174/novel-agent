@@ -1,0 +1,15 @@
+{
+  "brandPrimary": "#4f46e5",
+  "brandPrimaryDark": "#4338ca",
+  "brandGradientEnd": "#6366f1",
+  "brandBackground": "#f1f5f9",
+  "brandSurface": "#ffffff",
+  "brandText": "#0f172a",
+  "brandMuted": "#64748b",
+  "brandBorder": "#e2e8f0",
+  "productName": "Novel Agent",
+  "tagline": "理解你的笔触与灵感",
+  "logoUrl": "https://www.novel-agent.cn/favicon.svg",
+  "supportEmail": "hello@noreply.novel-agent.cn",
+  "frontendBaseUrl": "https://www.novel-agent.cn"
+}

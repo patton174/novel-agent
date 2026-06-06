@@ -53,6 +53,9 @@ auth:
     email-code-ttl-seconds: 600
     email-cooldown-seconds: 60
     email-daily-limit: 5
+    email-verify-link-ttl-seconds: 86400
+    frontend-base-url: ${AUTH_FRONTEND_BASE_URL:http://localhost:5173}
+    email-link-secret: ${AUTH_EMAIL_LINK_SECRET:dev-email-link-secret-change-me}
     captcha-challenge-ttl-seconds: 300
     captcha-token-ttl-seconds: 600
     captcha-tolerance-px: 6
@@ -61,6 +64,13 @@ mailtrap:
   token: ${MAILTRAP_TOKEN:}
   from-email: hello@noreply.novel-agent.cn
   from-name: Novel Agent
+
+mail:
+  brand:
+    primary: "#4f46e5"
+    product-name: Novel Agent
+    tagline: 理解你的笔触与灵感
+    frontend-base-url: ${AUTH_FRONTEND_BASE_URL:http://localhost:5173}
 
 agent:
   internal:

@@ -2,11 +2,7 @@ import { useMemo, useState } from 'react'
 import { cn } from '@/lib/utils'
 import type { DashboardActivity, DashboardActivityDay } from '@/api/dashboardApi'
 import { Skeleton } from '@/components/ui/skeleton'
-import {
-  Card,
-  CardContent,
-  CardHeader,
-} from '@/components/ui/card'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
 
 export type ActivityMode = 'all' | 'writing' | 'agent'
 
@@ -22,6 +18,13 @@ const LEVEL_CLASSES = [
   'bg-emerald-400 dark:bg-emerald-700',
   'bg-emerald-600 dark:bg-emerald-600',
   'bg-emerald-800 dark:bg-emerald-500',
+]
+
+/** 与 Tailwind size-3 / gap-[3px] 保持一致，月份标签才能对齐列 */
+const WEEKDAY_LABELS = [
+  { row: 1, label: '一' },
+  { row: 3, label: '三' },
+  { row: 5, label: '五' },
 ]
 
 interface HeatCell {
@@ -99,7 +102,7 @@ function buildHeatmapGrid(days: DashboardActivityDay[], mode: ActivityMode) {
 
     const month = weekStart.getUTCMonth()
     if (month !== lastMonth) {
-      monthLabels.push({ weekIndex, label: `${month + 1}月` })
+      monthLabels.push({ weekIndex, label: String(month + 1) })
       lastMonth = month
     }
 
@@ -182,9 +185,7 @@ function formatTotal(activity: DashboardActivity, mode: ActivityMode): string {
     case 'agent':
       return activity.totalAgentRuns.toLocaleString('zh-CN')
     case 'all':
-      return (
-        activity.totalWritingWords + activity.totalAgentRuns * 800
-      ).toLocaleString('zh-CN')
+      return (activity.totalWritingWords + activity.totalAgentRuns * 800).toLocaleString('zh-CN')
   }
 }
 
@@ -219,16 +220,21 @@ export function ActivityHeatmap({ activity, loading }: ActivityHeatmapProps) {
   const highlights = useMemo(() => computeHighlights(days, mode), [days, mode])
   const activeMode = MODE_OPTIONS.find((m) => m.id === mode)!
 
+  const monthLabelByWeek = useMemo(
+    () => new Map(monthLabels.map((m) => [m.weekIndex, m.label])),
+    [monthLabels],
+  )
+
   return (
-    <Card className="py-0">
-      <CardHeader className="border-b [.border-b]:pb-4">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
+    <Card className="py-0 shadow-none">
+      <CardHeader className="border-b px-5 py-4 [.border-b]:pb-4">
+        <div className="flex items-center justify-between gap-4">
+          <div className="min-w-0">
             <p className="text-xs font-medium text-muted-foreground">{activeMode.metricLabel}</p>
             {loading ? (
-              <Skeleton className="mt-2 h-9 w-32" />
+              <Skeleton className="mt-1.5 h-8 w-28" />
             ) : (
-              <p className="mt-1 text-3xl font-bold tabular-nums tracking-tight text-foreground">
+              <p className="mt-0.5 text-2xl font-bold tabular-nums tracking-tight text-foreground">
                 {activity ? formatTotal(activity, mode) : '0'}
               </p>
             )}
@@ -240,7 +246,7 @@ export function ActivityHeatmap({ activity, loading }: ActivityHeatmapProps) {
                 type="button"
                 onClick={() => setMode(option.id)}
                 className={cn(
-                  'rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
+                  'rounded-md px-2.5 py-1 text-xs font-medium transition-colors',
                   mode === option.id
                     ? 'bg-surface text-foreground shadow-sm'
                     : 'text-muted-foreground hover:text-foreground',
@@ -253,41 +259,44 @@ export function ActivityHeatmap({ activity, loading }: ActivityHeatmapProps) {
         </div>
       </CardHeader>
 
-      <CardContent className="py-5">
+      <CardContent className="px-5 py-4">
         {loading ? (
-          <Skeleton className="h-28 w-full rounded-xl" />
+          <Skeleton className="h-[108px] w-full max-w-2xl rounded-lg" />
         ) : (
-          <div className="overflow-x-auto">
-            <div className="inline-block min-w-full">
-              <div className="mb-2 flex pl-7 text-[10px] font-medium text-muted-foreground">
-                {weeks.map((_, weekIndex) => {
-                  const label = monthLabels.find((m) => m.weekIndex === weekIndex)
-                  return (
-                    <div
-                      key={weekIndex}
-                      className="shrink-0 text-left"
-                      style={{ width: 14, marginRight: 2 }}
-                    >
-                      {label ? label.label.replace('月', '') : ''}
-                    </div>
-                  )
-                })}
+          <div className="overflow-x-auto pb-1">
+            <div className="inline-flex min-w-0 flex-col gap-1.5">
+              {/* 月份行 — 与下方周列同宽同间距 */}
+              <div className="flex gap-[3px] pl-[18px]">
+                {weeks.map((_, weekIndex) => (
+                  <div
+                    key={weekIndex}
+                    className="w-3 shrink-0 text-[10px] leading-none text-muted-foreground"
+                  >
+                    {monthLabelByWeek.get(weekIndex) ?? ''}
+                  </div>
+                ))}
               </div>
 
-              <div className="flex gap-0.5">
-                <div className="flex w-6 shrink-0 flex-col justify-between py-[2px] text-[10px] leading-none text-muted-foreground">
-                  <span>一</span>
-                  <span className="opacity-0">二</span>
-                  <span>三</span>
-                  <span className="opacity-0">四</span>
-                  <span>五</span>
-                  <span className="opacity-0">六</span>
-                  <span className="opacity-0">日</span>
+              <div className="flex gap-[3px]">
+                {/* 星期标签 — 与格子行对齐 */}
+                <div className="flex w-[15px] shrink-0 flex-col gap-[3px] pt-[1px]">
+                  {Array.from({ length: 7 }).map((_, rowIndex) => {
+                    const label = WEEKDAY_LABELS.find((l) => l.row === rowIndex)
+                    return (
+                      <div
+                        key={rowIndex}
+                        className="flex h-3 items-center text-[10px] leading-none text-muted-foreground"
+                      >
+                        {label?.label ?? ''}
+                      </div>
+                    )
+                  })}
                 </div>
 
-                <div className="flex gap-0.5">
+                {/* 热力格子 */}
+                <div className="flex gap-[3px]">
                   {weeks.map((week, weekIndex) => (
-                    <div key={weekIndex} className="flex flex-col gap-0.5">
+                    <div key={weekIndex} className="flex flex-col gap-[3px]">
                       {week.map((cell, rowIndex) => {
                         const level = cell.date ? valueToLevel(cell.value, maxValue) : 0
                         return (
@@ -299,7 +308,7 @@ export function ActivityHeatmap({ activity, loading }: ActivityHeatmapProps) {
                                 : undefined
                             }
                             className={cn(
-                              'size-[11px] rounded-[2px]',
+                              'size-3 shrink-0 rounded-[2px]',
                               cell.date ? LEVEL_CLASSES[level] : 'bg-transparent',
                             )}
                           />
@@ -313,39 +322,41 @@ export function ActivityHeatmap({ activity, loading }: ActivityHeatmapProps) {
           </div>
         )}
 
-        <div className="mt-5 grid grid-cols-2 gap-4 border-t border-border pt-5 sm:grid-cols-4">
-          <div>
-            <p className="text-[11px] text-muted-foreground">最活跃月份</p>
-            <p className="mt-0.5 text-sm font-semibold text-foreground">
-              {loading ? '—' : highlights.bestMonthLabel}
-            </p>
+        <div className="mt-4 flex flex-col gap-4 border-t border-border pt-4 sm:flex-row sm:items-end sm:justify-between">
+          <div className="grid flex-1 grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-4">
+            <div>
+              <p className="text-[11px] text-muted-foreground">最活跃月份</p>
+              <p className="mt-0.5 text-sm font-medium text-foreground">
+                {loading ? '—' : highlights.bestMonthLabel}
+              </p>
+            </div>
+            <div>
+              <p className="text-[11px] text-muted-foreground">最活跃日期</p>
+              <p className="mt-0.5 text-sm font-medium text-foreground">
+                {loading ? '—' : highlights.bestDayLabel}
+              </p>
+            </div>
+            <div>
+              <p className="text-[11px] text-muted-foreground">最长连续</p>
+              <p className="mt-0.5 text-sm font-medium text-foreground">
+                {loading ? '—' : `${streaks.longest} 天`}
+              </p>
+            </div>
+            <div>
+              <p className="text-[11px] text-muted-foreground">当前连续</p>
+              <p className="mt-0.5 text-sm font-medium text-foreground">
+                {loading ? '—' : `${streaks.current} 天`}
+              </p>
+            </div>
           </div>
-          <div>
-            <p className="text-[11px] text-muted-foreground">最活跃日期</p>
-            <p className="mt-0.5 text-sm font-semibold text-foreground">
-              {loading ? '—' : highlights.bestDayLabel}
-            </p>
-          </div>
-          <div>
-            <p className="text-[11px] text-muted-foreground">最长连续</p>
-            <p className="mt-0.5 text-sm font-semibold text-foreground">
-              {loading ? '—' : `${streaks.longest} 天`}
-            </p>
-          </div>
-          <div>
-            <p className="text-[11px] text-muted-foreground">当前连续</p>
-            <p className="mt-0.5 text-sm font-semibold text-foreground">
-              {loading ? '—' : `${streaks.current} 天`}
-            </p>
-          </div>
-        </div>
 
-        <div className="mt-4 flex items-center justify-end gap-1.5 text-[10px] text-muted-foreground">
-          <span>少</span>
-          {LEVEL_CLASSES.map((cls, i) => (
-            <div key={i} className={cn('size-[11px] rounded-[2px]', cls)} />
-          ))}
-          <span>多</span>
+          <div className="flex shrink-0 items-center gap-1.5 text-[10px] text-muted-foreground">
+            <span>少</span>
+            {LEVEL_CLASSES.map((cls, i) => (
+              <div key={i} className={cn('size-3 rounded-[2px]', cls)} />
+            ))}
+            <span>多</span>
+          </div>
         </div>
       </CardContent>
     </Card>

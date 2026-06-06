@@ -142,6 +142,10 @@ want "${CHANGED_CONTENT:-false}" && MODULES+=(agent-content)
 want "${CHANGED_CONSUMER:-false}" && MODULES+=(agent-consumer)
 
 if [[ ${#MODULES[@]} -gt 0 ]]; then
+  if want "${CHANGED_AUTH:-false}"; then
+    echo "[ci-hot] build MJML email templates"
+    bash "$SCRIPT_DIR/build-email-templates.sh"
+  fi
   PL=$(IFS=,; echo "${MODULES[*]}")
   echo "[ci-hot] mvn -pl $PL -am package -DskipTests"
   (cd "$REPO_ROOT/novel-agent" && mvn -q -pl "$PL" -am package -DskipTests)
@@ -153,7 +157,7 @@ if want "${CHANGED_FRONTEND:-false}"; then
     cd "$REPO_ROOT/frontend"
     corepack enable && corepack prepare pnpm@9.15.9 --activate
     pnpm install --frozen-lockfile
-    VITE_SECURITY_AES=true VITE_ROUTE_OBFUSCATION=true VITE_FIELD_ENCRYPTION=true pnpm run build
+    VITE_SECURITY_AES=true VITE_ROUTE_OBFUSCATION=true VITE_FIELD_ENCRYPTION=true VITE_SECURITY_ENCRYPT_STREAM=true pnpm run build
   )
 fi
 

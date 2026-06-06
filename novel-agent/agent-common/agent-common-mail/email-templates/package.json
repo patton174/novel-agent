@@ -1,0 +1,13 @@
+{
+  "name": "@novel-agent/email-templates",
+  "private": true,
+  "version": "1.0.0",
+  "description": "MJML 邮件模板 → agent-common-mail classpath HTML/TXT",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "watch": "node scripts/build.mjs --watch"
+  },
+  "devDependencies": {
+    "mjml": "^4.15.3"
+  }
+}

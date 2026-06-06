@@ -121,19 +121,19 @@ export default function DashboardHomePage() {
   const activityLoading = activity === null
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-6 pb-8">
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+    <div className="mx-auto flex w-full max-w-5xl flex-col gap-5">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {STAT_CARDS.map((stat) => (
           <Card key={stat.key} size="sm" className="py-0 shadow-none">
-            <CardContent className="flex items-center gap-4 py-4">
+            <CardContent className="flex items-center gap-3 px-4 py-3.5">
               <div
-                className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${stat.bg}`}
+                className={`flex size-9 shrink-0 items-center justify-center rounded-lg ${stat.bg}`}
               >
-                <stat.icon className={`size-5 ${stat.color}`} />
+                <stat.icon className={`size-4 ${stat.color}`} />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-medium text-muted-foreground">{stat.label}</p>
-                <p className="mt-0.5 text-2xl font-bold tabular-nums leading-none text-foreground">
+                <p className="text-[11px] font-medium text-muted-foreground">{stat.label}</p>
+                <p className="mt-0.5 text-xl font-bold tabular-nums leading-none text-foreground">
                   {loading ? (
                     <Skeleton className="mt-1 h-7 w-14" />
                   ) : stat.format ? (
@@ -150,12 +150,12 @@ export default function DashboardHomePage() {
 
       <ActivityHeatmap activity={activity} loading={activityLoading} />
 
-      <div className="grid items-stretch gap-6 lg:grid-cols-3">
-        <Card className="flex flex-col py-0 lg:col-span-2">
-          <CardHeader className="border-b [.border-b]:pb-4">
-            <CardTitle className="text-base font-semibold">最近编辑</CardTitle>
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.65fr)_minmax(260px,1fr)] lg:items-start">
+        <Card className="flex flex-col py-0 shadow-none">
+          <CardHeader className="border-b px-5 py-4 [.border-b]:pb-4">
+            <CardTitle className="text-sm font-semibold">最近编辑</CardTitle>
             <CardAction>
-              <Button asChild variant="ghost" size="sm" className="h-8 gap-1 px-2 text-primary">
+              <Button asChild variant="ghost" size="sm" className="h-7 gap-1 px-2 text-xs text-primary">
                 <Link to="/dashboard/novels">
                   查看全部
                   <ArrowRight className="size-3.5" />
@@ -164,13 +164,13 @@ export default function DashboardHomePage() {
             </CardAction>
           </CardHeader>
 
-          <CardContent className="flex flex-1 flex-col p-0">
+          <CardContent className="p-0">
             {loading ? (
               <div className="divide-y divide-border">
                 {Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="flex items-center gap-4 px-4 py-4">
-                    <Skeleton className="size-10 rounded-xl" />
-                    <div className="min-w-0 flex-1 space-y-2">
+                  <div key={i} className="flex items-center gap-3 px-5 py-3">
+                    <Skeleton className="size-9 rounded-lg" />
+                    <div className="min-w-0 flex-1 space-y-1.5">
                       <Skeleton className="h-4 w-40" />
                       <Skeleton className="h-3 w-28" />
                     </div>
@@ -179,7 +179,7 @@ export default function DashboardHomePage() {
                 ))}
               </div>
             ) : recentNovels!.length === 0 ? (
-              <div className="flex flex-1 flex-col items-center justify-center px-6 py-14 text-center">
+              <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
                 <div className="mb-4 flex size-14 items-center justify-center rounded-full bg-muted">
                   <BookOpen className="size-7 text-muted-foreground" />
                 </div>
@@ -200,10 +200,10 @@ export default function DashboardHomePage() {
                 {recentNovels!.map((novel) => (
                   <div
                     key={novel.novelId}
-                    className="flex items-center gap-4 px-4 py-3.5 transition-colors hover:bg-surface-hover"
+                    className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-surface-hover"
                   >
-                    <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                      <BookOpen className="size-5" />
+                    <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                      <BookOpen className="size-4" />
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-semibold text-foreground">
@@ -229,42 +229,42 @@ export default function DashboardHomePage() {
           </CardContent>
         </Card>
 
-        <Card className="flex flex-col py-0">
-          <CardHeader className="border-b [.border-b]:pb-4">
-            <CardTitle className="text-base font-semibold">用量与账单</CardTitle>
+        <Card className="flex flex-col py-0 shadow-none">
+          <CardHeader className="border-b px-5 py-4 [.border-b]:pb-4">
+            <CardTitle className="text-sm font-semibold">用量与账单</CardTitle>
           </CardHeader>
 
-          <CardContent className="flex flex-1 flex-col gap-5 py-5">
+          <CardContent className="flex flex-col gap-4 px-5 py-4">
             <div className="space-y-2">
               <div className="flex items-center justify-between text-sm">
-                <span className="flex items-center gap-2 font-medium text-muted-foreground">
-                  <Activity className="size-4 shrink-0" />
+                <span className="flex items-center gap-2 text-muted-foreground">
+                  <Activity className="size-3.5 shrink-0" />
                   本月 Tokens
                 </span>
-                <span className="font-semibold tabular-nums text-foreground">124,592 / 1M</span>
+                <span className="font-medium tabular-nums text-foreground">124,592 / 1M</span>
               </div>
-              <div className="h-2 overflow-hidden rounded-full bg-muted">
+              <div className="h-1.5 overflow-hidden rounded-full bg-muted">
                 <div className="h-full rounded-full bg-primary" style={{ width: '12.4%' }} />
               </div>
             </div>
 
             <div className="flex items-center justify-between text-sm">
-              <span className="flex items-center gap-2 font-medium text-muted-foreground">
-                <BarChart3 className="size-4 shrink-0" />
+              <span className="flex items-center gap-2 text-muted-foreground">
+                <BarChart3 className="size-3.5 shrink-0" />
                 API 调用
               </span>
-              <span className="font-semibold tabular-nums text-foreground">3,402 次</span>
+              <span className="font-medium tabular-nums text-foreground">3,402 次</span>
             </div>
 
-            <div className="mt-auto border-t border-border pt-5">
-              <div className="mb-4 flex items-center justify-between">
-                <span className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                  <CreditCard className="size-4 shrink-0" />
+            <div className="border-t border-border pt-4">
+              <div className="mb-3 flex items-center justify-between">
+                <span className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <CreditCard className="size-3.5 shrink-0" />
                   预估费用
                 </span>
-                <span className="text-2xl font-bold tabular-nums text-foreground">¥12.45</span>
+                <span className="text-xl font-bold tabular-nums text-foreground">¥12.45</span>
               </div>
-              <Button className="w-full rounded-xl" variant="outline">
+              <Button className="h-9 w-full rounded-lg text-sm" variant="outline">
                 查看详细账单
               </Button>
             </div>

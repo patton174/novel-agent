@@ -9,9 +9,12 @@ public final class SecurityRedisKeys {
     public static final String CRYPTO_MANIFEST_KEY = "crypto:manifest:current";
     /** 当前 bootstrap 元数据（与 Worker crypto-runtime.json 对齐） */
     public static final String CRYPTO_BOOTSTRAP_KEY = "crypto:bootstrap:current";
+    /** 邮箱验证链接 HMAC 密钥（部署时 internal register 写入，持久化） */
+    public static final String EMAIL_LINK_SECRET_KEY = "auth:email:link-secret:current";
     public static final String EMAIL_CODE_PREFIX = "auth:email:code:";
     public static final String EMAIL_COOLDOWN_PREFIX = "auth:email:cooldown:";
     public static final String EMAIL_DAILY_PREFIX = "auth:email:daily:";
+    public static final String EMAIL_VERIFY_LINK_PREFIX = "auth:email:verify-link:";
     public static final String CAPTCHA_CHALLENGE_PREFIX = "auth:captcha:challenge:";
     public static final String CAPTCHA_TOKEN_PREFIX = "auth:captcha:token:";
     public static final String RATE_LIMIT_PREFIX = "auth:ratelimit:";

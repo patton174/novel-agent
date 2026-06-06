@@ -57,6 +57,25 @@ auth:
     enforce-fingerprint: false
     enforce-heartbeat: false
     enforce-csrf: false
+  verification:
+    frontend-base-url: https://www.novel-agent.cn
+    email-link-secret: ${AUTH_EMAIL_LINK_SECRET:}
+
+mail:
+  brand:
+    primary: "#4f46e5"
+    primary-dark: "#4338ca"
+    gradient-end: "#6366f1"
+    background: "#f1f5f9"
+    surface: "#ffffff"
+    text: "#0f172a"
+    muted: "#64748b"
+    border: "#e2e8f0"
+    product-name: Novel Agent
+    tagline: 理解你的笔触与灵感
+    logo-url: https://www.novel-agent.cn/favicon.svg
+    support-email: hello@noreply.novel-agent.cn
+    frontend-base-url: https://www.novel-agent.cn
 
 logging:
   level:

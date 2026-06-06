@@ -9,7 +9,8 @@ export function isBootstrapAuthPath(url: string): boolean {
     path.startsWith('/api/auth/api/register') ||
     path.startsWith('/api/auth/api/refresh') ||
     path.startsWith('/api/auth/api/captcha') ||
-    path.startsWith('/api/auth/api/send-email-code')
+    path.startsWith('/api/auth/api/send-email-code') ||
+    path.startsWith('/api/auth/api/confirm-email-verify')
   )
 }
 

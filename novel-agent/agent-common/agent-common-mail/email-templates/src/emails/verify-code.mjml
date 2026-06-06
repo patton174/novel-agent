@@ -1,0 +1,59 @@
+<mjml lang="zh-CN">
+  <mj-head>
+    <mj-title>__productName__ 验证码</mj-title>
+    <mj-preview>您的验证码是 __code__，__ttlLabel__ 内有效。</mj-preview>
+    <mj-attributes>
+      <mj-all font-family="'Segoe UI', 'PingFang SC', 'Microsoft YaHei', Helvetica, Arial, sans-serif" />
+      <mj-text color="__brandText__" font-size="16px" line-height="26px" />
+    </mj-attributes>
+    <mj-style inline="inline">
+      .otp-box {
+        letter-spacing: 8px !important;
+        font-weight: 700 !important;
+        font-size: 32px !important;
+        color: __brandPrimary__ !important;
+      }
+      @media only screen and (max-width: 480px) {
+        .mobile-pad { padding-left: 16px !important; padding-right: 16px !important; }
+        .otp-box { font-size: 28px !important; letter-spacing: 6px !important; }
+      }
+    </mj-style>
+  </mj-head>
+  <mj-body background-color="__brandBackground__" width="600px">
+    <mj-wrapper padding="24px 12px" css-class="mobile-pad">
+      <mj-include path="../partials/header.mjml" />
+
+      <mj-section background-color="__brandSurface__" padding="8px 32px 0" border-radius="16px 16px 0 0">
+        <mj-column>
+          <mj-text font-size="22px" font-weight="700" color="__brandText__" padding="0 0 8px">
+            邮箱验证码
+          </mj-text>
+          <mj-text color="__brandMuted__" padding="0 0 16px">
+            您正在 __productName__ 进行邮箱验证，请在页面中输入以下验证码：
+          </mj-text>
+        </mj-column>
+      </mj-section>
+
+      <mj-section background-color="__brandSurface__" padding="8px 32px 24px">
+        <mj-column background-color="#f8fafc" border-radius="16px" border="1px solid __brandBorder__">
+          <mj-text align="center" css-class="otp-box" padding="24px 16px">
+            __code__
+          </mj-text>
+        </mj-column>
+      </mj-section>
+
+      <mj-section background-color="__brandSurface__" padding="0 32px 16px">
+        <mj-column>
+          <mj-text font-size="13px" color="__brandMuted__" align="center" padding="0 0 8px">
+            验证码 __ttlLabel__ 内有效，请勿泄露给他人。
+          </mj-text>
+          <mj-text font-size="13px" color="__brandMuted__" padding="0">
+            如非本人操作，请忽略此邮件。
+          </mj-text>
+        </mj-column>
+      </mj-section>
+
+      <mj-include path="../partials/footer.mjml" />
+    </mj-wrapper>
+  </mj-body>
+</mjml>

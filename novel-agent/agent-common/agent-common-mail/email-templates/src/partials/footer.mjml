@@ -1,0 +1,12 @@
+<mj-section background-color="__brandSurface__" padding="16px 32px 24px" border-radius="0 0 16px 16px">
+  <mj-column>
+    <mj-divider border-color="__brandBorder__" border-width="1px" padding="0 0 16px" />
+    <mj-text align="center" font-size="12px" color="__brandMuted__" line-height="18px" padding="0">
+      此邮件由 __productName__ 自动发送，请勿直接回复。<br />
+      如有疑问请联系 <a href="mailto:__supportEmail__" style="color:__brandPrimary__;text-decoration:none;">__supportEmail__</a>
+    </mj-text>
+    <mj-text align="center" font-size="11px" color="__brandMuted__" padding="12px 0 0">
+      © __year__ __productName__ · <a href="__frontendBaseUrl__" style="color:__brandMuted__;text-decoration:underline;">__frontendBaseUrl__</a>
+    </mj-text>
+  </mj-column>
+</mj-section>

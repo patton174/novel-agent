@@ -115,4 +115,6 @@ echo "[crypto-register] Worker env + runtime.json 已更新"
 EOF
 
 rm -f "$PAYLOAD_TMP" "$RUNTIME_TMP"
-echo "[crypto-register] 3/3 完成 kid=$KEY_ID prefix=$API_PREFIX version=$VERSION"
+echo "[crypto-register] 3/4 同步邮箱验证密钥（Redis + MW .env.mw）..."
+bash "$SCRIPT_DIR/register-auth-secrets.sh"
+echo "[crypto-register] 4/4 完成 kid=$KEY_ID prefix=$API_PREFIX version=$VERSION"

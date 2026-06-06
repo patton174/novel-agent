@@ -38,3 +38,47 @@ export async function fetchUserInfo(): Promise<UserProfile> {
   const raw = await parseResultResponse<UserInfoWire>(res)
   return normalizeUserProfile(raw)
 }
+
+export async function sendEmailVerifyLink(): Promise<void> {
+  const res = await secureFetch('/api/auth/auth/send-email-verify', { method: 'POST' })
+  if (!res.ok) {
+    let message = '发送验证邮件失败'
+    try {
+      const json = await res.json()
+      if (json != null && typeof json === 'object') {
+        const body = json as { msg?: string; message?: string }
+        message = body.msg || body.message || message
+      }
+    } catch {
+      // ignore
+    }
+    throw new Error(message)
+  }
+  await parseResultResponse<null>(res)
+}
+
+export async function confirmEmailVerify(token: string, sig: string, exp: number): Promise<void> {
+  const res = await secureFetch('/api/auth/api/confirm-email-verify', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token, sig, exp }),
+  })
+  if (!res.ok) {
+    let message = '邮箱验证失败'
+    try {
+      const json = await res.json()
+      if (json != null && typeof json === 'object') {
+        const body = json as { msg?: string; message?: string }
+        message = body.msg || body.message || message
+      }
+    } catch {
+      // ignore
+    }
+    throw new Error(message)
+  }
+  await parseResultResponse<null>(res)
+}
+
+export function needsEmailVerification(profile: UserProfile | null | undefined): boolean {
+  return profile?.emailVerified === false
+}

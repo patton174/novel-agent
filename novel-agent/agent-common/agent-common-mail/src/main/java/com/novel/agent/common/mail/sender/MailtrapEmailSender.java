@@ -1,31 +1,45 @@
-package com.novel.agent.auth.service;
+package com.novel.agent.common.mail.sender;
 
-import com.novel.agent.auth.config.MailtrapProperties;
 import com.novel.agent.common.core.enums.ResultCode;
 import com.novel.agent.common.core.exception.BizException;
+import com.novel.agent.common.mail.config.MailtrapProperties;
+import com.novel.agent.common.mail.template.EmailTemplateRenderer;
+import com.novel.agent.common.mail.template.RenderedEmail;
 import io.mailtrap.client.MailtrapClient;
 import io.mailtrap.config.MailtrapConfig;
 import io.mailtrap.factory.MailtrapClientFactory;
 import io.mailtrap.model.request.emails.Address;
 import io.mailtrap.model.request.emails.MailtrapMail;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
-@Slf4j
-@Service
 public class MailtrapEmailSender {
 
-    private final MailtrapProperties properties;
+    private static final Logger log = LoggerFactory.getLogger(MailtrapEmailSender.class);
 
-    public MailtrapEmailSender(MailtrapProperties properties) {
+    private final MailtrapProperties properties;
+    private final EmailTemplateRenderer templateRenderer;
+
+    public MailtrapEmailSender(MailtrapProperties properties, EmailTemplateRenderer templateRenderer) {
         this.properties = properties;
+        this.templateRenderer = templateRenderer;
     }
 
-    public void sendVerificationCode(String toEmail, String code) {
+    public void sendVerificationLink(String toEmail, String verifyUrl, long ttlSeconds, String frontendBaseUrl) {
+        RenderedEmail rendered = templateRenderer.renderVerifyLink(verifyUrl, ttlSeconds, frontendBaseUrl);
+        send(toEmail, rendered, "email-verification");
+    }
+
+    public void sendVerificationCode(String toEmail, String code, long ttlSeconds) {
+        RenderedEmail rendered = templateRenderer.renderVerifyCode(code, ttlSeconds);
+        send(toEmail, rendered, "email-verification");
+    }
+
+    public void send(String toEmail, RenderedEmail rendered, String category) {
         if (!properties.enabled()) {
-            log.warn("Mailtrap token 未配置，跳过发信 email={} code={}", maskEmail(toEmail), code);
+            log.warn("Mailtrap token 未配置，跳过发信 email={} subject={}", maskEmail(toEmail), rendered.subject());
             return;
         }
         MailtrapConfig config = new MailtrapConfig.Builder()
@@ -35,9 +49,10 @@ public class MailtrapEmailSender {
         MailtrapMail mail = MailtrapMail.builder()
             .from(new Address(properties.getFromEmail(), properties.getFromName()))
             .to(List.of(new Address(toEmail)))
-            .subject("Novel Agent 邮箱验证码")
-            .text("您的验证码是：" + code + "，10 分钟内有效。如非本人操作请忽略。")
-            .category("email-verification")
+            .subject(rendered.subject())
+            .html(rendered.html())
+            .text(rendered.text())
+            .category(category)
             .build();
         try {
             client.send(mail);

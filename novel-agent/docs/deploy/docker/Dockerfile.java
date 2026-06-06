@@ -12,6 +12,11 @@ COPY novel-agent/agent-gateway novel-agent/agent-gateway
 COPY novel-agent/agent-pyai novel-agent/agent-pyai
 COPY novel-agent/agent-content novel-agent/agent-content
 COPY novel-agent/agent-consumer novel-agent/agent-consumer
+RUN apt-get update && apt-get install -y --no-install-recommends curl \
+  && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+  && apt-get install -y --no-install-recommends nodejs \
+  && cd novel-agent/agent-common/agent-common-mail/email-templates && npm install && npm run build \
+  && apt-get purge -y curl && apt-get autoremove -y && rm -rf /var/lib/apt/lists/*
 RUN mvn -f novel-agent/pom.xml \
   -pl agent-auth,agent-gateway,agent-pyai,agent-content,agent-consumer \
   -am clean package -DskipTests -Dspring-boot.repackage.skip=false

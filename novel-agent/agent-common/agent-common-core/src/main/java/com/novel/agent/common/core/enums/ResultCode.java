@@ -29,6 +29,8 @@ public enum ResultCode {
     EMAIL_CODE_INVALID(1102, 400, "邮箱验证码无效或已过期"),
     EMAIL_SEND_TOO_FREQUENT(1103, 429, "发送过于频繁，请稍后再试"),
     EMAIL_SEND_FAILED(1104, 500, "邮件发送失败，请稍后再试"),
+    EMAIL_ALREADY_VERIFIED(1105, 400, "邮箱已验证"),
+    EMAIL_VERIFY_LINK_INVALID(1106, 400, "验证链接无效或已过期"),
 
     // internal 1201-1299
     INTERNAL_KEY_INVALID(1201, 401, "invalid internal key"),

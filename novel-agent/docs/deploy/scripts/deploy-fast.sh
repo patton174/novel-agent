@@ -64,6 +64,9 @@ case "$SERVICE" in
       (
         cd "$REPO_ROOT/frontend"
         export VITE_SECURITY_AES="${VITE_SECURITY_AES:-true}"
+        export VITE_ROUTE_OBFUSCATION="${VITE_ROUTE_OBFUSCATION:-true}"
+        export VITE_FIELD_ENCRYPTION="${VITE_FIELD_ENCRYPTION:-true}"
+        export VITE_SECURITY_ENCRYPT_STREAM="${VITE_SECURITY_ENCRYPT_STREAM:-true}"
         export VITE_CODE_OBFUSCATION="${VITE_CODE_OBFUSCATION:-true}"
         if [[ ! -d node_modules/javascript-obfuscator ]]; then
           echo "[deploy-fast] 安装前端依赖（含 javascript-obfuscator / terser）..."
@@ -126,6 +129,9 @@ fi
 
 if [[ "${SKIP_BUILD:-0}" != "1" && "${SKIP_MVN:-0}" != "1" ]]; then
   echo "[deploy-fast] 本地编译 $MODULE ..."
+  if [[ "$MODULE" == "agent-auth" ]]; then
+    bash "$SCRIPT_DIR/build-email-templates.sh"
+  fi
   (cd "$REPO_ROOT/novel-agent" && mvn -q -pl "$MODULE" -am package -DskipTests)
 else
   echo "[deploy-fast] SKIP_BUILD=1，使用已有 jar"
@@ -223,5 +229,10 @@ fi
 \$COMPOSE -f '$COMPOSE_FILE' --env-file '$ENV_REL' ps '$COMPOSE_SVC'
 docker logs "\$CID" --tail 8 2>&1
 EOF
+
+if [[ "$COMPOSE_SVC" == "agent-auth" ]]; then
+  echo "[deploy-fast] 同步邮箱验证密钥（Redis + MW .env.mw）..."
+  bash "$SCRIPT_DIR/register-auth-secrets.sh" || echo "[deploy-fast] WARN: register-auth-secrets 失败"
+fi
 
 echo "[deploy-fast] 完成: $COMPOSE_SVC @ $TARGET"

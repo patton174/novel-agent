@@ -87,6 +87,7 @@ jobs:
               - 'novel-agent/agent-gateway/**'
             auth:
               - 'novel-agent/agent-auth/**'
+              - 'novel-agent/agent-common/agent-common-mail/**'
             pyai:
               - 'novel-agent/agent-pyai/**'
             content:

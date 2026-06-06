@@ -10,7 +10,7 @@ import { useUserStore } from '../stores/userStore'
 const PAGE_META: Record<string, { title: string; description?: string }> = {
   '/dashboard': { title: '概览', description: '创作数据与最近编辑' },
   '/dashboard/novels': { title: '我的小说', description: '管理你的全部作品' },
-  '/dashboard/settings': { title: '账户设置', description: '个人信息与偏好' },
+  '/dashboard/settings': { title: '账户设置', description: '个人信息与邮箱验证' },
 }
 
 export default function DashboardLayout() {
@@ -44,7 +44,7 @@ export default function DashboardLayout() {
       <AppSidebar />
       <div className="flex min-w-0 flex-1 flex-col">
         <DashboardHeader title={meta.title} description={meta.description} />
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-y-auto px-8 py-5">
           <Outlet />
         </main>
       </div>

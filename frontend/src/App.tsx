@@ -27,6 +27,7 @@ const DashboardLayout = lazy(() => import('./layouts/DashboardLayout'))
 const DashboardHomePage = lazy(() => import('./pages/dashboard/DashboardHomePage'))
 const NovelsPage = lazy(() => import('./pages/dashboard/NovelsPage'))
 const SettingsPage = lazy(() => import('./pages/dashboard/SettingsPage'))
+const VerifyEmailPage = lazy(() => import('./pages/VerifyEmailPage'))
 const AdminLayout = lazy(() => import('./layouts/AdminLayout'))
 const AdminHomePage = lazy(() => import('./pages/admin/AdminHomePage'))
 const UsersPage = lazy(() => import('./pages/admin/UsersPage'))
@@ -65,6 +66,7 @@ function AppRoutes() {
         
         <Route path="/login" element={<PageTransition><LoginPage /></PageTransition>} />
         <Route path="/register" element={<PageTransition><RegisterPage /></PageTransition>} />
+        <Route path="/verify-email" element={<PageTransition><VerifyEmailPage /></PageTransition>} />
         
         <Route path="/editor/:chapterId?" element={<PageTransition><EditorPage /></PageTransition>} />
         

@@ -1,11 +1,9 @@
-package com.novel.agent.auth.config;
+package com.novel.agent.common.mail.config;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
 
 @Data
-@Component
 @ConfigurationProperties(prefix = "mailtrap")
 public class MailtrapProperties {
 
