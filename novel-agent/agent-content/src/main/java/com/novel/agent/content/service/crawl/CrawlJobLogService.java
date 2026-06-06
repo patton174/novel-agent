@@ -73,6 +73,14 @@ public class CrawlJobLogService {
         return new CrawlLogsResponse(logs, maxSeq);
     }
 
+    public void clear(String jobId) {
+        if (jobId == null || jobId.isBlank()) {
+            return;
+        }
+        redisTemplate.delete(listKey(jobId));
+        redisTemplate.delete(seqKey(jobId));
+    }
+
     private long nextSeq(String jobId) {
         Long seq = redisTemplate.opsForValue().increment(seqKey(jobId));
         return seq == null ? 1L : seq;

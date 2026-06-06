@@ -12,6 +12,7 @@ import com.novel.agent.content.service.crawl.dto.UpsertCrawlSiteRequest;
 import com.novel.agent.content.service.crm.biz.CrmCrawlBiz;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -66,6 +67,11 @@ public class CrmCrawlController extends BaseController {
     @PostMapping("/jobs/{jobId}/cancel")
     public Result<CrawlJobDTO> cancelJob(@PathVariable String jobId) {
         return biz.cancelJob(jobId);
+    }
+
+    @DeleteMapping("/jobs/{jobId}")
+    public Result<Void> deleteJob(@PathVariable String jobId) {
+        return biz.deleteJob(jobId);
     }
 
     @GetMapping("/jobs/{jobId}/logs")

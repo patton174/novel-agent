@@ -117,6 +117,16 @@ public class CrawlJobService {
     }
 
     @Transactional
+    public void deleteJob(String jobId) {
+        CrawlJobEntity entity = getJob(jobId);
+        if (entity.getStatus() == CrawlJobStatus.RUNNING) {
+            throw new ValidationException(ResultCode.BAD_REQUEST, "运行中的任务请先取消");
+        }
+        crawlJobLogService.clear(jobId);
+        crawlJobRepository.delete(entity);
+    }
+
+    @Transactional
     public CrawlJobEntity updateProgress(
         String jobId,
         Integer chaptersTotal,

@@ -67,6 +67,11 @@ public class CrmCrawlBiz extends BaseBiz {
         return ok(PythonCrawlClient.toDto(crawlJobService.cancelJob(jobId)));
     }
 
+    public Result<Void> deleteJob(String jobId) {
+        crawlJobService.deleteJob(jobId);
+        return ok(null);
+    }
+
     public Result<CrawlLogsResponse> listLogs(String jobId, long afterSeq) {
         crawlJobService.getJob(jobId);
         return ok(crawlJobLogService.listAfter(jobId, Math.max(0L, afterSeq)));

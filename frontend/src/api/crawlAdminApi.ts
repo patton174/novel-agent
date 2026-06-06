@@ -111,6 +111,14 @@ export async function cancelCrawlJob(jobId: string): Promise<CrawlJob> {
   return parseResponse<CrawlJob>(res)
 }
 
+export async function deleteCrawlJob(jobId: string): Promise<void> {
+  const res = await secureFetch(`/api/content/crm/crawl/jobs/${jobId}`, { method: 'DELETE' })
+  if (!res.ok) {
+    throw new Error('删除任务失败')
+  }
+  await parseResponse<null>(res)
+}
+
 export async function previewCrawl(payload: {
   sourceUrl: string
   configJson?: string

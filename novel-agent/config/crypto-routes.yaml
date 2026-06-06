@@ -139,6 +139,8 @@ routes:
     path: /api/content/crm/crawl/jobs/{jobId}/pause
   - method: POST
     path: /api/content/crm/crawl/jobs/{jobId}/cancel
+  - method: DELETE
+    path: /api/content/crm/crawl/jobs/{jobId}
   - method: GET
     path: /api/content/crm/crawl/jobs/{jobId}/logs
   - method: POST
