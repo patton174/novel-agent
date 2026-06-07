@@ -49,8 +49,27 @@ export default function CrawlerPage() {
   const [goalDirty, setGoalDirty] = useState(false)
   const [incompleteCount, setIncompleteCount] = useState(0)
   const [logRefreshKey, setLogRefreshKey] = useState(0)
+  const [logClearKey, setLogClearKey] = useState(0)
   const [jobFilter, setJobFilter] = useState<JobFilter>('all')
   const orchGoalSyncedRef = useRef(false)
+
+  const serverGoal = orchState?.goal?.trim() ?? ''
+  const localGoal = orchGoal.trim()
+  const isOrchRunning = orchState?.status === 'RUNNING'
+  const isOrchSleeping = !isOrchRunning
+  const hasServerGoal = Boolean(serverGoal)
+  const goalMatchesServer = localGoal === serverGoal
+  const orchBlocked = orchState?.agentEnabled === false || orchState?.agentLlmConfigured === false
+
+  const canSetGoal =
+    !orchBlocked &&
+    Boolean(localGoal) &&
+    (goalDirty || !goalMatchesServer || (isOrchSleeping && hasServerGoal) || !hasServerGoal)
+
+  const canWake =
+    !orchBlocked && hasServerGoal && isOrchSleeping && goalMatchesServer && !goalDirty
+
+  const canClear = hasServerGoal || isOrchRunning
 
   const hasRunningJob = useMemo(
     () => (jobs ?? []).some((job) => job.status === 'RUNNING' || job.status === 'PENDING'),
@@ -93,18 +112,21 @@ export default function CrawlerPage() {
   }, [goalDirty])
 
   const refreshAll = useCallback(async () => {
+    setJobsLoading(true)
     await Promise.all([loadJobs(), loadOrchMeta()])
+    setLogRefreshKey((k) => k + 1)
   }, [loadJobs, loadOrchMeta])
 
   const handleSetOrchestratorGoal = async () => {
-    if (!orchGoal.trim()) {
+    if (!localGoal) {
       appToast.error('请输入总目标')
       return
     }
     setActingKey('orch-goal')
     try {
-      const state = await setOrchestratorGoal(orchGoal.trim())
+      const state = await setOrchestratorGoal(localGoal)
       setOrchState(state)
+      setOrchGoal(state.goal || localGoal)
       setGoalDirty(false)
       setLogRefreshKey((k) => k + 1)
       appToast.success('目标已设定，主编排 Agent 将开始工作')
@@ -131,13 +153,23 @@ export default function CrawlerPage() {
   }
 
   const handleClearOrchestrator = async () => {
+    if (!(await confirmAction({
+      title: '清空总目标',
+      description: '将清空主编排目标、进入睡眠，并清除决策日志。',
+      confirmLabel: '清空',
+      danger: true,
+    }))) {
+      return
+    }
     setActingKey('orch-clear')
     try {
       const state = await clearOrchestratorGoal()
       setOrchState(state)
       setOrchGoal(DEFAULT_GOAL)
       setGoalDirty(false)
-      appToast.success('目标已清空，进入睡眠')
+      orchGoalSyncedRef.current = true
+      setLogClearKey((k) => k + 1)
+      appToast.success('目标与日志已清空，进入睡眠')
     } catch (err) {
       appToast.error(err instanceof Error ? err.message : '操作失败')
     } finally {
@@ -151,7 +183,7 @@ export default function CrawlerPage() {
 
   useEffect(() => {
     if (!pageVisible) return
-    const orchLive = orchState?.status === 'RUNNING'
+    const orchLive = isOrchRunning
     const jobsLive = hasRunningJob
     const intervalMs = orchLive || jobsLive ? 4000 : 12000
     const timer = window.setInterval(() => {
@@ -159,7 +191,7 @@ export default function CrawlerPage() {
       if (jobsLive || orchLive) void loadJobs()
     }, intervalMs)
     return () => window.clearInterval(timer)
-  }, [pageVisible, hasRunningJob, orchState?.status, loadJobs, loadOrchMeta])
+  }, [pageVisible, hasRunningJob, isOrchRunning, loadJobs, loadOrchMeta])
 
   const patchJob = useCallback((jobId: string, patch: Partial<CrawlJob>) => {
     setJobs((prev) => (prev ?? []).map((job) => (job.id === jobId ? { ...job, ...patch } : job)))
@@ -256,31 +288,21 @@ export default function CrawlerPage() {
       ? 'llm-missing'
       : null
 
+  const orchBusy = actingKey?.startsWith('orch-') ?? false
+
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-end">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => void refreshAll()}
-          disabled={jobsLoading && jobs === null}
-        >
-          <RefreshCw className={`mr-2 size-4 ${jobsLoading ? 'animate-spin' : ''}`} />
-          刷新
-        </Button>
-      </div>
-
       <section className="space-y-4 rounded-2xl border border-border bg-surface p-5 shadow-soft">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           <span
             className={cn(
               'rounded-full px-2.5 py-0.5 text-xs font-medium',
-              orchState?.status === 'RUNNING'
+              isOrchRunning
                 ? 'bg-primary/15 text-primary'
                 : 'bg-muted text-muted-foreground',
             )}
           >
-            主编排 · {orchState?.status === 'RUNNING' ? '运行中' : '睡眠'}
+            主编排 · {isOrchRunning ? '运行中' : '睡眠'}
           </span>
           <span className="text-sm text-muted-foreground">
             并行 {orchState?.runningJobCount ?? 0}/{orchState?.maxConcurrentJobs ?? 3}
@@ -318,25 +340,29 @@ export default function CrawlerPage() {
               setGoalDirty(true)
             }}
             rows={2}
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            disabled={orchBlocked || orchBusy}
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm disabled:opacity-50"
             placeholder={DEFAULT_GOAL}
           />
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <Button disabled={actingKey != null} onClick={() => void handleSetOrchestratorGoal()}>
-            设定并唤醒
+          <Button
+            disabled={!canSetGoal || orchBusy}
+            onClick={() => void handleSetOrchestratorGoal()}
+          >
+            {!hasServerGoal || isOrchSleeping ? '设定并唤醒' : '更新目标'}
           </Button>
           <Button
             variant="secondary"
-            disabled={actingKey != null}
+            disabled={!canWake || orchBusy}
             onClick={() => void handleWakeOrchestrator()}
           >
             唤醒
           </Button>
           <Button
             variant="outline"
-            disabled={actingKey != null}
+            disabled={!canClear || orchBusy}
             onClick={() => void handleClearOrchestrator()}
           >
             清空 / 睡眠
@@ -346,6 +372,7 @@ export default function CrawlerPage() {
         <OrchestratorLogTerminal
           status={orchState?.status}
           refreshKey={logRefreshKey}
+          clearKey={logClearKey}
           paused={!pageVisible}
         />
       </section>
@@ -375,13 +402,24 @@ export default function CrawlerPage() {
               </button>
             ))}
           </div>
-          <span className="text-xs text-muted-foreground">由主编排自动创建 · 点击查看日志</span>
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-muted-foreground">点击行查看详情与日志</span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => void refreshAll()}
+              disabled={jobsLoading && jobs === null}
+            >
+              <RefreshCw className={`mr-1.5 size-3.5 ${jobsLoading ? 'animate-spin' : ''}`} />
+              刷新
+            </Button>
+          </div>
         </div>
 
         {jobsLoading && jobs === null ? (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {Array.from({ length: 3 }).map((_, i) => (
-              <Skeleton key={i} className="h-20 w-full rounded-xl" />
+              <Skeleton key={i} className="h-14 w-full rounded-xl" />
             ))}
           </div>
         ) : filteredJobs.length === 0 ? (
@@ -391,7 +429,7 @@ export default function CrawlerPage() {
               : '当前筛选下没有子任务。'}
           </p>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             {filteredJobs.map((job) => (
               <CrawlJobRow
                 key={job.id}

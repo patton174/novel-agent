@@ -46,6 +46,8 @@ interface OrchestratorLogTerminalProps {
   status?: string
   active?: boolean
   refreshKey?: number
+  /** 递增时清空本地日志并重新 bootstrap（如清空目标） */
+  clearKey?: number
   /** 页面不可见时暂停轮询 */
   paused?: boolean
 }
@@ -54,6 +56,7 @@ export function OrchestratorLogTerminal({
   status,
   active = true,
   refreshKey = 0,
+  clearKey = 0,
   paused = false,
 }: OrchestratorLogTerminalProps) {
   const [logs, setLogs] = useState<OrchestratorDecisionEntry[]>([])
@@ -96,9 +99,11 @@ export function OrchestratorLogTerminal({
   useEffect(() => {
     if (!active) return
     maxSeqRef.current = 0
+    setLogs([])
+    setFetchError(null)
     setLoading(true)
     void pull(true).finally(() => setLoading(false))
-  }, [active, refreshKey, pull])
+  }, [active, refreshKey, clearKey, pull])
 
   useEffect(() => {
     if (!active || paused) return

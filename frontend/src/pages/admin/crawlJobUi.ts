@@ -71,6 +71,48 @@ export function crawlJobOptimisticPatch(
   }
 }
 
+export function crawlJobDisplayTitle(job: CrawlJob, goal: string | null): string {
+  const title = job.title?.trim()
+  if (title && title !== '解析中…' && title.length <= 80) {
+    return title
+  }
+  if (goal?.trim()) {
+    const g = goal.trim()
+    return g.length <= 72 ? g : `${g.slice(0, 72)}…`
+  }
+  if (title) {
+    return title.length <= 72 ? title : `${title.slice(0, 72)}…`
+  }
+  return '未命名任务'
+}
+
+export function crawlJobProgressLabel(job: CrawlJob): string | null {
+  const done = job.chaptersDone ?? 0
+  const total = job.chaptersTotal
+  if (total != null && total > 0) {
+    return `${done}/${total} 章`
+  }
+  if (job.status === 'COMPLETED') {
+    return '已完成'
+  }
+  if (job.status === 'RUNNING' || job.status === 'PENDING') {
+    return '执行中'
+  }
+  return null
+}
+
+export function shortenSourceUrl(url: string, max = 48): string {
+  try {
+    const u = new URL(url)
+    const path = u.pathname + u.search
+    const host = u.host
+    const combined = `${host}${path}`
+    return combined.length <= max ? combined : `${combined.slice(0, max)}…`
+  } catch {
+    return url.length <= max ? url : `${url.slice(0, max)}…`
+  }
+}
+
 export function truncateError(message: string | null | undefined, max = 120): string | null {
   if (!message?.trim()) {
     return null

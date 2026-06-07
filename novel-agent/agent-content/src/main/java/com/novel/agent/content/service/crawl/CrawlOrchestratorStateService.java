@@ -80,8 +80,13 @@ public class CrawlOrchestratorStateService {
     }
 
     public CrawlOrchestratorStateDTO clearGoal() {
-        appendDecision("目标已清空，进入睡眠");
+        clearDecisions();
         return setGoal("", false);
+    }
+
+    public void clearDecisions() {
+        redisTemplate.delete(DECISIONS_KEY);
+        redisTemplate.delete(DECISION_SEQ_KEY);
     }
 
     public CrawlOrchestratorStateDTO wake() {

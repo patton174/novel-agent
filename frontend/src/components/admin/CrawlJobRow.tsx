@@ -1,14 +1,17 @@
 import { memo } from 'react'
-import { ChevronRight, Loader2, Pause, Play, Square, Trash2 } from 'lucide-react'
+import { Loader2, Pause, Play, Square, Trash2 } from 'lucide-react'
 import type { CrawlJob } from '@/api/crawlAdminApi'
 import { parseCrawlJobGoal } from '@/api/crawlAdminApi'
 import { Button } from '@/components/ui/button'
 import {
   type CrawlJobAction,
   crawlJobActions,
+  crawlJobDisplayTitle,
+  crawlJobProgressLabel,
   crawlJobProgressPercent,
   crawlJobStatusClass,
   crawlJobStatusLabel,
+  shortenSourceUrl,
   truncateError,
 } from '@/pages/admin/crawlJobUi'
 import { cn } from '@/lib/utils'
@@ -38,8 +41,11 @@ export const CrawlJobRow = memo(function CrawlJobRow({
 }: CrawlJobRowProps) {
   const percent = crawlJobProgressPercent(job)
   const jobGoal = parseCrawlJobGoal(job.configJson)
-  const errorPreview = truncateError(job.errorMessage)
+  const title = crawlJobDisplayTitle(job, jobGoal)
+  const progressLabel = crawlJobProgressLabel(job)
+  const errorPreview = truncateError(job.errorMessage, 80)
   const actions = crawlJobActions(job.status)
+  const isActive = job.status === 'RUNNING' || job.status === 'PENDING'
 
   return (
     <div
@@ -53,58 +59,45 @@ export const CrawlJobRow = memo(function CrawlJobRow({
         }
       }}
       className={cn(
-        'group flex cursor-pointer flex-col gap-3 rounded-xl border p-4 transition-colors hover:bg-muted/30 lg:flex-row lg:items-center lg:justify-between',
-        job.status === 'RUNNING' || job.status === 'PENDING'
-          ? 'border-primary/30 bg-primary/[0.03]'
-          : 'border-border/80',
+        'group flex cursor-pointer items-center gap-3 rounded-xl border px-3 py-2.5 transition-colors hover:bg-muted/40',
+        isActive ? 'border-primary/25 bg-primary/[0.03]' : 'border-border/70',
       )}
     >
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="font-medium">{job.title || '解析中…'}</span>
+      <div className="min-w-0 flex-1 space-y-1">
+        <div className="flex min-w-0 items-center gap-2">
+          <span className="min-w-0 truncate text-sm font-medium">{title}</span>
           <span
             className={cn(
-              'rounded-full px-2 py-0.5 text-xs font-medium',
+              'shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium',
               crawlJobStatusClass(job.status),
             )}
           >
             {crawlJobStatusLabel(job.status)}
           </span>
-          <span className="ml-auto flex items-center gap-1 text-xs text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 lg:ml-0">
-            日志
-            <ChevronRight className="size-3.5" />
-          </span>
         </div>
-        <p className="mt-1 truncate text-xs text-muted-foreground">{job.sourceUrl}</p>
-        {jobGoal ? (
-          <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">目标：{jobGoal}</p>
-        ) : null}
-        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-          <span>
-            进度 {job.chaptersDone ?? 0}/{job.chaptersTotal ?? '?'}
-          </span>
-          {job.catalogNovelId ? <span>书库 {job.catalogNovelId.slice(0, 8)}…</span> : null}
-          {percent != null ? <span>{percent}%</span> : null}
-        </div>
+        <p className="truncate text-xs text-muted-foreground">
+          {shortenSourceUrl(job.sourceUrl)}
+          {progressLabel ? ` · ${progressLabel}` : ''}
+        </p>
         {percent != null ? (
-          <div className="mt-2 h-1 w-full max-w-xs overflow-hidden rounded-full bg-muted">
+          <div className="h-1 max-w-[200px] overflow-hidden rounded-full bg-muted">
             <div
               className="h-full rounded-full bg-primary transition-[width] duration-500"
               style={{ width: `${percent}%` }}
             />
           </div>
-        ) : job.status === 'RUNNING' ? (
-          <div className="mt-1 flex items-center gap-2 text-xs text-primary">
-            <Loader2 className="size-3.5 animate-spin" />
-            执行中
+        ) : isActive ? (
+          <div className="flex items-center gap-1.5 text-[11px] text-primary">
+            <Loader2 className="size-3 animate-spin" />
+            运行中
           </div>
         ) : null}
         {errorPreview ? (
-          <p className="mt-1 line-clamp-1 text-xs text-destructive">{errorPreview}</p>
+          <p className="truncate text-[11px] text-destructive">{errorPreview}</p>
         ) : null}
       </div>
       {actions.length > 0 ? (
-        <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
+        <div className="flex shrink-0 items-center gap-1">
           {actions.map((action) => {
             const meta = ACTION_META[action]
             const Icon = meta.icon
@@ -112,8 +105,10 @@ export const CrawlJobRow = memo(function CrawlJobRow({
             return (
               <Button
                 key={action}
-                size="sm"
-                variant={meta.variant ?? 'outline'}
+                size="icon"
+                variant={meta.variant === 'destructive' ? 'destructive' : 'ghost'}
+                className="size-8"
+                title={meta.label}
                 disabled={actingKey != null && !busy}
                 onClick={(e) => {
                   e.stopPropagation()
@@ -121,11 +116,10 @@ export const CrawlJobRow = memo(function CrawlJobRow({
                 }}
               >
                 {busy ? (
-                  <Loader2 className="mr-1 size-3.5 animate-spin" />
+                  <Loader2 className="size-3.5 animate-spin" />
                 ) : (
-                  <Icon className="mr-1 size-3.5" />
+                  <Icon className="size-3.5" />
                 )}
-                {meta.label}
               </Button>
             )
           })}
