@@ -367,7 +367,7 @@ function interactionFromPayload(event: AgentEventEnvelope): AgentInteractionPayl
           : []
       const qOptions = choiceOptionsFromRaw(qOptionsRaw, `q${index}`)
       const prompt = String(cell.prompt ?? cell.question ?? nested?.prompt ?? '')
-      let qTypeRaw = cell.type ?? nested?.type
+      const qTypeRaw = cell.type ?? nested?.type
       let qType =
         qTypeRaw === 'multi_select' || qTypeRaw === 'user_input' || qTypeRaw === 'single_select'
           ? qTypeRaw

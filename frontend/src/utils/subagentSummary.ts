@@ -3,7 +3,7 @@ export function stripSubagentSummaryDuplicate(
   summary: string,
   description: string,
 ): string {
-  let body = summary.trim()
+  const body = summary.trim()
   if (!body) {
     return ''
   }

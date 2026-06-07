@@ -8,7 +8,7 @@ export function formatSubagentLogLabel(entry: AgentSubagentLogEntry): string {
   if (entry.phase === 'turn') {
     const t = (entry.title || '').trim()
     if (t && !/^编排/.test(t)) {
-      return t.replace(/^调用模型编排[…\.]*$/u, '编排中…')
+      return t.replace(/^调用模型编排[….]*$/u, '编排中…')
     }
     return '编排中…'
   }

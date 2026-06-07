@@ -465,7 +465,7 @@ describe('agentStreamTimeline', () => {
   })
 
   it('keeps choose/AskUser lone tool outside orchestration', () => {
-    let timeline = applyTimelineEvent([], {
+    const timeline = applyTimelineEvent([], {
       type: 'tool.started',
       step_id: 'step-choose',
       payload: { name: 'choose' },

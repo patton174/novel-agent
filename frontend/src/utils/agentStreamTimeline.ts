@@ -137,7 +137,7 @@ export function appendNarrationDelta(
 }
 
 /** 编排 LLM 占位文案，不写入 reasoning 正文 */
-const PLAN_REASONING_PLACEHOLDER = /^(?:正在调用编排模型|正在编排)[…\.]*\s*$|^第\s*\d+\s*次重试编排[…\.]*\s*$/u
+const PLAN_REASONING_PLACEHOLDER = /^(?:正在调用编排模型|正在编排)[….]*\s*$|^第\s*\d+\s*次重试编排[….]*\s*$/u
 
 function isPlanReasoningPlaceholder(delta: string): boolean {
   return PLAN_REASONING_PLACEHOLDER.test(delta.trim())
@@ -725,7 +725,8 @@ function pushThinkRoundItem(
 ): void {
   const last = items[items.length - 1]
   if (last?.kind === item.kind) {
-    ;(last.blocks as AgentTimelineBlock[]).push(...item.blocks)
+    const blocks = last.blocks as AgentTimelineBlock[]
+    blocks.push(...item.blocks)
     return
   }
   items.push({ kind: item.kind, blocks: [...item.blocks] } as ThinkRoundItem)

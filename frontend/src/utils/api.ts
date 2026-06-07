@@ -70,6 +70,7 @@ export async function openAgentStream(
   let streamEnded = false
   let receivedEvent = false
   try {
+    // eslint-disable-next-line no-constant-condition -- SSE stream read loop
     while (true) {
       throwIfAborted(signal)
       const { done, value } = await reader.read()

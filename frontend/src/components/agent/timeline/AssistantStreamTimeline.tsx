@@ -64,7 +64,7 @@ export function AssistantStreamTimeline({
   const [singleSelectDrafts, setSingleSelectDrafts] = useState<Record<string, AgentChoiceOption | undefined>>({})
   const [customDrafts, setCustomDrafts] = useState<Record<string, string>>({})
   const effectiveTimeline = useMemo(() => {
-    let result = timeline.length > 0 ? [...timeline] : []
+    const result = timeline.length > 0 ? [...timeline] : []
     const hasThinkBlock = result.some((block) => block.kind === 'think')
     const hasThinkToolStep = stepStates.some(
       (s) => s.type === 'tool' && s.toolName === 'think',

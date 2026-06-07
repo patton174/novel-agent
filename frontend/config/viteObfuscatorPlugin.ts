@@ -67,7 +67,6 @@ export function viteObfuscatorPlugin(options: ObfuscatorOptions): Plugin {
       }
     },
     closeBundle() {
-      // eslint-disable-next-line no-console
       console.log(`[obfuscator] obfuscated=${obfuscated} skipped=${skipped}`)
     },
   }

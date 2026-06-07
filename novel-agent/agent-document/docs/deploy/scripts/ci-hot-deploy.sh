@@ -16,7 +16,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/../../../../../.." && pwd)"
+REPO_ROOT="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel)"
 cd "$REPO_ROOT"
 
 export MW_HOST="${MW_HOST:?MW_HOST required}"
@@ -152,7 +152,7 @@ if [[ ${#MODULES[@]} -gt 0 ]]; then
   PL=""
   for m in "${MODULES[@]}"; do
     [[ -n "$PL" ]] && PL+=","
-    PL+="agent-service/$m"
+    PL+=":$m"
   done
   echo "[ci-hot] mvn -pl $PL -am package -DskipTests"
   (cd "$REPO_ROOT/novel-agent" && mvn -q -pl "$PL" -am package -DskipTests)

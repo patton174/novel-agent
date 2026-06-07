@@ -69,7 +69,7 @@ function upsertStepSubagent(
   updater: (prev: AgentSubagentState | undefined) => AgentSubagentState,
   description = '子任务',
 ): AgentStepState[] {
-  let working = ensureAgentParentStep(stepStates, parentStepId, description)
+  const working = ensureAgentParentStep(stepStates, parentStepId, description)
   const idx = working.findIndex((s) => s.stepId === parentStepId)
   if (idx < 0) {
     return stepStates
