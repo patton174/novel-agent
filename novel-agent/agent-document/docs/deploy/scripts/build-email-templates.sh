@@ -3,7 +3,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TEMPLATES_DIR="$(cd "$SCRIPT_DIR/../../../agent-common/agent-common-mail/email-templates" && pwd)"
+TEMPLATES_DIR="$(cd "$SCRIPT_DIR/../../../../agent-common/agent-common-mail/email-templates" && pwd)"
 
 cd "$TEMPLATES_DIR"
 
