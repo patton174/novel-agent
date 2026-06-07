@@ -65,7 +65,7 @@ public class InternalCrawlBiz {
 
     public Map<String, Object> setCatalogCover(String jobId, SetCatalogCoverRequest request) {
         var catalog = crawlJobService.setCatalogCover(jobId, request.coverUrl());
-        return Map.of("catalogNovelId", catalog.getId(), "coverUrl", catalog.getCoverUrl());
+        return Map.of("catalogNovelId", catalog.id(), "coverUrl", catalog.coverUrl());
     }
 
     public Map<String, Object> importChapter(String jobId, CrawlImportChapterRequest request) {

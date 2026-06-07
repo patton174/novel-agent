@@ -17,6 +17,7 @@ import com.novel.agent.content.entity.CrawlSiteEntity;
 import com.novel.agent.content.repository.CrawlJobRepository;
 import com.novel.agent.content.repository.CrawlSiteRepository;
 import com.novel.agent.content.service.catalog.CatalogService;
+import com.novel.agent.content.service.crawl.dto.CatalogNovelDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -228,7 +229,7 @@ public class CrawlJobService {
     }
 
     @Transactional
-    public CrawlCatalogNovelEntity setCatalogCover(String jobId, String coverUrl) {
+    public CatalogNovelDTO setCatalogCover(String jobId, String coverUrl) {
         CrawlJobEntity job = getJob(jobId);
         String catalogNovelId = job.getCatalogNovelId();
         if (catalogNovelId == null || catalogNovelId.isBlank()) {
