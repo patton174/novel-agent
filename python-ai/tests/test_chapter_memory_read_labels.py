@@ -1,4 +1,4 @@
-from app.agent_step.events import (
+from app.agent.harness.events import (
     build_tool_completed_sse_payload,
     extract_chapter_memory_read_labels,
 )
@@ -32,8 +32,8 @@ def test_read_chapter_memory_emits_human_label():
 """
     path = "/novel/n1/memory/chapter/99e12c36-c825-4f94-9557-467465ebdeac.json"
     payload = build_tool_completed_sse_payload(
-        "Read",
+        "ReadMemory",
         content=content,
-        tool_input={"file_path": path},
+        tool_input={"scope": "chapter", "key": "99e12c36-c825-4f94-9557-467465ebdeac", "file_path": path},
     )
     assert payload["result_labels"] == ["第5章《风蚀洞穴》"]

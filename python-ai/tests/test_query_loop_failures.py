@@ -4,13 +4,13 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from langchain_core.messages import AIMessage
 
-from app.agent_step.query_loop import run_query_loop
-from app.agent_step.schemas import AgentRunContext, RunRequest, StepRequest
+from app.agent.loop import run_query_loop
+from app.agent.schemas import AgentRunContext, RunRequest, StepRequest
 from app.runtime.events import build_event
 
 
@@ -22,20 +22,21 @@ def _ctx() -> AgentRunContext:
         user_id=1,
         mode="auto",
         user_message="写小说",
+        novel_id="novel-1",
     )
 
 
-async def _think_fails(req: StepRequest) -> AsyncIterator[dict[str, Any]]:
-    assert req.tool == "think"
+async def _read_chapter_fails(req: StepRequest) -> AsyncIterator[dict[str, Any]]:
+    assert req.tool == "ReadChapter"
     ctx = req.context
     yield build_event(
-        event_type="think.started",
+        event_type="step.started",
         run_id=ctx.run_id,
         session_id=ctx.session_id,
         message_id=ctx.message_id,
-        step_id="step_think",
+        step_id="step_read",
         sequence=0,
-        payload={"title": "分析"},
+        payload={"tool": "ReadChapter"},
         persist=False,
     )
     yield build_event(
@@ -43,16 +44,16 @@ async def _think_fails(req: StepRequest) -> AsyncIterator[dict[str, Any]]:
         run_id=ctx.run_id,
         session_id=ctx.session_id,
         message_id=ctx.message_id,
-        step_id="step_think",
+        step_id="step_read",
         sequence=1,
-        payload={"error": "think LLM stream failed: timeout", "retryable": True},
+        payload={"error": "chapter not found", "retryable": False},
         persist=False,
     )
 
 
 @pytest.mark.asyncio
-async def test_query_loop_stops_after_think_step_failed():
-    """Executor/LLM hard failures still end the run."""
+async def test_query_loop_stops_after_tool_step_failed():
+    """Fatal tool failures end the run."""
     req = RunRequest(context=_ctx())
     types: list[str] = []
 
@@ -60,9 +61,9 @@ async def test_query_loop_stops_after_think_step_failed():
         content="",
         tool_calls=[
             {
-                "name": "think",
-                "args": {"question": "写小说"},
-                "id": "call_think_1",
+                "name": "ReadChapter",
+                "args": {"chapter_id": "missing"},
+                "id": "call_read_1",
                 "type": "tool_call",
             }
         ],
@@ -73,9 +74,9 @@ async def test_query_loop_stops_after_think_step_failed():
     async def _fake_bind_stream(*_a, **_k):
         yield ai_response
 
-    async def _fake_stream(ctx, tool, tool_input, *, sequence, outcome):
-        req = StepRequest(context=ctx, tool=tool, tool_input=tool_input)
-        async for ev in _think_fails(req):
+    async def _fake_stream(ctx, tool, tool_input, *, sequence, outcome, step_id=None):
+        req_inner = StepRequest(context=ctx, tool=tool, tool_input=tool_input)
+        async for ev in _read_chapter_fails(req_inner):
             if ev.get("type") == "step.failed":
                 payload = ev.get("payload") or {}
                 outcome.failed = True
@@ -83,13 +84,13 @@ async def test_query_loop_stops_after_think_step_failed():
             yield ev
 
     with (
-        patch("app.agent_step.query_loop._enrich_context", side_effect=lambda c, **_: c),
-        patch("app.agent_step.query_loop.llm_provider.get_llm", return_value=mock_llm),
+        patch("app.agent.loop._enrich_context", side_effect=lambda c, **_: c),
+        patch("app.agent.loop.llm_provider.get_llm", return_value=mock_llm),
         patch(
-            "app.agent_step.query_loop.stream_bind_tools_turn",
+            "app.agent.loop.stream_bind_tools_turn",
             side_effect=_fake_bind_stream,
         ),
-        patch("app.agent_step.query_loop.stream_tool_step", side_effect=_fake_stream),
+        patch("app.agent.loop.stream_tool_step", side_effect=_fake_stream),
     ):
         async for ev in run_query_loop(req):
             types.append(str(ev.get("type")))

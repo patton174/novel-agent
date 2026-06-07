@@ -4,7 +4,8 @@ import { logout } from '../utils/authApi'
 import { CreateNovelModal } from '../components/novel/CreateNovelModal'
 import { StoryMemoryModal } from '../components/memory/StoryMemoryModal'
 import { EditorPageWrapper, EditorMainContainer } from '../components/editor/EditorPageLayout'
-import { EditorSidebar } from '../components/editor/EditorSidebar'
+import { EditorSidebar, type EditorSidebarProps } from '../components/editor/EditorSidebar'
+import { EditorMobileNav } from '../components/editor/EditorMobileNav'
 import { EditorCenterTabs } from '../components/editor/EditorCenterTabs'
 import { EditorChatPanel } from '../components/editor/EditorChatPanel'
 import { EditorStoryPanel } from '../components/editor/EditorStoryPanel'
@@ -20,6 +21,50 @@ const EditorPage: React.FC = () => {
   const editor = useEditorPage()
   const [settingsOpen, setSettingsOpen] = useState(false)
 
+  const sidebarProps: EditorSidebarProps = {
+    sessionSearch: editor.sessions.sessionSearch,
+    onSessionSearchChange: editor.sessions.setSessionSearch,
+    activeNovelId: editor.activeNovelId,
+    activeSession: editor.sessions.activeSession,
+    novelSessionGroups: editor.sessions.novelSessionGroups,
+    expandedNovelIds: editor.sessions.expandedNovelIds,
+    batchMode: editor.sessions.batchMode,
+    batchNovelId: editor.sessions.batchNovelId,
+    selectedSessionIds: editor.sessions.selectedSessionIds,
+    titlePendingSessionIds: editor.sessions.titlePendingSessionIds,
+    onToggleNovelExpanded: editor.sessions.toggleNovelExpanded,
+    onSelectNovel: (id) => {
+      editor.sessions.expandNovel(id)
+      void editor.selectNovel(id)
+    },
+    onNewChatForNovel: (novelId) => {
+      if (novelId !== editor.activeNovelId) {
+        void editor.selectNovel(novelId).then(() => editor.sessions.handleNewChat())
+      } else {
+        editor.sessions.handleNewChat()
+      }
+    },
+    onStartBatchForNovel: (novelId) => {
+      if (novelId !== editor.activeNovelId) {
+        void editor.selectNovel(novelId).then(() => editor.sessions.startBatchForNovel(novelId))
+      } else {
+        editor.sessions.startBatchForNovel(novelId)
+      }
+    },
+    onExitBatchMode: editor.sessions.exitBatchMode,
+    onBatchDeleteRequest: editor.sessions.requestBatchDelete,
+    onSelectAllSessions: editor.sessions.selectAllSessionsInBatch,
+    onDeleteNovelRequest: editor.sessions.handleDeleteNovelRequest,
+    onToggleSessionSelected: editor.sessions.toggleSessionSelected,
+    onNewNovel: () => editor.setShowCreateNovel(true),
+    onSwitchSession: editor.sessions.switchSession,
+    onRenameSession: editor.sessions.handleRenameSession,
+    onDeleteSession: editor.sessions.handleDeleteSession,
+    onOpenMemory: () => editor.memory.openMemoryModal('world'),
+    onOpenSettings: () => setSettingsOpen(true),
+    memoryModalOpen: editor.memory.memoryModalOpen,
+  }
+
   return (
     <EditorPageWrapper>
       <CreateNovelModal
@@ -28,53 +73,10 @@ const EditorPage: React.FC = () => {
         onSubmit={async (payload) => { await editor.createNovel(payload) }}
       />
 
-      <EditorSidebar
-        sessionSearch={editor.sessions.sessionSearch}
-        onSessionSearchChange={editor.sessions.setSessionSearch}
-        activeNovelId={editor.activeNovelId}
-        activeSession={editor.sessions.activeSession}
-        novelSessionGroups={editor.sessions.novelSessionGroups}
-        expandedNovelIds={editor.sessions.expandedNovelIds}
-        batchMode={editor.sessions.batchMode}
-        batchNovelId={editor.sessions.batchNovelId}
-        selectedSessionIds={editor.sessions.selectedSessionIds}
-        titlePendingSessionIds={editor.sessions.titlePendingSessionIds}
-        onToggleNovelExpanded={editor.sessions.toggleNovelExpanded}
-        onSelectNovel={(id) => {
-          editor.sessions.expandNovel(id)
-          void editor.selectNovel(id)
-        }}
-        onNewChatForNovel={(novelId) => {
-          if (novelId !== editor.activeNovelId) {
-            void editor.selectNovel(novelId).then(() => editor.sessions.handleNewChat())
-          } else {
-            editor.sessions.handleNewChat()
-          }
-        }}
-        onStartBatchForNovel={(novelId) => {
-          if (novelId !== editor.activeNovelId) {
-            void editor.selectNovel(novelId).then(() =>
-              editor.sessions.startBatchForNovel(novelId),
-            )
-          } else {
-            editor.sessions.startBatchForNovel(novelId)
-          }
-        }}
-        onExitBatchMode={editor.sessions.exitBatchMode}
-        onBatchDeleteRequest={editor.sessions.requestBatchDelete}
-        onSelectAllSessions={editor.sessions.selectAllSessionsInBatch}
-        onDeleteNovelRequest={editor.sessions.handleDeleteNovelRequest}
-        onToggleSessionSelected={editor.sessions.toggleSessionSelected}
-        onNewNovel={() => editor.setShowCreateNovel(true)}
-        onSwitchSession={editor.sessions.switchSession}
-        onRenameSession={editor.sessions.handleRenameSession}
-        onDeleteSession={editor.sessions.handleDeleteSession}
-        onOpenMemory={() => editor.memory.openMemoryModal('world')}
-        onOpenSettings={() => setSettingsOpen(true)}
-        memoryModalOpen={editor.memory.memoryModalOpen}
-      />
+      <EditorSidebar {...sidebarProps} />
 
       <EditorMainContainer>
+        <EditorMobileNav {...sidebarProps} />
         <EditorCenterTabs
           activeTab={editor.activeCenterTab}
           onTabChange={editor.setActiveCenterTab}

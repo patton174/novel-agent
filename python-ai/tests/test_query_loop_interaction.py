@@ -6,8 +6,8 @@ from unittest.mock import patch
 
 import pytest
 
-from app.agent_step.query_loop import _should_end_run_after_batch, _tool_batch_end_run
-from app.agent_step.schemas import DisplayPayload, StepResult
+from app.agent.loop import _should_end_run_after_batch, _tool_batch_end_run
+from app.agent.schemas import DisplayPayload, StepResult
 
 
 def test_should_not_end_run_when_waited_even_if_continue_plan_false():
@@ -85,8 +85,8 @@ def test_step_result_action_end_detected_by_helper():
 
 
 def test_prepare_keeps_ask_user():
-    from app.agent_step.schemas import AgentRunContext, PlanToolCall
-    from app.agent_step.tool_prepare import prepare_execution_batch
+    from app.agent.schemas import AgentRunContext, PlanToolCall
+    from app.agent.harness.tool_prepare import prepare_execution_batch
 
     ctx = AgentRunContext(
         run_id="run_x",

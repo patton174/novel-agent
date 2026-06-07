@@ -1,0 +1,54 @@
+# Prometheus alerting rules（Phase 4 T4.10）
+# 挂载到 Prometheus rule_files，按环境调整阈值与 labels。
+
+groups:
+  - name: novel-agent-core
+    rules:
+      - alert: ServiceHealthDown
+        expr: up{job=~"agent-.*|python-ai"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "服务 {{ $labels.job }} 不可抓取"
+          description: "实例 {{ $labels.instance }} 超过 2 分钟无 metrics/health"
+
+      - alert: SpringHealthNotUp
+        expr: spring_health_status{status!="UP"} == 1
+        for: 3m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Java 服务 health 非 UP"
+          description: "{{ $labels.application }} status={{ $labels.status }}"
+
+      - alert: Http5xxRateHigh
+        expr: |
+          sum(rate(http_server_requests_seconds_count{status=~"5.."}[5m])) by (application)
+          /
+          sum(rate(http_server_requests_seconds_count[5m])) by (application)
+          > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "HTTP 5xx 比例 > 5%"
+          description: "{{ $labels.application }} 5xx rate {{ $value | humanizePercentage }}"
+
+      - alert: RabbitMQQueueDepthHigh
+        expr: rabbitmq_queue_messages > 5000
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "MQ 队列积压"
+          description: "队列 {{ $labels.queue }} 深度 {{ $value }}"
+
+      - alert: PythonAiDown
+        expr: absent(up{job="python-ai"}) or up{job="python-ai"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "python-ai metrics 不可达"
+          description: "检查 uvicorn 与 /metrics 端点"

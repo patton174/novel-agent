@@ -5,6 +5,7 @@ import { Outlet, useLocation } from 'react-router-dom'
 import { fetchUserInfo } from '../api/userApi'
 import { AppSidebar } from '../components/dashboard/AppSidebar'
 import { DashboardHeader } from '../components/dashboard/DashboardHeader'
+import { MobileSidebarDrawer } from '../components/dashboard/MobileSidebarDrawer'
 import { LayoutOutletSkeleton } from '../components/loading/LayoutOutletSkeleton'
 import { useUserStore } from '../stores/userStore'
 
@@ -44,9 +45,15 @@ export default function DashboardLayout() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-background text-foreground">
-      <AppSidebar />
+      <div className="hidden h-full shrink-0 md:block">
+        <AppSidebar />
+      </div>
       <div className="flex min-w-0 flex-1 flex-col">
-        <DashboardHeader title={meta.title} description={meta.description} />
+        <DashboardHeader
+          title={meta.title}
+          description={meta.description}
+          leading={<MobileSidebarDrawer />}
+        />
         <main className="flex-1 overflow-y-auto px-8 py-5">
           <Suspense fallback={<LayoutOutletSkeleton />}>
             <Outlet />

@@ -228,12 +228,18 @@ const LeftSidebar = styled.aside<{ $embedded?: boolean }>`
   background: ${editorTheme.bgSidebar};
   display: flex;
   flex-direction: column;
-  position: ${({ $embedded }) => ($embedded ? 'absolute' : 'fixed')};
+  position: ${({ $embedded }) => ($embedded ? 'relative' : 'fixed')};
   left: 0;
   top: 0;
   z-index: ${({ $embedded }) => ($embedded ? 2 : 100)};
   border-right: 1px solid ${editorTheme.border};
   min-height: 0;
+
+  @media (max-width: 767px) {
+    display: ${({ $embedded }) => ($embedded ? 'flex' : 'none')};
+    width: 100%;
+    max-width: ${editorLayout.sidebarWidthPx}px;
+  }
 `
 
 const SidebarHeader = styled.div`

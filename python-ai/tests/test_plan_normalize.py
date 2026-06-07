@@ -1,6 +1,6 @@
 """Tests for PlanResult dict normalization."""
 
-from app.agent_step.llm_parse import (
+from app.agent.harness.llm_parse import (
     build_plan_dict_from_tool_calls,
     extract_plan_tool_calls_from_text,
     normalize_plan_dict,

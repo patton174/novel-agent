@@ -1,6 +1,6 @@
 import pytest
 
-from app.agent_step.vfs.memory_document import (
+from app.agent.backend.memory_document import (
     MemoryDocumentError,
     envelope_to_storage_fields,
     validate_memory_document,

@@ -1,4 +1,4 @@
-from app.agent_step.intent_message import (
+from app.agent.harness.intent_message import (
     intent_user_message_for_context,
     split_embedded_qa_from_user_message,
 )

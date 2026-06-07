@@ -1,4 +1,4 @@
-"""Lightweight text embeddings with optional OpenAI-compatible API."""
+"""Text embeddings — independent provider from chat LLM."""
 
 from __future__ import annotations
 
@@ -31,22 +31,33 @@ def _hash_embed(text: str, dim: int = _EMBED_DIM) -> list[float]:
 async def embed_texts(texts: Sequence[str]) -> list[list[float]]:
     if not texts:
         return []
-    try:
-        from app.core.llm import llm_provider
 
-        if llm_provider.is_configured:
+    provider = (settings.rag_embed_provider or "openai").strip().lower()
+
+    if provider == "openai":
+        try:
             from langchain_openai import OpenAIEmbeddings
 
-            cfg = settings.get_active_llm_config()
-            embeddings = OpenAIEmbeddings(
-                api_key=cfg.get("api_key") or "dummy",
-                base_url=cfg.get("base_url"),
-                model="text-embedding-3-small",
+            api_key = (settings.rag_embed_api_key or "").strip()
+            if not api_key:
+                raise RuntimeError("RAG_EMBED_API_KEY not configured")
+            base_url = (settings.rag_embed_base_url or "").strip() or None
+            emb = OpenAIEmbeddings(
+                api_key=api_key,
+                base_url=base_url,
+                model=settings.rag_embed_model or "text-embedding-3-small",
             )
-            return await embeddings.aembed_documents(list(texts))
-    except Exception as exc:
-        logger.debug("embedding API unavailable, using hash fallback: %s", exc)
-    return [_hash_embed(t) for t in texts]
+            return await emb.aembed_documents(list(texts))
+        except Exception as exc:
+            logger.error("embedding provider failed: %s", exc)
+            if settings.rag_embed_fail_fast:
+                raise RuntimeError(f"embedding unavailable: {exc}") from exc
+            return [_hash_embed(t) for t in texts]
+
+    if provider == "disabled":
+        return [_hash_embed(t) for t in texts]
+
+    raise RuntimeError(f"unknown rag_embed_provider: {provider}")
 
 
 def cosine_similarity(a: list[float], b: list[float]) -> float:

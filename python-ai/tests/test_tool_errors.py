@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from app.agent_step.tool_errors import humanize_tool_validation_error
+from app.agent.harness.tool_errors import humanize_tool_validation_error
 
 
 def test_write_missing_file_path_message():

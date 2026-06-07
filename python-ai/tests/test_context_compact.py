@@ -1,7 +1,7 @@
 """Tests for compact agent context assembly."""
 
-from app.agent_step.prompting.run_context import assemble_run_context
-from app.agent_step.context_compact import (
+from app.agent.context.prompting.run_context import assemble_run_context
+from app.agent.context.compact import (
     chapter_has_substantial_body,
     ctx_with_write_anchor,
     effective_chapter_text,
@@ -10,8 +10,8 @@ from app.agent_step.context_compact import (
     is_onboarding_assistant_text,
     render_story_memory_compact_from_snapshot,
 )
-from app.agent_step.routing import has_writing_context, story_context_from_ctx
-from app.agent_step.schemas import AgentRunContext
+from app.agent.harness.routing import has_writing_context, story_context_from_ctx
+from app.agent.schemas import AgentRunContext
 
 
 def _ctx(**overrides) -> AgentRunContext:
@@ -79,7 +79,7 @@ def test_run_context_includes_full_chapter_list_after_list_tool():
     assert "chapter_list_full" in bundle["novel"]
     assert "[c1]" in bundle["novel"]["chapter_list_full"]
     assert "chapter_catalog" in bundle["novel"]
-    assert "Delete" in bundle["capabilities"]
+    assert "DeleteChapter" in bundle["capabilities"]
 
 
 def test_chapter_has_body_from_word_count_only():

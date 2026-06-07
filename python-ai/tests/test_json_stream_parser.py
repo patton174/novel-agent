@@ -1,6 +1,6 @@
 """DisplayContentStreamParser fence stripping."""
 
-from app.agent_step.json_stream import DisplayContentStreamParser
+from app.agent.streaming.json_stream import DisplayContentStreamParser
 
 
 def test_parser_streams_content_inside_markdown_json_fence():

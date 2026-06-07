@@ -1,4 +1,4 @@
-from app.agent_step.chapter_body_format import (
+from app.agent.harness.chapter_body_format import (
     ensure_paragraph_fullwidth_indent,
     normalize_chapter_body_for_persist,
     strip_markdown_artifacts,

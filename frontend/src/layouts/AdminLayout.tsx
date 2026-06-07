@@ -5,6 +5,7 @@ import { Link, Outlet, useLocation } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { fetchUserInfo } from '../api/userApi'
 import { AdminSidebar } from '../components/admin/AdminSidebar'
+import { MobileAdminDrawer } from '../components/admin/MobileAdminDrawer'
 import { LayoutOutletSkeleton } from '../components/loading/LayoutOutletSkeleton'
 import { Avatar, AvatarFallback } from '../components/ui/avatar'
 import { Badge } from '../components/ui/badge'
@@ -48,17 +49,22 @@ export default function AdminLayout() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-background text-foreground">
-      <AdminSidebar />
+      <div className="hidden h-full shrink-0 md:block">
+        <AdminSidebar />
+      </div>
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-14 shrink-0 items-center justify-between border-b border-border px-6">
-          <div>
+        <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-border px-4 md:px-6">
+          <div className="flex min-w-0 flex-1 items-center gap-2">
+            <MobileAdminDrawer />
+            <div className="min-w-0">
             <h1 className="text-base font-semibold leading-none">{meta.title}</h1>
             {meta.description ? (
               <p className="mt-1 text-xs text-muted-foreground">{meta.description}</p>
             ) : null}
+            </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex shrink-0 items-center gap-3">
             <Button asChild variant="outline" size="sm" className="hidden sm:inline-flex">
               <Link to="/dashboard">
                 <ArrowLeft className="size-4" />

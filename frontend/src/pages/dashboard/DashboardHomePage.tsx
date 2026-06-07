@@ -25,6 +25,8 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useMarkRouteSeen } from '@/hooks/useMarkRouteSeen'
+import { dashboardCache } from '@/stores/dashboardCacheStore'
 
 function formatUpdatedAt(value: string | number): string {
   const date = new Date(value)
@@ -79,9 +81,12 @@ const STAT_CARDS = [
 ]
 
 export default function DashboardHomePage() {
-  const [summary, setSummary] = useState<DashboardSummary | null>(null)
-  const [recentNovels, setRecentNovels] = useState<RecentNovel[] | null>(null)
-  const [activity, setActivity] = useState<DashboardActivity | null>(null)
+  useMarkRouteSeen()
+  const [summary, setSummary] = useState<DashboardSummary | null>(() => dashboardCache.getSummary())
+  const [recentNovels, setRecentNovels] = useState<RecentNovel[] | null>(() =>
+    dashboardCache.getRecentNovels(),
+  )
+  const [activity, setActivity] = useState<DashboardActivity | null>(() => dashboardCache.getActivity())
   const [loadError, setLoadError] = useState(false)
 
   useEffect(() => {
@@ -91,6 +96,9 @@ export default function DashboardHomePage() {
     void Promise.all([fetchSummary(), fetchRecentNovels(), fetchActivity()])
       .then(([s, novels, act]) => {
         if (cancelled) return
+        dashboardCache.setSummary(s)
+        dashboardCache.setRecentNovels(novels)
+        dashboardCache.setActivity(act)
         setSummary(s)
         setRecentNovels(novels)
         setActivity(act)

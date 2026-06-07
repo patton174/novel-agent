@@ -1,10 +1,10 @@
 """Chapter patch merge + tail selection."""
 
-from app.agent_step.context_compact import (
+from app.agent.context.compact import (
     apply_chapter_tool_patch_to_ctx,
     previous_chapter_tail_for_create,
 )
-from app.agent_step.schemas import AgentRunContext
+from app.agent.schemas import AgentRunContext
 
 
 def test_tail_uses_latest_written_chapter_not_open_editor_ch1():

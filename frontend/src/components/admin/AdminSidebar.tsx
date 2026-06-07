@@ -18,7 +18,12 @@ const mainNav: NavItem[] = [
   { label: '书库', to: '/admin/catalog', icon: BookOpen },
 ]
 
-export function AdminSidebar() {
+interface AdminSidebarProps {
+  embedded?: boolean
+  onNavigate?: () => void
+}
+
+export function AdminSidebar({ embedded = false, onNavigate }: AdminSidebarProps) {
   const linkClass = ({ isActive }: { isActive: boolean }) =>
     cn(
       'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
@@ -27,8 +32,12 @@ export function AdminSidebar() {
         : 'text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground',
     )
 
+  const shellClass = embedded
+    ? 'flex h-full w-full flex-col bg-sidebar text-sidebar-foreground'
+    : 'flex h-full w-56 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground'
+
   return (
-    <aside className="flex h-full w-56 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
+    <aside className={shellClass}>
       <div className="flex h-14 items-center gap-2 px-4">
         <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
           <Shield className="size-4" />
@@ -40,7 +49,7 @@ export function AdminSidebar() {
 
       <nav className="flex flex-1 flex-col gap-1 p-3">
         {mainNav.map((item) => (
-          <NavLink key={item.to} to={item.to} end={item.end} className={linkClass}>
+          <NavLink key={item.to} to={item.to} end={item.end} className={linkClass} onClick={onNavigate}>
             <item.icon className="size-4 shrink-0" />
             {item.label}
           </NavLink>
@@ -48,7 +57,7 @@ export function AdminSidebar() {
 
         <Separator className="my-2" />
 
-        <NavLink to="/dashboard" className={linkClass}>
+        <NavLink to="/dashboard" className={linkClass} onClick={onNavigate}>
           <ArrowLeft className="size-4 shrink-0" />
           返回用户端
         </NavLink>

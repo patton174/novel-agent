@@ -1,7 +1,7 @@
 """Tests for needs_context_search routing."""
 
-from app.agent_step.routing import needs_context_search
-from app.agent_step.schemas import AgentRunContext
+from app.agent.harness.routing import needs_context_search
+from app.agent.schemas import AgentRunContext
 
 
 def test_needs_context_search_keywords():

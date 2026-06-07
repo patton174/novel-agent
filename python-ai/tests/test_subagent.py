@@ -2,13 +2,13 @@
 
 import pytest
 
-from app.agent_step.schemas import AgentRunContext
-from app.agent_step.subagent import (
+from app.agent.schemas import AgentRunContext
+from app.agent.harness.subagent import (
     _summarize_subagent_events,
     build_subagent_context,
 )
-from app.agent_step.subagent_policy import SUBAGENT_EXCLUDED_TOOLS, subagent_depth
-from app.agent_step.tools.registry import get_all_tools, is_tool_discovered
+from app.agent.harness.subagent_policy import SUBAGENT_EXCLUDED_TOOLS, subagent_depth
+from app.agent.tools.registry import get_all_tools, is_tool_discovered
 
 
 def _parent_ctx() -> AgentRunContext:
@@ -37,7 +37,7 @@ def test_build_subagent_context_increments_depth():
 def test_subagent_excludes_agent_and_ask_user():
     child = build_subagent_context(_parent_ctx(), description="x", prompt="y")
     names = {t.name for t in get_all_tools(child)}
-    assert "Read" in names
+    assert "ReadChapter" in names
     assert "Agent" not in names
     assert "AskUser" not in names
     assert "Agent" in SUBAGENT_EXCLUDED_TOOLS
@@ -71,7 +71,7 @@ def test_summarize_subagent_events():
 
 @pytest.mark.asyncio
 async def test_agent_call_rejects_nested_subagent():
-    from app.agent_step.subagent import run_subagent
+    from app.agent.harness.subagent import run_subagent
 
     child = build_subagent_context(_parent_ctx(), description="内层", prompt="任务")
     result = await run_subagent(child, description="嵌套", prompt="不应执行")

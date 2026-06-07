@@ -19,4 +19,8 @@ export const EditorMainContainer = styled.main`
   position: relative;
   z-index: 1;
   overflow: hidden;
+
+  @media (max-width: 767px) {
+    margin-left: 0;
+  }
 `

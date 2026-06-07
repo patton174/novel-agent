@@ -40,7 +40,7 @@ def llm_policy_for_tool(tool_name: str) -> LlmStreamPolicy:
 
 def llm_policy_for_output(tool_input: dict | None) -> LlmStreamPolicy:
     """Progress output uses a faster profile; complete uses default."""
-    from app.agent_step.prompting.output_input import resolve_output_mode
+    from app.agent.context.prompting.output_input import resolve_output_mode
 
     mode = resolve_output_mode(tool_input or {})
     if mode == "progress":

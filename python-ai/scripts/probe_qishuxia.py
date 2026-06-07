@@ -4,9 +4,9 @@ from __future__ import annotations
 import re
 from urllib.parse import urljoin
 
-from app.crawl_agent.context import CrawlAgentContext
-from app.services.crawl_fetch import fetch_for_crawl
-from app.services.crawl_scrapling import fetch_page, page_links, page_text, _raw_html
+from app.crawl.agent.context import CrawlAgentContext
+from app.crawl.fetch.fetch import fetch_for_crawl
+from app.crawl.fetch.scrapling import fetch_page, page_links, page_text, _raw_html
 
 
 class _Client:

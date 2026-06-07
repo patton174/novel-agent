@@ -1,4 +1,4 @@
-from app.crawl_agent.limits import batch_save_count, effective_chapter_cap, slice_chapters
+from app.crawl.agent.limits import batch_save_count, effective_chapter_cap, slice_chapters
 
 
 def test_unlimited_chapters():

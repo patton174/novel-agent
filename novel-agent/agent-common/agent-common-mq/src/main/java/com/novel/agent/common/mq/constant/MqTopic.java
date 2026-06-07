@@ -21,6 +21,9 @@ public enum MqTopic {
 
     CRAWL_DISPATCH("agent.crawl.exchange", "crawl.dispatch", "agent.crawl.dispatch.queue"),
 
+    // 爬取书库章节向量索引
+    CATALOG_INDEX("agent.catalog-index.exchange", "agent.catalog-index.persist", "agent.catalog-index.queue"),
+
     ;
 
     private final String exchange;

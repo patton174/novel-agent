@@ -1,6 +1,6 @@
 """Tests for crawl_proxy resolution and masking."""
 
-from app.services.crawl_proxy import mask_proxy_url, pick_crawl_proxy, _split_proxy_list
+from app.crawl.fetch.proxy import mask_proxy_url, pick_crawl_proxy, _split_proxy_list
 
 
 def test_split_proxy_list():

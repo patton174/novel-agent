@@ -1,6 +1,6 @@
 """Tests for memory operation log in planner context."""
 
-from app.agent_step.context_memory_log import (
+from app.agent.context.memory_log import (
     append_memory_op_log,
     format_character_roster_for_plan,
     format_memory_ops_for_plan,

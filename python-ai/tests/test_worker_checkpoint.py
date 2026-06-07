@@ -6,12 +6,12 @@ import asyncio
 
 import pytest
 
-from app.agent_step.run_session import WorkerSliceSession
-from app.agent_step.schemas import AgentRunContext
-from app.agent_step.worker.checkpoint import restore_worker_state, serialize_worker_state
-from app.agent_step.worker.exceptions import WorkerSliceWaiting
-from app.agent_step.query_loop_support import RunLoopState
-from app.agent_step.transcript import AgentTranscript
+from app.agent.harness.run_session import WorkerSliceSession
+from app.agent.schemas import AgentRunContext
+from app.agent.harness.worker.checkpoint import restore_worker_state, serialize_worker_state
+from app.agent.harness.worker.exceptions import WorkerSliceWaiting
+from app.agent.harness.loop_support import RunLoopState
+from app.agent.harness.transcript import AgentTranscript
 
 
 def _sample_ctx() -> AgentRunContext:

@@ -1,11 +1,21 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { fetchStatsTrends, type TrendPoint } from '@/api/adminApi'
+import { ContentPending } from '@/components/loading/ContentPending'
+import { useMarkRouteSeen } from '@/hooks/useMarkRouteSeen'
 import { appToast } from '@/stores/appToastStore'
 import { Skeleton } from '@/components/ui/skeleton'
 
 const StatsTrendCharts = lazy(() => import('./StatsTrendCharts'))
 
+const chartAreaFallback = (
+  <div className="space-y-6" aria-hidden>
+    <Skeleton className="h-72 rounded-2xl" />
+    <Skeleton className="h-72 rounded-2xl" />
+  </div>
+)
+
 export default function StatsPage() {
+  useMarkRouteSeen()
   const [agentRunTrend, setAgentRunTrend] = useState<TrendPoint[] | null>(null)
   const [registrationTrend, setRegistrationTrend] = useState<TrendPoint[] | null>(null)
 
@@ -33,23 +43,11 @@ export default function StatsPage() {
   const loading = agentRunTrend === null
 
   if (loading) {
-    return (
-      <div className="space-y-6">
-        <Skeleton className="h-72 rounded-2xl" />
-        <Skeleton className="h-72 rounded-2xl" />
-      </div>
-    )
+    return <ContentPending label="正在加载趋势数据" />
   }
 
   return (
-    <Suspense
-      fallback={
-        <div className="space-y-6">
-          <Skeleton className="h-72 rounded-2xl" />
-          <Skeleton className="h-72 rounded-2xl" />
-        </div>
-      }
-    >
+    <Suspense fallback={chartAreaFallback}>
       <div className="space-y-6">
         <StatsTrendCharts
           agentRunTrend={agentRunTrend!}

@@ -1,4 +1,4 @@
-from app.agent_step.routing import (
+from app.agent.harness.routing import (
     format_dialogue_history,
     has_writing_context,
     is_continue_request,
@@ -6,7 +6,7 @@ from app.agent_step.routing import (
     project_summary_from_ctx,
     story_context_from_ctx,
 )
-from app.agent_step.schemas import AgentRunContext
+from app.agent.schemas import AgentRunContext
 
 
 def _ctx(**overrides) -> AgentRunContext:

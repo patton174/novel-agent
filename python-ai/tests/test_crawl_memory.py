@@ -1,9 +1,9 @@
 """Crawl context memory append/prune tests."""
 
-from app.crawl_agent.context import CrawlAgentContext
-from app.crawl_agent.memory import CrawlContextMemory
-from app.crawl_agent.prompting.run_context import build_crawl_run_context
-from app.services.crawl_content_client import CrawlContentClient
+from app.crawl.agent.context import CrawlAgentContext
+from app.crawl.agent.memory import CrawlContextMemory
+from app.crawl.agent.prompting.run_context import build_crawl_run_context
+from app.crawl.client import CrawlContentClient
 
 
 def _ctx() -> CrawlAgentContext:

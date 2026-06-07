@@ -11,7 +11,7 @@ for name in ("status", "status_code", "url", "html", "text", "body"):
         else:
             print(name, val)
 
-from app.services.crawl_scrapling import page_text, page_links
+from app.crawl.fetch.scrapling import page_text, page_links
 
 print("page_text", len(page_text(r, 500)))
 print("page_links", len(page_links(r, "https://www.shuyous.com/", 10)))

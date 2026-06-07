@@ -2,7 +2,7 @@
 
 from types import SimpleNamespace
 
-from app.services.crawl_scrapling import _build_meta, page_text
+from app.crawl.fetch.scrapling import _build_meta, page_text
 
 
 class _Fake403:
@@ -32,7 +32,7 @@ def test_build_meta_marks_403_blocked():
 
 
 def test_page_links_html_fallback_when_css_empty():
-    from app.services.crawl_scrapling import page_links
+    from app.crawl.fetch.scrapling import page_links
 
     class _StealthLike:
         status = 200
@@ -52,7 +52,7 @@ def test_page_links_html_fallback_when_css_empty():
 
 
 def test_page_html_strips_script_keeps_links():
-    from app.services.crawl_scrapling import page_html
+    from app.crawl.fetch.scrapling import page_html
 
     class _Page:
         status = 200
@@ -74,14 +74,14 @@ def test_page_html_strips_script_keeps_links():
 
 
 def test_is_scrapling_tls_error():
-    from app.services.crawl_scrapling import _is_scrapling_tls_error
+    from app.crawl.fetch.scrapling import _is_scrapling_tls_error
 
     assert _is_scrapling_tls_error(RuntimeError("curl: (35) TLS connect error: OPENSSL_internal"))
     assert not _is_scrapling_tls_error(RuntimeError("HTTP 404"))
 
 
 def test_proxy_candidates_for_fetch():
-    from app.services.crawl_proxy import proxy_candidates_for_fetch
+    from app.crawl.fetch.proxy import proxy_candidates_for_fetch
 
     chain = proxy_candidates_for_fetch("http://127.0.0.1:7890")
     assert chain[0] == "http://127.0.0.1:7890"
@@ -89,7 +89,7 @@ def test_proxy_candidates_for_fetch():
 
 
 def test_page_links_scrapling_selector_get_no_default():
-    from app.services.crawl_scrapling import page_links
+    from app.crawl.fetch.scrapling import page_links
 
     class _Anchor:
         attrib = {"href": "/wangyouxiaoshuo/"}

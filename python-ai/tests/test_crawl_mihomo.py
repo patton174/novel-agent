@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from app.services import crawl_mihomo
+from app.crawl.fetch import mihomo as crawl_mihomo
 
 
 @pytest.fixture(autouse=True)
@@ -86,16 +86,16 @@ def test_record_node_failure_skips_during_cooldown(monkeypatch):
 
 def test_fetch_with_mihomo_rotates_on_tls_error(monkeypatch):
     from app.config import settings as app_settings
-    from app.services.crawl_scrapling import _fetch_with_mihomo_node_rotation
+    from app.crawl.fetch.scrapling import _fetch_with_mihomo_node_rotation
 
     monkeypatch.setattr(app_settings, "crawl_http_proxy", "http://127.0.0.1:7890")
     monkeypatch.setattr(app_settings, "crawl_mihomo_max_nodes", 12)
     monkeypatch.setattr(
-        "app.services.crawl_scrapling.mihomo_rotation_enabled",
+        "app.crawl.fetch.scrapling.mihomo_rotation_enabled",
         lambda: True,
     )
     monkeypatch.setattr(
-        "app.services.crawl_scrapling.iter_nodes_for_retry",
+        "app.crawl.fetch.scrapling.iter_nodes_for_retry",
         lambda: ["节点A", "节点B"],
     )
 
@@ -105,7 +105,7 @@ def test_fetch_with_mihomo_rotates_on_tls_error(monkeypatch):
         selected.append(node)
 
     monkeypatch.setattr(
-        "app.services.crawl_scrapling.select_node",
+        "app.crawl.fetch.scrapling.select_node",
         fake_select,
     )
 
@@ -127,15 +127,15 @@ def test_fetch_with_mihomo_rotates_on_tls_error(monkeypatch):
         return _OkPage()
 
     monkeypatch.setattr(
-        "app.services.crawl_scrapling.fetch_page",
+        "app.crawl.fetch.scrapling.fetch_page",
         fake_fetch,
     )
     monkeypatch.setattr(
-        "app.services.crawl_scrapling.record_node_failure",
+        "app.crawl.fetch.scrapling.record_node_failure",
         MagicMock(),
     )
     monkeypatch.setattr(
-        "app.services.crawl_scrapling.record_node_success",
+        "app.crawl.fetch.scrapling.record_node_success",
         MagicMock(),
     )
 

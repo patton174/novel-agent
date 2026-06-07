@@ -1,6 +1,6 @@
 """Tests for transport failure handling without raising to callers."""
 
-from app.services.crawl_scrapling import (
+from app.crawl.fetch.scrapling import (
     _is_tls_or_proxy_error,
     _should_retry_next_mihomo_node,
     _transport_failure_result,
@@ -27,19 +27,19 @@ def test_should_retry_next_mihomo_node_tls_only():
 
 def test_transport_failure_result_no_raise(monkeypatch):
     monkeypatch.setattr(
-        "app.services.crawl_scrapling.mihomo_rotation_enabled",
+        "app.crawl.fetch.scrapling.mihomo_rotation_enabled",
         lambda: False,
     )
     monkeypatch.setattr(
-        "app.services.crawl_scrapling.proxy_candidates_for_fetch",
+        "app.crawl.fetch.scrapling.proxy_candidates_for_fetch",
         lambda _p: ["http://127.0.0.1:7890", None],
     )
 
     def boom(*_a, **_k):
         raise RuntimeError("curl: (35) TLS connect error: OPENSSL_internal")
 
-    monkeypatch.setattr("app.services.crawl_scrapling.fetch_page", boom)
-    monkeypatch.setattr("app.services.crawl_scrapling.settings.crawl_browser_fetch_enabled", False)
+    monkeypatch.setattr("app.crawl.fetch.scrapling.fetch_page", boom)
+    monkeypatch.setattr("app.crawl.fetch.scrapling.settings.crawl_browser_fetch_enabled", False)
 
     page, meta = fetch_page_with_retry("https://example.com/", proxy="http://127.0.0.1:7890")
     assert meta.http_status == 0

@@ -1,12 +1,12 @@
 """Tests for think-tag filtering."""
 
 from app.runtime.text_sanitize import extract_visible_text, strip_think_markup
-from app.agent_step.llm_parse import (
+from app.agent.harness.llm_parse import (
     extract_json_object,
     extract_plan_json_from_text,
     sanitize_step_result,
 )
-from app.agent_step.schemas import DisplayPayload, StepResult
+from app.agent.schemas import DisplayPayload, StepResult
 
 
 def test_strip_think_markup_keeps_outside_text():
@@ -78,8 +78,8 @@ def test_extract_plan_json_finds_embedded_object():
 
 
 def test_needs_user_direction_for_incomplete_prompt():
-    from app.agent_step.routing import needs_user_direction
-    from app.agent_step.schemas import AgentRunContext
+    from app.agent.harness.routing import needs_user_direction
+    from app.agent.schemas import AgentRunContext
 
     ctx = AgentRunContext(
         run_id="r1",

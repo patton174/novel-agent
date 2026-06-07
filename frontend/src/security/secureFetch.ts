@@ -15,6 +15,11 @@ import {
 } from './requestCrypto'
 
 const ENC_CONTENT_TYPE = 'application/vnd.novel-agent.enc+json'
+const TRACE_HEADER = 'X-Trace-Id'
+
+function newTraceId(): string {
+  return crypto.randomUUID().replace(/-/g, '')
+}
 
 function bodyBytesOf(body: BodyInit | null | undefined): Uint8Array {
   if (body == null) {
@@ -49,6 +54,7 @@ async function buildRequest(
 
   const headers: Record<string, string> = {
     ...getAuthHeaders(),
+    [TRACE_HEADER]: newTraceId(),
     ...(init?.headers as Record<string, string> | undefined),
   }
 

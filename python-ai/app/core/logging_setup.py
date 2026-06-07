@@ -6,6 +6,7 @@ import logging
 import sys
 
 from app.config import settings
+from app.core.trace_middleware import TraceIdFilter
 
 
 def configure_stdio_utf8() -> None:
@@ -29,9 +30,10 @@ def setup_logging() -> None:
     ):
         return
     handler = logging.StreamHandler(sys.stderr)
+    handler.addFilter(TraceIdFilter())
     handler.setFormatter(
         logging.Formatter(
-            "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+            "%(asctime)s trace_id=%(trace_id)s - %(name)s - %(levelname)s - %(message)s",
             datefmt="%Y-%m-%d %H:%M:%S",
         )
     )

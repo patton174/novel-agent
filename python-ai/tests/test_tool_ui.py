@@ -1,8 +1,7 @@
 """CC-aligned per-tool UI excerpts."""
 
-from app.agent_step.tool_ui import glob_ui_excerpt, read_ui_excerpt
-from app.agent_step.vfs.api_inventory import format_glob_inventory
-from app.agent_step.vfs.format import add_line_numbers, FILE_UNCHANGED_STUB
+from app.agent.harness.tool_ui import glob_ui_excerpt, read_ui_excerpt
+from app.agent.backend.format import add_line_numbers, FILE_UNCHANGED_STUB
 
 
 def test_read_ui_excerpt_line_count():
@@ -14,9 +13,10 @@ def test_read_ui_excerpt_unchanged():
     assert "未变更" in read_ui_excerpt(FILE_UNCHANGED_STUB, {})
 
 
-def test_glob_ui_excerpt_inventory_headers():
-    inv = format_glob_inventory(chapter_count=5, memory_count=2, paths=[])
-    assert "5 条章节路径" in glob_ui_excerpt(inv, {})
+def test_glob_ui_excerpt_list_chapters_json():
+    inv = '{"chapters": [{"chapter_id": "a", "title": "第一章"}, {"chapter_id": "b", "title": "第二章"}]}'
+    excerpt = glob_ui_excerpt(inv, {})
+    assert "第一章" in excerpt
 
 
 def test_read_ui_excerpt_memory_roster():

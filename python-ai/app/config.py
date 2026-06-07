@@ -33,6 +33,22 @@ class Settings(BaseSettings):
     milvus_user: str = ""
     milvus_password: str = ""
 
+    # RAG embedding (independent from chat LLM — DeepSeek has no embedding API)
+    rag_embed_provider: str = "openai"
+    rag_embed_model: str = "text-embedding-3-small"
+    rag_embed_api_key: str = ""
+    rag_embed_base_url: str = ""
+    rag_embed_fail_fast: bool = True
+
+    # Generic agent tools
+    web_search_api_key: str = ""
+    web_search_provider: str = "tavily"
+    mcp_servers: str = ""
+    agent_skills_dir: str = ""
+    kg_enabled: bool = False
+    rag_hybrid_enabled: bool = True
+    rag_rerank_enabled: bool = False
+
     content_base_url: str = "http://127.0.0.1:8091"
     internal_service_key: str = "dev-internal-key-change-me"
     worker_id: str = ""
@@ -47,6 +63,9 @@ class Settings(BaseSettings):
     agent_autocompact_max_input_chars: int = 90_000
     agent_subagent_max_turns: int = 20
     agent_subagent_max_depth: int = 1
+    agent_durable_checkpoint: bool = False
+    agent_relevance_inject: bool = False
+    agent_run_session_ttl_sec: int = 3600
 
     crawl_request_delay_ms: int = 800
     crawl_http_proxy: str = ""

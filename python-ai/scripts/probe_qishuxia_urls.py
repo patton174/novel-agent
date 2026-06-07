@@ -1,9 +1,9 @@
 """Probe multiple qishuxia URLs — what AI would see via FetchPage."""
 from __future__ import annotations
 
-from app.crawl_agent.context import CrawlAgentContext
-from app.services.crawl_fetch import fetch_for_crawl
-from app.services.crawl_scrapling import page_links, page_text
+from app.crawl.agent.context import CrawlAgentContext
+from app.crawl.fetch.fetch import fetch_for_crawl
+from app.crawl.fetch.scrapling import page_links, page_text
 
 
 class _Client:

@@ -13,19 +13,13 @@ alwaysApply: true
 | 场景 | 做法 |
 |------|------|
 | 功能验收 | 直接访问 https://www.novel-agent.cn |
-| 代码部署 | CI 或 `novel-agent/docs/deploy/scripts/deploy-fast.sh` |
+| 代码部署 | CI 或 `novel-agent/agent-document/docs/deploy/scripts/deploy-fast.sh` |
 | 前端 UI 小改 | `cd frontend && npm run dev`（勿启 Consumer / 勿连生产 MQ） |
 
-## 架构速查（线上一致）
+## 架构与部署（详见记忆规则）
 
-| 端口 | 服务 | 部署位置 |
-|------|------|----------|
-| 3000 | Frontend | Worker |
-| 8000 | Python AI | Worker |
-| 8082 | PyAI | Worker |
-| 8091 | Content | Worker |
-| 8090 | Consumer | Worker |
-| 8080/8081 | Gateway / Auth | MW |
+- `.cursor/rules/project-architecture.mdc` — 拓扑、链路、爬虫编排
+- `.cursor/rules/deploy-ops.mdc` — CI、脚本、MW/Worker 主机、安全对齐
 
 ## 禁止事项
 

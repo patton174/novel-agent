@@ -1,6 +1,6 @@
 """Character scope memory field normalization."""
 
-from app.agent_step.memory_fields import memory_fields_from_mapping
+from app.agent.harness.memory_fields import memory_fields_from_mapping
 from app.runtime.story_memory import patch_story_memory, read_story_memory_item
 
 

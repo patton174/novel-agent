@@ -7,7 +7,8 @@ describe('AgentThinkPanel', () => {
     const { getByTestId } = render(<AgentThinkPanel isThinking text="" />)
     expect(getByTestId('agent-think-toggle')).toHaveTextContent('思考')
     expect(getByTestId('agent-think-toggle')).toHaveTextContent('进行中')
-    expect(document.querySelector('[data-tool-icon="think"]')).toBeNull()
+    expect(getByTestId('timeline-lead-icon')).toHaveAttribute('data-status', 'loading')
+    expect(document.querySelector('[data-tool-icon="think"]')).not.toBeNull()
   })
 
   it('hides body after thinking completes until user expands', () => {

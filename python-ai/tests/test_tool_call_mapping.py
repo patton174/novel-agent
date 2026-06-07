@@ -1,7 +1,7 @@
 """Tool call id mapping through prepare_execution_batch."""
 
-from app.agent_step.schemas import AgentRunContext, PlanToolCall
-from app.agent_step.tool_prepare import prepare_execution_batch
+from app.agent.schemas import AgentRunContext, PlanToolCall
+from app.agent.harness.tool_prepare import prepare_execution_batch
 
 
 class _Ai:

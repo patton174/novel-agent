@@ -4,15 +4,11 @@ import logging
 logger = logging.getLogger(__name__)
 
 from fastapi import APIRouter, HTTPException, Request, Header
-from fastapi.responses import StreamingResponse
-
 from app.models.schemas import (
-    ContinueRequest,
     RewriteRequest,
     OutlineRequest,
     DialogueRequest,
     ReviewRequest,
-    ContinueResponse,
     RewriteResponse,
     OutlineResponse,
     DialogueResponse,
@@ -22,15 +18,13 @@ from app.models.schemas import (
     ConfigResponse,
     LLMProviderConfig,
 )
-from app.core.llm import generate_text, generate_text_stream, llm_provider, LLMError
+from app.core.llm import generate_text, llm_provider, LLMError
 from app.runtime.story_memory import get_story_memory, patch_story_memory
 from app.core.prompts import (
-    CONTINUATION_SYSTEM,
     REWRITE_SYSTEM,
     OUTLINE_SYSTEM,
     DIALOGUE_SYSTEM,
     REVIEW_SYSTEM,
-    continuation_prompt,
     rewrite_prompt,
     outline_prompt,
     dialogue_prompt,
@@ -259,105 +253,6 @@ async def switch_provider(provider: str):
     llm_provider.switch_provider(provider)
 
     return {"status": "ok", "active_provider": provider}
-
-
-@router.post("/ai/continue", response_model=ContinueResponse)
-async def continue_story(request: ContinueRequest):
-    """
-    Continue a chapter from the provided content.
-
-    Returns 3 candidate continuations.
-    """
-    if not llm_provider.is_configured:
-        raise HTTPException(status_code=503, detail="LLM not configured")
-
-    try:
-        # Apply content filter to input
-        if content_filter.contains_problematic_content(request.content):
-            raise HTTPException(status_code=400, detail="Input content contains sensitive material")
-
-        prompt = continuation_prompt(
-            request.content,
-            request.style,
-            request.word_count,
-        )
-
-        response = await generate_text(
-            prompt=prompt,
-            system_message=CONTINUATION_SYSTEM,
-            temperature=0.7,
-        )
-
-        # Filter output
-        filtered_response = content_filter.filter_text(response)
-
-        candidates = parse_candidates(filtered_response)
-
-        return ContinueResponse(
-            candidates=candidates,
-            used_context=False,  # TODO: integrate vector search
-        )
-
-    except LLMError as e:
-        raise HTTPException(status_code=502, detail=f"AI service error: {str(e)}") from e
-
-
-async def sse_stream(prompt: str, system_message: str, task_id: str = "default") -> StreamingResponse:
-    """
-    Create a Server-Sent Events streaming response.
-    """
-    print(f">>>>>> sse_stream ENTERED, task_id={task_id} <<<<<<", flush=True)
-
-    async def event_generator():
-        print(f">>>>>> event_generator STARTED, task_id={task_id} <<<<<<", flush=True)
-        logger.info(f"=== sse_stream called with task_id: {task_id} ===")
-        yield f"event: start\ndata: {task_id}\n\n"
-
-        try:
-            async for chunk in generate_text_stream(prompt=prompt, system_message=system_message):
-                clean = chunk.replace("<think>", "").replace("</think>", "").strip()
-                if clean:
-                    for line in clean.split('\n'):
-                        if line:
-                            yield f"data: {line}\n\n"
-            yield f"event: end\ndata: done\n\n"
-        except Exception as e:
-            yield f"event: error\ndata: {str(e)}\n\n"
-
-    return StreamingResponse(
-        event_generator(),
-        media_type="text/event-stream",
-        headers={
-            "Cache-Control": "no-cache",
-            "Connection": "keep-alive",
-            "X-Accel-Buffering": "no",
-        },
-    )
-
-
-@router.post("/ai/continue/stream")
-async def continue_story_stream(request: ContinueRequest):
-    """
-    Continue a chapter with SSE streaming.
-
-    Streams the response in Server-Sent Events format.
-    """
-    print(">>>>>> continue_story_stream ENTERED <<<<<<", flush=True)
-    logger.info("=== continue_story_stream called ===")
-    logger.info("=== after docstring ===")
-    if not llm_provider.is_configured:
-        raise HTTPException(status_code=503, detail="LLM not configured")
-
-    if content_filter.contains_problematic_content(request.content):
-        raise HTTPException(status_code=400, detail="Input content contains sensitive material")
-
-    prompt = continuation_prompt(
-        request.content,
-        request.style,
-        request.word_count,
-    )
-
-    return await sse_stream(prompt=prompt, system_message=CONTINUATION_SYSTEM, task_id="continue")
 
 
 async def rewrite_text(request: RewriteRequest):

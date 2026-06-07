@@ -1,6 +1,6 @@
 """Visible text channel prefix parsing."""
 
-from app.agent_step.visible_text_channel import (
+from app.agent.harness.visible_text_channel import (
     classify_visible_channel_prefix,
     polish_visible_text,
     prefix_scan_state,
@@ -49,7 +49,7 @@ def test_polish_visible_text_strips_decorative_heading_emoji():
 
 
 def test_extract_delivery_body_from_inline_prefix():
-    from app.agent_step.visible_text_channel import extract_delivery_body_from_text
+    from app.agent.harness.visible_text_channel import extract_delivery_body_from_text
 
     body = extract_delivery_body_from_text(
         "第 5 步完成。\n\n[交付]\n\n# 报告\n\n正文"

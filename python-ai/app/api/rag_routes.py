@@ -5,7 +5,8 @@ from __future__ import annotations
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
 
-from app.rag.chapter_index import clear_novel_index, index_chapter, reindex_novel, remove_chapter, search_novel
+from app.rag.chapter_index import clear_novel_index, reindex_novel, remove_chapter, search_novel
+from app.rag.ingest_queue import index_with_retry
 
 router = APIRouter(prefix="/rag", tags=["RAG"])
 
@@ -38,7 +39,7 @@ class ReindexNovelRequest(BaseModel):
 
 @router.post("/index/chapter")
 async def index_chapter_route(body: IndexChapterRequest):
-    count = await index_chapter(
+    count = await index_with_retry(
         novel_id=body.novel_id,
         chapter_id=body.chapter_id,
         title=body.title,

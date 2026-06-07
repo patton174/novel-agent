@@ -1,6 +1,6 @@
 """expand_memory_writes flattens nested JSON from agent output."""
 
-from app.agent_step.memory_fields import expand_memory_writes
+from app.agent.harness.memory_fields import expand_memory_writes
 
 
 def test_expand_character_json_card_into_flat_fields():

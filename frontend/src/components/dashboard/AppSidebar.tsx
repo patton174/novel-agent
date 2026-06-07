@@ -34,7 +34,12 @@ const actionNav: NavItem[] = [
   { label: '进入编辑器', to: '/editor', icon: PenLine },
 ]
 
-export function AppSidebar() {
+interface AppSidebarProps {
+  embedded?: boolean
+  onNavigate?: () => void
+}
+
+export function AppSidebar({ embedded = false, onNavigate }: AppSidebarProps) {
   const profile = useUserStore((s) => s.profile)
   const setProfile = useUserStore((s) => s.setProfile)
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -62,9 +67,13 @@ export function AppSidebar() {
         : 'text-muted-foreground hover:bg-surface-hover hover:text-foreground',
     )
 
+  const shellClass = embedded
+    ? 'flex h-full w-full flex-col bg-surface text-foreground'
+    : 'flex h-full w-64 shrink-0 flex-col border-r border-border bg-surface text-foreground'
+
   return (
     <>
-      <aside className="flex h-full w-64 shrink-0 flex-col border-r border-border bg-surface text-foreground">
+      <aside className={shellClass}>
         <div className="flex h-16 items-center border-b border-border px-5">
           <Link to="/dashboard" className="flex min-w-0 items-center transition-opacity hover:opacity-90">
             <NovelAiWordmark size="sm" animate={false} />
@@ -73,7 +82,13 @@ export function AppSidebar() {
 
         <nav className="flex flex-1 flex-col gap-1.5 overflow-y-auto p-4">
           {mainNav.map((item) => (
-            <NavLink key={item.to} to={item.to} end={item.end} className={navLinkClass}>
+            <NavLink
+              key={item.to}
+              to={item.to}
+              end={item.end}
+              className={navLinkClass}
+              onClick={onNavigate}
+            >
               <item.icon className="size-4.5 shrink-0" />
               {item.label}
             </NavLink>
@@ -82,7 +97,7 @@ export function AppSidebar() {
           <Separator className="my-3" />
 
           {actionNav.map((item) => (
-            <NavLink key={item.to} to={item.to} className={navLinkClass}>
+            <NavLink key={item.to} to={item.to} className={navLinkClass} onClick={onNavigate}>
               <item.icon className="size-4.5 shrink-0" />
               {item.label}
             </NavLink>
@@ -90,7 +105,7 @@ export function AppSidebar() {
 
           {adminNav.length > 0 && <Separator className="my-3" />}
           {adminNav.map((item) => (
-            <NavLink key={item.to} to={item.to} className={navLinkClass}>
+            <NavLink key={item.to} to={item.to} className={navLinkClass} onClick={onNavigate}>
               <item.icon className="size-4.5 shrink-0" />
               {item.label}
             </NavLink>

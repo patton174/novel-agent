@@ -1,6 +1,6 @@
 """Light output input normalization."""
 
-from app.agent_step.prompting.output_input import normalize_output_input, resolve_output_mode
+from app.agent.context.prompting.output_input import normalize_output_input, resolve_output_mode
 
 
 def test_resolve_mode_from_end_run():

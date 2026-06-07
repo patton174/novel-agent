@@ -10,7 +10,8 @@ from fastapi import APIRouter, Header, HTTPException
 from pydantic import BaseModel, Field
 
 from app.config import settings
-from app.services.novel_crawler import execute_crawl_job, preview_crawl
+from app.crawl.job_executor import has_capacity, run_bounded
+from app.crawl.runner import execute_crawl_job, preview_crawl
 
 logger = logging.getLogger(__name__)
 
@@ -72,14 +73,18 @@ async def crawl_execute_internal(
     x_internal_service_key: str | None = Header(default=None, alias="X-Internal-Service-Key"),
 ):
     _verify_internal_key(x_internal_service_key)
+    if not has_capacity():
+        raise HTTPException(status_code=429, detail="crawl worker at capacity")
     logger.info("crawl execute accepted jobId=%s url=%s", body.job_id, body.source_url)
-    asyncio.create_task(
-        execute_crawl_job(
+
+    async def _run() -> None:
+        await execute_crawl_job(
             job_id=body.job_id,
             source_url=body.source_url,
             site_config=body.site_config,
         )
-    )
+
+    asyncio.create_task(run_bounded(body.job_id, _run))
     return CrawlExecuteResponse(accepted=True, job_id=body.job_id)
 
 
@@ -112,7 +117,7 @@ async def orchestrator_run_once_internal(
     x_internal_service_key: str | None = Header(default=None, alias="X-Internal-Service-Key"),
 ):
     _verify_internal_key(x_internal_service_key)
-    from app.crawl_orchestrator.loop import run_orchestrator_once, signal_orchestrator_wake
+    from app.crawl.orchestrator.loop import run_orchestrator_once, signal_orchestrator_wake
 
     signal_orchestrator_wake()
     asyncio.create_task(run_orchestrator_once())

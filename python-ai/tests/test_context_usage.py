@@ -1,12 +1,12 @@
 """Tests for context token estimation and compression triggers."""
 
-from app.agent_step.context_usage import (
+from app.agent.context.usage import (
     RunUsageAccumulator,
     estimate_text_tokens,
     measure_plan_prompt,
     should_compress_context,
 )
-from app.agent_step.schemas import AgentRunContext, PlanRequest
+from app.agent.schemas import AgentRunContext, PlanRequest
 
 
 def test_estimate_text_tokens_cjk_heavier_than_ascii():
@@ -18,7 +18,7 @@ def test_estimate_text_tokens_cjk_heavier_than_ascii():
 
 
 def test_should_compress_context_near_threshold():
-    from app.agent_step.context_usage import compress_threshold_tokens
+    from app.agent.context.usage import compress_threshold_tokens
 
     limit = compress_threshold_tokens()
     assert should_compress_context(limit)

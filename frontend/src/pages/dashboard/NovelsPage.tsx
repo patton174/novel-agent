@@ -5,9 +5,11 @@ import { BookOpen, Clock, ImagePlus, Plus, Sparkles } from 'lucide-react'
 import { CoverGenerateDialog } from '@/components/dashboard/CoverGenerateDialog'
 import { CoverImageGeneratingOverlay } from '@/components/dashboard/CoverImageGeneratingOverlay'
 import { Button } from '@/components/ui/button'
+import { ContentPending } from '@/components/loading/ContentPending'
 import { InlineBrandLoader } from '@/components/loading/BrandLoader'
-import { Skeleton } from '@/components/ui/skeleton'
+import { useMarkRouteSeen } from '@/hooks/useMarkRouteSeen'
 import { fetchNovels, generateNovelCover, type DashboardNovel } from '@/api/dashboardApi'
+import { dashboardCache } from '@/stores/dashboardCacheStore'
 import { appToast } from '@/stores/appToastStore'
 
 function formatDate(ts: number): string {
@@ -23,7 +25,8 @@ function formatDate(ts: number): string {
 }
 
 export default function NovelsPage() {
-  const [novels, setNovels] = useState<DashboardNovel[] | null>(null)
+  useMarkRouteSeen()
+  const [novels, setNovels] = useState<DashboardNovel[] | null>(() => dashboardCache.getNovels())
   const [error, setError] = useState(false)
   const [generatingId, setGeneratingId] = useState<string | null>(null)
   const [dialogNovel, setDialogNovel] = useState<DashboardNovel | null>(null)
@@ -33,6 +36,7 @@ export default function NovelsPage() {
     void fetchNovels()
       .then((list) => {
         if (!cancelled) {
+          dashboardCache.setNovels(list)
           setNovels(list)
           setError(false)
         }
@@ -112,19 +116,7 @@ export default function NovelsPage() {
       </div>
 
       {loading ? (
-        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div
-              key={i}
-              className="rounded-2xl border border-border bg-surface p-5 shadow-soft"
-            >
-              <Skeleton className="mb-4 h-32 w-full rounded-xl" />
-              <Skeleton className="mb-2 h-5 w-3/4" />
-              <Skeleton className="mb-6 h-4 w-1/2" />
-              <Skeleton className="h-10 w-full rounded-xl" />
-            </div>
-          ))}
-        </div>
+        <ContentPending label="正在加载作品列表" />
       ) : novels!.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-border bg-surface px-6 py-24 text-center shadow-sm">
           <div className="mb-6 flex size-20 items-center justify-center rounded-full bg-primary/10">

@@ -2,7 +2,7 @@
 
 import pytest
 
-from app.agent_step.orchestration_contract import (
+from app.agent.harness.orchestration_contract import (
     normalize_tool_calls,
     reorder_plan_tool_calls,
     validate_plan_batch,
@@ -12,7 +12,7 @@ from tests.harness.plan_scenarios import load_plan_scenarios
 
 @pytest.mark.parametrize("scenario", load_plan_scenarios(), ids=lambda s: s["id"])
 def test_plan_scenario(scenario: dict) -> None:
-    from app.agent_step.schemas import PlanToolCall
+    from app.agent.schemas import PlanToolCall
 
     expect = scenario.get("expect") or {}
     raw_calls = scenario.get("tool_calls") or []

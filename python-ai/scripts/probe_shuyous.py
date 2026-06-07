@@ -1,4 +1,4 @@
-from app.services.crawl_scrapling import fetch_page, page_links, page_text
+from app.crawl.fetch.scrapling import fetch_page, page_links, page_text
 
 URLS = [
     "https://www.shuyous.com/",

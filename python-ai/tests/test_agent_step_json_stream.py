@@ -1,6 +1,6 @@
 """Tests for incremental display.content JSON extraction."""
 
-from app.agent_step.json_stream import DisplayContentStreamParser
+from app.agent.streaming.json_stream import DisplayContentStreamParser
 
 
 def test_extracts_content_incrementally():

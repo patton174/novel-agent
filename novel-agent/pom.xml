@@ -15,11 +15,8 @@
     <modules>
         <module>agent-common</module>
         <module>agent-feign</module>
-        <module>agent-gateway</module>
-        <module>agent-pyai</module>
-        <module>agent-auth</module>
-        <module>agent-content</module>
-        <module>agent-consumer</module>
+        <module>agent-service</module>
+        <module>agent-document</module>
     </modules>
 
     <properties>
@@ -107,6 +104,11 @@
                     <artifactId>spring-boot-maven-plugin</artifactId>
                     <version>${spring-boot.version}</version>
                 </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>3.2.5</version>
+                </plugin>
             </plugins>
         </pluginManagement>
         <plugins>
@@ -119,6 +121,10 @@
                     <target>17</target>
                     <parameters>true</parameters>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
             </plugin>
         </plugins>
     </build>

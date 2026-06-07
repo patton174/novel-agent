@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.novel.agent</groupId>
+        <artifactId>novel-agent</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>agent-service</artifactId>
+    <packaging>pom</packaging>
+    <description>业务服务聚合层（gateway / pyai / auth / content / consumer）</description>
+
+    <modules>
+        <module>agent-gateway</module>
+        <module>agent-pyai</module>
+        <module>agent-auth</module>
+        <module>agent-content</module>
+        <module>agent-consumer</module>
+    </modules>
+</project>

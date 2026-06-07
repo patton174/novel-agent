@@ -8,11 +8,11 @@ import logging
 
 from langchain_core.messages import HumanMessage, SystemMessage
 
-from app.agent_step.schemas import AgentRunContext
-from app.agent_step.strategies.ask_user import AskUserToolStrategy, _normalize_question
+from app.agent.schemas import AgentRunContext
+from app.agent.strategies.ask_user import AskUserToolStrategy, _normalize_question
 from app.core.agent_prompts import build_ask_user_prompt
 from app.core.llm import llm_provider
-from app.agent_step.llm_parse import _message_content, extract_json_array
+from app.agent.harness.llm_parse import _message_content, extract_json_array
 
 logging.basicConfig(level=logging.INFO)
 

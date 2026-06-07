@@ -4,11 +4,11 @@
 !.env.example
 python-ai/.env
 infra/.env
-novel-agent/docs/deploy/docker/.env
-novel-agent/docs/deploy/docker/.env.mw
-novel-agent/docs/deploy/docker/.env.worker
-novel-agent/docs/deploy/docker/.env.split
-novel-agent/docs/deploy/windows/env.bat
+novel-agent/agent-document/docs/deploy/docker/.env
+novel-agent/agent-document/docs/deploy/docker/.env.mw
+novel-agent/agent-document/docs/deploy/docker/.env.worker
+novel-agent/agent-document/docs/deploy/docker/.env.split
+novel-agent/agent-document/docs/deploy/windows/env.bat
 
 # ========== 构建与依赖 ==========
 **/node_modules/
@@ -20,6 +20,13 @@ frontend/dist/
 *.pyc
 *.pyo
 *.class
+
+# ========== Python 工程化缓存（ruff/mypy/pytest-cov，Phase 4 引入）==========
+**/.mypy_cache/
+**/.ruff_cache/
+**/htmlcov/
+.coverage
+**/*.egg-info/
 
 # ========== 日志与 IDE ==========
 .dev-logs/
@@ -33,15 +40,15 @@ frontend/dist/
 !.cursor/rules/**
 
 # ========== 部署生成物（由 envsubst / setup-split-config 生成）==========
-novel-agent/docs/deploy/windows.zip
-novel-agent/docs/deploy/docker/nacos-split-rendered/
-novel-agent/docs/deploy/docker/nginx-entry-mw.conf
-novel-agent/docs/deploy/docker/nginx-frontend-worker.conf
-novel-agent/docs/deploy/docker/nginx-python-lb.conf
+novel-agent/agent-document/docs/deploy/windows.zip
+novel-agent/agent-document/docs/deploy/docker/nacos-split-rendered/
+novel-agent/agent-document/docs/deploy/docker/nginx-entry-mw.conf
+novel-agent/agent-document/docs/deploy/docker/nginx-frontend-worker.conf
+novel-agent/agent-document/docs/deploy/docker/nginx-python-lb.conf
 
 # ========== 本地 Windows 产物 ==========
-novel-agent/docs/deploy/windows/dist/
-novel-agent/docs/deploy/windows/logs/
+novel-agent/agent-document/docs/deploy/windows/dist/
+novel-agent/agent-document/docs/deploy/windows/logs/
 
 # ========== 临时 / 个人 ==========
 .tmp_*
@@ -50,8 +57,8 @@ novel-agent/docs/deploy/windows/logs/
 *.tmp
 *.bak
 novel-agent/config/crypto-manifest.generated.json
-novel-agent/docs/deploy/docker/nacos-split-rendered-0e/
-novel-agent/docs/deploy/docker/nacos-split-rendered-aes/
+novel-agent/agent-document/docs/deploy/docker/nacos-split-rendered-0e/
+novel-agent/agent-document/docs/deploy/docker/nacos-split-rendered-aes/
 .DS_Store
 Thumbs.db
 

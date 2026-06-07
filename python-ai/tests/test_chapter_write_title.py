@@ -1,8 +1,8 @@
 """Chapter Write must use explicit title, not placeholder 新章节."""
 
-from app.agent_step.schemas import AgentRunContext
-from app.agent_step.tools.cc import _attach_chapter_write_patch, _title_from_chapter_markdown
-from app.agent_step.vfs.chapter_meta import is_valid_chapter_title, resolve_chapter_write_title
+from app.agent.schemas import AgentRunContext
+from app.agent.tools.chapter_stream import attach_chapter_write_patch, title_from_chapter_markdown
+from app.agent.backend.chapter_meta import is_valid_chapter_title, resolve_chapter_write_title
 
 
 def _ctx(**kwargs) -> AgentRunContext:
@@ -20,7 +20,7 @@ def _ctx(**kwargs) -> AgentRunContext:
 
 def test_title_from_chapter_markdown_reads_frontmatter():
     body = "---\ntitle: 第一章 入局\n---\n\n　　正文"
-    assert _title_from_chapter_markdown(body) == "第一章 入局"
+    assert title_from_chapter_markdown(body) == "第一章 入局"
 
 
 def test_resolve_chapter_write_title_rejects_placeholder():
@@ -47,7 +47,7 @@ def test_resolve_chapter_write_title_uses_catalog_for_existing():
 
 def test_attach_chapter_write_patch_errors_without_title():
     ctx = _ctx()
-    patch = _attach_chapter_write_patch(
+    patch = attach_chapter_write_patch(
         {},
         file_path="/novel/n1/chapters/new-id.md",
         content="　　只有正文没有标题",

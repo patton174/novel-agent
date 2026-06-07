@@ -777,7 +777,7 @@ def render_story_memory_for_prompt(
         project=project,
     )
     if compact:
-        from app.agent_step.context_compact import render_story_memory_compact_from_snapshot
+        from app.agent.context.compact import render_story_memory_compact_from_snapshot
 
         return render_story_memory_compact_from_snapshot(
             snapshot,

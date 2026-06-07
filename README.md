@@ -26,26 +26,26 @@ AI 辅助小说创作平台：Vite + React 前端、Spring Boot 微服务、Fast
 **重启开发栈（唯一方式）**——在 Git Bash 中执行：
 
 ```bash
-bash novel-agent/docs/deploy/windows/restart-dev.sh
+bash novel-agent/agent-document/docs/deploy/windows/restart-dev.sh
 ```
 
 禁止使用 `start-dev.bat` / `start-dev-all.bat` 重启。
 
-- 环境变量模板：`novel-agent/docs/deploy/windows/env.bat.example`
+- 环境变量模板：`novel-agent/agent-document/docs/deploy/windows/env.bat.example`
 - 基础设施：`infra/README.md`
-- 详细说明：`novel-agent/docs/deploy/LOCAL-DEV.md`、`CLAUDE.md`
+- 详细说明：`novel-agent/agent-document/docs/deploy/LOCAL-DEV.md`、`CLAUDE.md`
 
 ## 生产部署
 
 双机拓扑（MW 中间件 + Gateway/Auth，Worker 业务与前端）：
 
 ```bash
-bash novel-agent/docs/deploy/scripts/deploy-fast.sh gateway mw
-bash novel-agent/docs/deploy/scripts/deploy-fast.sh auth mw
-bash novel-agent/docs/deploy/scripts/deploy-fast.sh frontend worker
+bash novel-agent/agent-document/docs/deploy/scripts/deploy-fast.sh gateway mw
+bash novel-agent/agent-document/docs/deploy/scripts/deploy-fast.sh auth mw
+bash novel-agent/agent-document/docs/deploy/scripts/deploy-fast.sh frontend worker
 ```
 
-完整说明见 [`novel-agent/docs/deploy/README.md`](novel-agent/docs/deploy/README.md)。
+完整说明见 [`novel-agent/agent-document/docs/deploy/README.md`](novel-agent/agent-document/docs/deploy/README.md)。
 
 ## 安全能力（Phase 0e）
 

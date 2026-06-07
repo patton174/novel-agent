@@ -1,0 +1,22 @@
+{
+  "appName": "墨言",
+  "loading": "加载中…",
+  "save": "保存",
+  "cancel": "取消",
+  "confirm": "确认",
+  "delete": "删除",
+  "edit": "编辑",
+  "back": "返回",
+  "retry": "重试",
+  "error": "出错了",
+  "success": "操作成功",
+  "nav": {
+    "home": "首页",
+    "dashboard": "工作台",
+    "editor": "写作",
+    "admin": "管理后台",
+    "login": "登录",
+    "register": "注册",
+    "logout": "退出登录"
+  }
+}

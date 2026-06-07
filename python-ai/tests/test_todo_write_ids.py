@@ -1,11 +1,11 @@
-"""TodoWrite schema: id + content are required (CC — no server-side todo invention)."""
+"""TodoWrite schema: id + content are required (no server-side todo invention)."""
 
 import pytest
 
-from app.agent_step.schemas import AgentRunContext
-from app.agent_step.tools.cc import _todo_call
-from app.agent_step.tools.cc.schemas import TodoWriteInput
-from app.agent_step.tools.run_tool_use import run_tool_use
+from app.agent.tools.interaction import todo_write
+from app.agent.tools.schemas import TodoWriteInput
+from app.agent.schemas import AgentRunContext
+from app.agent.tools.run_tool_use import run_tool_use
 
 
 @pytest.mark.asyncio
@@ -46,7 +46,7 @@ async def test_todo_write_persists_when_model_supplies_ids():
         ],
         merge=False,
     )
-    result = await _todo_call(ctx, inp)
+    result = await todo_write(ctx, inp)
     todos = (result.context_patch or {}).get("todos")
     assert isinstance(todos, list)
     assert len(todos) == 2

@@ -10,8 +10,8 @@ import { RouteSuspenseFallback } from './components/loading/RouteShellSuspense'
 import { RouteProgressBar } from './components/loading/RouteProgressBar'
 import { RequireAuth } from './components/guards/RequireAuth'
 import { RequireAdmin } from './components/guards/RequireAdmin'
-import AdminLayout from './layouts/AdminLayout'
-import DashboardLayout from './layouts/DashboardLayout'
+const AdminLayout = lazy(() => import('./layouts/AdminLayout'))
+const DashboardLayout = lazy(() => import('./layouts/DashboardLayout'))
 import { fetchUserInfo } from './api/userApi'
 import { migrateLegacyAuthStorage, isLoggedIn } from './utils/auth'
 import { primeFingerprint } from './security/fingerprint'

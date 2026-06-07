@@ -1,0 +1,79 @@
+"""Crawl agent runtime context (mirrors AgentRunContext)."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Any
+
+from app.crawl.agent.memory import CrawlContextMemory
+from app.crawl.client import CrawlContentClient
+from app.crawl.fetch.proxy import mask_proxy_url, pick_crawl_proxy
+
+
+@dataclass
+class ChapterItem:
+    title: str
+    url: str
+    sort_order: int = 0
+
+
+@dataclass
+class CrawlAgentContext:
+    job_id: str
+    entry_url: str
+    goal: str
+    client: CrawlContentClient
+    max_chapters: int = 0
+    use_stealth: bool = False
+    site_config: dict[str, Any] = field(default_factory=dict)
+
+    novel_title: str = ""
+    novel_author: str = ""
+    novel_description: str = ""
+    catalog_novel_id: str = ""
+    source_url: str = ""
+
+    chapters_queue: list[ChapterItem] = field(default_factory=list)
+    saved_sort_orders: set[int] = field(default_factory=set)
+    chapters_saved: int = 0
+    last_fetched_url: str = ""
+    last_cached_page: Any = None
+    last_cached_meta: Any = None
+    failed_tool_counts: dict[str, int] = field(default_factory=dict)
+    browser_session: Any = None
+
+    memory: CrawlContextMemory = field(default_factory=CrawlContextMemory)
+
+    end_run: bool = False
+    end_success: bool = False
+    end_message: str = ""
+    catalog_snapshot: dict[str, Any] | None = None
+
+    def mark_chapter_saved(self, sort_order: int) -> None:
+        self.saved_sort_orders.add(max(1, sort_order))
+        self.chapters_saved = len(self.saved_sort_orders)
+
+    def next_save_start(self, start_from: int) -> int:
+        return max(start_from, max(self.saved_sort_orders, default=0) + 1)
+
+    def all_chapters_saved(self) -> bool:
+        if not self.chapters_queue:
+            return False
+        return all(ch.sort_order in self.saved_sort_orders for ch in self.chapters_queue)
+
+    def snapshot(self) -> dict[str, Any]:
+        return {
+            "job_id": self.job_id,
+            "entry_url": self.entry_url,
+            "goal": self.goal,
+            "max_chapters": self.max_chapters,
+            "use_stealth": self.use_stealth,
+            "proxy": mask_proxy_url(pick_crawl_proxy(self.site_config)) or None,
+            "novel_title": self.novel_title,
+            "catalog_novel_id": self.catalog_novel_id,
+            "chapters_discovered": len(self.chapters_queue),
+            "chapters_saved": self.chapters_saved,
+            "chapters_remaining": max(0, len(self.chapters_queue) - len(self.saved_sort_orders)),
+            "last_fetched_url": self.last_fetched_url,
+            "memory": self.memory.snapshot_json(),
+        }

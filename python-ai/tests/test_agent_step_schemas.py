@@ -3,7 +3,7 @@
 import pytest
 from pydantic import ValidationError
 
-from app.agent_step.schemas import DisplayPayload, StepResult
+from app.agent.schemas import DisplayPayload, StepResult
 
 
 def test_step_result_continue_allows_empty_next_tool():

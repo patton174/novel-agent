@@ -8,22 +8,27 @@ from unittest.mock import patch
 
 import pytest
 
-from app.agent_step.query_loop_support import ToolStepOutcome, stream_tool_step
-from app.agent_step.schemas import AgentRunContext
+from app.agent.harness.loop_support import ToolStepOutcome, stream_tool_step
+from app.agent.schemas import AgentRunContext
 
 _FULL = "x" * 5000
 _EXCERPT = "《大纲》末法觉醒…"
 
 
 async def _fake_chapter_read_stream(
-    ctx: AgentRunContext, tool: str, tool_input: dict, *, sequence: int
+    ctx: AgentRunContext,
+    tool: str,
+    tool_input: dict,
+    *,
+    sequence: int,
+    step_id: str | None = None,
 ) -> AsyncIterator[dict[str, Any]]:
-    assert tool == "Read"
-    yield {"type": "step.started", "payload": {"tool": "Read"}}
+    assert tool == "ReadChapter"
+    yield {"type": "step.started", "payload": {"tool": "ReadChapter"}}
     yield {
         "type": "tool.completed",
         "payload": {
-            "name": "Read",
+            "name": "ReadChapter",
             "display_excerpt": _EXCERPT,
             "output_summary": _EXCERPT,
         },
@@ -31,13 +36,13 @@ async def _fake_chapter_read_stream(
     yield {
         "type": "step.completed",
         "payload": {
-            "step_kind": "Read",
+            "step_kind": "ReadChapter",
             "action": "continue",
             "next_tool": "",
             "next_input": {},
             "context_patch": {},
             "reason": _EXCERPT,
-            "display": {"type": "tool", "tool": "Read", "content": _FULL},
+            "display": {"type": "tool", "tool": "ReadChapter", "content": _FULL},
         },
     }
 
@@ -56,13 +61,13 @@ async def test_stream_tool_step_read_uses_full_step_completed_content():
     outcome = ToolStepOutcome()
 
     with patch(
-        "app.agent_step.query_loop_support.stream_cc_tool_step",
+        "app.agent.harness.loop_support.stream_cc_tool_step",
         side_effect=_fake_chapter_read_stream,
     ):
         async for _ in stream_tool_step(
             ctx,
-            "Read",
-            {"file_path": "/novel/novel-1/memory/outline/book.md"},
+            "ReadChapter",
+            {"chapter_id": "c1"},
             sequence=0,
             outcome=outcome,
         ):

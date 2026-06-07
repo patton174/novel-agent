@@ -1,14 +1,14 @@
 """Modular prompt injection tests."""
 
-from app.agent_step.prompting.tool_prompt import (
+from app.agent.context.prompting.tool_prompt import (
     build_ask_user_questions_messages,
     build_output_stream_messages,
     build_think_stream_messages,
     build_tool_messages,
     output_submit_messages,
 )
-from app.agent_step.prompting.types import ToolPromptMode, ToolPromptRequest
-from app.agent_step.schemas import AgentRunContext
+from app.agent.context.prompting.types import ToolPromptMode, ToolPromptRequest
+from app.agent.schemas import AgentRunContext
 
 
 def _ctx(**overrides) -> AgentRunContext:
@@ -41,14 +41,14 @@ def test_ask_user_questions_mode():
 
 
 def test_output_stream_includes_delivery_modes():
-    from app.agent_step.prompting.tool_contracts import output_stream_system_lines
+    from app.agent.context.prompting.tool_contracts import output_stream_system_lines
 
     text = "\n".join(output_stream_system_lines())
     assert "交付倾向" in text or "进度" in text
 
 
 def test_output_delivery_hint_uses_mode():
-    from app.agent_step.prompting.fragments import build_output_delivery_hint
+    from app.agent.context.prompting.fragments import build_output_delivery_hint
 
     assert "进度" in build_output_delivery_hint({"output_mode": "progress"})
     assert "收尾" in build_output_delivery_hint({"output_mode": "complete"})

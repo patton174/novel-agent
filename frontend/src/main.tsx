@@ -1,3 +1,4 @@
+import './i18n'
 import { installRandomUUIDPolyfill } from './utils/randomUUID'
 import React from 'react'
 import ReactDOM from 'react-dom/client'

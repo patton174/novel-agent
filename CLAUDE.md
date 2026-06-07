@@ -2,6 +2,13 @@
 
 本文件为 AI 与开发者提供项目协作规范；**本地 `restart-dev.sh` 已废弃**，验收走线上部署。
 
+**AI 持久记忆（优先查阅）：**
+
+- 架构与链路：`.cursor/rules/project-architecture.mdc`
+- 部署与运维：`.cursor/rules/deploy-ops.mdc`
+- 长文架构：`docs/ARCHITECTURE.md`
+- 部署指南：`novel-agent/agent-document/docs/deploy/README.md`
+
 ## 项目架构
 
 ```
@@ -109,7 +116,7 @@ cd frontend && npm run dev -- --host
 
 **Sign 规则**：POST+envelope → body.sign；GET/无 body POST → URL `_na_t/_na_n/_na_k/_na_s`。不用 `X-Novel-Agent-*` 头。
 
-**部署**：见 `novel-agent/docs/deploy/README.md`；`.cursor/rules/security-deploy.mdc` 速查。
+**部署**：见 `novel-agent/agent-document/docs/deploy/README.md`；`.cursor/rules/security-deploy.mdc` 速查。
 
 **注意**：
 

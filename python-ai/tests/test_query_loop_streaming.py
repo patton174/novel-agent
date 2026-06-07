@@ -8,23 +8,28 @@ from unittest.mock import patch
 
 import pytest
 
-from app.agent_step.query_loop_support import ToolStepOutcome, stream_tool_step
-from app.agent_step.schemas import AgentRunContext
+from app.agent.harness.loop_support import ToolStepOutcome, stream_tool_step
+from app.agent.schemas import AgentRunContext
 
 
 async def _fake_read_stream(
-    ctx: AgentRunContext, tool: str, tool_input: dict, *, sequence: int
+    ctx: AgentRunContext,
+    tool: str,
+    tool_input: dict,
+    *,
+    sequence: int,
+    step_id: str | None = None,
 ) -> AsyncIterator[dict[str, Any]]:
-    assert tool == "Read"
-    yield {"type": "step.started", "payload": {"tool": "Read"}}
+    assert tool == "ReadChapter"
+    yield {"type": "step.started", "payload": {"tool": "ReadChapter"}}
     yield {
         "type": "tool.completed",
-        "payload": {"name": "Read", "output": "ok"},
+        "payload": {"name": "ReadChapter", "output": "ok"},
     }
     yield {
         "type": "step.completed",
         "payload": {
-            "step_kind": "Read",
+            "step_kind": "ReadChapter",
             "action": "continue",
             "next_tool": "",
             "next_input": {},
@@ -49,11 +54,11 @@ async def test_stream_tool_step_yields_events_incrementally():
     seen_types: list[str] = []
 
     with patch(
-        "app.agent_step.query_loop_support.stream_cc_tool_step",
+        "app.agent.harness.loop_support.stream_cc_tool_step",
         side_effect=_fake_read_stream,
     ):
         async for ev in stream_tool_step(
-            ctx, "Read", {"file_path": "/novel/novel-1/meta.json"}, sequence=0, outcome=outcome
+            ctx, "ReadChapter", {"chapter_id": "c1"}, sequence=0, outcome=outcome
         ):
             seen_types.append(str(ev.get("type")))
 

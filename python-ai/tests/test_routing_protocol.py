@@ -1,5 +1,5 @@
-from app.agent_step.routing_protocol import strip_step_routing
-from app.agent_step.schemas import DisplayPayload, StepResult
+from app.agent.harness.routing_protocol import strip_step_routing
+from app.agent.schemas import DisplayPayload, StepResult
 
 
 def test_strip_step_routing_continue_clears_next_tool():

@@ -1,9 +1,0 @@
-spring:
-  main:
-    web-application-type: reactive
-  banner:
-    location: classpath:banner.txt
-
-agent:
-  content:
-    base-url: ${CONTENT_SERVICE_BASE_URL:http://127.0.0.1:8091}

@@ -1,7 +1,7 @@
 """Chapter Write/Edit progress messages for SSE."""
 
-from app.agent_step.schemas import AgentRunContext
-from app.agent_step.tool_display import chapter_write_progress_message
+from app.agent.schemas import AgentRunContext
+from app.agent.harness.tool_display import chapter_write_progress_message
 
 
 def test_chapter_edit_progress_uses_title_from_context():
@@ -22,8 +22,8 @@ def test_chapter_edit_progress_uses_title_from_context():
         ],
     )
     msg = chapter_write_progress_message(
-        "Edit",
-        {"file_path": "/novel/novel-1/chapters/c1.md"},
+        "EditChapter",
+        {"chapter_id": "c1", "title": "第1章 末法降临"},
         ctx,
     )
     assert "正在编辑" in msg

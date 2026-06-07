@@ -6,8 +6,8 @@ import pytest
 from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import BaseModel, ValidationError
 
-from app.agent_step.schemas import PlanResult, StepResult
-from app.agent_step.structured_llm import (
+from app.agent.schemas import PlanResult, StepResult
+from app.agent.harness.structured_llm import (
     format_schema_error,
     invoke_structured,
     invoke_structured_with_retry,
@@ -29,7 +29,7 @@ async def test_invoke_structured_returns_parsed_model():
     mock_llm = MagicMock()
     mock_llm.with_structured_output.return_value = mock_chain
 
-    with patch("app.agent_step.structured_llm.llm_provider.get_llm", return_value=mock_llm):
+    with patch("app.agent.harness.structured_llm.llm_provider.get_llm", return_value=mock_llm):
         result = await invoke_structured(
             [SystemMessage(content="sys"), HumanMessage(content="hi")],
             _SampleModel,
@@ -56,8 +56,8 @@ async def test_invoke_structured_with_retry_retries_on_validation_error():
     mock_llm.with_structured_output.return_value = mock_chain
 
     with (
-        patch("app.agent_step.structured_llm.llm_provider.get_llm", return_value=mock_llm),
-        patch("app.agent_step.structured_llm.asyncio.sleep", new_callable=AsyncMock),
+        patch("app.agent.harness.structured_llm.llm_provider.get_llm", return_value=mock_llm),
+        patch("app.agent.harness.structured_llm.asyncio.sleep", new_callable=AsyncMock),
     ):
         result = await invoke_structured_with_retry(
             [HumanMessage(content="x")],
@@ -99,7 +99,7 @@ async def test_invoke_structured_wrong_native_tool_raises_without_salvage():
     mock_llm = MagicMock()
     mock_llm.with_structured_output.return_value = mock_chain
 
-    with patch("app.agent_step.structured_llm.llm_provider.get_llm", return_value=mock_llm):
+    with patch("app.agent.harness.structured_llm.llm_provider.get_llm", return_value=mock_llm):
         with pytest.raises(ValueError, match="tool_use_error.*No such tool available.*memory_read"):
             await invoke_structured([HumanMessage(content="x")], PlanResult, profile="plan")
 
@@ -111,7 +111,7 @@ async def test_invoke_structured_with_retry_on_wrong_native_tool():
     ok = PlanResult.model_validate(
         {
             "action": "continue",
-            "tool_calls": [{"tool": "memory_read", "input": {"scope": "world"}}],
+            "tool_calls": [{"tool": "ReadMemory", "input": {"scope": "world", "key": "rules"}}],
             "reason": "ok",
         }
     )
@@ -141,8 +141,8 @@ async def test_invoke_structured_with_retry_on_wrong_native_tool():
     mock_llm.with_structured_output.return_value = mock_chain
 
     with (
-        patch("app.agent_step.structured_llm.llm_provider.get_llm", return_value=mock_llm),
-        patch("app.agent_step.structured_llm.asyncio.sleep", new_callable=AsyncMock),
+        patch("app.agent.harness.structured_llm.llm_provider.get_llm", return_value=mock_llm),
+        patch("app.agent.harness.structured_llm.asyncio.sleep", new_callable=AsyncMock),
     ):
         result = await invoke_structured_with_retry(
             [HumanMessage(content="x")],
@@ -150,7 +150,7 @@ async def test_invoke_structured_with_retry_on_wrong_native_tool():
             profile="plan",
             max_attempts=3,
         )
-    assert result.tool_calls[0].tool == "memory_read"
+    assert result.tool_calls[0].tool == "ReadMemory"
     assert mock_chain.ainvoke.await_count == 2
 
 
@@ -165,7 +165,7 @@ async def test_invoke_structured_salvages_raw_tool_args_on_parse_error():
                 "name": "PlanResult",
                 "args": {
                     "action": "continue",
-                    "tool_calls": '[{"tool":"memory_read","input":{"scope":"world"}}]',
+                    "tool_calls": '[{"tool":"ReadMemory","input":{"scope":"world","key":"rules"}}]',
                     "reason": "ok",
                     "continue_plan": False,
                 },
@@ -195,11 +195,11 @@ async def test_invoke_structured_salvages_raw_tool_args_on_parse_error():
     mock_llm = MagicMock()
     mock_llm.with_structured_output.return_value = mock_chain
 
-    from app.agent_step.schemas import PlanResult
+    from app.agent.schemas import PlanResult
 
-    with patch("app.agent_step.structured_llm.llm_provider.get_llm", return_value=mock_llm):
+    with patch("app.agent.harness.structured_llm.llm_provider.get_llm", return_value=mock_llm):
         result = await invoke_structured([HumanMessage(content="x")], PlanResult, profile="plan")
-    assert result.tool_calls[0].tool == "memory_read"
+    assert result.tool_calls[0].tool == "ReadMemory"
 
 
 @pytest.mark.asyncio
@@ -210,8 +210,8 @@ async def test_try_invoke_structured_returns_none_on_failure():
     mock_llm.with_structured_output.return_value = mock_chain
 
     with (
-        patch("app.agent_step.structured_llm.llm_provider.get_llm", return_value=mock_llm),
-        patch("app.agent_step.structured_llm.asyncio.sleep", new_callable=AsyncMock),
+        patch("app.agent.harness.structured_llm.llm_provider.get_llm", return_value=mock_llm),
+        patch("app.agent.harness.structured_llm.asyncio.sleep", new_callable=AsyncMock),
     ):
         result = await try_invoke_structured(
             [HumanMessage(content="x")],
@@ -219,15 +219,15 @@ async def test_try_invoke_structured_returns_none_on_failure():
             profile="default",
         )
     assert result is None
-    from app.agent_step.tool_errors import max_structured_output_retries
+    from app.agent.harness.tool_errors import max_structured_output_retries
 
     assert mock_chain.ainvoke.await_count == max_structured_output_retries()
 
 
 def test_plan_result_coerces_tool_calls_json_string():
     raw = (
-        '[{"tool":"memory_read","input":{"scope":"world"}},'
-        '{"tool":"output","input":{"hint":"done"}}]'
+        '[{"tool":"ReadMemory","input":{"scope":"world","key":"rules"}},'
+        '{"tool":"ListChapters","input":{}}]'
     )
     result = PlanResult.model_validate(
         {
@@ -237,8 +237,8 @@ def test_plan_result_coerces_tool_calls_json_string():
         }
     )
     assert len(result.tool_calls) == 2
-    assert result.tool_calls[0].tool == "memory_read"
-    assert result.next_tool == "memory_read"
+    assert result.tool_calls[0].tool == "ReadMemory"
+    assert result.next_tool == "ReadMemory"
 
 
 def test_step_result_action_end_auto_fills_next_tool():

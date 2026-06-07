@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from app.crawl_agent.context import ChapterItem, CrawlAgentContext
-from app.crawl_agent.runtime_state import (
+from app.crawl.agent.context import ChapterItem, CrawlAgentContext
+from app.crawl.agent.runtime_state import (
     apply_runtime_to_context,
     parse_config_json,
     runtime_from_context,
 )
-from app.services.crawl_content_client import CrawlContentClient
+from app.crawl.client import CrawlContentClient
 
 
 def test_runtime_roundtrip():

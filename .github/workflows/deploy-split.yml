@@ -84,39 +84,40 @@ jobs:
         with:
           filters: |
             gateway:
-              - 'novel-agent/agent-gateway/**'
+              - 'novel-agent/agent-service/agent-gateway/**'
               - 'novel-agent/config/crypto-routes.yaml'
             auth:
-              - 'novel-agent/agent-auth/**'
+              - 'novel-agent/agent-service/agent-auth/**'
               - 'novel-agent/agent-common/agent-common-mail/**'
               - 'novel-agent/config/crypto-routes.yaml'
             pyai:
-              - 'novel-agent/agent-pyai/**'
+              - 'novel-agent/agent-service/agent-pyai/**'
             content:
-              - 'novel-agent/agent-content/**'
+              - 'novel-agent/agent-service/agent-content/**'
             consumer:
-              - 'novel-agent/agent-consumer/**'
+              - 'novel-agent/agent-service/agent-consumer/**'
             frontend:
               - 'frontend/**'
             common:
               - 'novel-agent/agent-common/**'
               - 'novel-agent/agent-feign/**'
+              - 'novel-agent/agent-service/**'
               - 'novel-agent/pom.xml'
             security:
-              - 'novel-agent/agent-auth/**'
-              - 'novel-agent/agent-gateway/**'
+              - 'novel-agent/agent-service/agent-auth/**'
+              - 'novel-agent/agent-service/agent-gateway/**'
               - 'novel-agent/agent-common/agent-common-security/**'
               - 'novel-agent/config/crypto-routes.yaml'
               - 'frontend/src/security/**'
               - 'frontend/src/utils/authApi.ts'
             deploy_ci:
-              - 'novel-agent/docs/deploy/scripts/**'
-              - 'novel-agent/docs/deploy/docker/docker-compose.worker.yml'
-              - 'novel-agent/docs/deploy/docker/nginx-python-lb-worker.conf'
+              - 'novel-agent/agent-document/docs/deploy/scripts/**'
+              - 'novel-agent/agent-document/docs/deploy/docker/docker-compose.worker.yml'
+              - 'novel-agent/agent-document/docs/deploy/docker/nginx-python-lb-worker.conf'
               - '.github/workflows/deploy-split.yml'
             python-ai:
               - 'python-ai/**'
-              - 'novel-agent/docs/deploy/docker/Dockerfile.python-ai'
+              - 'novel-agent/agent-document/docs/deploy/docker/Dockerfile.python-ai'
 
       - uses: actions/setup-java@v4
         with:
@@ -172,7 +173,7 @@ jobs:
           FORCE_DEPLOY_CONSUMER: ${{ github.event.inputs.deploy_consumer }}
           FORCE_DEPLOY_FRONTEND: ${{ github.event.inputs.deploy_frontend }}
           FORCE_DEPLOY_PYTHON_AI: ${{ github.event.inputs.deploy_python_ai }}
-        run: bash novel-agent/docs/deploy/scripts/ci-hot-deploy.sh
+        run: bash novel-agent/agent-document/docs/deploy/scripts/ci-hot-deploy.sh
 
       - name: Smoke test MW gateway
         if: >-

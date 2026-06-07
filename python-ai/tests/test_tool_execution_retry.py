@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from app.agent_step.schemas import DisplayPayload, StepResult
-from app.agent_step.tool_execution import (
+from app.agent.schemas import DisplayPayload, StepResult
+from app.agent.harness.tool_execution import (
     classify_tool_step_failure,
     is_tool_failure_retryable,
     prepare_tool_retry_input,

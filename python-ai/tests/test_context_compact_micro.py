@@ -2,12 +2,12 @@
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 
-from app.agent_step.context_compact_micro import (
+from app.agent.context.compact_micro import (
     MICROCOMPACT_CLEARED_MESSAGE,
     collect_compactable_tool_ids,
     microcompact_messages,
 )
-from app.agent_step.context_policy import (
+from app.agent.context.policy import (
     microcompact_threshold_tokens,
     should_microcompact_context,
 )

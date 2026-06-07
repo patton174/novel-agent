@@ -1,7 +1,7 @@
 import pytest
 
-from app.agent_step.schemas import AgentRunContext
-from app.agent_step.tool_display import resolve_delete_target_label
+from app.agent.schemas import AgentRunContext
+from app.agent.harness.tool_display import resolve_delete_target_label
 
 
 @pytest.mark.asyncio

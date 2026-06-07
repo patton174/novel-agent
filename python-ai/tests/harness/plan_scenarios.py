@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from app.agent_step.schemas import AgentRunContext, PlanRequest, PlanResult, PlanToolCall
+from app.agent.schemas import AgentRunContext, PlanRequest, PlanResult, PlanToolCall
 
 _FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "plan" / "scenarios.json"
 

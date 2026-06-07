@@ -1,6 +1,8 @@
 """Tests for crawl AI heuristics (no LLM)."""
 
-from app.services.crawl_ai_extractor import _heuristic_catalog_urls, _same_book_url
+from app.crawl.extract.ai_extractor import _heuristic_catalog_urls, _same_book_url
+from app.crawl.fetch.fetch import HtmlBodyPage
+from app.crawl.engine.content_extract import extract_chapter_via_selector
 
 
 def test_same_book_url_shuyous():
@@ -21,3 +23,15 @@ def test_heuristic_catalog_urls_prefers_directory_link():
     urls = _heuristic_catalog_urls(links, page_url)
     assert urls
     assert "index.html" in urls[0]
+
+
+def test_custom_content_selector_from_site_config():
+    html = '<div class="custom-body">' + ("字" * 80) + "</div>"
+    page = HtmlBodyPage(body=html)
+    hit = extract_chapter_via_selector(
+        page,
+        site_config={"content_selector": ".custom-body"},
+        min_chars=50,
+    )
+    assert hit is not None
+    assert len(hit[1]) >= 50

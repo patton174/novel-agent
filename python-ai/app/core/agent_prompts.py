@@ -2,7 +2,7 @@
 
 from langchain_core.messages import SystemMessage
 
-from app.agent_step.prompting.fragments import (
+from app.agent.context.prompting.fragments import (
     THINK_INTENSITY_SPEC,
     build_ask_user_task_text as build_ask_user_prompt,
     build_chapter_task_text as build_chapter_task_prompt,

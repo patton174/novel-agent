@@ -1,15 +1,14 @@
 """Default ui_excerpt registry + build_tool auto-wire."""
 
-from app.agent_step.tool_ui import (
+from app.agent.harness.tool_ui import (
     default_ui_excerpt_for_name,
     glob_ui_excerpt,
     read_ui_excerpt,
     todo_write_ui_excerpt,
-    tool_search_ui_excerpt,
 )
-from app.agent_step.tools.registry import find_tool_by_name
-from app.agent_step.tools.tool import build_tool
-from app.agent_step.schemas import AgentRunContext
+from app.agent.tools.registry import find_tool_by_name
+from app.agent.tools.tool import build_tool
+from app.agent.schemas import AgentRunContext
 from pydantic import BaseModel
 
 
@@ -18,7 +17,7 @@ class _In(BaseModel):
 
 
 async def _noop(_ctx: AgentRunContext, _inp: _In):
-    from app.agent_step.tools.tool import ToolCallResult
+    from app.agent.tools.tool import ToolCallResult
 
     return ToolCallResult(content="ok")
 
@@ -29,29 +28,30 @@ def test_build_tool_auto_wires_ui_excerpt():
     assert t.ui_excerpt("Todos updated.", {}) == ""
 
 
-def test_registry_covers_deferred_tools():
+def test_registry_covers_api_tools():
     assert default_ui_excerpt_for_name("Agent") is not None
-    assert default_ui_excerpt_for_name("TaskList") is not None
-    assert find_tool_by_name("Read") is not None
-    assert find_tool_by_name("Read").ui_excerpt is read_ui_excerpt
+    assert default_ui_excerpt_for_name("ListChapters") is not None
+    assert find_tool_by_name("ReadChapter") is not None
+    assert find_tool_by_name("ReadChapter").ui_excerpt is read_ui_excerpt
 
 
-def test_tool_search_excerpt():
-    assert "3 个工具" in tool_search_ui_excerpt("A\nB\nC", {})
+def test_list_chapters_excerpt_from_json():
+    from app.agent.harness.tool_display import format_list_chapters_excerpt
+
+    content = '{"chapters": [{"chapter_id": "a", "title": "第一章"}, {"chapter_id": "b", "title": "第二章"}]}'
+    excerpt = format_list_chapters_excerpt(content)
+    assert "第一章" in excerpt
+    assert "第二章" in excerpt
 
 
 def test_glob_sse_style_summary():
-    from app.agent_step.events import build_tool_completed_sse_payload
+    from app.agent.harness.events import build_tool_completed_sse_payload
 
-    inv = (
-        "# 数据来源\n# 章节（Content API）: 2 条可访问路径\n"
-        "# 记忆（story-memory API）: 1 条\n/novel/n1/chapters/a.md"
-    )
     payload = build_tool_completed_sse_payload(
-        "Glob",
-        content=inv,
-        tool_input={"pattern": "*"},
+        "ListChapters",
+        content='{"chapters": [{"chapter_id": "a", "title": "第一章"}]}',
+        tool_input={},
     )
     assert "display_excerpt" in payload
-    assert "列举" in payload["display_excerpt"]
+    assert "第一章" in payload["display_excerpt"]
     assert "output" in payload

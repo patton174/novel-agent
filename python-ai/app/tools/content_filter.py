@@ -20,7 +20,11 @@ class ContentFilter:
     }
 
     def __init__(self):
-        self._patterns = self.SENSITIVE_PATTERNS
+        self._patterns = set(self.SENSITIVE_PATTERNS)
+
+    def add_pattern(self, pattern: str) -> None:
+        if pattern:
+            self._patterns.add(pattern)
 
     def contains_problematic_content(self, text: str) -> bool:
         """

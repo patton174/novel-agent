@@ -4,7 +4,7 @@ globs:
   - frontend/src/security/**
   - novel-agent/agent-gateway/**
   - novel-agent/agent-auth/**
-  - novel-agent/docs/deploy/**
+  - novel-agent/agent-document/docs/deploy/**
 ---
 
 # 安全与部署速查
@@ -22,8 +22,10 @@ Canonical：`METHOD|path?bizQuery|ts|nonce|sha256(body)`
 
 ## 路由脱敏 + 字段加密
 
-- Nacos：`route-obfuscation: true`, `field-encryption: true`
-- 前端 env：`VITE_ROUTE_OBFUSCATION`, `VITE_FIELD_ENCRYPTION`（生产默认 true）
+- Nacos：`route-obfuscation: true`, `field-encryption: true`, **`encrypt-stream: true`**
+- 前端 env：`VITE_ROUTE_OBFUSCATION`, `VITE_FIELD_ENCRYPTION`, `VITE_SECURITY_ENCRYPT_STREAM`（生产默认 true）
+- SSE `/agent/chat/stream`：Gateway 必须解密 AES 信封；前端 stream **跳过**字段级 `__sec`
+- 本地 dev 直连 PyAI（`VITE_LOCAL_PYAI`）：`/api/agent` 不做 body AES
 - 模板：`docker/nacos-split/agent-gateway.yaml`；渲染目录含密码，**不入库**
 
 ## 前端混淆
@@ -44,7 +46,7 @@ Canonical：`METHOD|path?bizQuery|ts|nonce|sha256(body)`
 ## 部署
 
 ```bash
-bash novel-agent/docs/deploy/scripts/deploy-fast.sh {gateway|auth|frontend} {mw|worker}
+bash novel-agent/agent-document/docs/deploy/scripts/deploy-fast.sh {gateway|auth|frontend} {mw|worker}
 ```
 
 - **force-recreate auth 后必须再 deploy-fast auth**

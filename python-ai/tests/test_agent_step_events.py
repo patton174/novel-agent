@@ -1,7 +1,7 @@
 """Tests for display -> SSE event mapping."""
 
-from app.agent_step.events import build_tool_completed_sse_payload, emit_display_events
-from app.agent_step.schemas import DisplayPayload, StepResult
+from app.agent.harness.events import build_tool_completed_sse_payload, emit_display_events
+from app.agent.schemas import DisplayPayload, StepResult
 
 
 def test_emit_think_display_events():
@@ -94,9 +94,9 @@ def test_read_chapter_emits_title_labels_not_md_path():
     )
     path = "/novel/n1/chapters/abc.md"
     payload = build_tool_completed_sse_payload(
-        "Read",
+        "ReadChapter",
         content=content,
-        tool_input={"file_path": path},
+        tool_input={"chapter_id": "abc", "file_path": path},
     )
     assert payload["result_labels"] == ["《初入江湖》·作品列表第2章"]
     assert "display_excerpt" in payload
@@ -105,39 +105,29 @@ def test_read_chapter_emits_title_labels_not_md_path():
 
 
 def test_glob_long_output_passes_inventory_body_for_frontend_ui():
-    from app.agent_step.vfs.path_tree import format_paths_as_tree
-
-    paths = [f"/novel/n1/chapters/ch_{i}.md" for i in range(5)]
-    content = (
-        "# 数据来源：作品库 HTTP API\n"
-        "# 章节（Content API）: 5 条\n"
-        + "\n".join(format_paths_as_tree(paths))
-    )
+    content = '{"chapters": [{"chapter_id": "ch_0", "title": "第一章"}]}'
     payload = build_tool_completed_sse_payload(
-        "Glob",
+        "ListChapters",
         content=content,
-        tool_input={"pattern": "chapters/**/*.md"},
+        tool_input={},
     )
-    assert "tool_input" in payload
-    assert payload["tool_input"]["pattern"] == "chapters/**/*.md"
     assert "display_excerpt" in payload
-    assert "列举" in payload["display_excerpt"]
+    assert "第一章" in payload["display_excerpt"]
     assert "output" in payload
-    assert "├──" in payload["output"]
-    assert "ch_0" in payload["output"]
+    assert "ch_0" in payload["output"] or "第一章" in payload["output"]
     assert "output_summary" in payload
-    assert "条" in payload["output_summary"]
+    assert "第一章" in payload["output_summary"] or "ch_0" in payload["output_summary"]
 
 
 def test_write_completed_payload_omits_body_from_tool_input():
     path = "/novel/n1/chapters/ch-1.md"
     body = "　　" + ("正文" * 2000)
     payload = build_tool_completed_sse_payload(
-        "Write",
+        "WriteChapter",
         content="已写入",
-        tool_input={"file_path": path, "content": body},
+        tool_input={"title": "第一章", "chapter_id": "ch-1", "content": body},
     )
-    assert payload["tool_input"]["file_path"] == path
+    assert payload["tool_input"]["title"] == "第一章"
     assert "content" not in payload["tool_input"]
 
 

@@ -2,9 +2,9 @@
 
 from types import SimpleNamespace
 
-from app.crawl_agent.context import CrawlAgentContext
-from app.services.crawl_fetch import fetch_for_crawl, get_cached_page, resolve_crawl_url
-from app.services.crawl_scrapling import PageFetchMeta
+from app.crawl.agent.context import CrawlAgentContext
+from app.crawl.fetch.fetch import fetch_for_crawl, get_cached_page, resolve_crawl_url
+from app.crawl.fetch.scrapling import PageFetchMeta
 
 
 class _FakeClient:
@@ -61,8 +61,8 @@ def test_fetch_for_crawl_upgrades_stealth(monkeypatch):
         )
         return page, meta
 
-    monkeypatch.setattr("app.services.crawl_fetch.fetch_page_with_retry", fake_retry)
-    monkeypatch.setattr("app.services.crawl_fetch.pick_crawl_proxy", lambda _cfg: None)
+    monkeypatch.setattr("app.crawl.fetch.fetch.fetch_page_with_retry", fake_retry)
+    monkeypatch.setattr("app.crawl.fetch.fetch.pick_crawl_proxy", lambda _cfg: None)
 
     fetch_for_crawl(ctx, "https://example.com/book/1/")
     assert ctx.use_stealth is True

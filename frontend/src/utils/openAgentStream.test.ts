@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { secureFetch } from '../security/secureFetch'
 import { openAgentStream } from './api'
+
+vi.mock('../security/secureFetch', () => ({
+  secureFetch: vi.fn(),
+}))
 
 function mockEventStream(chunks: string[]) {
   const encoder = new TextEncoder()
@@ -15,18 +20,15 @@ function mockEventStream(chunks: string[]) {
     },
   })
 
-  vi.stubGlobal(
-    'fetch',
-    vi.fn().mockResolvedValue({
-      ok: true,
-      body,
-    }),
-  )
+  vi.mocked(secureFetch).mockResolvedValue({
+    ok: true,
+    body,
+  } as Response)
 }
 
 describe('openAgentStream', () => {
   afterEach(() => {
-    vi.unstubAllGlobals()
+    vi.clearAllMocks()
   })
 
   it('emits events from chunked SSE frames and finishes after stream-end', async () => {
@@ -45,13 +47,11 @@ describe('openAgentStream', () => {
     expect(received[0][0]).toBe('agent-event')
     expect(received[1][0]).toBe('agent-event')
     expect(received[2]).toEqual(['stream-end', 'done'])
+    expect(secureFetch).toHaveBeenCalledOnce()
   })
 
   it('preserves a trailing partial frame until the next chunk arrives', async () => {
-    mockEventStream([
-      'event: stream-end\ndata: do',
-      'ne\n\n',
-    ])
+    mockEventStream(['event: stream-end\ndata: do', 'ne\n\n'])
 
     const received: string[] = []
     await openAgentStream({ message: 'hi', mode: 'continue' }, (event) => {
@@ -79,13 +79,10 @@ describe('openAgentStream', () => {
       },
     })
 
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({
-        ok: true,
-        body,
-      }),
-    )
+    vi.mocked(secureFetch).mockResolvedValue({
+      ok: true,
+      body,
+    } as Response)
 
     const controller = new AbortController()
     const received: string[] = []

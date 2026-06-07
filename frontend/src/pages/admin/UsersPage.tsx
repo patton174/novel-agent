@@ -5,12 +5,14 @@ import { UserEditDialog } from '@/components/admin/UserEditDialog'
 import { UserTable } from '@/components/admin/UserTable'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Skeleton } from '@/components/ui/skeleton'
+import { ContentPending } from '@/components/loading/ContentPending'
+import { useMarkRouteSeen } from '@/hooks/useMarkRouteSeen'
 import { appToast } from '@/stores/appToastStore'
 
 const PAGE_SIZE = 20
 
 export default function UsersPage() {
+  useMarkRouteSeen()
   const [users, setUsers] = useState<AdminUser[] | null>(null)
   const [totalCount, setTotalCount] = useState(0)
   const [pageCurrent, setPageCurrent] = useState(1)
@@ -82,11 +84,7 @@ export default function UsersPage() {
       </form>
 
       {loading && users === null ? (
-        <div className="space-y-2">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton key={i} className="h-10 w-full" />
-          ))}
-        </div>
+        <ContentPending label="正在加载用户列表" />
       ) : (
         <UserTable
           users={users ?? []}

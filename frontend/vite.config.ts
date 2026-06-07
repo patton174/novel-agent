@@ -1,3 +1,4 @@
+import { createRequire } from 'node:module'
 import { defineConfig, loadEnv, type PluginOption } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
@@ -67,6 +68,22 @@ export default defineConfig(({ mode }) => {
       }
 
   const plugins: PluginOption[] = [react(), tailwindcss()]
+  if (process.env.ANALYZE === 'true') {
+    try {
+      const require = createRequire(import.meta.url)
+      const { visualizer } = require('rollup-plugin-visualizer') as typeof import('rollup-plugin-visualizer')
+      plugins.push(
+        visualizer({
+          filename: 'dist/stats.html',
+          gzipSize: true,
+          brotliSize: true,
+          open: false,
+        }),
+      )
+    } catch {
+      console.warn('[analyze] rollup-plugin-visualizer not installed; run pnpm install')
+    }
+  }
   if (codeObfuscation) {
     plugins.push(viteObfuscatorPlugin(javascriptObfuscatorOptions()))
   }
@@ -92,6 +109,10 @@ export default defineConfig(({ mode }) => {
             if (id.includes('framer-motion')) return 'motion'
             if (id.includes('/gsap')) return 'gsap'
             if (id.includes('react-markdown') || id.includes('remark-')) return 'markdown'
+            if (id.includes('styled-components')) return 'styled'
+            if (id.includes('@radix-ui') || id.includes('radix-ui')) return 'radix'
+            if (id.includes('lucide-react')) return 'icons'
+            if (id.includes('i18next')) return 'i18n'
           },
         },
       },

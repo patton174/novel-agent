@@ -1,7 +1,7 @@
 """Chapter memory must not land in /memory/novel/; no silent redirect."""
 
-from app.agent_step.schemas import AgentRunContext
-from app.agent_step.vfs.memory_write_guard import validate_memory_write_target
+from app.agent.schemas import AgentRunContext
+from app.agent.backend.memory_write_guard import validate_memory_write_target
 
 
 def _ctx() -> AgentRunContext:

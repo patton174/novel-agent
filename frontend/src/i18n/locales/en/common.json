@@ -1,0 +1,22 @@
+{
+  "appName": "Moyan",
+  "loading": "Loading…",
+  "save": "Save",
+  "cancel": "Cancel",
+  "confirm": "Confirm",
+  "delete": "Delete",
+  "edit": "Edit",
+  "back": "Back",
+  "retry": "Retry",
+  "error": "Something went wrong",
+  "success": "Success",
+  "nav": {
+    "home": "Home",
+    "dashboard": "Dashboard",
+    "editor": "Editor",
+    "admin": "Admin",
+    "login": "Sign in",
+    "register": "Sign up",
+    "logout": "Sign out"
+  }
+}

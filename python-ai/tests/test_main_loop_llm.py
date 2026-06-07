@@ -5,8 +5,8 @@ from unittest.mock import MagicMock
 import pytest
 from langchain_core.messages import AIMessage, AIMessageChunk
 
-from app.agent_step.main_loop_llm import stream_bind_tools_turn
-from app.agent_step.schemas import AgentRunContext
+from app.agent.harness.main_loop_llm import stream_bind_tools_turn
+from app.agent.schemas import AgentRunContext
 
 
 def _ctx() -> AgentRunContext:

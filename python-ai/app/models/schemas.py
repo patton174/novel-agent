@@ -6,15 +6,6 @@ from uuid import uuid4
 from pydantic import BaseModel, Field
 
 
-class ContinueRequest(BaseModel):
-    """Request schema for chapter continuation."""
-
-    content: str = Field(..., description="Previous chapter content")
-    style: Optional[str] = Field(None, description="Writing style hint")
-    word_count: Optional[int] = Field(1000, description="Target word count")
-    novel_id: Optional[int] = Field(None, description="Novel ID for context retrieval")
-
-
 class RewriteRequest(BaseModel):
     """Request schema for paragraph rewriting."""
 
@@ -54,13 +45,6 @@ class GenerationCandidate(BaseModel):
     id: int = Field(..., description="Candidate ID (1, 2, or 3)")
     content: str = Field(..., description="Generated content")
     score: Optional[float] = Field(None, description="Quality score if available")
-
-
-class ContinueResponse(BaseModel):
-    """Response schema for chapter continuation."""
-
-    candidates: list[GenerationCandidate] = Field(..., description="List of generation candidates")
-    used_context: bool = Field(False, description="Whether vector context was used")
 
 
 class RewriteResponse(BaseModel):

@@ -1,4 +1,6 @@
 import { useLocation } from 'react-router-dom'
+import { InstantShell } from '@/components/loading/InstantShell'
+import { hasRouteBeenSeen } from '@/utils/seenRoutes'
 import {
   AdminCatalogContentSkeleton,
   AdminContentSkeleton,
@@ -15,6 +17,10 @@ import {
 /** Layout Outlet 内容区骨架（主包同步，避免 lazy→Suspense→白屏） */
 export function LayoutOutletSkeleton() {
   const { pathname } = useLocation()
+
+  if (hasRouteBeenSeen(pathname)) {
+    return <InstantShell variant="content" />
+  }
 
   if (pathname.startsWith('/admin/users')) {
     return <AdminTableContentSkeleton />

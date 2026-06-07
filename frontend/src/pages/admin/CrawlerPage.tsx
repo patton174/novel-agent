@@ -21,7 +21,8 @@ import { CrawlJobDetailModal } from '@/components/admin/CrawlJobDetailModal'
 import { CrawlJobRow } from '@/components/admin/CrawlJobRow'
 import { OrchestratorLogTerminal } from '@/components/admin/OrchestratorLogTerminal'
 import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
+import { ContentPending } from '@/components/loading/ContentPending'
+import { useMarkRouteSeen } from '@/hooks/useMarkRouteSeen'
 import {
   type CrawlJobAction,
   crawlJobOptimisticPatch,
@@ -37,6 +38,7 @@ const DEFAULT_GOAL =
 type JobFilter = 'all' | 'active' | 'failed'
 
 export default function CrawlerPage() {
+  useMarkRouteSeen()
   const location = useLocation()
   const pageVisible = usePageVisible()
   const [jobs, setJobs] = useState<CrawlJob[] | null>(null)
@@ -417,11 +419,7 @@ export default function CrawlerPage() {
         </div>
 
         {jobsLoading && jobs === null ? (
-          <div className="space-y-2">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <Skeleton key={i} className="h-14 w-full rounded-xl" />
-            ))}
-          </div>
+          <ContentPending label="正在加载爬虫任务" />
         ) : filteredJobs.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             {jobFilter === 'all'

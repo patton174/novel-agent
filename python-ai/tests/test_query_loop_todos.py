@@ -1,4 +1,4 @@
-from app.agent_step.query_loop_support import (
+from app.agent.harness.loop_support import (
     build_todo_exit_review_message,
     open_todo_items,
 )

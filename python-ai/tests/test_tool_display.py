@@ -1,7 +1,7 @@
 """Tests for user-facing tool display excerpts."""
 
-from app.agent_step.events import build_tool_completed_sse_payload, extract_chapter_read_labels
-from app.agent_step.tool_display import (
+from app.agent.harness.events import build_tool_completed_sse_payload, extract_chapter_read_labels
+from app.agent.harness.tool_display import (
     format_chapter_read_excerpt,
     format_tool_display_excerpt,
     split_frontmatter,
@@ -40,9 +40,9 @@ def test_extract_chapter_labels_with_line_numbers():
 def test_sse_read_chapter_uses_display_excerpt():
     content = "---\ntitle: 测试章\nchapter_id: u\nlist_index: 1\n---\n\n正文内容。"
     payload = build_tool_completed_sse_payload(
-        "Read",
+        "ReadChapter",
         content=content,
-        tool_input={"file_path": "/novel/n/chapters/u.md"},
+        tool_input={"chapter_id": "u", "file_path": "/novel/n/chapters/u.md"},
     )
     assert "display_excerpt" in payload
     assert "测试章" in payload["display_excerpt"]

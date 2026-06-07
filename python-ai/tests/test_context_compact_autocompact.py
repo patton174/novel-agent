@@ -5,13 +5,13 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 
-from app.agent_step.context_compact_autocompact import (
+from app.agent.context.compact_autocompact import (
     autocompact_conversation,
     compact_boundary_line,
     format_compact_summary,
     split_messages_for_autocompact,
 )
-from app.agent_step.transcript import AgentTranscript
+from app.agent.harness.transcript import AgentTranscript
 
 
 def test_format_compact_summary_strips_analysis():
@@ -69,11 +69,11 @@ async def test_autocompact_conversation_rewrites_messages():
 
     with (
         patch(
-            "app.agent_step.context_compact_autocompact.llm_provider.get_llm",
+            "app.agent.context.compact_autocompact.llm_provider.get_llm",
             return_value=mock_llm,
         ),
         patch(
-            "app.agent_step.context_compact_autocompact.autocompact_keep_tail_messages",
+            "app.agent.context.compact_autocompact.autocompact_keep_tail_messages",
             return_value=4,
         ),
     ):

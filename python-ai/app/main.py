@@ -6,13 +6,15 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.core.logging_setup import setup_logging
+from app.core.metrics import setup_metrics
+from app.core.trace_middleware import TraceIdMiddleware
 
 from app.api.routes import router
 from app.api.rag_routes import router as rag_router
 from app.api.image_routes import router as image_router
 from app.api.crawler_routes import router as crawler_router, internal_router as crawler_internal_router
-from app.agent_step.router import router as agent_step_router
-from app.agent_step.worker.router import router as worker_router
+from app.agent.router import router as agent_step_router
+from app.agent.harness.worker.router import router as worker_router
 from app import __version__
 
 
@@ -25,6 +27,9 @@ app = FastAPI(
     description="AI-powered novel writing assistant service",
     version=__version__,
 )
+
+app.add_middleware(TraceIdMiddleware)
+setup_metrics(app)
 
 # CORS configuration
 app.add_middleware(
@@ -50,7 +55,7 @@ async def startup_event():
     """Re-apply logging config after uvicorn overrides it."""
     _setup_logging()
     await _warmup_agent()
-    from app.crawl_orchestrator.loop import start_orchestrator_background
+    from app.crawl.orchestrator.loop import start_orchestrator_background
 
     start_orchestrator_background()
 
@@ -63,7 +68,7 @@ async def _warmup_agent():
         if llm_provider.is_configured:
             logging.getLogger(__name__).info("Agent step executor ready (LLM configured)")
             if settings.agent_llm_trace:
-                from app.agent_step.llm_trace import _trace_file_path
+                from app.agent.harness.llm_trace import _trace_file_path
 
                 logging.getLogger(__name__).info(
                     "Agent LLM trace enabled: %s", _trace_file_path()

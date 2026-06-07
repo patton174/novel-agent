@@ -1,14 +1,15 @@
 """Crawl agent tool registry smoke tests."""
 
-from app.crawl_agent.tools import catalog_impl  # noqa: F401
-from app.crawl_agent.tools import impl  # noqa: F401 — register
-from app.crawl_agent.tools.registry import find_tool, get_all_tools
+from app.crawl.agent.tools import catalog_impl  # noqa: F401
+from app.crawl.agent.tools import impl  # noqa: F401 — register
+from app.crawl.agent.tools.registry import find_tool, get_all_tools
 
 
 def test_crawl_tools_registered():
     names = {t.name for t in get_all_tools()}
     expected = {
         "FetchPage",
+        "MapLinks",
         "BrowserOpen",
         "BrowserClick",
         "BrowserGoto",

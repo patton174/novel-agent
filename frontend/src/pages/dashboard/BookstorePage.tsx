@@ -7,10 +7,12 @@ import {
   type CatalogNovel,
 } from '@/api/catalogApi'
 import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
+import { ContentPending } from '@/components/loading/ContentPending'
+import { useMarkRouteSeen } from '@/hooks/useMarkRouteSeen'
 import { appToast } from '@/stores/appToastStore'
 
 export default function BookstorePage() {
+  useMarkRouteSeen()
   const [novels, setNovels] = useState<CatalogNovel[] | null>(null)
   const [addingId, setAddingId] = useState<string | null>(null)
 
@@ -57,11 +59,7 @@ export default function BookstorePage() {
       </div>
 
       {loading ? (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="h-40 rounded-2xl" />
-          ))}
-        </div>
+        <ContentPending label="正在加载书库" />
       ) : novels.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-border px-6 py-16 text-center text-muted-foreground">
           书库暂无作品，管理员启动爬虫后会出现在这里

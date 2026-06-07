@@ -1,5 +1,5 @@
-from app.agent_step.schemas import AgentRunContext
-from app.agent_step.vfs.chapter_meta import (
+from app.agent.schemas import AgentRunContext
+from app.agent.backend.chapter_meta import (
     format_chapter_display_label,
     resolve_chapter_write_meta,
     sorted_chapter_summaries,

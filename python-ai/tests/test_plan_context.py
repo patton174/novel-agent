@@ -2,15 +2,15 @@
 
 import json
 
-from app.agent_step.context_compact import compact_story_memory_text
-from app.agent_step.plan_context import (
+from app.agent.context.compact import compact_story_memory_text
+from app.agent.harness.plan_context import (
     build_plan_context,
     format_plan_context_message,
     has_character_roster_snapshot,
     summarize_memory_read,
 )
-from app.agent_step.orchestration_contract import build_main_loop_system_prompt
-from app.agent_step.schemas import AgentRunContext, PlanRequest
+from app.agent.harness.orchestration_contract import build_main_loop_system_prompt
+from app.agent.schemas import AgentRunContext, PlanRequest
 
 
 def _ctx(**overrides) -> AgentRunContext:
@@ -120,8 +120,8 @@ def test_build_plan_context_think_pending_confirm_flag():
 def test_main_loop_system_prompt_non_empty():
     text = build_main_loop_system_prompt()
     assert len(text) < 6000
-    assert "tool_use" in text
-    assert "chapter_create" in text
+    assert "ListChapters" in text
+    assert "WriteChapter" in text
 
 
 def test_format_plan_context_message_roundtrip():

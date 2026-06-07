@@ -72,58 +72,9 @@ POST /api/config/switch?provider=openai
 
 ## AI 生成接口
 
-### 1. 续写章节
+> **续写**：`/api/ai/continue` 已废弃删除。写作续写统一走 Agent 主路径（`/api/agent/*` + `SearchKnowledge` / `WriteChapter` 等工具）。
 
-```
-POST /api/ai/continue
-```
-
-根据前文内容续写章节，返回 3 个候选版本。
-
-**请求体**:
-```json
-{
-  "content": "前文内容...",
-  "style": "都市言情",
-  "word_count": 1000,
-  "novel_id": 1
-}
-```
-
-| 字段 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| content | string | ✅ | 上一章节的内容 |
-| style | string | ❌ | 写作风格提示 |
-| word_count | integer | ❌ | 目标字数，默认 1000 |
-| novel_id | integer | ❌ | 小说 ID（用于向量检索上下文） |
-
-**响应示例**:
-```json
-{
-  "candidates": [
-    {
-      "id": 1,
-      "content": "续写内容选项1...",
-      "score": null
-    },
-    {
-      "id": 2,
-      "content": "续写内容选项2...",
-      "score": null
-    },
-    {
-      "id": 3,
-      "content": "续写内容选项3...",
-      "score": null
-    }
-  ],
-  "used_context": false
-}
-```
-
----
-
-### 2. 重写段落
+### 1. 重写段落
 
 ```
 POST /api/ai/rewrite

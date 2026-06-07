@@ -1,6 +1,6 @@
 #!/bin/bash
 docker exec -e PYTHONPATH=/app novel-agent-worker-python-ai-1 python <<'PY'
-from app.services.crawl_scrapling import fetch_page_with_retry, page_links, page_text
+from app.crawl.fetch.scrapling import fetch_page_with_retry, page_links, page_text
 
 for url in [
     "https://www.qishuxia.com/",

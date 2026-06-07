@@ -9,8 +9,8 @@ from unittest.mock import MagicMock, patch
 import pytest
 from langchain_core.messages import AIMessage
 
-from app.agent_step.query_loop import run_query_loop
-from app.agent_step.schemas import AgentRunContext, RunRequest
+from app.agent.loop import run_query_loop
+from app.agent.schemas import AgentRunContext, RunRequest
 
 
 def _ctx() -> AgentRunContext:
@@ -42,14 +42,14 @@ async def test_query_loop_retries_after_tool_pairing_400():
     mock_llm.bind_tools.return_value = mock_llm
 
     with (
-        patch("app.agent_step.query_loop._enrich_context", side_effect=lambda c, **_: c),
-        patch("app.agent_step.query_loop.llm_provider.get_llm", return_value=mock_llm),
+        patch("app.agent.loop._enrich_context", side_effect=lambda c, **_: c),
+        patch("app.agent.loop.llm_provider.get_llm", return_value=mock_llm),
         patch(
-            "app.agent_step.query_loop.stream_bind_tools_turn",
+            "app.agent.loop.stream_bind_tools_turn",
             side_effect=_flaky_stream,
         ),
         patch(
-            "app.agent_step.query_loop.enrich_context_for_run",
+            "app.agent.loop.enrich_context_for_run",
             side_effect=lambda c, **_: c,
         ),
     ):

@@ -7,24 +7,6 @@ from typing import Optional
 # System Prompts
 # ============================================================================
 
-CONTINUATION_SYSTEM = """You are a professional novel writing assistant.
-
-当用户要求续写小说时，你应该：
-
-1. 首先使用 choose 工具提供3个不同的续写方向选项供用户选择
-2. 等待用户选择后，再使用 write 工具生成具体的续写内容
-3. 保持角色性格、叙事风格和情节连贯性
-
-续写方向选项可以包括：
-- 情节走向（如：紧张悬疑、温情治愈、冲突升级等）
-- 风格变化（如：文笔更华丽、节奏加快、更注重内心描写等）
-- 情节点（提供3个不同的具体发展方向）
-
-使用 choose 工具时，topic 参数描述当前情境，options_count 为3，context 参数提供故事背景。
-
-用户选择后，使用 write 工具生成约指定字数的内容，返回 markdown 格式。"""
-
-
 REWRITE_SYSTEM = """You are a professional editor specializing in text revision.
 Your task is to rewrite the given text according to the user's instructions.
 Maintain the core meaning while improving clarity, flow, and impact.
@@ -124,27 +106,6 @@ Example:
 # ============================================================================
 # User Prompt Templates
 # ============================================================================
-
-def continuation_prompt(content: str, style: Optional[str] = None, word_count: int = 1000) -> str:
-    """Generate continuation prompt."""
-    base = f"""Continue the following story naturally.
-
-PREVIOUS CHAPTER CONTENT:
----
-{content}
----
-
-TARGET WORD COUNT: approximately {word_count} words
-
-Generate 3 distinct continuation options:"""
-
-    if style:
-        base += f"\n\nSTYLE REQUIREMENT: {style}"
-
-    base += "\n\nFormat your response as:\n【Option 1】\n...content...\n\n【Option 2】\n...content...\n\n【Option 3】\n...content..."
-
-    return base
-
 
 def rewrite_prompt(original_text: str, instructions: str) -> str:
     """Generate rewrite prompt."""
