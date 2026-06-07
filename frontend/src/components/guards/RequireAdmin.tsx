@@ -13,6 +13,11 @@ export function RequireAdmin({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (profile) {
       setProfileReady(true)
+      if (profile.role === 'admin') {
+        void import('../../pages/admin/AdminHomePage')
+        void import('../../pages/admin/UsersPage')
+        void import('../../pages/admin/CrawlerPage')
+      }
       return
     }
     let cancelled = false

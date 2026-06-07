@@ -5,10 +5,13 @@ import { AnimatePresence } from 'framer-motion'
 import { theme } from './styles/theme'
 import { AppToastHost } from './components/ui/AppToastHost'
 import { ConfirmDialogHost } from './components/ui/ConfirmDialogHost'
+import { RouteErrorBoundary } from './components/RouteErrorBoundary'
 import { RouteSuspenseFallback } from './components/loading/RouteShellSuspense'
 import { RouteProgressBar } from './components/loading/RouteProgressBar'
 import { RequireAuth } from './components/guards/RequireAuth'
 import { RequireAdmin } from './components/guards/RequireAdmin'
+import AdminLayout from './layouts/AdminLayout'
+import DashboardLayout from './layouts/DashboardLayout'
 import { fetchUserInfo } from './api/userApi'
 import { migrateLegacyAuthStorage, isLoggedIn } from './utils/auth'
 import { primeFingerprint } from './security/fingerprint'
@@ -26,36 +29,32 @@ const FeaturesPage = lazy(() => import('./pages/FeaturesPage'))
 const TestimonialsPage = lazy(() => import('./pages/TestimonialsPage'))
 const GenericContentPage = lazy(() => import('./pages/GenericContentPage'))
 const EditorPage = lazy(() => import('./pages/EditorPage'))
-const DashboardLayout = lazy(() => import('./layouts/DashboardLayout'))
 const DashboardHomePage = lazy(() => import('./pages/dashboard/DashboardHomePage'))
 const NovelsPage = lazy(() => import('./pages/dashboard/NovelsPage'))
 const BookstorePage = lazy(() => import('./pages/dashboard/BookstorePage'))
 const BillingPage = lazy(() => import('./pages/dashboard/BillingPage'))
 const SettingsPage = lazy(() => import('./pages/dashboard/SettingsPage'))
 const VerifyEmailPage = lazy(() => import('./pages/VerifyEmailPage'))
-const AdminLayout = lazy(() => import('./layouts/AdminLayout'))
 const AdminHomePage = lazy(() => import('./pages/admin/AdminHomePage'))
 const UsersPage = lazy(() => import('./pages/admin/UsersPage'))
 const StatsPage = lazy(() => import('./pages/admin/StatsPage'))
 const CrawlerPage = lazy(() => import('./pages/admin/CrawlerPage'))
 const CatalogPage = lazy(() => import('./pages/admin/CatalogPage'))
 
-/** 同一大布局内子路由切换不触发整页 exit 动画 */
-function pageTransitionKey(pathname: string): string {
-  if (pathname.startsWith('/dashboard')) return '/dashboard'
-  if (pathname.startsWith('/admin')) return '/admin'
-  if (pathname.startsWith('/editor')) return '/editor'
-  return pathname
+function isAppShellRoute(pathname: string): boolean {
+  return (
+    pathname.startsWith('/admin') ||
+    pathname.startsWith('/dashboard') ||
+    pathname.startsWith('/editor')
+  )
 }
 
-function AppRoutes() {
+function AppRouteTree() {
   const location = useLocation()
-  useJourneyTracker()
 
   return (
-    <AnimatePresence mode="wait">
-      <PageTransition key={pageTransitionKey(location.pathname)}>
-        <Routes location={location}>
+    <RouteErrorBoundary>
+      <Routes location={location}>
         <Route path="/" element={<HomePage />} />
         <Route path="/features" element={<FeaturesPage />} />
         <Route path="/pricing" element={<PricingPage />} />
@@ -63,13 +62,13 @@ function AppRoutes() {
         <Route path="/privacy" element={<GenericContentPage title="隐私政策" />} />
         <Route path="/terms" element={<GenericContentPage title="用户协议" />} />
         <Route path="/contact" element={<GenericContentPage title="联系我们" />} />
-        
+
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/verify-email" element={<VerifyEmailPage />} />
-        
+
         <Route path="/editor/:chapterId?" element={<EditorPage />} />
-        
+
         <Route
           path="/dashboard"
           element={
@@ -84,7 +83,7 @@ function AppRoutes() {
           <Route path="billing" element={<BillingPage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
-        
+
         <Route
           path="/admin"
           element={
@@ -99,8 +98,29 @@ function AppRoutes() {
           <Route path="crawler" element={<CrawlerPage />} />
           <Route path="catalog" element={<CatalogPage />} />
         </Route>
-        </Routes>
-      </PageTransition>
+      </Routes>
+    </RouteErrorBoundary>
+  )
+}
+
+function AppRoutes() {
+  const location = useLocation()
+  useJourneyTracker()
+
+  const routeTree = (
+    <Suspense fallback={<RouteSuspenseFallback />}>
+      <AppRouteTree />
+    </Suspense>
+  )
+
+  // 管理端/仪表盘/编辑器：不做全页 fade 动画，layout 已静态导入，避免 AnimatePresence 白屏
+  if (isAppShellRoute(location.pathname)) {
+    return routeTree
+  }
+
+  return (
+    <AnimatePresence mode="sync">
+      <PageTransition key={location.pathname}>{routeTree}</PageTransition>
     </AnimatePresence>
   )
 }
@@ -127,9 +147,7 @@ function App() {
       <ConfirmDialogHost />
       <BrowserRouter>
         <RouteProgressBar />
-        <Suspense fallback={<RouteSuspenseFallback />}>
-          <AppRoutes />
-        </Suspense>
+        <AppRoutes />
       </BrowserRouter>
     </ThemeProvider>
   )
