@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { ArrowLeft, BarChart3, Bot, LayoutDashboard, Shield, Users } from 'lucide-react'
+import { ArrowLeft, BarChart3, BookOpen, Bot, LayoutDashboard, Shield, Users } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Separator } from '@/components/ui/separator'
 
@@ -15,6 +15,7 @@ const mainNav: NavItem[] = [
   { label: '用户管理', to: '/admin/users', icon: Users },
   { label: '平台统计', to: '/admin/stats', icon: BarChart3 },
   { label: 'AI 爬虫', to: '/admin/crawler', icon: Bot },
+  { label: '书库', to: '/admin/catalog', icon: BookOpen },
 ]
 
 export function AdminSidebar() {

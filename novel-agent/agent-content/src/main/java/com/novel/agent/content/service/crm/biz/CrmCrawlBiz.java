@@ -16,6 +16,7 @@ import com.novel.agent.content.service.crawl.dto.CreateCrawlJobRequest;
 import com.novel.agent.content.service.crawl.dto.CrawlJobDTO;
 import com.novel.agent.content.service.crawl.dto.CrawlLogsResponse;
 import com.novel.agent.content.service.crawl.dto.CrawlOrchestratorStateDTO;
+import com.novel.agent.content.service.crawl.dto.OrchestratorDecisionsDTO;
 import com.novel.agent.content.service.crawl.dto.CrawlPreviewRequest;
 import com.novel.agent.content.service.crawl.dto.CrawlSiteDTO;
 import com.novel.agent.content.service.crawl.dto.SetOrchestratorGoalRequest;
@@ -123,6 +124,10 @@ public class CrmCrawlBiz extends BaseBiz {
 
     public Result<CrawlOrchestratorStateDTO> clearOrchestratorGoal() {
         return ok(orchestratorStateService.clearGoal());
+    }
+
+    public Result<OrchestratorDecisionsDTO> listOrchestratorDecisions(long afterSeq, int limit) {
+        return ok(orchestratorStateService.listDecisions(afterSeq, limit));
     }
 
     private void applySite(CrawlSiteEntity entity, UpsertCrawlSiteRequest request) {

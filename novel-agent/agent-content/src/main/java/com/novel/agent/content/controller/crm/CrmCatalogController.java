@@ -8,6 +8,7 @@ import com.novel.agent.content.service.crawl.dto.CatalogChapterSummaryDTO;
 import com.novel.agent.content.service.crawl.dto.CatalogNovelDTO;
 import com.novel.agent.content.service.crawl.dto.CatalogNovelProgressDTO;
 import com.novel.agent.content.service.crawl.dto.CrawlOrchestratorStateDTO;
+import com.novel.agent.content.service.crawl.dto.OrchestratorDecisionsDTO;
 import com.novel.agent.content.service.crawl.dto.SetOrchestratorGoalRequest;
 import com.novel.agent.content.service.crawl.dto.UpdateCatalogChapterRequest;
 import com.novel.agent.content.service.crawl.dto.UpdateCatalogNovelRequest;
@@ -131,5 +132,13 @@ public class CrmCatalogController extends BaseController {
     @PostMapping("/api/content/crm/crawl/orchestrator/clear")
     public Result<CrawlOrchestratorStateDTO> clearOrchestratorGoal() {
         return crawlBiz.clearOrchestratorGoal();
+    }
+
+    @GetMapping("/api/content/crm/crawl/orchestrator/decisions")
+    public Result<OrchestratorDecisionsDTO> listOrchestratorDecisions(
+        @RequestParam(defaultValue = "0") long afterSeq,
+        @RequestParam(defaultValue = "100") int limit
+    ) {
+        return crawlBiz.listOrchestratorDecisions(afterSeq, limit);
     }
 }

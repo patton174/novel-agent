@@ -5,12 +5,20 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.novel.agent.content.crawl.CrawlJobStatus;
 import com.novel.agent.content.repository.CrawlJobRepository;
 import com.novel.agent.content.service.crawl.dto.CrawlOrchestratorStateDTO;
+import com.novel.agent.content.service.crawl.dto.OrchestratorDecisionDTO;
+import com.novel.agent.content.service.crawl.dto.OrchestratorDecisionsDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -20,6 +28,9 @@ public class CrawlOrchestratorStateService {
     public static final int MAX_CONCURRENT_JOBS = 10;
 
     private static final String KEY = "crawl:orchestrator:state";
+    private static final String DECISIONS_KEY = "crawl:orchestrator:decisions";
+    private static final String DECISION_SEQ_KEY = "crawl:orchestrator:decision_seq";
+    private static final int MAX_DECISIONS = 500;
     private static final Duration TTL = Duration.ofDays(30);
 
     private final StringRedisTemplate redisTemplate;
@@ -41,19 +52,28 @@ public class CrawlOrchestratorStateService {
     }
 
     public CrawlOrchestratorStateDTO setGoal(String goal) {
+        return setGoal(goal, true);
+    }
+
+    private CrawlOrchestratorStateDTO setGoal(String goal, boolean logDecision) {
         long now = System.currentTimeMillis();
+        String trimmed = goal == null ? "" : goal.trim();
         OrchestratorState state = new OrchestratorState(
-            goal == null ? "" : goal.trim(),
-            goal == null || goal.isBlank() ? "SLEEPING" : "RUNNING",
+            trimmed,
+            trimmed.isBlank() ? "SLEEPING" : "RUNNING",
             "",
             now
         );
         save(state);
+        if (logDecision) {
+            appendDecision("目标已设定：" + (trimmed.isBlank() ? "（空）" : trimmed));
+        }
         return getState();
     }
 
     public CrawlOrchestratorStateDTO clearGoal() {
-        return setGoal("");
+        appendDecision("目标已清空，进入睡眠");
+        return setGoal("", false);
     }
 
     public CrawlOrchestratorStateDTO wake() {
@@ -61,20 +81,77 @@ public class CrawlOrchestratorStateService {
         if (state.goal() == null || state.goal().isBlank()) {
             return getState();
         }
+        appendDecision("手动唤醒主编排");
         OrchestratorState next = new OrchestratorState(state.goal(), "RUNNING", state.lastDecision(), System.currentTimeMillis());
         save(next);
         return getState();
     }
 
     public void recordDecision(String decision) {
+        String msg = decision == null ? "" : decision.trim();
+        appendDecision(msg);
         OrchestratorState state = parse(redisTemplate.opsForValue().get(KEY));
         OrchestratorState next = new OrchestratorState(
             state.goal(),
             state.status(),
-            decision == null ? "" : decision.trim(),
+            msg.length() > 200 ? msg.substring(0, 200) : msg,
             System.currentTimeMillis()
         );
         save(next);
+    }
+
+    public OrchestratorDecisionsDTO listDecisions(long afterSeq, int limit) {
+        int size = Math.max(1, Math.min(limit, 200));
+        Long maxSeq = redisTemplate.opsForValue().increment(DECISION_SEQ_KEY, 0);
+        long currentMax = maxSeq == null ? 0 : maxSeq;
+        if (currentMax <= afterSeq) {
+            return new OrchestratorDecisionsDTO(List.of(), currentMax);
+        }
+        List<String> raw = redisTemplate.opsForList().range(DECISIONS_KEY, 0, MAX_DECISIONS - 1);
+        if (raw == null || raw.isEmpty()) {
+            return new OrchestratorDecisionsDTO(List.of(), currentMax);
+        }
+        List<OrchestratorDecisionDTO> out = new ArrayList<>();
+        for (String line : raw) {
+            OrchestratorDecisionDTO dto = parseDecision(line);
+            if (dto != null && dto.seq() > afterSeq) {
+                out.add(dto);
+            }
+        }
+        Collections.reverse(out);
+        if (out.size() > size) {
+            out = out.subList(out.size() - size, out.size());
+        }
+        return new OrchestratorDecisionsDTO(out, currentMax);
+    }
+
+    private void appendDecision(String message) {
+        if (message == null || message.isBlank()) {
+            return;
+        }
+        long seq = redisTemplate.opsForValue().increment(DECISION_SEQ_KEY);
+        long ts = System.currentTimeMillis();
+        try {
+            String entry = objectMapper.writeValueAsString(Map.of("seq", seq, "ts", ts, "message", message));
+            redisTemplate.opsForList().leftPush(DECISIONS_KEY, entry);
+            redisTemplate.opsForList().trim(DECISIONS_KEY, 0, MAX_DECISIONS - 1);
+            redisTemplate.expire(DECISIONS_KEY, TTL);
+            redisTemplate.expire(DECISION_SEQ_KEY, TTL);
+        } catch (JsonProcessingException e) {
+            log.warn("orchestrator decision serialize failed: {}", e.getMessage());
+        }
+    }
+
+    private OrchestratorDecisionDTO parseDecision(String raw) {
+        try {
+            Map<String, Object> map = objectMapper.readValue(raw, new TypeReference<>() {});
+            long seq = ((Number) map.getOrDefault("seq", 0L)).longValue();
+            long ts = ((Number) map.getOrDefault("ts", 0L)).longValue();
+            String message = String.valueOf(map.getOrDefault("message", ""));
+            return new OrchestratorDecisionDTO(seq, ts, message);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     public void markSleeping() {

@@ -16,7 +16,8 @@ import {
   type CatalogNovel,
   type CatalogNovelProgress,
 } from '@/api/catalogAdminApi'
-import { CatalogNovelDetailModal } from '@/components/admin/CatalogNovelDetailModal'
+import { CatalogOverviewDialog } from '@/components/admin/CatalogOverviewDialog'
+import { CatalogReaderModal } from '@/components/admin/CatalogReaderModal'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -37,7 +38,8 @@ export function CatalogAdminPanel({ onOpenJob }: CatalogAdminPanelProps) {
   const [actingId, setActingId] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [selectedNovel, setSelectedNovel] = useState<CatalogNovel | null>(null)
-  const [detailOpen, setDetailOpen] = useState(false)
+  const [overviewOpen, setOverviewOpen] = useState(false)
+  const [readerOpen, setReaderOpen] = useState(false)
 
   const load = useCallback(async () => {
     try {
@@ -75,7 +77,12 @@ export function CatalogAdminPanel({ onOpenJob }: CatalogAdminPanelProps) {
 
   const openNovel = (novel: CatalogNovel) => {
     setSelectedNovel(novel)
-    setDetailOpen(true)
+    setOverviewOpen(true)
+  }
+
+  const openReader = (novel: CatalogNovel) => {
+    setSelectedNovel(novel)
+    setReaderOpen(true)
   }
 
   const handleDeleteNovel = async (novel: CatalogNovel, e: React.MouseEvent) => {
@@ -88,7 +95,8 @@ export function CatalogAdminPanel({ onOpenJob }: CatalogAdminPanelProps) {
       await deleteCatalogNovel(novel.id)
       appToast.success('已删除')
       if (selectedNovel?.id === novel.id) {
-        setDetailOpen(false)
+        setOverviewOpen(false)
+        setReaderOpen(false)
         setSelectedNovel(null)
       }
       void load()
@@ -197,11 +205,23 @@ export function CatalogAdminPanel({ onOpenJob }: CatalogAdminPanelProps) {
                   variant="ghost"
                   onClick={(e) => {
                     e.stopPropagation()
+                    openReader(n)
+                  }}
+                >
+                  <BookOpen className="mr-1 size-3.5" />
+                  阅读
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={(e) => {
+                    e.stopPropagation()
                     openNovel(n)
                   }}
                 >
                   <Pencil className="mr-1 size-3.5" />
-                  编辑
+                  概览
                 </Button>
                 <Button
                   type="button"
@@ -252,20 +272,32 @@ export function CatalogAdminPanel({ onOpenJob }: CatalogAdminPanelProps) {
         </div>
       ) : null}
 
-      <CatalogNovelDetailModal
+      <CatalogOverviewDialog
         novel={selectedNovel}
-        open={detailOpen}
+        open={overviewOpen}
         onOpenChange={(open) => {
-          setDetailOpen(open)
-          if (!open) setSelectedNovel(null)
+          setOverviewOpen(open)
+          if (!open && !readerOpen) setSelectedNovel(null)
         }}
+        onRead={(n) => openReader(n)}
         onUpdated={() => void load()}
         onDeleted={() => {
-          setDetailOpen(false)
+          setOverviewOpen(false)
+          setReaderOpen(false)
           setSelectedNovel(null)
           void load()
         }}
         onOpenJob={onOpenJob}
+      />
+
+      <CatalogReaderModal
+        novel={selectedNovel}
+        open={readerOpen}
+        onOpenChange={(open) => {
+          setReaderOpen(open)
+          if (!open && !overviewOpen) setSelectedNovel(null)
+        }}
+        onUpdated={() => void load()}
       />
     </section>
   )

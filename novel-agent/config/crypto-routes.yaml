@@ -185,6 +185,8 @@ routes:
     path: /api/content/crm/crawl/orchestrator/wake
   - method: POST
     path: /api/content/crm/crawl/orchestrator/clear
+  - method: GET
+    path: /api/content/crm/crawl/orchestrator/decisions
 
   # agent / pyai
   - method: POST

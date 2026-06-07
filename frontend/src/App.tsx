@@ -35,6 +35,7 @@ const AdminHomePage = lazy(() => import('./pages/admin/AdminHomePage'))
 const UsersPage = lazy(() => import('./pages/admin/UsersPage'))
 const StatsPage = lazy(() => import('./pages/admin/StatsPage'))
 const CrawlerPage = lazy(() => import('./pages/admin/CrawlerPage'))
+const CatalogPage = lazy(() => import('./pages/admin/CatalogPage'))
 
 function RouteFallback() {
   return (
@@ -100,6 +101,7 @@ function AppRoutes() {
           <Route path="users" element={<UsersPage />} />
           <Route path="stats" element={<StatsPage />} />
           <Route path="crawler" element={<CrawlerPage />} />
+          <Route path="catalog" element={<CatalogPage />} />
         </Route>
       </Routes>
     </AnimatePresence>

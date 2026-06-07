@@ -41,3 +41,27 @@ export async function clearOrchestratorGoal(): Promise<OrchestratorState> {
   if (!res.ok) throw new Error('清空目标失败')
   return parseResponse<OrchestratorState>(res)
 }
+
+export interface OrchestratorDecisionEntry {
+  seq: number
+  ts: number
+  message: string
+}
+
+export interface OrchestratorDecisionsResponse {
+  logs: OrchestratorDecisionEntry[]
+  maxSeq: number
+}
+
+export async function fetchOrchestratorDecisions(
+  afterSeq = 0,
+  limit = 100,
+): Promise<OrchestratorDecisionsResponse> {
+  const params = new URLSearchParams({
+    afterSeq: String(afterSeq),
+    limit: String(limit),
+  })
+  const res = await secureFetch(`/api/content/crm/crawl/orchestrator/decisions?${params}`)
+  if (!res.ok) throw new Error('加载编排日志失败')
+  return parseResponse<OrchestratorDecisionsResponse>(res)
+}

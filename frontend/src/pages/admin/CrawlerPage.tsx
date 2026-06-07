@@ -1,28 +1,23 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Link, useLocation } from 'react-router-dom'
 import {
   Bot,
   ChevronRight,
   Loader2,
   Pause,
   Play,
-  Plus,
   RefreshCw,
   Square,
   Trash2,
-  Wand2,
 } from 'lucide-react'
 import {
-  buildCrawlConfigJson,
   cancelCrawlJob,
-  createCrawlJob,
   deleteCrawlJob,
   fetchCrawlJobs,
   parseCrawlJobGoal,
   pauseCrawlJob,
-  previewCrawl,
   startCrawlJob,
   type CrawlJob,
-  type CrawlPreviewResult,
 } from '@/api/crawlAdminApi'
 import {
   clearOrchestratorGoal,
@@ -33,9 +28,8 @@ import {
 } from '@/api/orchestratorAdminApi'
 import { fetchIncompleteCatalog } from '@/api/catalogAdminApi'
 import { CrawlJobDetailModal } from '@/components/admin/CrawlJobDetailModal'
-import { CatalogAdminPanel } from '@/components/admin/CatalogAdminPanel'
+import { OrchestratorLogTerminal } from '@/components/admin/OrchestratorLogTerminal'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   type CrawlJobAction,
@@ -52,14 +46,6 @@ import { appToast } from '@/stores/appToastStore'
 const DEFAULT_GOAL =
   '把链接中的小说全部章节抓取并清洗正文，入库公共书库（书籍页、目录页、章节页均可）'
 
-type CrawlerTab = 'orchestrator' | 'catalog' | 'tasks'
-
-const TAB_LABELS: Record<CrawlerTab, string> = {
-  orchestrator: '主编排',
-  catalog: '书库',
-  tasks: '子任务',
-}
-
 const ACTION_META: Record<
   CrawlJobAction,
   { label: string; icon: typeof Play; variant?: 'outline' | 'destructive' }
@@ -71,14 +57,10 @@ const ACTION_META: Record<
 }
 
 export default function CrawlerPage() {
-  const [tab, setTab] = useState<CrawlerTab>('orchestrator')
+  const location = useLocation()
   const [jobs, setJobs] = useState<CrawlJob[] | null>(null)
   const [loading, setLoading] = useState(true)
   const [actingKey, setActingKey] = useState<string | null>(null)
-  const [previewing, setPreviewing] = useState(false)
-  const [previewResult, setPreviewResult] = useState<CrawlPreviewResult | null>(null)
-  const [sourceUrl, setSourceUrl] = useState('')
-  const [goal, setGoal] = useState(DEFAULT_GOAL)
   const [detailJob, setDetailJob] = useState<CrawlJob | null>(null)
   const [detailOpen, setDetailOpen] = useState(false)
   const [orchState, setOrchState] = useState<OrchestratorState | null>(null)
@@ -100,13 +82,11 @@ export default function CrawlerPage() {
       setJobs(jobPage.list)
       if (orch) {
         setOrchState(orch)
-        if (!orchGoal && orch.goal) setOrchGoal(orch.goal)
+        setOrchGoal((prev) => (prev || orch.goal || DEFAULT_GOAL))
       }
       setIncompleteCount(inc.length)
       setDetailJob((current) => {
-        if (!current) {
-          return current
-        }
+        if (!current) return current
         return jobPage.list.find((j) => j.id === current.id) ?? current
       })
     } catch (err) {
@@ -152,7 +132,6 @@ export default function CrawlerPage() {
     try {
       const state = await clearOrchestratorGoal()
       setOrchState(state)
-      setOrchGoal('')
       appToast.success('目标已清空，进入睡眠')
     } catch (err) {
       appToast.error(err instanceof Error ? err.message : '操作失败')
@@ -168,10 +147,10 @@ export default function CrawlerPage() {
 
   useEffect(() => {
     void load()
-    const intervalMs = hasRunningJob ? 2500 : 8000
+    const intervalMs = hasRunningJob || orchState?.status === 'RUNNING' ? 2500 : 8000
     const timer = window.setInterval(() => void load(), intervalMs)
     return () => window.clearInterval(timer)
-  }, [load, hasRunningJob])
+  }, [load, hasRunningJob, orchState?.status])
 
   const patchJob = useCallback((jobId: string, patch: Partial<CrawlJob>) => {
     setJobs((prev) => (prev ?? []).map((job) => (job.id === jobId ? { ...job, ...patch } : job)))
@@ -183,72 +162,13 @@ export default function CrawlerPage() {
     setDetailOpen(true)
   }, [])
 
-  const openJobById = useCallback(
-    (jobId: string) => {
-      const job = (jobs ?? []).find((j) => j.id === jobId)
-      setTab('tasks')
-      if (job) {
-        openDetail(job)
-        return
-      }
-      appToast.info('请刷新后在子任务列表中查看该任务')
-    },
-    [jobs, openDetail],
-  )
-
-  const handlePreview = async () => {
-    if (!sourceUrl.trim()) {
-      appToast.error('请输入链接')
-      return
-    }
-    if (!goal.trim()) {
-      appToast.error('请描述爬取目标')
-      return
-    }
-    setPreviewing(true)
-    setPreviewResult(null)
-    try {
-      const result = await previewCrawl({
-        sourceUrl: sourceUrl.trim(),
-        configJson: buildCrawlConfigJson(goal),
-      })
-      setPreviewResult(result)
-      if (result.ok) {
-        appToast.success(result.message || '预览成功')
-      } else {
-        appToast.error(result.message || '预览失败')
-      }
-    } catch (err) {
-      appToast.error(err instanceof Error ? err.message : '预览失败')
-    } finally {
-      setPreviewing(false)
-    }
-  }
-
-  const handleCreate = async () => {
-    if (!sourceUrl.trim()) {
-      appToast.error('请输入链接')
-      return
-    }
-    if (!goal.trim()) {
-      appToast.error('请描述爬取目标')
-      return
-    }
-    setActingKey('create')
-    try {
-      const job = await createCrawlJob({
-        sourceUrl: sourceUrl.trim(),
-        configJson: buildCrawlConfigJson(goal),
-      })
-      await startCrawlJob(job.id)
-      appToast.success('AI 代理已启动，点击任务卡片查看日志')
-      await load()
-    } catch (err) {
-      appToast.error(err instanceof Error ? err.message : '创建任务失败')
-    } finally {
-      setActingKey(null)
-    }
-  }
+  useEffect(() => {
+    const openJobId = (location.state as { openJobId?: string } | null)?.openJobId
+    if (!openJobId || !jobs) return
+    const job = jobs.find((j) => j.id === openJobId)
+    if (job) openDetail(job)
+    window.history.replaceState({}, document.title)
+  }, [location.state, jobs, openDetail])
 
   const runAction = async (job: CrawlJob, action: CrawlJobAction) => {
     const key = `${job.id}:${action}`
@@ -277,9 +197,7 @@ export default function CrawlerPage() {
     }
 
     const optimistic = crawlJobOptimisticPatch(action)
-    if (optimistic) {
-      patchJob(job.id, optimistic)
-    }
+    if (optimistic) patchJob(job.id, optimistic)
 
     try {
       if (action === 'start') await startCrawlJob(job.id)
@@ -297,9 +215,7 @@ export default function CrawlerPage() {
 
   const renderJobActions = (job: CrawlJob) => {
     const actions = crawlJobActions(job.status)
-    if (actions.length === 0) {
-      return null
-    }
+    if (actions.length === 0) return null
     return (
       <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
         {actions.map((action) => {
@@ -336,7 +252,7 @@ export default function CrawlerPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">AI 自动爬虫</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            主编排 Agent 常驻决策，最多 10 个并行子任务；书库支持续爬与 CRUD
+            主编排 Agent 常驻决策并自动创建子任务（最多 10 并行），下方可查看各子任务运行日志
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={() => void load()} disabled={loading}>
@@ -345,150 +261,98 @@ export default function CrawlerPage() {
         </Button>
       </div>
 
-      <div className="flex gap-2 border-b border-border pb-2">
-        {(Object.keys(TAB_LABELS) as CrawlerTab[]).map((key) => (
-          <Button
-            key={key}
-            size="sm"
-            variant={tab === key ? 'default' : 'ghost'}
-            onClick={() => setTab(key)}
-          >
-            {TAB_LABELS[key]}
-          </Button>
-        ))}
-      </div>
-
-      {tab === 'orchestrator' ? (
-        <section className="space-y-4 rounded-2xl border border-border bg-surface p-5 shadow-soft">
-          <div className="flex flex-wrap items-center gap-3">
-            <span
-              className={cn(
-                'rounded-full px-2.5 py-0.5 text-xs font-medium',
-                orchState?.status === 'RUNNING'
-                  ? 'bg-primary/15 text-primary'
-                  : 'bg-muted text-muted-foreground',
-              )}
-            >
-              {orchState?.status === 'RUNNING' ? '运行中' : '睡眠'}
-            </span>
-            <span className="text-sm text-muted-foreground">
-              子任务 {orchState?.runningJobCount ?? 0}/{orchState?.maxConcurrentJobs ?? 10}
-            </span>
-            {incompleteCount > 0 ? (
-              <Button type="button" size="sm" variant="outline" onClick={() => setTab('catalog')}>
-                未完成书目 {incompleteCount}
-              </Button>
-            ) : null}
-          </div>
-          {orchState?.goal ? (
-            <div className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm">
-              <p className="text-xs font-medium text-muted-foreground">当前总目标</p>
-              <p className="mt-1 whitespace-pre-wrap">{orchState.goal}</p>
-            </div>
-          ) : null}
-          <div>
-            <label className="mb-1.5 block text-xs font-medium text-muted-foreground">总目标（唤醒主编排）</label>
-            <textarea
-              value={orchGoal}
-              onChange={(e) => setOrchGoal(e.target.value)}
-              rows={3}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              placeholder="例如：续爬书库中所有未完成的书；或爬取某站网游分类"
-            />
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Button disabled={actingKey != null} onClick={() => void handleSetOrchestratorGoal()}>
-              设定并唤醒
-            </Button>
-            <Button variant="secondary" disabled={actingKey != null} onClick={() => void handleWakeOrchestrator()}>
-              唤醒
-            </Button>
-            <Button variant="outline" disabled={actingKey != null} onClick={() => void handleClearOrchestrator()}>
-              清空目标 / 睡眠
-            </Button>
-          </div>
-          {orchState?.lastDecision ? (
-            <p className="text-xs text-muted-foreground">最近决策：{orchState.lastDecision}</p>
-          ) : null}
-          <div>
-            <h3 className="mb-2 text-sm font-semibold">运行中子任务</h3>
-            {runningJobs.length === 0 ? (
-              <p className="text-sm text-muted-foreground">暂无运行中子任务</p>
-            ) : (
-              <div className="space-y-2">
-                {runningJobs.slice(0, 10).map((job) => (
-                  <div key={job.id} className="flex items-center justify-between rounded-lg border px-3 py-2 text-sm">
-                    <span className="truncate">{job.title || job.sourceUrl}</span>
-                    <Button size="sm" variant="outline" onClick={() => void runAction(job, 'pause')}>
-                      暂停
-                    </Button>
-                  </div>
-                ))}
-              </div>
+      <section className="space-y-4 rounded-2xl border border-border bg-surface p-5 shadow-soft">
+        <div className="flex flex-wrap items-center gap-3">
+          <span
+            className={cn(
+              'rounded-full px-2.5 py-0.5 text-xs font-medium',
+              orchState?.status === 'RUNNING'
+                ? 'bg-primary/15 text-primary'
+                : 'bg-muted text-muted-foreground',
             )}
-          </div>
-        </section>
-      ) : null}
-
-      {tab === 'catalog' ? <CatalogAdminPanel onOpenJob={openJobById} /> : null}
-
-      {tab === 'tasks' ? (
-        <>
-      <section className="rounded-2xl border border-border bg-surface p-5 shadow-soft">
-        <div className="mb-4 flex items-center gap-2">
-          <Bot className="size-5 text-primary" />
-          <h2 className="text-lg font-semibold">新建任务</h2>
-        </div>
-        <div className="space-y-3">
-          <div>
-            <label className="mb-1.5 block text-xs font-medium text-muted-foreground">链接</label>
-            <Input
-              value={sourceUrl}
-              onChange={(e) => setSourceUrl(e.target.value)}
-              placeholder="任意小说相关 URL（书籍页 / 目录 / 章节 / 阅读页）"
-            />
-          </div>
-          <div>
-            <label className="mb-1.5 block text-xs font-medium text-muted-foreground">目标（自然语言）</label>
-            <textarea
-              value={goal}
-              onChange={(e) => setGoal(e.target.value)}
-              rows={3}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm leading-relaxed"
-              placeholder="例如：爬取该书全部章节入库（不限章数）"
-            />
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Button type="button" variant="secondary" disabled={previewing} onClick={() => void handlePreview()}>
-              {previewing ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Wand2 className="mr-2 size-4" />}
-              AI 预览
+          >
+            {orchState?.status === 'RUNNING' ? '运行中' : '睡眠'}
+          </span>
+          <span className="text-sm text-muted-foreground">
+            子任务 {orchState?.runningJobCount ?? 0}/{orchState?.maxConcurrentJobs ?? 10}
+          </span>
+          {incompleteCount > 0 ? (
+            <Button type="button" size="sm" variant="outline" asChild>
+              <Link to="/admin/catalog">未完成书目 {incompleteCount}</Link>
             </Button>
-            <Button type="button" disabled={actingKey === 'create'} onClick={() => void handleCreate()}>
-              {actingKey === 'create' ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Plus className="mr-2 size-4" />}
-              启动 AI 代理
-            </Button>
-          </div>
-          {previewResult ? (
-            <div
-              className={cn(
-                'rounded-xl border px-4 py-3 text-sm',
-                previewResult.ok
-                  ? 'border-emerald-500/30 bg-emerald-500/5'
-                  : 'border-destructive/30 bg-destructive/5',
-              )}
-            >
-              {previewResult.ok ? (
-                <p className="font-medium">{previewResult.title || previewResult.message}</p>
-              ) : (
-                <p className="text-destructive">{previewResult.message || '预览失败'}</p>
-              )}
-            </div>
           ) : null}
+        </div>
+
+        {orchState?.goal ? (
+          <div className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm">
+            <p className="text-xs font-medium text-muted-foreground">当前总目标</p>
+            <p className="mt-1 whitespace-pre-wrap">{orchState.goal}</p>
+          </div>
+        ) : null}
+
+        <div>
+          <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+            总目标（唤醒主编排）
+          </label>
+          <textarea
+            value={orchGoal}
+            onChange={(e) => setOrchGoal(e.target.value)}
+            rows={3}
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            placeholder="例如：续爬书库中所有未完成的书；或爬取某站网游分类"
+          />
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <Button disabled={actingKey != null} onClick={() => void handleSetOrchestratorGoal()}>
+            设定并唤醒
+          </Button>
+          <Button
+            variant="secondary"
+            disabled={actingKey != null}
+            onClick={() => void handleWakeOrchestrator()}
+          >
+            唤醒
+          </Button>
+          <Button
+            variant="outline"
+            disabled={actingKey != null}
+            onClick={() => void handleClearOrchestrator()}
+          >
+            清空目标 / 睡眠
+          </Button>
+        </div>
+
+        {runningJobs.length > 0 ? (
+          <div className="rounded-xl border border-border/80 bg-muted/20 px-4 py-3">
+            <p className="mb-2 text-xs font-medium text-muted-foreground">运行中子任务</p>
+            <div className="flex flex-wrap gap-2">
+              {runningJobs.slice(0, 10).map((job) => (
+                <button
+                  key={job.id}
+                  type="button"
+                  onClick={() => openDetail(job)}
+                  className="rounded-lg border border-border bg-background px-2.5 py-1 text-xs transition-colors hover:bg-muted/50"
+                >
+                  {job.title || job.sourceUrl.slice(0, 24)}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        <div>
+          <p className="mb-2 text-sm font-semibold">主编排决策日志</p>
+          <OrchestratorLogTerminal status={orchState?.status} />
         </div>
       </section>
 
       <section className="rounded-2xl border border-border bg-surface p-5 shadow-soft">
-        <h2 className="mb-4 text-lg font-semibold">任务列表</h2>
+        <div className="mb-4 flex items-center gap-2">
+          <Bot className="size-5 text-primary" />
+          <h2 className="text-lg font-semibold">子任务列表</h2>
+          <span className="text-sm text-muted-foreground">由主编排自动创建，点击查看日志</span>
+        </div>
         {loading && jobs === null ? (
           <div className="space-y-3">
             {Array.from({ length: 3 }).map((_, i) => (
@@ -496,7 +360,9 @@ export default function CrawlerPage() {
             ))}
           </div>
         ) : jobs!.length === 0 ? (
-          <p className="text-sm text-muted-foreground">暂无爬虫任务</p>
+          <p className="text-sm text-muted-foreground">
+            暂无子任务。设定主编排目标后，Agent 将自动创建并调度子任务。
+          </p>
         ) : (
           <div className="space-y-2">
             {jobs!.map((job) => {
@@ -540,13 +406,17 @@ export default function CrawlerPage() {
                     </div>
                     <p className="mt-1 truncate text-xs text-muted-foreground">{job.sourceUrl}</p>
                     {jobGoal ? (
-                      <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">目标：{jobGoal}</p>
+                      <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
+                        目标：{jobGoal}
+                      </p>
                     ) : null}
                     <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
                       <span>
                         进度 {job.chaptersDone ?? 0}/{job.chaptersTotal ?? '?'}
                       </span>
-                      {job.catalogNovelId ? <span>书库 {job.catalogNovelId.slice(0, 8)}…</span> : null}
+                      {job.catalogNovelId ? (
+                        <span>书库 {job.catalogNovelId.slice(0, 8)}…</span>
+                      ) : null}
                       {percent != null ? <span>{percent}%</span> : null}
                     </div>
                     {percent != null ? (
@@ -573,17 +443,13 @@ export default function CrawlerPage() {
           </div>
         )}
       </section>
-        </>
-      ) : null}
 
       <CrawlJobDetailModal
         job={detailJob}
         open={detailOpen}
         onOpenChange={(open) => {
           setDetailOpen(open)
-          if (!open) {
-            setDetailJob(null)
-          }
+          if (!open) setDetailJob(null)
         }}
       />
     </div>
