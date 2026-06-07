@@ -26,7 +26,7 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 
 /**
- * 全方法请求签名：有 envelope 的 POST 从 body.sign 验签；其余从 URL query（_na_*）验签。
+ * 全方法请求签名：POST/PUT/PATCH 有 envelope 时从 body.sign 验签；其余从 URL query（_na_*）验签。
  */
 @Slf4j
 @Component
@@ -60,12 +60,12 @@ public class RequestSignGatewayFilter implements GlobalFilter, Ordered {
             return chain.filter(exchange);
         }
 
-        boolean postWithBodySign = HttpMethod.POST.equals(request.getMethod());
+        boolean envelopeBodySign = isEnvelopeBodySignMethod(request.getMethod());
         boolean querySign = RequestSignCodec.hasSignQuery(
             RequestSignCodec.parseQuery(request.getURI().getRawQuery())
         );
 
-        if (!postWithBodySign && !querySign) {
+        if (!envelopeBodySign && !querySign) {
             if (properties.aesRequired()) {
                 return badRequest(exchange, "request sign required");
             }
@@ -83,14 +83,21 @@ public class RequestSignGatewayFilter implements GlobalFilter, Ordered {
                 if (!querySign && raw.length == 0 && properties.aesRequired()) {
                     return badRequest(exchange, "request sign required");
                 }
-                return verifyAndContinue(exchange, chain, request, raw, postWithBodySign, querySign);
+                return verifyAndContinue(exchange, chain, request, raw, envelopeBodySign, querySign);
             })
             .switchIfEmpty(Mono.defer(() -> {
                 if (!querySign && properties.aesRequired()) {
                     return badRequest(exchange, "request sign required");
                 }
-                return verifyAndContinue(exchange, chain, request, new byte[0], postWithBodySign, querySign);
+                return verifyAndContinue(exchange, chain, request, new byte[0], envelopeBodySign, querySign);
             }));
+    }
+
+    /** POST/PUT/PATCH 可携带 AES envelope，sign 在 body 内；与前端 secureFetch 对齐 */
+    private static boolean isEnvelopeBodySignMethod(HttpMethod method) {
+        return HttpMethod.POST.equals(method)
+            || HttpMethod.PUT.equals(method)
+            || HttpMethod.PATCH.equals(method);
     }
 
     private Mono<Void> verifyAndContinue(
@@ -98,12 +105,12 @@ public class RequestSignGatewayFilter implements GlobalFilter, Ordered {
         GatewayFilterChain chain,
         ServerHttpRequest request,
         byte[] raw,
-        boolean postWithBodySign,
+        boolean envelopeBodySign,
         boolean querySign
     ) {
         SignMaterial material;
         try {
-            material = extractSignMaterial(request, raw, postWithBodySign, querySign);
+            material = extractSignMaterial(request, raw, envelopeBodySign, querySign);
         } catch (SignExtractException ex) {
             return badRequest(exchange, ex.getMessage());
         }
@@ -155,10 +162,10 @@ public class RequestSignGatewayFilter implements GlobalFilter, Ordered {
     private SignMaterial extractSignMaterial(
         ServerHttpRequest request,
         byte[] raw,
-        boolean postWithBodySign,
+        boolean envelopeBodySign,
         boolean querySign
     ) throws SignExtractException {
-        if (postWithBodySign && raw.length > 0) {
+        if (envelopeBodySign && raw.length > 0) {
             try {
                 JsonNode node = objectMapper.readTree(raw);
                 if (node.isObject()) {
