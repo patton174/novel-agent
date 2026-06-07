@@ -81,3 +81,39 @@ async def crawl_execute_internal(
         )
     )
     return CrawlExecuteResponse(accepted=True, job_id=body.job_id)
+
+
+class OrchestratorAgentStatusResponse(BaseModel):
+    enabled: bool
+    llm_configured: bool
+    poll_sec: int
+
+
+class OrchestratorRunOnceResponse(BaseModel):
+    accepted: bool = True
+
+
+@internal_router.get("/orchestrator/status", response_model=OrchestratorAgentStatusResponse)
+async def orchestrator_status_internal(
+    x_internal_service_key: str | None = Header(default=None, alias="X-Internal-Service-Key"),
+):
+    _verify_internal_key(x_internal_service_key)
+    from app.core.llm import llm_provider
+
+    return OrchestratorAgentStatusResponse(
+        enabled=settings.crawl_orchestrator_enabled,
+        llm_configured=llm_provider.is_configured,
+        poll_sec=max(5, settings.crawl_orchestrator_poll_sec),
+    )
+
+
+@internal_router.post("/orchestrator/run-once", response_model=OrchestratorRunOnceResponse)
+async def orchestrator_run_once_internal(
+    x_internal_service_key: str | None = Header(default=None, alias="X-Internal-Service-Key"),
+):
+    _verify_internal_key(x_internal_service_key)
+    from app.crawl_orchestrator.loop import run_orchestrator_once, signal_orchestrator_wake
+
+    signal_orchestrator_wake()
+    asyncio.create_task(run_orchestrator_once())
+    return OrchestratorRunOnceResponse(accepted=True)

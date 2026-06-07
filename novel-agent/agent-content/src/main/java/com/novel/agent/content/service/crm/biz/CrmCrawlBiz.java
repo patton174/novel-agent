@@ -111,23 +111,64 @@ public class CrmCrawlBiz extends BaseBiz {
     }
 
     public Result<CrawlOrchestratorStateDTO> getOrchestratorState() {
-        return ok(orchestratorStateService.getState());
+        return ok(enrichOrchestratorState(orchestratorStateService.getState()));
     }
 
     public Result<CrawlOrchestratorStateDTO> setOrchestratorGoal(SetOrchestratorGoalRequest request) {
-        return ok(orchestratorStateService.setGoal(request.goal()));
+        CrawlOrchestratorStateDTO state = orchestratorStateService.setGoal(request.goal());
+        triggerOrchestratorCycle();
+        return ok(enrichOrchestratorState(state));
     }
 
     public Result<CrawlOrchestratorStateDTO> wakeOrchestrator() {
-        return ok(orchestratorStateService.wake());
+        CrawlOrchestratorStateDTO state = orchestratorStateService.wake();
+        triggerOrchestratorCycle();
+        return ok(enrichOrchestratorState(state));
     }
 
     public Result<CrawlOrchestratorStateDTO> clearOrchestratorGoal() {
-        return ok(orchestratorStateService.clearGoal());
+        return ok(enrichOrchestratorState(orchestratorStateService.clearGoal()));
     }
 
     public Result<OrchestratorDecisionsDTO> listOrchestratorDecisions(long afterSeq, int limit) {
         return ok(orchestratorStateService.listDecisions(afterSeq, limit));
+    }
+
+    private CrawlOrchestratorStateDTO enrichOrchestratorState(CrawlOrchestratorStateDTO base) {
+        try {
+            Map<String, Object> agent = pythonCrawlClient.getOrchestratorAgentStatus();
+            return new CrawlOrchestratorStateDTO(
+                base.goal(),
+                base.status(),
+                base.runningJobCount(),
+                base.maxConcurrentJobs(),
+                base.lastDecision(),
+                base.updatedAt(),
+                Boolean.TRUE.equals(agent.get("enabled")),
+                Boolean.TRUE.equals(agent.get("llm_configured"))
+            );
+        } catch (Exception ex) {
+            return new CrawlOrchestratorStateDTO(
+                base.goal(),
+                base.status(),
+                base.runningJobCount(),
+                base.maxConcurrentJobs(),
+                base.lastDecision(),
+                base.updatedAt(),
+                null,
+                null
+            );
+        }
+    }
+
+    private void triggerOrchestratorCycle() {
+        try {
+            pythonCrawlClient.triggerOrchestratorCycle();
+        } catch (Exception ex) {
+            orchestratorStateService.recordDecision(
+                "触发主编排失败：" + (ex.getMessage() == null ? "python-ai 不可达" : ex.getMessage())
+            );
+        }
     }
 
     private void applySite(CrawlSiteEntity entity, UpsertCrawlSiteRequest request) {

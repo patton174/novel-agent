@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.novel.agent.content.crawl.CrawlJobStatus;
+import com.novel.agent.content.config.AgentRuntimeProperties;
 import com.novel.agent.content.entity.CrawlJobEntity;
 import com.novel.agent.content.entity.CrawlSiteEntity;
 import com.novel.agent.content.service.crawl.dto.CrawlJobDTO;
@@ -21,13 +21,16 @@ public class PythonCrawlClient {
 
     private final RestClient restClient;
     private final ObjectMapper objectMapper;
+    private final String internalKey;
 
     public PythonCrawlClient(
         RestClient pythonRestClient,
-        ObjectMapper objectMapper
+        ObjectMapper objectMapper,
+        AgentRuntimeProperties runtimeProperties
     ) {
         this.restClient = pythonRestClient;
         this.objectMapper = objectMapper;
+        this.internalKey = runtimeProperties.internalServiceKey();
     }
 
     public Map<String, Object> preview(String sourceUrl, Map<String, Object> siteConfig) {
@@ -62,6 +65,26 @@ public class PythonCrawlClient {
             .body(toJson(body).getBytes(StandardCharsets.UTF_8))
             .retrieve()
             .toBodilessEntity();
+    }
+
+    public void triggerOrchestratorCycle() {
+        restClient.post()
+            .uri("/internal/orchestrator/run-once")
+            .header("X-Internal-Service-Key", internalKey)
+            .retrieve()
+            .toBodilessEntity();
+    }
+
+    public Map<String, Object> getOrchestratorAgentStatus() {
+        JsonNode response = restClient.get()
+            .uri("/internal/orchestrator/status")
+            .header("X-Internal-Service-Key", internalKey)
+            .retrieve()
+            .body(JsonNode.class);
+        if (response == null) {
+            return Map.of("enabled", false, "llm_configured", false);
+        }
+        return objectMapper.convertValue(response, Map.class);
     }
 
     private String toJson(ObjectNode body) {

@@ -6,5 +6,7 @@ public record CrawlOrchestratorStateDTO(
     int runningJobCount,
     int maxConcurrentJobs,
     String lastDecision,
-    long updatedAt
+    long updatedAt,
+    Boolean agentEnabled,
+    Boolean agentLlmConfigured
 ) {}

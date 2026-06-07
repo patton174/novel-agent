@@ -28,6 +28,39 @@ SYSTEM_PROMPT = """你是爬虫主编排 Agent（全局唯一、常驻运行）�
 - maxChapters 传 0 表示不限章节
 - 不要长篇解释，只调用工具"""
 
+_wake_event: asyncio.Event | None = None
+
+
+def signal_orchestrator_wake() -> None:
+    """Interrupt daemon sleep for an immediate cycle (CRM wake / set goal)."""
+    if _wake_event is not None:
+        _wake_event.set()
+
+
+async def run_orchestrator_once(client: OrchestratorClient | None = None) -> None:
+    owned = client is None
+    if owned:
+        client = OrchestratorClient()
+    try:
+        if not settings.crawl_orchestrator_enabled:
+            await client.record_decision(
+                "主编排未启用：请在 Worker 的 python-ai/.env 设置 CRAWL_ORCHESTRATOR_ENABLED=true 并重启"
+            )
+            return
+        if not llm_provider.is_configured:
+            await client.record_decision("主编排 idle：LLM API 未配置，无法决策")
+            return
+        await _one_cycle(client)
+    except Exception as exc:
+        logger.exception("orchestrator once failed: %s", exc)
+        try:
+            await client.record_decision(f"主编排异常：{exc!s}"[:500])
+        except Exception:
+            pass
+    finally:
+        if owned:
+            await client.close()
+
 
 async def _one_cycle(client: OrchestratorClient) -> None:
     state = await client.get_state()
@@ -73,23 +106,34 @@ async def _one_cycle(client: OrchestratorClient) -> None:
 
 
 async def orchestrator_daemon() -> None:
+    global _wake_event
+    _wake_event = asyncio.Event()
     logger.info("Crawl orchestrator daemon started (poll=%ss)", settings.crawl_orchestrator_poll_sec)
     client = OrchestratorClient()
     try:
+        await client.record_decision("主编排 daemon 已启动")
         while True:
             try:
-                if llm_provider.is_configured:
-                    await _one_cycle(client)
-                else:
-                    logger.warning("orchestrator: LLM not configured, idle")
+                await run_orchestrator_once(client)
             except Exception as exc:
                 logger.exception("orchestrator cycle failed: %s", exc)
-            await asyncio.sleep(max(5, settings.crawl_orchestrator_poll_sec))
+                try:
+                    await client.record_decision(f"主编排循环异常：{exc!s}"[:500])
+                except Exception:
+                    pass
+            _wake_event.clear()
+            poll = max(5, settings.crawl_orchestrator_poll_sec)
+            try:
+                await asyncio.wait_for(_wake_event.wait(), timeout=poll)
+            except asyncio.TimeoutError:
+                pass
     finally:
+        _wake_event = None
         await client.close()
 
 
 def start_orchestrator_background() -> None:
     if not settings.crawl_orchestrator_enabled:
+        logger.info("Crawl orchestrator disabled (CRAWL_ORCHESTRATOR_ENABLED=false)")
         return
     asyncio.create_task(orchestrator_daemon())

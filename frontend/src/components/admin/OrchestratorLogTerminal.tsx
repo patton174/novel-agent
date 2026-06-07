@@ -19,20 +19,36 @@ function formatTime(ts: number): string {
 interface OrchestratorLogTerminalProps {
   status?: string
   active?: boolean
+  /** 父组件刷新后传入，用于在唤醒后立即拉日志 */
+  refreshKey?: number
 }
 
-export function OrchestratorLogTerminal({ status, active = true }: OrchestratorLogTerminalProps) {
+export function OrchestratorLogTerminal({
+  status,
+  active = true,
+  refreshKey = 0,
+}: OrchestratorLogTerminalProps) {
   const [logs, setLogs] = useState<OrchestratorDecisionEntry[]>([])
   const [loading, setLoading] = useState(false)
+  const [fetchError, setFetchError] = useState<string | null>(null)
   const [autoScroll, setAutoScroll] = useState(true)
   const scrollRef = useRef<HTMLDivElement>(null)
   const maxSeqRef = useRef(0)
+  const bootstrappedRef = useRef(false)
 
   const isLive = status === 'RUNNING'
 
-  const pull = useCallback(async () => {
+  const pull = useCallback(async (bootstrap = false) => {
     try {
-      const res = await fetchOrchestratorDecisions(maxSeqRef.current)
+      const afterSeq = bootstrap ? 0 : maxSeqRef.current
+      const res = await fetchOrchestratorDecisions(afterSeq, bootstrap ? 200 : 100)
+      setFetchError(null)
+      if (bootstrap) {
+        setLogs(res.logs)
+        maxSeqRef.current = res.maxSeq
+        bootstrappedRef.current = true
+        return
+      }
       if (res.logs.length > 0) {
         setLogs((prev) => {
           const seen = new Set(prev.map((l) => l.seq))
@@ -46,20 +62,24 @@ export function OrchestratorLogTerminal({ status, active = true }: OrchestratorL
       if (res.maxSeq > maxSeqRef.current) {
         maxSeqRef.current = res.maxSeq
       }
-    } catch {
-      /* 轮询失败静默 */
+    } catch (err) {
+      setFetchError(err instanceof Error ? err.message : '加载日志失败')
     }
   }, [])
 
   useEffect(() => {
     if (!active) return
+    bootstrappedRef.current = false
+    maxSeqRef.current = 0
+    setLogs([])
     setLoading(true)
-    void pull().finally(() => setLoading(false))
-  }, [active, pull])
+    void pull(true).finally(() => setLoading(false))
+  }, [active, refreshKey, pull])
 
   useEffect(() => {
-    if (!active || !isLive) return
-    const timer = window.setInterval(() => void pull(), 800)
+    if (!active) return
+    const intervalMs = isLive ? 1500 : 4000
+    const timer = window.setInterval(() => void pull(false), intervalMs)
     return () => window.clearInterval(timer)
   }, [active, isLive, pull])
 
@@ -91,6 +111,11 @@ export function OrchestratorLogTerminal({ status, active = true }: OrchestratorL
           自动滚动
         </label>
       </div>
+      {fetchError ? (
+        <p className="border-b border-rose-500/20 bg-rose-500/10 px-3 py-1.5 text-xs text-rose-400">
+          {fetchError}
+        </p>
+      ) : null}
       <div
         ref={scrollRef}
         className="h-[min(42vh,360px)] overflow-y-auto px-3 py-2 font-mono text-xs leading-relaxed"
@@ -98,7 +123,7 @@ export function OrchestratorLogTerminal({ status, active = true }: OrchestratorL
         {loading && logs.length === 0 ? (
           <p className="text-zinc-500">加载日志…</p>
         ) : logs.length === 0 ? (
-          <p className="text-zinc-500">暂无决策日志，设定目标后主编排 Agent 的决策将显示在此</p>
+          <p className="text-zinc-500">暂无决策日志，设定目标或唤醒后主编排 Agent 的决策将显示在此</p>
         ) : (
           logs.map((entry) => (
             <div key={entry.seq} className="flex gap-2 py-0.5">
@@ -108,7 +133,10 @@ export function OrchestratorLogTerminal({ status, active = true }: OrchestratorL
                   'min-w-0 break-all',
                   entry.message.startsWith('目标')
                     ? 'text-violet-400'
-                    : entry.message.includes('失败') || entry.message.includes('错误')
+                    : entry.message.includes('未启用') ||
+                        entry.message.includes('失败') ||
+                        entry.message.includes('异常') ||
+                        entry.message.includes('错误')
                       ? 'text-rose-400'
                       : 'text-sky-300',
                 )}

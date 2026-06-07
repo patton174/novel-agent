@@ -47,7 +47,9 @@ public class CrawlOrchestratorStateService {
             running,
             MAX_CONCURRENT_JOBS,
             state.lastDecision(),
-            state.updatedAt()
+            state.updatedAt(),
+            null,
+            null
         );
     }
 

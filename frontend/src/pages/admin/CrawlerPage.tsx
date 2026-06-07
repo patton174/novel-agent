@@ -66,6 +66,7 @@ export default function CrawlerPage() {
   const [orchState, setOrchState] = useState<OrchestratorState | null>(null)
   const [orchGoal, setOrchGoal] = useState('')
   const [incompleteCount, setIncompleteCount] = useState(0)
+  const [logRefreshKey, setLogRefreshKey] = useState(0)
 
   const hasRunningJob = useMemo(
     () => (jobs ?? []).some((job) => job.status === 'RUNNING' || job.status === 'PENDING'),
@@ -106,6 +107,7 @@ export default function CrawlerPage() {
     try {
       const state = await setOrchestratorGoal(orchGoal.trim())
       setOrchState(state)
+      setLogRefreshKey((k) => k + 1)
       appToast.success('目标已设定，主编排 Agent 将开始工作')
     } catch (err) {
       appToast.error(err instanceof Error ? err.message : '设定失败')
@@ -119,6 +121,7 @@ export default function CrawlerPage() {
     try {
       const state = await wakeOrchestrator()
       setOrchState(state)
+      setLogRefreshKey((k) => k + 1)
       appToast.success('已唤醒')
     } catch (err) {
       appToast.error(err instanceof Error ? err.message : '唤醒失败')
@@ -283,6 +286,18 @@ export default function CrawlerPage() {
           ) : null}
         </div>
 
+        {orchState?.agentEnabled === false ? (
+          <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-800 dark:text-amber-300">
+            Worker 上主编排 Agent 未启用。请在 python-ai/.env 设置{' '}
+            <code className="rounded bg-background/80 px-1 py-0.5 text-xs">CRAWL_ORCHESTRATOR_ENABLED=true</code>{' '}
+            并重启 python-ai 容器；唤醒后会写入诊断日志。
+          </div>
+        ) : orchState?.agentLlmConfigured === false ? (
+          <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-800 dark:text-amber-300">
+            LLM API 未配置，主编排无法决策。请检查 python-ai/.env 中的 API Key。
+          </div>
+        ) : null}
+
         {orchState?.goal ? (
           <div className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm">
             <p className="text-xs font-medium text-muted-foreground">当前总目标</p>
@@ -343,7 +358,7 @@ export default function CrawlerPage() {
 
         <div>
           <p className="mb-2 text-sm font-semibold">主编排决策日志</p>
-          <OrchestratorLogTerminal status={orchState?.status} />
+          <OrchestratorLogTerminal status={orchState?.status} refreshKey={logRefreshKey} />
         </div>
       </section>
 

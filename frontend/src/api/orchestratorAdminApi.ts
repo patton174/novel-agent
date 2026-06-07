@@ -8,6 +8,8 @@ export interface OrchestratorState {
   maxConcurrentJobs: number
   lastDecision: string
   updatedAt: number
+  agentEnabled?: boolean | null
+  agentLlmConfigured?: boolean | null
 }
 
 async function parseResponse<T>(res: Response): Promise<T> {

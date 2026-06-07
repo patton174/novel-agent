@@ -12,7 +12,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
@@ -109,48 +108,43 @@ export function CatalogOverviewDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md gap-0 overflow-hidden p-0 sm:max-w-lg">
-        <div className="relative h-28 bg-gradient-to-br from-primary/20 via-muted to-background">
+      <DialogContent className="max-w-lg gap-0 overflow-hidden p-0">
+        <div className="flex gap-4 border-b border-border bg-muted/30 p-5">
           {coverUrl || novel.coverUrl ? (
             <img
               src={(coverUrl || novel.coverUrl) ?? undefined}
               alt=""
-              className="absolute bottom-0 left-6 size-24 translate-y-1/2 rounded-xl border-4 border-background object-cover shadow-lg"
+              className="size-20 shrink-0 rounded-lg object-cover shadow-sm ring-1 ring-border"
             />
           ) : (
-            <div className="absolute bottom-0 left-6 flex size-24 translate-y-1/2 items-center justify-center rounded-xl border-4 border-background bg-muted shadow-lg">
-              <BookOpen className="size-10 text-muted-foreground" />
+            <div className="flex size-20 shrink-0 items-center justify-center rounded-lg bg-muted ring-1 ring-border">
+              <BookOpen className="size-8 text-muted-foreground" />
             </div>
           )}
-        </div>
-
-        <div className="px-6 pb-6 pt-14">
-          <DialogHeader className="space-y-1 text-left">
-            <DialogTitle className="text-xl leading-snug">{title || novel.title}</DialogTitle>
+          <DialogHeader className="min-w-0 flex-1 space-y-1 text-left">
+            <DialogTitle className="text-lg leading-snug">{title || novel.title}</DialogTitle>
             <DialogDescription className="text-sm">
-              {author || novel.author || '未知作者'}
-              {' · '}
-              {novel.chapterCount} 章
+              {author || novel.author || '未知作者'} · {novel.chapterCount} 章
             </DialogDescription>
           </DialogHeader>
+        </div>
 
+        <div className="space-y-4 px-5 py-4">
           {loading ? (
-            <p className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
+            <p className="flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="size-4 animate-spin" />
               加载进度…
             </p>
           ) : progress ? (
             <div
               className={cn(
-                'mt-4 rounded-lg border px-3 py-2 text-sm',
+                'rounded-lg border px-3 py-2.5 text-sm',
                 progress.complete
                   ? 'border-emerald-500/30 bg-emerald-500/5'
                   : 'border-amber-500/30 bg-amber-500/5',
               )}
             >
-              <p className="font-medium">
-                {progress.complete ? '爬取已完成' : '爬取进行中'}
-              </p>
+              <p className="font-medium">{progress.complete ? '爬取已完成' : '爬取进行中'}</p>
               <p className="mt-0.5 text-xs text-muted-foreground">
                 已入库 {progress.chapterCount} 章
                 {progress.chaptersExpected != null
@@ -159,15 +153,13 @@ export function CatalogOverviewDialog({
                 {progress.latestJobStatus ? ` · 任务 ${progress.latestJobStatus}` : ''}
               </p>
               {progress.latestJobId && onOpenJob ? (
-                <Button
+                <button
                   type="button"
-                  size="sm"
-                  variant="link"
-                  className="mt-1 h-auto p-0 text-xs"
+                  className="mt-1 text-xs text-primary underline-offset-2 hover:underline"
                   onClick={() => onOpenJob(progress.latestJobId!)}
                 >
                   查看关联爬虫任务
-                </Button>
+                </button>
               ) : null}
             </div>
           ) : null}
@@ -175,7 +167,7 @@ export function CatalogOverviewDialog({
           {!editing ? (
             <>
               {description || novel.description ? (
-                <p className="mt-4 line-clamp-4 text-sm leading-relaxed text-muted-foreground">
+                <p className="line-clamp-4 text-sm leading-relaxed text-muted-foreground">
                   {description || novel.description}
                 </p>
               ) : null}
@@ -184,7 +176,7 @@ export function CatalogOverviewDialog({
                   href={(sourceUrl || novel.sourceUrl) ?? undefined}
                   target="_blank"
                   rel="noreferrer"
-                  className="mt-3 inline-flex items-center gap-1 truncate text-xs text-primary hover:underline"
+                  className="inline-flex max-w-full items-center gap-1 text-xs text-muted-foreground hover:text-primary"
                 >
                   <ExternalLink className="size-3 shrink-0" />
                   <span className="truncate">{sourceUrl || novel.sourceUrl}</span>
@@ -192,7 +184,7 @@ export function CatalogOverviewDialog({
               ) : null}
             </>
           ) : (
-            <div className="mt-4 space-y-3">
+            <div className="space-y-3">
               <div>
                 <label className="mb-1 block text-xs text-muted-foreground">书名</label>
                 <Input value={title} onChange={(e) => setTitle(e.target.value)} />
@@ -220,66 +212,61 @@ export function CatalogOverviewDialog({
               </div>
             </div>
           )}
+        </div>
 
-          <DialogFooter className="mt-6 flex-col gap-2 sm:flex-col sm:space-x-0">
-            {!editing ? (
-              <>
+        <div className="flex items-center justify-between gap-3 border-t border-border bg-muted/20 px-5 py-3">
+          {!editing ? (
+            <>
+              <div className="flex items-center gap-2">
                 <Button
                   type="button"
-                  className="w-full"
-                  onClick={() => {
-                    onRead?.(novel)
-                    onOpenChange(false)
-                  }}
+                  variant="ghost"
+                  size="sm"
+                  className="text-muted-foreground"
+                  onClick={() => setEditing(true)}
                 >
-                  <BookOpen className="mr-2 size-4" />
-                  阅读 / 目录
+                  <Pencil className="mr-1.5 size-3.5" />
+                  编辑
                 </Button>
-                <div className="flex w-full gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="flex-1"
-                    onClick={() => setEditing(true)}
-                  >
-                    <Pencil className="mr-1.5 size-4" />
-                    编辑信息
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="text-destructive hover:text-destructive"
-                    disabled={deleting}
-                    onClick={() => void handleDelete()}
-                  >
-                    {deleting ? (
-                      <Loader2 className="size-4 animate-spin" />
-                    ) : (
-                      <Trash2 className="size-4" />
-                    )}
-                  </Button>
-                </div>
-              </>
-            ) : (
-              <div className="flex w-full gap-2">
                 <Button
                   type="button"
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => {
-                    resetForms(novel)
-                    setEditing(false)
-                  }}
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive hover:text-destructive"
+                  disabled={deleting}
+                  onClick={() => void handleDelete()}
                 >
-                  取消
-                </Button>
-                <Button type="button" className="flex-1" disabled={saving} onClick={() => void handleSave()}>
-                  {saving ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
-                  保存
+                  {deleting ? (
+                    <Loader2 className="size-3.5 animate-spin" />
+                  ) : (
+                    <Trash2 className="size-3.5" />
+                  )}
                 </Button>
               </div>
-            )}
-          </DialogFooter>
+              <Button type="button" onClick={() => onRead?.(novel)}>
+                <BookOpen className="mr-2 size-4" />
+                阅读目录
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  resetForms(novel)
+                  setEditing(false)
+                }}
+              >
+                取消
+              </Button>
+              <Button type="button" size="sm" disabled={saving} onClick={() => void handleSave()}>
+                {saving ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
+                保存
+              </Button>
+            </>
+          )}
         </div>
       </DialogContent>
     </Dialog>

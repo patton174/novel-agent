@@ -210,6 +210,14 @@ hot_python() {
   deploy_ssh "$WORKER_SSH" bash -s <<EOF
 set -euo pipefail
 cd '$WORKER_REMOTE_DIR'
+PYENV='python-ai/.env'
+if [[ -f "\$PYENV" ]]; then
+  if grep -q '^CRAWL_ORCHESTRATOR_ENABLED=' "\$PYENV"; then
+    sed -i 's/^CRAWL_ORCHESTRATOR_ENABLED=.*/CRAWL_ORCHESTRATOR_ENABLED=true/' "\$PYENV"
+  else
+    echo 'CRAWL_ORCHESTRATOR_ENABLED=true' >> "\$PYENV"
+  fi
+fi
 COMPOSE='docker compose'
 if ! docker compose version >/dev/null 2>&1; then COMPOSE='docker-compose'; fi
 CF='novel-agent/docs/deploy/docker/docker-compose.worker.yml'

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Loader2, Pencil, Save, Search, Trash2 } from 'lucide-react'
+import { Loader2, Pencil, Save, Search, Trash2, X } from 'lucide-react'
 import {
   deleteCatalogChapter,
   fetchCatalogChapter,
@@ -12,9 +12,9 @@ import {
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
-  DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
@@ -148,24 +148,31 @@ export function CatalogReaderModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[90vh] max-w-5xl flex-col gap-0 overflow-hidden p-0 sm:max-w-5xl">
-        <DialogHeader className="flex shrink-0 flex-row items-center justify-between gap-4 border-b border-border px-5 py-3 text-left">
-          <div className="min-w-0">
+      <DialogContent className="flex max-h-[90vh] max-w-5xl flex-col gap-0 overflow-hidden p-0 sm:max-w-5xl" showCloseButton={false}>
+        <div className="flex shrink-0 items-center justify-between gap-4 border-b border-border px-5 py-3">
+          <div className="min-w-0 pr-2">
             <DialogTitle className="truncate text-base font-semibold">{novel.title}</DialogTitle>
             <DialogDescription className="text-xs">
               共 {chapters.length} 章 · {novel.author || '未知作者'}
             </DialogDescription>
           </div>
-          <Button
-            type="button"
-            size="sm"
-            variant={editMode ? 'default' : 'outline'}
-            onClick={() => setEditMode((v) => !v)}
-          >
-            <Pencil className="mr-1.5 size-3.5" />
-            {editMode ? '阅读模式' : '编辑模式'}
-          </Button>
-        </DialogHeader>
+          <div className="flex shrink-0 items-center gap-1">
+            <Button
+              type="button"
+              size="sm"
+              variant={editMode ? 'secondary' : 'outline'}
+              onClick={() => setEditMode((v) => !v)}
+            >
+              <Pencil className="mr-1.5 size-3.5" />
+              {editMode ? '阅读' : '编辑'}
+            </Button>
+            <DialogClose asChild>
+              <Button type="button" variant="ghost" size="icon-sm" aria-label="关闭">
+                <X className="size-4" />
+              </Button>
+            </DialogClose>
+          </div>
+        </div>
 
         <div className="grid min-h-0 flex-1 grid-cols-1 md:grid-cols-[240px_minmax(0,1fr)]">
           <aside className="flex min-h-0 flex-col border-b border-border md:border-b-0 md:border-r">

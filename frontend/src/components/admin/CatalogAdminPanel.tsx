@@ -82,6 +82,7 @@ export function CatalogAdminPanel({ onOpenJob }: CatalogAdminPanelProps) {
 
   const openReader = (novel: CatalogNovel) => {
     setSelectedNovel(novel)
+    setOverviewOpen(false)
     setReaderOpen(true)
   }
 
