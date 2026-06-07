@@ -242,6 +242,16 @@ COMPOSE='docker compose'
 if ! docker compose version >/dev/null 2>&1; then COMPOSE='docker-compose'; fi
 CF='novel-agent/agent-document/docs/deploy/docker/docker-compose.worker.yml'
 ENV='novel-agent/agent-document/docs/deploy/docker/.env.worker'
+LEGACY_ENV='novel-agent/docs/deploy/docker/.env.worker'
+if [[ ! -f "\$ENV" && -f "\$LEGACY_ENV" ]]; then
+  mkdir -p "\$(dirname "\$ENV")"
+  cp "\$LEGACY_ENV" "\$ENV"
+  echo "[ci-hot] migrated .env.worker from legacy path"
+fi
+if [[ ! -f "\$ENV" ]]; then
+  echo "[ci-hot] missing \$ENV on worker — run setup-split-config.sh on server"
+  exit 1
+fi
 \$COMPOSE -f "\$CF" --env-file "\$ENV" build python-ai
 \$COMPOSE -f "\$CF" --env-file "\$ENV" up -d --no-deps python-ai python-ai-2
 EOF

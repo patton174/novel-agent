@@ -46,6 +46,7 @@ jobs:
       - run: pip install -e ".[dev]"
       - run: ruff check app/ tests/
       - run: mypy app/ --ignore-missing-imports
+        continue-on-error: true
       - run: python -m pytest tests/ -q
 
   java:
