@@ -55,8 +55,15 @@ async function buildRequest(
   let body = init?.body
   let signEmbeddedInBody = false
 
+  // 本地 dev 将 /api/agent 直连 PyAI 时无 Gateway 解密层，禁止对 agent 请求做 body AES
+  const agentBypassesGateway =
+    import.meta.env.DEV &&
+    Boolean(import.meta.env.VITE_LOCAL_PYAI) &&
+    logicalUrl.includes('/api/agent/')
+
   const canEncryptBody =
     isSecurityCryptoEnabled() &&
+    !agentBypassesGateway &&
     !(isStreamUrl(logicalUrl) && import.meta.env.VITE_SECURITY_ENCRYPT_STREAM !== 'true') &&
     body != null &&
     typeof body === 'string' &&
@@ -66,7 +73,8 @@ async function buildRequest(
     ? await getActiveCryptoMaterial(logicalUrl)
     : null
 
-  if (canEncryptBody && isFieldEncryptionEnabled() && material) {
+  // SSE stream 走扁平 JSON，避免 __sec 字段体在网关未展开时导致 message 校验失败
+  if (canEncryptBody && isFieldEncryptionEnabled() && material && !isStreamUrl(logicalUrl)) {
     body = await wrapFieldPayload(body as string, material)
   }
 

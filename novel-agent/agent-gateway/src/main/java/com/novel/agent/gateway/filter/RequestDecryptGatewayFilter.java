@@ -62,9 +62,6 @@ public class RequestDecryptGatewayFilter implements GlobalFilter, Ordered {
         if (!BODY_METHODS.contains(request.getMethod())) {
             return chain.filter(exchange);
         }
-        if (isStreamPath(path) && !properties.encryptStream()) {
-            return chain.filter(exchange);
-        }
 
         return DataBufferUtils.join(request.getBody())
             .flatMap(buffer -> {
@@ -148,10 +145,6 @@ public class RequestDecryptGatewayFilter implements GlobalFilter, Ordered {
                 return headers;
             }
         };
-    }
-
-    private boolean isStreamPath(String path) {
-        return path.contains("/chat/stream");
     }
 
     private Mono<Void> badRequest(ServerWebExchange exchange, String message) {

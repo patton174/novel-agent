@@ -47,7 +47,7 @@ auth:
     aes-required: true
     route-obfuscation: true
     field-encryption: true
-    encrypt-stream: false
+    encrypt-stream: true
     replay-window-seconds: 120
     enforce-csrf: false
     heartbeat-max-silence-seconds: 180
