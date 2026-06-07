@@ -111,6 +111,8 @@ jobs:
               - 'frontend/src/utils/authApi.ts'
             deploy_ci:
               - 'novel-agent/docs/deploy/scripts/**'
+              - 'novel-agent/docs/deploy/docker/docker-compose.worker.yml'
+              - 'novel-agent/docs/deploy/docker/nginx-python-lb-worker.conf'
               - '.github/workflows/deploy-split.yml'
             python-ai:
               - 'python-ai/**'

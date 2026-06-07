@@ -112,13 +112,18 @@ if want "${CHANGED_SECURITY:-false}"; then
   echo "[ci-hot] security paths changed → sync MW auth + gateway"
 fi
 
-# 部署脚本/workflow 变更：补发 MW 安全栈 + Worker content（探针/路径对齐）
+# 部署脚本/workflow/Worker compose 变更：全量 Worker 热部署 + 基础设施同步
 if want "${CHANGED_DEPLOY_CI:-false}"; then
-  echo "[ci-hot] deploy/ci changed → sync MW auth + gateway + worker content"
+  echo "[ci-hot] deploy/ci changed → sync worker infra + deploy full worker stack"
   CHANGED_AUTH=true
   CHANGED_GATEWAY=true
   CHANGED_CONTENT=true
+  CHANGED_CONSUMER=true
+  CHANGED_PYAI=true
+  CHANGED_PYTHON_AI=true
+  CHANGED_FRONTEND=true
   export MW_JAVA_REBUILD=1
+  export WORKER_INFRA_SYNC=1
 fi
 
 if want "${CHANGED_COMMON:-false}"; then
@@ -159,6 +164,11 @@ if want "${CHANGED_FRONTEND:-false}"; then
     pnpm install --frozen-lockfile
     VITE_SECURITY_AES=true VITE_ROUTE_OBFUSCATION=true VITE_FIELD_ENCRYPTION=true VITE_SECURITY_ENCRYPT_STREAM=true pnpm run build
   )
+fi
+
+if want "${WORKER_INFRA_SYNC:-false}"; then
+  echo "[ci-hot] worker infra: python-lb + memory + compose (before jar hot deploy)"
+  bash "$SCRIPT_DIR/update-worker-memory.sh"
 fi
 
 PIDS=()

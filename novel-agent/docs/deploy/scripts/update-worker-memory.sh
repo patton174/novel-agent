@@ -1,55 +1,24 @@
 #!/usr/bin/env bash
-# Worker 容器内存重平衡：降低 JVM 占用、抬高 python-ai limit、限制抓取并发
+# Worker 容器内存重平衡（本地或 CI 调用 → scp 脚本后在 Worker 执行）
 set -euo pipefail
 
-WK="${WORKER_SSH:-root@47.80.80.224}"
-DIR="${DEPLOY_DIR:-/opt/novel-agent}"
-CF="$DIR/novel-agent/docs/deploy/docker/docker-compose.worker.yml"
-ENV_WK="$DIR/novel-agent/docs/deploy/docker/.env.worker"
-PYENV="$DIR/python-ai/.env"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
+# shellcheck source=/dev/null
+source "$SCRIPT_DIR/_deploy-lib.sh"
 
-echo "=== Worker: 应用内存配置并重建容器 ==="
-ssh "$WK" bash -s <<EOF
-set -euo pipefail
-cd "$DIR"
-COMPOSE="docker compose"
+WK="${WORKER_SSH:-root@${WORKER_HOST:?WORKER_HOST required}}"
+DIR="${WORKER_REMOTE_DIR:-/opt/novel-agent}"
+DOCKER_DIR="$REPO_ROOT/novel-agent/docs/deploy/docker"
 
-if [[ ! -f "$ENV_WK" ]]; then
-  echo "missing $ENV_WK — 请先 git pull 或运行 setup-split-config.sh"
-  exit 1
-fi
+echo "=== Worker: 同步 compose/nginx 并应用内存配置 ==="
+deploy_ssh "$WK" "mkdir -p '$DIR/novel-agent/docs/deploy/docker' '$DIR/novel-agent/docs/deploy/scripts'"
+deploy_scp "$DOCKER_DIR/docker-compose.worker.yml" "$WK:$DIR/novel-agent/docs/deploy/docker/docker-compose.worker.yml"
+deploy_scp "$DOCKER_DIR/nginx-python-lb-worker.conf" "$WK:$DIR/novel-agent/docs/deploy/docker/nginx-python-lb-worker.conf"
+deploy_scp "$SCRIPT_DIR/update-worker-crawl-env.sh" "$WK:$DIR/novel-agent/docs/deploy/scripts/update-worker-crawl-env.sh"
+deploy_scp "$SCRIPT_DIR/worker-apply-infra.sh" "$WK:$DIR/novel-agent/docs/deploy/scripts/worker-apply-infra.sh"
+deploy_ssh "$WK" "chmod +x '$DIR/novel-agent/docs/deploy/scripts/worker-apply-infra.sh' '$DIR/novel-agent/docs/deploy/scripts/update-worker-crawl-env.sh' && DEPLOY_DIR='$DIR' bash '$DIR/novel-agent/docs/deploy/scripts/worker-apply-infra.sh'"
 
-# python-ai/.env 抓取并发（与 compose 环境变量双保险）
-if [[ -f "$PYENV" ]]; then
-  for kv in \
-    "CRAWL_FETCH_CONCURRENCY=2" \
-    "CRAWL_BROWSER_CONCURRENCY=1"; do
-    k="\${kv%%=*}"
-    v="\${kv#*=}"
-    if grep -q "^\${k}=" "$PYENV"; then
-      sed -i "s|^\${k}=.*|\${k}=\${v}|" "$PYENV"
-    else
-      echo "\${k}=\${v}" >> "$PYENV"
-    fi
-  done
-fi
-
-\$COMPOSE -f "$CF" --env-file "$ENV_WK" up -d --force-recreate \
-  python-ai python-ai-2 python-lb \
-  agent-content agent-consumer agent-pyai frontend
-
-sleep 12
-echo "--- docker stats ---"
-docker stats --no-stream --format 'table {{.Name}}\t{{.MemUsage}}\t{{.MemPerc}}' \\
-  \$(docker ps --filter name=novel-agent-worker --format '{{.Names}}' | tr '\n' ' ')
-echo "--- limits ---"
-docker inspect \\
-  novel-agent-worker-python-ai-1 \\
-  novel-agent-worker-python-ai-2-1 \\
-  novel-agent-worker-agent-content-1 \\
-  novel-agent-worker-agent-consumer-1 \\
-  novel-agent-worker-agent-pyai-1 \\
-  --format '{{.Name}} limit={{.HostConfig.Memory}}' 2>/dev/null || true
-EOF
-
+sleep 8
+deploy_ssh "$WK" "docker stats --no-stream --format 'table {{.Name}}\t{{.MemUsage}}\t{{.MemPerc}}' \$(docker ps --filter name=novel-agent-worker --format '{{.Names}}' | head -8 | tr '\n' ' ')"
 echo "[update-worker-memory] done"
