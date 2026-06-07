@@ -5,7 +5,7 @@ import { Link, Outlet, useLocation } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { fetchUserInfo } from '../api/userApi'
 import { AdminSidebar } from '../components/admin/AdminSidebar'
-import { AdminContentSkeleton } from '../components/loading/PageSkeletons'
+import { InstantShell } from '../components/loading/InstantShell'
 import { Avatar, AvatarFallback } from '../components/ui/avatar'
 import { Badge } from '../components/ui/badge'
 import { Button } from '../components/ui/button'
@@ -77,7 +77,7 @@ export default function AdminLayout() {
           </div>
         </header>
         <main className="flex-1 overflow-y-auto p-6">
-          <Suspense fallback={<AdminContentSkeleton />}>
+          <Suspense fallback={<InstantShell variant="content" />}>
             <Outlet />
           </Suspense>
         </main>

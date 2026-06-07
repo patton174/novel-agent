@@ -5,7 +5,7 @@ import { AnimatePresence } from 'framer-motion'
 import { theme } from './styles/theme'
 import { AppToastHost } from './components/ui/AppToastHost'
 import { ConfirmDialogHost } from './components/ui/ConfirmDialogHost'
-import { RouteFallback } from './components/loading/RouteFallback'
+import { RouteSuspenseFallback } from './components/loading/RouteShellSuspense'
 import { RouteProgressBar } from './components/loading/RouteProgressBar'
 import { RequireAuth } from './components/guards/RequireAuth'
 import { RequireAdmin } from './components/guards/RequireAdmin'
@@ -117,7 +117,7 @@ function App() {
       <ConfirmDialogHost />
       <BrowserRouter>
         <RouteProgressBar />
-        <Suspense fallback={<RouteFallback />}>
+        <Suspense fallback={<RouteSuspenseFallback />}>
           <AppRoutes />
         </Suspense>
       </BrowserRouter>

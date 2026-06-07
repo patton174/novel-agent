@@ -80,6 +80,12 @@ export default defineConfig(({ mode }) => {
       chunkSizeWarningLimit: codeObfuscation ? 1200 : 500,
       rollupOptions: {
         output: {
+          chunkFileNames(chunkInfo) {
+            if (chunkInfo.facadeModuleId?.includes('RouteFallbackShell')) {
+              return 'assets/route-shells-[hash].js'
+            }
+            return 'assets/[name]-[hash].js'
+          },
           manualChunks(id) {
             if (!id.includes('node_modules')) return
             if (id.includes('recharts') || id.includes('d3-')) return 'recharts'
