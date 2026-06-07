@@ -40,32 +40,41 @@ const StatsPage = lazy(() => import('./pages/admin/StatsPage'))
 const CrawlerPage = lazy(() => import('./pages/admin/CrawlerPage'))
 const CatalogPage = lazy(() => import('./pages/admin/CatalogPage'))
 
+/** 同一大布局内子路由切换不触发整页 exit 动画 */
+function pageTransitionKey(pathname: string): string {
+  if (pathname.startsWith('/dashboard')) return '/dashboard'
+  if (pathname.startsWith('/admin')) return '/admin'
+  if (pathname.startsWith('/editor')) return '/editor'
+  return pathname
+}
+
 function AppRoutes() {
   const location = useLocation()
   useJourneyTracker()
 
   return (
     <AnimatePresence mode="wait">
-      <Routes location={location} key={location.pathname}>
-        <Route path="/" element={<PageTransition><HomePage /></PageTransition>} />
-        <Route path="/features" element={<PageTransition><FeaturesPage /></PageTransition>} />
-        <Route path="/pricing" element={<PageTransition><PricingPage /></PageTransition>} />
-        <Route path="/testimonials" element={<PageTransition><TestimonialsPage /></PageTransition>} />
-        <Route path="/privacy" element={<PageTransition><GenericContentPage title="隐私政策" /></PageTransition>} />
-        <Route path="/terms" element={<PageTransition><GenericContentPage title="用户协议" /></PageTransition>} />
-        <Route path="/contact" element={<PageTransition><GenericContentPage title="联系我们" /></PageTransition>} />
+      <PageTransition key={pageTransitionKey(location.pathname)}>
+        <Routes location={location}>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/features" element={<FeaturesPage />} />
+        <Route path="/pricing" element={<PricingPage />} />
+        <Route path="/testimonials" element={<TestimonialsPage />} />
+        <Route path="/privacy" element={<GenericContentPage title="隐私政策" />} />
+        <Route path="/terms" element={<GenericContentPage title="用户协议" />} />
+        <Route path="/contact" element={<GenericContentPage title="联系我们" />} />
         
-        <Route path="/login" element={<PageTransition><LoginPage /></PageTransition>} />
-        <Route path="/register" element={<PageTransition><RegisterPage /></PageTransition>} />
-        <Route path="/verify-email" element={<PageTransition><VerifyEmailPage /></PageTransition>} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/verify-email" element={<VerifyEmailPage />} />
         
-        <Route path="/editor/:chapterId?" element={<PageTransition><EditorPage /></PageTransition>} />
+        <Route path="/editor/:chapterId?" element={<EditorPage />} />
         
         <Route
           path="/dashboard"
           element={
             <RequireAuth>
-              <PageTransition><DashboardLayout /></PageTransition>
+              <DashboardLayout />
             </RequireAuth>
           }
         >
@@ -80,7 +89,7 @@ function AppRoutes() {
           path="/admin"
           element={
             <RequireAdmin>
-              <PageTransition><AdminLayout /></PageTransition>
+              <AdminLayout />
             </RequireAdmin>
           }
         >
@@ -90,7 +99,8 @@ function AppRoutes() {
           <Route path="crawler" element={<CrawlerPage />} />
           <Route path="catalog" element={<CatalogPage />} />
         </Route>
-      </Routes>
+        </Routes>
+      </PageTransition>
     </AnimatePresence>
   )
 }

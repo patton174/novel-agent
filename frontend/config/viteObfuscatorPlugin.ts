@@ -6,12 +6,20 @@ import type { Plugin, RenderedChunk } from 'vite'
 const UI_CHUNK_PREFIX =
   /^(dialog|badge|button|avatar|separator|select|dropdown-menu|sheet|switch|popover|tooltip|tabs|checkbox|label|input|card|skeleton)-/
 
+/** framer-motion / gsap / recharts 等运行时库不可混淆（会破坏回调与内部 API） */
+const VENDOR_CHUNK_SKIP =
+  /^(motion|gsap|recharts|markdown)-/
+
 /**
  * Vite 路由懒加载依赖 __vite__mapDeps / import() 字符串路径；
  * 对含这些特征的 chunk 跳过 obfuscator，避免 chunk 404 + MIME text/html。
  */
 function shouldSkipChunkObfuscation(code: string, chunk: RenderedChunk): boolean {
   if (chunk.isEntry) {
+    return true
+  }
+  const baseName = chunk.fileName.split('/').pop() ?? chunk.fileName
+  if (VENDOR_CHUNK_SKIP.test(baseName)) {
     return true
   }
   if (code.includes('__vite__mapDeps')) {
@@ -21,7 +29,6 @@ function shouldSkipChunkObfuscation(code: string, chunk: RenderedChunk): boolean
   if (/import\s*\(\s*['"]/.test(code)) {
     return true
   }
-  const baseName = chunk.fileName.split('/').pop() ?? chunk.fileName
   if (UI_CHUNK_PREFIX.test(baseName)) {
     return true
   }
