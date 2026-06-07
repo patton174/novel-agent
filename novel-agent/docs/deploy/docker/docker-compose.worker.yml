@@ -28,7 +28,7 @@ services:
     environment:
       LOG_LEVEL: ${PYTHON_LOG_LEVEL:-INFO}
       CONTENT_BASE_URL: http://agent-content:8091
-    mem_limit: ${PYTHON_MEM_LIMIT:-320m}
+    mem_limit: ${PYTHON_MEM_LIMIT:-512m}
     ports:
       - "8000:8000"
     networks:
@@ -48,7 +48,7 @@ services:
     environment:
       LOG_LEVEL: ${PYTHON_LOG_LEVEL:-INFO}
       CONTENT_BASE_URL: http://agent-content:8091
-    mem_limit: ${PYTHON_MEM_LIMIT_2:-320m}
+    mem_limit: ${PYTHON_MEM_LIMIT_2:-512m}
     ports:
       - "8001:8000"
     networks:

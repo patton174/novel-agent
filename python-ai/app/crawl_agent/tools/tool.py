@@ -18,6 +18,7 @@ class CrawlToolResult:
     is_error: bool = False
     end_run: bool = False
     context_patch: dict[str, Any] = field(default_factory=dict)
+    count_as_failure: bool = True
 
 
 @dataclass

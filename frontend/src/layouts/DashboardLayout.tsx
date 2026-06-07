@@ -5,7 +5,7 @@ import { Outlet, useLocation } from 'react-router-dom'
 import { fetchUserInfo } from '../api/userApi'
 import { AppSidebar } from '../components/dashboard/AppSidebar'
 import { DashboardHeader } from '../components/dashboard/DashboardHeader'
-import { InstantShell } from '../components/loading/InstantShell'
+import { LayoutOutletSuspenseFallback } from '../components/loading/LayoutOutletSuspense'
 import { useUserStore } from '../stores/userStore'
 
 const PAGE_META: Record<string, { title: string; description?: string }> = {
@@ -48,7 +48,7 @@ export default function DashboardLayout() {
       <div className="flex min-w-0 flex-1 flex-col">
         <DashboardHeader title={meta.title} description={meta.description} />
         <main className="flex-1 overflow-y-auto px-8 py-5">
-          <Suspense fallback={<InstantShell variant="content" />}>
+          <Suspense fallback={<LayoutOutletSuspenseFallback />}>
             <Outlet />
           </Suspense>
         </main>

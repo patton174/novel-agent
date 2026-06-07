@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 
 from app.core.llm import llm_provider
+from app.config import settings
 from app.crawl_agent.context import CrawlAgentContext
 from app.crawl_agent.loop_support import (
     invoke_llm_with_pairing_retry,
@@ -44,11 +45,17 @@ async def run_crawl_tool_loop(
     max_turns: int = _MAX_TURNS,
     preview_mode: bool = False,
 ) -> CrawlLoopResult:
-    if not llm_provider.is_configured:
-        raise RuntimeError("LLM 未配置")
+    if not llm_provider.is_crawl_configured:
+        raise RuntimeError("爬虫 LLM 未配置（CRAWL_LLM_API_KEY 或 AGNES_IMAGE_API_KEY）")
 
     tools = build_crawl_langchain_tools()
-    llm = llm_provider.get_llm(profile="plan").bind_tools(tools)
+    llm = llm_provider.get_llm(profile="crawl").bind_tools(tools)
+    crawl_cfg = settings.get_crawl_llm_config()
+    logger.info(
+        "crawl agent llm model=%s base_url=%s",
+        crawl_cfg.get("model"),
+        crawl_cfg.get("base_url"),
+    )
     messages: list = [
         SystemMessage(content=build_crawl_system_prompt(ctx)),
         HumanMessage(content=build_crawl_task_message(ctx)),

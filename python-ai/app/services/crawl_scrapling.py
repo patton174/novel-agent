@@ -4,9 +4,20 @@ from __future__ import annotations
 
 import logging
 import re
+import threading
 from dataclasses import dataclass
 from typing import Any
 from urllib.parse import urljoin
+
+from app.config import settings
+from app.services.crawl_proxy import mask_proxy_url, pick_crawl_proxy, proxy_candidates_for_fetch
+from app.services.crawl_mihomo import (
+    iter_nodes_for_retry,
+    mihomo_rotation_enabled,
+    record_node_failure,
+    record_node_success,
+    select_node,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -14,6 +25,24 @@ _ANCHOR_RE = re.compile(
     r'<a[^>]+href=["\']([^"\']+)["\'][^>]*>(.*?)</a>',
     flags=re.IGNORECASE | re.DOTALL,
 )
+
+# curl_cffi 高并发下 TLS 易抖动；Stealth 浏览器占内存，单独限流
+_http_fetch_sem: threading.Semaphore | None = None
+_browser_fetch_sem: threading.Semaphore | None = None
+
+
+def _http_sem() -> threading.Semaphore:
+    global _http_fetch_sem
+    if _http_fetch_sem is None:
+        _http_fetch_sem = threading.Semaphore(max(1, settings.crawl_fetch_concurrency))
+    return _http_fetch_sem
+
+
+def _browser_sem() -> threading.Semaphore:
+    global _browser_fetch_sem
+    if _browser_fetch_sem is None:
+        _browser_fetch_sem = threading.Semaphore(max(1, settings.crawl_browser_concurrency))
+    return _browser_fetch_sem
 
 
 @dataclass
@@ -24,6 +53,7 @@ class PageFetchMeta:
     link_count: int
     blocked: bool
     hint: str = ""
+    proxy_node_retries: int = 0
 
 
 def _browser_unavailable(exc: BaseException) -> bool:
@@ -34,6 +64,139 @@ def _browser_unavailable(exc: BaseException) -> bool:
         or "playwright install" in msg
         or "browser_type.launch" in msg
     )
+
+
+def _is_tls_or_proxy_error(exc: BaseException) -> bool:
+    msg = str(exc).lower()
+    return (
+        "tls connect error" in msg
+        or "curl: (35)" in msg
+        or "curl: (56)" in msg
+        or "curl: (52)" in msg
+        or "invalid library" in msg
+        or "openssl_internal" in msg
+        or "ssl: unexpected_eof" in msg
+        or "sslerror" in msg
+        or "certificate verify failed" in msg
+        or "proxy connect" in msg
+        or "connection reset" in msg
+    )
+
+
+def _use_mihomo_node_rotation(proxy: str | None) -> bool:
+    if not mihomo_rotation_enabled():
+        return False
+    base = settings.crawl_http_proxy.strip()
+    if not base:
+        return False
+    effective = (proxy or base).strip()
+    return effective == base
+
+
+def _should_retry_next_mihomo_node(
+    meta: PageFetchMeta | None,
+    exc: BaseException | None,
+) -> bool:
+    """仅 TLS/代理链路失败时换节点；403 等业务拦截不换节点。"""
+    if exc is not None:
+        return _is_tls_or_proxy_error(exc)
+    return False
+
+
+def _fetch_with_mihomo_node_rotation(
+    url: str,
+    *,
+    auto_stealth: bool,
+    proxy: str | None,
+) -> tuple[Any, PageFetchMeta] | None:
+    """经 mihomo API 切换节点并重试；不可用时返回 None 走原有逻辑。"""
+    if not _use_mihomo_node_rotation(proxy):
+        return None
+
+    http_proxy = (proxy or settings.crawl_http_proxy).strip()
+    nodes = iter_nodes_for_retry()
+    if not nodes:
+        logger.warning("mihomo 无可用叶子节点，跳过自动换节点")
+        return None
+
+    last_tls_exc: BaseException | None = None
+    last_meta: PageFetchMeta | None = None
+    tls_attempts = 0
+    select_lock = threading.Lock()
+
+    def try_http(node: str) -> tuple[Any, PageFetchMeta] | None:
+        nonlocal last_tls_exc, last_meta, tls_attempts
+        with select_lock:
+            select_node(node)
+        try:
+            page = fetch_page(url, stealth=False, proxy=http_proxy)
+            meta = _build_meta(page, url, used_stealth=False, proxy=http_proxy)
+            meta.proxy_node_retries = tls_attempts
+            record_node_success(node)
+            if tls_attempts:
+                logger.info(
+                    "FetchPage 换节点成功 node=%s url=%s status=%s tries=%s",
+                    node[:45],
+                    url,
+                    meta.http_status,
+                    tls_attempts,
+                )
+            return page, meta
+        except Exception as exc:
+            if _should_retry_next_mihomo_node(None, exc):
+                tls_attempts += 1
+                last_tls_exc = exc
+                record_node_failure(node)
+                logger.debug(
+                    "FetchPage TLS 静默换节点 node=%s url=%s err=%s",
+                    node[:45],
+                    url,
+                    str(exc)[:160],
+                )
+                return None
+            raise
+
+    for node in nodes:
+        result = try_http(node)
+        if result is not None:
+            return result
+
+    if auto_stealth and settings.crawl_browser_fetch_enabled:
+        stealth_limit = min(3, len(nodes))
+        for node in nodes[:stealth_limit]:
+            with select_lock:
+                select_node(node)
+            try:
+                logger.debug("FetchPage Stealth 静默换节点 node=%s url=%s", node[:45], url)
+                page = fetch_page(url, stealth=True, proxy=http_proxy)
+                meta = _build_meta(page, url, used_stealth=True, proxy=http_proxy)
+                meta.proxy_node_retries = tls_attempts
+                record_node_success(node)
+                return page, meta
+            except Exception as exc:
+                if _browser_unavailable(exc):
+                    logger.warning("Stealth 浏览器不可用: %s", exc)
+                    break
+                if _should_retry_next_mihomo_node(None, exc):
+                    tls_attempts += 1
+                    record_node_failure(node)
+                    logger.debug(
+                        "Stealth TLS 静默换节点 node=%s url=%s err=%s",
+                        node[:45],
+                        url,
+                        str(exc)[:160],
+                    )
+                    continue
+                record_node_failure(node)
+                logger.debug("Stealth 节点失败 node=%s url=%s: %s", node[:45], url, exc)
+
+    if last_tls_exc:
+        logger.info(
+            "mihomo 已静默尝试 %d 个节点仍无法握手 url=%s",
+            len(nodes),
+            url,
+        )
+        return None
 
 
 def page_http_status(page: Any) -> int:
@@ -212,16 +375,13 @@ def _build_meta(page: Any, url: str, *, used_stealth: bool, proxy: str | None = 
     blocked = status >= 400 or content_chars < 80
     hint = ""
     if status == 403:
-        if proxy:
-            hint = (
-                "HTTP 403：当前代理出口仍被目标站拒绝，请更换住宅/动态代理或检查账号流量"
-            )
-        else:
-            hint = "目标站返回 403 Forbidden，Worker 出口 IP 可能被 WAF 封禁，请配置 CRAWL_HTTP_PROXY"
+        hint = "目标站拒绝访问（403），可尝试 BrowserOpen 或 FailJob"
     elif status >= 400:
         hint = f"HTTP {status}，页面不可用"
+    elif status == 0:
+        hint = "无法打开该 URL，可尝试 BrowserOpen 或 FailJob"
     elif blocked:
-        hint = "响应正文过短且无有效链接，可能为反爬空壳页"
+        hint = "响应正文过短，可能为反爬空壳页，可换 BrowserOpen"
 
     return PageFetchMeta(
         http_status=status,
@@ -233,38 +393,84 @@ def _build_meta(page: Any, url: str, *, used_stealth: bool, proxy: str | None = 
     )
 
 
+class _EmptyFetchPage:
+    status = 0
+    reason = "Unavailable"
+    body = b""
+
+    def css(self, _sel):
+        return []
+
+
+def _transport_failure_meta(url: str, *, proxy_node_retries: int = 0) -> PageFetchMeta:
+    return PageFetchMeta(
+        http_status=0,
+        used_stealth=False,
+        content_chars=0,
+        link_count=0,
+        blocked=True,
+        hint="无法打开该 URL，可尝试 BrowserOpen 或 FailJob",
+        proxy_node_retries=proxy_node_retries,
+    )
+
+
+def _transport_failure_result(
+    url: str,
+    *,
+    proxy_node_retries: int = 0,
+) -> tuple[Any, PageFetchMeta]:
+    return _EmptyFetchPage(), _transport_failure_meta(url, proxy_node_retries=proxy_node_retries)
+
+
+def _fetch_http(url: str, *, proxy: str | None) -> Any:
+    """Scrapling HTTP Fetcher（curl_cffi），带 impersonate 与并发限流。"""
+    from scrapling.fetchers import Fetcher
+
+    kwargs: dict[str, Any] = {
+        "stealthy_headers": True,
+        "impersonate": settings.crawl_impersonate,
+        "retries": max(1, settings.crawl_http_retries),
+        "timeout": settings.crawl_http_timeout,
+    }
+    if proxy:
+        kwargs["proxy"] = proxy
+    with _http_sem():
+        return Fetcher.get(url, **kwargs)
+
+
+def _fetch_stealth_browser(url: str, *, proxy: str | None) -> Any:
+    """Scrapling StealthyFetcher — Chromium 网络栈，绕过 curl_cffi+代理 TLS 问题。"""
+    from scrapling.fetchers import StealthyFetcher
+
+    kwargs: dict[str, Any] = {
+        "headless": True,
+        "network_idle": False,
+        "timeout": settings.crawl_browser_timeout_ms,
+        "disable_resources": True,
+    }
+    if proxy:
+        kwargs["proxy"] = proxy
+        kwargs["geoip"] = True
+        kwargs["block_webrtc"] = True
+    with _browser_sem():
+        return StealthyFetcher.fetch(url, **kwargs)
+
+
 def fetch_page(url: str, *, stealth: bool = False, proxy: str | None = None):
-    try:
-        from scrapling.fetchers import Fetcher
-
-        if stealth:
-            try:
-                from scrapling.fetchers import StealthyFetcher
-
-                kwargs: dict[str, Any] = {
-                    "headless": True,
-                    "network_idle": False,
-                    "timeout": 60000,
-                }
-                if proxy:
-                    kwargs["proxy"] = proxy
-                    kwargs["geoip"] = True
-                    kwargs["block_webrtc"] = True
-                return StealthyFetcher.fetch(url, **kwargs)
-            except Exception as exc:
-                if _browser_unavailable(exc):
-                    logger.warning(
-                        "Stealth 浏览器未安装或不可用，回退 HTTP Fetcher。"
-                        " Docker 镜像需 patchright install chromium：%s",
-                        exc,
-                    )
-                else:
-                    raise
-        if proxy:
-            return Fetcher.get(url, stealthy_headers=True, proxy=proxy)
-        return Fetcher.get(url, stealthy_headers=True)
-    except ImportError as exc:
-        raise RuntimeError("Scrapling 未安装，请执行 pip install scrapling[fetchers]") from exc
+    if stealth:
+        try:
+            return _fetch_stealth_browser(url, proxy=proxy)
+        except Exception as exc:
+            if _browser_unavailable(exc):
+                logger.warning(
+                    "Stealth 浏览器不可用（需 patchright chromium；容器内存建议 ≥512MB）：%s",
+                    exc,
+                )
+                raise RuntimeError(
+                    "Stealth 浏览器不可用，请确认镜像已 patchright install chromium 且 PYTHON_MEM_LIMIT≥512m"
+                ) from exc
+            raise
+    return _fetch_http(url, proxy=proxy)
 
 
 def fetch_page_with_retry(
@@ -274,21 +480,90 @@ def fetch_page_with_retry(
     auto_stealth: bool = True,
     proxy: str | None = None,
 ) -> tuple[Any, PageFetchMeta]:
-    """抓取页面；HTTP 被拦或空壳时自动尝试 Stealth 一次。"""
-    page = fetch_page(url, stealth=stealth, proxy=proxy)
-    meta = _build_meta(page, url, used_stealth=stealth, proxy=proxy)
+    """抓取页面：mihomo 换节点 → HTTP Fetcher → 代理轮换/直连 → Stealth 浏览器。"""
+    if stealth:
+        page = fetch_page(url, stealth=True, proxy=proxy)
+        return page, _build_meta(page, url, used_stealth=True, proxy=proxy)
 
-    if auto_stealth and not stealth and meta.blocked:
-        logger.info("FetchPage auto stealth retry url=%s status=%s", url, meta.http_status)
+    mihomo_result = _fetch_with_mihomo_node_rotation(
+        url,
+        auto_stealth=auto_stealth,
+        proxy=proxy,
+    )
+    if mihomo_result is not None:
+        return mihomo_result
+
+    candidates = proxy_candidates_for_fetch(proxy)
+    last_tls_exc: BaseException | None = None
+    tls_proxy_attempts = 0
+
+    for candidate in candidates:
+        label = mask_proxy_url(candidate) or "direct"
         try:
-            stealth_page = fetch_page(url, stealth=True, proxy=proxy)
-            stealth_meta = _build_meta(stealth_page, url, used_stealth=True, proxy=proxy)
-            if not stealth_meta.blocked:
-                return stealth_page, stealth_meta
-            page, meta = stealth_page, stealth_meta
+            page = fetch_page(url, stealth=False, proxy=candidate)
+            meta = _build_meta(page, url, used_stealth=False, proxy=candidate)
+            meta.proxy_node_retries = tls_proxy_attempts
+            if not meta.blocked:
+                return page, meta
+            if meta.http_status in {403, 429} and meta.content_chars >= 80:
+                return page, meta
+            logger.debug(
+                "FetchPage blocked via %s url=%s status=%s chars=%s",
+                label,
+                url,
+                meta.http_status,
+                meta.content_chars,
+            )
         except Exception as exc:
-            logger.warning("Stealth retry failed url=%s: %s", url, exc)
-            if not meta.hint:
-                meta.hint = f"Stealth 重试失败: {exc}"
+            if _is_tls_or_proxy_error(exc):
+                tls_proxy_attempts += 1
+                last_tls_exc = exc
+                logger.debug(
+                    "FetchPage TLS 静默重试 proxy=%s url=%s err=%s",
+                    label,
+                    url,
+                    str(exc)[:160],
+                )
+                continue
+            raise
 
+    if auto_stealth and settings.crawl_browser_fetch_enabled:
+        for candidate in candidates:
+            label = mask_proxy_url(candidate) or "direct"
+            try:
+                logger.debug("FetchPage 升级 Stealth proxy=%s url=%s", label, url)
+                page = fetch_page(url, stealth=True, proxy=candidate)
+                meta = _build_meta(page, url, used_stealth=True, proxy=candidate)
+                meta.proxy_node_retries = tls_proxy_attempts
+                if not meta.blocked or meta.content_chars >= 80:
+                    return page, meta
+            except Exception as exc:
+                if _browser_unavailable(exc):
+                    logger.warning("Stealth 浏览器不可用: %s", exc)
+                    break
+                if _is_tls_or_proxy_error(exc):
+                    tls_proxy_attempts += 1
+                    last_tls_exc = exc
+                    logger.debug(
+                        "Stealth TLS 静默重试 proxy=%s url=%s err=%s",
+                        label,
+                        url,
+                        str(exc)[:160],
+                    )
+                    continue
+                logger.debug("Stealth fetch failed proxy=%s url=%s: %s", label, url, exc)
+                continue
+
+    if last_tls_exc:
+        logger.info("FetchPage 代理链 TLS 均失败 url=%s attempts=%s", url, tls_proxy_attempts)
+        return _transport_failure_result(url, proxy_node_retries=tls_proxy_attempts)
+
+    page = fetch_page(url, stealth=False, proxy=proxy)
+    meta = _build_meta(page, url, used_stealth=False, proxy=proxy)
+    meta.proxy_node_retries = tls_proxy_attempts
     return page, meta
+
+
+# 测试 / 诊断用
+def _is_scrapling_tls_error(exc: BaseException) -> bool:
+    return _is_tls_or_proxy_error(exc)

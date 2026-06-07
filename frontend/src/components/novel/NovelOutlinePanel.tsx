@@ -5,6 +5,7 @@ import {
   reorderVolumeIds,
   sortChapters,
 } from '../../utils/outlineDrag'
+import { alertDialog, promptDialog } from '../../stores/confirmDialogStore'
 import { EditorButton } from '../ui/EditorButton'
 import { OutlineVolumeBlock } from './outline/OutlineVolumeBlock'
 import { readDragPayload, writeDragPayload } from './outline/outlineDrag'
@@ -62,12 +63,17 @@ export function NovelOutlinePanel({
 
   const handleAddVolume = useCallback(async () => {
     if (!activeNovelId) return
-    const title = window.prompt('新卷名称', `第${volumes.length + 1}卷`)
-    if (!title?.trim()) return
+    const title = await promptDialog({
+      title: '新卷名称',
+      defaultValue: `第${volumes.length + 1}卷`,
+      placeholder: '输入卷名',
+      confirmLabel: '创建',
+    })
+    if (!title) return
     try {
-      await addVolume(title.trim())
+      await addVolume(title)
     } catch {
-      window.alert('创建卷失败')
+      void alertDialog({ title: '创建卷失败' })
     }
   }, [activeNovelId, volumes.length, addVolume])
 
@@ -100,7 +106,7 @@ export function NovelOutlinePanel({
       try {
         await reorderVolumes(reorderVolumeIds(volumes, payload.id, targetVolumeId))
       } catch {
-        window.alert('卷排序失败')
+        void alertDialog({ title: '卷排序失败' })
       } finally {
         setBusy(false)
       }
@@ -130,7 +136,7 @@ export function NovelOutlinePanel({
       try {
         await applyChapterReorderPlans(plans)
       } catch {
-        window.alert('章节移动失败')
+        void alertDialog({ title: '章节移动失败' })
       } finally {
         setBusy(false)
       }

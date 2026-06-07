@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { api } from '../../utils/api'
+import { alertDialog } from '../../stores/confirmDialogStore'
 
 export function useEditorReindex(activeNovelId: string | null) {
   const [reindexing, setReindexing] = useState(false)
@@ -25,12 +26,18 @@ export function useEditorReindex(activeNovelId: string | null) {
       setReindexing(false)
       setReindexProgress(null)
       if (status.status === 'completed') {
-        window.alert(`索引重建完成：${status.indexed}/${status.chapters} 章已索引`)
+        void alertDialog({
+          title: '索引重建完成',
+          description: `${status.indexed}/${status.chapters} 章已索引`,
+        })
       }
     } catch {
       setReindexing(false)
       setReindexProgress(null)
-      window.alert('无法启动索引重建，请确认 content 与 python-ai 服务已启动')
+      void alertDialog({
+        title: '无法启动索引重建',
+        description: '请确认 content 与 python-ai 服务已启动',
+      })
     }
   }, [activeNovelId, reindexing])
 
@@ -72,9 +79,15 @@ export function useEditorReindex(activeNovelId: string | null) {
         setReindexing(false)
         setReindexProgress(null)
         if (status.status === 'completed') {
-          window.alert(`索引重建完成：${status.indexed}/${status.chapters} 章已索引`)
+          void alertDialog({
+            title: '索引重建完成',
+            description: `${status.indexed}/${status.chapters} 章已索引`,
+          })
         } else if (status.status === 'failed') {
-          window.alert(`索引重建失败：${status.error ?? '未知错误'}`)
+          void alertDialog({
+            title: '索引重建失败',
+            description: status.error ?? '未知错误',
+          })
         }
       } catch {
         if (cancelled) return

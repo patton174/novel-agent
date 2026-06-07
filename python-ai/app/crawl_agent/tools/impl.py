@@ -31,7 +31,8 @@ from app.services.crawl_browser import (
     prepare_html_for_ai,
 )
 from app.services.crawl_fetch import fetch_for_crawl, resolve_crawl_url
-from app.services.crawl_proxy import mask_proxy_url, pick_crawl_proxy
+from app.services.crawl_proxy import pick_crawl_proxy
+from app.services.crawl_scrapling import page_html
 from app.crawl_agent.limits import batch_save_count, slice_chapters
 
 _REGISTERED = False
@@ -97,10 +98,7 @@ def _append_snapshot_to_context(snap: BrowserSnapshot) -> dict[str, Any]:
 async def _fetch_page_tool(ctx: CrawlAgentContext, inp: FetchPageInput) -> CrawlToolResult:
     stealth_override = inp.use_stealth
     target = resolve_crawl_url(ctx, inp.url.strip())
-    proxy = _crawl_proxy(ctx)
-    proxy_hint = mask_proxy_url(proxy)
-    log_suffix = f" · 代理 {proxy_hint}" if proxy_hint else ""
-    await _append_log(ctx, "INFO", f"FetchPage: {target}{log_suffix}")
+    await _append_log(ctx, "INFO", f"FetchPage: {target}")
 
     page, meta = await asyncio.to_thread(
         fetch_for_crawl,
@@ -114,15 +112,14 @@ async def _fetch_page_tool(ctx: CrawlAgentContext, inp: FetchPageInput) -> Crawl
     body = page_html(page, 22_000)
 
     if meta.blocked:
-        msg = meta.hint or f"HTTP {meta.http_status}，无法获取有效页面内容"
+        msg = meta.hint or "无法获取有效页面内容"
+        is_transport = meta.http_status == 0
         await _append_log(
             ctx,
-            "ERROR",
-            f"FetchPage 失败 · HTTP {meta.http_status} · {msg}",
+            "WARN" if meta.http_status in {403, 429} else "INFO",
+            f"FetchPage 未拿到可用页 · HTTP {meta.http_status} · {msg}",
         )
-        patch: dict[str, Any] = {
-            "append_note": f"FetchPage 失败 ({target}): {msg}",
-        }
+        patch: dict[str, Any] = {}
         if body.strip():
             patch["append_page"] = {
                 "url": target,
@@ -138,6 +135,7 @@ async def _fetch_page_tool(ctx: CrawlAgentContext, inp: FetchPageInput) -> Crawl
                 html_chars=len(body),
             ),
             is_error=True,
+            count_as_failure=not is_transport,
             context_patch=patch,
         )
 

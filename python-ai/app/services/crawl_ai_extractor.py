@@ -141,7 +141,7 @@ def _dedupe_urls(urls: list[str]) -> list[str]:
 
 
 async def resolve_page_navigation(page, page_url: str, links: list[dict[str, str]]) -> dict[str, Any]:
-    if not llm_provider.is_configured:
+    if not llm_provider.is_crawl_configured:
         raise RuntimeError("LLM 未配置，AI 自动爬虫无法运行")
 
     body_text = _page_text(page, 10000)
@@ -171,7 +171,7 @@ async def resolve_page_navigation(page, page_url: str, links: list[dict[str, str
 - catalog：当前页应能列出多章
 - chapter：单章正文页，catalog_urls 请填同书目录/章节列表链接
 """
-    raw = await generate_text(prompt, system_message=SYSTEM_EXTRACTOR, temperature=0.1)
+    raw = await generate_text(prompt, system_message=SYSTEM_EXTRACTOR, temperature=0.1, profile="crawl")
     data = _parse_json(raw)
     if not isinstance(data, dict):
         return {"page_type": "unknown", "catalog_urls": []}
@@ -184,7 +184,7 @@ async def resolve_page_navigation(page, page_url: str, links: list[dict[str, str
 
 
 async def extract_catalog_from_page(page, page_url: str, *, max_chapters: int = 200) -> CatalogExtraction:
-    if not llm_provider.is_configured:
+    if not llm_provider.is_crawl_configured:
         raise RuntimeError("LLM 未配置，AI 自动爬虫无法运行")
 
     links = _links_from_page(page, page_url)
@@ -213,7 +213,7 @@ async def extract_catalog_from_page(page, page_url: str, *, max_chapters: int = 
 3. url 必须是可访问的章节地址（相对路径请转为基于 {page_url} 的绝对路径）
 4. 若当前页是书籍详情且无内嵌章节，chapters 可返回空数组（后续会跳转目录页）
 """
-    raw = await generate_text(prompt, system_message=SYSTEM_EXTRACTOR, temperature=0.2)
+    raw = await generate_text(prompt, system_message=SYSTEM_EXTRACTOR, temperature=0.2, profile="crawl")
     data = _parse_json(raw)
     if not isinstance(data, dict):
         raise ValueError("AI 目录解析返回格式无效")
@@ -334,7 +334,7 @@ async def extract_catalog(page, page_url: str, *, max_chapters: int = 200) -> Ca
 
 
 async def extract_chapter(page, page_url: str, fallback_title: str = "") -> ChapterExtraction:
-    if not llm_provider.is_configured:
+    if not llm_provider.is_crawl_configured:
         raise RuntimeError("LLM 未配置，AI 自动爬虫无法运行")
 
     body_text = _page_text(page, 20000)
@@ -352,7 +352,7 @@ async def extract_chapter(page, page_url: str, fallback_title: str = "") -> Chap
   "content": "纯正文，保留段落换行，不含导航/广告/评论区"
 }}
 """
-    raw = await generate_text(prompt, system_message=SYSTEM_EXTRACTOR, temperature=0.2)
+    raw = await generate_text(prompt, system_message=SYSTEM_EXTRACTOR, temperature=0.2, profile="crawl")
     data = _parse_json(raw)
     if not isinstance(data, dict):
         raise ValueError("AI 章节解析返回格式无效")

@@ -51,7 +51,7 @@ async def interpret_goal(goal: str, *, base_max_chapters: int = 0) -> CrawlGoalS
     if m:
         spec.max_chapters = min(2000, max(1, int(m.group(1))))
 
-    if not llm_provider.is_configured:
+    if not llm_provider.is_crawl_configured:
         spec.summary = text[:120]
         return spec
 
@@ -66,7 +66,7 @@ async def interpret_goal(goal: str, *, base_max_chapters: int = 0) -> CrawlGoalS
 }}
 """
     try:
-        raw = await generate_text(prompt, system_message=SYSTEM, temperature=0.1)
+        raw = await generate_text(prompt, system_message=SYSTEM, temperature=0.1, profile="crawl")
         data = json.loads(raw.strip().removeprefix("```json").removesuffix("```").strip())
         if isinstance(data, dict):
             if isinstance(data.get("max_chapters"), int):

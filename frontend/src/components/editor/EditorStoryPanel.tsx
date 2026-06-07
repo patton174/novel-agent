@@ -7,6 +7,7 @@ import { ChapterVersionPanel } from '../novel/ChapterVersionPanel'
 import { NovelOutlinePanel } from '../novel/NovelOutlinePanel'
 
 import { EditorButton } from '../ui/EditorButton'
+import { confirmAction } from '../../stores/confirmDialogStore'
 
 import { editorTheme } from '../../styles/editorTheme'
 
@@ -170,7 +171,11 @@ export function EditorStoryPanel({
 
     if (!activeChapterId || !versionPreview) return
 
-    if (!window.confirm('确定恢复到该版本？当前正文会先保存为一个版本。')) return
+    if (!(await confirmAction({
+      title: '恢复版本',
+      description: '确定恢复到该版本？当前正文会先保存为一个版本。',
+      confirmLabel: '恢复',
+    }))) return
 
     const { api } = await import('../../utils/api')
 

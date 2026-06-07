@@ -14,7 +14,7 @@ from app.core.llm_content import extract_llm_text
 
 logger = logging.getLogger(__name__)
 
-LLMProfile = Literal["default", "plan", "fast"]
+LLMProfile = Literal["default", "plan", "fast", "crawl"]
 
 try:
     from langchain_anthropic import ChatAnthropic
@@ -37,10 +37,14 @@ class LLMProvider:
     def __init__(self) -> None:
         self._llm_default: BaseChatModel | None = None
         self._llm_plan: BaseChatModel | None = None
+        self._llm_crawl: BaseChatModel | None = None
         self._provider = settings.active_provider
 
     def _resolve_config(self, config: dict | None, *, profile: LLMProfile) -> dict:
-        base = dict(settings.get_active_llm_config())
+        if profile == "crawl" and config is None:
+            base = dict(settings.get_crawl_llm_config())
+        else:
+            base = dict(settings.get_active_llm_config())
         if config:
             base.update(config)
         if profile == "plan":
@@ -121,6 +125,11 @@ class LLMProvider:
                 self._llm_plan = self._create_llm(resolved)
             return self._llm_plan
 
+        if profile == "crawl":
+            if self._llm_crawl is None:
+                self._llm_crawl = self._create_llm(resolved)
+            return self._llm_crawl
+
         if profile == "fast":
             # Separate instance: lower token budget for quick JSON tools.
             return self._create_llm(resolved)
@@ -133,10 +142,15 @@ class LLMProvider:
         self._provider = provider
         self._llm_default = None
         self._llm_plan = None
+        self._llm_crawl = None
 
     @property
     def is_configured(self) -> bool:
         return settings.is_llm_configured
+
+    @property
+    def is_crawl_configured(self) -> bool:
+        return settings.is_crawl_llm_configured
 
     @property
     def provider_name(self) -> str:
@@ -197,8 +211,10 @@ async def generate_text(
     prompt: str,
     system_message: Optional[str] = None,
     temperature: float = 1.0,
+    *,
+    profile: LLMProfile = "default",
 ) -> str:
-    llm = llm_provider.get_llm()
+    llm = llm_provider.get_llm(profile=profile)
     original_temperature = getattr(llm, "temperature", None)
     if hasattr(llm, "temperature"):
         llm.temperature = temperature

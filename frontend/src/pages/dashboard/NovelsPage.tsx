@@ -5,6 +5,7 @@ import { BookOpen, Clock, ImagePlus, Plus, Sparkles } from 'lucide-react'
 import { CoverGenerateDialog } from '@/components/dashboard/CoverGenerateDialog'
 import { CoverImageGeneratingOverlay } from '@/components/dashboard/CoverImageGeneratingOverlay'
 import { Button } from '@/components/ui/button'
+import { InlineBrandLoader } from '@/components/loading/BrandLoader'
 import { Skeleton } from '@/components/ui/skeleton'
 import { fetchNovels, generateNovelCover, type DashboardNovel } from '@/api/dashboardApi'
 import { appToast } from '@/stores/appToastStore'
@@ -91,7 +92,11 @@ export default function NovelsPage() {
           <div>
             <p className="text-sm font-medium text-muted-foreground">作品库</p>
             <p className="text-lg font-bold tabular-nums text-foreground">
-              {loading ? '加载中…' : `共 ${novels!.length} 部作品`}
+              {loading ? (
+                <InlineBrandLoader label="正在加载作品" className="text-base" />
+              ) : (
+                `共 ${novels!.length} 部作品`
+              )}
             </p>
           </div>
         </div>

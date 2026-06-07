@@ -124,7 +124,7 @@ async def resolve_site_for_goal(
     links: list[dict[str, str]],
     goal: str,
 ) -> dict[str, Any]:
-    if not llm_provider.is_configured:
+    if not llm_provider.is_crawl_configured:
         pick_first = goal_needs_site_discovery(goal)
         books = _heuristic_book_urls(links, page_url, pick_first=pick_first)
         return {
@@ -162,7 +162,7 @@ async def resolve_site_for_goal(
 - 目标含具体书名 → novel_urls 填该书详情页
 - book_detail / catalog / chapter 表示当前页已是书籍相关页，novel_urls 可含当前页或书籍主页
 """
-    raw = await generate_text(prompt, system_message=SYSTEM, temperature=0.15)
+    raw = await generate_text(prompt, system_message=SYSTEM, temperature=0.15, profile="crawl")
     text = raw.strip()
     if text.startswith("```"):
         text = re.sub(r"^```(?:json)?\s*", "", text)

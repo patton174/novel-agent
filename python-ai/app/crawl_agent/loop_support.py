@@ -40,7 +40,7 @@ _REPEAT_FAILURE_HINTS: dict[str, str] = {
     ),
     "FetchPage": (
         "FetchPage 已多次失败：禁止拼接猜测路径。"
-        "下一 URL 必须来自 RUN_CONTEXT HTML 中的 href；可试 BrowserOpen + BrowserClick，否则 FailJob。"
+        "下一 URL 必须来自 RUN_CONTEXT HTML 中的 href；可试 BrowserOpen，否则 FailJob。"
     ),
 }
 
@@ -77,6 +77,8 @@ def repeat_failure_hint(ctx: CrawlAgentContext, tool_name: str, args: dict[str, 
 def record_tool_outcome(ctx: CrawlAgentContext, tool_name: str, args: dict[str, Any], result: CrawlToolResult) -> None:
     fp = tool_call_fingerprint(tool_name, args)
     if result.is_error:
+        if not result.count_as_failure:
+            return
         ctx.failed_tool_counts[fp] = ctx.failed_tool_counts.get(fp, 0) + 1
     else:
         ctx.failed_tool_counts.pop(fp, None)

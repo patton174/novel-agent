@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { CheckCircle2, Loader2, XCircle } from 'lucide-react'
+import { CheckCircle2, XCircle } from 'lucide-react'
+import { InlineBrandLoader } from '@/components/loading/BrandLoader'
 import { confirmEmailVerify, fetchUserInfo } from '@/api/userApi'
 import { Button } from '@/components/ui/button'
 import { useUserStore } from '@/stores/userStore'
@@ -53,7 +54,7 @@ export default function VerifyEmailPage() {
     <div className="flex min-h-screen items-center justify-center bg-background px-6">
       <div className="w-full max-w-md rounded-2xl border border-border bg-surface p-8 text-center shadow-soft">
         {state === 'loading' ? (
-          <Loader2 className="mx-auto size-10 animate-spin text-primary" />
+          <InlineBrandLoader label="正在验证邮箱" className="mx-auto py-6" size="md" />
         ) : state === 'success' ? (
           <CheckCircle2 className="mx-auto size-10 text-emerald-600" />
         ) : (
@@ -63,7 +64,9 @@ export default function VerifyEmailPage() {
         <h1 className="mt-4 text-lg font-semibold text-foreground">
           {state === 'loading' ? '验证中' : state === 'success' ? '验证成功' : '验证失败'}
         </h1>
-        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{message}</p>
+        {state !== 'loading' ? (
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{message}</p>
+        ) : null}
 
         {state !== 'loading' ? (
           <Button asChild className="mt-6 rounded-xl">

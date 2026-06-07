@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Navigate } from 'react-router-dom'
+import { BrandLoader } from '@/components/loading/BrandLoader'
 import { fetchUserInfo } from '../../api/userApi'
 import { useUserStore } from '../../stores/userStore'
 import { RequireAuth } from './RequireAuth'
@@ -35,17 +36,7 @@ export function RequireAdmin({ children }: { children: React.ReactNode }) {
   return (
     <RequireAuth>
       {!profileReady ? (
-        <div
-          style={{
-            minHeight: '100vh',
-            display: 'grid',
-            placeItems: 'center',
-            color: '#888',
-            fontFamily: 'system-ui, sans-serif',
-          }}
-        >
-          加载中…
-        </div>
+        <BrandLoader label="正在加载管理权限" fullScreen />
       ) : profile?.role === 'admin' ? (
         children
       ) : (

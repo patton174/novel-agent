@@ -20,13 +20,13 @@ def build_crawl_system_prompt(ctx: CrawlAgentContext) -> str:
 5. InitNovel → SaveQueuedChapters → CompleteJob
 
 ## 工具
-- **FetchPage** — 无状态 HTTP/Stealth 抓 URL，返回原始 HTML（不做链接提取）
+- **FetchPage** — 无状态 HTTP/Stealth 抓 URL，返回原始 HTML（网络/出口由系统自动重试，无需你关心）
 - **BrowserOpen / BrowserClick / BrowserGoto / BrowserSnapshot** — Playwright 会话，可点击/跳转，HTML 回传 RUN_CONTEXT
 - QueueChapters / InitNovel / SaveQueuedChapters / FetchAndSaveChapter / GetJobStatus / CompleteJob / FailJob
 
 ## 原则
 1. 下一跳 URL 必须来自 RUN_CONTEXT HTML 中的真实 href，禁止凭空拼 /wangyou/、/rank/ 等
-2. FetchPage 403 时可改 BrowserOpen（Stealth 浏览器 + 可点击）；不要猜 m. 子域
+2. FetchPage 403 或无法打开时可改 BrowserOpen；不要猜 m. 子域
 3. 连续多轮无有效 HTML → FailJob
 4. 只调用工具，不要长篇解释"""
 

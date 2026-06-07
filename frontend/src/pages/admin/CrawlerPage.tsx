@@ -1,20 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import {
-  Bot,
-  ChevronRight,
-  Loader2,
-  Pause,
-  Play,
-  RefreshCw,
-  Square,
-  Trash2,
-} from 'lucide-react'
+import { RefreshCw } from 'lucide-react'
 import {
   cancelCrawlJob,
   deleteCrawlJob,
   fetchCrawlJobs,
-  parseCrawlJobGoal,
   pauseCrawlJob,
   startCrawlJob,
   type CrawlJob,
@@ -28,76 +18,83 @@ import {
 } from '@/api/orchestratorAdminApi'
 import { fetchIncompleteCatalog } from '@/api/catalogAdminApi'
 import { CrawlJobDetailModal } from '@/components/admin/CrawlJobDetailModal'
+import { CrawlJobRow } from '@/components/admin/CrawlJobRow'
 import { OrchestratorLogTerminal } from '@/components/admin/OrchestratorLogTerminal'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   type CrawlJobAction,
-  crawlJobActions,
   crawlJobOptimisticPatch,
-  crawlJobProgressPercent,
-  crawlJobStatusClass,
-  crawlJobStatusLabel,
-  truncateError,
 } from '@/pages/admin/crawlJobUi'
 import { cn } from '@/lib/utils'
+import { usePageVisible } from '@/hooks/usePageVisible'
 import { confirmAction } from '@/stores/confirmDialogStore'
 import { appToast } from '@/stores/appToastStore'
 
 const DEFAULT_GOAL =
   '把链接中的小说全部章节抓取并清洗正文，入库公共书库（书籍页、目录页、章节页均可）'
 
-const ACTION_META: Record<
-  CrawlJobAction,
-  { label: string; icon: typeof Play; variant?: 'outline' | 'destructive' }
-> = {
-  start: { label: '启动', icon: Play },
-  pause: { label: '暂停', icon: Pause },
-  cancel: { label: '取消', icon: Square },
-  delete: { label: '删除', icon: Trash2, variant: 'destructive' },
-}
+type JobFilter = 'all' | 'active' | 'failed'
 
 export default function CrawlerPage() {
   const location = useLocation()
+  const pageVisible = usePageVisible()
   const [jobs, setJobs] = useState<CrawlJob[] | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [jobsLoading, setJobsLoading] = useState(true)
   const [actingKey, setActingKey] = useState<string | null>(null)
   const [detailJob, setDetailJob] = useState<CrawlJob | null>(null)
   const [detailOpen, setDetailOpen] = useState(false)
   const [orchState, setOrchState] = useState<OrchestratorState | null>(null)
   const [orchGoal, setOrchGoal] = useState('')
+  const [goalDirty, setGoalDirty] = useState(false)
   const [incompleteCount, setIncompleteCount] = useState(0)
   const [logRefreshKey, setLogRefreshKey] = useState(0)
+  const [jobFilter, setJobFilter] = useState<JobFilter>('all')
+  const orchGoalSyncedRef = useRef(false)
 
   const hasRunningJob = useMemo(
     () => (jobs ?? []).some((job) => job.status === 'RUNNING' || job.status === 'PENDING'),
     [jobs],
   )
 
-  const load = useCallback(async () => {
+  const loadJobs = useCallback(async () => {
     try {
-      const [jobPage, orch, inc] = await Promise.all([
-        fetchCrawlJobs(1, 50),
-        fetchOrchestratorState().catch(() => null),
-        fetchIncompleteCatalog(50).catch(() => []),
-      ])
+      const jobPage = await fetchCrawlJobs(1, 50)
       setJobs(jobPage.list)
-      if (orch) {
-        setOrchState(orch)
-        setOrchGoal((prev) => (prev || orch.goal || DEFAULT_GOAL))
-      }
-      setIncompleteCount(inc.length)
       setDetailJob((current) => {
         if (!current) return current
         return jobPage.list.find((j) => j.id === current.id) ?? current
       })
     } catch (err) {
       setJobs([])
-      appToast.error(err instanceof Error ? err.message : '加载失败')
+      appToast.error(err instanceof Error ? err.message : '子任务加载失败')
     } finally {
-      setLoading(false)
+      setJobsLoading(false)
     }
   }, [])
+
+  const loadOrchMeta = useCallback(async () => {
+    try {
+      const [orch, inc] = await Promise.all([
+        fetchOrchestratorState(),
+        fetchIncompleteCatalog(50).catch(() => []),
+      ])
+      setOrchState(orch)
+      if (!goalDirty && !orchGoalSyncedRef.current) {
+        setOrchGoal(orch.goal || DEFAULT_GOAL)
+        orchGoalSyncedRef.current = true
+      } else if (!goalDirty && orch.goal) {
+        setOrchGoal(orch.goal)
+      }
+      setIncompleteCount(inc.length)
+    } catch {
+      /* 编排状态可选 */
+    }
+  }, [goalDirty])
+
+  const refreshAll = useCallback(async () => {
+    await Promise.all([loadJobs(), loadOrchMeta()])
+  }, [loadJobs, loadOrchMeta])
 
   const handleSetOrchestratorGoal = async () => {
     if (!orchGoal.trim()) {
@@ -108,8 +105,10 @@ export default function CrawlerPage() {
     try {
       const state = await setOrchestratorGoal(orchGoal.trim())
       setOrchState(state)
+      setGoalDirty(false)
       setLogRefreshKey((k) => k + 1)
       appToast.success('目标已设定，主编排 Agent 将开始工作')
+      void loadJobs()
     } catch (err) {
       appToast.error(err instanceof Error ? err.message : '设定失败')
     } finally {
@@ -136,6 +135,8 @@ export default function CrawlerPage() {
     try {
       const state = await clearOrchestratorGoal()
       setOrchState(state)
+      setOrchGoal(DEFAULT_GOAL)
+      setGoalDirty(false)
       appToast.success('目标已清空，进入睡眠')
     } catch (err) {
       appToast.error(err instanceof Error ? err.message : '操作失败')
@@ -144,17 +145,21 @@ export default function CrawlerPage() {
     }
   }
 
-  const runningJobs = useMemo(
-    () => (jobs ?? []).filter((j) => j.status === 'RUNNING' || j.status === 'PENDING'),
-    [jobs],
-  )
+  useEffect(() => {
+    void refreshAll()
+  }, [refreshAll])
 
   useEffect(() => {
-    void load()
-    const intervalMs = hasRunningJob || orchState?.status === 'RUNNING' ? 2500 : 8000
-    const timer = window.setInterval(() => void load(), intervalMs)
+    if (!pageVisible) return
+    const orchLive = orchState?.status === 'RUNNING'
+    const jobsLive = hasRunningJob
+    const intervalMs = orchLive || jobsLive ? 4000 : 12000
+    const timer = window.setInterval(() => {
+      void loadOrchMeta()
+      if (jobsLive || orchLive) void loadJobs()
+    }, intervalMs)
     return () => window.clearInterval(timer)
-  }, [load, hasRunningJob, orchState?.status])
+  }, [pageVisible, hasRunningJob, orchState?.status, loadJobs, loadOrchMeta])
 
   const patchJob = useCallback((jobId: string, patch: Partial<CrawlJob>) => {
     setJobs((prev) => (prev ?? []).map((job) => (job.id === jobId ? { ...job, ...patch } : job)))
@@ -174,104 +179,99 @@ export default function CrawlerPage() {
     window.history.replaceState({}, document.title)
   }, [location.state, jobs, openDetail])
 
-  const runAction = async (job: CrawlJob, action: CrawlJobAction) => {
-    const key = `${job.id}:${action}`
-    setActingKey(key)
+  const runAction = useCallback(
+    async (job: CrawlJob, action: CrawlJobAction) => {
+      const key = `${job.id}:${action}`
+      setActingKey(key)
 
-    if (action === 'delete') {
-      if (!(await confirmAction({
-        title: '删除子任务',
-        description: '确定删除该任务？日志将一并清除。',
-        confirmLabel: '删除',
-        danger: true,
-      }))) {
-        setActingKey(null)
+      if (action === 'delete') {
+        if (!(await confirmAction({
+          title: '删除子任务',
+          description: '确定删除该任务？日志将一并清除。',
+          confirmLabel: '删除',
+          danger: true,
+        }))) {
+          setActingKey(null)
+          return
+        }
+        setJobs((prev) => (prev ?? []).filter((item) => item.id !== job.id))
+        if (detailJob?.id === job.id) {
+          setDetailOpen(false)
+          setDetailJob(null)
+        }
+        try {
+          await deleteCrawlJob(job.id)
+          appToast.success('已删除')
+        } catch (err) {
+          appToast.error(err instanceof Error ? err.message : '删除失败')
+          void loadJobs()
+        } finally {
+          setActingKey(null)
+        }
         return
       }
-      setJobs((prev) => (prev ?? []).filter((item) => item.id !== job.id))
-      if (detailJob?.id === job.id) {
-        setDetailOpen(false)
-        setDetailJob(null)
-      }
+
+      const optimistic = crawlJobOptimisticPatch(action)
+      if (optimistic) patchJob(job.id, optimistic)
+
       try {
-        await deleteCrawlJob(job.id)
-        appToast.success('已删除')
+        if (action === 'start') await startCrawlJob(job.id)
+        else if (action === 'pause') await pauseCrawlJob(job.id)
+        else await cancelCrawlJob(job.id)
+        appToast.success('操作成功')
+        void loadJobs()
       } catch (err) {
-        appToast.error(err instanceof Error ? err.message : '删除失败')
-        void load()
+        appToast.error(err instanceof Error ? err.message : '操作失败')
+        void loadJobs()
       } finally {
         setActingKey(null)
       }
-      return
+    },
+    [detailJob?.id, loadJobs, patchJob],
+  )
+
+  const filteredJobs = useMemo(() => {
+    const list = jobs ?? []
+    if (jobFilter === 'active') {
+      return list.filter((j) => j.status === 'RUNNING' || j.status === 'PENDING')
     }
-
-    const optimistic = crawlJobOptimisticPatch(action)
-    if (optimistic) patchJob(job.id, optimistic)
-
-    try {
-      if (action === 'start') await startCrawlJob(job.id)
-      else if (action === 'pause') await pauseCrawlJob(job.id)
-      else await cancelCrawlJob(job.id)
-      appToast.success('操作成功')
-      void load()
-    } catch (err) {
-      appToast.error(err instanceof Error ? err.message : '操作失败')
-      void load()
-    } finally {
-      setActingKey(null)
+    if (jobFilter === 'failed') {
+      return list.filter((j) => j.status === 'FAILED' || j.status === 'CANCELLED')
     }
-  }
+    return list
+  }, [jobs, jobFilter])
 
-  const renderJobActions = (job: CrawlJob) => {
-    const actions = crawlJobActions(job.status)
-    if (actions.length === 0) return null
-    return (
-      <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
-        {actions.map((action) => {
-          const meta = ACTION_META[action]
-          const Icon = meta.icon
-          const busy = actingKey === `${job.id}:${action}`
-          return (
-            <Button
-              key={action}
-              size="sm"
-              variant={meta.variant ?? 'outline'}
-              disabled={actingKey != null && !busy}
-              onClick={(e) => {
-                e.stopPropagation()
-                void runAction(job, action)
-              }}
-            >
-              {busy ? (
-                <Loader2 className="mr-1 size-3.5 animate-spin" />
-              ) : (
-                <Icon className="mr-1 size-3.5" />
-              )}
-              {meta.label}
-            </Button>
-          )
-        })}
-      </div>
-    )
-  }
+  const jobCounts = useMemo(() => {
+    const list = jobs ?? []
+    return {
+      all: list.length,
+      active: list.filter((j) => j.status === 'RUNNING' || j.status === 'PENDING').length,
+      failed: list.filter((j) => j.status === 'FAILED' || j.status === 'CANCELLED').length,
+    }
+  }, [jobs])
+
+  const orchBanner = orchState?.agentEnabled === false
+    ? 'orchestrator-disabled'
+    : orchState?.agentLlmConfigured === false
+      ? 'llm-missing'
+      : null
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">AI 自动爬虫</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            主编排 Agent 常驻决策并自动创建子任务（最多 10 并行），下方可查看各子任务运行日志
-          </p>
-        </div>
-        <Button variant="outline" size="sm" onClick={() => void load()} disabled={loading}>
-          <RefreshCw className={`mr-2 size-4 ${loading ? 'animate-spin' : ''}`} />
+    <div className="space-y-5">
+      <div className="flex items-center justify-end">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => void refreshAll()}
+          disabled={jobsLoading && jobs === null}
+        >
+          <RefreshCw className={`mr-2 size-4 ${jobsLoading ? 'animate-spin' : ''}`} />
           刷新
         </Button>
       </div>
 
       <section className="space-y-4 rounded-2xl border border-border bg-surface p-5 shadow-soft">
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           <span
             className={cn(
               'rounded-full px-2.5 py-0.5 text-xs font-medium',
@@ -280,47 +280,46 @@ export default function CrawlerPage() {
                 : 'bg-muted text-muted-foreground',
             )}
           >
-            {orchState?.status === 'RUNNING' ? '运行中' : '睡眠'}
+            主编排 · {orchState?.status === 'RUNNING' ? '运行中' : '睡眠'}
           </span>
           <span className="text-sm text-muted-foreground">
-            子任务 {orchState?.runningJobCount ?? 0}/{orchState?.maxConcurrentJobs ?? 10}
+            并行 {orchState?.runningJobCount ?? 0}/{orchState?.maxConcurrentJobs ?? 10}
           </span>
           {incompleteCount > 0 ? (
-            <Button type="button" size="sm" variant="outline" asChild>
-              <Link to="/admin/catalog">未完成书目 {incompleteCount}</Link>
-            </Button>
+            <Link
+              to="/admin/catalog"
+              className="text-sm text-primary underline-offset-4 hover:underline"
+            >
+              书库未完成 {incompleteCount} 本
+            </Link>
           ) : null}
         </div>
 
-        {orchState?.agentEnabled === false ? (
+        {orchBanner === 'orchestrator-disabled' ? (
           <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-800 dark:text-amber-300">
-            Worker 上主编排 Agent 未启用。请在 python-ai/.env 设置{' '}
+            Worker 上主编排未启用，请设置{' '}
             <code className="rounded bg-background/80 px-1 py-0.5 text-xs">CRAWL_ORCHESTRATOR_ENABLED=true</code>{' '}
-            并重启 python-ai 容器；唤醒后会写入诊断日志。
+            并重启 python-ai。
           </div>
-        ) : orchState?.agentLlmConfigured === false ? (
+        ) : orchBanner === 'llm-missing' ? (
           <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-800 dark:text-amber-300">
-            LLM API 未配置，主编排无法决策。请检查 python-ai/.env 中的 API Key。
-          </div>
-        ) : null}
-
-        {orchState?.goal ? (
-          <div className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm">
-            <p className="text-xs font-medium text-muted-foreground">当前总目标</p>
-            <p className="mt-1 whitespace-pre-wrap">{orchState.goal}</p>
+            主编排 LLM 未配置，请检查 python-ai/.env 中的 OPENAI_API_KEY。
           </div>
         ) : null}
 
         <div>
           <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
-            总目标（唤醒主编排）
+            总目标
           </label>
           <textarea
             value={orchGoal}
-            onChange={(e) => setOrchGoal(e.target.value)}
-            rows={3}
+            onChange={(e) => {
+              setOrchGoal(e.target.value)
+              setGoalDirty(true)
+            }}
+            rows={2}
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-            placeholder="例如：续爬书库中所有未完成的书；或爬取某站网游分类"
+            placeholder={DEFAULT_GOAL}
           />
         </div>
 
@@ -340,127 +339,68 @@ export default function CrawlerPage() {
             disabled={actingKey != null}
             onClick={() => void handleClearOrchestrator()}
           >
-            清空目标 / 睡眠
+            清空 / 睡眠
           </Button>
         </div>
 
-        {runningJobs.length > 0 ? (
-          <div className="rounded-xl border border-border/80 bg-muted/20 px-4 py-3">
-            <p className="mb-2 text-xs font-medium text-muted-foreground">运行中子任务</p>
-            <div className="flex flex-wrap gap-2">
-              {runningJobs.slice(0, 10).map((job) => (
-                <button
-                  key={job.id}
-                  type="button"
-                  onClick={() => openDetail(job)}
-                  className="rounded-lg border border-border bg-background px-2.5 py-1 text-xs transition-colors hover:bg-muted/50"
-                >
-                  {job.title || job.sourceUrl.slice(0, 24)}
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : null}
-
-        <div>
-          <p className="mb-2 text-sm font-semibold">主编排决策日志</p>
-          <OrchestratorLogTerminal status={orchState?.status} refreshKey={logRefreshKey} />
-        </div>
+        <OrchestratorLogTerminal
+          status={orchState?.status}
+          refreshKey={logRefreshKey}
+          paused={!pageVisible}
+        />
       </section>
 
       <section className="rounded-2xl border border-border bg-surface p-5 shadow-soft">
-        <div className="mb-4 flex items-center gap-2">
-          <Bot className="size-5 text-primary" />
-          <h2 className="text-lg font-semibold">子任务列表</h2>
-          <span className="text-sm text-muted-foreground">由主编排自动创建，点击查看日志</span>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap gap-1 rounded-lg border border-border bg-muted/30 p-1">
+            {(
+              [
+                ['all', '全部', jobCounts.all],
+                ['active', '进行中', jobCounts.active],
+                ['failed', '失败/取消', jobCounts.failed],
+              ] as const
+            ).map(([key, label, count]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setJobFilter(key)}
+                className={cn(
+                  'rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
+                  jobFilter === key
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground',
+                )}
+              >
+                {label} {count > 0 ? `(${count})` : ''}
+              </button>
+            ))}
+          </div>
+          <span className="text-xs text-muted-foreground">由主编排自动创建 · 点击查看日志</span>
         </div>
-        {loading && jobs === null ? (
+
+        {jobsLoading && jobs === null ? (
           <div className="space-y-3">
             {Array.from({ length: 3 }).map((_, i) => (
               <Skeleton key={i} className="h-20 w-full rounded-xl" />
             ))}
           </div>
-        ) : jobs!.length === 0 ? (
+        ) : filteredJobs.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            暂无子任务。设定主编排目标后，Agent 将自动创建并调度子任务。
+            {jobFilter === 'all'
+              ? '暂无子任务。设定主编排目标后，Agent 将自动创建并调度。'
+              : '当前筛选下没有子任务。'}
           </p>
         ) : (
           <div className="space-y-2">
-            {jobs!.map((job) => {
-              const percent = crawlJobProgressPercent(job)
-              const jobGoal = parseCrawlJobGoal(job.configJson)
-              const errorPreview = truncateError(job.errorMessage)
-              return (
-                <div
-                  key={job.id}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => openDetail(job)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault()
-                      openDetail(job)
-                    }
-                  }}
-                  className={cn(
-                    'group flex cursor-pointer flex-col gap-3 rounded-xl border p-4 transition-colors hover:bg-muted/30 lg:flex-row lg:items-center lg:justify-between',
-                    job.status === 'RUNNING'
-                      ? 'border-primary/30 bg-primary/[0.03]'
-                      : 'border-border/80',
-                  )}
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-medium">{job.title || '解析中…'}</span>
-                      <span
-                        className={cn(
-                          'rounded-full px-2 py-0.5 text-xs font-medium',
-                          crawlJobStatusClass(job.status),
-                        )}
-                      >
-                        {crawlJobStatusLabel(job.status)}
-                      </span>
-                      <span className="ml-auto flex items-center gap-1 text-xs text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 lg:ml-0">
-                        查看日志
-                        <ChevronRight className="size-3.5" />
-                      </span>
-                    </div>
-                    <p className="mt-1 truncate text-xs text-muted-foreground">{job.sourceUrl}</p>
-                    {jobGoal ? (
-                      <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
-                        目标：{jobGoal}
-                      </p>
-                    ) : null}
-                    <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                      <span>
-                        进度 {job.chaptersDone ?? 0}/{job.chaptersTotal ?? '?'}
-                      </span>
-                      {job.catalogNovelId ? (
-                        <span>书库 {job.catalogNovelId.slice(0, 8)}…</span>
-                      ) : null}
-                      {percent != null ? <span>{percent}%</span> : null}
-                    </div>
-                    {percent != null ? (
-                      <div className="mt-2 h-1 w-full max-w-xs overflow-hidden rounded-full bg-muted">
-                        <div
-                          className="h-full rounded-full bg-primary transition-all duration-500"
-                          style={{ width: `${percent}%` }}
-                        />
-                      </div>
-                    ) : job.status === 'RUNNING' ? (
-                      <div className="mt-1 flex items-center gap-2 text-xs text-primary">
-                        <Loader2 className="size-3.5 animate-spin" />
-                        执行中
-                      </div>
-                    ) : null}
-                    {errorPreview ? (
-                      <p className="mt-1 line-clamp-1 text-xs text-destructive">{errorPreview}</p>
-                    ) : null}
-                  </div>
-                  {renderJobActions(job)}
-                </div>
-              )
-            })}
+            {filteredJobs.map((job) => (
+              <CrawlJobRow
+                key={job.id}
+                job={job}
+                actingKey={actingKey}
+                onOpen={openDetail}
+                onAction={runAction}
+              />
+            ))}
           </div>
         )}
       </section>

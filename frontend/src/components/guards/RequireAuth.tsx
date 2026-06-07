@@ -1,4 +1,5 @@
 import { Navigate, useLocation } from 'react-router-dom'
+import { BrandLoader } from '@/components/loading/BrandLoader'
 import { useAuthReady } from '../../security/useAuthReady'
 import { isLoggedIn } from '../../utils/auth'
 
@@ -6,11 +7,7 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
   const authReady = useAuthReady()
   const location = useLocation()
   if (!authReady) {
-    return (
-      <div className="grid min-h-screen place-items-center text-muted-foreground">
-        加载中…
-      </div>
-    )
+    return <BrandLoader label="正在验证登录状态" fullScreen />
   }
   if (!isLoggedIn()) {
     return <Navigate to="/login" state={{ from: location }} replace />

@@ -1,10 +1,13 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import { Brain } from 'lucide-react'
 import {
   fetchOrchestratorDecisions,
   type OrchestratorDecisionEntry,
 } from '@/api/orchestratorAdminApi'
 import { cn } from '@/lib/utils'
+import { InlineBrandLoader } from '@/components/loading/BrandLoader'
+
+const MAX_LOG_LINES = 250
 
 function formatTime(ts: number): string {
   const d = new Date(ts)
@@ -16,17 +19,42 @@ function formatTime(ts: number): string {
   })
 }
 
+const LogLine = memo(function LogLine({ entry }: { entry: OrchestratorDecisionEntry }) {
+  return (
+    <div className="flex gap-2 py-0.5">
+      <span className="shrink-0 tabular-nums text-zinc-600">{formatTime(entry.ts)}</span>
+      <span
+        className={cn(
+          'min-w-0 break-all',
+          entry.message.startsWith('目标')
+            ? 'text-violet-400'
+            : entry.message.includes('未启用') ||
+                entry.message.includes('失败') ||
+                entry.message.includes('异常') ||
+                entry.message.includes('错误')
+              ? 'text-rose-400'
+              : 'text-sky-300',
+        )}
+      >
+        {entry.message}
+      </span>
+    </div>
+  )
+})
+
 interface OrchestratorLogTerminalProps {
   status?: string
   active?: boolean
-  /** 父组件刷新后传入，用于在唤醒后立即拉日志 */
   refreshKey?: number
+  /** 页面不可见时暂停轮询 */
+  paused?: boolean
 }
 
 export function OrchestratorLogTerminal({
   status,
   active = true,
   refreshKey = 0,
+  paused = false,
 }: OrchestratorLogTerminalProps) {
   const [logs, setLogs] = useState<OrchestratorDecisionEntry[]>([])
   const [loading, setLoading] = useState(false)
@@ -34,19 +62,17 @@ export function OrchestratorLogTerminal({
   const [autoScroll, setAutoScroll] = useState(true)
   const scrollRef = useRef<HTMLDivElement>(null)
   const maxSeqRef = useRef(0)
-  const bootstrappedRef = useRef(false)
 
   const isLive = status === 'RUNNING'
 
   const pull = useCallback(async (bootstrap = false) => {
     try {
       const afterSeq = bootstrap ? 0 : maxSeqRef.current
-      const res = await fetchOrchestratorDecisions(afterSeq, bootstrap ? 200 : 100)
+      const res = await fetchOrchestratorDecisions(afterSeq, bootstrap ? 200 : 80)
       setFetchError(null)
       if (bootstrap) {
-        setLogs(res.logs)
+        setLogs(res.logs.slice(-MAX_LOG_LINES))
         maxSeqRef.current = res.maxSeq
-        bootstrappedRef.current = true
         return
       }
       if (res.logs.length > 0) {
@@ -56,7 +82,7 @@ export function OrchestratorLogTerminal({
           for (const entry of res.logs) {
             if (!seen.has(entry.seq)) merged.push(entry)
           }
-          return merged
+          return merged.length > MAX_LOG_LINES ? merged.slice(-MAX_LOG_LINES) : merged
         })
       }
       if (res.maxSeq > maxSeqRef.current) {
@@ -69,19 +95,17 @@ export function OrchestratorLogTerminal({
 
   useEffect(() => {
     if (!active) return
-    bootstrappedRef.current = false
     maxSeqRef.current = 0
-    setLogs([])
     setLoading(true)
     void pull(true).finally(() => setLoading(false))
   }, [active, refreshKey, pull])
 
   useEffect(() => {
-    if (!active) return
-    const intervalMs = isLive ? 1500 : 4000
+    if (!active || paused) return
+    const intervalMs = isLive ? 3000 : 8000
     const timer = window.setInterval(() => void pull(false), intervalMs)
     return () => window.clearInterval(timer)
-  }, [active, isLive, pull])
+  }, [active, isLive, paused, pull])
 
   useEffect(() => {
     if (!active || !autoScroll || !scrollRef.current) return
@@ -93,13 +117,14 @@ export function OrchestratorLogTerminal({
       <div className="flex items-center justify-between border-b border-zinc-800/80 px-3 py-2">
         <span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-wider text-zinc-500">
           <Brain className="size-3.5" />
-          主编排决策日志
+          决策日志
           {isLive ? (
             <span className="inline-flex items-center gap-1 text-primary">
               <span className="size-1.5 animate-pulse rounded-full bg-primary" />
               实时
             </span>
           ) : null}
+          {paused ? <span className="text-zinc-600">· 已暂停</span> : null}
         </span>
         <label className="flex cursor-pointer items-center gap-1.5 font-mono text-[10px] text-zinc-500">
           <input
@@ -118,33 +143,14 @@ export function OrchestratorLogTerminal({
       ) : null}
       <div
         ref={scrollRef}
-        className="h-[min(42vh,360px)] overflow-y-auto px-3 py-2 font-mono text-xs leading-relaxed"
+        className="h-[min(36vh,320px)] overflow-y-auto px-3 py-2 font-mono text-xs leading-relaxed"
       >
         {loading && logs.length === 0 ? (
-          <p className="text-zinc-500">加载日志…</p>
+          <InlineBrandLoader label="加载日志" className="text-zinc-500" />
         ) : logs.length === 0 ? (
-          <p className="text-zinc-500">暂无决策日志，设定目标或唤醒后主编排 Agent 的决策将显示在此</p>
+          <p className="text-zinc-500">暂无决策日志，设定目标或唤醒后将显示主编排决策</p>
         ) : (
-          logs.map((entry) => (
-            <div key={entry.seq} className="flex gap-2 py-0.5">
-              <span className="shrink-0 tabular-nums text-zinc-600">{formatTime(entry.ts)}</span>
-              <span
-                className={cn(
-                  'min-w-0 break-all',
-                  entry.message.startsWith('目标')
-                    ? 'text-violet-400'
-                    : entry.message.includes('未启用') ||
-                        entry.message.includes('失败') ||
-                        entry.message.includes('异常') ||
-                        entry.message.includes('错误')
-                      ? 'text-rose-400'
-                      : 'text-sky-300',
-                )}
-              >
-                {entry.message}
-              </span>
-            </div>
-          ))
+          logs.map((entry) => <LogLine key={entry.seq} entry={entry} />)
         )}
       </div>
     </div>

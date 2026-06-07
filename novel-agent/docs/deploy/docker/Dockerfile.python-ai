@@ -8,8 +8,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 COPY python-ai/requirements.txt /app/requirements.txt
 
-# patchright install-deps 会安装 Chromium 所需的系统库
-RUN pip install --no-cache-dir -r requirements.txt \
+# ca-certificates：curl_cffi / Scrapling HTTPS；patchright Chromium 用于 StealthyFetcher
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates \
+    && rm -rf /var/lib/apt/lists/* \
+    && pip install --no-cache-dir -r requirements.txt \
     && patchright install-deps chromium \
     && patchright install chromium \
     && rm -rf /root/.cache/pip

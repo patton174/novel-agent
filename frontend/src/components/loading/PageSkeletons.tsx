@@ -1,3 +1,5 @@
+import { BrandLoader } from '@/components/loading/BrandLoader'
+
 function Pulse({ className = '' }: { className?: string }) {
   return <div className={`animate-pulse rounded-md bg-muted ${className}`.trim()} />
 }
@@ -52,6 +54,72 @@ export function AdminContentSkeleton() {
   )
 }
 
+export function AdminTableContentSkeleton() {
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Pulse className="h-9 w-64 rounded-lg" />
+        <Pulse className="h-9 w-24 rounded-lg" />
+      </div>
+      <div className="overflow-hidden rounded-xl border border-border">
+        <Pulse className="h-10 rounded-none" />
+        {Array.from({ length: 8 }).map((_, i) => (
+          <Pulse key={i} className="mt-px h-12 rounded-none" />
+        ))}
+      </div>
+      <div className="flex justify-end gap-2">
+        <Pulse className="h-9 w-20 rounded-lg" />
+        <Pulse className="h-9 w-20 rounded-lg" />
+      </div>
+    </div>
+  )
+}
+
+export function AdminStatsContentSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Pulse className="h-72 rounded-2xl" />
+        <Pulse className="h-72 rounded-2xl" />
+      </div>
+      <Pulse className="h-96 rounded-2xl" />
+    </div>
+  )
+}
+
+export function AdminCrawlerContentSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Pulse key={i} className="h-24 rounded-xl" />
+        ))}
+      </div>
+      <Pulse className="h-40 rounded-xl" />
+      <Pulse className="h-[min(42vh,360px)] rounded-xl" />
+      <div className="space-y-3">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Pulse key={i} className="h-20 rounded-xl" />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+export function AdminCatalogContentSkeleton() {
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Pulse className="h-9 w-72 rounded-lg" />
+        <Pulse className="h-9 w-28 rounded-lg" />
+      </div>
+      {Array.from({ length: 6 }).map((_, i) => (
+        <Pulse key={i} className="h-16 rounded-xl" />
+      ))}
+    </div>
+  )
+}
+
 export function DashboardShellSkeleton() {
   return (
     <div className="flex h-screen overflow-hidden bg-background">
@@ -61,14 +129,82 @@ export function DashboardShellSkeleton() {
           <Pulse className="h-5 w-36" />
         </header>
         <main className="flex-1 space-y-4 p-6">
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <Pulse key={i} className="h-24 rounded-xl" />
-            ))}
-          </div>
-          <Pulse className="h-80 rounded-2xl" />
+          <DashboardHomeContentSkeleton />
         </main>
       </div>
+    </div>
+  )
+}
+
+export function DashboardHomeContentSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Pulse key={i} className="h-24 rounded-xl" />
+        ))}
+      </div>
+      <Pulse className="h-44 rounded-2xl" />
+      <div className="space-y-3">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Pulse key={i} className="h-16 rounded-xl" />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+export function NovelsGridContentSkeleton() {
+  return (
+    <div className="space-y-6">
+      <Pulse className="h-20 rounded-2xl" />
+      <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="rounded-2xl border border-border p-5">
+            <Pulse className="mb-4 h-32 rounded-xl" />
+            <Pulse className="mb-2 h-5 w-3/4" />
+            <Pulse className="mb-6 h-4 w-1/2" />
+            <Pulse className="h-10 rounded-xl" />
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+export function BookstoreContentSkeleton() {
+  return (
+    <div className="space-y-6">
+      <Pulse className="h-16 rounded-2xl" />
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <Pulse key={i} className="h-48 rounded-2xl" />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+export function BillingContentSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="grid gap-4 md:grid-cols-3">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <Pulse key={i} className="h-28 rounded-xl" />
+        ))}
+      </div>
+      <Pulse className="h-64 rounded-2xl" />
+    </div>
+  )
+}
+
+export function SettingsContentSkeleton() {
+  return (
+    <div className="mx-auto max-w-xl space-y-4">
+      <Pulse className="h-16 rounded-lg" />
+      <Pulse className="h-11 rounded-lg" />
+      <Pulse className="h-11 rounded-lg" />
+      <Pulse className="h-11 rounded-lg" />
     </div>
   )
 }
@@ -105,23 +241,9 @@ export function AuthPageSkeleton() {
   )
 }
 
+/** route-shells chunk 内使用的品牌 Loading（与主包 BrandLoader 视觉一致） */
 export function BrandLoaderLite({ label = '正在加载' }: { label?: string }) {
-  return (
-    <div
-      className="flex min-h-[40vh] flex-col items-center justify-center gap-4 text-muted-foreground"
-      role="status"
-      aria-live="polite"
-    >
-      <p className="text-xl font-semibold tracking-tight text-foreground">
-        Novel <span className="text-primary">AI</span>
-      </p>
-      <div className="flex items-center gap-2 text-sm">
-        <span className="relative flex size-2">
-          <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary/40 opacity-75" />
-          <span className="relative inline-flex size-2 rounded-full bg-primary" />
-        </span>
-        <span>{label}</span>
-      </div>
-    </div>
-  )
+  return <BrandLoader label={label} />
 }
+
+export { BrandLoader, InlineBrandLoader } from '@/components/loading/BrandLoader'

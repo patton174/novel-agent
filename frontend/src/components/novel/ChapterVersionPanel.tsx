@@ -4,6 +4,8 @@ import { palette } from '../../styles/theme'
 import { EditorButton } from '../ui/EditorButton'
 import { api } from '../../utils/api'
 import type { ChapterVersion } from '../../types/novel'
+import { confirmAction } from '../../stores/confirmDialogStore'
+import { InlineBrandLoader } from '../loading/BrandLoader'
 
 interface ChapterVersionPanelProps {
   chapterId: string | null
@@ -57,7 +59,11 @@ export const ChapterVersionPanel: React.FC<ChapterVersionPanelProps> = ({
 
   const handleRestore = async (versionId: string) => {
     if (!chapterId) return
-    if (!window.confirm('确定恢复到该版本？当前正文会先保存为一个版本。')) return
+    if (!(await confirmAction({
+      title: '恢复版本',
+      description: '确定恢复到该版本？当前正文会先保存为一个版本。',
+      confirmLabel: '恢复',
+    }))) return
     setRestoringId(versionId)
     try {
       await api.restoreChapterVersion(chapterId, versionId)
@@ -80,7 +86,9 @@ export const ChapterVersionPanel: React.FC<ChapterVersionPanelProps> = ({
           {!chapterId ? (
             <Hint>选择章节后可查看版本</Hint>
           ) : loading ? (
-            <Hint>加载中…</Hint>
+            <Hint>
+              <InlineBrandLoader label="加载版本历史" />
+            </Hint>
           ) : versions.length === 0 ? (
             <Hint>暂无历史版本</Hint>
           ) : (

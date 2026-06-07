@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { BookOpen, ExternalLink, Loader2, Pencil, Trash2 } from 'lucide-react'
+import { InlineBrandLoader } from '@/components/loading/BrandLoader'
 import {
   deleteCatalogNovel,
   fetchCatalogProgress,
@@ -137,10 +138,7 @@ export function CatalogOverviewDialog({
 
         <div className="space-y-4 px-5 py-4">
           {loading ? (
-            <p className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="size-4 animate-spin" />
-              加载进度…
-            </p>
+            <InlineBrandLoader label="加载进度" className="text-sm text-muted-foreground" />
           ) : progress ? (
             <div
               className={cn(

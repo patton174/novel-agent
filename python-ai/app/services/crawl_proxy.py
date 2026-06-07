@@ -75,3 +75,31 @@ def mask_proxy_url(proxy: str | None) -> str:
 
 def crawl_proxy_enabled(config: dict[str, Any] | None = None) -> bool:
     return pick_crawl_proxy(config) is not None
+
+
+def proxy_candidates_for_fetch(primary: str | None) -> list[str | None]:
+    """HTTP 抓取候选代理链：主代理 → 列表轮换 → 可选直连。"""
+    seen: set[str | None] = set()
+    ordered: list[str | None] = []
+
+    def add(value: str | None) -> None:
+        key = value or ""
+        if key in seen:
+            return
+        seen.add(key)
+        ordered.append(value)
+
+    if primary and primary.strip():
+        add(primary.strip())
+    elif settings.crawl_http_proxy.strip():
+        add(settings.crawl_http_proxy.strip())
+
+    for item in _split_proxy_list(settings.crawl_proxy_list):
+        add(item)
+
+    if settings.crawl_tls_retry_direct:
+        add(None)
+
+    if not ordered:
+        ordered.append(None)
+    return ordered
