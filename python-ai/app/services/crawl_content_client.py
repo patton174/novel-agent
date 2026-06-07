@@ -129,3 +129,11 @@ class CrawlContentClient:
             resp.raise_for_status()
         except Exception as exc:
             logger.debug("append crawl log failed jobId=%s: %s", job_id, exc)
+
+    async def save_runtime_state(self, job_id: str, runtime: dict[str, Any]) -> None:
+        resp = await self._client.post(
+            f"{self._base}/internal/crawl/jobs/{job_id}/runtime",
+            headers=self._headers(),
+            json=runtime,
+        )
+        resp.raise_for_status()

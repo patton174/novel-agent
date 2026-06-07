@@ -49,4 +49,4 @@ bash novel-agent/docs/deploy/scripts/deploy-fast.sh {gateway|auth|frontend} {mw|
 
 - **force-recreate auth 后必须再 deploy-fast auth**
 - frontend deploy 自动 `register-frontend-crypto.sh` 轮换 prefix
-- 本地重启只用 `restart-dev.sh`，禁止 bat 启动脚本
+- **`restart-dev.sh` 已废弃**；勿本地启 Consumer 连生产 MQ

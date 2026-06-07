@@ -1,5 +1,6 @@
 package com.novel.agent.content.controller.internal;
 
+import com.novel.agent.content.service.crawl.PythonCrawlClient;
 import com.novel.agent.content.service.crawl.dto.AppendCrawlLogRequest;
 import com.novel.agent.content.service.crawl.dto.CrawlImportChapterRequest;
 import com.novel.agent.content.service.crawl.dto.CrawlJobDTO;
@@ -76,5 +77,23 @@ public class InternalCrawlController {
     ) {
         biz.appendLog(jobId, request);
         return Map.of("ok", true);
+    }
+
+    @PostMapping("/{jobId}/runtime")
+    public CrawlJobDTO mergeRuntime(
+        @PathVariable String jobId,
+        @RequestBody Map<String, Object> runtime
+    ) {
+        return biz.mergeRuntime(jobId, runtime);
+    }
+
+    @PostMapping("/{jobId}/pause")
+    public CrawlJobDTO pauseJob(@PathVariable String jobId) {
+        return PythonCrawlClient.toDto(biz.pauseJob(jobId));
+    }
+
+    @PostMapping("/{jobId}/cancel")
+    public CrawlJobDTO cancelJob(@PathVariable String jobId) {
+        return PythonCrawlClient.toDto(biz.cancelJob(jobId));
     }
 }

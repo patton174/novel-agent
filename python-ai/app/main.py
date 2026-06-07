@@ -50,6 +50,9 @@ async def startup_event():
     """Re-apply logging config after uvicorn overrides it."""
     _setup_logging()
     await _warmup_agent()
+    from app.crawl_orchestrator.loop import start_orchestrator_background
+
+    start_orchestrator_background()
 
 
 async def _warmup_agent():

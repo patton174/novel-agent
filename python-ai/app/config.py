@@ -49,10 +49,10 @@ class Settings(BaseSettings):
     agent_subagent_max_depth: int = 1
 
     crawl_request_delay_ms: int = 800
-    # 爬虫出口代理（住宅/动态 IP 推荐，格式 http://user:pass@host:port）
     crawl_http_proxy: str = ""
-    # 多代理轮询，逗号分隔；设置后优先于 CRAWL_HTTP_PROXY 单条
     crawl_proxy_list: str = ""
+    crawl_orchestrator_enabled: bool = False
+    crawl_orchestrator_poll_sec: int = 30
 
     # Agnes image generation (OpenAI-compatible Images API)
     agnes_image_api_key: str = ""

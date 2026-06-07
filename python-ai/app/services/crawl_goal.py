@@ -20,7 +20,7 @@ SYSTEM = (
 @dataclass
 class CrawlGoalSpec:
     raw_goal: str
-    max_chapters: int = 200
+    max_chapters: int = 0
     use_stealth: bool = False
     summary: str = ""
 
@@ -40,7 +40,7 @@ def options_from_config(site_config: dict[str, Any] | None) -> dict[str, Any]:
     return dict(site_config)
 
 
-async def interpret_goal(goal: str, *, base_max_chapters: int = 200) -> CrawlGoalSpec:
+async def interpret_goal(goal: str, *, base_max_chapters: int = 0) -> CrawlGoalSpec:
     text = (goal or DEFAULT_GOAL).strip()
     spec = CrawlGoalSpec(raw_goal=text, max_chapters=base_max_chapters)
 

@@ -10,6 +10,7 @@ import com.novel.agent.content.service.crawl.dto.CrawlJobDTO;
 import com.novel.agent.content.service.crawl.dto.CrawlProgressRequest;
 import com.novel.agent.content.service.crawl.dto.InitCatalogRequest;
 import com.novel.agent.content.crawl.CrawlJobStatus;
+import com.novel.agent.content.repository.CrawlJobRepository;
 import com.novel.agent.content.crawl.CrawlLogLevel;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -22,6 +23,7 @@ public class InternalCrawlBiz {
 
     private final CrawlJobService crawlJobService;
     private final CrawlJobLogService crawlJobLogService;
+    private final CrawlJobRepository crawlJobRepository;
 
     public CrawlJobDTO getJob(String jobId) {
         return PythonCrawlClient.toDto(crawlJobService.getJob(jobId));
@@ -70,6 +72,10 @@ public class InternalCrawlBiz {
         return PythonCrawlClient.toDto(crawlJobService.failJob(jobId, errorMessage));
     }
 
+    public CrawlJobDTO mergeRuntime(String jobId, Map<String, Object> runtime) {
+        return PythonCrawlClient.toDto(crawlJobService.mergeRuntimeState(jobId, runtime));
+    }
+
     public void appendLog(String jobId, AppendCrawlLogRequest request) {
         CrawlLogLevel level;
         try {
@@ -78,5 +84,17 @@ public class InternalCrawlBiz {
             level = CrawlLogLevel.INFO;
         }
         crawlJobLogService.append(jobId, level, request.message());
+    }
+
+    public long runningJobCount() {
+        return crawlJobRepository.countByStatus(CrawlJobStatus.RUNNING);
+    }
+
+    public CrawlJobEntity pauseJob(String jobId) {
+        return crawlJobService.pauseJob(jobId);
+    }
+
+    public CrawlJobEntity cancelJob(String jobId) {
+        return crawlJobService.cancelJob(jobId);
     }
 }

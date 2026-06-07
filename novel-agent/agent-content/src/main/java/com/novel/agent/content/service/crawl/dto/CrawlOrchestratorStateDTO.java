@@ -1,0 +1,10 @@
+package com.novel.agent.content.service.crawl.dto;
+
+public record CrawlOrchestratorStateDTO(
+    String goal,
+    String status,
+    int runningJobCount,
+    int maxConcurrentJobs,
+    String lastDecision,
+    long updatedAt
+) {}

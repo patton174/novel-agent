@@ -10,4 +10,6 @@ public interface CrawlCatalogChapterRepository extends JpaRepository<CrawlCatalo
     List<CrawlCatalogChapterEntity> findByCatalogNovelIdOrderBySortOrderAsc(String catalogNovelId);
 
     int countByCatalogNovelId(String catalogNovelId);
+
+    void deleteByCatalogNovelId(String catalogNovelId);
 }

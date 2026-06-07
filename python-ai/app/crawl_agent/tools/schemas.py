@@ -13,6 +13,26 @@ class FetchPageInput(BaseModel):
     )
 
 
+class BrowserOpenInput(BaseModel):
+    url: str = Field(..., min_length=8, description="打开 Playwright 浏览器并导航到此 URL")
+
+
+class BrowserGotoInput(BaseModel):
+    url: str = Field(..., min_length=8, description="在当前浏览器会话中跳转到 URL")
+
+
+class BrowserClickInput(BaseModel):
+    text: str = Field(
+        default="",
+        description="按可见文字点击链接/按钮（推荐，如「网游竞技」「开始阅读」）",
+    )
+    selector: str = Field(default="", description="CSS 选择器；text 为空时使用")
+
+
+class BrowserSnapshotInput(BaseModel):
+    pass
+
+
 class DiscoverChaptersInput(BaseModel):
     """Deprecated — use QueueChapters. Kept for schema compatibility."""
     url: str = Field(..., min_length=8)

@@ -7,8 +7,13 @@ import json
 from typing import Any
 
 from app.crawl_agent.context import ChapterItem, CrawlAgentContext
+from app.crawl_agent.runtime_state import persist_runtime
 from app.crawl_agent.tools.registry import register_tool
 from app.crawl_agent.tools.schemas import (
+    BrowserClickInput,
+    BrowserGotoInput,
+    BrowserOpenInput,
+    BrowserSnapshotInput,
     CompleteJobInput,
     FailJobInput,
     FetchAndSaveChapterInput,
@@ -20,9 +25,14 @@ from app.crawl_agent.tools.schemas import (
 )
 from app.crawl_agent.tools.tool import CrawlTool, CrawlToolResult
 from app.services.crawl_ai_extractor import extract_chapter
+from app.services.crawl_browser import (
+    CrawlBrowserSession,
+    BrowserSnapshot,
+    prepare_html_for_ai,
+)
 from app.services.crawl_fetch import fetch_for_crawl, resolve_crawl_url
 from app.services.crawl_proxy import mask_proxy_url, pick_crawl_proxy
-from app.services.crawl_scrapling import page_links, page_text
+from app.crawl_agent.limits import batch_save_count, slice_chapters
 
 _REGISTERED = False
 
@@ -54,6 +64,36 @@ def _crawl_proxy(ctx: CrawlAgentContext) -> str | None:
     return pick_crawl_proxy(ctx.site_config)
 
 
+def _browser_session(ctx: CrawlAgentContext) -> CrawlBrowserSession:
+    if ctx.browser_session is None:
+        ctx.browser_session = CrawlBrowserSession(proxy=_crawl_proxy(ctx))
+    return ctx.browser_session
+
+
+def _snapshot_payload(snap: BrowserSnapshot) -> tuple[str, dict[str, Any]]:
+    html = prepare_html_for_ai(snap.html)
+    preview = html[:1500]
+    return html, {
+        "url": snap.url,
+        "title": snap.title,
+        "http_status": snap.http_status,
+        "content": preview,
+        "html_chars": len(html),
+        "note": "完整 HTML 已追加至 RUN_CONTEXT，请自行读 href/正文决定下一步。",
+    }
+
+
+def _append_snapshot_to_context(snap: BrowserSnapshot) -> dict[str, Any]:
+    html = prepare_html_for_ai(snap.html)
+    return {
+        "append_page": {
+            "url": snap.url,
+            "title": snap.title,
+            "content": html,
+        }
+    }
+
+
 async def _fetch_page_tool(ctx: CrawlAgentContext, inp: FetchPageInput) -> CrawlToolResult:
     stealth_override = inp.use_stealth
     target = resolve_crawl_url(ctx, inp.url.strip())
@@ -71,8 +111,7 @@ async def _fetch_page_tool(ctx: CrawlAgentContext, inp: FetchPageInput) -> Crawl
         use_cache=False,
     )
     ctx.last_fetched_url = target
-    links = page_links(page, target, limit=200)
-    body = page_text(page, 16_000)
+    body = page_html(page, 22_000)
 
     if meta.blocked:
         msg = meta.hint or f"HTTP {meta.http_status}，无法获取有效页面内容"
@@ -81,6 +120,14 @@ async def _fetch_page_tool(ctx: CrawlAgentContext, inp: FetchPageInput) -> Crawl
             "ERROR",
             f"FetchPage 失败 · HTTP {meta.http_status} · {msg}",
         )
+        patch: dict[str, Any] = {
+            "append_note": f"FetchPage 失败 ({target}): {msg}",
+        }
+        if body.strip():
+            patch["append_page"] = {
+                "url": target,
+                "content": body,
+            }
         return CrawlToolResult(
             content=_json_err(
                 msg,
@@ -88,45 +135,114 @@ async def _fetch_page_tool(ctx: CrawlAgentContext, inp: FetchPageInput) -> Crawl
                 http_status=meta.http_status,
                 used_stealth=meta.used_stealth,
                 content=body[:1500],
-                links=links,
+                html_chars=len(body),
             ),
             is_error=True,
-            context_patch={
-                "append_note": f"FetchPage 失败 ({target}): {msg}",
-            },
+            context_patch=patch,
         )
 
     if meta.used_stealth and stealth_override is None:
         await _append_log(ctx, "INFO", "已自动切换 Stealth 浏览器抓取（后续抓取将沿用）")
     elif meta.http_status >= 300:
-        await _append_log(ctx, "WARN", f"FetchPage HTTP {meta.http_status} · {len(body)} 字 · {len(links)} 链接")
+        await _append_log(ctx, "WARN", f"FetchPage HTTP {meta.http_status} · HTML {len(body)} 字")
 
     return CrawlToolResult(
         content=_json_ok(
             url=target,
             http_status=meta.http_status,
             used_stealth=meta.used_stealth,
-            content=body,
-            links=links,
-            link_count=len(links),
-            note=(
-                "正文已追加至 RUN_CONTEXT。请阅读 content 决定下一 URL；"
-                "links 仅为辅助索引，可能不完整，不可依赖工具替你解析全站目录。"
-            ),
+            content=body[:1500],
+            html_chars=len(body),
+            note="完整 HTML 已追加至 RUN_CONTEXT。请自行读 href/正文决定下一 URL；勿凭空拼路径。",
         ),
         context_patch={
             "append_page": {
                 "url": target,
                 "content": body,
-                "links_index": links,
             }
         },
     )
 
 
+async def _browser_open_tool(ctx: CrawlAgentContext, inp: BrowserOpenInput) -> CrawlToolResult:
+    target = resolve_crawl_url(ctx, inp.url.strip())
+    await _append_log(ctx, "INFO", f"BrowserOpen: {target}")
+    try:
+        snap = await _browser_session(ctx).goto(target)
+    except Exception as exc:
+        msg = str(exc)[:500]
+        await _append_log(ctx, "ERROR", f"BrowserOpen 失败 · {msg}")
+        return CrawlToolResult(content=_json_err(msg), is_error=True)
+
+    ctx.last_fetched_url = snap.url
+    ctx.use_stealth = True
+    html, payload = _snapshot_payload(snap)
+    await _append_log(ctx, "INFO", f"BrowserOpen 成功 · {snap.url} · HTML {len(html)} 字")
+    return CrawlToolResult(content=_json_ok(**payload), context_patch=_append_snapshot_to_context(snap))
+
+
+async def _browser_goto_tool(ctx: CrawlAgentContext, inp: BrowserGotoInput) -> CrawlToolResult:
+    if ctx.browser_session is None or not ctx.browser_session.is_open:
+        return CrawlToolResult(
+            content=_json_err("浏览器未打开，请先 BrowserOpen"),
+            is_error=True,
+        )
+    target = resolve_crawl_url(ctx, inp.url.strip())
+    await _append_log(ctx, "INFO", f"BrowserGoto: {target}")
+    try:
+        snap = await ctx.browser_session.goto(target)
+    except Exception as exc:
+        msg = str(exc)[:500]
+        await _append_log(ctx, "ERROR", f"BrowserGoto 失败 · {msg}")
+        return CrawlToolResult(content=_json_err(msg), is_error=True)
+
+    ctx.last_fetched_url = snap.url
+    html, payload = _snapshot_payload(snap)
+    await _append_log(ctx, "INFO", f"BrowserGoto 成功 · {snap.url} · HTML {len(html)} 字")
+    return CrawlToolResult(content=_json_ok(**payload), context_patch=_append_snapshot_to_context(snap))
+
+
+async def _browser_click_tool(ctx: CrawlAgentContext, inp: BrowserClickInput) -> CrawlToolResult:
+    if ctx.browser_session is None or not ctx.browser_session.is_open:
+        return CrawlToolResult(
+            content=_json_err("浏览器未打开，请先 BrowserOpen"),
+            is_error=True,
+        )
+    label = inp.text.strip() or inp.selector.strip()
+    await _append_log(ctx, "INFO", f"BrowserClick: {label!r}")
+    try:
+        snap = await ctx.browser_session.click(text=inp.text.strip(), selector=inp.selector.strip())
+    except Exception as exc:
+        msg = str(exc)[:500]
+        await _append_log(ctx, "ERROR", f"BrowserClick 失败 · {msg}")
+        return CrawlToolResult(content=_json_err(msg), is_error=True)
+
+    ctx.last_fetched_url = snap.url
+    html, payload = _snapshot_payload(snap)
+    await _append_log(ctx, "INFO", f"BrowserClick 成功 · {snap.url} · HTML {len(html)} 字")
+    return CrawlToolResult(content=_json_ok(**payload), context_patch=_append_snapshot_to_context(snap))
+
+
+async def _browser_snapshot_tool(ctx: CrawlAgentContext, _inp: BrowserSnapshotInput) -> CrawlToolResult:
+    if ctx.browser_session is None or not ctx.browser_session.is_open:
+        return CrawlToolResult(
+            content=_json_err("浏览器未打开，请先 BrowserOpen"),
+            is_error=True,
+        )
+    await _append_log(ctx, "INFO", "BrowserSnapshot")
+    try:
+        snap = await ctx.browser_session.snapshot()
+    except Exception as exc:
+        msg = str(exc)[:500]
+        return CrawlToolResult(content=_json_err(msg), is_error=True)
+
+    ctx.last_fetched_url = snap.url
+    html, payload = _snapshot_payload(snap)
+    return CrawlToolResult(content=_json_ok(**payload), context_patch=_append_snapshot_to_context(snap))
+
+
 async def _queue_chapters_tool(ctx: CrawlAgentContext, inp: QueueChaptersInput) -> CrawlToolResult:
-    limit = ctx.max_chapters
-    incoming = inp.chapters[:limit]
+    incoming = slice_chapters(inp.chapters, ctx.max_chapters)
     if not incoming:
         return CrawlToolResult(content=_json_err("chapters 不能为空"), is_error=True)
 
@@ -169,6 +285,7 @@ async def _queue_chapters_tool(ctx: CrawlAgentContext, inp: QueueChaptersInput) 
             chapters_total=len(ctx.chapters_queue),
             chapters_done=ctx.chapters_saved,
         )
+        await persist_runtime(ctx)
 
     preview = [
         {"sort_order": c.sort_order, "title": c.title, "url": c.url}
@@ -252,6 +369,7 @@ async def _fetch_and_save_chapter_tool(
     ctx.catalog_novel_id = str(result.get("catalogNovelId") or ctx.catalog_novel_id)
     ctx.chapters_saved = max(ctx.chapters_saved, inp.sort_order)
     await ctx.client.update_progress(ctx.job_id, chapters_done=ctx.chapters_saved)
+    await persist_runtime(ctx)
     await _append_log(
         ctx,
         "SUCCESS",
@@ -284,7 +402,7 @@ async def _save_queued_chapters_tool(
         ctx.catalog_novel_id = str(job.get("catalogNovelId") or "")
 
     start = max(inp.start_from, ctx.chapters_saved + 1)
-    cap = inp.max_count or min(20, ctx.max_chapters)
+    cap = batch_save_count(ctx.max_chapters, inp.max_count)
     pending = [c for c in ctx.chapters_queue if c.sort_order >= start][:cap]
     if not pending:
         return CrawlToolResult(
@@ -342,6 +460,9 @@ async def _save_queued_chapters_tool(
     if errors and saved == 0:
         return CrawlToolResult(content=_json_err("; ".join(errors[:3])), is_error=True)
 
+    if ctx.job_id != "preview":
+        await persist_runtime(ctx)
+
     return CrawlToolResult(
         content=_json_ok(
             saved=saved,
@@ -395,11 +516,46 @@ def register_crawl_tools() -> None:
         CrawlTool(
             name="FetchPage",
             description=(
-                "抓取 URL，返回正文 content 与参考 links（追加到 RUN_CONTEXT）。"
-                "由你阅读正文决定下一步；工具不会替你解析站点结构。"
+                "无状态 HTTP/Stealth 抓取 URL，返回原始 HTML（追加到 RUN_CONTEXT）。"
+                "由你自行读 HTML 中的 href/正文决定下一步；工具不做链接提取。"
             ),
             input_model=FetchPageInput,
             call=_fetch_page_tool,
+        )
+    )
+    register_tool(
+        CrawlTool(
+            name="BrowserOpen",
+            description=(
+                "打开 Playwright 浏览器会话并导航到 URL（保持 Cookie/JS 状态）。"
+                "需要点击菜单、搜索、SPA 站点时优先于 FetchPage。"
+            ),
+            input_model=BrowserOpenInput,
+            call=_browser_open_tool,
+        )
+    )
+    register_tool(
+        CrawlTool(
+            name="BrowserClick",
+            description="在当前浏览器页面按可见文字或 CSS 选择器点击，返回点击后的 HTML。",
+            input_model=BrowserClickInput,
+            call=_browser_click_tool,
+        )
+    )
+    register_tool(
+        CrawlTool(
+            name="BrowserGoto",
+            description="在当前浏览器会话中跳转到 URL（保留会话状态）。",
+            input_model=BrowserGotoInput,
+            call=_browser_goto_tool,
+        )
+    )
+    register_tool(
+        CrawlTool(
+            name="BrowserSnapshot",
+            description="获取当前浏览器页面的 HTML 快照（不导航）。",
+            input_model=BrowserSnapshotInput,
+            call=_browser_snapshot_tool,
         )
     )
     register_tool(

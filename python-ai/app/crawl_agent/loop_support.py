@@ -39,8 +39,8 @@ _REPEAT_FAILURE_HINTS: dict[str, str] = {
         "禁止提交未在正文中出现的猜测 URL。"
     ),
     "FetchPage": (
-        "FetchPage 已多次失败：禁止拼接 /read/、/1.html 等猜测路径。"
-        "下一 URL 必须来自 RUN_CONTEXT 页内链接；无可用链接则 FailJob。"
+        "FetchPage 已多次失败：禁止拼接猜测路径。"
+        "下一 URL 必须来自 RUN_CONTEXT HTML 中的 href；可试 BrowserOpen + BrowserClick，否则 FailJob。"
     ),
 }
 

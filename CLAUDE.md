@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-本文件为 AI 与开发者提供项目协作规范；**本地开发栈重启只允许使用 `restart-dev.sh`**。
+本文件为 AI 与开发者提供项目协作规范；**本地 `restart-dev.sh` 已废弃**，验收走线上部署。
 
 ## 项目架构
 
@@ -43,34 +43,25 @@ C:\Users\JZJ\.cursor\projects\d-Users-JZJ-Desktop-agent\claude-code-ref\src\
 
 详见 `.cursor/rules/claude-code-ref.mdc`。
 
-## 本地开发：重启服务（唯一方式）
+## 本地开发：重启服务
 
-> **禁止**使用 `start-dev.bat`、`start-dev-all.bat` 等 bat 启动脚本重启或拉起开发栈。  
-> **只允许**使用 Git Bash 执行：
+> **`restart-dev.sh` / `start-dev*.bat` 已废弃（2026-06-05）。**  
+> 本地 Consumer 连生产 MQ 会抢线上 `agent.run.dispatch.queue`，导致 Agent 无响应。  
+> 验收请用 https://www.novel-agent.cn ；部署用 CI / `deploy-fast.sh`。
 
-```bash
-bash novel-agent/docs/deploy/windows/restart-dev.sh
-```
-
-脚本路径：`novel-agent/docs/deploy/windows/restart-dev.sh`
-
-作用：先释放端口 `3000 / 8000 / 8082 / 8090 / 8091`，再按序启动 Python AI → PyAI → Content → Consumer → Frontend。  
-日志目录：项目根 `.dev-logs/`（`python-ai.log`、`pyai.log`、`content.log`、`consumer.log`、`frontend.log`）。
-
-环境变量由同目录 `env.bat` 注入（`PROJECT_ROOT`、`JAVA_HOME`、`VITE_REMOTE_AUTH` 等）。
+若仅需改前端 UI，可单独 `cd frontend && npm run dev`，**不要**启动 Consumer 或连生产 RabbitMQ。
 
 ## 何时必须重启（修改代码后）
 
 | 改动范围 | 是否重启 | 说明 |
 |----------|----------|------|
-| `python-ai/` Agent、工具、提示词、路由 | **必须** | PyAI 调 Python；改工具/registry/planner 不重启不生效 |
-| `novel-agent/` Java 业务、SSE、SideEffect | **必须** | 需重新 `spring-boot:run` |
-| `frontend/` 仅 TSX/CSS、Vite 可 HMR 的改动 | 通常不必 | 浏览器硬刷新即可；改 `vite.config`、env 需重启 |
-| `frontend/` 新增 npm 依赖 | **必须** | 跑 `restart-dev.sh` |
-| 修改 `env.bat`、端口、远程 Auth 地址 | **必须** | |
-| 仅改 Markdown/文档/测试（不跑服务） | 不必 | |
+| `python-ai/` Agent、工具、提示词、路由 | **部署 Worker** | CI 或 `deploy-fast.sh` |
+| `novel-agent/` Java 业务、SSE、SideEffect | **部署对应服务** | 同上 |
+| `frontend/` 仅 TSX/CSS | 通常 HMR | 单独 `npm run dev`；线上改走 CI frontend 部署 |
+| `frontend/` 新增 npm 依赖 | **重启 frontend** | 本地 dev 或 CI |
+| 仅改 Markdown/文档/测试 | 不必 | |
 
-**经验法则**：跨 Python + Java + 前端的多文件重构、工具拆分、SSE 协议变更 → **一律 `restart-dev.sh` 全栈重启**，不要只刷新浏览器。
+**经验法则**：跨 Python + Java + 前端的多文件重构、工具拆分、SSE 协议变更 → 走 CI 全量部署；**不要**本地起 Consumer 连生产 MQ。
 
 ## 基础设施（可选，与业务栈分开）
 
@@ -92,7 +83,7 @@ cd python-ai && python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --relo
 cd frontend && npm run dev -- --host
 ```
 
-日常「改完代码继续实验」→ 只用 **`restart-dev.sh`**。
+日常「改完代码继续实验」→ 走 CI / `deploy-fast.sh` 部署到 Worker，或仅本地 `npm run dev` 改前端。
 
 ## Agent 编排（Python AI）
 
@@ -124,5 +115,5 @@ cd frontend && npm run dev -- --host
 
 - `docker compose --force-recreate agent-auth` 后必须再 `deploy-fast.sh auth mw`
 - `MAILTRAP_TOKEN`、`nacos-split-rendered-*` 含密钥，勿提交
-- 本地重启只用 `restart-dev.sh`
+- 本地勿用 `restart-dev.sh`（已废弃）；勿启 Consumer 连生产 MQ
 

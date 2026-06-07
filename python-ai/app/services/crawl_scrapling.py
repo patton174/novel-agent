@@ -61,6 +61,33 @@ def _strip_html(html: str) -> str:
     return " ".join(text.split())
 
 
+def page_html(page: Any, max_chars: int = 24_000) -> str:
+    """返回原始 HTML（去掉 script/style），供 LLM 自行解析链接与正文。"""
+    if page is None:
+        return ""
+
+    status = page_http_status(page)
+    html = _raw_html(page)
+    if not html.strip():
+        return page_text(page, max_chars)
+
+    for pat in (
+        re.compile(r"(?is)<script[^>]*>.*?</script>"),
+        re.compile(r"(?is)<style[^>]*>.*?</style>"),
+    ):
+        html = pat.sub("", html)
+
+    if status >= 400:
+        reason = str(getattr(page, "reason", "") or "").strip()
+        head = f"<!-- HTTP {status}"
+        if reason:
+            head += f" {reason}"
+        head += " -->\n"
+        html = head + html
+
+    return html.strip()[:max_chars]
+
+
 def page_text(page: Any, max_chars: int = 18000) -> str:
     if page is None:
         return ""
@@ -127,10 +154,27 @@ def _links_from_html(html: str, base_url: str, *, limit: int, seen: set[str]) ->
     return items
 
 
+def _anchor_label(anchor: Any) -> str:
+    if hasattr(anchor, "text") and anchor.text:
+        return str(anchor.text).strip()
+    if hasattr(anchor, "get"):
+        try:
+            val = anchor.get("text")
+            if val:
+                return str(val).strip()
+        except (TypeError, AttributeError):
+            pass
+    return ""
+
+
 def page_links(page: Any, base_url: str, limit: int = 600) -> list[dict[str, str]]:
     items: list[dict[str, str]] = []
     seen: set[str] = set()
-    anchors = page.css("a") if hasattr(page, "css") else []
+    try:
+        anchors = page.css("a") if hasattr(page, "css") else []
+    except Exception as exc:
+        logger.warning("page.css('a') failed base=%s: %s", base_url, exc)
+        anchors = []
     for anchor in anchors:
         href = anchor.attrib.get("href") if hasattr(anchor, "attrib") else None
         if not href or href.startswith("#") or href.lower().startswith("javascript:"):
@@ -138,11 +182,7 @@ def page_links(page: Any, base_url: str, limit: int = 600) -> list[dict[str, str
         full = urljoin(base_url, href)
         if full in seen:
             continue
-        text = ""
-        if hasattr(anchor, "text") and anchor.text:
-            text = anchor.text.strip()
-        if not text and hasattr(anchor, "get"):
-            text = str(anchor.get("text", "")).strip()
+        text = _anchor_label(anchor)
         if len(text) > 160:
             text = text[:160]
         seen.add(full)
@@ -164,10 +204,10 @@ def page_links(page: Any, base_url: str, limit: int = 600) -> list[dict[str, str
 
 def _build_meta(page: Any, url: str, *, used_stealth: bool, proxy: str | None = None) -> PageFetchMeta:
     status = page_http_status(page)
-    text = page_text(page, 12_000)
-    links = page_links(page, url, limit=120)
-    content_chars = len(text.strip())
-    link_count = len(links)
+    html = page_html(page, 12_000)
+    text = page_text(page, 8000)
+    content_chars = max(len(html.strip()), len(text.strip()))
+    link_count = 0
 
     blocked = status >= 400 or content_chars < 80
     hint = ""
@@ -203,7 +243,8 @@ def fetch_page(url: str, *, stealth: bool = False, proxy: str | None = None):
 
                 kwargs: dict[str, Any] = {
                     "headless": True,
-                    "network_idle": True,
+                    "network_idle": False,
+                    "timeout": 60000,
                 }
                 if proxy:
                     kwargs["proxy"] = proxy

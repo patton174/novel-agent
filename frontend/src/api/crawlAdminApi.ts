@@ -145,7 +145,7 @@ export async function fetchCrawlLogs(jobId: string, afterSeq = 0): Promise<Crawl
 }
 
 export function buildCrawlConfigJson(goal: string): string {
-  return JSON.stringify({ goal: goal.trim() })
+  return JSON.stringify({ goal: goal.trim(), maxChapters: 0 })
 }
 
 export function parseCrawlJobGoal(configJson?: string | null): string | null {

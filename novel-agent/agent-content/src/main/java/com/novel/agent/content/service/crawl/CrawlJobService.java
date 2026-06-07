@@ -1,5 +1,6 @@
 package com.novel.agent.content.service.crawl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.novel.agent.common.core.enums.ResultCode;
@@ -18,7 +19,8 @@ import com.novel.agent.content.repository.CrawlSiteRepository;
 import com.novel.agent.content.service.catalog.CatalogService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
@@ -48,6 +50,17 @@ public class CrawlJobService {
     public CrawlJobEntity getJob(String jobId) {
         return crawlJobRepository.findById(jobId)
             .orElseThrow(() -> new NotFoundException(ResultCode.NOT_FOUND, "爬虫任务不存在"));
+    }
+
+    public Page<CrawlJobEntity> pageJobs(int pageCurrent, int pageSize) {
+        int page = Math.max(0, pageCurrent - 1);
+        int size = Math.max(1, Math.min(pageSize, 100));
+        return crawlJobRepository.findAllByOrderByUpdatedAtDesc(PageRequest.of(page, size));
+    }
+
+    @Transactional
+    public CrawlJobEntity saveJob(CrawlJobEntity entity) {
+        return crawlJobRepository.save(entity);
     }
 
     @Transactional
@@ -149,6 +162,19 @@ public class CrawlJobService {
             if (status == CrawlJobStatus.RUNNING && entity.getStartedAt() == null) {
                 entity.setStartedAt(Instant.now());
             }
+        }
+        return crawlJobRepository.save(entity);
+    }
+
+    @Transactional
+    public CrawlJobEntity mergeRuntimeState(String jobId, Map<String, Object> runtime) {
+        CrawlJobEntity entity = getJob(jobId);
+        Map<String, Object> config = new LinkedHashMap<>(parseConfigJson(entity.getConfigJson()));
+        config.put("_runtime", runtime == null ? Map.of() : runtime);
+        try {
+            entity.setConfigJson(objectMapper.writeValueAsString(config));
+        } catch (JsonProcessingException ex) {
+            throw new ValidationException(ResultCode.BAD_REQUEST, "runtime 序列化失败");
         }
         return crawlJobRepository.save(entity);
     }

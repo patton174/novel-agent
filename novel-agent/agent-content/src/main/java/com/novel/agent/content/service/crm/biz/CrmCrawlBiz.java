@@ -10,12 +10,15 @@ import com.novel.agent.content.entity.CrawlSiteEntity;
 import com.novel.agent.content.repository.CrawlJobRepository;
 import com.novel.agent.content.service.crawl.CrawlJobLogService;
 import com.novel.agent.content.service.crawl.CrawlJobService;
+import com.novel.agent.content.service.crawl.CrawlOrchestratorStateService;
 import com.novel.agent.content.service.crawl.PythonCrawlClient;
 import com.novel.agent.content.service.crawl.dto.CreateCrawlJobRequest;
 import com.novel.agent.content.service.crawl.dto.CrawlJobDTO;
 import com.novel.agent.content.service.crawl.dto.CrawlLogsResponse;
+import com.novel.agent.content.service.crawl.dto.CrawlOrchestratorStateDTO;
 import com.novel.agent.content.service.crawl.dto.CrawlPreviewRequest;
 import com.novel.agent.content.service.crawl.dto.CrawlSiteDTO;
+import com.novel.agent.content.service.crawl.dto.SetOrchestratorGoalRequest;
 import com.novel.agent.content.service.crawl.dto.UpsertCrawlSiteRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -32,6 +35,7 @@ public class CrmCrawlBiz extends BaseBiz {
     private final CrawlJobRepository crawlJobRepository;
     private final PythonCrawlClient pythonCrawlClient;
     private final CrawlJobLogService crawlJobLogService;
+    private final CrawlOrchestratorStateService orchestratorStateService;
 
     public Result<Page<CrawlJobDTO>> pageJobs(int pageCurrent, int pageSize) {
         PageQuery query = pageQuery(pageCurrent, pageSize);
@@ -103,6 +107,22 @@ public class CrmCrawlBiz extends BaseBiz {
         CrawlSiteEntity entity = crawlJobService.getSite(siteId);
         applySite(entity, request);
         return ok(PythonCrawlClient.toDto(crawlJobService.saveSite(entity)));
+    }
+
+    public Result<CrawlOrchestratorStateDTO> getOrchestratorState() {
+        return ok(orchestratorStateService.getState());
+    }
+
+    public Result<CrawlOrchestratorStateDTO> setOrchestratorGoal(SetOrchestratorGoalRequest request) {
+        return ok(orchestratorStateService.setGoal(request.goal()));
+    }
+
+    public Result<CrawlOrchestratorStateDTO> wakeOrchestrator() {
+        return ok(orchestratorStateService.wake());
+    }
+
+    public Result<CrawlOrchestratorStateDTO> clearOrchestratorGoal() {
+        return ok(orchestratorStateService.clearGoal());
     }
 
     private void applySite(CrawlSiteEntity entity, UpsertCrawlSiteRequest request) {

@@ -8,6 +8,7 @@ from typing import Any
 
 from app.crawl_agent.context import CrawlAgentContext
 from app.crawl_agent.loop import CrawlLoopResult, run_crawl_tool_loop
+from app.crawl_agent.runtime_state import apply_runtime_to_context, parse_config_json
 from app.services.crawl_content_client import CrawlContentClient
 from app.services.crawl_goal import DEFAULT_GOAL, goal_from_config, options_from_config
 
@@ -18,15 +19,17 @@ logger = logging.getLogger(__name__)
 class CrawlOptions:
     goal: str = DEFAULT_GOAL
     use_stealth: bool = False
-    max_chapters: int = 200
+    max_chapters: int = 0
 
     @classmethod
     def from_config(cls, site_config: dict[str, Any] | None) -> CrawlOptions:
         cfg = options_from_config(site_config)
+        raw = cfg.get("maxChapters") if cfg.get("maxChapters") is not None else cfg.get("max_chapters")
+        max_ch = 0 if raw is None else int(raw)
         return cls(
             goal=goal_from_config(site_config),
             use_stealth=bool(cfg.get("useStealth") or cfg.get("use_stealth")),
-            max_chapters=int(cfg.get("maxChapters") or cfg.get("max_chapters") or 200),
+            max_chapters=max_ch,
         )
 
 
@@ -86,8 +89,25 @@ async def run_crawl_agent(
     ctx.novel_title = str(snap.get("title") or "")
     ctx.chapters_saved = int(snap.get("chaptersDone") or 0)
     total = int(snap.get("chaptersTotal") or 0)
+
+    config = parse_config_json(snap.get("configJson"))
+    if site_config:
+        config = {**config, **options_from_config(site_config)}
+    queue_restored = apply_runtime_to_context(ctx, config.get("_runtime"))
+
     await client.update_progress(job_id, status="RUNNING")
-    if ctx.chapters_saved > 0:
+    if queue_restored:
+        await client.append_log(
+            job_id,
+            level="INFO",
+            message=(
+                f"续爬：已恢复章节队列 {len(ctx.chapters_queue)} 章"
+                f"，已入库 {ctx.chapters_saved} 章"
+                f"{f' · 《{ctx.novel_title}》' if ctx.novel_title else ''}"
+                " — 可直接 SaveQueuedChapters 从下一章继续"
+            ),
+        )
+    elif ctx.chapters_saved > 0:
         await client.append_log(
             job_id,
             level="INFO",

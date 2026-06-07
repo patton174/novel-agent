@@ -18,6 +18,7 @@ from app.crawl_agent.loop_support import (
 )
 from app.crawl_agent.prompts import build_crawl_system_prompt, build_crawl_task_message
 from app.crawl_agent.prompting.run_context import refresh_crawl_run_context
+from app.services.crawl_browser import close_browser_session
 from app.crawl_agent.tools import impl  # noqa: F401 — register tools
 from app.crawl_agent.tools.langchain_bind import build_crawl_langchain_tools
 
@@ -68,98 +69,102 @@ async def run_crawl_tool_loop(
             message=f"AI 代理 loop 启动 · 目标：{ctx.goal[:200]}",
         )
 
-    for turn in range(max_turns):
-        if ctx.end_run:
-            break
-
-        if ctx.job_id != "preview":
-            await ctx.client.append_log(
-                ctx.job_id,
-                level="INFO",
-                message=f"AI 推理中…（第 {turn + 1} 轮）",
-            )
-
-        try:
-            ai: AIMessage = await invoke_llm_with_pairing_retry(llm, messages, ctx)
-        except Exception as exc:
-            logger.warning("crawl agent llm turn failed: %s", exc)
-            if ctx.job_id != "preview":
-                await ctx.client.append_log(ctx.job_id, level="ERROR", message=f"LLM 调用失败: {str(exc)[:500]}")
-                await ctx.client.fail_job(ctx.job_id, error_message=str(exc)[:500])
-            return CrawlLoopResult(ok=False, message=str(exc))
-
-        messages.append(ai)
-        calls = tool_calls_from_ai(ai)
-
-        if not calls:
-            if (
-                not preview_mode
-                and ctx.chapters_saved > 0
-                and ctx.chapters_saved >= len(ctx.chapters_queue)
-            ):
-                await ctx.client.complete_job(
-                    ctx.job_id,
-                    catalog_novel_id=ctx.catalog_novel_id,
-                    title=ctx.novel_title or "未命名",
-                )
-                return CrawlLoopResult(
-                    ok=True,
-                    message="章节已全部入库",
-                    novel_title=ctx.novel_title,
-                    author=ctx.novel_author,
-                    chapter_count=ctx.chapters_saved,
-                )
-            messages.append(
-                HumanMessage(
-                    content="请继续调用工具推进任务；完成用 CompleteJob，失败用 FailJob。"
-                )
-            )
-            continue
-
-        for call in calls:
-            result = await run_crawl_tool_with_retry(ctx, call.name, call.args)
-            record_tool_outcome(ctx, call.name, call.args, result)
-            messages.append(
-                ToolMessage(content=result.content, tool_call_id=call.tool_call_id)
-            )
-            hint = repeat_failure_hint(ctx, call.name, call.args)
-            if hint and result.is_error:
-                messages.append(HumanMessage(content=hint))
-            if preview_mode and ctx.chapters_queue and call.name == "QueueChapters":
-                sample = [
-                    {"title": c.title, "url": c.url}
-                    for c in ctx.chapters_queue[:5]
-                ]
-                return CrawlLoopResult(
-                    ok=True,
-                    message=f"预览：识别《{ctx.novel_title}》约 {len(ctx.chapters_queue)} 章",
-                    novel_title=ctx.novel_title,
-                    author=ctx.novel_author,
-                    chapter_count=len(ctx.chapters_queue),
-                    sample_chapters=sample,
-                )
+    try:
+        for turn in range(max_turns):
             if ctx.end_run:
                 break
 
-    if ctx.end_success:
-        return CrawlLoopResult(
-            ok=True,
-            message=ctx.end_message or "完成",
-            novel_title=ctx.novel_title,
-            author=ctx.novel_author,
-            chapter_count=ctx.chapters_saved,
-        )
+            if ctx.job_id != "preview":
+                await ctx.client.append_log(
+                    ctx.job_id,
+                    level="INFO",
+                    message=f"AI 推理中…（第 {turn + 1} 轮）",
+                )
 
-    if ctx.chapters_queue and ctx.chapters_saved >= len(ctx.chapters_queue):
-        return CrawlLoopResult(
-            ok=True,
-            message="章节已全部入库",
-            novel_title=ctx.novel_title,
-            author=ctx.novel_author,
-            chapter_count=ctx.chapters_saved,
-        )
+            try:
+                ai: AIMessage = await invoke_llm_with_pairing_retry(llm, messages, ctx)
+            except Exception as exc:
+                logger.warning("crawl agent llm turn failed: %s", exc)
+                if ctx.job_id != "preview":
+                    await ctx.client.append_log(ctx.job_id, level="ERROR", message=f"LLM 调用失败: {str(exc)[:500]}")
+                    await ctx.client.fail_job(ctx.job_id, error_message=str(exc)[:500])
+                return CrawlLoopResult(ok=False, message=str(exc))
 
-    msg = ctx.end_message or "代理达到最大轮次或未完成目标"
-    if not ctx.end_run and ctx.job_id != "preview":
-        await ctx.client.fail_job(ctx.job_id, error_message=msg[:500])
-    return CrawlLoopResult(ok=False, message=msg)
+            messages.append(ai)
+            calls = tool_calls_from_ai(ai)
+
+            if not calls:
+                if (
+                    not preview_mode
+                    and ctx.chapters_saved > 0
+                    and ctx.chapters_saved >= len(ctx.chapters_queue)
+                ):
+                    await ctx.client.complete_job(
+                        ctx.job_id,
+                        catalog_novel_id=ctx.catalog_novel_id,
+                        title=ctx.novel_title or "未命名",
+                    )
+                    return CrawlLoopResult(
+                        ok=True,
+                        message="章节已全部入库",
+                        novel_title=ctx.novel_title,
+                        author=ctx.novel_author,
+                        chapter_count=ctx.chapters_saved,
+                    )
+                messages.append(
+                    HumanMessage(
+                        content="请继续调用工具推进任务；完成用 CompleteJob，失败用 FailJob。"
+                    )
+                )
+                continue
+
+            for call in calls:
+                result = await run_crawl_tool_with_retry(ctx, call.name, call.args)
+                record_tool_outcome(ctx, call.name, call.args, result)
+                messages.append(
+                    ToolMessage(content=result.content, tool_call_id=call.tool_call_id)
+                )
+                hint = repeat_failure_hint(ctx, call.name, call.args)
+                if hint and result.is_error:
+                    messages.append(HumanMessage(content=hint))
+                if preview_mode and ctx.chapters_queue and call.name == "QueueChapters":
+                    sample = [
+                        {"title": c.title, "url": c.url}
+                        for c in ctx.chapters_queue[:5]
+                    ]
+                    return CrawlLoopResult(
+                        ok=True,
+                        message=f"预览：识别《{ctx.novel_title}》约 {len(ctx.chapters_queue)} 章",
+                        novel_title=ctx.novel_title,
+                        author=ctx.novel_author,
+                        chapter_count=len(ctx.chapters_queue),
+                        sample_chapters=sample,
+                    )
+                if ctx.end_run:
+                    break
+
+        if ctx.end_success:
+            return CrawlLoopResult(
+                ok=True,
+                message=ctx.end_message or "完成",
+                novel_title=ctx.novel_title,
+                author=ctx.novel_author,
+                chapter_count=ctx.chapters_saved,
+            )
+
+        if ctx.chapters_queue and ctx.chapters_saved >= len(ctx.chapters_queue):
+            return CrawlLoopResult(
+                ok=True,
+                message="章节已全部入库",
+                novel_title=ctx.novel_title,
+                author=ctx.novel_author,
+                chapter_count=ctx.chapters_saved,
+            )
+
+        msg = ctx.end_message or "代理达到最大轮次或未完成目标"
+        if not ctx.end_run and ctx.job_id != "preview":
+            await ctx.client.fail_job(ctx.job_id, error_message=msg[:500])
+        return CrawlLoopResult(ok=False, message=msg)
+    finally:
+        await close_browser_session(ctx.browser_session)
+        ctx.browser_session = None

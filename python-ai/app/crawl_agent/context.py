@@ -23,7 +23,7 @@ class CrawlAgentContext:
     entry_url: str
     goal: str
     client: CrawlContentClient
-    max_chapters: int = 200
+    max_chapters: int = 0
     use_stealth: bool = False
     site_config: dict[str, Any] = field(default_factory=dict)
 
@@ -39,6 +39,7 @@ class CrawlAgentContext:
     last_cached_page: Any = None
     last_cached_meta: Any = None
     failed_tool_counts: dict[str, int] = field(default_factory=dict)
+    browser_session: Any = None
 
     memory: CrawlContextMemory = field(default_factory=CrawlContextMemory)
 

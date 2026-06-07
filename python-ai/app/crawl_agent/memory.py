@@ -7,9 +7,8 @@ from dataclasses import dataclass, field
 from typing import Any
 from uuid import uuid4
 
-PAGE_TEXT_MAX = 10_000
-LINKS_IN_PAGE_MAX = 80
-MEMORY_CHAR_BUDGET = 16_000
+PAGE_HTML_MAX = 22_000
+MEMORY_CHAR_BUDGET = 24_000
 MAX_ACTIVE_PAGE_VIEWS = 2
 
 
@@ -46,27 +45,12 @@ class CrawlContextMemory:
         self.step_counter += 1
         return self.step_counter
 
-    @staticmethod
-    def _format_links(links: list[dict[str, str]], *, limit: int = LINKS_IN_PAGE_MAX) -> str:
-        lines: list[str] = []
-        for item in links[:limit]:
-            title = str(item.get("title") or "").strip()
-            url = str(item.get("url") or "").strip()
-            if not url:
-                continue
-            lines.append(f"- {title or url} → {url}")
-        if not lines:
-            return "（无可用链接）"
-        return "\n".join(lines)
-
     def _append_page(self, data: dict[str, Any]) -> None:
         url = str(data.get("url") or "").strip()
-        content = str(data.get("content") or "").strip()[:PAGE_TEXT_MAX]
-        links = data.get("links_index") if isinstance(data.get("links_index"), list) else []
-        links_text = self._format_links(links)
-        body = content
-        if links_text:
-            body = f"{content}\n\n--- 页内链接（锚文本 → URL）---\n{links_text}"
+        content = str(data.get("content") or "").strip()[:PAGE_HTML_MAX]
+        title = str(data.get("title") or "").strip()
+        header = f"<!-- title: {title} -->\n" if title else ""
+        body = f"{header}{content}".strip()
 
         active_pages = [e for e in self.entries if e.kind == "page_view" and e.active]
         while len(active_pages) >= MAX_ACTIVE_PAGE_VIEWS:
@@ -81,7 +65,7 @@ class CrawlContextMemory:
                 kind="page_view",
                 url=url,
                 text=body,
-                meta={"link_count": len(links)},
+                meta={"chars": len(content), "title": title},
             )
         )
 

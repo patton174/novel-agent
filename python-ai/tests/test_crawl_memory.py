@@ -15,20 +15,18 @@ def _ctx() -> CrawlAgentContext:
     )
 
 
-def test_append_page_injects_content_into_run_context():
+def test_append_page_injects_html_into_run_context():
     ctx = _ctx()
     ctx.memory.apply_patch(
         {
             "append_page": {
                 "url": "https://www.shuyous.com/",
-                "content": "强力推荐\n《测试书名》",
-                "links_index": [{"title": "排行", "url": "https://www.shuyous.com/ph.html"}],
+                "content": '首页<a href="https://www.shuyous.com/ph.html">排行</a>',
             }
         }
     )
     block = build_crawl_run_context(ctx)
-    assert "强力推荐" in block
-    assert "《测试书名》" in block
+    assert "排行" in block
     assert "ph.html" in block
 
 
@@ -39,7 +37,6 @@ def test_catalog_invalidates_old_pages():
             "append_page": {
                 "url": "https://www.shuyous.com/",
                 "content": "首页正文",
-                "links_index": [],
             }
         }
     )
@@ -67,7 +64,6 @@ def test_max_two_active_page_views():
                 "append_page": {
                     "url": f"https://example.com/p{i}",
                     "content": f"page {i}",
-                    "links_index": [],
                 }
             }
         )

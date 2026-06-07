@@ -16,7 +16,7 @@ def build_crawl_run_context(ctx: CrawlAgentContext) -> str:
         "## 任务",
         f"- 入口 URL: {ctx.entry_url}",
         f"- 用户目标: {ctx.goal}",
-        f"- 章节上限: {ctx.max_chapters}",
+        f"- 章节上限: {'不限' if ctx.max_chapters <= 0 else ctx.max_chapters}",
         f"- Stealth: {'开' if ctx.use_stealth else '关'}",
         "## 当前进度",
         json.dumps(ctx.snapshot(), ensure_ascii=False),
@@ -36,8 +36,8 @@ def build_crawl_run_context(ctx: CrawlAgentContext) -> str:
     parts.extend(
         [
             "## 决策要求",
-            "- 下一 URL 必须来自上方页内链接（锚文本 → URL），禁止凭空拼路径",
-            "- 你负责读正文决策；FetchPage 收集材料 → QueueChapters 登记章节 → InitNovel → SaveQueuedChapters",
+            "- 下一 URL 必须来自上方 HTML 中的真实 href，禁止凭空拼路径",
+            "- FetchPage 无状态；需点击/搜索时用 BrowserOpen + BrowserClick",
             "- 同一工具连续失败两次：换策略或 FailJob，不要重复相同参数",
             "- 完成：CompleteJob；无法完成：FailJob",
         ]

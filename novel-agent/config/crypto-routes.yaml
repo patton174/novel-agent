@@ -152,6 +152,40 @@ routes:
   - method: PUT
     path: /api/content/crm/crawl/sites/{siteId}
 
+  # catalog CRM
+  - method: GET
+    path: /api/content/crm/catalog/novels/page
+  - method: GET
+    path: /api/content/crm/catalog/novels/incomplete
+  - method: GET
+    path: /api/content/crm/catalog/novels/{catalogNovelId}
+  - method: GET
+    path: /api/content/crm/catalog/novels/{catalogNovelId}/progress
+  - method: GET
+    path: /api/content/crm/catalog/novels/{catalogNovelId}/chapters
+  - method: GET
+    path: /api/content/crm/catalog/novels/{catalogNovelId}/chapters/{chapterId}
+  - method: PUT
+    path: /api/content/crm/catalog/novels/{catalogNovelId}/chapters/{chapterId}
+  - method: DELETE
+    path: /api/content/crm/catalog/novels/{catalogNovelId}/chapters/{chapterId}
+  - method: PUT
+    path: /api/content/crm/catalog/novels/{catalogNovelId}
+  - method: PUT
+    path: /api/content/crm/catalog/novels/{catalogNovelId}/cover
+  - method: DELETE
+    path: /api/content/crm/catalog/novels/{catalogNovelId}
+
+  # crawl orchestrator
+  - method: GET
+    path: /api/content/crm/crawl/orchestrator
+  - method: PUT
+    path: /api/content/crm/crawl/orchestrator/goal
+  - method: POST
+    path: /api/content/crm/crawl/orchestrator/wake
+  - method: POST
+    path: /api/content/crm/crawl/orchestrator/clear
+
   # agent / pyai
   - method: POST
     path: /api/agent/chat/stream

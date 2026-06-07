@@ -85,9 +85,11 @@ jobs:
           filters: |
             gateway:
               - 'novel-agent/agent-gateway/**'
+              - 'novel-agent/config/crypto-routes.yaml'
             auth:
               - 'novel-agent/agent-auth/**'
               - 'novel-agent/agent-common/agent-common-mail/**'
+              - 'novel-agent/config/crypto-routes.yaml'
             pyai:
               - 'novel-agent/agent-pyai/**'
             content:
@@ -104,6 +106,7 @@ jobs:
               - 'novel-agent/agent-auth/**'
               - 'novel-agent/agent-gateway/**'
               - 'novel-agent/agent-common/agent-common-security/**'
+              - 'novel-agent/config/crypto-routes.yaml'
               - 'frontend/src/security/**'
               - 'frontend/src/utils/authApi.ts'
             deploy_ci:
