@@ -321,4 +321,11 @@ if want "${CHANGED_AUTH:-false}" || want "${CHANGED_GATEWAY:-false}" || want "${
   sync_crypto_register
 fi
 
+if want "${CHANGED_FRONTEND:-false}" || want "${WORKER_INFRA_SYNC:-false}"; then
+  echo "[ci-hot] sync nginx /g/ routes (MW entry + Worker frontend)"
+  bash "$SCRIPT_DIR/sync-nginx-g-routes.sh" || {
+    echo "[ci-hot] WARN: sync-nginx-g-routes 失败，加密 API 可能 405"
+  }
+fi
+
 echo "[ci-hot] 全部热部署完成"

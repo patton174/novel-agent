@@ -31,6 +31,20 @@ server {
         proxy_buffering off;
     }
 
+    # 动态 API 入口（路径 AES/base64url，前缀每日轮换）
+    location /g/ {
+        proxy_pass http://agent-gateway:8080;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Authorization $http_authorization;
+        proxy_read_timeout 3600s;
+        proxy_send_timeout 3600s;
+        proxy_buffering off;
+    }
+
     # 静态页 / SPA → Worker 前端
     location / {
         proxy_pass http://worker_frontend;
