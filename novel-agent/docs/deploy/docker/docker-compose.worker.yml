@@ -95,12 +95,12 @@ services:
     restart: unless-stopped
     environment:
       <<: *java-env
-      JAVA_OPTS: ${JAVA_OPTS_CONTENT:--Xms64m -Xmx224m -XX:MaxMetaspaceSize=96m -XX:+UseSerialGC -Dfile.encoding=UTF-8}
+      JAVA_OPTS: ${JAVA_OPTS_CONTENT:--Xms96m -Xmx240m -XX:MaxMetaspaceSize=144m -Dfile.encoding=UTF-8}
       SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
       SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
       SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
       AGENT_PYTHON_BASE_URL: ${AGENT_PYTHON_BASE_URL}
-    mem_limit: ${JAVA_MEM_LIMIT_CONTENT:-352m}
+    mem_limit: ${JAVA_MEM_LIMIT_CONTENT:-384m}
     ports:
       - "8091:8091"
     networks:

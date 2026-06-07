@@ -160,7 +160,7 @@ if ! docker compose version >/dev/null 2>&1; then COMPOSE="docker-compose"; fi
 CID=\$(\$COMPOSE -f '$COMPOSE_FILE' --env-file '$ENV_REL' ps -q '$COMPOSE_SVC')
 if [[ "${WORKER_JAVA_RECREATE:-0}" == "1" && '$TARGET' == 'worker' ]]; then
   echo "[deploy-fast] WORKER_JAVA_RECREATE=1 → compose recreate $COMPOSE_SVC（应用新 env/mem_limit）"
-  \$COMPOSE -f '$COMPOSE_FILE' --env-file '$ENV_REL' up -d --force-recreate '$COMPOSE_SVC'
+  \$COMPOSE -f '$COMPOSE_FILE' --env-file '$ENV_REL' up -d --force-recreate --no-deps '$COMPOSE_SVC'
   CID=\$(\$COMPOSE -f '$COMPOSE_FILE' --env-file '$ENV_REL' ps -q '$COMPOSE_SVC')
 fi
 if [[ -z "\$CID" ]]; then

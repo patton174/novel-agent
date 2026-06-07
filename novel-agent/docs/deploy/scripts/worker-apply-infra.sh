@@ -17,12 +17,12 @@ upsert() {
   fi
 }
 
-upsert "$ENV_WK" JAVA_OPTS_CONTENT "-Xms64m -Xmx224m -XX:MaxMetaspaceSize=96m -XX:+UseSerialGC -Dfile.encoding=UTF-8"
+upsert "$ENV_WK" JAVA_OPTS_CONTENT "-Xms96m -Xmx240m -XX:MaxMetaspaceSize=144m -Dfile.encoding=UTF-8"
 upsert "$ENV_WK" JAVA_OPTS_PYAI "-Xms64m -Xmx176m -XX:MaxMetaspaceSize=96m -XX:+UseSerialGC -Dfile.encoding=UTF-8"
 upsert "$ENV_WK" JAVA_OPTS_CONSUMER "-Xms64m -Xmx152m -XX:MaxMetaspaceSize=80m -XX:+UseSerialGC -Dfile.encoding=UTF-8"
 upsert "$ENV_WK" PYTHON_MEM_LIMIT "448m"
 upsert "$ENV_WK" PYTHON_MEM_LIMIT_2 "384m"
-upsert "$ENV_WK" JAVA_MEM_LIMIT_CONTENT "352m"
+upsert "$ENV_WK" JAVA_MEM_LIMIT_CONTENT "384m"
 upsert "$ENV_WK" JAVA_MEM_LIMIT_PYAI "256m"
 upsert "$ENV_WK" JAVA_MEM_LIMIT_CONSUMER "224m"
 upsert "$ENV_WK" CRAWL_FETCH_CONCURRENCY "2"
