@@ -228,6 +228,19 @@ public class CrawlJobService {
     }
 
     @Transactional
+    public CrawlCatalogNovelEntity setCatalogCover(String jobId, String coverUrl) {
+        CrawlJobEntity job = getJob(jobId);
+        String catalogNovelId = job.getCatalogNovelId();
+        if (catalogNovelId == null || catalogNovelId.isBlank()) {
+            throw new ValidationException(ResultCode.BAD_REQUEST, "书库作品未关联，无法更新封面");
+        }
+        if (coverUrl == null || coverUrl.isBlank()) {
+            throw new ValidationException(ResultCode.BAD_REQUEST, "coverUrl 不能为空");
+        }
+        return catalogService.setCoverUrl(catalogNovelId, coverUrl.trim());
+    }
+
+    @Transactional
     public CrawlJobEntity completeJob(String jobId, String catalogNovelId, String title) {
         CrawlJobEntity entity = getJob(jobId);
         entity.setStatus(CrawlJobStatus.COMPLETED);

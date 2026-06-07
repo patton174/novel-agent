@@ -10,6 +10,7 @@ import com.novel.agent.content.service.crawl.dto.CrawlImportChapterRequest;
 import com.novel.agent.content.service.crawl.dto.CrawlJobDTO;
 import com.novel.agent.content.service.crawl.dto.CrawlProgressRequest;
 import com.novel.agent.content.service.crawl.dto.InitCatalogRequest;
+import com.novel.agent.content.service.crawl.dto.SetCatalogCoverRequest;
 import com.novel.agent.content.crawl.CrawlJobStatus;
 import com.novel.agent.content.crawl.CrawlLogLevel;
 import com.novel.agent.content.repository.CrawlJobRepository;
@@ -60,6 +61,11 @@ public class InternalCrawlBiz {
             request.sourceUrl()
         );
         return Map.of("catalogNovelId", catalog.getId());
+    }
+
+    public Map<String, Object> setCatalogCover(String jobId, SetCatalogCoverRequest request) {
+        var catalog = crawlJobService.setCatalogCover(jobId, request.coverUrl());
+        return Map.of("catalogNovelId", catalog.getId(), "coverUrl", catalog.getCoverUrl());
     }
 
     public Map<String, Object> importChapter(String jobId, CrawlImportChapterRequest request) {

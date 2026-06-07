@@ -22,6 +22,7 @@ from app.crawl_agent.tools.schemas import (
     GetJobStatusInput,
     InitNovelInput,
     QueueChaptersInput,
+    UpdateCoverUrlInput,
     SaveQueuedChaptersInput,
 )
 from app.crawl_agent.tools.tool import CrawlTool, CrawlToolResult
@@ -97,7 +98,8 @@ def _append_snapshot_to_context(snap: BrowserSnapshot) -> dict[str, Any]:
 
 
 async def _fetch_page_via_browser(ctx: CrawlAgentContext, target: str) -> CrawlToolResult:
-    snap = await _browser_session(ctx).goto(target)
+    pw_timeout = min(settings.crawl_browser_timeout_ms, 25_000)
+    snap = await _browser_session(ctx).goto(target, timeout_ms=pw_timeout)
     ctx.last_fetched_url = snap.url
     ctx.use_stealth = True
     html, payload = _snapshot_payload(snap)
@@ -146,7 +148,15 @@ async def _fetch_page_tool(ctx: CrawlAgentContext, inp: FetchPageInput) -> Crawl
     )
     if prefer_playwright:
         try:
-            return await _fetch_page_via_browser(ctx, target)
+            browser_result = await _fetch_page_via_browser(ctx, target)
+            if not browser_result.is_error:
+                return browser_result
+            await _append_log(
+                ctx,
+                "WARN",
+                "FetchPage Playwright 未成功，回退 HTTP · "
+                + browser_result.content[:180],
+            )
         except Exception as exc:
             msg = str(exc)[:300]
             await _append_log(ctx, "WARN", f"FetchPage Playwright 失败，回退 HTTP · {msg}")
@@ -531,22 +541,65 @@ async def _get_job_status_tool(ctx: CrawlAgentContext, _inp: GetJobStatusInput) 
     return CrawlToolResult(content=json.dumps(snap, ensure_ascii=False))
 
 
-async def _complete_job_tool(ctx: CrawlAgentContext, inp: CompleteJobInput) -> CrawlToolResult:
+async def _update_cover_url_tool(ctx: CrawlAgentContext, inp: UpdateCoverUrlInput) -> CrawlToolResult:
+    cover = inp.cover_url.strip()
+    if not cover.lower().startswith(("http://", "https://")):
+        return CrawlToolResult(
+            content=_json_err("cover_url 必须是 http(s) 绝对地址"),
+            is_error=True,
+        )
+
     catalog_id = ctx.catalog_novel_id
-    if not catalog_id:
+    if not catalog_id and ctx.job_id != "preview":
         job = await ctx.client.get_job(ctx.job_id)
         catalog_id = str(job.get("catalogNovelId") or "")
     if not catalog_id:
-        return CrawlToolResult(content=_json_err("尚未入库任何章节，无法 CompleteJob"), is_error=True)
-    await ctx.client.complete_job(
-        ctx.job_id,
-        catalog_novel_id=catalog_id,
-        title=ctx.novel_title or "未命名",
+        return CrawlToolResult(
+            content=_json_err(
+                "任务未关联书库 catalogNovelId，无法 UpdateCoverUrl。"
+                "全书入库请先 InitNovel；补封面任务需主编排 Create 时传入 catalog_novel_id"
+            ),
+            is_error=True,
+        )
+
+    if ctx.job_id != "preview":
+        novel = await ctx.client.set_catalog_cover_by_id(catalog_id, cover_url=cover)
+        ctx.catalog_novel_id = str(novel.get("id") or catalog_id)
+        try:
+            from app.crawl_agent.catalog_context import fetch_catalog_snapshot
+
+            ctx.catalog_snapshot = await fetch_catalog_snapshot(ctx.client, ctx.catalog_novel_id)
+        except Exception:
+            pass
+    await _append_log(ctx, "SUCCESS", f"UpdateCoverUrl · {cover[:160]}")
+    return CrawlToolResult(
+        content=_json_ok(catalog_novel_id=ctx.catalog_novel_id, cover_url=cover),
     )
-    await _append_log(ctx, "SUCCESS", inp.message)
+
+
+async def _complete_job_tool(ctx: CrawlAgentContext, inp: CompleteJobInput) -> CrawlToolResult:
+    catalog_id = ctx.catalog_novel_id
+    if not catalog_id and ctx.job_id != "preview":
+        job = await ctx.client.get_job(ctx.job_id)
+        catalog_id = str(job.get("catalogNovelId") or "")
+
+    if ctx.chapters_saved > 0 and not catalog_id:
+        return CrawlToolResult(
+            content=_json_err("已入库章节但未关联书库，请先 InitNovel"),
+            is_error=True,
+        )
+
+    title = (ctx.novel_title or inp.message or ctx.goal or "完成").strip()[:200]
+    if ctx.job_id != "preview":
+        await ctx.client.complete_job(
+            ctx.job_id,
+            catalog_novel_id=catalog_id,
+            title=title,
+        )
+    await _append_log(ctx, "SUCCESS", inp.message or title)
     ctx.end_success = True
-    ctx.end_message = inp.message
-    return CrawlToolResult(content=_json_ok(message=inp.message), end_run=True)
+    ctx.end_message = inp.message or title
+    return CrawlToolResult(content=_json_ok(message=ctx.end_message), end_run=True)
 
 
 async def _fail_job_tool(ctx: CrawlAgentContext, inp: FailJobInput) -> CrawlToolResult:
@@ -610,10 +663,22 @@ def register_crawl_tools() -> None:
     )
     register_tool(
         CrawlTool(
+            name="UpdateCoverUrl",
+            description=(
+                "将封面图 URL 写入任务已关联的书库作品（catalogNovelId）。"
+                "cover_url 须来自 RUN_CONTEXT 页面中的 img/og:image。"
+                "仅补封面时用；不要与 QueueChapters 混用。"
+            ),
+            input_model=UpdateCoverUrlInput,
+            call=_update_cover_url_tool,
+        )
+    )
+    register_tool(
+        CrawlTool(
             name="QueueChapters",
             description=(
-                "登记你从 RUN_CONTEXT 正文中读到的章节列表（title/url/sort_order）。"
-                "不会替你解析网站；必须先 FetchPage 读到目录再提交。"
+                "登记你从 RUN_CONTEXT 读到的章节列表（title/url/sort_order）。"
+                "仅当子目标要求抓书/入库章节时使用。"
             ),
             input_model=QueueChaptersInput,
             call=_queue_chapters_tool,
@@ -622,7 +687,7 @@ def register_crawl_tools() -> None:
     register_tool(
         CrawlTool(
             name="InitNovel",
-            description="初始化公共书库作品（书名/作者来自你已读页面；Save 之前调用一次）。",
+            description="初始化公共书库作品。全书入库流程中使用；补封面勿用。",
             input_model=InitNovelInput,
             call=_init_novel_tool,
         )
@@ -656,7 +721,7 @@ def register_crawl_tools() -> None:
     register_tool(
         CrawlTool(
             name="CompleteJob",
-            description="全部目标完成后结束任务（成功）。",
+            description="子目标达成后结束。message 写清结果（如发现类任务写明找到的 URL）。",
             input_model=CompleteJobInput,
             call=_complete_job_tool,
         )
@@ -673,3 +738,5 @@ def register_crawl_tools() -> None:
 
 # side-effect: register on import
 register_crawl_tools()
+
+from app.crawl_agent.tools import catalog_impl  # noqa: F401 — register catalog CRUD

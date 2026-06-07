@@ -46,6 +46,7 @@ class CrawlAgentContext:
     end_run: bool = False
     end_success: bool = False
     end_message: str = ""
+    catalog_snapshot: dict[str, Any] | None = None
 
     def snapshot(self) -> dict[str, Any]:
         return {

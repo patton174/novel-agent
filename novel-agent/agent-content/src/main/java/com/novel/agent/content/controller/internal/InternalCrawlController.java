@@ -6,6 +6,7 @@ import com.novel.agent.content.service.crawl.dto.CrawlImportChapterRequest;
 import com.novel.agent.content.service.crawl.dto.CrawlJobDTO;
 import com.novel.agent.content.service.crawl.dto.CrawlProgressRequest;
 import com.novel.agent.content.service.crawl.dto.InitCatalogRequest;
+import com.novel.agent.content.service.crawl.dto.SetCatalogCoverRequest;
 import com.novel.agent.content.service.internal.InternalCrawlBiz;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -44,6 +45,14 @@ public class InternalCrawlController {
         @Valid @RequestBody InitCatalogRequest request
     ) {
         return biz.initCatalog(jobId, request);
+    }
+
+    @PostMapping("/{jobId}/catalog/cover")
+    public Map<String, Object> setCatalogCover(
+        @PathVariable String jobId,
+        @Valid @RequestBody SetCatalogCoverRequest request
+    ) {
+        return biz.setCatalogCover(jobId, request);
     }
 
     @PostMapping("/{jobId}/chapters")

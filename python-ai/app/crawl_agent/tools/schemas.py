@@ -98,7 +98,15 @@ class GetJobStatusInput(BaseModel):
 
 
 class CompleteJobInput(BaseModel):
-    message: str = Field(default="爬虫任务完成")
+    message: str = Field(default="爬虫任务完成", description="完成说明；发现类任务在此写明找到的 URL")
+
+
+class UpdateCoverUrlInput(BaseModel):
+    cover_url: str = Field(
+        ...,
+        min_length=8,
+        description="封面图绝对 URL（须来自 RUN_CONTEXT 中 img/src 或 og:image）",
+    )
 
 
 class FailJobInput(BaseModel):

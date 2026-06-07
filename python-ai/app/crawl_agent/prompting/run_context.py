@@ -6,6 +6,7 @@ import json
 
 from langchain_core.messages import HumanMessage
 
+from app.crawl_agent.catalog_context import format_catalog_snapshot
 from app.crawl_agent.context import CrawlAgentContext
 from app.crawl_agent.memory import CrawlContextMemory
 
@@ -22,6 +23,13 @@ def build_crawl_run_context(ctx: CrawlAgentContext) -> str:
         json.dumps(ctx.snapshot(), ensure_ascii=False),
     ]
 
+    parts.extend(
+        [
+            "## 书库快照（已关联作品；改书库/章节前先看这里）",
+            format_catalog_snapshot(ctx.catalog_snapshot),
+        ]
+    )
+
     sections = memory.format_sections()
     if sections:
         parts.extend(
@@ -36,10 +44,12 @@ def build_crawl_run_context(ctx: CrawlAgentContext) -> str:
     parts.extend(
         [
             "## 决策要求",
-            "- 下一 URL 必须来自上方 HTML 中的真实 href，禁止凭空拼路径",
-            "- FetchPage 无状态；需点击/搜索时用 BrowserOpen + BrowserClick",
-            "- 同一工具连续失败两次：换策略或 FailJob，不要重复相同参数",
-            "- 完成：CompleteJob；无法完成：FailJob",
+            "- 以子目标选工具；书库操作用 List/Get/Update/Add/Delete Catalog*",
+            "- 补封面：FetchPage 找 img → UpdateCoverUrl 或 UpdateCatalogNovel(cover_url=…)",
+            "- 改章节：ListCatalogChapters 拿 id → UpdateCatalogChapter / DeleteCatalogChapter",
+            "- 从网页批量抓书：QueueChapters → InitNovel → SaveQueuedChapters",
+            "- 下一 URL 须来自 HTML 真实 href",
+            "- 同一工具连续失败两次：换策略或 FailJob",
         ]
     )
     return "\n\n".join(parts)

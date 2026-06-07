@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from typing import Any
 from urllib.parse import urlparse
 
@@ -154,6 +155,15 @@ async def run_orchestrator_tool(
                     {
                         "ok": False,
                         "error": f"sourceUrl 已有活跃任务，禁止重复派发: {source_url}",
+                    }
+                )
+            if re.search(r"封面|cover", sub_goal, re.I) and not str(
+                args.get("catalog_novel_id") or ""
+            ).strip():
+                return json.dumps(
+                    {
+                        "ok": False,
+                        "error": "补封面 sub_goal 必须同时传 catalog_novel_id（来自 catalog.missingCover）",
                     }
                 )
             cfg = {

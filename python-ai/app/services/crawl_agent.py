@@ -6,6 +6,7 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any
 
+from app.crawl_agent.catalog_context import fetch_catalog_snapshot
 from app.crawl_agent.context import CrawlAgentContext
 from app.crawl_agent.loop import CrawlLoopResult, run_crawl_tool_loop
 from app.crawl_agent.runtime_state import apply_runtime_to_context, parse_config_json
@@ -105,6 +106,12 @@ async def run_crawl_agent(
     if site_config:
         config = {**config, **options_from_config(site_config)}
     queue_restored = apply_runtime_to_context(ctx, config.get("_runtime"))
+
+    if ctx.catalog_novel_id and ctx.job_id != "preview":
+        try:
+            ctx.catalog_snapshot = await fetch_catalog_snapshot(client, ctx.catalog_novel_id)
+        except Exception as exc:
+            logger.debug("catalog snapshot preload failed jobId=%s: %s", job_id, exc)
 
     await client.update_progress(job_id, status="RUNNING")
     if queue_restored:

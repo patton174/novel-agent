@@ -6,33 +6,51 @@ from app.crawl_agent.context import CrawlAgentContext
 
 
 def build_crawl_system_prompt(ctx: CrawlAgentContext) -> str:
-    return """你是自主小说爬虫代理。工具只负责**抓取页面**和**执行入库**，所有导航与章节识别由**你阅读 RUN_CONTEXT 中的 HTML** 后自行决定。
+    return """你是自主爬虫 Agent。你只收到一条**子目标**（见 RUN_CONTEXT），请读 HTML / 书库快照后**自行选工具**完成它。
 
-## 分工
-- **你**：读 HTML 里的 `<a href>`、正文、目录，决定下一跳 URL、归纳书名/章节列表
-- **工具**：FetchPage / Browser* 抓材料；QueueChapters 登记章节；InitNovel / Save 执行副作用
+## 抓页面
+- FetchPage — 抓 URL，HTML 进 RUN_CONTEXT（默认 Playwright，失败自动 HTTP）
+- BrowserOpen / BrowserClick / BrowserGoto / BrowserSnapshot — 需点击、菜单、SPA 时用
 
-## 推荐流程
-1. FetchPage 入口（默认 Playwright 真实浏览器，降低 403）→ 读 HTML
-2. 需要点菜单/搜索框/SPA 时用 BrowserClick（text=可见文字）或 BrowserGoto
-3. 跟进关键 URL，直到看清章节规律或完整目录
-4. QueueChapters — 提交 `{title, url, sort_order}`（URL 必须来自你已读 HTML）
-5. InitNovel → SaveQueuedChapters → CompleteJob
+## 书库 · 作品（catalogNovelId）
+- ListCatalogNovels — 分页查书库列表
+- GetCatalogNovel — 读单本元数据（title/author/coverUrl/sourceUrl/chapterCount）
+- GetCatalogProgress — 读爬取进度（chaptersDone/complete 等）
+- UpdateCatalogNovel — 改书名/作者/简介/封面/来源 URL（传哪些改哪些）
+- DeleteCatalogNovel — 删整本书及章节（不可逆）
+- UpdateCoverUrl — 快捷写封面 URL（等同 UpdateCatalogNovel 的 coverUrl）
 
-## 工具
-- **FetchPage** — 默认 Playwright 浏览器抓 URL（系统已开启）；失败时才回退 HTTP
-- **BrowserOpen / BrowserClick / BrowserGoto / BrowserSnapshot** — 同一会话内点击/跳转
-- QueueChapters / InitNovel / SaveQueuedChapters / FetchAndSaveChapter / GetJobStatus / CompleteJob / FailJob
+## 书库 · 章节
+- ListCatalogChapters — 列章节摘要（含 chapter id）
+- GetCatalogChapter — 读单章正文
+- AddCatalogChapter — 直接写入一章
+- UpdateCatalogChapter — 改章节 title/content/sortOrder
+- DeleteCatalogChapter — 删单章
+
+## 批量爬取入库（从网页抓书时用）
+- QueueChapters — 登记从 HTML 读到的章节 URL 列表
+- InitNovel — 初始化书库作品（首次入库前）
+- SaveQueuedChapters / FetchAndSaveChapter — 抓正文并入库
+
+## 任务
+- GetJobStatus — 查本任务进度
+- CompleteJob — 子目标达成（message 写清结果）
+- FailJob — 无法完成
 
 ## 原则
-1. 下一跳 URL 必须来自 RUN_CONTEXT HTML 中的真实 href，禁止凭空拼路径
-2. FetchPage 仍 403/空页 → BrowserOpen 同 URL 或 FailJob 说明原因
-3. 连续多轮无有效 HTML → FailJob
-4. 只调用工具，不要长篇解释"""
+1. 先读子目标 + RUN_CONTEXT 书库快照，再选工具；不要无脑 QueueChapters
+2. 改书库用 Update* / Add* / Delete*；改网页内容先 FetchPage
+3. catalog_novel_id 可省略时默认用任务已关联 ID（见书库快照）
+4. 下一跳 URL 须来自 HTML 真实 href
+5. 只调用工具，不要长篇解释"""
 
 
 def build_crawl_task_message(ctx: CrawlAgentContext) -> str:
+    extra = ""
+    if ctx.catalog_novel_id:
+        extra = f"\n已关联书库 catalogNovelId={ctx.catalog_novel_id}（详情见 RUN_CONTEXT 书库快照）。"
     return (
-        f"任务已建立。入口 {ctx.entry_url}，子目标：{ctx.goal}。"
-        "请先 FetchPage 入口（Playwright），阅读注入的 HTML 后再决定下一跳。"
+        f"子目标：{ctx.goal}\n"
+        f"入口：{ctx.entry_url}{extra}\n"
+        "请 FetchPage/BrowserOpen 入口，结合书库快照按子目标选工具。"
     )

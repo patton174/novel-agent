@@ -105,6 +105,15 @@ class CrawlContentClient:
         resp.raise_for_status()
         return resp.json()
 
+    async def set_catalog_cover(self, job_id: str, *, cover_url: str) -> dict[str, Any]:
+        resp = await self._client.post(
+            f"{self._base}/internal/crawl/jobs/{job_id}/catalog/cover",
+            headers=self._headers(),
+            json={"coverUrl": cover_url},
+        )
+        resp.raise_for_status()
+        return resp.json()
+
     async def complete_job(self, job_id: str, *, catalog_novel_id: str, title: str) -> None:
         await self._client.post(
             f"{self._base}/internal/crawl/jobs/{job_id}/complete",
@@ -137,3 +146,168 @@ class CrawlContentClient:
             json=runtime,
         )
         resp.raise_for_status()
+
+    # --- 书库 catalog CRUD（internal/crawl/catalog）---
+
+    async def page_catalog_novels(
+        self,
+        *,
+        page_current: int = 1,
+        page_size: int = 20,
+    ) -> dict[str, Any]:
+        resp = await self._client.get(
+            f"{self._base}/internal/crawl/catalog/novels",
+            headers=self._headers(),
+            params={"pageCurrent": page_current, "pageSize": page_size},
+        )
+        resp.raise_for_status()
+        return resp.json()
+
+    async def get_catalog_novel(self, catalog_novel_id: str) -> dict[str, Any]:
+        resp = await self._client.get(
+            f"{self._base}/internal/crawl/catalog/novels/{catalog_novel_id}",
+            headers=self._headers(),
+        )
+        resp.raise_for_status()
+        return resp.json()
+
+    async def get_catalog_progress(self, catalog_novel_id: str) -> dict[str, Any]:
+        resp = await self._client.get(
+            f"{self._base}/internal/crawl/catalog/novels/{catalog_novel_id}/progress",
+            headers=self._headers(),
+        )
+        resp.raise_for_status()
+        return resp.json()
+
+    async def update_catalog_novel(
+        self,
+        catalog_novel_id: str,
+        *,
+        title: str | None = None,
+        author: str | None = None,
+        description: str | None = None,
+        cover_url: str | None = None,
+        source_url: str | None = None,
+    ) -> dict[str, Any]:
+        payload: dict[str, Any] = {}
+        if title is not None:
+            payload["title"] = title
+        if author is not None:
+            payload["author"] = author
+        if description is not None:
+            payload["description"] = description
+        if cover_url is not None:
+            payload["coverUrl"] = cover_url
+        if source_url is not None:
+            payload["sourceUrl"] = source_url
+        resp = await self._client.put(
+            f"{self._base}/internal/crawl/catalog/novels/{catalog_novel_id}",
+            headers=self._headers(),
+            json=payload,
+        )
+        resp.raise_for_status()
+        return resp.json()
+
+    async def delete_catalog_novel(self, catalog_novel_id: str) -> dict[str, Any]:
+        resp = await self._client.delete(
+            f"{self._base}/internal/crawl/catalog/novels/{catalog_novel_id}",
+            headers=self._headers(),
+        )
+        resp.raise_for_status()
+        return resp.json()
+
+    async def set_catalog_cover_by_id(
+        self,
+        catalog_novel_id: str,
+        *,
+        cover_url: str,
+    ) -> dict[str, Any]:
+        resp = await self._client.post(
+            f"{self._base}/internal/crawl/catalog/novels/{catalog_novel_id}/cover",
+            headers=self._headers(),
+            json={"coverUrl": cover_url},
+        )
+        resp.raise_for_status()
+        return resp.json()
+
+    async def list_catalog_chapters(self, catalog_novel_id: str) -> list[dict[str, Any]]:
+        resp = await self._client.get(
+            f"{self._base}/internal/crawl/catalog/novels/{catalog_novel_id}/chapters",
+            headers=self._headers(),
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        return data if isinstance(data, list) else []
+
+    async def get_catalog_chapter(
+        self,
+        catalog_novel_id: str,
+        chapter_id: str,
+    ) -> dict[str, Any]:
+        resp = await self._client.get(
+            f"{self._base}/internal/crawl/catalog/novels/{catalog_novel_id}/chapters/{chapter_id}",
+            headers=self._headers(),
+        )
+        resp.raise_for_status()
+        return resp.json()
+
+    async def add_catalog_chapter(
+        self,
+        catalog_novel_id: str,
+        *,
+        title: str,
+        content: str = "",
+        sort_order: int,
+        source_url: str = "",
+    ) -> dict[str, Any]:
+        resp = await self._client.post(
+            f"{self._base}/internal/crawl/catalog/novels/{catalog_novel_id}/chapters",
+            headers=self._headers(),
+            json={
+                "title": title,
+                "content": content,
+                "sortOrder": sort_order,
+                "sourceUrl": source_url,
+            },
+        )
+        resp.raise_for_status()
+        return resp.json()
+
+    async def update_catalog_chapter(
+        self,
+        catalog_novel_id: str,
+        chapter_id: str,
+        *,
+        title: str | None = None,
+        content: str | None = None,
+        sort_order: int | None = None,
+        source_url: str | None = None,
+    ) -> dict[str, Any]:
+        payload: dict[str, Any] = {}
+        if title is not None:
+            payload["title"] = title
+        if content is not None:
+            payload["content"] = content
+        if sort_order is not None:
+            payload["sortOrder"] = sort_order
+        if source_url is not None:
+            payload["sourceUrl"] = source_url
+        resp = await self._client.put(
+            f"{self._base}/internal/crawl/catalog/novels/{catalog_novel_id}/chapters/{chapter_id}",
+            headers=self._headers(),
+            json=payload,
+        )
+        resp.raise_for_status()
+        return resp.json()
+
+    async def delete_catalog_chapter(
+        self,
+        catalog_novel_id: str,
+        chapter_id: str,
+    ) -> dict[str, Any]:
+        resp = await self._client.delete(
+            f"{self._base}/internal/crawl/catalog/novels/{catalog_novel_id}/chapters/{chapter_id}",
+            headers=self._headers(),
+        )
+        resp.raise_for_status()
+        return resp.json()
