@@ -1,6 +1,7 @@
 package com.novel.agent.content.service.internal;
 
 import com.novel.agent.content.entity.CrawlCatalogNovelEntity;
+import com.novel.agent.content.entity.CrawlJobEntity;
 import com.novel.agent.content.service.crawl.CrawlJobLogService;
 import com.novel.agent.content.service.crawl.CrawlJobService;
 import com.novel.agent.content.service.crawl.PythonCrawlClient;
