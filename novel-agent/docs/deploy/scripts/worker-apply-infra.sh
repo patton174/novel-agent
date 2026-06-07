@@ -17,12 +17,12 @@ upsert() {
   fi
 }
 
-upsert "$ENV_WK" JAVA_OPTS_CONTENT "-Xms64m -Xmx200m -XX:MaxMetaspaceSize=96m -XX:+UseSerialGC -Dfile.encoding=UTF-8"
+upsert "$ENV_WK" JAVA_OPTS_CONTENT "-Xms64m -Xmx224m -XX:MaxMetaspaceSize=96m -XX:+UseSerialGC -Dfile.encoding=UTF-8"
 upsert "$ENV_WK" JAVA_OPTS_PYAI "-Xms64m -Xmx176m -XX:MaxMetaspaceSize=96m -XX:+UseSerialGC -Dfile.encoding=UTF-8"
 upsert "$ENV_WK" JAVA_OPTS_CONSUMER "-Xms64m -Xmx152m -XX:MaxMetaspaceSize=80m -XX:+UseSerialGC -Dfile.encoding=UTF-8"
 upsert "$ENV_WK" PYTHON_MEM_LIMIT "448m"
 upsert "$ENV_WK" PYTHON_MEM_LIMIT_2 "384m"
-upsert "$ENV_WK" JAVA_MEM_LIMIT_CONTENT "320m"
+upsert "$ENV_WK" JAVA_MEM_LIMIT_CONTENT "352m"
 upsert "$ENV_WK" JAVA_MEM_LIMIT_PYAI "256m"
 upsert "$ENV_WK" JAVA_MEM_LIMIT_CONSUMER "224m"
 upsert "$ENV_WK" CRAWL_FETCH_CONCURRENCY "2"
@@ -37,8 +37,23 @@ COMPOSE="docker compose"
 if ! docker compose version >/dev/null 2>&1; then COMPOSE="docker-compose"; fi
 
 $COMPOSE -f "$CF" --env-file "$ENV_WK" up -d python-lb
-# Java 服务在 ci-hot jar 热替换之前 recreate，以应用新 JAVA_OPTS / AGENT_PYTHON_BASE_URL
-$COMPOSE -f "$CF" --env-file "$ENV_WK" up -d --force-recreate agent-content agent-consumer agent-pyai
 $COMPOSE -f "$CF" --env-file "$ENV_WK" up -d --force-recreate python-ai python-ai-2
+
+wait_http() {
+  local url="$1" label="$2" max="${3:-60}"
+  local i code
+  for i in $(seq 1 "$max"); do
+    code=$(curl -s -o /dev/null -w '%{http_code}' --connect-timeout 2 "$url" 2>/dev/null || echo 000)
+    if [[ "$code" =~ ^[0-9]{3}$ && "$code" != "000" && "$code" != "404" ]]; then
+      echo "[worker-apply-infra] $label ready (HTTP $code, attempt $i)"
+      return 0
+    fi
+    sleep 2
+  done
+  echo "[worker-apply-infra] WARN: $label not ready after ${max} attempts"
+  return 0
+}
+
+wait_http "http://127.0.0.1:8000/api/health" "python-ai-1" 40
 
 echo "[worker-apply-infra] done"

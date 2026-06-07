@@ -158,6 +158,11 @@ cd '$REMOTE_DIR'
 COMPOSE="docker compose"
 if ! docker compose version >/dev/null 2>&1; then COMPOSE="docker-compose"; fi
 CID=\$(\$COMPOSE -f '$COMPOSE_FILE' --env-file '$ENV_REL' ps -q '$COMPOSE_SVC')
+if [[ "${WORKER_JAVA_RECREATE:-0}" == "1" && '$TARGET' == 'worker' ]]; then
+  echo "[deploy-fast] WORKER_JAVA_RECREATE=1 → compose recreate $COMPOSE_SVC（应用新 env/mem_limit）"
+  \$COMPOSE -f '$COMPOSE_FILE' --env-file '$ENV_REL' up -d --force-recreate '$COMPOSE_SVC'
+  CID=\$(\$COMPOSE -f '$COMPOSE_FILE' --env-file '$ENV_REL' ps -q '$COMPOSE_SVC')
+fi
 if [[ -z "\$CID" ]]; then
   echo "[deploy-fast] 容器未运行，仅 up $COMPOSE_SVC"
   \$COMPOSE -f '$COMPOSE_FILE' --env-file '$ENV_REL' up -d '$COMPOSE_SVC'
@@ -170,7 +175,15 @@ docker cp '$REMOTE_JAR' "\$CID:/app/app.jar"
 rm -f '$REMOTE_JAR'
 docker restart "\$CID"
 echo "[deploy-fast] 等待 $COMPOSE_SVC 启动..."
-sleep 5
+if [[ '$COMPOSE_SVC' == 'agent-content' ]]; then
+  sleep 10
+  max_attempts=120
+  sleep_sec=2
+else
+  sleep 5
+  max_attempts=45
+  sleep_sec=2
+fi
 probe_ready() {
   case '$COMPOSE_SVC' in
     agent-auth)
@@ -212,14 +225,14 @@ probe_ready() {
   esac
 }
 ok=0
-for i in \$(seq 1 45); do
+for i in \$(seq 1 \$max_attempts); do
   code=\$(probe_ready)
   if [[ "\$code" =~ ^[0-9]{3}\$ && "\$code" != "000" ]]; then
     echo "[deploy-fast] $COMPOSE_SVC 就绪 (HTTP \$code, attempt \$i)"
     ok=1
     break
   fi
-  sleep 2
+  sleep \$sleep_sec
 done
 if [[ "\$ok" -ne 1 ]]; then
   echo "[deploy-fast] ERROR: $COMPOSE_SVC 启动超时，最近日志："

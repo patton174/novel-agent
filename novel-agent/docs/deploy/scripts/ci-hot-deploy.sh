@@ -112,18 +112,15 @@ if want "${CHANGED_SECURITY:-false}"; then
   echo "[ci-hot] security paths changed → sync MW auth + gateway"
 fi
 
-# 部署脚本/workflow/Worker compose 变更：全量 Worker 热部署 + 基础设施同步
+# 部署脚本/workflow/Worker compose 变更：仅 Worker 栈 + 基础设施（不触发 MW auth/gateway）
 if want "${CHANGED_DEPLOY_CI:-false}"; then
-  echo "[ci-hot] deploy/ci changed → sync worker infra + deploy full worker stack"
-  CHANGED_AUTH=true
-  CHANGED_GATEWAY=true
+  echo "[ci-hot] deploy/ci changed → sync worker infra + deploy worker stack"
   CHANGED_CONTENT=true
   CHANGED_CONSUMER=true
   CHANGED_PYAI=true
   CHANGED_PYTHON_AI=true
-  CHANGED_FRONTEND=true
-  export MW_JAVA_REBUILD=1
   export WORKER_INFRA_SYNC=1
+  export WORKER_JAVA_RECREATE=1
 fi
 
 if want "${CHANGED_COMMON:-false}"; then
@@ -176,6 +173,9 @@ hot() {
   local svc="$1" target="$2"
   echo "[ci-hot] deploy-fast $svc $target"
   local -a hot_env=(SKIP_BUILD=1)
+  if [[ "$target" == "worker" && "$svc" =~ ^(content|consumer|pyai)$ ]]; then
+    hot_env+=(WORKER_JAVA_RECREATE="${WORKER_JAVA_RECREATE:-0}")
+  fi
   if [[ "$svc" == "frontend" && "$target" == "worker" ]]; then
     # ci-hot 已预编译 dist，避免 deploy-fast 二次 build + 二次 crypto register
     hot_env+=(SKIP_FRONTEND_BUILD=1 SKIP_CRYPTO_REGISTER=1)
