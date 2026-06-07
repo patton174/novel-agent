@@ -30,7 +30,7 @@ from app.services.crawl_browser import (
     BrowserSnapshot,
     prepare_html_for_ai,
 )
-from app.services.crawl_fetch import fetch_for_crawl, resolve_crawl_url
+from app.services.crawl_fetch import fetch_for_crawl, fetch_for_crawl_async, resolve_crawl_url
 from app.services.crawl_proxy import pick_crawl_proxy
 from app.services.crawl_scrapling import page_html
 from app.crawl_agent.limits import batch_save_count, slice_chapters
@@ -429,7 +429,7 @@ async def _save_queued_chapters_tool(
             f"[{ch.sort_order}/{total}] 抓取中 · {ch.title or ch.url}",
         )
         try:
-            page, meta = await asyncio.to_thread(fetch_for_crawl, ctx, ch.url)
+            page, meta = await fetch_for_crawl_async(ctx, ch.url)
             if meta.blocked:
                 raise ValueError(meta.hint or f"HTTP {meta.http_status}")
             extracted = await extract_chapter(page, ch.url, fallback_title=ch.title)

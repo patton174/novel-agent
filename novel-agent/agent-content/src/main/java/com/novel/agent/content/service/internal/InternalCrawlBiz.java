@@ -11,16 +11,23 @@ import com.novel.agent.content.service.crawl.dto.CrawlJobDTO;
 import com.novel.agent.content.service.crawl.dto.CrawlProgressRequest;
 import com.novel.agent.content.service.crawl.dto.InitCatalogRequest;
 import com.novel.agent.content.crawl.CrawlJobStatus;
-import com.novel.agent.content.repository.CrawlJobRepository;
 import com.novel.agent.content.crawl.CrawlLogLevel;
+import com.novel.agent.content.repository.CrawlJobRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
+import java.util.Set;
 
 @Component
 @RequiredArgsConstructor
 public class InternalCrawlBiz {
+
+    /** 占用并发槽位的状态：运行中 + 已暂停（暂停不释放槽位） */
+    private static final Set<CrawlJobStatus> ACTIVE_JOB_STATUSES = Set.of(
+        CrawlJobStatus.RUNNING,
+        CrawlJobStatus.PAUSED
+    );
 
     private final CrawlJobService crawlJobService;
     private final CrawlJobLogService crawlJobLogService;
@@ -87,8 +94,9 @@ public class InternalCrawlBiz {
         crawlJobLogService.append(jobId, level, request.message());
     }
 
+    /** RUNNING + PAUSED 均占用并发槽位 */
     public long runningJobCount() {
-        return crawlJobRepository.countByStatus(CrawlJobStatus.RUNNING);
+        return crawlJobRepository.countByStatusIn(ACTIVE_JOB_STATUSES);
     }
 
     public CrawlJobEntity pauseJob(String jobId) {

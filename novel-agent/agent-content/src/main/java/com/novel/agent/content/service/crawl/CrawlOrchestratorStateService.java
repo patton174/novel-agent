@@ -19,13 +19,19 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class CrawlOrchestratorStateService {
 
-    public static final int MAX_CONCURRENT_JOBS = 10;
+    public static final int MAX_CONCURRENT_JOBS = 3;
+
+    private static final Set<CrawlJobStatus> ACTIVE_JOB_STATUSES = Set.of(
+        CrawlJobStatus.RUNNING,
+        CrawlJobStatus.PAUSED
+    );
 
     private static final String KEY = "crawl:orchestrator:state";
     private static final String DECISIONS_KEY = "crawl:orchestrator:decisions";
@@ -40,7 +46,7 @@ public class CrawlOrchestratorStateService {
     public CrawlOrchestratorStateDTO getState() {
         String raw = redisTemplate.opsForValue().get(KEY);
         OrchestratorState state = parse(raw);
-        int running = (int) crawlJobRepository.countByStatus(CrawlJobStatus.RUNNING);
+        int running = (int) crawlJobRepository.countByStatusIn(ACTIVE_JOB_STATUSES);
         return new CrawlOrchestratorStateDTO(
             state.goal(),
             state.status(),

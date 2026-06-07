@@ -283,7 +283,7 @@ export default function CrawlerPage() {
             主编排 · {orchState?.status === 'RUNNING' ? '运行中' : '睡眠'}
           </span>
           <span className="text-sm text-muted-foreground">
-            并行 {orchState?.runningJobCount ?? 0}/{orchState?.maxConcurrentJobs ?? 10}
+            并行 {orchState?.runningJobCount ?? 0}/{orchState?.maxConcurrentJobs ?? 3}
           </span>
           {incompleteCount > 0 ? (
             <Link

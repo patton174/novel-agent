@@ -32,7 +32,7 @@ async def ListCrawlJobs(page: int = 1, size: int = 20) -> str:
 
 @tool
 async def GetRunningJobCount() -> str:
-    """当前 RUNNING 子任务数量与上限。"""
+    """当前占用并发槽位的子任务数（RUNNING+PAUSED）与上限。"""
     return ""
 
 

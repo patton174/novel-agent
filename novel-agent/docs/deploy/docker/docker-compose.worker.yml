@@ -1,5 +1,8 @@
-# Worker 机（2C2G）：Python×2 + Content + PyAI + Consumer + 前端
-# python-ai 双实例承担 LLM CPU；Java 服务内存略压缩以适配 2G
+# Worker 机（2C2G / 物理 ~1.8G）
+# 内存预算（mem_limit 合计 ~1.70G，留 ~100Mi 给 OS；Swap 作尖峰缓冲）
+#   python-ai 448m + python-ai-2 384m  — 爬虫/Chromium 主因 OOM
+#   agent-content 320m / pyai 256m / consumer 224m — JVM Xmx≈limit 的 55–65%
+#   python-lb 24m + frontend 48m
 name: novel-agent-worker
 
 x-java-env: &java-env
@@ -17,6 +20,20 @@ x-java-env: &java-env
   SPRING_RABBITMQ_PASSWORD: ${SPRING_RABBITMQ_PASSWORD}
 
 services:
+  python-lb:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    volumes:
+      - ./nginx-python-lb-worker.conf:/etc/nginx/conf.d/default.conf:ro
+    mem_limit: 24m
+    networks:
+      - novel-net
+    depends_on:
+      python-ai:
+        condition: service_healthy
+      python-ai-2:
+        condition: service_healthy
+
   python-ai:
     build:
       context: ../../../../
@@ -28,7 +45,9 @@ services:
     environment:
       LOG_LEVEL: ${PYTHON_LOG_LEVEL:-INFO}
       CONTENT_BASE_URL: http://agent-content:8091
-    mem_limit: ${PYTHON_MEM_LIMIT:-512m}
+      CRAWL_FETCH_CONCURRENCY: ${CRAWL_FETCH_CONCURRENCY:-2}
+      CRAWL_BROWSER_CONCURRENCY: ${CRAWL_BROWSER_CONCURRENCY:-1}
+    mem_limit: ${PYTHON_MEM_LIMIT:-448m}
     ports:
       - "8000:8000"
     networks:
@@ -48,7 +67,9 @@ services:
     environment:
       LOG_LEVEL: ${PYTHON_LOG_LEVEL:-INFO}
       CONTENT_BASE_URL: http://agent-content:8091
-    mem_limit: ${PYTHON_MEM_LIMIT_2:-512m}
+      CRAWL_FETCH_CONCURRENCY: ${CRAWL_FETCH_CONCURRENCY:-2}
+      CRAWL_BROWSER_CONCURRENCY: ${CRAWL_BROWSER_CONCURRENCY:-1}
+    mem_limit: ${PYTHON_MEM_LIMIT_2:-384m}
     ports:
       - "8001:8000"
     networks:
@@ -74,42 +95,18 @@ services:
     restart: unless-stopped
     environment:
       <<: *java-env
-      JAVA_OPTS: ${JAVA_OPTS_CONTENT:--Xms96m -Xmx256m -Dfile.encoding=UTF-8}
+      JAVA_OPTS: ${JAVA_OPTS_CONTENT:--Xms64m -Xmx200m -XX:MaxMetaspaceSize=96m -XX:+UseSerialGC -Dfile.encoding=UTF-8}
       SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
       SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
       SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
       AGENT_PYTHON_BASE_URL: ${AGENT_PYTHON_BASE_URL}
-    mem_limit: ${JAVA_MEM_LIMIT_CONTENT:-384m}
+    mem_limit: ${JAVA_MEM_LIMIT_CONTENT:-320m}
     ports:
       - "8091:8091"
     networks:
       - novel-net
     depends_on:
-      python-ai:
-        condition: service_started
-
-  agent-pyai:
-    build:
-      context: ../../../../
-      dockerfile: novel-agent/docs/deploy/docker/Dockerfile.java
-      args:
-        MODULE: agent-pyai
-        JAR: agent-pyai-1.0.0-SNAPSHOT.jar
-    image: novel-agent/pyai:latest
-    restart: unless-stopped
-    environment:
-      <<: *java-env
-      JAVA_OPTS: ${JAVA_OPTS_PYAI:--Xms96m -Xmx256m -Dfile.encoding=UTF-8}
-      SPRING_MAIN_WEB_APPLICATION_TYPE: reactive
-      AGENT_PYTHON_BASE_URL: ${AGENT_PYTHON_BASE_URL}
-      AGENT_CONTENT_BASE_URL: ${AGENT_CONTENT_BASE_URL}
-    mem_limit: ${JAVA_MEM_LIMIT_PYAI:-288m}
-    ports:
-      - "8082:8082"
-    networks:
-      - novel-net
-    depends_on:
-      agent-content:
+      python-lb:
         condition: service_started
 
   agent-consumer:
@@ -123,13 +120,42 @@ services:
     restart: unless-stopped
     environment:
       <<: *java-env
-      JAVA_OPTS: ${JAVA_OPTS_CONSUMER:--Xms96m -Xmx192m -Dfile.encoding=UTF-8}
+      JAVA_OPTS: ${JAVA_OPTS_CONSUMER:--Xms64m -Xmx152m -XX:MaxMetaspaceSize=80m -XX:+UseSerialGC -Dfile.encoding=UTF-8}
+      AGENT_PYTHON_BASE_URL: ${AGENT_PYTHON_BASE_URL}
       AGENT_CONTENT_BASE_URL: ${AGENT_CONTENT_BASE_URL}
-    mem_limit: ${JAVA_MEM_LIMIT_CONSUMER:-256m}
+    mem_limit: ${JAVA_MEM_LIMIT_CONSUMER:-224m}
     networks:
       - novel-net
     depends_on:
       agent-content:
+        condition: service_started
+      python-lb:
+        condition: service_started
+
+  agent-pyai:
+    build:
+      context: ../../../../
+      dockerfile: novel-agent/docs/deploy/docker/Dockerfile.java
+      args:
+        MODULE: agent-pyai
+        JAR: agent-pyai-1.0.0-SNAPSHOT.jar
+    image: novel-agent/pyai:latest
+    restart: unless-stopped
+    environment:
+      <<: *java-env
+      JAVA_OPTS: ${JAVA_OPTS_PYAI:--Xms64m -Xmx176m -XX:MaxMetaspaceSize=96m -XX:+UseSerialGC -Dfile.encoding=UTF-8}
+      SPRING_MAIN_WEB_APPLICATION_TYPE: reactive
+      AGENT_PYTHON_BASE_URL: ${AGENT_PYTHON_BASE_URL}
+      AGENT_CONTENT_BASE_URL: ${AGENT_CONTENT_BASE_URL}
+    mem_limit: ${JAVA_MEM_LIMIT_PYAI:-256m}
+    ports:
+      - "8082:8082"
+    networks:
+      - novel-net
+    depends_on:
+      agent-content:
+        condition: service_started
+      python-lb:
         condition: service_started
 
   frontend:
@@ -138,7 +164,7 @@ services:
       dockerfile: novel-agent/docs/deploy/docker/Dockerfile.frontend-worker
     image: novel-agent/frontend-worker:latest
     restart: unless-stopped
-    mem_limit: 64m
+    mem_limit: 48m
     ports:
       - "${FRONTEND_PORT:-3000}:80"
     networks:

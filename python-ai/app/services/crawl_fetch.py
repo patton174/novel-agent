@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Any
 from urllib.parse import urljoin
 
@@ -37,6 +38,54 @@ def store_page_cache(ctx: CrawlAgentContext, url: str, page: Any, meta: PageFetc
     ctx.last_fetched_url = url
     ctx.last_cached_page = page
     ctx.last_cached_meta = meta
+
+
+@dataclass
+class HtmlBodyPage:
+    """Playwright 会话 goto 返回的 HTML，供 page_text / extract_chapter 复用。"""
+
+    body: str
+    status: int = 200
+
+
+async def fetch_for_crawl_async(
+    ctx: CrawlAgentContext,
+    url: str,
+    *,
+    stealth: bool | None = None,
+    auto_stealth: bool = True,
+    use_cache: bool = False,
+) -> tuple[Any, PageFetchMeta]:
+    """异步抓取；若 Browser 会话已打开则复用，避免 SaveQueuedChapters 再开 Stealth。"""
+    import asyncio
+
+    target = resolve_crawl_url(ctx, url)
+    session = ctx.browser_session
+    if session is not None and getattr(session, "is_open", False):
+        snap = await session.goto(target)
+        blocked = snap.http_status >= 400
+        html = snap.html or ""
+        page = HtmlBodyPage(body=html, status=snap.http_status)
+        meta = PageFetchMeta(
+            http_status=snap.http_status,
+            used_stealth=False,
+            content_chars=len(html),
+            link_count=0,
+            blocked=blocked,
+            hint=f"HTTP {snap.http_status}" if blocked else "",
+        )
+        if not blocked:
+            store_page_cache(ctx, target, page, meta)
+        return page, meta
+
+    return await asyncio.to_thread(
+        fetch_for_crawl,
+        ctx,
+        url,
+        stealth=stealth,
+        auto_stealth=auto_stealth,
+        use_cache=use_cache,
+    )
 
 
 def fetch_for_crawl(

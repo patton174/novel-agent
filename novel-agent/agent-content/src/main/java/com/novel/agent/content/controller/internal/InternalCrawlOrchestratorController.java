@@ -52,7 +52,9 @@ public class InternalCrawlOrchestratorController {
         if (crawlBiz.runningJobCount() >= CrawlOrchestratorStateService.MAX_CONCURRENT_JOBS) {
             throw new com.novel.agent.common.core.exception.ValidationException(
                 com.novel.agent.common.core.enums.ResultCode.BAD_REQUEST,
-                "并发子任务已达上限 " + CrawlOrchestratorStateService.MAX_CONCURRENT_JOBS
+                "并发子任务已达上限 "
+                    + CrawlOrchestratorStateService.MAX_CONCURRENT_JOBS
+                    + "（含 RUNNING 与 PAUSED）"
             );
         }
         CrawlJobEntity entity = crawlJobService.createJob(

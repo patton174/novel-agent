@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
+import java.util.Collection;
 import java.util.List;
 
 public interface CrawlJobRepository extends JpaRepository<CrawlJobEntity, String> {
@@ -16,6 +17,8 @@ public interface CrawlJobRepository extends JpaRepository<CrawlJobEntity, String
     Page<CrawlJobEntity> findAllByOrderByUpdatedAtDesc(Pageable pageable);
 
     long countByStatus(CrawlJobStatus status);
+
+    long countByStatusIn(Collection<CrawlJobStatus> statuses);
 
     @Query("""
         SELECT j FROM CrawlJobEntity j
