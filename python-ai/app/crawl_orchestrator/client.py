@@ -122,6 +122,14 @@ class OrchestratorClient:
         resp.raise_for_status()
         return resp.json()
 
+    async def cancel_job(self, job_id: str) -> dict[str, Any]:
+        resp = await self._client.post(
+            f"{self._base}/internal/crawl/jobs/{job_id}/cancel",
+            headers=self._headers(),
+        )
+        resp.raise_for_status()
+        return resp.json()
+
     async def get_job(self, job_id: str) -> dict[str, Any]:
         resp = await self._client.get(
             f"{self._base}/internal/crawl/jobs/{job_id}",

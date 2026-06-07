@@ -83,6 +83,12 @@ async def StopCrawlJob(job_id: str) -> str:
 
 
 @tool
+async def CancelCrawlJob(job_id: str) -> str:
+    """取消 PAUSED/FAILED 子任务以释放槽位（不可取消 RUNNING）。"""
+    return ""
+
+
+@tool
 async def GetCrawlJobStatus(job_id: str) -> str:
     """查询单个子任务状态与进度。"""
     return ""
@@ -107,6 +113,7 @@ ORCHESTRATOR_TOOLS = [
     GetRunningJobCount,
     CreateCrawlJob,
     StopCrawlJob,
+    CancelCrawlJob,
     GetCrawlJobStatus,
     Sleep,
     CompleteGoal,
@@ -147,9 +154,9 @@ async def run_orchestrator_tool(
                     }
                 )
             norm = _normalize_url(source_url)
-            active_urls = set(cycle_ctx.get("activeSourceUrls") or []) if cycle_ctx else set()
-            if not active_urls:
-                active_urls = await _active_source_urls(client)
+            active_urls = await _active_source_urls(client)
+            if cycle_ctx:
+                active_urls |= set(cycle_ctx.get("activeSourceUrls") or [])
             if norm in active_urls:
                 return json.dumps(
                     {
@@ -178,6 +185,22 @@ async def run_orchestrator_tool(
                 config_json=json.dumps(cfg, ensure_ascii=False),
                 catalog_novel_id=str(args.get("catalog_novel_id") or ""),
             )
+            if cycle_ctx is not None:
+                urls = set(cycle_ctx.get("activeSourceUrls") or [])
+                urls.add(norm)
+                cycle_ctx["activeSourceUrls"] = sorted(urls)
+                compact = {
+                    "id": job.get("id"),
+                    "sourceUrl": job.get("sourceUrl"),
+                    "title": job.get("title"),
+                    "status": job.get("status"),
+                    "chaptersDone": job.get("chaptersDone"),
+                    "chaptersTotal": job.get("chaptersTotal"),
+                    "catalogNovelId": job.get("catalogNovelId"),
+                    "errorMessage": job.get("errorMessage"),
+                }
+                jobs = [compact] + list(cycle_ctx.get("activeJobs") or [])
+                cycle_ctx["activeJobs"] = jobs[:10]
             return json.dumps({"ok": True, "job": job}, ensure_ascii=False)
         if name == "StopCrawlJob":
             job_id = str(args.get("job_id") or "").strip()
@@ -196,6 +219,28 @@ async def run_orchestrator_tool(
                     ensure_ascii=False,
                 )
             job = await client.pause_job(job_id)
+            return json.dumps({"ok": True, "job": job}, ensure_ascii=False)
+        if name == "CancelCrawlJob":
+            job_id = str(args.get("job_id") or "").strip()
+            if not job_id:
+                return json.dumps({"ok": False, "error": "job_id 不能为空"})
+            job = await client.get_job(job_id)
+            status = str(job.get("status") or "").upper()
+            if status == "RUNNING":
+                return json.dumps(
+                    {"ok": False, "error": "RUNNING 请用 StopCrawlJob 暂停，或等待完成"},
+                    ensure_ascii=False,
+                )
+            if status == "CANCELLED":
+                return json.dumps({"ok": True, "job": job, "note": "已是 CANCELLED"}, ensure_ascii=False)
+            job = await client.cancel_job(job_id)
+            if cycle_ctx is not None:
+                norm = _normalize_url(str(job.get("sourceUrl") or ""))
+                urls = [u for u in (cycle_ctx.get("activeSourceUrls") or []) if u != norm]
+                cycle_ctx["activeSourceUrls"] = urls
+                cycle_ctx["activeJobs"] = [
+                    j for j in (cycle_ctx.get("activeJobs") or []) if str(j.get("id")) != job_id
+                ]
             return json.dumps({"ok": True, "job": job}, ensure_ascii=False)
         if name == "GetCrawlJobStatus":
             job = await client.get_job(str(args["job_id"]))
