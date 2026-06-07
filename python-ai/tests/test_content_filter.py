@@ -1,6 +1,7 @@
 """Tests for the Novel AI Service."""
 
 import pytest
+
 from app.config import settings
 
 

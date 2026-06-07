@@ -2,10 +2,6 @@
 
 from __future__ import annotations
 
-from unittest.mock import patch
-
-import pytest
-
 from app.agent.loop import _should_end_run_after_batch, _tool_batch_end_run
 from app.agent.schemas import DisplayPayload, StepResult
 
@@ -85,8 +81,8 @@ def test_step_result_action_end_detected_by_helper():
 
 
 def test_prepare_keeps_ask_user():
-    from app.agent.schemas import AgentRunContext, PlanToolCall
     from app.agent.harness.tool_prepare import prepare_execution_batch
+    from app.agent.schemas import AgentRunContext, PlanToolCall
 
     ctx = AgentRunContext(
         run_id="run_x",

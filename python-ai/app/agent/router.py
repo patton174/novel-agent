@@ -3,21 +3,20 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
 
 from app.agent.context.enrich import enrich_context as _enrich_context
-from app.agent.streaming.sse_bridge import stream_cc_tool_step
-from app.agent.loop import run_query_loop
 from app.agent.harness.run_session import abort_run_session, get_run_session
-from app.agent.schemas import RunRequest, StepRequest
 from app.agent.harness.session_title import (
     SessionTitleRequest,
     SessionTitleResponse,
     generate_session_title,
 )
+from app.agent.loop import run_query_loop
+from app.agent.schemas import RunRequest, StepRequest
+from app.agent.streaming.sse_bridge import stream_cc_tool_step
 from app.core.llm import llm_provider
 from app.runtime.events import encode_sse
 from app.runtime.host_guard import resolve_host_mode, stream_text_with_keepalive

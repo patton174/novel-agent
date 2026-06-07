@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 from app.rag import chapter_index
-from app.rag.chapter_index import set_test_backend, _MemoryBackend
+from app.rag.chapter_index import _MemoryBackend, set_test_backend
 
 
 @pytest.mark.asyncio

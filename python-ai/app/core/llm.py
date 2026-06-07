@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import logging
-from typing import AsyncIterator, Callable, Literal, Optional
+from collections.abc import AsyncIterator, Callable
+from typing import Literal
 
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -112,7 +113,7 @@ class LLMProvider:
 
     def get_llm(
         self,
-        config: Optional[dict] = None,
+        config: dict | None = None,
         *,
         profile: LLMProfile = "default",
     ) -> BaseChatModel:
@@ -181,8 +182,8 @@ def message_text(raw: object) -> str:
 )
 async def call_llm_with_retry(
     prompt: str,
-    system_message: Optional[str] = None,
-    callback: Optional[Callable] = None,
+    system_message: str | None = None,
+    callback: Callable | None = None,
 ) -> str:
     from langchain_core.outputs import ChatResult
 
@@ -209,7 +210,7 @@ async def call_llm_with_retry(
 
 async def generate_text(
     prompt: str,
-    system_message: Optional[str] = None,
+    system_message: str | None = None,
     temperature: float = 1.0,
     *,
     profile: LLMProfile = "default",
@@ -227,7 +228,7 @@ async def generate_text(
 
 async def generate_text_stream(
     prompt: str,
-    system_message: Optional[str] = None,
+    system_message: str | None = None,
     temperature: float = 1.0,
 ) -> AsyncIterator[str]:
     llm = llm_provider.get_llm()

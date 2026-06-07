@@ -120,7 +120,6 @@ def test_glob_long_output_passes_inventory_body_for_frontend_ui():
 
 
 def test_write_completed_payload_omits_body_from_tool_input():
-    path = "/novel/n1/chapters/ch-1.md"
     body = "　　" + ("正文" * 2000)
     payload = build_tool_completed_sse_payload(
         "WriteChapter",

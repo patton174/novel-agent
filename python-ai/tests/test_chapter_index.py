@@ -2,7 +2,13 @@
 
 import pytest
 
-from app.rag.chapter_index import clear_novel_index, index_chapter, reindex_novel, remove_chapter, search_novel
+from app.rag.chapter_index import (
+    clear_novel_index,
+    index_chapter,
+    reindex_novel,
+    remove_chapter,
+    search_novel,
+)
 
 
 @pytest.mark.asyncio

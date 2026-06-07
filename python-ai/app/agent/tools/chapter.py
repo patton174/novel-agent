@@ -7,6 +7,8 @@ from typing import Any
 
 from app.agent.backend import chapter_client
 from app.agent.backend.chapter_meta import resolve_chapter_write_meta
+from app.agent.harness.chapter_body_format import normalize_chapter_body_for_persist
+from app.agent.schemas import AgentRunContext
 from app.agent.tools.schemas import (
     DeleteChapterInput,
     EditChapterInput,
@@ -15,8 +17,6 @@ from app.agent.tools.schemas import (
     ReorderChaptersInput,
     WriteChapterInput,
 )
-from app.agent.harness.chapter_body_format import normalize_chapter_body_for_persist
-from app.agent.schemas import AgentRunContext
 from app.agent.tools.tool import ToolCallResult, build_tool
 
 

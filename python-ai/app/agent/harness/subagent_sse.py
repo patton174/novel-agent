@@ -2,20 +2,19 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from collections.abc import AsyncIterator
 from typing import Any
 from uuid import uuid4
 
-import asyncio
-
-from app.agent.schemas import AgentRunContext, RunRequest
+from app.agent.harness.events import build_tool_completed_sse_payload
 from app.agent.harness.subagent import build_subagent_context, subagent_depth
 from app.agent.harness.subagent_policy import is_subagent_run
+from app.agent.harness.tool_result_routing import build_model_step_payload
+from app.agent.schemas import AgentRunContext, RunRequest
 from app.agent.tools.schemas import AgentInput
 from app.agent.tools.tool import ToolCallResult
-from app.agent.harness.events import build_tool_completed_sse_payload
-from app.agent.harness.tool_result_routing import build_model_step_payload
 from app.config import settings
 from app.runtime.events import build_event
 

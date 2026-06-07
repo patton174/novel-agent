@@ -13,12 +13,12 @@ from app.agent.harness.cc_visibility import (
     should_emit_tool_started,
     tool_display_name,
 )
+from app.agent.harness.events import build_tool_completed_sse_payload
 from app.agent.harness.tool_display import (
     chapter_write_progress_message,
     format_tool_display_excerpt,
     read_progress_message,
 )
-from app.agent.harness.events import build_tool_completed_sse_payload
 from app.agent.schemas import AgentRunContext, StepRequest
 from app.agent.streaming.chapter_stream_bridge import (
     CHAPTER_STREAM_TOOLS,
@@ -26,7 +26,6 @@ from app.agent.streaming.chapter_stream_bridge import (
     run_chapter_stream_pipeline,
     should_stream_chapter_write,
 )
-from app.agent.streaming.context_enrich_bridge import enrich_context_for_tool_step
 from app.agent.streaming.tool_side_effect import failure_event_sequence
 from app.agent.tools.run_tool_use import run_tool_use
 from app.agent.tools.tool import ToolCallResult

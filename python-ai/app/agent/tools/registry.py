@@ -2,16 +2,16 @@
 
 from __future__ import annotations
 
+from app.agent.harness.subagent_policy import SUBAGENT_EXCLUDED_TOOLS, is_subagent_run
+from app.agent.schemas import AgentRunContext
 from app.agent.tools.chapter import CHAPTER_TOOLS
 from app.agent.tools.interaction import INTERACTION_TOOLS
 from app.agent.tools.knowledge import KNOWLEDGE_TOOLS
-from app.agent.tools.memory import MEMORY_TOOLS
 from app.agent.tools.mcp import MCP_TOOLS
+from app.agent.tools.memory import MEMORY_TOOLS
 from app.agent.tools.skill import SKILL_TOOLS
-from app.agent.tools.web import WEB_TOOLS
-from app.agent.schemas import AgentRunContext
-from app.agent.harness.subagent_policy import SUBAGENT_EXCLUDED_TOOLS, is_subagent_run
 from app.agent.tools.tool import AgentTool
+from app.agent.tools.web import WEB_TOOLS
 
 _TOOLS: list[AgentTool] | None = None
 

@@ -1,7 +1,7 @@
 """Configuration management for Novel AI Service."""
 
+
 from pydantic_settings import BaseSettings
-from typing import Optional
 
 
 class Settings(BaseSettings):
@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     # Primary LLM (MiniMax: anthropic protocol recommended)
     llm_protocol: str = "anthropic"
     openai_api_key: str = ""
-    openai_base_url: Optional[str] = "https://api.minimaxi.com/anthropic"
+    openai_base_url: str | None = "https://api.minimaxi.com/anthropic"
     openai_model: str = "MiniMax-M2.7-highspeed"
     openai_max_tokens: int = 8192
     openai_timeout: int = 90
@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     llm_prompt_cache: bool = True
 
     deepseek_api_key: str = ""
-    deepseek_base_url: Optional[str] = None
+    deepseek_base_url: str | None = None
     deepseek_model: str = "deepseek-chat"
     deepseek_max_tokens: int = 4096
     deepseek_timeout: int = 60

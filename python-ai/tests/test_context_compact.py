@@ -1,6 +1,5 @@
 """Tests for compact agent context assembly."""
 
-from app.agent.context.prompting.run_context import assemble_run_context
 from app.agent.context.compact import (
     chapter_has_substantial_body,
     ctx_with_write_anchor,
@@ -10,6 +9,7 @@ from app.agent.context.compact import (
     is_onboarding_assistant_text,
     render_story_memory_compact_from_snapshot,
 )
+from app.agent.context.prompting.run_context import assemble_run_context
 from app.agent.harness.routing import has_writing_context, story_context_from_ctx
 from app.agent.schemas import AgentRunContext
 

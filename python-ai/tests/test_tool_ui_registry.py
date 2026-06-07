@@ -1,15 +1,14 @@
 """Default ui_excerpt registry + build_tool auto-wire."""
 
+from pydantic import BaseModel
+
 from app.agent.harness.tool_ui import (
     default_ui_excerpt_for_name,
-    glob_ui_excerpt,
     read_ui_excerpt,
-    todo_write_ui_excerpt,
 )
+from app.agent.schemas import AgentRunContext
 from app.agent.tools.registry import find_tool_by_name
 from app.agent.tools.tool import build_tool
-from app.agent.schemas import AgentRunContext
-from pydantic import BaseModel
 
 
 class _In(BaseModel):

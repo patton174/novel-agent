@@ -8,8 +8,8 @@ from typing import Any
 from langchain_core.messages import BaseMessage, ToolMessage, messages_from_dict, messages_to_dict
 
 from app.agent.harness.loop_support import RunLoopState
-from app.agent.schemas import AgentRunContext
 from app.agent.harness.transcript import AgentTranscript, TranscriptEntry
+from app.agent.schemas import AgentRunContext
 
 _CHECKPOINT_MESSAGE_LIMIT = 20
 

@@ -1,7 +1,9 @@
 """Crawl agent tool registry smoke tests."""
 
-from app.crawl.agent.tools import catalog_impl  # noqa: F401
-from app.crawl.agent.tools import impl  # noqa: F401 — register
+from app.crawl.agent.tools import (
+    catalog_impl,  # noqa: F401
+    impl,  # noqa: F401 — register
+)
 from app.crawl.agent.tools.registry import find_tool, get_all_tools
 
 

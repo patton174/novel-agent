@@ -4,7 +4,12 @@ from __future__ import annotations
 
 import inspect
 
-from app.agent.streaming import chapter_stream_bridge, context_enrich_bridge, sse_bridge, tool_side_effect
+from app.agent.streaming import (
+    chapter_stream_bridge,
+    context_enrich_bridge,
+    sse_bridge,
+    tool_side_effect,
+)
 
 
 def test_sse_bridge_public_api():

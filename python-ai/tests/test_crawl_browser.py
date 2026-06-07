@@ -1,6 +1,6 @@
 """Tests for Playwright browser session helpers."""
 
-from app.crawl.fetch.browser import prepare_html_for_ai, playwright_proxy
+from app.crawl.fetch.browser import playwright_proxy, prepare_html_for_ai
 
 
 def test_prepare_html_for_ai_strips_script():

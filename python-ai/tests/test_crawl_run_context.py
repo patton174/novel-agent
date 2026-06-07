@@ -1,10 +1,11 @@
 """RUN_CONTEXT marker injection tests."""
 
+from unittest.mock import MagicMock
+
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from app.crawl.agent.context import CrawlAgentContext
 from app.crawl.agent.prompting.run_context import RUN_CONTEXT_MARKER, refresh_crawl_run_context
-from unittest.mock import MagicMock
 
 
 def _ctx() -> CrawlAgentContext:

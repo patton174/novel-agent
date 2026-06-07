@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import json
 
-from app.agent.tools.schemas import GetCharacterGraphInput, SearchKnowledgeInput, SearchMode
 from app.agent.schemas import AgentRunContext
+from app.agent.tools.schemas import GetCharacterGraphInput, SearchKnowledgeInput, SearchMode
 from app.agent.tools.tool import ToolCallResult, build_tool
 from app.config import settings
 from app.kg.query import character_graph

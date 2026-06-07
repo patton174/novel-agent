@@ -9,18 +9,17 @@ import re
 from typing import Any
 from urllib.parse import unquote
 
-from app.agent.harness.cc_visibility import (
-    is_chapter_vfs_path,
-    is_memory_vfs_path,
-    normalize_tool_name,
-)
-from app.agent.schemas import AgentRunContext
-from app.agent.backend.ids import CHAPTER_ID_RE as VFS_CHAPTER_ID_RE
 from app.agent.backend import chapter_store
 from app.agent.backend.chapter_meta import (
     format_chapter_display_label,
     sorted_chapter_summaries,
 )
+from app.agent.backend.ids import CHAPTER_ID_RE as VFS_CHAPTER_ID_RE
+from app.agent.harness.cc_visibility import (
+    is_chapter_vfs_path,
+    is_memory_vfs_path,
+)
+from app.agent.schemas import AgentRunContext
 
 _MEMORY_SCOPE_LABELS: dict[str, str] = {
     "characters": "角色库",
@@ -376,7 +375,7 @@ def chapter_write_progress_message(
     tool_input: dict[str, Any] | None,
     ctx: AgentRunContext,
 ) -> str:
-    from app.agent.harness.cc_visibility import vfs_path_from_tool_input
+    from app.agent.harness.cc_visibility import tool_display_name, vfs_path_from_tool_input
 
     raw = (tool or "").strip()
     inp = dict(tool_input or {})
@@ -400,7 +399,7 @@ def read_progress_message(tool: str, tool_input: dict[str, Any] | None) -> str:
     fp = vfs_path_from_tool_input(tool_input)
     label = tool_display_name(tool, tool_input)
     if fp and is_chapter_vfs_path(fp):
-        return f"正在从作品库读取章节…"
+        return "正在从作品库读取章节…"
     if fp and is_memory_vfs_path(fp):
         return "正在查阅创作记忆…"
     raw = (tool or "").strip()

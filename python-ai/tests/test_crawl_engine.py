@@ -6,9 +6,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from app.crawl.agent.context import CrawlAgentContext
 from app.crawl.engine.fetch_engine import FetchEngine, ScrapeOptions, ScrapeResult
 from app.crawl.engine.modes import FetchMode
-from app.crawl.agent.context import CrawlAgentContext
 
 
 def _ctx() -> CrawlAgentContext:

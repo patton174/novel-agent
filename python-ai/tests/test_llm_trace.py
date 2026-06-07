@@ -1,7 +1,5 @@
 """Tests for agent LLM trace logging."""
 
-import json
-from pathlib import Path
 
 from langchain_core.messages import HumanMessage, SystemMessage
 

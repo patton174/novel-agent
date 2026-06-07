@@ -1,9 +1,9 @@
-from app.agent.schemas import AgentRunContext
 from app.agent.backend.chapter_meta import (
     format_chapter_display_label,
     resolve_chapter_write_meta,
     sorted_chapter_summaries,
 )
+from app.agent.schemas import AgentRunContext
 
 
 def test_sorted_chapter_summaries_assigns_list_index():

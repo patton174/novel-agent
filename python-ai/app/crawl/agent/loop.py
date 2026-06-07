@@ -7,9 +7,8 @@ from dataclasses import dataclass
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 
-from app.core.llm import llm_provider
 from app.config import settings
-from app.crawl.config import get_crawl_limits
+from app.core.llm import llm_provider
 from app.crawl.agent.context import CrawlAgentContext
 from app.crawl.agent.loop_support import (
     invoke_llm_with_pairing_retry,
@@ -18,11 +17,12 @@ from app.crawl.agent.loop_support import (
     run_crawl_tool_with_retry,
     tool_calls_from_ai,
 )
-from app.crawl.agent.prompts import build_crawl_system_prompt, build_crawl_task_message
 from app.crawl.agent.prompting.run_context import refresh_crawl_run_context
-from app.crawl.fetch.browser import close_browser_session
+from app.crawl.agent.prompts import build_crawl_system_prompt, build_crawl_task_message
 from app.crawl.agent.tools import impl  # noqa: F401 — register tools
 from app.crawl.agent.tools.langchain_bind import build_crawl_langchain_tools
+from app.crawl.config import get_crawl_limits
+from app.crawl.fetch.browser import close_browser_session
 
 logger = logging.getLogger(__name__)
 

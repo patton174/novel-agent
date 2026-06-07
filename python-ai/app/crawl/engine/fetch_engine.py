@@ -4,19 +4,18 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import Any
 
 from app.config import settings
-from app.crawl.metrics import record_fetch
+from app.crawl.agent.context import CrawlAgentContext
 from app.crawl.engine.html_clean import strip_scripts_and_styles
 from app.crawl.engine.modes import FetchMode
 from app.crawl.engine.selectors import extract_links_from_items
 from app.crawl.engine.types import LinkItem, ScrapeOptions, ScrapeResult
-from app.crawl.agent.context import CrawlAgentContext
 from app.crawl.fetch.browser import CrawlBrowserSession, prepare_html_for_ai
 from app.crawl.fetch.fetch import HtmlBodyPage, fetch_for_crawl_async, resolve_crawl_url
 from app.crawl.fetch.proxy import pick_crawl_proxy
 from app.crawl.fetch.scrapling import page_html, page_links, page_text
+from app.crawl.metrics import record_fetch
 
 logger = logging.getLogger(__name__)
 

@@ -1,6 +1,6 @@
 """SSE payload slimming helpers."""
 
-from app.agent.harness.events import extract_memory_read_labels, _tool_completed_payload
+from app.agent.harness.events import _tool_completed_payload, extract_memory_read_labels
 from app.agent.schemas import DisplayPayload
 
 

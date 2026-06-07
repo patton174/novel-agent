@@ -8,6 +8,7 @@ from unittest.mock import patch
 
 import pytest
 
+from app.agent.harness.loop_support import ToolStepOutcome, stream_tool_step
 from app.agent.harness.tool_result_routing import (
     build_model_step_payload,
     map_tool_result_for_model,
@@ -15,9 +16,8 @@ from app.agent.harness.tool_result_routing import (
     model_text_from_step_payload,
     tool_message_text,
 )
-from app.agent.tools.tool import ToolCallResult
-from app.agent.harness.loop_support import ToolStepOutcome, stream_tool_step
 from app.agent.schemas import AgentRunContext
+from app.agent.tools.tool import ToolCallResult
 
 _UI = "《大纲》摘要…"
 _FULL = "line\n" * 400

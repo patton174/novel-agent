@@ -1,8 +1,8 @@
 """Tests for autocompact (format/split; LLM path mocked)."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 
 from app.agent.context.compact_autocompact import (

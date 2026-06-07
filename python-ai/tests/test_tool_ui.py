@@ -1,7 +1,7 @@
 """CC-aligned per-tool UI excerpts."""
 
+from app.agent.backend.format import FILE_UNCHANGED_STUB, add_line_numbers
 from app.agent.harness.tool_ui import glob_ui_excerpt, read_ui_excerpt
-from app.agent.backend.format import add_line_numbers, FILE_UNCHANGED_STUB
 
 
 def test_read_ui_excerpt_line_count():

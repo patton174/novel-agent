@@ -1,6 +1,6 @@
 """Pydantic schemas for request/response models."""
 
-from typing import Any, Optional
+from typing import Any
 from uuid import uuid4
 
 from pydantic import BaseModel, Field
@@ -11,15 +11,15 @@ class RewriteRequest(BaseModel):
 
     original_text: str = Field(..., description="Original text to rewrite")
     instructions: str = Field(..., description="Rewrite instructions")
-    novel_id: Optional[int] = Field(None, description="Novel ID for context retrieval")
+    novel_id: int | None = Field(None, description="Novel ID for context retrieval")
 
 
 class OutlineRequest(BaseModel):
     """Request schema for novel outline generation."""
 
     summary: str = Field(..., description="One-sentence novel summary")
-    genre: Optional[str] = Field(None, description="Novel genre")
-    style: Optional[str] = Field(None, description="Writing style")
+    genre: str | None = Field(None, description="Novel genre")
+    style: str | None = Field(None, description="Writing style")
 
 
 class DialogueRequest(BaseModel):
@@ -28,15 +28,15 @@ class DialogueRequest(BaseModel):
     character_a: str = Field(..., description="First character name")
     character_b: str = Field(..., description="Second character name")
     scene: str = Field(..., description="Scene description")
-    context: Optional[str] = Field(None, description="Additional context")
-    novel_id: Optional[int] = Field(None, description="Novel ID for character lookup")
+    context: str | None = Field(None, description="Additional context")
+    novel_id: int | None = Field(None, description="Novel ID for character lookup")
 
 
 class ReviewRequest(BaseModel):
     """Request schema for AI proofreading."""
 
     content: str = Field(..., description="Content to review")
-    focus_areas: Optional[list[str]] = Field(None, description="Specific areas to focus on")
+    focus_areas: list[str] | None = Field(None, description="Specific areas to focus on")
 
 
 class GenerationCandidate(BaseModel):
@@ -44,7 +44,7 @@ class GenerationCandidate(BaseModel):
 
     id: int = Field(..., description="Candidate ID (1, 2, or 3)")
     content: str = Field(..., description="Generated content")
-    score: Optional[float] = Field(None, description="Quality score if available")
+    score: float | None = Field(None, description="Quality score if available")
 
 
 class RewriteResponse(BaseModel):
@@ -57,7 +57,7 @@ class OutlineResponse(BaseModel):
     """Response schema for outline generation."""
 
     outline: str = Field(..., description="Generated outline")
-    structure: Optional[dict] = Field(None, description="Structured outline data")
+    structure: dict | None = Field(None, description="Structured outline data")
 
 
 class DialogueResponse(BaseModel):
@@ -71,7 +71,7 @@ class ReviewResponse(BaseModel):
 
     issues: list[dict] = Field(default_factory=list, description="List of identified issues")
     suggestions: list[str] = Field(default_factory=list, description="List of suggestions")
-    overall_quality: Optional[str] = Field(None, description="Overall quality assessment")
+    overall_quality: str | None = Field(None, description="Overall quality assessment")
 
 
 class HealthResponse(BaseModel):
@@ -89,7 +89,7 @@ class LLMProviderConfig(BaseModel):
 
     name: str = Field(..., description="Provider name (openai, deepseek, etc.)")
     api_key: str = Field(..., description="API key (masked)")
-    base_url: Optional[str] = Field(None, description="Custom endpoint URL")
+    base_url: str | None = Field(None, description="Custom endpoint URL")
     model: str = Field(..., description="Model name")
     max_tokens: int = Field(4096, description="Max tokens")
     request_timeout: int = Field(30, description="Request timeout in seconds")
@@ -138,7 +138,7 @@ class AgentChatRequest(BaseModel):
     """Request schema for agent chat."""
 
     message: str = Field(..., description="User message")
-    context: Optional[str] = Field(None, description="Conversation context")
+    context: str | None = Field(None, description="Conversation context")
     use_tools: bool = Field(True, description="Whether to use agent tools")
 
 
@@ -146,7 +146,7 @@ class AgentChatResponse(BaseModel):
     """Response schema for agent chat."""
 
     response: str = Field(..., description="Agent response")
-    tool_calls: Optional[list[dict]] = Field(default_factory=list, description="Tool calls made by agent")
+    tool_calls: list[dict] | None = Field(default_factory=list, description="Tool calls made by agent")
 
 
 def normalize_agent_execution_request(body: dict[str, Any]) -> AgentExecutionRequest:

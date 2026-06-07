@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from app.crawl.agent.catalog_context import fetch_catalog_snapshot
 from app.crawl.agent.context import CrawlAgentContext
 from app.crawl.agent.tools.base import append_log as _append_log

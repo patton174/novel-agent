@@ -2,12 +2,12 @@
 
 import pytest
 
-from app.agent.schemas import AgentRunContext
 from app.agent.harness.subagent import (
     _summarize_subagent_events,
     build_subagent_context,
 )
 from app.agent.harness.subagent_policy import SUBAGENT_EXCLUDED_TOOLS, subagent_depth
+from app.agent.schemas import AgentRunContext
 from app.agent.tools.registry import get_all_tools, is_tool_discovered
 
 

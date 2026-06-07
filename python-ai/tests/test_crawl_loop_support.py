@@ -3,13 +3,13 @@
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 
 from app.agent.harness.message_history import repair_tool_message_pairing
+from app.crawl.agent.context import CrawlAgentContext
 from app.crawl.agent.loop_support import (
     is_retryable_crawl_tool_error,
-    repeat_failure_hint,
     record_tool_outcome,
+    repeat_failure_hint,
     tool_calls_from_ai,
 )
-from app.crawl.agent.context import CrawlAgentContext
 from app.crawl.agent.tools.tool import CrawlToolResult
 
 

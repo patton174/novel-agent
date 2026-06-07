@@ -2,11 +2,6 @@
 
 import json
 
-import pytest
-from httpx import ASGITransport, AsyncClient
-
-from app.main import app
-from app.runtime.stream_partition import partition_stream_chunk, partition_stream_chunk_stateful
 from app.models.schemas import (
     AgentExecutionRequest,
     AgentInputPayload,
@@ -15,6 +10,7 @@ from app.models.schemas import (
     normalize_agent_execution_request,
 )
 from app.runtime.events import build_event, encode_sse
+from app.runtime.stream_partition import partition_stream_chunk, partition_stream_chunk_stateful
 
 _EXECUTION_REQUEST = AgentExecutionRequest(
     run_id="run-1",

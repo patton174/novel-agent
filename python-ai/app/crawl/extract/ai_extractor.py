@@ -9,10 +9,10 @@ from dataclasses import dataclass
 from typing import Any
 from urllib.parse import urljoin, urlparse
 
-from app.crawl.metrics import record_extract
 from app.core.llm import generate_text, llm_provider
 from app.crawl.engine.content_extract import extract_chapter_via_selector
 from app.crawl.fetch.scrapling import page_text as _page_text
+from app.crawl.metrics import record_extract
 
 SYSTEM_EXTRACTOR = (
     "你是专业的小说网页解析助手。"

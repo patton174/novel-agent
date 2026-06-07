@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import Any
 
 from langchain_core.tools import StructuredTool
-from pydantic import BaseModel, create_model
 
 from app.agent.schemas import AgentRunContext
 from app.agent.tools.registry import get_all_tools, is_deferred_tool

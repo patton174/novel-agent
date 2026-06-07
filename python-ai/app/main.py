@@ -1,21 +1,22 @@
 """FastAPI application entry point."""
 
 import logging
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app import __version__
+from app.agent.harness.worker.router import router as worker_router
+from app.agent.router import router as agent_step_router
+from app.api.crawler_routes import internal_router as crawler_internal_router
+from app.api.crawler_routes import router as crawler_router
+from app.api.image_routes import router as image_router
+from app.api.rag_routes import router as rag_router
+from app.api.routes import router
 from app.config import settings
 from app.core.logging_setup import setup_logging
 from app.core.metrics import setup_metrics
 from app.core.trace_middleware import TraceIdMiddleware
-
-from app.api.routes import router
-from app.api.rag_routes import router as rag_router
-from app.api.image_routes import router as image_router
-from app.api.crawler_routes import router as crawler_router, internal_router as crawler_internal_router
-from app.agent.router import router as agent_step_router
-from app.agent.harness.worker.router import router as worker_router
-from app import __version__
 
 
 def _setup_logging():

@@ -8,18 +8,22 @@ from collections.abc import AsyncIterator
 
 from langchain_core.messages import HumanMessage, SystemMessage
 
-from app.agent.harness.llm_parse import _message_content, extract_json_object, normalize_step_result_dict
-from app.agent.harness.routing import story_context_from_ctx
-from app.agent.schemas import AgentRunContext, StepResult
-from app.agent.streaming.stream_channels import LlmStreamPart
-from app.agent.harness.structured_llm import try_invoke_structured
-from app.agent.harness.structured_submit import visible_markdown_text
 from app.agent.context.prompting.fragments import build_chapter_task_text
 from app.agent.context.prompting.tool_prompt import build_chapter_stream_messages
+from app.agent.harness.chapter_body_format import normalize_chapter_body_for_persist
+from app.agent.harness.llm_parse import (
+    _message_content,
+    extract_json_object,
+    normalize_step_result_dict,
+)
+from app.agent.harness.routing import story_context_from_ctx
+from app.agent.harness.structured_llm import try_invoke_structured
+from app.agent.harness.structured_submit import visible_markdown_text
+from app.agent.schemas import AgentRunContext, StepResult
+from app.agent.streaming.stream_channels import LlmStreamPart
 from app.core.llm import llm_provider
 from app.core.llm_chunk_split import LlmChunkSplitter
 from app.core.llm_stream_policy import llm_policy_for_tool
-from app.agent.harness.chapter_body_format import normalize_chapter_body_for_persist
 
 logger = logging.getLogger(__name__)
 

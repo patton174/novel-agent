@@ -1,7 +1,5 @@
 """Content filtering tool for sensitive word detection."""
 
-import re
-from typing import Set
 
 
 class ContentFilter:
@@ -14,7 +12,7 @@ class ContentFilter:
 
     # Basic problematic content patterns (simplified for demonstration)
     # In production, use a comprehensive sensitive word database
-    SENSITIVE_PATTERNS: Set[str] = {
+    SENSITIVE_PATTERNS: set[str] = {
         # Add sensitive patterns here - this is a minimal example
         # "example_pattern",
     }
@@ -60,10 +58,6 @@ class ContentFilter:
         # For now, just return the text as-is
         # In production, implement actual filtering logic
         return text
-
-    def add_pattern(self, pattern: str) -> None:
-        """Add a new pattern to the filter."""
-        self._patterns.add(pattern)
 
     def remove_pattern(self, pattern: str) -> None:
         """Remove a pattern from the filter."""

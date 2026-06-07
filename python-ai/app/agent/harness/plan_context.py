@@ -8,12 +8,12 @@ from typing import Any
 from app.agent.context.compact import compact_story_memory_text, format_chapter_window
 from app.agent.context.memory_log import memory_ops_for_plan_json
 from app.agent.harness.intent_message import intent_user_message_for_context
+from app.agent.harness.orchestration_contract import context_decision_hints
 from app.agent.harness.routing import (
     format_dialogue_history,
     project_summary_from_ctx,
 )
-from app.agent.harness.orchestration_contract import context_decision_hints
-from app.agent.schemas import AgentRunContext, PlanRequest
+from app.agent.schemas import PlanRequest
 
 _PREVIEW_CHAR = 120
 _CHARACTER_ROSTER_PREVIEW = 520

@@ -5,9 +5,9 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from app.agent.backend.ids import CHAPTER_ID_RE, novel_root
 from app.agent.context.compact import find_chapter_id_by_title
 from app.agent.schemas import AgentRunContext
-from app.agent.backend.ids import CHAPTER_ID_RE, novel_root
 
 _CHAPTER_TITLE_HINT_RE = re.compile(
     r"第\s*\d+\s*章|chapter\s*\d+",
@@ -72,9 +72,10 @@ def validate_memory_write_target(
             if cid:
                 hint = f" 应使用：{_chapter_memory_path(ctx, cid)}"
                 break
+        example = hint or f" 示例：{_chapter_memory_path(ctx, '<chapter_id>')}"
         return (
             "章节记忆路径必须使用 chapter_catalog 中的 chapter_id（UUID），"
-            f"禁止用章节名作 key。{hint or f' 示例：{_chapter_memory_path(ctx, '<chapter_id>')}'}"
+            f"禁止用章节名作 key。{example}"
         )
 
     if scope_norm != "novel":
@@ -94,8 +95,9 @@ def validate_memory_write_target(
         if cid:
             hint = f" 应使用：{_chapter_memory_path(ctx, cid)}"
             break
+    write_hint = hint or f" 请 Write {_chapter_memory_path(ctx, '<chapter_id>')}，"
     return (
         "逐章剧情/摘要/伏笔属于「章节记忆」，禁止写入 /memory/novel/（大纲/创作规划）。"
-        f"{hint or f' 请 Write {_chapter_memory_path(ctx, '<chapter_id>')}，'}"
+        f"{write_hint}"
         "data 必填「摘要」Markdown；路径 key 为 chapter_catalog 的 UUID。"
     )

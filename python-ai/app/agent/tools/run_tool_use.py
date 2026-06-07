@@ -4,15 +4,15 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.agent.schemas import AgentRunContext
 from app.agent.harness.tool_errors import (
     format_input_validation_error,
     format_no_such_tool_error,
     humanize_tool_validation_error,
 )
+from app.agent.harness.tool_result_routing import map_tool_result_for_model
+from app.agent.schemas import AgentRunContext
 from app.agent.tools.hooks import run_post_tool_hooks, run_pre_tool_hooks
 from app.agent.tools.registry import find_tool_by_name
-from app.agent.harness.tool_result_routing import map_tool_result_for_model
 from app.agent.tools.result_storage import truncate_tool_result
 from app.agent.tools.tool import ToolCallResult
 

@@ -2,8 +2,8 @@
 
 from app.agent.harness.cc_visibility import (
     is_hidden_ui_tool,
-    should_emit_tool_started,
     should_emit_read_result_labels,
+    should_emit_tool_started,
     tool_display_name,
 )
 

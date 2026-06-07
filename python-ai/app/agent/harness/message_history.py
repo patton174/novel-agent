@@ -7,10 +7,10 @@ import logging
 
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 
-from app.agent.harness.plan_context import build_plan_context
 from app.agent.context.prompting.run_context import format_run_context_block
-from app.agent.schemas import AgentRunContext, PlanRequest
+from app.agent.harness.plan_context import build_plan_context
 from app.agent.harness.transcript import AgentTranscript
+from app.agent.schemas import AgentRunContext, PlanRequest
 
 logger = logging.getLogger(__name__)
 

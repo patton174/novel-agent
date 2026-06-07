@@ -3,35 +3,36 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-from fastapi import APIRouter, HTTPException, Request, Header
+from fastapi import APIRouter, Header, HTTPException
+
+from app import __version__
+from app.core.llm import LLMError, generate_text, llm_provider
+from app.core.prompts import (
+    DIALOGUE_SYSTEM,
+    OUTLINE_SYSTEM,
+    REVIEW_SYSTEM,
+    REWRITE_SYSTEM,
+    dialogue_prompt,
+    outline_prompt,
+    review_prompt,
+    rewrite_prompt,
+)
 from app.models.schemas import (
-    RewriteRequest,
-    OutlineRequest,
+    ConfigResponse,
     DialogueRequest,
-    ReviewRequest,
-    RewriteResponse,
-    OutlineResponse,
     DialogueResponse,
-    ReviewResponse,
     GenerationCandidate,
     HealthResponse,
-    ConfigResponse,
     LLMProviderConfig,
+    OutlineRequest,
+    OutlineResponse,
+    ReviewRequest,
+    ReviewResponse,
+    RewriteRequest,
+    RewriteResponse,
 )
-from app.core.llm import generate_text, llm_provider, LLMError
 from app.runtime.story_memory import get_story_memory, patch_story_memory
-from app.core.prompts import (
-    REWRITE_SYSTEM,
-    OUTLINE_SYSTEM,
-    DIALOGUE_SYSTEM,
-    REVIEW_SYSTEM,
-    rewrite_prompt,
-    outline_prompt,
-    dialogue_prompt,
-    review_prompt,
-)
 from app.tools.content_filter import ContentFilter
-from app import __version__
 
 router = APIRouter()
 content_filter = ContentFilter()

@@ -11,7 +11,6 @@ from langchain_core.messages import AIMessage
 
 from app.agent.loop import run_query_loop
 from app.agent.schemas import AgentRunContext, RunRequest, StepRequest
-from app.agent.harness.loop_support import ToolStepOutcome
 from app.runtime.events import build_event
 
 
@@ -128,5 +127,5 @@ async def _fake_stream_tool_step(ctx, tool, tool_input, *, sequence, outcome, st
                 display=DisplayPayload.model_validate(payload.get("display") or {}),
                 reason=str(payload.get("reason") or "ok"),
             )
-            outcome.tool_output = str((outcome.result.display.content or ""))
+            outcome.tool_output = str(outcome.result.display.content or "")
         yield ev

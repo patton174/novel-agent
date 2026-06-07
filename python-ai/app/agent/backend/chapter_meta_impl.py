@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.agent.context.compact import _chapter_sort_key
-from app.agent.schemas import AgentRunContext
 from app.agent.backend.catalog_constants import API_SOURCE_HEADER
 from app.agent.backend.ids import CHAPTER_ID_RE
+from app.agent.context.compact import _chapter_sort_key
+from app.agent.schemas import AgentRunContext
 
 # 禁止作为持久化章节标题的占位名
 _FORBIDDEN_CHAPTER_TITLES = frozenset({"新章节", "新对话", "未命名", "章节"})

@@ -1,7 +1,7 @@
 """Chapter Write/Edit progress messages for SSE."""
 
-from app.agent.schemas import AgentRunContext
 from app.agent.harness.tool_display import chapter_write_progress_message
+from app.agent.schemas import AgentRunContext
 
 
 def test_chapter_edit_progress_uses_title_from_context():

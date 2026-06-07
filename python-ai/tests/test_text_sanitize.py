@@ -1,12 +1,12 @@
 """Tests for think-tag filtering."""
 
-from app.runtime.text_sanitize import extract_visible_text, strip_think_markup
 from app.agent.harness.llm_parse import (
     extract_json_object,
     extract_plan_json_from_text,
     sanitize_step_result,
 )
 from app.agent.schemas import DisplayPayload, StepResult
+from app.runtime.text_sanitize import extract_visible_text, strip_think_markup
 
 
 def test_strip_think_markup_keeps_outside_text():

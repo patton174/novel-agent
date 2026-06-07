@@ -9,12 +9,11 @@ from typing import Any
 
 from langchain_core.messages import BaseMessage
 
-from app.agent.context.prompting.blocks import coerce_text_snippet
-from app.agent.schemas import DisplayPayload, StepResult
 from app.agent.harness.structured_llm import invoke_structured_with_retry
+from app.agent.schemas import DisplayPayload, StepResult
 from app.core.llm import llm_provider
-from app.core.llm_stream_policy import llm_policy_for_tool
 from app.core.llm_content import extract_llm_text
+from app.core.llm_stream_policy import llm_policy_for_tool
 from app.runtime.text_sanitize import extract_visible_text, strip_think_markup
 
 logger = logging.getLogger(__name__)

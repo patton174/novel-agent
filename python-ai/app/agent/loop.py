@@ -10,38 +10,40 @@ from uuid import uuid4
 
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 
-from app.agent.tools.langchain_bind import build_agent_langchain_tools
+from app.agent.context.compact import apply_chapter_tool_patch_to_ctx
 from app.agent.context.compact_autocompact import autocompact_conversation
 from app.agent.context.compact_micro import microcompact_messages
+from app.agent.context.enrich import (
+    enrich_context as _enrich_context,
+)
+from app.agent.context.enrich import (
+    enrich_context_for_run,
+    refresh_chapters_from_content_api,
+)
 from app.agent.context.meter import measure_agent_context
 from app.agent.context.policy import (
     should_autocompact_context,
     should_microcompact_context,
 )
+from app.agent.context.relevance import inject_relevant_context
 from app.agent.context.usage import (
     build_context_usage_event,
     should_compress_context,
 )
-from app.agent.harness.llm_trace import extract_cache_usage
-from app.agent.context.compact import apply_chapter_tool_patch_to_ctx
-from app.agent.context.enrich import (
-    enrich_context as _enrich_context,
-    enrich_context_for_run,
-    refresh_chapters_from_content_api,
-)
-from app.agent.context.relevance import inject_relevant_context
 from app.agent.harness.checkpoint_persist import persist_sse_checkpoint
-from app.agent.harness.orchestration_contract import (
-    get_main_loop_tools,
-    PLAN_MAX_TOOL_CALLS,
-    QUERY_LOOP_INTERACTION_TOOLS,
-    blocking_resolved_plan_violations,
-    build_main_loop_system_prompt,
-    normalize_tool_calls,
-    validate_plan_batch,
+from app.agent.harness.llm_trace import extract_cache_usage
+from app.agent.harness.loop_support import (
+    _MAX_LLM_PAIRING_RETRIES_PER_TURN,
+    _MAX_TOOL_RECOVERIES_PER_TURN,
+    _MAX_VALIDATION_RETRIES_PER_TURN,
+    RunLoopState,
+    planning_title,
+    stream_tool_step,
+    tool_batch_end_run,
+    wait_for_user_interaction,
+    yield_visible_assistant_message,
 )
-from app.agent.harness.subagent import build_subagent_run_context_human, build_subagent_system_prompt
-from app.agent.harness.subagent_policy import is_subagent_run
+from app.agent.harness.main_loop_llm import stream_bind_tools_turn
 from app.agent.harness.message_history import (
     build_run_context_human,
     is_tool_pairing_llm_error,
@@ -49,15 +51,14 @@ from app.agent.harness.message_history import (
     refresh_run_context_human,
     repair_tool_message_pairing,
 )
-from app.agent.harness.plan_context import build_plan_context
-from app.agent.harness.loop_support import (
-    RunLoopState,
-    apply_step_completed,
-    planning_title,
-    stream_tool_step,
-    tool_batch_end_run,
-    wait_for_user_interaction,
-    yield_visible_assistant_message,
+from app.agent.harness.orchestration_contract import (
+    PLAN_MAX_TOOL_CALLS,
+    QUERY_LOOP_INTERACTION_TOOLS,
+    blocking_resolved_plan_violations,
+    build_main_loop_system_prompt,
+    get_main_loop_tools,
+    normalize_tool_calls,
+    validate_plan_batch,
 )
 from app.agent.harness.run_session import (
     RunSession,
@@ -65,27 +66,27 @@ from app.agent.harness.run_session import (
     register_run_session,
     unregister_run_session,
 )
-from app.agent.harness.tool_result_routing import tool_message_text
-from app.agent.schemas import AgentRunContext, PlanRequest, PlanToolCall, RunRequest
-from app.agent.harness.main_loop_llm import stream_bind_tools_turn
-from app.agent.harness.tool_prepare import prepare_execution_batch
+from app.agent.harness.subagent import (
+    build_subagent_run_context_human,
+    build_subagent_system_prompt,
+)
+from app.agent.harness.subagent_policy import is_subagent_run
 from app.agent.harness.tool_batch_errors import (
     append_batch_validation_errors,
     append_tool_messages_for_detail,
     append_unknown_tool_errors,
 )
+from app.agent.harness.tool_errors import format_input_validation_error
 from app.agent.harness.tool_execution import (
     classify_tool_step_failure,
     is_recoverable_tool_execution_failure,
 )
-from app.agent.harness.tool_errors import format_input_validation_error
-from app.agent.harness.loop_support import (
-    _MAX_LLM_PAIRING_RETRIES_PER_TURN,
-    _MAX_TOOL_RECOVERIES_PER_TURN,
-    _MAX_VALIDATION_RETRIES_PER_TURN,
-)
 from app.agent.harness.tool_orchestration import execute_tool_batches, partition_tool_calls
+from app.agent.harness.tool_prepare import prepare_execution_batch
+from app.agent.harness.tool_result_routing import tool_message_text
 from app.agent.harness.transcript import AgentTranscript
+from app.agent.schemas import AgentRunContext, PlanRequest, PlanToolCall, RunRequest
+from app.agent.tools.langchain_bind import build_agent_langchain_tools
 from app.core.llm import llm_provider
 from app.core.llm_cache import cached_system_message
 from app.runtime.events import build_event

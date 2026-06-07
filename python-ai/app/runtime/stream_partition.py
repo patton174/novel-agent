@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import re
-
 _THINKING_OPEN = "<think>"
 _THINKING_CLOSE = "</think>"
 _THINK_TAG = "think"

@@ -1,7 +1,5 @@
 """Prompt templates for different generation tasks."""
 
-from typing import Optional
-
 
 # ============================================================================
 # System Prompts
@@ -132,7 +130,7 @@ Format your response as:
 ...rewritten text..."""
 
 
-def outline_prompt(summary: str, genre: Optional[str] = None, style: Optional[str] = None) -> str:
+def outline_prompt(summary: str, genre: str | None = None, style: str | None = None) -> str:
     """Generate outline prompt."""
     base = f"""Create a detailed novel outline based on the following summary.
 
@@ -180,7 +178,7 @@ def dialogue_prompt(
     character_a: str,
     character_b: str,
     scene: str,
-    context: Optional[str] = None
+    context: str | None = None
 ) -> str:
     """Generate dialogue prompt."""
     base = f"""Write a dialogue scene between {character_a} and {character_b}.
@@ -200,7 +198,7 @@ Make the dialogue feel natural and true to each character's personality."""
     return base
 
 
-def review_prompt(content: str, focus_areas: Optional[list[str]] = None) -> str:
+def review_prompt(content: str, focus_areas: list[str] | None = None) -> str:
     """Generate review prompt."""
     base = f"""Review the following text and provide detailed feedback.
 

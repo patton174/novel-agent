@@ -1,7 +1,6 @@
 """Chapter patch merge + tail selection."""
 
 from app.agent.context.compact import (
-    apply_chapter_tool_patch_to_ctx,
     previous_chapter_tail_for_create,
 )
 from app.agent.schemas import AgentRunContext

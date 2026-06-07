@@ -9,8 +9,6 @@ from app.agent.backend.memory_schema import (
     FLAT_SCOPES,
     GROUP_SCOPES,
     MEMORY_DOC_VERSION,
-    memory_schema_prompt_lines,
-    schema_example_for_scope,
     validate_and_normalize_envelope,
 )
 

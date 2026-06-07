@@ -10,6 +10,7 @@ import re
 from collections.abc import Callable
 from typing import Any
 
+from app.agent.backend.format import FILE_UNCHANGED_STUB
 from app.agent.harness.cc_visibility import (
     is_chapter_vfs_path,
     is_memory_vfs_path,
@@ -20,12 +21,11 @@ from app.agent.harness.tool_display import (
     format_chapter_read_excerpt,
     format_delete_display_message,
     format_glob_grep_excerpt,
-    format_memory_read_excerpt,
     format_memory_mutation_message,
+    format_memory_read_excerpt,
     format_write_success_message,
     strip_line_numbers,
 )
-from app.agent.backend.format import FILE_UNCHANGED_STUB
 
 UiExcerptFn = Callable[[str, dict[str, Any]], str]
 

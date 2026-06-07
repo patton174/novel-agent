@@ -6,13 +6,13 @@ import pytest
 from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import BaseModel, ValidationError
 
-from app.agent.schemas import PlanResult, StepResult
 from app.agent.harness.structured_llm import (
     format_schema_error,
     invoke_structured,
     invoke_structured_with_retry,
     try_invoke_structured,
 )
+from app.agent.schemas import PlanResult, StepResult
 
 
 class _SampleModel(BaseModel):

@@ -12,7 +12,7 @@ from app.config import settings
 
 @dataclass
 class _SessionEntry:
-    session: "RunSession"
+    session: RunSession
     created_at: float
 
 

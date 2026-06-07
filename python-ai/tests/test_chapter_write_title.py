@@ -1,8 +1,8 @@
 """Chapter Write must use explicit title, not placeholder 新章节."""
 
+from app.agent.backend.chapter_meta import is_valid_chapter_title, resolve_chapter_write_title
 from app.agent.schemas import AgentRunContext
 from app.agent.tools.chapter_stream import attach_chapter_write_patch, title_from_chapter_markdown
-from app.agent.backend.chapter_meta import is_valid_chapter_title, resolve_chapter_write_title
 
 
 def _ctx(**kwargs) -> AgentRunContext:

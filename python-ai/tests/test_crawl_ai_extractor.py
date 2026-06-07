@@ -1,8 +1,8 @@
 """Tests for crawl AI heuristics (no LLM)."""
 
+from app.crawl.engine.content_extract import extract_chapter_via_selector
 from app.crawl.extract.ai_extractor import _heuristic_catalog_urls, _same_book_url
 from app.crawl.fetch.fetch import HtmlBodyPage
-from app.crawl.engine.content_extract import extract_chapter_via_selector
 
 
 def test_same_book_url_shuyous():

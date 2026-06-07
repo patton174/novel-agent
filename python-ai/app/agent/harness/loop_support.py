@@ -6,35 +6,33 @@ import logging
 from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
 from typing import Any
-
-from langchain_core.messages import BaseMessage
 from uuid import uuid4
 
+from langchain_core.messages import BaseMessage
+
 from app.agent.context.usage import RunUsageAccumulator
-from app.agent.streaming.sse_bridge import stream_cc_tool_step
 from app.agent.harness.orchestration_contract import (
     QUERY_LOOP_END_RUN_TOOLS as _END_RUN_TOOLS,
-    QUERY_LOOP_INTERACTION_TOOLS as _INTERACTION_TOOLS,
 )
 from app.agent.harness.run_session import RunSession, WorkerSliceSession
-from app.agent.schemas import AgentRunContext, StepRequest, StepResult
 from app.agent.harness.tool_execution import (
+    _RETRY_SUPPRESS_EVENT_TYPES,
     RETRYABLE_TOOLS,
     TOOL_EXECUTION_MAX_ATTEMPTS,
-    _RETRY_SUPPRESS_EVENT_TYPES,
     classify_tool_step_failure,
     is_tool_failure_retryable,
     merge_tool_retry_context,
     prepare_tool_retry_input,
     tool_retry_delay,
 )
-from app.agent.harness.transcript import AgentTranscript, apply_interaction_to_context
-from app.runtime.events import build_event
-
 from app.agent.harness.tool_result_routing import (
     model_text_from_sse_tool_completed,
     model_text_from_step_payload,
 )
+from app.agent.harness.transcript import AgentTranscript, apply_interaction_to_context
+from app.agent.schemas import AgentRunContext, StepResult
+from app.agent.streaming.sse_bridge import stream_cc_tool_step
+from app.runtime.events import build_event
 
 logger = logging.getLogger(__name__)
 

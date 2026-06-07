@@ -77,7 +77,10 @@ async def finalize_streamed_chapter_write(
     Persist streamed chapter body. Returns (result, progress/fail events, next_seq).
     result is None when failure events were built.
     """
-    from app.agent.tools.chapter_stream import attach_chapter_write_patch, persist_chapter_write_patch
+    from app.agent.tools.chapter_stream import (
+        attach_chapter_write_patch,
+        persist_chapter_write_patch,
+    )
 
     stream_fp = file_path or (
         f"/novel/{ctx.novel_id or 'unknown'}/chapters/"

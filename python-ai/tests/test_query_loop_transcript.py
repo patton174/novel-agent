@@ -1,7 +1,7 @@
 """Tests for query-loop transcript."""
 
-from app.agent.schemas import DisplayPayload, StepResult
 from app.agent.harness.transcript import AgentTranscript, apply_interaction_to_context
+from app.agent.schemas import DisplayPayload, StepResult
 
 
 def test_transcript_clears_pending_confirm_after_interaction():

@@ -1,6 +1,5 @@
 """Tests for crawl_scrapling HTTP error handling."""
 
-from types import SimpleNamespace
 
 from app.crawl.fetch.scrapling import _build_meta, page_text
 

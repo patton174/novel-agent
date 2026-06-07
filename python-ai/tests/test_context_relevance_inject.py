@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-import json
 
 from app.agent.context.prompting.run_context import assemble_run_context
 from app.agent.context.relevance import inject_relevant_context

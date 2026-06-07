@@ -3,18 +3,17 @@
 from __future__ import annotations
 
 from contextvars import ContextVar
-from typing import Optional
 
-_chapter_text: ContextVar[Optional[str]] = ContextVar("chapter_text", default=None)
+_chapter_text: ContextVar[str | None] = ContextVar("chapter_text", default=None)
 _mode: ContextVar[str] = ContextVar("mode", default="auto")
 
 
-def bind_run_context(*, chapter_text: Optional[str], mode: str) -> None:
+def bind_run_context(*, chapter_text: str | None, mode: str) -> None:
     _chapter_text.set(chapter_text)
     _mode.set(mode or "auto")
 
 
-def get_chapter_text() -> Optional[str]:
+def get_chapter_text() -> str | None:
     return _chapter_text.get()
 
 

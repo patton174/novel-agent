@@ -8,8 +8,8 @@ from collections.abc import Callable
 from langchain_core.messages import BaseMessage
 
 from app.agent.context.prompting.tool_prompt import build_step_submit_messages as _build_step_submit
-from app.agent.schemas import DisplayPayload, StepResult
 from app.agent.harness.structured_llm import invoke_structured_with_retry
+from app.agent.schemas import DisplayPayload, StepResult
 from app.runtime.text_sanitize import extract_visible_text
 
 logger = logging.getLogger(__name__)

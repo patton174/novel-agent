@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from app.agent.schemas import AgentRunContext
 from app.agent.backend.chapter_store import fetch_chapter_summaries
+from app.agent.schemas import AgentRunContext
 
 _MEMORY_TOOLS = frozenset({"Read", "Write", "Edit"})
 

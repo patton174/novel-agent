@@ -1,11 +1,11 @@
 """Tests for transport failure handling without raising to callers."""
 
 from app.crawl.fetch.scrapling import (
+    PageFetchMeta,
     _is_tls_or_proxy_error,
     _should_retry_next_mihomo_node,
     _transport_failure_result,
     fetch_page_with_retry,
-    PageFetchMeta,
 )
 
 

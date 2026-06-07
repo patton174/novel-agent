@@ -6,12 +6,11 @@ import logging
 from typing import Any
 from uuid import uuid4
 
-from app.agent.schemas import AgentRunContext, RunRequest
 from app.agent.harness.subagent_policy import (
     SUBAGENT_EXCLUDED_TOOLS,
-    is_subagent_run,
     subagent_depth,
 )
+from app.agent.schemas import AgentRunContext, RunRequest
 from app.agent.tools.tool import ToolCallResult
 from app.config import settings
 

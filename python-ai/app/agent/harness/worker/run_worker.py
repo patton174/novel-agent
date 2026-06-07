@@ -8,13 +8,13 @@ import socket
 import uuid
 from typing import Any
 
-from app.agent.loop import run_query_loop
 from app.agent.harness.run_session import WorkerSliceSession
-from app.agent.schemas import RunRequest
 from app.agent.harness.worker.checkpoint import restore_worker_state, serialize_worker_state
 from app.agent.harness.worker.content_client import ContentRunClient
 from app.agent.harness.worker.exceptions import WorkerSliceWaiting
 from app.agent.harness.worker.schemas import WorkerExecuteRequest, WorkerExecuteResponse
+from app.agent.loop import run_query_loop
+from app.agent.schemas import RunRequest
 from app.config import settings
 
 logger = logging.getLogger(__name__)

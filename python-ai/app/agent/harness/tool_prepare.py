@@ -5,8 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from app.agent.harness.orchestration_contract import normalize_tool_calls, reorder_plan_tool_calls
-from app.agent.schemas import AgentRunContext, PlanToolCall
 from app.agent.harness.tool_orchestration import ToolExecutionItem
+from app.agent.schemas import AgentRunContext, PlanToolCall
 
 
 @dataclass(frozen=True)

@@ -7,19 +7,18 @@ import logging
 from typing import Any, TypeVar
 
 from langchain_core.messages import BaseMessage, HumanMessage
+from pydantic import BaseModel, ValidationError
 
-from app.agent.harness.tool_errors import (
-    format_wrong_structured_tool_error,
-    max_structured_output_retries,
-    structured_tool_aliases_for,
-)
 from app.agent.context.prompting.retry import (
     format_retry_human_message,
     structured_retry_human_content,
 )
 from app.agent.context.prompting.types import RetryContext
-from pydantic import BaseModel, ValidationError
-
+from app.agent.harness.tool_errors import (
+    format_wrong_structured_tool_error,
+    max_structured_output_retries,
+    structured_tool_aliases_for,
+)
 from app.core.llm import llm_provider
 
 logger = logging.getLogger(__name__)

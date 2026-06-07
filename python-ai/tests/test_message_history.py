@@ -3,14 +3,13 @@
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 
 from app.agent.harness.message_history import (
-    build_run_context_human,
     is_tool_pairing_llm_error,
     prune_message_tail,
     refresh_run_context_human,
     repair_tool_message_pairing,
 )
-from app.agent.schemas import AgentRunContext
 from app.agent.harness.transcript import AgentTranscript
+from app.agent.schemas import AgentRunContext
 
 
 def test_refresh_updates_human_block():

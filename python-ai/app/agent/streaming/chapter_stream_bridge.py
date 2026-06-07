@@ -9,10 +9,13 @@ from typing import Any
 
 from app.agent.harness.tool_display import chapter_write_progress_message
 from app.agent.schemas import AgentRunContext
+from app.agent.streaming.context_enrich_bridge import enrich_context_for_tool_step
+from app.agent.streaming.tool_side_effect import (
+    failure_event_sequence,
+    finalize_streamed_chapter_write,
+)
 from app.agent.tools.run_tool_use import run_tool_use
 from app.agent.tools.tool import ToolCallResult
-from app.agent.streaming.context_enrich_bridge import enrich_context_for_tool_step
-from app.agent.streaming.tool_side_effect import failure_event_sequence, finalize_streamed_chapter_write
 from app.runtime.events import build_event
 from app.runtime.streaming import emit_sse_text_chunks
 

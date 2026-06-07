@@ -4,7 +4,6 @@ import asyncio
 
 import pytest
 
-from app.runtime.events import build_event
 from app.runtime.host_guard import resolve_host_mode, stream_with_host_guard
 
 

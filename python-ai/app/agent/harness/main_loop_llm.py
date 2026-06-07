@@ -12,7 +12,6 @@ from uuid import uuid4
 from langchain_core.messages import AIMessage, AIMessageChunk
 
 from app.agent.harness.llm_trace import log_llm_exchange
-from app.agent.schemas import AgentRunContext
 from app.agent.harness.visible_text_channel import (
     VisibleChannel,
     classify_visible_channel_prefix,
@@ -22,6 +21,7 @@ from app.agent.harness.visible_text_channel import (
     polish_visible_text,
     prefix_scan_state,
 )
+from app.agent.schemas import AgentRunContext
 from app.core.llm_chunk_split import LlmChunkSplitter
 from app.core.llm_content import extract_llm_text
 from app.runtime.events import build_event

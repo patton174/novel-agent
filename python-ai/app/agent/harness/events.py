@@ -13,8 +13,10 @@ from app.agent.harness.cc_visibility import (
     is_memory_vfs_path,
     normalize_tool_name,
     should_emit_read_result_labels,
-    tool_display_name as cc_tool_display_name,
     vfs_path_from_tool_input,
+)
+from app.agent.harness.cc_visibility import (
+    tool_display_name as cc_tool_display_name,
 )
 from app.agent.schemas import DisplayPayload, StepResult
 from app.runtime.events import build_event

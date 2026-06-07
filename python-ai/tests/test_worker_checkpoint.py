@@ -2,16 +2,14 @@
 
 from __future__ import annotations
 
-import asyncio
-
 import pytest
 
+from app.agent.harness.loop_support import RunLoopState
 from app.agent.harness.run_session import WorkerSliceSession
-from app.agent.schemas import AgentRunContext
+from app.agent.harness.transcript import AgentTranscript
 from app.agent.harness.worker.checkpoint import restore_worker_state, serialize_worker_state
 from app.agent.harness.worker.exceptions import WorkerSliceWaiting
-from app.agent.harness.loop_support import RunLoopState
-from app.agent.harness.transcript import AgentTranscript
+from app.agent.schemas import AgentRunContext
 
 
 def _sample_ctx() -> AgentRunContext:

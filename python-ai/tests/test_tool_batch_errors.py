@@ -2,7 +2,6 @@
 
 from langchain_core.messages import ToolMessage
 
-from app.agent.schemas import PlanToolCall
 from app.agent.harness.tool_batch_errors import append_batch_validation_errors
 
 

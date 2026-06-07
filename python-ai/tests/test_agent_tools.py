@@ -9,7 +9,8 @@ import pytest
 from pydantic import ValidationError
 
 from app.agent.metrics import record_tool_result, reset, snapshot
-from app.agent.tools import chapter, memory
+from app.agent.schemas import AgentRunContext
+from app.agent.tools import chapter
 from app.agent.tools.registry import build_agent_tools, find_tool_by_name, get_tool_names
 from app.agent.tools.schemas import (
     MemoryScope,
@@ -18,7 +19,6 @@ from app.agent.tools.schemas import (
     WriteChapterInput,
     WriteMemoryInput,
 )
-from app.agent.schemas import AgentRunContext
 
 
 def _ctx() -> AgentRunContext:
@@ -99,7 +99,6 @@ def test_read_chapter_error(monkeypatch):
 
 
 def test_write_chapter_stream_when_empty_content():
-    from app.agent.tools.schemas import WriteChapterInput
 
     out = asyncio.run(
         chapter.write_chapter(_ctx(), WriteChapterInput(title="新章", content=""))

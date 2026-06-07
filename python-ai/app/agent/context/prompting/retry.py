@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from langchain_core.messages import HumanMessage
 
-from app.agent.harness.tool_errors import format_tool_use_error
-from app.agent.context.prompting.blocks import json_block, join_human_blocks
+from app.agent.context.prompting.blocks import join_human_blocks, json_block
 from app.agent.context.prompting.types import RetryContext
+from app.agent.harness.tool_errors import format_tool_use_error
 
 
 def format_retry_dict(

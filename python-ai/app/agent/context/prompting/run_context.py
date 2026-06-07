@@ -4,19 +4,19 @@ from __future__ import annotations
 
 from typing import Any
 
+from app.agent.backend.memory_catalog import format_memory_catalog_db
 from app.agent.context.compact import (
     CHAPTER_INFO_CHAIN_FOR_PROMPT,
     compact_story_memory_text,
     format_chapter_catalog_db,
     format_chapter_window,
 )
-from app.agent.backend.memory_catalog import format_memory_catalog_db
+from app.agent.context.prompting.blocks import json_block
 from app.agent.harness.intent_message import intent_user_message_for_context
 from app.agent.harness.orchestration_contract import MAIN_LOOP_TOOLS
 from app.agent.harness.plan_context import _transcript_has_interaction, think_text_for_plan
 from app.agent.harness.routing import format_dialogue_history, project_summary_from_ctx
 from app.agent.schemas import AgentRunContext, PlanRequest
-from app.agent.context.prompting.blocks import json_block
 
 _USER_MESSAGE_MAX = 800
 _DIALOGUE_MAX = 1600

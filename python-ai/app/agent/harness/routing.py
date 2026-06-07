@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from app.agent.context.compact import (
     compact_story_memory_text,
     ctx_with_write_anchor,

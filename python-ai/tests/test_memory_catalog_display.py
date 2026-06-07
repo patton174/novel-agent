@@ -1,7 +1,7 @@
 """Chapter memory catalog shows titles, not raw UUID-only lines."""
 
-from app.agent.schemas import AgentRunContext
 from app.agent.backend.memory_catalog import chapter_memory_catalog_label
+from app.agent.schemas import AgentRunContext
 
 
 def _ctx() -> AgentRunContext:

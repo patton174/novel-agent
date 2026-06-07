@@ -4,13 +4,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from app.agent.schemas import PlanToolCall
+from app.agent.schemas import AgentRunContext, PlanToolCall
 from app.agent.tools.registry import (
-    get_tool_names,
-    is_tool_discovered,
     find_tool_by_name,
+    get_tool_names,
 )
-from app.agent.schemas import AgentRunContext
 
 PLAN_MAX_TOOL_CALLS = 8
 
@@ -139,7 +137,7 @@ def plan_has_terminal_reply(calls: list[PlanToolCall]) -> bool:
 
 
 def is_tool_concurrency_safe(tool: str, inp: dict | None = None) -> bool:
-    from app.agent.tools.registry import find_tool_by_name, partition_concurrency_safe
+    from app.agent.tools.registry import partition_concurrency_safe
 
     raw = dict(inp or {})
     if partition_concurrency_safe(tool, raw):
@@ -161,8 +159,8 @@ def is_tool_concurrency_safe(tool: str, inp: dict | None = None) -> bool:
 
 
 def build_main_loop_system_prompt() -> str:
-    from app.agent.tools.registry import get_all_tools
     from app.agent.harness.visible_text_channel import visible_text_channel_prompt_block
+    from app.agent.tools.registry import get_all_tools
 
     names = ", ".join(sorted(t.name for t in get_all_tools()))
     channel_block = visible_text_channel_prompt_block()

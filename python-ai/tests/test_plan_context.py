@@ -3,13 +3,13 @@
 import json
 
 from app.agent.context.compact import compact_story_memory_text
+from app.agent.harness.orchestration_contract import build_main_loop_system_prompt
 from app.agent.harness.plan_context import (
     build_plan_context,
     format_plan_context_message,
     has_character_roster_snapshot,
     summarize_memory_read,
 )
-from app.agent.harness.orchestration_contract import build_main_loop_system_prompt
 from app.agent.schemas import AgentRunContext, PlanRequest
 
 

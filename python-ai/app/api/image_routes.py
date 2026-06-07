@@ -5,7 +5,7 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-from app.services.agnes_image import AgnesImageError, is_configured, image_to_image, text_to_image
+from app.services.agnes_image import AgnesImageError, image_to_image, is_configured, text_to_image
 from app.services.cover_prompt import CoverPromptRequest, CoverPromptResponse, suggest_cover_prompt
 
 router = APIRouter(prefix="/images", tags=["Images"])

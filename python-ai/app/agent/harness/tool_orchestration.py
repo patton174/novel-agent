@@ -9,10 +9,10 @@ from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
-from app.agent.harness.orchestration_contract import is_tool_concurrency_safe
-from app.agent.harness.loop_support import apply_step_completed
-from app.agent.schemas import AgentRunContext, StepResult
 from app.agent.harness.cc_visibility import normalize_tool_name
+from app.agent.harness.loop_support import apply_step_completed
+from app.agent.harness.orchestration_contract import is_tool_concurrency_safe
+from app.agent.schemas import AgentRunContext, StepResult
 
 logger = logging.getLogger(__name__)
 

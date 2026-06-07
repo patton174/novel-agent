@@ -3,8 +3,6 @@
 from app.agent.harness.events import build_tool_completed_sse_payload, extract_chapter_read_labels
 from app.agent.harness.tool_display import (
     format_chapter_read_excerpt,
-    format_tool_display_excerpt,
-    split_frontmatter,
     strip_line_numbers,
 )
 

@@ -8,7 +8,6 @@ from langchain_core.messages import HumanMessage, SystemMessage
 
 from app.crawl.agent.catalog_context import format_catalog_snapshot
 from app.crawl.agent.context import CrawlAgentContext
-from app.crawl.agent.memory import CrawlContextMemory
 
 RUN_CONTEXT_MARKER = "__RUN_CONTEXT__"
 

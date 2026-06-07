@@ -7,13 +7,13 @@ from typing import Any
 
 import httpx
 
-from app.agent.schemas import AgentRunContext
 from app.agent.backend.chapter_meta import (
     CHAPTER_TITLE_REQUIRED_MSG,
     is_valid_chapter_title,
     resolve_chapter_write_meta,
     sorted_chapter_summaries,
 )
+from app.agent.schemas import AgentRunContext
 from app.config import settings
 
 logger = logging.getLogger(__name__)

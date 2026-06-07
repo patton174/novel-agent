@@ -8,8 +8,8 @@ from typing import Any
 from app.agent.backend import chapter_client
 from app.agent.backend.chapter_meta import resolve_chapter_write_meta, resolve_chapter_write_title
 from app.agent.harness.chapter_body_format import normalize_chapter_body_for_persist
-from app.agent.schemas import AgentRunContext
 from app.agent.harness.tool_display import split_frontmatter
+from app.agent.schemas import AgentRunContext
 
 CHAPTER_ID_RE = re.compile(
     r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",

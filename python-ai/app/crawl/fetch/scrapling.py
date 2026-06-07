@@ -10,7 +10,6 @@ from typing import Any
 from urllib.parse import urljoin
 
 from app.config import settings
-from app.crawl.fetch.proxy import mask_proxy_url, pick_crawl_proxy, proxy_candidates_for_fetch
 from app.crawl.fetch.mihomo import (
     iter_nodes_for_retry,
     mihomo_rotation_enabled,
@@ -18,6 +17,7 @@ from app.crawl.fetch.mihomo import (
     record_node_success,
     select_node,
 )
+from app.crawl.fetch.proxy import mask_proxy_url, proxy_candidates_for_fetch
 
 logger = logging.getLogger(__name__)
 

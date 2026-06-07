@@ -13,7 +13,6 @@ from app.agent.context.prompting.fragments import (
     build_output_delivery_hint,
     build_think_system_text,
     build_think_task_text,
-    normalize_think_intensity,
 )
 from app.agent.context.prompting.run_context import format_run_context_block
 from app.agent.context.prompting.tool_contracts import (

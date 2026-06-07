@@ -3,15 +3,12 @@
 from __future__ import annotations
 
 import asyncio
+import json
 from typing import Any
 
 from app.config import settings
-from app.crawl.metrics import record_chapter_saved
-from app.crawl.config import get_crawl_limits
-from app.crawl.engine.fetch_engine import FetchEngine, ScrapeOptions
-from app.crawl.engine.modes import FetchMode
-from app.crawl.engine.selectors import extract_links_from_items, guess_sort_orders
 from app.crawl.agent.context import ChapterItem, CrawlAgentContext
+from app.crawl.agent.limits import batch_save_count, slice_chapters
 from app.crawl.agent.runtime_state import persist_runtime
 from app.crawl.agent.tools.base import append_log as _append_log
 from app.crawl.agent.tools.base import crawl_proxy as _crawl_proxy
@@ -31,19 +28,23 @@ from app.crawl.agent.tools.schemas import (
     InitNovelInput,
     MapLinksInput,
     QueueChaptersInput,
-    UpdateCoverUrlInput,
     SaveQueuedChaptersInput,
+    UpdateCoverUrlInput,
 )
 from app.crawl.agent.tools.tool import CrawlTool, CrawlToolResult
+from app.crawl.config import get_crawl_limits
+from app.crawl.engine.fetch_engine import FetchEngine, ScrapeOptions
+from app.crawl.engine.modes import FetchMode
+from app.crawl.engine.selectors import extract_links_from_items, guess_sort_orders
 from app.crawl.extract.ai_extractor import extract_chapter
 from app.crawl.fetch.browser import (
-    CrawlBrowserSession,
     BrowserSnapshot,
+    CrawlBrowserSession,
     prepare_html_for_ai,
 )
-from app.crawl.fetch.fetch import fetch_for_crawl_async, resolve_crawl_url
-from app.crawl.fetch.scrapling import page_html, page_links
-from app.crawl.agent.limits import batch_save_count, slice_chapters
+from app.crawl.fetch.fetch import fetch_for_crawl, fetch_for_crawl_async, resolve_crawl_url
+from app.crawl.fetch.scrapling import page_links
+from app.crawl.metrics import record_chapter_saved
 
 _REGISTERED = False
 _FETCH_ENGINE = FetchEngine()
