@@ -6,6 +6,7 @@ import asyncio
 import json
 from typing import Any
 
+from app.config import settings
 from app.crawl_agent.context import ChapterItem, CrawlAgentContext
 from app.crawl_agent.runtime_state import persist_runtime
 from app.crawl_agent.tools.registry import register_tool
@@ -95,11 +96,62 @@ def _append_snapshot_to_context(snap: BrowserSnapshot) -> dict[str, Any]:
     }
 
 
+async def _fetch_page_via_browser(ctx: CrawlAgentContext, target: str) -> CrawlToolResult:
+    snap = await _browser_session(ctx).goto(target)
+    ctx.last_fetched_url = snap.url
+    ctx.use_stealth = True
+    html, payload = _snapshot_payload(snap)
+    blocked = snap.http_status >= 400 or len(html.strip()) < 80
+    if blocked:
+        msg = f"HTTP {snap.http_status}，Playwright 未拿到有效页"
+        await _append_log(ctx, "WARN", f"FetchPage(Playwright) · {msg}")
+        patch: dict[str, Any] = {}
+        if html.strip():
+            patch["append_page"] = {"url": snap.url, "content": html}
+        return CrawlToolResult(
+            content=_json_err(
+                msg,
+                url=snap.url,
+                http_status=snap.http_status,
+                used_stealth=True,
+                content=html[:1500],
+                html_chars=len(html),
+            ),
+            is_error=True,
+            count_as_failure=snap.http_status not in {403, 429},
+            context_patch=patch,
+        )
+    await _append_log(ctx, "INFO", f"FetchPage(Playwright) 成功 · {snap.url} · HTML {len(html)} 字")
+    return CrawlToolResult(
+        content=_json_ok(
+            url=snap.url,
+            http_status=snap.http_status,
+            used_stealth=True,
+            content=html[:1500],
+            html_chars=len(html),
+            note="Playwright 抓取；完整 HTML 已追加至 RUN_CONTEXT。",
+        ),
+        context_patch=_append_snapshot_to_context(snap),
+    )
+
+
 async def _fetch_page_tool(ctx: CrawlAgentContext, inp: FetchPageInput) -> CrawlToolResult:
-    stealth_override = inp.use_stealth
     target = resolve_crawl_url(ctx, inp.url.strip())
     await _append_log(ctx, "INFO", f"FetchPage: {target}")
 
+    prefer_playwright = (
+        settings.crawl_browser_fetch_enabled
+        and settings.crawl_prefer_playwright
+        and inp.use_stealth is not False
+    )
+    if prefer_playwright:
+        try:
+            return await _fetch_page_via_browser(ctx, target)
+        except Exception as exc:
+            msg = str(exc)[:300]
+            await _append_log(ctx, "WARN", f"FetchPage Playwright 失败，回退 HTTP · {msg}")
+
+    stealth_override = inp.use_stealth
     page, meta = await asyncio.to_thread(
         fetch_for_crawl,
         ctx,

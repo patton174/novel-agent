@@ -11,23 +11,37 @@ from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, Tool
 from app.config import settings
 from app.core.llm import llm_provider
 from app.crawl_orchestrator.client import OrchestratorClient
+from app.crawl_orchestrator.context_builder import build_cycle_context, format_cycle_context
 from app.crawl_orchestrator.tools import ORCHESTRATOR_TOOLS, run_orchestrator_tool
 
 logger = logging.getLogger(__name__)
 
-SYSTEM_PROMPT = """你是爬虫主编排 Agent（全局唯一、常驻运行）。你不直接 FetchPage，只负责：
-1. 理解当前总目标 goal
-2. 查看书库进度、运行中子任务、未完成作品
-3. 在并发上限内创建/暂停子任务（每个子任务 = 一本书的 CrawlJob）
-4. 目标完成后调用 CompleteGoal；无事可做时调用 Sleep
+SYSTEM_PROMPT = """你是爬虫主编排 Agent（全局唯一、常驻）。你不直接抓取页面，只负责把「总目标 goal」拆成可执行的子任务并调度。
 
-规则：
-- 同时占用槽位的子任务（RUNNING + PAUSED）最多 3 个；暂停的任务仍占槽位，需等其完成或人工在 CRM 取消后再派发
-- 只能用 StopCrawlJob 暂停子任务，禁止取消或删除子任务
-- 续爬：对 chaptersDone < chaptersExpected 的书，用 catalogNovelId + sourceUrl 创建 resume 任务
-- 新建书：CreateCrawlJob 传 sourceUrl 与 goal
-- maxChapters 传 0 表示不限章节
-- 不要长篇解释，只调用工具"""
+## 角色
+- **总目标 goal**：CRM 设定的战略意图（可能包含多件事，如「爬某站新书 + 补书库封面」）
+- **子任务 CrawlJob**：每次 CreateCrawlJob 必须带**明确、可执行的 sub_goal**（一本书/一个封面/一次续爬），子 Agent 只看 sub_goal，看不到总目标
+
+## 决策前必读（已在用户消息注入）
+- catalog：书库总量、缺封面列表、未完成续爬、最近入库
+- activeJobs / activeSourceUrls：已在跑或占槽的任务，**禁止重复 URL**
+
+## 派发规则（严格遵守）
+1. 同时占用槽位（RUNNING+PAUSED）最多 3；**PAUSED 仍占槽**，不要对已 PAUSED 的任务再 StopCrawlJob
+2. **禁止**对同一 sourceUrl 创建第二个活跃任务
+3. **禁止**无 sub_goal 的盲目 CreateCrawlJob；sub_goal 要具体，例如：
+   - 新书：「从 https://…/book/123/ 抓取全部章节入库」
+   - 续爬：「续爬 catalogNovelId=xxx，从 sourceUrl 补全剩余章节」
+   - 封面：「从 sourceUrl 提取封面图 URL，InitNovel 后写入书库 coverUrl」
+4. 仅当 RUNNING 子任务过多且需要腾槽时，才对 **RUNNING** 任务 StopCrawlJob；FAILED/COMPLETED 不占槽
+5. 槽位满且全是 PAUSED → Sleep 并在 decision 说明需人工 CRM 取消，**不要**反复 Stop/Create
+6. 总目标全部完成 → CompleteGoal；本轮无事可做 → Sleep
+
+## 工具
+GetOrchestratorState / ListIncompleteCatalog / ListCrawlJobs / GetRunningJobCount /
+CreateCrawlJob / StopCrawlJob / GetCrawlJobStatus / Sleep / CompleteGoal
+
+只调用工具，不要长篇解释。"""
 
 _wake_event: asyncio.Event | None = None
 
@@ -66,24 +80,23 @@ async def run_orchestrator_once(client: OrchestratorClient | None = None) -> Non
 async def _one_cycle(client: OrchestratorClient) -> None:
     state = await client.get_state()
     goal = str(state.get("goal") or "").strip()
-    status = str(state.get("status") or "SLEEPING")
     if not goal:
         logger.debug("orchestrator: no goal, sleeping")
         await client.mark_sleeping()
         return
-    if status == "SLEEPING" and str(state.get("runningJobCount") or 0) == "0":
-        # still have goal but was sleeping — orchestrator wakes on goal set from CRM
-        pass
+
+    cycle_ctx = await build_cycle_context(client)
+    ctx_text = format_cycle_context(cycle_ctx)
 
     llm = llm_provider.get_llm(profile="plan").bind_tools(ORCHESTRATOR_TOOLS)
-    running = state.get("runningJobCount", 0)
     messages = [
         SystemMessage(content=SYSTEM_PROMPT),
         HumanMessage(
             content=(
-                f"## 当前状态\n{json.dumps(state, ensure_ascii=False)}\n\n"
-                f"## 目标\n{goal}\n\n"
-                "请决定下一步：查进度、派发子任务、暂停任务、CompleteGoal 或 Sleep。"
+                f"## 总目标（战略）\n{goal}\n\n"
+                f"## 当前快照（书库+任务，已预加载）\n{ctx_text}\n\n"
+                "请基于快照决策：必要时用工具刷新；派发子任务时必须写清 sub_goal；"
+                "不要重复 activeSourceUrls 中的 URL。"
             )
         ),
     ]
@@ -99,7 +112,7 @@ async def _one_cycle(client: OrchestratorClient) -> None:
             name = call.get("name", "")
             args = call.get("args") or {}
             tid = call.get("id") or name
-            result = await run_orchestrator_tool(client, name, args, goal=goal)
+            result = await run_orchestrator_tool(client, name, args, goal=goal, cycle_ctx=cycle_ctx)
             messages.append(ToolMessage(content=result, tool_call_id=tid))
             await client.record_decision(f"{name}: {result[:200]}")
             if name in {"Sleep", "CompleteGoal"}:

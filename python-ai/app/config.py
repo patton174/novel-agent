@@ -66,6 +66,7 @@ class Settings(BaseSettings):
     crawl_http_timeout: int = 45
     crawl_fetch_concurrency: int = 3
     crawl_browser_fetch_enabled: bool = True
+    crawl_prefer_playwright: bool = True
     crawl_browser_concurrency: int = 1
     crawl_browser_timeout_ms: int = 60000
     crawl_tls_retry_direct: bool = True

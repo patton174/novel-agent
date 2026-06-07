@@ -4,12 +4,40 @@ from __future__ import annotations
 
 import json
 from typing import Any
+from urllib.parse import urlparse
 
 from langchain_core.tools import tool
 
 from app.crawl_orchestrator.client import OrchestratorClient
+from app.crawl_orchestrator.context_builder import ACTIVE_JOB_STATUSES
 
 DEFAULT_SUB_GOAL = "把链接中的小说全部章节抓取并清洗正文，入库公共书库"
+
+
+def _normalize_url(url: str) -> str:
+    u = (url or "").strip().rstrip("/")
+    if not u:
+        return ""
+    parsed = urlparse(u)
+    if parsed.scheme and parsed.netloc:
+        path = parsed.path.rstrip("/") or "/"
+        return f"{parsed.scheme}://{parsed.netloc}{path}"
+    return u.rstrip("/")
+
+
+async def _active_source_urls(client: OrchestratorClient) -> set[str]:
+    page = await client.page_jobs(page=1, size=50)
+    jobs = page.get("list") if isinstance(page, dict) else []
+    if not isinstance(jobs, list):
+        return set()
+    out: set[str] = set()
+    for job in jobs:
+        if str(job.get("status") or "").upper() not in ACTIVE_JOB_STATUSES:
+            continue
+        norm = _normalize_url(str(job.get("sourceUrl") or ""))
+        if norm:
+            out.add(norm)
+    return out
 
 
 @tool
@@ -43,13 +71,13 @@ async def CreateCrawlJob(
     catalog_novel_id: str = "",
     crawl_type: str = "full",
 ) -> str:
-    """创建并启动子任务。续爬传 catalog_novel_id 与 crawl_type=resume。"""
+    """创建并启动子任务。必须提供具体 sub_goal（goal 参数）；续爬传 catalog_novel_id。"""
     return ""
 
 
 @tool
 async def StopCrawlJob(job_id: str) -> str:
-    """暂停指定子任务。"""
+    """暂停 RUNNING 中的子任务；已 PAUSED 勿重复调用。"""
     return ""
 
 
@@ -90,6 +118,7 @@ async def run_orchestrator_tool(
     args: dict[str, Any],
     *,
     goal: str,
+    cycle_ctx: dict[str, Any] | None = None,
 ) -> str:
     try:
         if name == "GetOrchestratorState":
@@ -103,20 +132,60 @@ async def run_orchestrator_tool(
         if name == "GetRunningJobCount":
             return json.dumps(await client.running_count(), ensure_ascii=False)
         if name == "CreateCrawlJob":
-            sub_goal = str(args.get("goal") or goal or DEFAULT_SUB_GOAL).strip()
+            source_url = str(args.get("source_url") or "").strip()
+            if not source_url:
+                return json.dumps({"ok": False, "error": "source_url 不能为空"})
+            sub_goal = str(args.get("goal") or "").strip()
+            if not sub_goal:
+                return json.dumps({"ok": False, "error": "必须提供具体 sub_goal（goal 参数），不可空"})
+            if sub_goal == goal.strip() and len(sub_goal) > 80:
+                return json.dumps(
+                    {
+                        "ok": False,
+                        "error": "sub_goal 过长且与总目标相同，请拆成单本书/单封面等可执行描述",
+                    }
+                )
+            norm = _normalize_url(source_url)
+            active_urls = set(cycle_ctx.get("activeSourceUrls") or []) if cycle_ctx else set()
+            if not active_urls:
+                active_urls = await _active_source_urls(client)
+            if norm in active_urls:
+                return json.dumps(
+                    {
+                        "ok": False,
+                        "error": f"sourceUrl 已有活跃任务，禁止重复派发: {source_url}",
+                    }
+                )
             cfg = {
                 "goal": sub_goal,
                 "maxChapters": 0,
                 "crawlType": str(args.get("crawl_type") or "full"),
+                "useStealth": True,
+                "usePlaywright": True,
             }
             job = await client.create_and_start_job(
-                source_url=str(args["source_url"]).strip(),
+                source_url=source_url,
                 config_json=json.dumps(cfg, ensure_ascii=False),
                 catalog_novel_id=str(args.get("catalog_novel_id") or ""),
             )
             return json.dumps({"ok": True, "job": job}, ensure_ascii=False)
         if name == "StopCrawlJob":
-            job = await client.pause_job(str(args["job_id"]))
+            job_id = str(args.get("job_id") or "").strip()
+            if not job_id:
+                return json.dumps({"ok": False, "error": "job_id 不能为空"})
+            job = await client.get_job(job_id)
+            status = str(job.get("status") or "").upper()
+            if status == "PAUSED":
+                return json.dumps(
+                    {"ok": True, "job": job, "note": "已是 PAUSED，无需重复暂停（仍占槽位）"},
+                    ensure_ascii=False,
+                )
+            if status not in {"RUNNING", "PENDING"}:
+                return json.dumps(
+                    {"ok": False, "error": f"当前状态 {status} 不可暂停，请改用 GetCrawlJobStatus 查看"},
+                    ensure_ascii=False,
+                )
+            job = await client.pause_job(job_id)
             return json.dumps({"ok": True, "job": job}, ensure_ascii=False)
         if name == "GetCrawlJobStatus":
             job = await client.get_job(str(args["job_id"]))

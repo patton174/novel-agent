@@ -17,6 +17,7 @@ import com.novel.agent.content.service.crawl.dto.CatalogChapterDetailDTO;
 import com.novel.agent.content.service.crawl.dto.CatalogChapterSummaryDTO;
 import com.novel.agent.content.service.crawl.dto.CatalogNovelDTO;
 import com.novel.agent.content.service.crawl.dto.CatalogNovelProgressDTO;
+import com.novel.agent.content.service.crawl.dto.CatalogOverviewDTO;
 import com.novel.agent.content.service.crawl.dto.UpdateCatalogChapterRequest;
 import com.novel.agent.content.service.crawl.dto.UpdateCatalogNovelRequest;
 import lombok.RequiredArgsConstructor;
@@ -176,6 +177,30 @@ public class CatalogService {
             .map(this::toProgressFromJob)
             .distinct()
             .toList();
+    }
+
+    public List<CatalogNovelProgressDTO> listMissingCover(int limit) {
+        int size = Math.max(1, Math.min(limit, 100));
+        return catalogNovelRepository.findMissingCover(PageRequest.of(0, size))
+            .stream()
+            .map(novel -> toProgress(novel, null))
+            .toList();
+    }
+
+    public CatalogOverviewDTO buildOrchestratorOverview(int limit) {
+        int size = Math.max(1, Math.min(limit, 50));
+        long total = catalogNovelRepository.count();
+        Page<CrawlCatalogNovelEntity> missingPage = catalogNovelRepository.findMissingCover(PageRequest.of(0, size));
+        List<CatalogNovelProgressDTO> missing = missingPage.stream()
+            .map(novel -> toProgress(novel, null))
+            .toList();
+        List<CatalogNovelProgressDTO> incomplete = listIncomplete(size);
+        List<CatalogNovelProgressDTO> recent = catalogNovelRepository
+            .findAllByOrderByUpdatedAtDesc(PageRequest.of(0, size))
+            .stream()
+            .map(novel -> toProgress(novel, null))
+            .toList();
+        return new CatalogOverviewDTO(total, missingPage.getTotalElements(), missing, incomplete, recent);
     }
 
     @Transactional

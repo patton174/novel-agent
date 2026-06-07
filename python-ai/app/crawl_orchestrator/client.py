@@ -74,6 +74,16 @@ class OrchestratorClient:
         data = resp.json()
         return data if isinstance(data, list) else []
 
+    async def catalog_overview(self, limit: int = 30) -> dict[str, Any]:
+        resp = await self._client.get(
+            f"{self._base}/internal/crawl/catalog/overview",
+            headers=self._headers(),
+            params={"limit": limit},
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        return data if isinstance(data, dict) else {}
+
     async def page_jobs(self, page: int = 1, size: int = 20) -> dict[str, Any]:
         resp = await self._client.get(
             f"{self._base}/internal/crawl/orchestrator/jobs",

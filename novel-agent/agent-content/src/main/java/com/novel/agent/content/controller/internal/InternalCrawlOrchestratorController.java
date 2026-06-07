@@ -2,6 +2,7 @@ package com.novel.agent.content.controller.internal;
 
 import com.novel.agent.content.service.catalog.CatalogService;
 import com.novel.agent.content.service.crawl.CrawlOrchestratorStateService;
+import com.novel.agent.content.service.crawl.dto.CatalogOverviewDTO;
 import com.novel.agent.content.service.crawl.dto.CrawlOrchestratorStateDTO;
 import com.novel.agent.content.service.crawl.dto.CatalogNovelProgressDTO;
 import com.novel.agent.content.service.crawl.dto.CrawlJobDTO;
@@ -100,6 +101,18 @@ public class InternalCrawlOrchestratorController {
     @GetMapping("/catalog/incomplete")
     public List<CatalogNovelProgressDTO> listIncomplete(@RequestParam(defaultValue = "50") int limit) {
         return catalogService.listIncomplete(limit);
+    }
+
+    @GetMapping("/catalog/missing-cover")
+    public List<CatalogNovelProgressDTO> listMissingCover(@RequestParam(defaultValue = "50") int limit) {
+        return catalogService.listMissingCover(limit);
+    }
+
+    @GetMapping("/catalog/overview")
+    public CatalogOverviewDTO catalogOverview(
+        @RequestParam(defaultValue = "30") int limit
+    ) {
+        return catalogService.buildOrchestratorOverview(limit);
     }
 
     @GetMapping("/jobs/running-count")

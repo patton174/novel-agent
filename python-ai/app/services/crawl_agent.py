@@ -9,6 +9,7 @@ from typing import Any
 from app.crawl_agent.context import CrawlAgentContext
 from app.crawl_agent.loop import CrawlLoopResult, run_crawl_tool_loop
 from app.crawl_agent.runtime_state import apply_runtime_to_context, parse_config_json
+from app.config import settings
 from app.services.crawl_content_client import CrawlContentClient
 from app.services.crawl_goal import DEFAULT_GOAL, goal_from_config, options_from_config
 
@@ -26,9 +27,19 @@ class CrawlOptions:
         cfg = options_from_config(site_config)
         raw = cfg.get("maxChapters") if cfg.get("maxChapters") is not None else cfg.get("max_chapters")
         max_ch = 0 if raw is None else int(raw)
+        explicit_stealth = cfg.get("useStealth") if "useStealth" in cfg else cfg.get("use_stealth")
+        prefer_pw = cfg.get("usePlaywright") if "usePlaywright" in cfg else cfg.get("use_playwright")
+        if prefer_pw is False:
+            use_stealth = bool(explicit_stealth)
+        elif prefer_pw is True or explicit_stealth is True:
+            use_stealth = True
+        else:
+            use_stealth = bool(explicit_stealth) or (
+                settings.crawl_browser_fetch_enabled and settings.crawl_prefer_playwright
+            )
         return cls(
             goal=goal_from_config(site_config),
-            use_stealth=bool(cfg.get("useStealth") or cfg.get("use_stealth")),
+            use_stealth=use_stealth,
             max_chapters=max_ch,
         )
 
