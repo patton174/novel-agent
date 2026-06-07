@@ -146,7 +146,7 @@ if [[ "${SKIP_BUILD:-0}" != "1" && "${SKIP_MVN:-0}" != "1" ]]; then
   if [[ "$MODULE" == "agent-auth" ]]; then
     bash "$SCRIPT_DIR/build-email-templates.sh"
   fi
-  (cd "$REPO_ROOT/novel-agent" && mvn -q -pl ":$MODULE" -am package -DskipTests)
+  (cd "$REPO_ROOT/novel-agent" && mvn -q -pl "agent-service/$MODULE" -am package -DskipTests)
 else
   echo "[deploy-fast] SKIP_BUILD=1，使用已有 jar"
 fi

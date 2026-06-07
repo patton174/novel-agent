@@ -152,7 +152,7 @@ if [[ ${#MODULES[@]} -gt 0 ]]; then
   PL=""
   for m in "${MODULES[@]}"; do
     [[ -n "$PL" ]] && PL+=","
-    PL+=":$m"
+    PL+="agent-service/$m"
   done
   echo "[ci-hot] mvn -pl $PL -am package -DskipTests"
   (cd "$REPO_ROOT/novel-agent" && mvn -q -pl "$PL" -am package -DskipTests)

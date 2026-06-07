@@ -19,7 +19,7 @@ build_jar_remote() {
     -v novel-agent-m2:/root/.m2 \
     -w /build/novel-agent \
     "$MVN_IMAGE" \
-    mvn -q -pl ":$module" -am package -DskipTests
+    mvn -q -pl "agent-service/$module" -am package -DskipTests
   [[ -f "$out" ]] || { echo "缺少 $out"; exit 1; }
   echo "$out"
 }

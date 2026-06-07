@@ -15,7 +15,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl \
   && cd novel-agent/agent-common/agent-common-mail/email-templates && npm install && npm run build \
   && apt-get purge -y curl && apt-get autoremove -y && rm -rf /var/lib/apt/lists/*
 RUN mvn -f novel-agent/pom.xml \
-  -pl :agent-auth,:agent-gateway,:agent-pyai,:agent-content,:agent-consumer \
+  -pl agent-service/agent-auth,agent-service/agent-gateway,agent-service/agent-pyai,agent-service/agent-content,agent-service/agent-consumer \
   -am clean package -DskipTests -Dspring-boot.repackage.skip=false
 
 FROM eclipse-temurin:21-jre-alpine AS runtime
