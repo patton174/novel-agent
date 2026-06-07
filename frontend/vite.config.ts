@@ -78,6 +78,17 @@ export default defineConfig(({ mode }) => {
       minify: codeObfuscation ? 'terser' : 'esbuild',
       terserOptions: codeObfuscation ? terserMinifyOptions() : undefined,
       chunkSizeWarningLimit: codeObfuscation ? 1200 : 500,
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (!id.includes('node_modules')) return
+            if (id.includes('recharts') || id.includes('d3-')) return 'recharts'
+            if (id.includes('framer-motion')) return 'motion'
+            if (id.includes('/gsap')) return 'gsap'
+            if (id.includes('react-markdown') || id.includes('remark-')) return 'markdown'
+          },
+        },
+      },
     },
     define: {
       'import.meta.env.VITE_SECURITY_AES': JSON.stringify(securityAes),

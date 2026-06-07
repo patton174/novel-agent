@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
+import { confirmAction } from '@/stores/confirmDialogStore'
 import { appToast } from '@/stores/appToastStore'
 
 interface CatalogReaderModalProps {
@@ -131,7 +132,12 @@ export function CatalogReaderModal({
 
   const handleDeleteChapter = async () => {
     if (!selectedChapterId || !chapterDetail) return
-    if (!window.confirm(`确定删除章节「${chapterDetail.title}」？`)) return
+    if (!(await confirmAction({
+      title: '删除章节',
+      description: `确定删除章节「${chapterDetail.title}」？`,
+      confirmLabel: '删除',
+      danger: true,
+    }))) return
     setDeleting(true)
     try {
       await deleteCatalogChapter(novel.id, selectedChapterId)

@@ -1,10 +1,11 @@
 import '../styles/globals.css'
 
-import { useEffect } from 'react'
+import { useEffect, Suspense } from 'react'
 import { Link, Outlet, useLocation } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { fetchUserInfo } from '../api/userApi'
 import { AdminSidebar } from '../components/admin/AdminSidebar'
+import { AdminContentSkeleton } from '../components/loading/PageSkeletons'
 import { Avatar, AvatarFallback } from '../components/ui/avatar'
 import { Badge } from '../components/ui/badge'
 import { Button } from '../components/ui/button'
@@ -14,6 +15,8 @@ const PAGE_META: Record<string, { title: string; description?: string }> = {
   '/admin': { title: '管理概览', description: '平台与用户数据总览' },
   '/admin/users': { title: '用户管理', description: '搜索、查看与编辑用户' },
   '/admin/stats': { title: '平台统计', description: '注册与 Agent 调用趋势' },
+  '/admin/crawler': { title: 'AI 爬虫', description: '主编排与子任务调度' },
+  '/admin/catalog': { title: '书库', description: '入库书籍与章节管理' },
 }
 
 export default function AdminLayout() {
@@ -74,7 +77,9 @@ export default function AdminLayout() {
           </div>
         </header>
         <main className="flex-1 overflow-y-auto p-6">
-          <Outlet />
+          <Suspense fallback={<AdminContentSkeleton />}>
+            <Outlet />
+          </Suspense>
         </main>
       </div>
     </div>

@@ -41,6 +41,7 @@ import {
   truncateError,
 } from '@/pages/admin/crawlJobUi'
 import { cn } from '@/lib/utils'
+import { confirmAction } from '@/stores/confirmDialogStore'
 import { appToast } from '@/stores/appToastStore'
 
 const DEFAULT_GOAL =
@@ -178,7 +179,12 @@ export default function CrawlerPage() {
     setActingKey(key)
 
     if (action === 'delete') {
-      if (!window.confirm('确定删除该任务？日志将一并清除。')) {
+      if (!(await confirmAction({
+        title: '删除子任务',
+        description: '确定删除该任务？日志将一并清除。',
+        confirmLabel: '删除',
+        danger: true,
+      }))) {
         setActingKey(null)
         return
       }

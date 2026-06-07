@@ -165,11 +165,16 @@ PIDS=()
 hot() {
   local svc="$1" target="$2"
   echo "[ci-hot] deploy-fast $svc $target"
+  local -a hot_env=(SKIP_BUILD=1)
+  if [[ "$svc" == "frontend" && "$target" == "worker" ]]; then
+    # ci-hot 已预编译 dist，避免 deploy-fast 二次 build + 二次 crypto register
+    hot_env+=(SKIP_FRONTEND_BUILD=1 SKIP_CRYPTO_REGISTER=1)
+  fi
   if [[ "${GITHUB_ACTIONS:-}" == "true" && "${CI_PARALLEL_DEPLOY:-0}" != "1" ]]; then
     # CI 串行部署，避免多路 scp/ssh 残留导致 Post job cleanup 挂死
-    SKIP_BUILD=1 bash "$SCRIPT_DIR/deploy-fast.sh" "$svc" "$target"
+    env "${hot_env[@]}" bash "$SCRIPT_DIR/deploy-fast.sh" "$svc" "$target"
   else
-    SKIP_BUILD=1 bash "$SCRIPT_DIR/deploy-fast.sh" "$svc" "$target" &
+    env "${hot_env[@]}" bash "$SCRIPT_DIR/deploy-fast.sh" "$svc" "$target" &
     PIDS+=($!)
   fi
 }

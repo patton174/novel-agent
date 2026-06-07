@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
+import { confirmAction } from '@/stores/confirmDialogStore'
 import { appToast } from '@/stores/appToastStore'
 
 interface CatalogOverviewDialogProps {
@@ -93,7 +94,12 @@ export function CatalogOverviewDialog({
   }
 
   const handleDelete = async () => {
-    if (!window.confirm(`确定删除《${title || novel.title}》及其全部章节？`)) return
+    if (!(await confirmAction({
+      title: '删除书籍',
+      description: `确定删除《${title || novel.title}》及其全部章节？`,
+      confirmLabel: '删除',
+      danger: true,
+    }))) return
     setDeleting(true)
     try {
       await deleteCatalogNovel(novel.id)

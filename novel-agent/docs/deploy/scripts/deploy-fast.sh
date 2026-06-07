@@ -94,12 +94,16 @@ fi
 docker cp "$REMOTE_DIST/." "\$CID:/usr/share/nginx/html/"
 rm -rf '$REMOTE_DIST'
 docker restart "\$CID"
-echo "[deploy-fast] 前端已更新，硬刷新浏览器"
+    echo "[deploy-fast] 前端已更新，硬刷新浏览器"
 EOF
-    echo "[crypto-register] 注册前端 crypto 密钥（Worker env + runtime.json）..."
-    bash "$SCRIPT_DIR/register-frontend-crypto.sh" || {
-      echo "[deploy-fast] WARN: crypto register 失败，可稍后手动运行 register-frontend-crypto.sh"
-    }
+    if [[ "${SKIP_CRYPTO_REGISTER:-0}" != "1" ]]; then
+      echo "[crypto-register] 注册前端 crypto 密钥（Worker env + runtime.json）..."
+      bash "$SCRIPT_DIR/register-frontend-crypto.sh" || {
+        echo "[deploy-fast] WARN: crypto register 失败，可稍后手动运行 register-frontend-crypto.sh"
+      }
+    else
+      echo "[deploy-fast] SKIP_CRYPTO_REGISTER=1，跳过 crypto register（由 ci-hot 统一执行）"
+    fi
     exit 0
     ;;
   novel-agent-*)

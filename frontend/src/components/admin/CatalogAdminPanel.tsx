@@ -21,6 +21,7 @@ import { CatalogReaderModal } from '@/components/admin/CatalogReaderModal'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
+import { confirmAction } from '@/stores/confirmDialogStore'
 import { appToast } from '@/stores/appToastStore'
 
 const PAGE_SIZE = 20
@@ -88,7 +89,12 @@ export function CatalogAdminPanel({ onOpenJob }: CatalogAdminPanelProps) {
 
   const handleDeleteNovel = async (novel: CatalogNovel, e: React.MouseEvent) => {
     e.stopPropagation()
-    if (!window.confirm(`确定删除《${novel.title}》及其全部章节？此操作不可恢复。`)) {
+    if (!(await confirmAction({
+      title: '删除书籍',
+      description: `确定删除《${novel.title}》及其全部章节？此操作不可恢复。`,
+      confirmLabel: '删除',
+      danger: true,
+    }))) {
       return
     }
     setActingId(novel.id)

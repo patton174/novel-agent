@@ -4,6 +4,9 @@ import { ThemeProvider } from 'styled-components'
 import { AnimatePresence } from 'framer-motion'
 import { theme } from './styles/theme'
 import { AppToastHost } from './components/ui/AppToastHost'
+import { ConfirmDialogHost } from './components/ui/ConfirmDialogHost'
+import { RouteFallback } from './components/loading/RouteFallback'
+import { RouteProgressBar } from './components/loading/RouteProgressBar'
 import { RequireAuth } from './components/guards/RequireAuth'
 import { RequireAdmin } from './components/guards/RequireAdmin'
 import { fetchUserInfo } from './api/userApi'
@@ -36,22 +39,6 @@ const UsersPage = lazy(() => import('./pages/admin/UsersPage'))
 const StatsPage = lazy(() => import('./pages/admin/StatsPage'))
 const CrawlerPage = lazy(() => import('./pages/admin/CrawlerPage'))
 const CatalogPage = lazy(() => import('./pages/admin/CatalogPage'))
-
-function RouteFallback() {
-  return (
-    <div
-      style={{
-        minHeight: '100vh',
-        display: 'grid',
-        placeItems: 'center',
-        color: '#64748b',
-        fontFamily: 'system-ui, sans-serif',
-      }}
-    >
-      加载中…
-    </div>
-  )
-}
 
 function AppRoutes() {
   const location = useLocation()
@@ -127,7 +114,9 @@ function App() {
   return (
     <ThemeProvider theme={theme}>
       <AppToastHost />
+      <ConfirmDialogHost />
       <BrowserRouter>
+        <RouteProgressBar />
         <Suspense fallback={<RouteFallback />}>
           <AppRoutes />
         </Suspense>
