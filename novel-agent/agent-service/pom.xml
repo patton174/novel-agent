@@ -20,5 +20,6 @@
         <module>agent-auth</module>
         <module>agent-content</module>
         <module>agent-consumer</module>
+        <module>agent-billing</module>
     </modules>
 </project>

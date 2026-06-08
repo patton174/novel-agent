@@ -7,17 +7,13 @@ from typing import Any
 
 import httpx
 
-from app.config import settings
+from app.agent.backend.content_api import content_internal_url, internal_headers
 
 logger = logging.getLogger(__name__)
-
-INTERNAL_KEY_HEADER = "X-Internal-Service-Key"
 
 
 class CrawlContentClient:
     def __init__(self) -> None:
-        self._base = settings.content_base_url.rstrip("/")
-        self._key = settings.internal_service_key
         self._timeout = httpx.Timeout(connect=15.0, read=60.0, write=30.0, pool=15.0)
         self._client = httpx.AsyncClient(timeout=self._timeout)
 
@@ -25,11 +21,14 @@ class CrawlContentClient:
         await self._client.aclose()
 
     def _headers(self) -> dict[str, str]:
-        return {INTERNAL_KEY_HEADER: self._key}
+        return internal_headers()
+
+    def _url(self, path: str) -> str:
+        return content_internal_url(path)
 
     async def get_job(self, job_id: str) -> dict[str, Any] | None:
         resp = await self._client.get(
-            f"{self._base}/internal/crawl/jobs/{job_id}",
+            self._url(f"/crawl/jobs/{job_id}"),
             headers=self._headers(),
         )
         if resp.status_code == 404:
@@ -56,7 +55,7 @@ class CrawlContentClient:
         if status is not None:
             payload["status"] = status
         await self._client.post(
-            f"{self._base}/internal/crawl/jobs/{job_id}/progress",
+            self._url(f"/crawl/jobs/{job_id}/progress"),
             headers=self._headers(),
             json=payload,
         )
@@ -71,7 +70,7 @@ class CrawlContentClient:
         source_url: str = "",
     ) -> dict[str, Any]:
         resp = await self._client.post(
-            f"{self._base}/internal/crawl/jobs/{job_id}/chapters",
+            self._url(f"/crawl/jobs/{job_id}/chapters"),
             headers=self._headers(),
             json={
                 "title": title,
@@ -93,7 +92,7 @@ class CrawlContentClient:
         source_url: str = "",
     ) -> dict[str, Any]:
         resp = await self._client.post(
-            f"{self._base}/internal/crawl/jobs/{job_id}/catalog/init",
+            self._url(f"/crawl/jobs/{job_id}/catalog/init"),
             headers=self._headers(),
             json={
                 "title": title,
@@ -107,14 +106,14 @@ class CrawlContentClient:
 
     async def complete_job(self, job_id: str, *, catalog_novel_id: str, title: str) -> None:
         await self._client.post(
-            f"{self._base}/internal/crawl/jobs/{job_id}/complete",
+            self._url(f"/crawl/jobs/{job_id}/complete"),
             headers=self._headers(),
             json={"catalogNovelId": catalog_novel_id, "title": title},
         )
 
     async def fail_job(self, job_id: str, *, error_message: str) -> None:
         await self._client.post(
-            f"{self._base}/internal/crawl/jobs/{job_id}/fail",
+            self._url(f"/crawl/jobs/{job_id}/fail"),
             headers=self._headers(),
             json={"errorMessage": error_message},
         )
@@ -122,7 +121,7 @@ class CrawlContentClient:
     async def append_log(self, job_id: str, *, level: str, message: str) -> None:
         try:
             resp = await self._client.post(
-                f"{self._base}/internal/crawl/jobs/{job_id}/logs",
+                self._url(f"/crawl/jobs/{job_id}/logs"),
                 headers=self._headers(),
                 json={"level": level, "message": message},
             )
@@ -132,7 +131,7 @@ class CrawlContentClient:
 
     async def save_runtime_state(self, job_id: str, runtime: dict[str, Any]) -> None:
         resp = await self._client.post(
-            f"{self._base}/internal/crawl/jobs/{job_id}/runtime",
+            self._url(f"/crawl/jobs/{job_id}/runtime"),
             headers=self._headers(),
             json=runtime,
         )
@@ -147,7 +146,7 @@ class CrawlContentClient:
         page_size: int = 20,
     ) -> dict[str, Any]:
         resp = await self._client.get(
-            f"{self._base}/internal/crawl/catalog/novels",
+            self._url("/crawl/catalog/novels"),
             headers=self._headers(),
             params={"pageCurrent": page_current, "pageSize": page_size},
         )
@@ -156,7 +155,7 @@ class CrawlContentClient:
 
     async def get_catalog_novel(self, catalog_novel_id: str) -> dict[str, Any]:
         resp = await self._client.get(
-            f"{self._base}/internal/crawl/catalog/novels/{catalog_novel_id}",
+            self._url(f"/crawl/catalog/novels/{catalog_novel_id}"),
             headers=self._headers(),
         )
         resp.raise_for_status()
@@ -164,7 +163,7 @@ class CrawlContentClient:
 
     async def get_catalog_progress(self, catalog_novel_id: str) -> dict[str, Any]:
         resp = await self._client.get(
-            f"{self._base}/internal/crawl/catalog/novels/{catalog_novel_id}/progress",
+            self._url(f"/crawl/catalog/novels/{catalog_novel_id}/progress"),
             headers=self._headers(),
         )
         resp.raise_for_status()
@@ -192,7 +191,7 @@ class CrawlContentClient:
         if source_url is not None:
             payload["sourceUrl"] = source_url
         resp = await self._client.put(
-            f"{self._base}/internal/crawl/catalog/novels/{catalog_novel_id}",
+            self._url(f"/crawl/catalog/novels/{catalog_novel_id}"),
             headers=self._headers(),
             json=payload,
         )
@@ -201,7 +200,7 @@ class CrawlContentClient:
 
     async def delete_catalog_novel(self, catalog_novel_id: str) -> dict[str, Any]:
         resp = await self._client.delete(
-            f"{self._base}/internal/crawl/catalog/novels/{catalog_novel_id}",
+            self._url(f"/crawl/catalog/novels/{catalog_novel_id}"),
             headers=self._headers(),
         )
         resp.raise_for_status()
@@ -214,7 +213,7 @@ class CrawlContentClient:
         cover_url: str,
     ) -> dict[str, Any]:
         resp = await self._client.post(
-            f"{self._base}/internal/crawl/catalog/novels/{catalog_novel_id}/cover",
+            self._url(f"/crawl/catalog/novels/{catalog_novel_id}/cover"),
             headers=self._headers(),
             json={"coverUrl": cover_url},
         )
@@ -223,7 +222,7 @@ class CrawlContentClient:
 
     async def list_catalog_chapters(self, catalog_novel_id: str) -> list[dict[str, Any]]:
         resp = await self._client.get(
-            f"{self._base}/internal/crawl/catalog/novels/{catalog_novel_id}/chapters",
+            self._url(f"/crawl/catalog/novels/{catalog_novel_id}/chapters"),
             headers=self._headers(),
         )
         resp.raise_for_status()
@@ -236,7 +235,7 @@ class CrawlContentClient:
         chapter_id: str,
     ) -> dict[str, Any]:
         resp = await self._client.get(
-            f"{self._base}/internal/crawl/catalog/novels/{catalog_novel_id}/chapters/{chapter_id}",
+            self._url(f"/crawl/catalog/novels/{catalog_novel_id}/chapters/{chapter_id}"),
             headers=self._headers(),
         )
         resp.raise_for_status()
@@ -252,7 +251,7 @@ class CrawlContentClient:
         source_url: str = "",
     ) -> dict[str, Any]:
         resp = await self._client.post(
-            f"{self._base}/internal/crawl/catalog/novels/{catalog_novel_id}/chapters",
+            self._url(f"/crawl/catalog/novels/{catalog_novel_id}/chapters"),
             headers=self._headers(),
             json={
                 "title": title,
@@ -284,7 +283,7 @@ class CrawlContentClient:
         if source_url is not None:
             payload["sourceUrl"] = source_url
         resp = await self._client.put(
-            f"{self._base}/internal/crawl/catalog/novels/{catalog_novel_id}/chapters/{chapter_id}",
+            self._url(f"/crawl/catalog/novels/{catalog_novel_id}/chapters/{chapter_id}"),
             headers=self._headers(),
             json=payload,
         )
@@ -297,7 +296,7 @@ class CrawlContentClient:
         chapter_id: str,
     ) -> dict[str, Any]:
         resp = await self._client.delete(
-            f"{self._base}/internal/crawl/catalog/novels/{catalog_novel_id}/chapters/{chapter_id}",
+            self._url(f"/crawl/catalog/novels/{catalog_novel_id}/chapters/{chapter_id}"),
             headers=self._headers(),
         )
         resp.raise_for_status()

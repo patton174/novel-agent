@@ -7,6 +7,7 @@ from typing import Any
 
 import httpx
 
+from app.agent.backend.content_api import content_auth_url, unwrap_result, user_headers
 from app.agent.backend.chapter_meta import (
     CHAPTER_TITLE_REQUIRED_MSG,
     is_valid_chapter_title,
@@ -14,7 +15,6 @@ from app.agent.backend.chapter_meta import (
     sorted_chapter_summaries,
 )
 from app.agent.schemas import AgentRunContext
-from app.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -35,13 +35,13 @@ async def fetch_chapter_summaries(ctx: AgentRunContext) -> list[dict[str, Any]]:
     novel_id = str(ctx.novel_id or (ctx.project or {}).get("id") or "").strip()
     if not novel_id or ctx.user_id <= 0:
         return [dict(ch) for ch in (ctx.chapters or []) if isinstance(ch, dict)]
-    url = f"{settings.content_base_url.rstrip('/')}/api/content/novels/{novel_id}/chapters"
+    url = content_auth_url(f"/novels/{novel_id}/chapters")
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
-            resp = await client.get(url, headers={"X-User-Id": str(ctx.user_id)})
+            resp = await client.get(url, headers=user_headers(ctx.user_id))
             if resp.status_code != 200:
                 return [dict(ch) for ch in (ctx.chapters or []) if isinstance(ch, dict)]
-            body = resp.json()
+            body = unwrap_result(resp.json())
             if not isinstance(body, list):
                 return [dict(ch) for ch in (ctx.chapters or []) if isinstance(ch, dict)]
             summaries = [
@@ -65,9 +65,7 @@ async def fetch_chapter_read_slice(
     """Content API line-based read (1-based offset/limit). Returns (numbered text, error)."""
     if not chapter_id or ctx.user_id <= 0:
         return None, "missing chapter_id or user_id"
-    url = (
-        f"{settings.content_base_url.rstrip('/')}/api/content/chapters/{chapter_id}/read"
-    )
+    url = content_auth_url(f"/chapters/{chapter_id}/read")
     params: dict[str, int] = {}
     if offset is not None:
         params["offset"] = int(offset)
@@ -77,14 +75,14 @@ async def fetch_chapter_read_slice(
         async with httpx.AsyncClient(timeout=30.0) as client:
             resp = await client.get(
                 url,
-                headers={"X-User-Id": str(ctx.user_id)},
+                headers=user_headers(ctx.user_id),
                 params=params or None,
             )
             if resp.status_code == 404:
                 return None, f"file not found: /novel/…/chapters/{chapter_id}.md"
             if resp.status_code != 200:
                 return None, f"chapter read failed HTTP {resp.status_code}"
-            body = resp.json()
+            body = unwrap_result(resp.json())
             if not isinstance(body, dict):
                 return None, "invalid chapter read response"
             return str(body.get("text") or ""), None
@@ -96,13 +94,13 @@ async def fetch_chapter_read_slice(
 async def fetch_chapter_full(ctx: AgentRunContext, chapter_id: str) -> dict[str, Any] | None:
     if not chapter_id or ctx.user_id <= 0:
         return None
-    url = f"{settings.content_base_url.rstrip('/')}/api/content/chapters/{chapter_id}"
+    url = content_auth_url(f"/chapters/{chapter_id}")
     try:
         async with httpx.AsyncClient(timeout=15.0) as client:
-            resp = await client.get(url, headers={"X-User-Id": str(ctx.user_id)})
+            resp = await client.get(url, headers=user_headers(ctx.user_id))
             if resp.status_code != 200:
                 return None
-            body = resp.json()
+            body = unwrap_result(resp.json())
             if not isinstance(body, dict) or not body.get("id"):
                 return None
             return {
@@ -121,10 +119,10 @@ async def fetch_chapter_full(ctx: AgentRunContext, chapter_id: str) -> dict[str,
 async def delete_chapter(ctx: AgentRunContext, chapter_id: str) -> tuple[bool, str]:
     if ctx.user_id <= 0:
         return False, "missing user_id"
-    url = f"{settings.content_base_url.rstrip('/')}/api/content/chapters/{chapter_id}"
+    url = content_auth_url(f"/chapters/{chapter_id}")
     try:
         async with httpx.AsyncClient(timeout=15.0) as client:
-            resp = await client.delete(url, headers={"X-User-Id": str(ctx.user_id)})
+            resp = await client.delete(url, headers=user_headers(ctx.user_id))
             if resp.status_code in (200, 204):
                 return True, ""
             if resp.status_code == 404:
@@ -175,21 +173,20 @@ async def persist_chapter_write(
     if out.get("sort_order"):
         body["sortOrder"] = int(out["sort_order"])
 
-    headers = {"X-User-Id": str(ctx.user_id), "X-Edit-Source": "ai"}
-    base = settings.content_base_url.rstrip("/")
+    headers = user_headers(ctx.user_id, edit_source="ai")
 
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
             if cid:
-                url = f"{base}/api/content/chapters/{cid}"
+                url = content_auth_url(f"/chapters/{cid}")
                 resp = await client.put(url, headers=headers, json=body)
                 if resp.status_code in (200, 204):
                     out["chapter_id"] = cid
                 elif resp.status_code == 404 and novel_id:
-                    post_url = f"{base}/api/content/novels/{novel_id}/chapters"
+                    post_url = content_auth_url(f"/novels/{novel_id}/chapters")
                     resp = await client.post(post_url, headers=headers, json=body)
                     if resp.status_code in (200, 201):
-                        created = resp.json()
+                        created = unwrap_result(resp.json())
                         if isinstance(created, dict) and created.get("id"):
                             out["chapter_id"] = str(created["id"])
                     else:
@@ -207,7 +204,7 @@ async def persist_chapter_write(
                         format_persist_failure_message(out, detail),
                     )
             elif novel_id:
-                url = f"{base}/api/content/novels/{novel_id}/chapters"
+                url = content_auth_url(f"/novels/{novel_id}/chapters")
                 resp = await client.post(url, headers=headers, json=body)
                 if resp.status_code not in (200, 201):
                     detail = resp.text[:300] if resp.text else f"HTTP {resp.status_code}"
@@ -216,7 +213,7 @@ async def persist_chapter_write(
                         out,
                         format_persist_failure_message(out, detail),
                     )
-                created = resp.json()
+                created = unwrap_result(resp.json())
                 if isinstance(created, dict) and created.get("id"):
                     out["chapter_id"] = str(created["id"])
             else:
@@ -237,10 +234,8 @@ async def update_chapter_sort_order(
         return False, "missing user_id or chapter_id"
     if sort_order < 1:
         return False, "sort_order must be >= 1"
-    url = (
-        f"{settings.content_base_url.rstrip('/')}/api/content/chapters/{chapter_id}"
-    )
-    headers = {"X-User-Id": str(ctx.user_id), "X-Edit-Source": "ai"}
+    url = content_auth_url(f"/chapters/{chapter_id}")
+    headers = user_headers(ctx.user_id, edit_source="ai")
     try:
         async with httpx.AsyncClient(timeout=15.0) as client:
             resp = await client.put(
@@ -268,17 +263,15 @@ async def reorder_novel_chapters(
     ids = [str(cid).strip() for cid in chapter_ids if str(cid).strip()]
     if not ids:
         return False, [], "chapter_ids is empty"
-    url = (
-        f"{settings.content_base_url.rstrip('/')}/api/content/novels/{novel_id}/chapters/reorder"
-    )
-    headers = {"X-User-Id": str(ctx.user_id), "X-Edit-Source": "ai"}
+    url = content_auth_url(f"/novels/{novel_id}/chapters/reorder")
+    headers = user_headers(ctx.user_id, edit_source="ai")
     try:
         async with httpx.AsyncClient(timeout=20.0) as client:
             resp = await client.post(url, headers=headers, json={"ids": ids})
             if resp.status_code != 200:
                 detail = resp.text[:300] if resp.text else f"HTTP {resp.status_code}"
                 return False, [], detail
-            body = resp.json()
+            body = unwrap_result(resp.json())
             if not isinstance(body, list):
                 fresh = await fetch_chapter_summaries(ctx)
                 return True, fresh, ""

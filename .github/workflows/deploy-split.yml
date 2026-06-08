@@ -23,7 +23,7 @@ on:
   workflow_dispatch:
     inputs:
       services:
-        description: '逗号分隔（优先于勾选）：gateway,auth,mw-auth,pyai,content,consumer,frontend,python-ai'
+        description: '逗号分隔（优先于勾选）：gateway,auth,mw-auth,pyai,content,consumer,billing,frontend,python-ai'
         required: false
         type: string
         default: ''
@@ -54,6 +54,11 @@ on:
         default: false
       deploy_consumer:
         description: 'Worker — consumer'
+        required: false
+        type: boolean
+        default: false
+      deploy_billing:
+        description: 'Worker — billing'
         required: false
         type: boolean
         default: false
@@ -96,6 +101,8 @@ jobs:
               - 'novel-agent/agent-service/agent-content/**'
             consumer:
               - 'novel-agent/agent-service/agent-consumer/**'
+            billing:
+              - 'novel-agent/agent-service/agent-billing/**'
             frontend:
               - 'frontend/**'
             common:
@@ -159,6 +166,7 @@ jobs:
           CHANGED_PYAI: ${{ steps.filter.outputs.pyai }}
           CHANGED_CONTENT: ${{ steps.filter.outputs.content }}
           CHANGED_CONSUMER: ${{ steps.filter.outputs.consumer }}
+          CHANGED_BILLING: ${{ steps.filter.outputs.billing }}
           CHANGED_FRONTEND: ${{ steps.filter.outputs.frontend }}
           CHANGED_COMMON: ${{ steps.filter.outputs.common }}
           CHANGED_SECURITY: ${{ steps.filter.outputs.security }}
@@ -171,6 +179,7 @@ jobs:
           FORCE_DEPLOY_PYAI: ${{ github.event.inputs.deploy_pyai }}
           FORCE_DEPLOY_CONTENT: ${{ github.event.inputs.deploy_content }}
           FORCE_DEPLOY_CONSUMER: ${{ github.event.inputs.deploy_consumer }}
+          FORCE_DEPLOY_BILLING: ${{ github.event.inputs.deploy_billing }}
           FORCE_DEPLOY_FRONTEND: ${{ github.event.inputs.deploy_frontend }}
           FORCE_DEPLOY_PYTHON_AI: ${{ github.event.inputs.deploy_python_ai }}
         run: bash novel-agent/agent-document/docs/deploy/scripts/ci-hot-deploy.sh

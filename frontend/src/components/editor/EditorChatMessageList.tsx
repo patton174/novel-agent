@@ -74,7 +74,11 @@ export function EditorChatMessageList({
             marketingScrubPlaying={marketingScrubPlaying}
             marketingPinOrchestration={marketingPinOrchestration}
             thinkExpanded={thinkExpandedByMessage.get(message.id)}
-            onThinkExpandedChange={(open) => onThinkPanelChange(message.id, open)}
+            onThinkExpandedChange={(open) => {
+              if (typeof onThinkPanelChange === 'function') {
+                onThinkPanelChange(message.id, open)
+              }
+            }}
             onSelectChoice={onSelectChoice}
             onSubmitInteraction={onSubmitInteraction}
             onEditUserMessage={onEditUserMessage}

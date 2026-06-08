@@ -15,6 +15,11 @@ import { useUserStore } from '../stores/userStore'
 const PAGE_META: Record<string, { title: string; description?: string }> = {
   '/admin': { title: '管理概览', description: '平台与用户数据总览' },
   '/admin/users': { title: '用户管理', description: '搜索、查看与编辑用户' },
+  '/admin/plans': { title: '套餐管理', description: '价格、配额与功能配置' },
+  '/admin/revenue': { title: '收入与成本', description: 'MRR、Token 消耗与 LLM 成本' },
+  '/admin/site-content': { title: '站点内容', description: '隐私政策、协议与系统公告' },
+  '/admin/audit-log': { title: '审计日志', description: '管理员操作追溯' },
+  '/admin/system-settings': { title: '系统参数', description: '注册开关、默认模型与平台限制' },
   '/admin/stats': { title: '平台统计', description: '注册与 Agent 调用趋势' },
   '/admin/crawler': { title: 'AI 爬虫', description: '主编排与子任务调度' },
   '/admin/catalog': { title: '书库', description: '入库书籍与章节管理' },

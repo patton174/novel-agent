@@ -54,6 +54,7 @@ case "$SERVICE" in
   pyai)       COMPOSE_SVC="agent-pyai";    MODULE="agent-pyai";    JAR="agent-pyai-1.0.0-SNAPSHOT.jar" ;;
   content)    COMPOSE_SVC="agent-content"; MODULE="agent-content"; JAR="agent-content-1.0.0-SNAPSHOT.jar" ;;
   consumer)   COMPOSE_SVC="agent-consumer"; MODULE="agent-consumer"; JAR="agent-consumer-1.0.0-SNAPSHOT.jar" ;;
+  billing)    COMPOSE_SVC="agent-billing"; MODULE="agent-billing"; JAR="agent-billing-1.0.0-SNAPSHOT.jar" ;;
   frontend|fe)
     echo "[deploy-fast] 前端：本地 vite build → 覆盖 Worker nginx 静态文件"
     if [[ "$TARGET" != "worker" ]]; then

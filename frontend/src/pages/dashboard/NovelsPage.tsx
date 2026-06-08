@@ -62,6 +62,9 @@ export default function NovelsPage() {
         )
         appToast.success('封面已生成')
       }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '封面生成失败'
+      appToast.error(message.includes('套餐') ? `${message}，请前往定价页升级` : message)
     } finally {
       setGeneratingId(null)
     }

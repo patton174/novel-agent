@@ -51,6 +51,7 @@ public class BizException extends RuntimeException {
             case 401 -> 401;
             case 403 -> 403;
             case 404 -> 404;
+            case 402 -> 402;
             case 429 -> 429;
             default -> code >= 500 ? 500 : 400;
         };

@@ -4,6 +4,7 @@ import { useEffect, Suspense } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import { fetchUserInfo } from '../api/userApi'
 import { AppSidebar } from '../components/dashboard/AppSidebar'
+import { DashboardAnnouncementBanner } from '../components/dashboard/DashboardAnnouncementBanner'
 import { DashboardHeader } from '../components/dashboard/DashboardHeader'
 import { MobileSidebarDrawer } from '../components/dashboard/MobileSidebarDrawer'
 import { LayoutOutletSkeleton } from '../components/loading/LayoutOutletSkeleton'
@@ -54,6 +55,7 @@ export default function DashboardLayout() {
           description={meta.description}
           leading={<MobileSidebarDrawer />}
         />
+        <DashboardAnnouncementBanner />
         <main className="flex-1 overflow-y-auto px-8 py-5">
           <Suspense fallback={<LayoutOutletSkeleton />}>
             <Outlet />

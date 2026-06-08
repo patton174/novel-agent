@@ -21,6 +21,9 @@ agent:
     base-url: ${AGENT_PYTHON_BASE_URL:http://localhost:8000}
   content:
     base-url: ${CONTENT_BASE_URL:http://127.0.0.1:8091}
+  billing:
+    base-url: ${BILLING_BASE_URL:http://127.0.0.1:8092}
+    enabled: ${BILLING_ENABLED:true}
   internal:
     service-key: ${INTERNAL_SERVICE_KEY:dev-internal-key-change-me}
   runtime:

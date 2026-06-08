@@ -648,4 +648,17 @@ describe('applyAgentEvent', () => {
     expect(afterDup.stepStates).toHaveLength(1)
     expect(afterDup.timeline.filter((b) => b.kind === 'tool')).toHaveLength(1)
   })
+
+  it('ignores duplicate events with the same event_id', () => {
+    let state = createInitialAgentStreamUiState()
+    const payload = JSON.stringify({
+      event_id: 'evt_msg_1',
+      type: 'message.delta',
+      sequence: 99,
+      payload: { text: '交付' },
+    })
+    state = applyAgentEvent(state, 'agent-event', payload)
+    const afterDup = applyAgentEvent(state, 'agent-event', payload)
+    expect(finalizeAgentMessageContent(afterDup)).toBe('交付')
+  })
 })

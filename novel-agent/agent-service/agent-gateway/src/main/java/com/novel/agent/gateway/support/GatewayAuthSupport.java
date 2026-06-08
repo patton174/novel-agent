@@ -31,6 +31,9 @@ public class GatewayAuthSupport {
         "/api/auth/api/captcha",
         "/api/auth/api/send-email-code",
         "/api/auth/api/confirm-email-verify",
+        "/api/billing/auth/plans",
+        "/api/billing/auth/site-content/",
+        "/api/billing/auth/settings/public",
         "/actuator/health"
     );
 

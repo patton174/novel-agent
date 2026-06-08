@@ -39,6 +39,20 @@ public class AgentRuntimeProperties {
         return internalServiceKey;
     }
 
+    @Value("${agent.billing.base-url:http://127.0.0.1:8092}")
+    private String billingBaseUrl;
+
+    @Value("${agent.billing.enabled:true}")
+    private boolean billingEnabled;
+
+    public String billingBaseUrl() {
+        return billingBaseUrl;
+    }
+
+    public boolean billingEnabled() {
+        return billingEnabled;
+    }
+
     @Value("${agent.python.base-url:http://localhost:8000}")
     private String pythonBaseUrl;
 

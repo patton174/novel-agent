@@ -417,6 +417,7 @@ export function useEditorAgentStream({
     }
 
     const handleStatusEvent = (eventName: string, rawData: string) => {
+      // 非 host：worker 事件只走 SSE（RunLiveSseFanout），status WS 仅用于 run.recovering，避免双通道重复。
       if (eventName === 'agent-event' && !hostModeEnabled) {
         try {
           const parsed = JSON.parse(rawData) as AgentEventEnvelope

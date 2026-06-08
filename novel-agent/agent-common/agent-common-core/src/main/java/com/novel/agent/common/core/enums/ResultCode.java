@@ -23,6 +23,7 @@ public enum ResultCode {
     AUTH_EMAIL_EXISTS(1006, 400, "邮箱已被注册"),
     AUTH_TOKEN_EXPIRED(1007, 401, "登录已过期，请重新登录"),
     AUTH_ROLE_INVALID(1008, 400, "不支持的角色"),
+    AUTH_REGISTRATION_DISABLED(1009, 503, "注册功能暂时关闭，请稍后再试"),
 
     // captcha / 邮箱 1101-1199
     CAPTCHA_INVALID(1101, 400, "验证码无效或已过期"),
@@ -53,7 +54,13 @@ public enum ResultCode {
     IMAGE_GENERATION_FAILED(2030, 503, "图像生成失败"),
 
     // crm 3001-3099
-    CRM_USER_NOT_FOUND(3001, 404, "用户不存在");
+    CRM_USER_NOT_FOUND(3001, 404, "用户不存在"),
+
+    // billing 2101-2199
+    BILLING_PLAN_NOT_FOUND(2101, 404, "套餐不存在"),
+    BILLING_QUOTA_EXCEEDED(2102, 402, "本月配额已用尽"),
+    BILLING_SUBSCRIPTION_NOT_FOUND(2103, 404, "订阅不存在"),
+    BILLING_FEATURE_NOT_AVAILABLE(2104, 403, "当前套餐不支持此功能");
 
     private final int code;
     private final int httpStatus;

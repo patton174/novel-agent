@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { AgentTimelineBlock } from '../../../types/agent'
 import { shouldRenderThinkBlock } from '../../../utils/agentStreamTimeline'
 import { AgentThinkPanel } from '../AgentThinkPanel'
@@ -82,20 +82,21 @@ export function ThinkBlock({
 
   const [pinnedOpen, setPinnedOpen] = useState<boolean | null>(null)
 
+  useEffect(() => {
+    setPinnedOpen(null)
+  }, [messageKey, block.id])
+
   if (!visible && !displayText.trim() && !isThinking) {
     return null
   }
 
   const controlledExpand = !isolateExpand ? thinkExpanded : undefined
-  const panelExpanded =
-    controlledExpand !== undefined ? controlledExpand : pinnedOpen ?? undefined
-  const setExpanded = (open: boolean) => {
-    if (!isolateExpand) {
-      onThinkExpandedChange?.(open)
+  const panelExpanded = pinnedOpen ?? controlledExpand ?? undefined
+  const handleExpandedChange = (open: boolean) => {
+    if (!isolateExpand && typeof onThinkExpandedChange === 'function') {
+      onThinkExpandedChange(open)
     }
-    if (isolateExpand || controlledExpand === undefined) {
-      setPinnedOpen(open)
-    }
+    setPinnedOpen(open)
   }
 
   return (
@@ -103,7 +104,7 @@ export function ThinkBlock({
       text={displayText}
       isThinking={isThinking}
       expanded={panelExpanded}
-      onExpandedChange={setExpanded}
+      onExpandedChange={handleExpandedChange}
       markdown
       showCursor={false}
       nested={isolateExpand}

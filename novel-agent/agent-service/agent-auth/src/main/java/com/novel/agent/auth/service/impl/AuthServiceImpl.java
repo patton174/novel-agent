@@ -1,5 +1,7 @@
 package com.novel.agent.auth.service.impl;
 
+import com.novel.agent.auth.client.BillingSettingsClient;
+import com.novel.agent.auth.client.BillingSubscriptionClient;
 import com.novel.agent.auth.dto.HeartbeatRequest;
 import com.novel.agent.auth.dto.LoginRequest;
 import com.novel.agent.auth.dto.LoginResponse;
@@ -37,6 +39,8 @@ public class AuthServiceImpl implements AuthService {
     private final WsTicketService wsTicketService;
     private final EmailVerificationService emailVerificationService;
     private final RateLimitService rateLimitService;
+    private final BillingSubscriptionClient billingSubscriptionClient;
+    private final BillingSettingsClient billingSettingsClient;
 
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder(12);
 
@@ -65,6 +69,9 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public void register(RegisterRequest request, String ip, String fingerprint) {
+        if (!billingSettingsClient.isRegistrationEnabled()) {
+            throw BizException.of(ResultCode.AUTH_REGISTRATION_DISABLED);
+        }
         rateLimitService.checkComposite("register", ip, fingerprint, 3, java.time.Duration.ofHours(1));
 
         if (authUserRepository.existsByUsername(request.getUsername())) {
@@ -88,6 +95,7 @@ public class AuthServiceImpl implements AuthService {
 
         authUserRepository.save(user);
         permissionSyncPublisher.publish(user.getId(), user.getRole());
+        billingSubscriptionClient.createDefaultSubscription(user.getId());
     }
 
     @Override

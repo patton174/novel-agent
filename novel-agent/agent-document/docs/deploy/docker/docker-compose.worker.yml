@@ -147,6 +147,8 @@ services:
       SPRING_MAIN_WEB_APPLICATION_TYPE: reactive
       AGENT_PYTHON_BASE_URL: ${AGENT_PYTHON_BASE_URL}
       AGENT_CONTENT_BASE_URL: ${AGENT_CONTENT_BASE_URL}
+      BILLING_BASE_URL: http://agent-billing:8092
+      BILLING_ENABLED: ${BILLING_ENABLED:-true}
     mem_limit: ${JAVA_MEM_LIMIT_PYAI:-256m}
     ports:
       - "8082:8082"
@@ -157,6 +159,27 @@ services:
         condition: service_started
       python-lb:
         condition: service_started
+
+  agent-billing:
+    build:
+      context: ../../../../../
+      dockerfile: novel-agent/agent-document/docs/deploy/docker/Dockerfile.java
+      args:
+        MODULE: agent-billing
+        JAR: agent-billing-1.0.0-SNAPSHOT.jar
+    image: novel-agent/billing:latest
+    restart: unless-stopped
+    environment:
+      <<: *java-env
+      JAVA_OPTS: ${JAVA_OPTS_BILLING:--Xms64m -Xmx176m -XX:MaxMetaspaceSize=96m -Dfile.encoding=UTF-8}
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+    mem_limit: ${JAVA_MEM_LIMIT_BILLING:-256m}
+    ports:
+      - "8092:8092"
+    networks:
+      - novel-net
 
   frontend:
     build:

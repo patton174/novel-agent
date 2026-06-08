@@ -33,6 +33,7 @@ export default defineConfig(({ mode }) => {
   const authProxyTarget = remoteAuth || remoteGateway
   const localPyai = env.VITE_LOCAL_PYAI || 'http://127.0.0.1:8082'
   const localContent = env.VITE_LOCAL_CONTENT || 'http://127.0.0.1:8091'
+  const localBilling = env.VITE_LOCAL_BILLING || 'http://127.0.0.1:8092'
   const apiProxyTarget = directPython ? 'http://127.0.0.1:8000' : 'http://127.0.0.1:8080'
   const useRemoteDev = Boolean(authProxyTarget || env.VITE_LOCAL_PYAI)
 
@@ -53,6 +54,12 @@ export default defineConfig(({ mode }) => {
         },
         '/api/content': {
           target: localContent,
+          changeOrigin: true,
+          timeout: 0,
+          proxyTimeout: 0,
+        },
+        '/api/billing': {
+          target: localBilling,
           changeOrigin: true,
           timeout: 0,
           proxyTimeout: 0,

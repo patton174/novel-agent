@@ -195,7 +195,7 @@ def _summarize_interaction(interaction: dict[str, Any]) -> str:
         return "用户选择：" + "、".join(titles)
     if isinstance(selected, dict):
         return "用户选择：" + str(selected.get("title") or selected)
-    return str(interaction.get("text") or "").strip()
+    return ""
 
 
 def apply_interaction_to_context(

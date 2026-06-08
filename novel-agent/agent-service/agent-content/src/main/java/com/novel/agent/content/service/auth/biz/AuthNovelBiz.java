@@ -14,6 +14,7 @@ import com.novel.agent.content.dto.UpdateNovelRequest;
 import com.novel.agent.content.service.ChapterService;
 import com.novel.agent.content.service.ContentSessionService;
 import com.novel.agent.content.service.NovelCoverService;
+import com.novel.agent.content.service.NovelExportService;
 import com.novel.agent.content.service.NovelService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -27,6 +28,7 @@ public class AuthNovelBiz extends BaseBiz {
 
     private final NovelService novelService;
     private final NovelCoverService novelCoverService;
+    private final NovelExportService novelExportService;
     private final ChapterService chapterService;
     private final ContentSessionService sessionService;
 
@@ -52,6 +54,14 @@ public class AuthNovelBiz extends BaseBiz {
 
     public Result<CoverPromptResponse> suggestCoverPrompt(Long userId, String novelId, String draft) {
         return ok(novelCoverService.suggestCoverPrompt(userId, novelId, draft));
+    }
+
+    public NovelExportService.ExportPayload exportTxt(Long userId, String novelId) {
+        return novelExportService.exportTxt(userId, novelId);
+    }
+
+    public NovelExportService.ExportPayload exportPdf(Long userId, String novelId) {
+        return novelExportService.exportPdf(userId, novelId);
     }
 
     public Result<Map<String, Object>> delete(Long userId, String novelId) {

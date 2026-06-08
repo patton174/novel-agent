@@ -1,5 +1,6 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { fetchPublicSiteSettings } from '@/api/billingApi'
 import { register, sendEmailCode } from '../utils/authApi'
 import { getFingerprint } from '../security/fingerprint'
 import SliderCaptchaModal from '../components/auth/SliderCaptchaModal'
@@ -21,6 +22,19 @@ const RegisterPage: React.FC = () => {
   const [sendingCode, setSendingCode] = useState(false)
   const [codeSent, setCodeSent] = useState(false)
   const [cooldown, setCooldown] = useState(0)
+  const [registrationClosed, setRegistrationClosed] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    void fetchPublicSiteSettings().then((settings) => {
+      if (!cancelled && !settings.registrationEnabled) {
+        setRegistrationClosed(true)
+      }
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const handleChange = (name: string, value: string) => {
     setFormData({ ...formData, [name]: value })
@@ -146,6 +160,20 @@ const RegisterPage: React.FC = () => {
             <p className="text-sm text-muted-foreground">只需几步，即可开始体验</p>
           </div>
 
+          {registrationClosed ? (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-6 text-center dark:border-amber-900/50 dark:bg-amber-950/30">
+              <p className="text-sm font-medium text-amber-900 dark:text-amber-100">注册功能暂时关闭</p>
+              <p className="mt-2 text-xs text-amber-800/80 dark:text-amber-200/70">
+                平台正在维护中，暂不接受新用户注册。如有疑问请联系管理员。
+              </p>
+              <Link
+                to="/login"
+                className="mt-4 inline-block text-sm font-medium text-primary hover:underline"
+              >
+                已有账号？去登录
+              </Link>
+            </div>
+          ) : (
           <form onSubmit={handleSubmit} className="space-y-3">
             <div className="space-y-1">
               <label htmlFor="reg-username" className="text-sm font-medium text-foreground">
@@ -250,13 +278,16 @@ const RegisterPage: React.FC = () => {
               注册即表示同意<Link to="/terms" className="hover:underline">《用户协议》</Link>和<Link to="/privacy" className="hover:underline">《隐私政策》</Link>
             </p>
           </form>
+          )}
 
+          {!registrationClosed && (
           <div className="mt-6 text-center text-sm text-muted-foreground">
             已有账号？{' '}
             <Link to="/login" className="text-primary font-medium hover:underline">
               登录
             </Link>
           </div>
+          )}
         </div>
       </div>
 

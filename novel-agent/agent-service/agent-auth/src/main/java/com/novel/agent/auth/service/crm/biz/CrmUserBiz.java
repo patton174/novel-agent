@@ -1,5 +1,6 @@
 package com.novel.agent.auth.service.crm.biz;
 
+import com.novel.agent.auth.client.BillingAuditClient;
 import com.novel.agent.auth.dao.UserInfoDao;
 import com.novel.agent.auth.entity.AuthUser;
 import com.novel.agent.auth.security.DeviceSessionService;
@@ -30,6 +31,7 @@ public class CrmUserBiz extends BaseBiz {
     private final UserInfoDao userInfoDao;
     private final DeviceSessionService deviceSessionService;
     private final PermissionSyncPublisher permissionSyncPublisher;
+    private final BillingAuditClient billingAuditClient;
 
     public Result<Page<CrmUserItemResp>> page(CrmUserPageReq req) {
         PageQuery query = pageQuery(req.pageCurrent(), req.pageSize());
@@ -47,13 +49,18 @@ public class CrmUserBiz extends BaseBiz {
         return ok(toDetail(user));
     }
 
-    public Result<CrmUserDetailResp> update(Long id, CrmUserUpdateReq req) {
+    public Result<CrmUserDetailResp> update(Long id, CrmUserUpdateReq req, Long actorId) {
         validateRole(req.role());
+        AuthUser before = userInfoDao.findById(id)
+            .orElseThrow(() -> new NotFoundException(ResultCode.CRM_USER_NOT_FOUND, "用户不存在"));
         userInfoDao.updateRoleAndStatus(id, req.role(), req.isActive());
         if (Boolean.FALSE.equals(req.isActive())) {
             deviceSessionService.revokeSessionsForUser(id);
         }
         permissionSyncPublisher.publish(id, req.role());
+        if (actorId != null && !before.getRole().equals(req.role())) {
+            billingAuditClient.logRoleChange(actorId, id, before.getRole(), req.role());
+        }
         return detail(id);
     }
 

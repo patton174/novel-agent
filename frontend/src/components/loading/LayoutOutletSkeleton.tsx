@@ -25,8 +25,14 @@ export function LayoutOutletSkeleton() {
   if (pathname.startsWith('/admin/users')) {
     return <AdminTableContentSkeleton />
   }
-  if (pathname.startsWith('/admin/stats')) {
+  if (pathname.startsWith('/admin/plans')) {
+    return <AdminTableContentSkeleton />
+  }
+  if (pathname.startsWith('/admin/revenue') || pathname.startsWith('/admin/stats')) {
     return <AdminStatsContentSkeleton />
+  }
+  if (pathname.startsWith('/admin/site-content') || pathname.startsWith('/admin/audit-log') || pathname.startsWith('/admin/system-settings')) {
+    return <AdminTableContentSkeleton />
   }
   if (pathname.startsWith('/admin/crawler')) {
     return <AdminCrawlerContentSkeleton />

@@ -67,6 +67,31 @@ bash novel-agent/agent-document/docs/deploy/scripts/deploy-fast.sh frontend work
 - 全链路 `X-Trace-Id`：前端 `secureFetch` 生成 → Gateway → Java → python-ai 日志字段 `trace_id`
 - 告警规则模板：`novel-agent/agent-document/docs/deploy/observability/prometheus-alerts.yml`
 
+## 数据库迁移（Flyway，Phase 8 T8.1）
+
+三个 Java 服务共用 PostgreSQL 库 `novel_agent`，各自维护独立的 Flyway 历史表，避免版本号冲突：
+
+| 服务 | 迁移目录 | Flyway 表 |
+|------|----------|-----------|
+| agent-auth | `agent-auth/src/main/resources/db/migration/` | `flyway_schema_history_auth` |
+| agent-content | `agent-content/src/main/resources/db/migration/` | `flyway_schema_history_content` |
+| agent-billing | `agent-billing/src/main/resources/db/migration/` | `flyway_schema_history`（默认） |
+
+本地 profile 已切换 `spring.jpa.hibernate.ddl-auto=validate`；新表结构请新增 `V{n}__*.sql`，勿再依赖 Hibernate auto-ddl。
+
+**已有库首次启用**（表已由旧版 `ddl-auto: update` 创建时）：直接启动各服务即可，`baseline-on-migrate: true` 会将 V1 标记为已 baseline。
+
+**全新空库**：按 auth → content → billing 顺序启动，Flyway 依次建表。
+
+**备份 / 恢复**（T8.2）：
+
+```bash
+bash novel-agent/agent-document/docs/deploy/scripts/backup-postgres.sh
+bash novel-agent/agent-document/docs/deploy/scripts/restore-postgres.sh /opt/novel-agent/backups/pg/novel_agent-YYYY-MM-DD-HHMM.sql.gz
+```
+
+MW 建议 cron：`0 3 * * * /opt/novel-agent/novel-agent/agent-document/docs/deploy/scripts/backup-postgres.sh`
+
 ## 路由脱敏 v2 全量发布
 
 分步或一键：

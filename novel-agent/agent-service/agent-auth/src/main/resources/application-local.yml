@@ -10,12 +10,18 @@ spring:
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
+    open-in-view: false
     show-sql: true
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+    table: flyway_schema_history_auth
   data:
     redis:
       host: ${REDIS_HOST:localhost}
@@ -75,6 +81,9 @@ mail:
 agent:
   internal:
     service-key: ${INTERNAL_SERVICE_KEY:dev-internal-key-change-me}
+  billing:
+    base-url: ${BILLING_BASE_URL:http://127.0.0.1:8092}
+    enabled: ${BILLING_ENABLED:true}
   python:
     base-url: ${AGENT_PYTHON_BASE_URL:http://127.0.0.1:8000}
   image:

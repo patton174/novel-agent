@@ -89,8 +89,18 @@ async def execute_worker_slice(req: WorkerExecuteRequest) -> WorkerExecuteRespon
         initial_state = restore_worker_state(worker_blob, base_ctx)
         session = WorkerSliceSession(run_id, resume_payload=req.resume_interaction)
         run_req = RunRequest(context=initial_state.ctx)
-        events: list[dict[str, Any]] = []
         terminal_status = "running"
+        appended = 0
+
+        async def publish_event(event: dict[str, Any]) -> None:
+            nonlocal appended
+            await client.append_event(
+                run_id,
+                event_id=str(event.get("event_id") or f"evt_{uuid.uuid4().hex}"),
+                event_type=str(event.get("type") or "agent.event"),
+                payload=event,
+            )
+            appended += 1
 
         try:
             async for event in run_query_loop(
@@ -99,7 +109,7 @@ async def execute_worker_slice(req: WorkerExecuteRequest) -> WorkerExecuteRespon
                 worker_session=session,
                 initial_state=initial_state,
             ):
-                events.append(event)
+                await publish_event(event)
                 if str(event.get("type") or "") == "run.failed":
                     terminal_status = "failed"
         except WorkerSliceWaiting:
@@ -112,27 +122,17 @@ async def execute_worker_slice(req: WorkerExecuteRequest) -> WorkerExecuteRespon
                 terminal_status = "failed"
 
         if terminal_status == "completed":
-            events.append(
+            await publish_event(
                 _build_terminal_event(initial_state, "run.completed", {"status": "completed"})
             )
         elif terminal_status == "failed":
-            events.append(
+            await publish_event(
                 _build_terminal_event(
                     initial_state,
                     "run.failed",
                     {"error": initial_state.last_run_error or "worker slice failed"},
                 )
             )
-
-        appended = 0
-        for event in events:
-            await client.append_event(
-                run_id,
-                event_id=str(event.get("event_id") or f"evt_{uuid.uuid4().hex}"),
-                event_type=str(event.get("type") or "agent.event"),
-                payload=event,
-            )
-            appended += 1
 
         if terminal_status == "waiting_user":
             await client.upsert_checkpoint(

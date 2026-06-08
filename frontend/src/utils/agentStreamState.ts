@@ -119,12 +119,17 @@ export function createInitialAgentStreamUiState(): AgentStreamUiState {
     stripChoiceBlockFromMessage: false,
     timeline: [],
     seenSequences: [],
+    seenEventIds: [],
     awaitingInteraction: false,
     streamPaused: false,
   }
 }
 
 function isDuplicateEvent(state: AgentStreamUiState, event: AgentEventEnvelope): boolean {
+  const eventId = typeof event.event_id === 'string' ? event.event_id.trim() : ''
+  if (eventId && (state.seenEventIds ?? []).includes(eventId)) {
+    return true
+  }
   if (typeof event.sequence !== 'number') {
     return false
   }
@@ -134,18 +139,31 @@ function isDuplicateEvent(state: AgentStreamUiState, event: AgentEventEnvelope):
 const MAX_SEEN_SEQUENCES = 512
 
 function markEventSeen(state: AgentStreamUiState, event: AgentEventEnvelope): AgentStreamUiState {
+  let next = state
+  const eventId = typeof event.event_id === 'string' ? event.event_id.trim() : ''
+  if (eventId) {
+    const seenIds = next.seenEventIds ?? []
+    if (!seenIds.includes(eventId)) {
+      const merged = [...seenIds, eventId]
+      next = {
+        ...next,
+        seenEventIds:
+          merged.length > MAX_SEEN_SEQUENCES ? merged.slice(-MAX_SEEN_SEQUENCES) : merged,
+      }
+    }
+  }
   if (typeof event.sequence !== 'number') {
-    return state
+    return next
   }
-  const seen = state.seenSequences ?? []
+  const seen = next.seenSequences ?? []
   if (seen.includes(event.sequence)) {
-    return state
+    return next
   }
-  const next = [...seen, event.sequence]
+  const mergedSeq = [...seen, event.sequence]
   return {
-    ...state,
+    ...next,
     seenSequences:
-      next.length > MAX_SEEN_SEQUENCES ? next.slice(-MAX_SEEN_SEQUENCES) : next,
+      mergedSeq.length > MAX_SEEN_SEQUENCES ? mergedSeq.slice(-MAX_SEEN_SEQUENCES) : mergedSeq,
   }
 }
 

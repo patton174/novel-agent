@@ -79,6 +79,10 @@ routes:
     path: /api/content/auth/novels/{novelId}/cover/generate
   - method: POST
     path: /api/content/auth/novels/{novelId}/cover/prompt
+  - method: GET
+    path: /api/content/auth/novels/{novelId}/export/txt
+  - method: GET
+    path: /api/content/auth/novels/{novelId}/export/pdf
   - method: DELETE
     path: /api/content/auth/volumes/{volumeId}
   - method: PUT
@@ -201,3 +205,54 @@ routes:
     path: /api/agent/memory/novel/{novelId}/delete
   - method: POST
     path: /api/agent/memory/novel/{novelId}/clear
+
+  # billing — 公开 auth
+  - method: GET
+    path: /api/billing/auth/plans
+
+  - method: GET
+    path: /api/billing/auth/site-content/{key}
+  - method: GET
+    path: /api/billing/auth/settings/public
+
+  # billing — 用户 auth
+  - method: GET
+    path: /api/billing/auth/usage/current
+  - method: GET
+    path: /api/billing/auth/usage/trends
+  - method: GET
+    path: /api/billing/auth/usage/events
+  - method: GET
+    path: /api/billing/auth/subscription
+  - method: GET
+    path: /api/billing/auth/features
+
+  # billing — 管理 crm
+  - method: GET
+    path: /api/billing/crm/plans
+  - method: POST
+    path: /api/billing/crm/plans
+  - method: PUT
+    path: /api/billing/crm/plans/{id}
+  - method: DELETE
+    path: /api/billing/crm/plans/{id}
+  - method: PUT
+    path: /api/billing/crm/user/{userId}/subscription
+  - method: GET
+    path: /api/billing/crm/usage/user/{userId}
+  - method: POST
+    path: /api/billing/crm/user/{userId}/quota-override
+  - method: GET
+    path: /api/billing/crm/usage/overview
+  - method: GET
+    path: /api/billing/crm/usage/trends
+  - method: GET
+    path: /api/billing/crm/site-content
+  - method: PUT
+    path: /api/billing/crm/site-content/{key}
+  - method: GET
+    path: /api/billing/crm/audit-log
+  - method: GET
+    path: /api/billing/crm/settings
+  - method: PUT
+    path: /api/billing/crm/settings

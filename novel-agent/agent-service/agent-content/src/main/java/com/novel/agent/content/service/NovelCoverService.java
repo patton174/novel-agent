@@ -8,6 +8,7 @@ import com.novel.agent.common.image.config.ImageClientProperties;
 import com.novel.agent.content.dto.CoverPromptResponse;
 import com.novel.agent.content.dto.NovelDTO;
 import com.novel.agent.content.entity.NovelEntity;
+import com.novel.agent.content.client.BillingFeatureClient;
 import com.novel.agent.content.repository.NovelRepository;
 import com.novel.agent.content.support.ContentExceptions;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +25,7 @@ public class NovelCoverService {
     private final PythonImageClient pythonImageClient;
     private final ImageClientProperties imageClientProperties;
     private final CoverPromptClient coverPromptClient;
+    private final BillingFeatureClient billingFeatureClient;
 
     public CoverPromptResponse suggestCoverPrompt(Long userId, String novelId, String draft) {
         NovelEntity entity = novelRepository.findByIdAndUserId(novelId, userId)
@@ -34,6 +36,7 @@ public class NovelCoverService {
 
     @Transactional
     public NovelDTO generateCover(Long userId, String novelId, String customPrompt) {
+        billingFeatureClient.assertFeature(userId, "custom_model");
         if (!pythonImageClient.enabled()) {
             throw BizException.of(ResultCode.IMAGE_GENERATION_FAILED, "图像生成服务未配置");
         }

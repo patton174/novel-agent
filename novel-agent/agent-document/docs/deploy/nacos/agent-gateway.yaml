@@ -32,6 +32,10 @@ spring:
           uri: lb://agent-content
           predicates:
             - Path=/api/content/**
+        - id: billing-route
+          uri: lb://agent-billing
+          predicates:
+            - Path=/api/billing/**
   data:
     redis:
       host: YOUR_MW_HOST

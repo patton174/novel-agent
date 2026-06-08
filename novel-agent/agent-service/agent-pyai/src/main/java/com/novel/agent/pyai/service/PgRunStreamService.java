@@ -8,8 +8,11 @@ import com.novel.agent.pyai.client.ContentInternalClient;
 import com.novel.agent.pyai.dto.agent.AgentSessionPersistMessage;
 import com.novel.agent.pyai.dto.agent.AgentStreamRequest;
 import com.novel.agent.pyai.mq.AgentRunMqPublisher;
+import com.novel.agent.pyai.dto.agent.AgentRunContextDto;
 import com.novel.agent.pyai.orchestration.AgentRunState;
+import com.novel.agent.pyai.orchestration.AssistantPersistCollector;
 import com.novel.agent.pyai.orchestration.SseEventCodec;
+import com.novel.agent.pyai.util.AgentTextSanitizer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -70,6 +73,7 @@ public class PgRunStreamService {
         String messageId = AgentRunState.newMessageId();
         String finalSessionId = sessionId;
         AtomicBoolean persisted = new AtomicBoolean(false);
+        AssistantPersistCollector assistantCollector = new AssistantPersistCollector();
 
         return Flux.<String>create(sink -> Schedulers.boundedElastic().schedule(() -> {
             AgentRunState state;
@@ -89,11 +93,28 @@ public class PgRunStreamService {
                 runLiveRedisSubscriber.subscribe(userId, finalSessionId, runId);
                 runLiveSseFanout.register(runId, frame -> {
                     sink.next(frame);
+                    assistantCollector.onFrame(frame, objectMapper);
                     if (frame.startsWith("event: stream-end")) {
-                        persistTurn(persisted, state, mode, "", "completed", null);
+                        persistTurn(
+                            persisted,
+                            state,
+                            runId,
+                            mode,
+                            sanitizeAssistantText(assistantCollector.buildSanitized()),
+                            "completed",
+                            null
+                        );
                         sink.complete();
                     } else if (isFailedFrame(frame)) {
-                        persistTurn(persisted, state, mode, "", "failed", extractError(frame));
+                        persistTurn(
+                            persisted,
+                            state,
+                            runId,
+                            mode,
+                            sanitizeAssistantText(assistantCollector.buildSanitized()),
+                            "failed",
+                            extractError(frame)
+                        );
                         sink.complete();
                     }
                 });
@@ -142,6 +163,7 @@ public class PgRunStreamService {
     private void persistTurn(
         AtomicBoolean persisted,
         AgentRunState state,
+        String runId,
         String mode,
         String assistantMessage,
         String status,
@@ -150,13 +172,20 @@ public class PgRunStreamService {
         if (!persisted.compareAndSet(false, true)) {
             return;
         }
+        Map<String, Object> patch = Map.of();
+        AgentRunContextDto workerCtx = workerContextStore.load(runId);
+        if (workerCtx != null && workerCtx.contextPatch() != null) {
+            patch = workerCtx.contextPatch();
+        } else {
+            patch = state.getMutableContextPatch();
+        }
         AgentSessionPersistMessage message = new AgentSessionPersistMessage(
             state.getUserId(),
             state.getSessionId(),
             state.getRunId(),
             state.getMessageId(),
             mode,
-            state.buildPersistedUserMessage(),
+            state.buildPersistedUserMessage(patch),
             assistantMessage,
             status,
             error
@@ -177,5 +206,13 @@ public class PgRunStreamService {
             return "FAILED";
         }
         return "FAILED";
+    }
+
+    private String sanitizeAssistantText(String raw) {
+        String clean = AgentTextSanitizer.sanitizeAssistantVisibleText(raw);
+        if (clean.isBlank()) {
+            return "";
+        }
+        return clean;
     }
 }

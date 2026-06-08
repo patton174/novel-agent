@@ -6,10 +6,10 @@
 #   DEPLOY_SSH_OPTS (例: -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes)
 #
 # 变更开关 (true/false):
-#   CHANGED_GATEWAY CHANGED_AUTH CHANGED_PYAI CHANGED_CONTENT CHANGED_CONSUMER CHANGED_FRONTEND CHANGED_COMMON
+#   CHANGED_GATEWAY CHANGED_AUTH CHANGED_PYAI CHANGED_CONTENT CHANGED_CONSUMER CHANGED_BILLING CHANGED_FRONTEND CHANGED_COMMON
 #   CHANGED_SECURITY CHANGED_DEPLOY_CI
 #   手动多选（任一非空即覆盖路径过滤，可组合）:
-#     FORCE_SERVICES   逗号分隔: gateway,auth,mw-auth,pyai,content,consumer,frontend,python-ai
+#     FORCE_SERVICES   逗号分隔: gateway,auth,mw-auth,pyai,content,consumer,billing,frontend,python-ai
 #     FORCE_SERVICE    兼容旧版单服务
 #     FORCE_DEPLOY_*   workflow_dispatch 布尔: MW_AUTH GATEWAY AUTH PYAI CONTENT CONSUMER FRONTEND PYTHON_AI
 #
@@ -39,6 +39,7 @@ reset_deploy_flags() {
   CHANGED_PYAI=false
   CHANGED_CONTENT=false
   CHANGED_CONSUMER=false
+  CHANGED_BILLING=false
   CHANGED_FRONTEND=false
   CHANGED_PYTHON_AI=false
   CHANGED_SECURITY=false
@@ -54,10 +55,11 @@ enable_force_service() {
     pyai) CHANGED_PYAI=true ;;
     content) CHANGED_CONTENT=true ;;
     consumer) CHANGED_CONSUMER=true ;;
+    billing) CHANGED_BILLING=true ;;
     frontend) CHANGED_FRONTEND=true ;;
     python-ai) CHANGED_PYTHON_AI=true ;;
     *)
-      echo "[ci-hot] 未知服务: $1（可用: gateway auth mw-auth pyai content consumer frontend python-ai）"
+      echo "[ci-hot] 未知服务: $1（可用: gateway auth mw-auth pyai content consumer billing frontend python-ai）"
       exit 1
       ;;
   esac
@@ -80,6 +82,7 @@ apply_manual_deploy_selection() {
     want "${FORCE_DEPLOY_PYAI:-false}" && services+=(pyai)
     want "${FORCE_DEPLOY_CONTENT:-false}" && services+=(content)
     want "${FORCE_DEPLOY_CONSUMER:-false}" && services+=(consumer)
+    want "${FORCE_DEPLOY_BILLING:-false}" && services+=(billing)
     want "${FORCE_DEPLOY_FRONTEND:-false}" && services+=(frontend)
     want "${FORCE_DEPLOY_PYTHON_AI:-false}" && services+=(python-ai)
   fi
@@ -117,6 +120,7 @@ if want "${CHANGED_DEPLOY_CI:-false}"; then
   echo "[ci-hot] deploy/ci changed → sync worker infra + deploy worker stack"
   CHANGED_CONTENT=true
   CHANGED_CONSUMER=true
+  CHANGED_BILLING=true
   CHANGED_PYAI=true
   CHANGED_PYTHON_AI=true
   CHANGED_FRONTEND=true
@@ -130,6 +134,7 @@ if want "${CHANGED_COMMON:-false}"; then
   CHANGED_PYAI=true
   CHANGED_CONTENT=true
   CHANGED_CONSUMER=true
+  CHANGED_BILLING=true
 fi
 
 # 前端已切到 /api/content/auth/*；仅发 frontend 时 Worker content 若未升级会整站 404
@@ -143,6 +148,7 @@ want "${CHANGED_AUTH:-false}" && MODULES+=(agent-auth)
 want "${CHANGED_PYAI:-false}" && MODULES+=(agent-pyai)
 want "${CHANGED_CONTENT:-false}" && MODULES+=(agent-content)
 want "${CHANGED_CONSUMER:-false}" && MODULES+=(agent-consumer)
+want "${CHANGED_BILLING:-false}" && MODULES+=(agent-billing)
 
 if [[ ${#MODULES[@]} -gt 0 ]]; then
   if want "${CHANGED_AUTH:-false}"; then
@@ -178,7 +184,7 @@ hot() {
   local svc="$1" target="$2"
   echo "[ci-hot] deploy-fast $svc $target"
   local -a hot_env=(SKIP_BUILD=1)
-  if [[ "$target" == "worker" && "$svc" =~ ^(content|consumer|pyai)$ ]]; then
+  if [[ "$target" == "worker" && "$svc" =~ ^(content|consumer|pyai|billing)$ ]]; then
     hot_env+=(WORKER_JAVA_RECREATE="${WORKER_JAVA_RECREATE:-0}")
   fi
   if [[ "$svc" == "frontend" && "$target" == "worker" ]]; then
@@ -199,6 +205,7 @@ want "${CHANGED_GATEWAY:-false}" && hot gateway mw
 want "${CHANGED_PYAI:-false}" && hot pyai worker
 want "${CHANGED_CONTENT:-false}" && hot content worker
 want "${CHANGED_CONSUMER:-false}" && hot consumer worker
+want "${CHANGED_BILLING:-false}" && hot billing worker
 want "${CHANGED_FRONTEND:-false}" && hot frontend worker
 
 hot_python() {

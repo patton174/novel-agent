@@ -7,7 +7,12 @@ from typing import Any
 
 import httpx
 
-from app.config import settings
+from app.agent.backend.content_api import (
+    content_auth_url,
+    unwrap_result,
+    unwrap_story_memory,
+    user_headers,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -49,14 +54,14 @@ def fetch_story_memory(
     novel = (novel_id or "").strip()
     session = (session_id or "").strip()
     if novel:
-        url = f"{settings.content_base_url.rstrip('/')}/api/content/novels/{novel}/story-memory"
+        url = content_auth_url(f"/novels/{novel}/story-memory")
     elif session:
-        url = f"{settings.content_base_url.rstrip('/')}/api/content/sessions/{session}/story-memory"
+        url = content_auth_url(f"/sessions/{session}/story-memory")
     else:
         return None
     try:
         with httpx.Client(timeout=10.0) as client:
-            resp = client.get(url, headers={"X-User-Id": str(user_id)})
+            resp = client.get(url, headers=user_headers(user_id))
             if resp.status_code != 200:
                 logger.warning(
                     "fetch story memory HTTP %s novel=%s session=%s",
@@ -65,8 +70,7 @@ def fetch_story_memory(
                     session or "-",
                 )
                 return None
-            body = resp.json()
-            memory = body.get("memory")
+            memory = unwrap_story_memory(resp.json())
             if isinstance(memory, dict):
                 return _normalize_snapshot(memory)
     except Exception as exc:
@@ -94,13 +98,9 @@ def patch_story_memory_remote(
     if user_id <= 0 or (not novel and not session):
         return {"ok": False, "reason": "invalid user/novel/session"}
     if novel:
-        url = (
-            f"{settings.content_base_url.rstrip('/')}/api/content/novels/{novel}/story-memory/patch"
-        )
+        url = content_auth_url(f"/novels/{novel}/story-memory/patch")
     else:
-        url = (
-            f"{settings.content_base_url.rstrip('/')}/api/content/sessions/{session}/story-memory/patch"
-        )
+        url = content_auth_url(f"/sessions/{session}/story-memory/patch")
     payload: dict[str, Any] = {"scope": scope, "key": key, "value": value}
     if item_id:
         payload["item_id"] = item_id
@@ -109,13 +109,17 @@ def patch_story_memory_remote(
             resp = client.post(
                 url,
                 json=payload,
-                headers={"X-User-Id": str(user_id)},
+                headers=user_headers(user_id),
             )
-            body = resp.json() if resp.content else {}
+            body = unwrap_result(resp.json()) if resp.content else {}
             if resp.status_code >= 400:
                 return {
                     "ok": False,
-                    "reason": str(body.get("reason") or f"HTTP {resp.status_code}"),
+                    "reason": str(
+                        (body or {}).get("reason")
+                        or (body or {}).get("msg")
+                        or f"HTTP {resp.status_code}"
+                    ),
                 }
             if isinstance(body, dict) and body.get("ok") is False:
                 return body
@@ -153,13 +157,9 @@ def delete_story_memory_remote(
     if user_id <= 0 or (not novel and not session):
         return {"ok": False, "reason": "invalid user/novel/session"}
     if novel:
-        url = (
-            f"{settings.content_base_url.rstrip('/')}/api/content/novels/{novel}/story-memory/delete"
-        )
+        url = content_auth_url(f"/novels/{novel}/story-memory/delete")
     else:
-        url = (
-            f"{settings.content_base_url.rstrip('/')}/api/content/sessions/{session}/story-memory/delete"
-        )
+        url = content_auth_url(f"/sessions/{session}/story-memory/delete")
     payload: dict[str, Any] = {"scope": scope, "key": key}
     if item_id:
         payload["item_id"] = item_id
@@ -168,13 +168,17 @@ def delete_story_memory_remote(
             resp = client.post(
                 url,
                 json=payload,
-                headers={"X-User-Id": str(user_id)},
+                headers=user_headers(user_id),
             )
-            body = resp.json() if resp.content else {}
+            body = unwrap_result(resp.json()) if resp.content else {}
             if resp.status_code >= 400:
                 return {
                     "ok": False,
-                    "reason": str(body.get("reason") or f"HTTP {resp.status_code}"),
+                    "reason": str(
+                        (body or {}).get("reason")
+                        or (body or {}).get("msg")
+                        or f"HTTP {resp.status_code}"
+                    ),
                 }
             if isinstance(body, dict) and body.get("ok") is False:
                 return body
@@ -217,13 +221,9 @@ def fetch_memory_read_slice(
     if user_id <= 0 or (not novel and not session):
         return None, "invalid user/novel/session"
     if novel:
-        url = (
-            f"{settings.content_base_url.rstrip('/')}/api/content/novels/{novel}/story-memory/read"
-        )
+        url = content_auth_url(f"/novels/{novel}/story-memory/read")
     else:
-        url = (
-            f"{settings.content_base_url.rstrip('/')}/api/content/sessions/{session}/story-memory/read"
-        )
+        url = content_auth_url(f"/sessions/{session}/story-memory/read")
     params: dict[str, str | int] = {"scope": scope}
     if key:
         params["key"] = key
@@ -237,7 +237,7 @@ def fetch_memory_read_slice(
         with httpx.Client(timeout=30.0) as client:
             resp = client.get(
                 url,
-                headers={"X-User-Id": str(user_id)},
+                headers=user_headers(user_id),
                 params=params,
             )
             if resp.status_code == 400:
@@ -246,7 +246,7 @@ def fetch_memory_read_slice(
                 return None, str(reason or "memory read failed")
             if resp.status_code != 200:
                 return None, f"memory read failed HTTP {resp.status_code}"
-            body = resp.json()
+            body = unwrap_result(resp.json())
             if not isinstance(body, dict):
                 return None, "invalid memory read response"
             return str(body.get("text") or ""), None

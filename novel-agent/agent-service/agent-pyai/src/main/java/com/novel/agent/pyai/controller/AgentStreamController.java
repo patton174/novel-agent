@@ -42,9 +42,15 @@ public class AgentStreamController {
         ServerHttpResponse response = exchange.getResponse();
         AgentStreamSupport.applySseHeaders(response);
 
+        AgentStreamBiz.StreamFrames session = biz.streamFrames(userId, request, contentOnly);
+        String quotaWarning = session.quotaWarningHeader();
+        if (quotaWarning != null && !quotaWarning.isBlank()) {
+            response.getHeaders().set("X-Quota-Warning", quotaWarning);
+        }
+
         DataBuffer prelude = response.bufferFactory()
             .wrap(AgentStreamSsePrelude.connectedFrame().getBytes(StandardCharsets.UTF_8));
-        Flux<DataBuffer> upstream = biz.streamFrames(userId, request, contentOnly)
+        Flux<DataBuffer> upstream = session.frames()
             .map(frame -> response.bufferFactory().wrap(frame.getBytes(StandardCharsets.UTF_8)))
             .onErrorResume(ex -> Flux.fromIterable(AgentStreamSupport.errorFrames(ex))
                 .map(frame -> response.bufferFactory().wrap(frame.getBytes(StandardCharsets.UTF_8))));

@@ -8,28 +8,27 @@ from typing import Any
 
 import httpx
 
-from app.config import settings
+from app.agent.backend.content_api import content_internal_url, internal_headers
 
 logger = logging.getLogger(__name__)
-
-INTERNAL_KEY_HEADER = "X-Internal-Service-Key"
 
 
 class ContentRunClient:
     def __init__(self) -> None:
-        self._base = settings.content_base_url.rstrip("/")
-        self._key = settings.internal_service_key
         self._client = httpx.AsyncClient(timeout=60.0)
 
     async def close(self) -> None:
         await self._client.aclose()
 
     def _headers(self) -> dict[str, str]:
-        return {INTERNAL_KEY_HEADER: self._key}
+        return internal_headers()
+
+    def _url(self, path: str) -> str:
+        return content_internal_url(path)
 
     async def try_lease(self, run_id: str, worker_id: str) -> dict[str, Any]:
         resp = await self._client.post(
-            f"{self._base}/internal/agent/runs/{run_id}/lease",
+            self._url(f"/agent/runs/{run_id}/lease"),
             headers=self._headers(),
             json={"workerId": worker_id},
         )
@@ -38,21 +37,21 @@ class ContentRunClient:
 
     async def release_lease(self, run_id: str, worker_id: str) -> None:
         await self._client.delete(
-            f"{self._base}/internal/agent/runs/{run_id}/lease",
+            self._url(f"/agent/runs/{run_id}/lease"),
             headers=self._headers(),
             params={"workerId": worker_id},
         )
 
     async def transition(self, run_id: str, status: str, error_message: str = "") -> None:
         await self._client.post(
-            f"{self._base}/internal/agent/runs/{run_id}/transition",
+            self._url(f"/agent/runs/{run_id}/transition"),
             headers=self._headers(),
             json={"status": status, "errorMessage": error_message},
         )
 
     async def get_checkpoint(self, run_id: str) -> dict[str, Any] | None:
         resp = await self._client.get(
-            f"{self._base}/internal/agent/runs/{run_id}/checkpoint",
+            self._url(f"/agent/runs/{run_id}/checkpoint"),
             headers=self._headers(),
         )
         if resp.status_code == 404:
@@ -70,7 +69,7 @@ class ContentRunClient:
         worker_state_json: str,
     ) -> None:
         await self._client.put(
-            f"{self._base}/internal/agent/runs/{run_id}/checkpoint",
+            self._url(f"/agent/runs/{run_id}/checkpoint"),
             headers=self._headers(),
             json={
                 "stepIndex": step_index,
@@ -89,7 +88,7 @@ class ContentRunClient:
         payload: dict[str, Any],
     ) -> None:
         await self._client.post(
-            f"{self._base}/internal/agent/runs/{run_id}/events",
+            self._url(f"/agent/runs/{run_id}/events"),
             headers=self._headers(),
             json={
                 "eventId": event_id,
@@ -101,12 +100,10 @@ class ContentRunClient:
 
     async def get_command_payload(self, run_id: str, command_id: str) -> dict[str, Any] | None:
         resp = await self._client.get(
-            f"{self._base}/internal/agent/runs/{run_id}",
+            self._url(f"/agent/runs/{run_id}"),
             headers=self._headers(),
         )
         if resp.status_code == 404:
             return None
-        # Command payload is stored via recordCommand; fetch from commands list endpoint if added.
-        # Fallback: caller passes payload in execute request for resume.
         _ = command_id
         return None

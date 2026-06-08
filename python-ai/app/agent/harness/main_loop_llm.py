@@ -11,7 +11,7 @@ from uuid import uuid4
 
 from langchain_core.messages import AIMessage, AIMessageChunk
 
-from app.agent.harness.llm_trace import log_llm_exchange
+from app.agent.harness.llm_trace import log_llm_exchange, extract_cache_usage
 from app.agent.harness.visible_text_channel import (
     VisibleChannel,
     classify_visible_channel_prefix,
@@ -515,6 +515,22 @@ async def stream_bind_tools_turn(
                 "has_tool_calls": has_tool_calls,
                 "visible_route_mode": router.mode,
             },
+        )
+
+        usage_fields = extract_cache_usage(gathered)
+        model_name = None
+        meta = getattr(gathered, "response_metadata", None) or {}
+        if isinstance(meta, dict):
+            model_name = meta.get("model") or meta.get("model_name")
+        from app.billing.reporter import report_llm_usage
+
+        await report_llm_usage(
+            user_id=ctx.user_id,
+            run_id=ctx.run_id,
+            session_id=ctx.session_id,
+            model=str(model_name) if model_name else None,
+            usage=usage_fields,
+            step_index=stream_state.sequence,
         )
 
         if isinstance(gathered, AIMessage):

@@ -299,10 +299,15 @@ public class AgentRunState {
         return userMessage;
     }
 
-    // Original user message plus in-run interaction confirmations for session persistence.
+    // Original user message plus in-run user confirmations (never tool traces or AskUser prompts).
     public String buildPersistedUserMessage() {
-        StringBuilder sb = new StringBuilder(userMessage == null ? "" : userMessage.trim());
-        Object raw = contextPatch.get("user_interactions");
+        return buildPersistedUserMessage(contextPatch);
+    }
+
+    public String buildPersistedUserMessage(Map<String, Object> patch) {
+        String base = userMessage == null ? "" : userMessage.trim();
+        StringBuilder sb = new StringBuilder(base);
+        Object raw = patch == null ? null : patch.get("user_interactions");
         if (raw instanceof List<?> list) {
             for (Object item : list) {
                 if (!(item instanceof Map<?, ?> map)) {
@@ -313,6 +318,9 @@ public class AgentRunState {
                     continue;
                 }
                 String line = String.valueOf(text).trim();
+                if (!isPersistableUserInteractionLine(line)) {
+                    continue;
+                }
                 if (sb.indexOf(line) >= 0) {
                     continue;
                 }
@@ -323,6 +331,23 @@ public class AgentRunState {
             }
         }
         return sb.toString();
+    }
+
+    private static boolean isPersistableUserInteractionLine(String line) {
+        if (line.isBlank()) {
+            return false;
+        }
+        if (line.contains("等待你的回复")) {
+            return false;
+        }
+        if (line.startsWith("AskUser") || line.startsWith("ask_user")) {
+            return false;
+        }
+        // Tool trace summaries like "Glob：…" / "Read：…" must not land in the user bubble.
+        if (line.matches("^[A-Za-z][A-Za-z0-9_\\-]{0,31}：.+")) {
+            return false;
+        }
+        return true;
     }
 
     public String getCurrentTool() {

@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -42,8 +43,21 @@ public class CrmUserController extends BaseController {
     @PutMapping("/{id}")
     public Result<CrmUserDetailResp> update(
         @PathVariable Long id,
+        @RequestHeader(value = "X-User-Id", required = false) String actorHeader,
         @Valid @RequestBody CrmUserUpdateReq req
     ) {
-        return biz.update(id, req);
+        Long actorId = parseActorId(actorHeader);
+        return biz.update(id, req, actorId);
+    }
+
+    private static Long parseActorId(String header) {
+        if (header == null || header.isBlank()) {
+            return null;
+        }
+        try {
+            return Long.parseLong(header.trim());
+        } catch (NumberFormatException ex) {
+            return null;
+        }
     }
 }

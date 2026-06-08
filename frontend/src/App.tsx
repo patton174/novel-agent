@@ -40,6 +40,11 @@ const UsersPage = lazy(() => import('./pages/admin/UsersPage'))
 const StatsPage = lazy(() => import('./pages/admin/StatsPage'))
 const CrawlerPage = lazy(() => import('./pages/admin/CrawlerPage'))
 const CatalogPage = lazy(() => import('./pages/admin/CatalogPage'))
+const PlansPage = lazy(() => import('./pages/admin/PlansPage'))
+const RevenuePage = lazy(() => import('./pages/admin/RevenuePage'))
+const SiteContentPage = lazy(() => import('./pages/admin/SiteContentPage'))
+const AuditLogPage = lazy(() => import('./pages/admin/AuditLogPage'))
+const SystemSettingsPage = lazy(() => import('./pages/admin/SystemSettingsPage'))
 
 function isAppShellRoute(pathname: string): boolean {
   return (
@@ -59,9 +64,9 @@ function AppRouteTree() {
         <Route path="/features" element={<FeaturesPage />} />
         <Route path="/pricing" element={<PricingPage />} />
         <Route path="/testimonials" element={<TestimonialsPage />} />
-        <Route path="/privacy" element={<GenericContentPage title="隐私政策" />} />
-        <Route path="/terms" element={<GenericContentPage title="用户协议" />} />
-        <Route path="/contact" element={<GenericContentPage title="联系我们" />} />
+        <Route path="/privacy" element={<GenericContentPage contentKey="privacy" fallbackTitle="隐私政策" />} />
+        <Route path="/terms" element={<GenericContentPage contentKey="terms" fallbackTitle="用户协议" />} />
+        <Route path="/contact" element={<GenericContentPage contentKey="contact" fallbackTitle="联系我们" />} />
 
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
@@ -94,6 +99,11 @@ function AppRouteTree() {
         >
           <Route index element={<AdminHomePage />} />
           <Route path="users" element={<UsersPage />} />
+          <Route path="plans" element={<PlansPage />} />
+          <Route path="revenue" element={<RevenuePage />} />
+          <Route path="site-content" element={<SiteContentPage />} />
+          <Route path="audit-log" element={<AuditLogPage />} />
+          <Route path="system-settings" element={<SystemSettingsPage />} />
           <Route path="stats" element={<StatsPage />} />
           <Route path="crawler" element={<CrawlerPage />} />
           <Route path="catalog" element={<CatalogPage />} />

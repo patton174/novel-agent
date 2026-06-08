@@ -129,12 +129,21 @@ export function AgentThinkPanel({
     () => defaultExpandedProp ?? false,
   )
   const expanded = expandedProp ?? internalExpanded
-  const setExpanded = (open: boolean) => {
+  const handleExpandedChange = (open: boolean) => {
     userToggledRef.current = true
-    onExpandedChange?.(open)
+    if (typeof onExpandedChange === 'function') {
+      onExpandedChange(open)
+    }
     if (expandedProp === undefined) {
       setInternalExpanded(open)
     }
+  }
+
+  const handleToggleClick = () => {
+    if (!canToggle) {
+      return
+    }
+    handleExpandedChange(!expanded)
   }
 
   useEffect(() => {
@@ -193,7 +202,7 @@ export function AgentThinkPanel({
                 disabled={!canToggle}
                 aria-expanded={canToggle ? expanded : undefined}
                 aria-controls={canToggle ? bodyId : undefined}
-                onClick={() => canToggle && setExpanded(!expanded)}
+                onClick={handleToggleClick}
                 data-testid="agent-think-toggle"
               >
                 <CcToolHeadline>

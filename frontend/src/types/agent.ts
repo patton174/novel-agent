@@ -182,6 +182,8 @@ export interface AgentStreamUiState {
   timeline: AgentTimelineBlock[]
   /** 已应用的 SSE/WS 事件序号，避免双通道重复 */
   seenSequences: number[]
+  /** 已应用的 event_id（双通道去重，优先于 sequence） */
+  seenEventIds?: string[]
   /** run.waiting：等待用户点选，应走 WS 而非新开发消息 */
   awaitingInteraction?: boolean
   /** run.paused：用户手动暂停步进 */

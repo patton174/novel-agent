@@ -1,12 +1,11 @@
 package com.novel.agent.pyai.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.novel.agent.common.mq.constant.MqTopic;
 import com.novel.agent.common.mq.producer.IMessageProducer;
 import com.novel.agent.pyai.dto.agent.AgentSessionPersistMessage;
 import com.novel.agent.pyai.dto.agent.AgentStreamRequest;
-import com.novel.agent.pyai.orchestration.AgentRunCoordinator;
+import com.novel.agent.pyai.orchestration.AssistantPersistCollector;
 import com.novel.agent.pyai.orchestration.AgentRunEventJournal;
 import com.novel.agent.pyai.orchestration.AgentRunRegistry;
 import com.novel.agent.pyai.orchestration.AgentRunState;
@@ -103,7 +102,7 @@ public class AgentBridgeService {
         String messageId = AgentRunState.newMessageId();
         log.info("开始步进编排 userId={}, sessionId={}, runId={}, mode={}", userId, sessionId, runId, mode);
 
-        StringBuilder assistantBuffer = new StringBuilder();
+        AssistantPersistCollector assistantCollector = new AssistantPersistCollector();
         AtomicBoolean persisted = new AtomicBoolean(false);
         String finalSessionId = sessionId;
         boolean hostMode = Boolean.TRUE.equals(request.hostMode());
@@ -152,7 +151,7 @@ public class AgentBridgeService {
             HostModeEventFanout hostFanout = fanout;
             try {
                 coordinator.run(frame -> {
-                    collectAssistantDelta(frame, assistantBuffer);
+                    collectAssistantDelta(frame, assistantCollector);
                     if (pgFanout != null) {
                         pgFanout.onFrame(frame);
                     }
@@ -174,7 +173,7 @@ public class AgentBridgeService {
                         persisted,
                         state,
                         mode,
-                        sanitizeAssistantText(assistantBuffer.toString()),
+                        sanitizeAssistantText(assistantCollector.buildSanitized()),
                         "failed",
                         "aborted by user"
                     );
@@ -183,7 +182,7 @@ public class AgentBridgeService {
                         persisted,
                         state,
                         mode,
-                        sanitizeAssistantText(assistantBuffer.toString()),
+                        sanitizeAssistantText(assistantCollector.buildSanitized()),
                         "completed",
                         null
                     );
@@ -197,7 +196,7 @@ public class AgentBridgeService {
                     persisted,
                     state,
                     mode,
-                    sanitizeAssistantText(assistantBuffer.toString()),
+                    sanitizeAssistantText(assistantCollector.buildSanitized()),
                     "failed",
                     ex.getMessage()
                 );
@@ -214,73 +213,8 @@ public class AgentBridgeService {
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
-    private void appendToolHistorySnippet(StringBuilder assistantBuffer, JsonNode payload) {
-        if (payload == null || payload.isMissingNode()) {
-            return;
-        }
-        String summary = payload.path("output_summary").asText("").trim();
-        if (summary.isBlank()) {
-            JsonNode labels = payload.path("result_labels");
-            if (labels.isArray() && !labels.isEmpty()) {
-                StringBuilder joined = new StringBuilder();
-                for (JsonNode label : labels) {
-                    String text = label.asText("").trim();
-                    if (text.isBlank()) {
-                        continue;
-                    }
-                    if (!joined.isEmpty()) {
-                        joined.append("、");
-                    }
-                    joined.append(text);
-                }
-                summary = joined.toString().trim();
-            }
-        }
-        if (summary.isBlank()) {
-            return;
-        }
-        String name = payload.path("name").asText("").trim();
-        String prefix = name.isBlank() ? "" : name + "：";
-        if (!assistantBuffer.isEmpty() && assistantBuffer.charAt(assistantBuffer.length() - 1) != '\n') {
-            assistantBuffer.append('\n');
-        }
-        assistantBuffer.append(prefix).append(summary);
-    }
-
-    private void collectAssistantDelta(String frame, StringBuilder assistantBuffer) {
-        if (frame == null || frame.isBlank() || !frame.contains("event: agent-event")) {
-            return;
-        }
-        String data = SseEventCodec.extractData(frame);
-        if (data == null || data.isBlank()) {
-            return;
-        }
-        try {
-            JsonNode root = objectMapper.readTree(data);
-            String type = root.path("type").asText("");
-            if ("message.delta".equals(type)) {
-                String text = root.path("payload").path("text").asText("");
-                if (!text.isBlank()) {
-                    assistantBuffer.append(text);
-                }
-                return;
-            }
-            if ("tool.completed".equals(type)) {
-                String name = root.path("payload").path("name").asText("");
-                if ("output".equals(name)) {
-                    String output = root.path("payload").path("output").asText("");
-                    if (!output.isBlank()) {
-                        assistantBuffer.append(output);
-                    }
-                    return;
-                }
-                if (assistantBuffer.length() < 4000) {
-                    appendToolHistorySnippet(assistantBuffer, root.path("payload"));
-                }
-            }
-        } catch (Exception ignored) {
-            // ignore malformed event frames
-        }
+    private void collectAssistantDelta(String frame, AssistantPersistCollector collector) {
+        collector.onFrame(frame, objectMapper);
     }
 
     private void persistTurn(

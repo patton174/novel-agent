@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { ArrowLeft, BarChart3, BookOpen, Bot, LayoutDashboard, Shield, Users } from 'lucide-react'
+import { ArrowLeft, BarChart3, BookOpen, Bot, CreditCard, DollarSign, FileText, LayoutDashboard, ScrollText, Settings, Shield, Users } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Separator } from '@/components/ui/separator'
 
@@ -13,6 +13,11 @@ interface NavItem {
 const mainNav: NavItem[] = [
   { label: '概览', to: '/admin', icon: LayoutDashboard, end: true },
   { label: '用户管理', to: '/admin/users', icon: Users },
+  { label: '套餐管理', to: '/admin/plans', icon: CreditCard },
+  { label: '收入与成本', to: '/admin/revenue', icon: DollarSign },
+  { label: '站点内容', to: '/admin/site-content', icon: FileText },
+  { label: '审计日志', to: '/admin/audit-log', icon: ScrollText },
+  { label: '系统参数', to: '/admin/system-settings', icon: Settings },
   { label: '平台统计', to: '/admin/stats', icon: BarChart3 },
   { label: 'AI 爬虫', to: '/admin/crawler', icon: Bot },
   { label: '书库', to: '/admin/catalog', icon: BookOpen },

@@ -17,6 +17,9 @@ import com.novel.agent.content.dto.UpdateNovelRequest;
 import com.novel.agent.content.service.auth.biz.AuthNovelBiz;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -83,6 +86,30 @@ public class AuthNovelController extends BaseController {
     ) {
         String prompt = request == null ? null : request.prompt();
         return biz.generateCover(parseUserId(userId), novelId, prompt);
+    }
+
+    @GetMapping("/{novelId}/export/txt")
+    public ResponseEntity<String> exportTxt(
+        @RequestHeader("X-User-Id") String userId,
+        @PathVariable String novelId
+    ) {
+        var payload = biz.exportTxt(parseUserId(userId), novelId);
+        return ResponseEntity.ok()
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + payload.filename() + "\"")
+            .contentType(MediaType.TEXT_PLAIN)
+            .body(payload.body());
+    }
+
+    @GetMapping("/{novelId}/export/pdf")
+    public ResponseEntity<String> exportPdf(
+        @RequestHeader("X-User-Id") String userId,
+        @PathVariable String novelId
+    ) {
+        var payload = biz.exportPdf(parseUserId(userId), novelId);
+        return ResponseEntity.ok()
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + payload.filename() + "\"")
+            .contentType(MediaType.TEXT_PLAIN)
+            .body(payload.body());
     }
 
     @DeleteMapping("/{novelId}")

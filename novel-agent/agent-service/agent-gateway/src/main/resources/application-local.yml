@@ -18,6 +18,14 @@ spring:
           uri: http://127.0.0.1:8082
           predicates:
             - Path=/api/agent/**
+        - id: content-local
+          uri: http://127.0.0.1:8091
+          predicates:
+            - Path=/api/content/**
+        - id: billing-local
+          uri: http://127.0.0.1:8092
+          predicates:
+            - Path=/api/billing/**
   data:
     redis:
       host: ${REDIS_HOST:localhost}

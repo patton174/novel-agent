@@ -51,6 +51,8 @@ class Settings(BaseSettings):
 
     content_base_url: str = "http://127.0.0.1:8091"
     internal_service_key: str = "dev-internal-key-change-me"
+    billing_report_enabled: bool = True
+    billing_report_url: str = "http://127.0.0.1:8082"
     worker_id: str = ""
     log_level: str = "INFO"
     agent_llm_trace: bool = True

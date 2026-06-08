@@ -22,4 +22,11 @@ public class PyaiWebClientConfig {
     ) {
         return RestClient.builder().baseUrl(contentBaseUrl).build();
     }
+
+    @Bean
+    RestClient billingRestClient(
+        @Value("${agent.billing.base-url:http://127.0.0.1:8092}") String billingBaseUrl
+    ) {
+        return RestClient.builder().baseUrl(billingBaseUrl).build();
+    }
 }

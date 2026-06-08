@@ -24,6 +24,8 @@ public enum MqTopic {
     // 爬取书库章节向量索引
     CATALOG_INDEX("agent.catalog-index.exchange", "agent.catalog-index.persist", "agent.catalog-index.queue"),
 
+    USAGE_EVENT("agent.usage.exchange", "usage.report", "agent.usage.queue"),
+
     ;
 
     private final String exchange;

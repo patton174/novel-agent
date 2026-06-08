@@ -14,18 +14,18 @@ import org.springframework.context.annotation.Bean;
 @ConditionalOnClass(RabbitTemplate.class)
 public class MqAutoConfiguration {
 
-    @Bean
-    public ObjectMapper mqObjectMapper() {
+    /** 勿注册为 {@code @Bean ObjectMapper}，否则会顶替 Boot 自带 JSR310 配置并导致 HTTP 序列化 Instant 失败。 */
+    private static ObjectMapper mqObjectMapper() {
         return new ObjectMapper();
     }
 
     @Bean
-    public IMessageProducer messageProducer(RabbitTemplate rabbitTemplate, ObjectMapper mqObjectMapper) {
-        return new RabbitMessageProducer(rabbitTemplate, mqObjectMapper);
+    public IMessageProducer messageProducer(RabbitTemplate rabbitTemplate) {
+        return new RabbitMessageProducer(rabbitTemplate, mqObjectMapper());
     }
 
     @Bean
-    public IMessageConsumer messageConsumer(RabbitTemplate rabbitTemplate, ObjectMapper mqObjectMapper) {
-        return new RabbitMessageConsumer(rabbitTemplate, mqObjectMapper);
+    public IMessageConsumer messageConsumer(RabbitTemplate rabbitTemplate) {
+        return new RabbitMessageConsumer(rabbitTemplate, mqObjectMapper());
     }
 }
