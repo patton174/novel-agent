@@ -40,6 +40,7 @@ export interface AgentTodoItem {
 export interface AgentEventEnvelope {
   type: string
   sequence: number
+  event_id?: string
   step_id?: string
   parent_step_id?: string | null
   run_id?: string
