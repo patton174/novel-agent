@@ -36,12 +36,12 @@ services:
 
   python-ai:
     build:
-      context: ../../../../
+      context: ../../../../../
       dockerfile: novel-agent/agent-document/docs/deploy/docker/Dockerfile.python-ai
     image: novel-agent/python-ai:latest
     restart: unless-stopped
     env_file:
-      - ../../../../python-ai/.env
+      - ../../../../../python-ai/.env
     environment:
       LOG_LEVEL: ${PYTHON_LOG_LEVEL:-INFO}
       CONTENT_BASE_URL: http://agent-content:8091
@@ -63,7 +63,7 @@ services:
     image: novel-agent/python-ai:latest
     restart: unless-stopped
     env_file:
-      - ../../../../python-ai/.env
+      - ../../../../../python-ai/.env
     environment:
       LOG_LEVEL: ${PYTHON_LOG_LEVEL:-INFO}
       CONTENT_BASE_URL: http://agent-content:8091
@@ -86,7 +86,7 @@ services:
 
   agent-content:
     build:
-      context: ../../../../
+      context: ../../../../../
       dockerfile: novel-agent/agent-document/docs/deploy/docker/Dockerfile.java
       args:
         MODULE: agent-content
@@ -111,7 +111,7 @@ services:
 
   agent-consumer:
     build:
-      context: ../../../../
+      context: ../../../../../
       dockerfile: novel-agent/agent-document/docs/deploy/docker/Dockerfile.java
       args:
         MODULE: agent-consumer
@@ -134,7 +134,7 @@ services:
 
   agent-pyai:
     build:
-      context: ../../../../
+      context: ../../../../../
       dockerfile: novel-agent/agent-document/docs/deploy/docker/Dockerfile.java
       args:
         MODULE: agent-pyai
@@ -160,7 +160,7 @@ services:
 
   frontend:
     build:
-      context: ../../../../
+      context: ../../../../../
       dockerfile: novel-agent/agent-document/docs/deploy/docker/Dockerfile.frontend-worker
     image: novel-agent/frontend-worker:latest
     restart: unless-stopped

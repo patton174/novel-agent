@@ -50,7 +50,7 @@ services:
 
   agent-auth:
     build:
-      context: ../../../../
+      context: ../../../../../
       dockerfile: novel-agent/agent-document/docs/deploy/docker/Dockerfile.java
       args:
         MODULE: agent-auth
@@ -75,7 +75,7 @@ services:
 
   agent-gateway:
     build:
-      context: ../../../../
+      context: ../../../../../
       dockerfile: novel-agent/agent-document/docs/deploy/docker/Dockerfile.java
       args:
         MODULE: agent-gateway
