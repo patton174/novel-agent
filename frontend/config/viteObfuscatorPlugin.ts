@@ -6,9 +6,9 @@ import type { Plugin, RenderedChunk } from 'vite'
 const UI_CHUNK_PREFIX =
   /^(dialog|badge|button|avatar|separator|select|dropdown-menu|sheet|switch|popover|tooltip|tabs|checkbox|label|input|card|skeleton)-/
 
-/** framer-motion / gsap / recharts 等运行时库不可混淆（会破坏回调与内部 API） */
+/** framer-motion / radix / lucide 等 vendor chunk 不可混淆（会破坏事件合成与 ref 回调） */
 const VENDOR_CHUNK_SKIP =
-  /^(motion|gsap|recharts|markdown)-/
+  /^(motion|gsap|recharts|markdown|radix|icons|styled|i18n)-/
 
 /**
  * Vite 路由懒加载依赖 __vite__mapDeps / import() 字符串路径；
