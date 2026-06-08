@@ -1,11 +1,11 @@
 package com.novel.agent.content.client;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.novel.agent.common.core.base.Result;
 import com.novel.agent.common.core.enums.ResultCode;
 import com.novel.agent.common.core.exception.BizException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
@@ -33,7 +33,7 @@ public class BillingFeatureClient {
                 .uri("/internal/billing/features/assert?userId={userId}&featureKey={featureKey}", userId, featureKey)
                 .header(INTERNAL_KEY_HEADER, internalServiceKey)
                 .retrieve()
-                .body(new TypeReference<Result<Void>>() {});
+                .body(new ParameterizedTypeReference<Result<Void>>() {});
         } catch (RestClientResponseException ex) {
             if (ex.getStatusCode().value() == 403) {
                 throw BizException.of(ResultCode.BILLING_FEATURE_NOT_AVAILABLE);

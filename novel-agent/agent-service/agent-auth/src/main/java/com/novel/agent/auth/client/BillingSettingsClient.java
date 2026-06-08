@@ -1,10 +1,10 @@
 package com.novel.agent.auth.client;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.novel.agent.auth.config.AuthIntegrationProperties;
 import com.novel.agent.common.core.base.Result;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
@@ -27,7 +27,7 @@ public class BillingSettingsClient {
                 .uri("/internal/billing/settings/public")
                 .header(INTERNAL_KEY_HEADER, integrationProperties.getInternal().getServiceKey())
                 .retrieve()
-                .body(new TypeReference<Result<PublicSettingsWire>>() {});
+                .body(new ParameterizedTypeReference<Result<PublicSettingsWire>>() {});
             if (result == null || result.data() == null) {
                 return true;
             }
