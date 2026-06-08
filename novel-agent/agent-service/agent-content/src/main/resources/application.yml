@@ -3,3 +3,9 @@ spring:
     import: optional:classpath:observability/actuator.yml
   banner:
     location: classpath:banner.txt
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 1
+    locations: classpath:db/migration
+    table: flyway_schema_history_content

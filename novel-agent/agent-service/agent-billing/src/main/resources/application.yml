@@ -3,3 +3,8 @@ spring:
     import: optional:classpath:observability/actuator.yml
   application:
     name: agent-billing
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 0
+    locations: classpath:db/migration
