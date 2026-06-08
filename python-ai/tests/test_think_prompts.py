@@ -1,10 +1,10 @@
 """Unit tests for think tool prompts."""
 
-from app.core.agent_prompts import (
+from app.agent.context.prompting.fragments import (
     THINK_INTENSITY_SPEC,
     build_think_fallback_markdown,
-    build_think_prompt,
     build_think_system_message,
+    build_think_task_text as build_think_prompt,
 )
 
 
