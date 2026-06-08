@@ -46,9 +46,11 @@ fi
 COMPOSE="docker compose"
 if ! docker compose version >/dev/null 2>&1; then COMPOSE="docker-compose"; fi
 
-$COMPOSE -f "$CF" --env-file "$ENV_WK" up -d python-lb
-$COMPOSE -f "$CF" --env-file "$ENV_WK" up -d --force-recreate python-ai || true
-$COMPOSE -f "$CF" --env-file "$ENV_WK" up -d python-ai-2 || true
+set +e
+$COMPOSE -f "$CF" --env-file "$ENV_WK" up -d --no-deps python-lb
+$COMPOSE -f "$CF" --env-file "$ENV_WK" up -d --force-recreate python-ai
+$COMPOSE -f "$CF" --env-file "$ENV_WK" up -d python-ai-2
+set -e
 
 wait_http() {
   local url="$1" label="$2" max="${3:-60}"

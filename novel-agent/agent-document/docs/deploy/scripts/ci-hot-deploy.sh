@@ -115,9 +115,9 @@ if want "${CHANGED_SECURITY:-false}"; then
   echo "[ci-hot] security paths changed → sync MW auth + gateway"
 fi
 
-# 部署脚本/workflow/Worker compose 变更：Worker 栈 + 前端（与 content 同批发布）
+# 部署脚本/workflow/Worker compose 变更：同步 compose；全量 infra 可选
 if want "${CHANGED_DEPLOY_CI:-false}"; then
-  echo "[ci-hot] deploy/ci changed → sync worker infra + deploy worker stack"
+  echo "[ci-hot] deploy/ci changed → sync worker compose + deploy worker stack"
   CHANGED_CONTENT=true
   CHANGED_CONSUMER=true
   CHANGED_BILLING=true
@@ -125,6 +125,7 @@ if want "${CHANGED_DEPLOY_CI:-false}"; then
   CHANGED_PYTHON_AI=true
   CHANGED_FRONTEND=true
   export WORKER_INFRA_SYNC=1
+  export WORKER_COMPOSE_SYNC_ONLY=1
   export WORKER_JAVA_RECREATE=1
 fi
 
