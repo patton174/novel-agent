@@ -3,13 +3,13 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/../../../../../.." && pwd)"
+REPO_ROOT="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel)"
+DOCKER_DIR="$(cd "$SCRIPT_DIR/../docker" && pwd)"
 # shellcheck source=/dev/null
 source "$SCRIPT_DIR/_deploy-lib.sh"
 
 WK="${WORKER_SSH:-root@${WORKER_HOST:?WORKER_HOST required}}"
 DIR="${WORKER_REMOTE_DIR:-/opt/novel-agent}"
-DOCKER_DIR="$REPO_ROOT/novel-agent/agent-document/docs/deploy/docker"
 
 echo "=== Worker: 同步 compose/nginx 并应用内存配置 ==="
 deploy_ssh "$WK" "mkdir -p '$DIR/novel-agent/agent-document/docs/deploy/docker' '$DIR/novel-agent/agent-document/docs/deploy/scripts'"

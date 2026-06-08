@@ -5,6 +5,16 @@ set -euo pipefail
 DIR="${DEPLOY_DIR:-/opt/novel-agent}"
 ENV_WK="$DIR/novel-agent/agent-document/docs/deploy/docker/.env.worker"
 CF="$DIR/novel-agent/agent-document/docs/deploy/docker/docker-compose.worker.yml"
+LEGACY_ENV="$DIR/novel-agent/docs/deploy/docker/.env.worker"
+LEGACY_CF="$DIR/novel-agent/docs/deploy/docker/docker-compose.worker.yml"
+if [[ ! -f "$ENV_WK" && -f "$LEGACY_ENV" ]]; then
+  mkdir -p "$(dirname "$ENV_WK")"
+  cp "$LEGACY_ENV" "$ENV_WK"
+fi
+if [[ ! -f "$CF" && -f "$LEGACY_CF" ]]; then
+  mkdir -p "$(dirname "$CF")"
+  cp "$LEGACY_CF" "$CF"
+fi
 PYENV="$DIR/python-ai/.env"
 
 upsert() {
