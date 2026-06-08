@@ -142,6 +142,12 @@ if want "${CHANGED_FRONTEND:-false}"; then
   CHANGED_CONTENT=true
 fi
 
+# billing 首次上线或 compose 新增服务：先同步 Worker compose
+if want "${CHANGED_BILLING:-false}"; then
+  echo "[ci-hot] billing changed → sync worker compose (ensure agent-billing service exists)"
+  export WORKER_INFRA_SYNC=1
+fi
+
 MODULES=()
 want "${CHANGED_GATEWAY:-false}" && MODULES+=(agent-gateway)
 want "${CHANGED_AUTH:-false}" && MODULES+=(agent-auth)

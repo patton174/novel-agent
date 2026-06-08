@@ -238,6 +238,10 @@ probe_ready() {
       curl -s -o /dev/null -w '%{http_code}' --connect-timeout 2 \
         'http://127.0.0.1:8090/' 2>/dev/null || echo 000
       ;;
+    agent-billing)
+      curl -s -o /dev/null -w '%{http_code}' --connect-timeout 2 \
+        'http://127.0.0.1:8092/actuator/health' 2>/dev/null || echo 000
+      ;;
     *)
       curl -s -o /dev/null -w '%{http_code}' --connect-timeout 2 \
         -X POST 'http://127.0.0.1:8080/api/auth/api/login' \
