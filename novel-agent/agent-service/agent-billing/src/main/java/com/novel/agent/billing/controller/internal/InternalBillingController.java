@@ -5,6 +5,7 @@ import com.novel.agent.billing.dto.PublicSiteSettingsResp;
 import com.novel.agent.billing.dto.QuotaCheckResp;
 import com.novel.agent.billing.dto.UsageReportRequest;
 import com.novel.agent.billing.service.AuditLogService;
+import com.novel.agent.billing.service.biz.FeatureGateBiz;
 import com.novel.agent.billing.service.biz.QuotaBiz;
 import com.novel.agent.billing.service.biz.SiteSettingsBiz;
 import com.novel.agent.billing.service.biz.SubscriptionBiz;
