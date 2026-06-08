@@ -1,7 +1,7 @@
 package com.novel.agent.pyai.client;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.core.ParameterizedTypeReference;
 import com.novel.agent.common.core.base.Result;
 import com.novel.agent.common.core.enums.ResultCode;
 import com.novel.agent.common.core.exception.BizException;
@@ -48,7 +48,7 @@ public class BillingInternalClient {
                 .uri("/internal/billing/quota/assert-run?userId={userId}", userId)
                 .header(INTERNAL_KEY_HEADER, runtimeProperties.internalServiceKey())
                 .retrieve()
-                .body(new TypeReference<Result<QuotaCheckResp>>() {});
+                .body(new ParameterizedTypeReference<Result<QuotaCheckResp>>() {});
             return result != null ? result.data() : null;
         } catch (RestClientResponseException ex) {
             if (ex.getStatusCode().value() == 402) {
