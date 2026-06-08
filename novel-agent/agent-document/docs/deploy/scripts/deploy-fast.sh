@@ -289,11 +289,26 @@ done
 if [[ "\$ok" -ne 1 ]]; then
   echo "[deploy-fast] ERROR: $COMPOSE_SVC 启动超时，最近日志："
   docker logs "\$CID" --tail 80 2>&1 || true
-  if [[ -f "/tmp/deploy-fast-${COMPOSE_SVC}-bak.jar" ]]; then
-    echo "[deploy-fast] 回滚上一版 jar ..."
-    docker cp "/tmp/deploy-fast-${COMPOSE_SVC}-bak.jar" "\$CID:/app/app.jar"
-    docker restart "\$CID"
-    sleep 15
+  bak="/tmp/deploy-fast-${COMPOSE_SVC}-bak.jar"
+  if [[ -f "\$bak" ]]; then
+    start_class=\$(unzip -p "\$bak" META-INF/MANIFEST.MF 2>/dev/null | tr -d '\r' | awk -F': ' '/Start-Class/{print \$2; exit}')
+    expect_class=""
+    case '$COMPOSE_SVC' in
+      agent-billing) expect_class="com.novel.agent.billing.NovelAgentBillingApplication" ;;
+      agent-content) expect_class="com.novel.agent.content.NovelAgentContentApplication" ;;
+      agent-pyai) expect_class="com.novel.agent.pyai.NovelAgentPyaiApplication" ;;
+      agent-consumer) expect_class="com.novel.agent.consumer.NovelAgentConsumerApplication" ;;
+      agent-auth) expect_class="com.novel.agent.auth.NovelAgentAuthApplication" ;;
+      agent-gateway) expect_class="com.novel.agent.gateway.NovelAgentGatewayApplication" ;;
+    esac
+    if [[ -n "\$expect_class" && "\$start_class" == "\$expect_class" ]]; then
+      echo "[deploy-fast] 回滚上一版 jar (\$start_class) ..."
+      docker cp "\$bak" "\$CID:/app/app.jar"
+      docker restart "\$CID"
+      sleep 15
+    else
+      echo "[deploy-fast] WARN: 跳过回滚（备份 Start-Class='\${start_class:-?}' ≠ 期望 '\$expect_class'，常见于 seed 镜像）"
+    fi
   fi
   exit 1
 fi

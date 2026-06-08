@@ -171,12 +171,12 @@ services:
     restart: unless-stopped
     environment:
       <<: *java-env
-      JAVA_OPTS: ${JAVA_OPTS_BILLING:--Xms64m -Xmx176m -XX:MaxMetaspaceSize=96m -Dfile.encoding=UTF-8}
+      JAVA_OPTS: ${JAVA_OPTS_BILLING:--Xms64m -Xmx220m -XX:MaxMetaspaceSize=128m -Dfile.encoding=UTF-8}
       SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
       SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
       SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
       AGENT_INTERNAL_SERVICE_KEY: ${INTERNAL_SERVICE_KEY:-dev-internal-key-change-me}
-    mem_limit: ${JAVA_MEM_LIMIT_BILLING:-256m}
+    mem_limit: ${JAVA_MEM_LIMIT_BILLING:-448m}
     ports:
       - "8092:8092"
     networks:

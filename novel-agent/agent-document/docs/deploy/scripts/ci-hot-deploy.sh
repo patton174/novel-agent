@@ -320,7 +320,7 @@ if want "${CHANGED_BILLING:-false}"; then
   # shellcheck source=/dev/null
   source "$SCRIPT_DIR/_deploy-lib.sh"
   smoke_ok=0
-  for i in $(seq 1 30); do
+  for i in $(seq 1 40); do
     code=$(deploy_ssh "$WORKER_SSH" \
       "curl -s -o /dev/null -w '%{http_code}' --connect-timeout 2 http://127.0.0.1:8092/actuator/health" \
       2>/dev/null || echo 000)
