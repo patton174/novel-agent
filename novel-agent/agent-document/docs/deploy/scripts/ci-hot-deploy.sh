@@ -314,6 +314,28 @@ if want "${CHANGED_CONTENT:-false}"; then
   fi
 fi
 
+if want "${CHANGED_BILLING:-false}"; then
+  echo "[ci-hot] smoke: Worker billing /actuator/health"
+  # shellcheck source=/dev/null
+  source "$SCRIPT_DIR/_deploy-lib.sh"
+  smoke_ok=0
+  for i in $(seq 1 30); do
+    code=$(deploy_ssh "$WORKER_SSH" \
+      "curl -s -o /dev/null -w '%{http_code}' --connect-timeout 2 http://127.0.0.1:8092/actuator/health" \
+      2>/dev/null || echo 000)
+    if [[ "$code" == "200" ]]; then
+      echo "[ci-hot] billing smoke OK (HTTP $code, attempt $i)"
+      smoke_ok=1
+      break
+    fi
+    sleep 3
+  done
+  if [[ "$smoke_ok" -ne 1 ]]; then
+    echo "[ci-hot] ERROR: agent-billing 未就绪（/actuator/health → $code）"
+    exit 1
+  fi
+fi
+
 # 确保 CI runner 无残留 ssh/scp（否则 Post job cleanup 会长时间等待）
 if [[ "${GITHUB_ACTIONS:-}" == "true" ]]; then
   for _ in 1 2 3; do
