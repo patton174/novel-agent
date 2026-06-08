@@ -4,19 +4,19 @@ from app.agent.context.prompting.fragments import (
     THINK_INTENSITY_SPEC,
     build_think_fallback_markdown,
     build_think_system_message,
-    build_think_task_text as build_think_prompt,
+    build_think_task_text,
 )
 
 
 def test_build_think_prompt_includes_task_auto_hint_for_medium():
-    prompt = build_think_prompt("续写下一幕", "前文节选", mode="auto", intensity="medium")
+    prompt = build_think_task_text("续写下一幕", "前文节选", mode="auto", intensity="medium")
     assert "自动判断任务类型" in prompt
     assert "续写下一幕" in prompt
     assert "150" in prompt and "450" in prompt
 
 
 def test_build_think_prompt_light_intensity():
-    prompt = build_think_prompt("写对话", intensity="light")
+    prompt = build_think_task_text("写对话", intensity="light")
     assert "自动判断任务类型" in prompt
     assert "80" in prompt and "220" in prompt
 
