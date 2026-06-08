@@ -146,6 +146,9 @@ fi
 if want "${CHANGED_BILLING:-false}"; then
   echo "[ci-hot] billing changed → sync worker compose (ensure agent-billing service exists)"
   export WORKER_INFRA_SYNC=1
+  if ! want "${CHANGED_DEPLOY_CI:-false}"; then
+    export WORKER_COMPOSE_SYNC_ONLY=1
+  fi
 fi
 
 MODULES=()

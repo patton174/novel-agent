@@ -14,6 +14,12 @@ DIR="${WORKER_REMOTE_DIR:-/opt/novel-agent}"
 echo "=== Worker: 同步 compose/nginx 并应用内存配置 ==="
 deploy_ssh "$WK" "mkdir -p '$DIR/novel-agent/agent-document/docs/deploy/docker' '$DIR/novel-agent/agent-document/docs/deploy/scripts'"
 deploy_scp "$DOCKER_DIR/docker-compose.worker.yml" "$WK:$DIR/novel-agent/agent-document/docs/deploy/docker/docker-compose.worker.yml"
+
+if [[ "${WORKER_COMPOSE_SYNC_ONLY:-0}" == "1" ]]; then
+  echo "[update-worker-memory] compose-only sync (skip python-lb / memory apply)"
+  exit 0
+fi
+
 deploy_scp "$DOCKER_DIR/nginx-python-lb-worker.conf" "$WK:$DIR/novel-agent/agent-document/docs/deploy/docker/nginx-python-lb-worker.conf"
 deploy_scp "$SCRIPT_DIR/update-worker-crawl-env.sh" "$WK:$DIR/novel-agent/agent-document/docs/deploy/scripts/update-worker-crawl-env.sh"
 deploy_scp "$SCRIPT_DIR/worker-apply-infra.sh" "$WK:$DIR/novel-agent/agent-document/docs/deploy/scripts/worker-apply-infra.sh"
