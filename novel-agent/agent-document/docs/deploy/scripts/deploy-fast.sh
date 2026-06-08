@@ -171,12 +171,34 @@ if ! docker compose version >/dev/null 2>&1; then COMPOSE="docker-compose"; fi
 CID=\$(\$COMPOSE -f '$COMPOSE_FILE' --env-file '$ENV_REL' ps -q '$COMPOSE_SVC')
 if [[ "${WORKER_JAVA_RECREATE:-0}" == "1" && '$TARGET' == 'worker' ]]; then
   echo "[deploy-fast] WORKER_JAVA_RECREATE=1 → compose recreate $COMPOSE_SVC（应用新 env/mem_limit）"
-  \$COMPOSE -f '$COMPOSE_FILE' --env-file '$ENV_REL' up -d --force-recreate --no-deps '$COMPOSE_SVC'
+  if ! docker image inspect "novel-agent/${COMPOSE_SVC#agent-}:latest" >/dev/null 2>&1; then
+    for donor in novel-agent/content:latest novel-agent/pyai:latest novel-agent/consumer:latest; do
+      if docker image inspect "\$donor" >/dev/null 2>&1; then
+        docker tag "\$donor" "novel-agent/${COMPOSE_SVC#agent-}:latest"
+        break
+      fi
+    done
+  fi
+  if ! \$COMPOSE -f '$COMPOSE_FILE' --env-file '$ENV_REL' up -d --force-recreate --no-deps --no-build '$COMPOSE_SVC' 2>/dev/null; then
+    \$COMPOSE -f '$COMPOSE_FILE' --env-file '$ENV_REL' up -d --force-recreate --no-deps '$COMPOSE_SVC'
+  fi
   CID=\$(\$COMPOSE -f '$COMPOSE_FILE' --env-file '$ENV_REL' ps -q '$COMPOSE_SVC')
 fi
 if [[ -z "\$CID" ]]; then
   echo "[deploy-fast] 容器未运行，仅 up $COMPOSE_SVC"
-  \$COMPOSE -f '$COMPOSE_FILE' --env-file '$ENV_REL' up -d '$COMPOSE_SVC'
+  if ! docker image inspect "novel-agent/${COMPOSE_SVC#agent-}:latest" >/dev/null 2>&1; then
+    seed_image="novel-agent/${COMPOSE_SVC#agent-}:latest"
+    for donor in novel-agent/content:latest novel-agent/pyai:latest novel-agent/consumer:latest; do
+      if docker image inspect "\$donor" >/dev/null 2>&1; then
+        echo "[deploy-fast] seed \$seed_image <= \$donor（跳过 Worker 端 Maven 构建）"
+        docker tag "\$donor" "\$seed_image"
+        break
+      fi
+    done
+  fi
+  if ! \$COMPOSE -f '$COMPOSE_FILE' --env-file '$ENV_REL' up -d --no-build '$COMPOSE_SVC' 2>/dev/null; then
+    \$COMPOSE -f '$COMPOSE_FILE' --env-file '$ENV_REL' up -d '$COMPOSE_SVC'
+  fi
   CID=\$(\$COMPOSE -f '$COMPOSE_FILE' --env-file '$ENV_REL' ps -q '$COMPOSE_SVC')
 fi
 mkdir -p /opt/novel-agent/backups
