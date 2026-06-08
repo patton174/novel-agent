@@ -143,10 +143,11 @@ if want "${CHANGED_FRONTEND:-false}"; then
   CHANGED_CONTENT=true
 fi
 
-# billing 首次上线或 compose 新增服务：先同步 Worker compose
+# billing 首次上线或 compose 新增服务：先同步 Worker compose；强制 recreate 以注入 DB/Redis 等 env
 if want "${CHANGED_BILLING:-false}"; then
-  echo "[ci-hot] billing changed → sync worker compose (ensure agent-billing service exists)"
+  echo "[ci-hot] billing changed → sync worker compose + recreate agent-billing"
   export WORKER_INFRA_SYNC=1
+  export WORKER_JAVA_RECREATE=1
   if ! want "${CHANGED_DEPLOY_CI:-false}"; then
     export WORKER_COMPOSE_SYNC_ONLY=1
   fi

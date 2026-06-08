@@ -7,10 +7,13 @@ spring:
   application:
     name: agent-billing
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/novel_agent}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://${MW_HOST:localhost}:5432/novel_agent?sslmode=disable}
     username: ${SPRING_DATASOURCE_USERNAME:postgres}
     password: ${SPRING_DATASOURCE_PASSWORD:changeme}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      connection-timeout: 15000
+      maximum-pool-size: 5
   jpa:
     hibernate:
       ddl-auto: validate
@@ -34,6 +37,7 @@ spring:
     baseline-on-migrate: true
     baseline-version: 0
     locations: classpath:db/migration
+    table: flyway_schema_history_billing
 
 agent:
   internal:

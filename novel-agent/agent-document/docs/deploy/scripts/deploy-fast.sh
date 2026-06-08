@@ -218,8 +218,8 @@ if [[ '$COMPOSE_SVC' == 'agent-content' ]]; then
   max_attempts=120
   sleep_sec=2
 elif [[ '$COMPOSE_SVC' == 'agent-billing' ]]; then
-  sleep 15
-  max_attempts=90
+  sleep 20
+  max_attempts=120
   sleep_sec=2
 else
   sleep 5
