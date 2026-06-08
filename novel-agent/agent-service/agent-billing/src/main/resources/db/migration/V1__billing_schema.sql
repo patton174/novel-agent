@@ -78,7 +78,7 @@ CREATE INDEX IF NOT EXISTS idx_usage_event_trace ON usage_event(trace_id);
 
 CREATE TABLE IF NOT EXISTS usage_period_summary (
     user_id         BIGINT NOT NULL,
-    period_yyyy_mm  CHAR(7) NOT NULL,
+    period_yyyy_mm  VARCHAR(7) NOT NULL,
     tokens_used     BIGINT NOT NULL DEFAULT 0,
     runs_used       INT NOT NULL DEFAULT 0,
     cost_micros     BIGINT NOT NULL DEFAULT 0,
