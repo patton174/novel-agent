@@ -27,14 +27,17 @@ upsert() {
   fi
 }
 
-upsert "$ENV_WK" JAVA_OPTS_CONTENT "-Xms96m -Xmx240m -XX:MaxMetaspaceSize=144m -Dfile.encoding=UTF-8"
-upsert "$ENV_WK" JAVA_OPTS_PYAI "-Xms64m -Xmx176m -XX:MaxMetaspaceSize=96m -XX:+UseSerialGC -Dfile.encoding=UTF-8"
-upsert "$ENV_WK" JAVA_OPTS_CONSUMER "-Xms64m -Xmx152m -XX:MaxMetaspaceSize=80m -XX:+UseSerialGC -Dfile.encoding=UTF-8"
-upsert "$ENV_WK" PYTHON_MEM_LIMIT "448m"
-upsert "$ENV_WK" PYTHON_MEM_LIMIT_2 "384m"
-upsert "$ENV_WK" JAVA_MEM_LIMIT_CONTENT "384m"
-upsert "$ENV_WK" JAVA_MEM_LIMIT_PYAI "256m"
+# 低内存 JVM：SerialGC + 限制 Metaspace/DirectMemory，与 docker-compose.worker.yml 默认一致
+upsert "$ENV_WK" JAVA_OPTS_CONTENT "-Xms64m -Xmx228m -XX:MaxMetaspaceSize=120m -XX:+UseSerialGC -XX:TieredStopAtLevel=1 -XX:+ExitOnOutOfMemoryError -Dfile.encoding=UTF-8"
+upsert "$ENV_WK" JAVA_OPTS_PYAI "-Xms48m -Xmx160m -XX:MaxMetaspaceSize=80m -XX:MaxDirectMemorySize=48m -XX:+UseSerialGC -XX:TieredStopAtLevel=1 -XX:+ExitOnOutOfMemoryError -Dfile.encoding=UTF-8"
+upsert "$ENV_WK" JAVA_OPTS_CONSUMER "-Xms48m -Xmx140m -XX:MaxMetaspaceSize=72m -XX:+UseSerialGC -XX:TieredStopAtLevel=1 -XX:+ExitOnOutOfMemoryError -Dfile.encoding=UTF-8"
+upsert "$ENV_WK" JAVA_OPTS_BILLING "-Xms48m -Xmx188m -XX:MaxMetaspaceSize=128m -XX:+UseSerialGC -XX:TieredStopAtLevel=1 -XX:+ExitOnOutOfMemoryError -Dfile.encoding=UTF-8"
+upsert "$ENV_WK" PYTHON_MEM_LIMIT "304m"
+upsert "$ENV_WK" PYTHON_MEM_LIMIT_2 "256m"
+upsert "$ENV_WK" JAVA_MEM_LIMIT_CONTENT "368m"
+upsert "$ENV_WK" JAVA_MEM_LIMIT_PYAI "240m"
 upsert "$ENV_WK" JAVA_MEM_LIMIT_CONSUMER "224m"
+upsert "$ENV_WK" JAVA_MEM_LIMIT_BILLING "384m"
 upsert "$ENV_WK" CRAWL_FETCH_CONCURRENCY "2"
 upsert "$ENV_WK" CRAWL_BROWSER_CONCURRENCY "1"
 upsert "$ENV_WK" AGENT_PYTHON_BASE_URL "http://python-lb:8000"

@@ -1,5 +1,5 @@
 # MW 机（2C4G）：中间件 + python-lb + Gateway + Auth（python-ai 已迁至 Worker）
-# 容器 mem_limit 合计 ~632m，CPU 压力主要在 PG/Nacos/Redis/MQ
+# Java 容器 auth 320m + gateway 352m；Nacos 中间件单独占 ~1.5G，需 1Panel 单独调
 name: novel-agent-mw
 
 x-java-env: &java-env
@@ -59,14 +59,14 @@ services:
     restart: unless-stopped
     environment:
       <<: *java-env
-      JAVA_OPTS: ${JAVA_OPTS_AUTH:--Xms96m -Xmx192m -Dfile.encoding=UTF-8}
+      JAVA_OPTS: ${JAVA_OPTS_AUTH:--Xms64m -Xmx160m -XX:MaxMetaspaceSize=96m -XX:+UseSerialGC -XX:TieredStopAtLevel=1 -XX:+ExitOnOutOfMemoryError -Dfile.encoding=UTF-8}
       SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
       SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
       SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
       MAILTRAP_TOKEN: ${MAILTRAP_TOKEN:-}
       AGENT_PYTHON_BASE_URL: ${AGENT_PYTHON_BASE_URL:-http://127.0.0.1:8000}
       NACOS_SERVER_ADDR: ${NACOS_SERVER_ADDR_DOCKER:-nacos-standalone:8848}
-    mem_limit: ${JAVA_MEM_LIMIT_MW:-448m}
+    mem_limit: ${JAVA_MEM_LIMIT_AUTH:-320m}
     ports:
       - "8081:8081"
     networks:
@@ -84,10 +84,10 @@ services:
     restart: unless-stopped
     environment:
       <<: *java-env
-      JAVA_OPTS: ${JAVA_OPTS_GATEWAY:--Xms96m -Xmx256m -Dfile.encoding=UTF-8}
+      JAVA_OPTS: ${JAVA_OPTS_GATEWAY:--Xms64m -Xmx192m -XX:MaxMetaspaceSize=96m -XX:MaxDirectMemorySize=64m -XX:+UseSerialGC -XX:TieredStopAtLevel=1 -XX:+ExitOnOutOfMemoryError -Dfile.encoding=UTF-8}
       SPRING_MAIN_WEB_APPLICATION_TYPE: reactive
       NACOS_SERVER_ADDR: ${NACOS_SERVER_ADDR_DOCKER:-nacos-standalone:8848}
-    mem_limit: ${JAVA_MEM_LIMIT_MW:-448m}
+    mem_limit: ${JAVA_MEM_LIMIT_GATEWAY:-352m}
     ports:
       - "${GATEWAY_PORT:-8080}:8080"
     networks:
