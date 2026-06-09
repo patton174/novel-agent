@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-# 国内节点部署 python-ai-cn：MW git pull（Worker 代理加速）→ rsync → CN build
+# 国内节点部署 python-ai-cn：
+#   MW git pull（经 Worker Mihomo 10.66.0.3:7890 加速）→ rsync 到 CN → docker build
+# git pull 失败时回退：本机 rsync 到 MW（需本地已 push GitHub）
 #
 # 用法: bash deploy-cn-from-git.sh
 set -euo pipefail
@@ -19,7 +21,6 @@ MW_DIR="${MW_REMOTE_DIR:-/opt/novel-agent}"
 CN_DIR="${CN_REMOTE_DIR:-/opt/novel-agent}"
 GIT_REPO_URL="${GIT_REPO_URL:-git@github.com:patton174/novel-agent.git}"
 GIT_BRANCH="${GIT_BRANCH:-master}"
-WORKER_WG_IP="${WORKER_WG_IP:-10.66.0.3}"
 PROXY_ENV="$SCRIPT_DIR/mesh-proxy-env.sh"
 
 log() { echo "[$(date '+%H:%M:%S')] [cn-git] $*"; }
@@ -30,90 +31,83 @@ log "上传 mesh-proxy-env.sh → MW / CN"
 deploy_scp "$PROXY_ENV" "$MW_SSH:/tmp/mesh-proxy-env.sh"
 deploy_ssh "$MW_SSH" "sed -i 's/\\r\$//' /tmp/mesh-proxy-env.sh; scp -o BatchMode=yes /tmp/mesh-proxy-env.sh root@${CN_HOST}:/tmp/mesh-proxy-env.sh; ssh -o BatchMode=yes root@${CN_HOST} \"sed -i 's/\\r\$//' /tmp/mesh-proxy-env.sh\""
 
-log "Step A: MW git pull ($GIT_BRANCH) + Worker Clash 代理 ..."
-deploy_ssh "$MW_SSH" bash -s <<REMOTE
+log "Step A: MW 同步代码（Worker Clash 代理加速 GitHub）..."
+_mw_git_ok=0
+if deploy_ssh "$MW_SSH" bash -s <<REMOTE; then
 set -eu
+command -v ncat >/dev/null || dnf install -y -q nmap-ncat 2>/dev/null || true
+sed -i '/^Host github.com/,/^Host /{ /^Host github.com/d; /^  /d; }' ~/.ssh/config 2>/dev/null || true
 source /tmp/mesh-proxy-env.sh
 apply_mesh_proxy
-probe_mesh_proxy MW || echo "WARN: MW 代理不可用，继续尝试直连 ..."
-
-# 修复已有 ~/.ssh/config 中无 ProxyCommand 的情况
-if grep -q '^Host github.com' ~/.ssh/config 2>/dev/null && ! grep -A3 '^Host github.com' ~/.ssh/config | grep -q ProxyCommand; then
-  sed -i '/^Host github.com/,/^Host /{ /^Host github.com/d; /^  /d; }' ~/.ssh/config 2>/dev/null || true
-  apply_mesh_proxy
-fi
-
+probe_mesh_proxy MW || true
 DIR="$MW_DIR"
 BRANCH="$GIT_BRANCH"
 REPO="$GIT_REPO_URL"
 git config --global --add safe.directory "\$DIR" 2>/dev/null || true
-if [[ ! -d "\$DIR/.git" ]]; then
-  echo "ERROR: \$DIR 不是 git 仓库，请先在 MW 运行 server-init-git.sh" >&2
-  exit 1
-fi
+[[ -d "\$DIR/.git" ]] || { echo "ERROR: \$DIR 不是 git 仓库"; exit 1; }
 cd "\$DIR"
-if ! git remote get-url origin >/dev/null 2>&1; then
-  git remote add origin "\$REPO"
-fi
+git remote get-url origin >/dev/null 2>&1 || git remote add origin "\$REPO"
 git fetch origin "\$BRANCH"
 git checkout "\$BRANCH" 2>/dev/null || git checkout -b "\$BRANCH" "origin/\$BRANCH"
 git pull --ff-only origin "\$BRANCH"
 echo "MW HEAD \$(git rev-parse --short HEAD)"
 REMOTE
+  _mw_git_ok=1
+fi
 
-log "Step B: MW → CN rsync（内网直连，不经代理）..."
+if [[ "$_mw_git_ok" -ne 1 ]]; then
+  log "git pull 失败 → 回退本机 rsync 到 MW（请将 MW deploy key 加入 GitHub 后下次可直连 pull）"
+  deploy_ssh "$MW_SSH" "cat ~/.ssh/id_ed25519.pub 2>/dev/null || echo '(无 MW 公钥)'"
+  REPO_ROOT="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel)"
+  deploy_rsync_to "$REPO_ROOT" "$MW_SSH" "$MW_DIR"
+  log "本机 rsync 完成"
+fi
+
+log "Step B: MW → CN rsync（WireGuard 内网）..."
 deploy_ssh "$MW_SSH" bash -s <<REMOTE
 set -eu
 CN="root@${CN_HOST}"
-SRC="$MW_DIR/"
-DST="$CN_DIR/"
-ssh -o BatchMode=yes "\$CN" "mkdir -p '$CN_DIR/python-ai'"
 rsync -av --info=progress2 --delete \
   --exclude '.git' \
   --exclude 'python-ai/.env' \
   --exclude '**/node_modules' \
   --exclude '**/target' \
   -e "ssh -o BatchMode=yes" \
-  "\$SRC" "\${CN}:\$DST"
+  "$MW_DIR/" "\${CN}:$CN_DIR/"
 echo "rsync OK"
 REMOTE
 
-log "Step C: CN docker build + up（Worker 代理加速拉镜像）..."
-deploy_ssh "$MW_SSH" ssh -o BatchMode=yes -o ConnectTimeout=30 "${CN_SSH#*@}" bash -s \
+log "Step C: CN docker build + up（Worker 代理 + 镜像加速）..."
+deploy_ssh "$MW_SSH" ssh -o BatchMode=yes "${CN_SSH#*@}" bash -s \
   "$CN_DIR" "$WORKER_HOST" <<'REMOTE'
 set -eu
 CN_DIR="$1"
 WORKER_HOST="$2"
+command -v ncat >/dev/null || apt-get update -qq && apt-get install -y -qq nmap-ncat 2>/dev/null || true
 source /tmp/mesh-proxy-env.sh
 apply_mesh_proxy
-probe_mesh_proxy CN || echo "WARN: CN 代理不可用，使用镜像加速直连 ..."
-
-command -v nc >/dev/null || (apt-get update -qq && apt-get install -y -qq netcat-openbsd >/dev/null)
+probe_mesh_proxy CN || echo "WARN: CN 代理不可用，使用 Docker 镜像加速"
 
 DOCKER_DIR="$CN_DIR/novel-agent/agent-document/docs/deploy/docker"
 CF="$DOCKER_DIR/docker-compose.cn.yml"
 COMPOSE="docker compose"
-if ! docker compose version >/dev/null 2>&1; then COMPOSE="docker-compose"; fi
+command -v docker compose >/dev/null || COMPOSE="docker-compose"
 
 progress() { echo "[$(date '+%H:%M:%S')] [cn] $*"; }
-
 mkdir -p "$CN_DIR/python-ai"
 if [[ ! -f "$CN_DIR/python-ai/.env" ]]; then
-  progress "拉取 python-ai/.env from Worker ..."
   scp -o BatchMode=yes "root@${WORKER_HOST}:/opt/novel-agent/python-ai/.env" "$CN_DIR/python-ai/.env"
 fi
-
 [[ -f "$CF" ]] || { echo "ERROR: missing $CF"; exit 1; }
 
-progress "[1/2] docker compose build python-ai-cn（HTTP_PROXY=$HTTP_PROXY）..."
-export DOCKER_BUILDKIT=1
-export BUILDKIT_PROGRESS=plain
+progress "[1/2] docker compose build python-ai-cn ..."
+export DOCKER_BUILDKIT=1 BUILDKIT_PROGRESS=plain
 cd "$CN_DIR"
 $COMPOSE -f "$CF" build --progress=plain python-ai-cn 2>&1 | while IFS= read -r line; do
   echo "[$(date '+%H:%M:%S')] [cn-build] $line"
 done
 
-progress "[2/2] docker compose up python-ai-cn ..."
+progress "[2/2] docker compose up ..."
 $COMPOSE -f "$CF" up -d python-ai-cn
 sleep 8
 curl -sf http://10.66.0.1:8000/api/health && progress "CN_HEALTH_OK" || { progress "CN_HEALTH_FAIL"; exit 1; }

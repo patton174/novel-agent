@@ -35,10 +35,10 @@ apply_mesh_proxy() {
   _ensure_proxy_cmd
 
   local proxy_cmd=""
-  if command -v nc >/dev/null 2>&1; then
-    proxy_cmd="nc -X connect -x ${WORKER_WG_IP}:${MIHOMO_PORT} %h %p"
-  elif command -v ncat >/dev/null 2>&1; then
+  if command -v ncat >/dev/null 2>&1; then
     proxy_cmd="ncat --proxy ${WORKER_WG_IP}:${MIHOMO_PORT} --proxy-type http %h %p"
+  elif command -v nc >/dev/null 2>&1 && nc -h 2>&1 | grep -q -- '-X'; then
+    proxy_cmd="nc -X connect -x ${WORKER_WG_IP}:${MIHOMO_PORT} %h %p"
   elif command -v connect >/dev/null 2>&1; then
     proxy_cmd="connect -H ${WORKER_WG_IP}:${MIHOMO_PORT} %h %p"
   fi
@@ -46,6 +46,7 @@ apply_mesh_proxy() {
   mkdir -p ~/.ssh
   chmod 700 ~/.ssh
   if [[ -n "$proxy_cmd" ]]; then
+    sed -i '/^Host github.com/,/^Host /{ /^Host github.com/d; /^  /d; }' ~/.ssh/config 2>/dev/null || true
     grep -q '^Host github.com' ~/.ssh/config 2>/dev/null || cat >> ~/.ssh/config <<CFG
 
 Host github.com
