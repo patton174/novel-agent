@@ -1,11 +1,8 @@
 #!/usr/bin/env bash
-# 国内节点：git pull + docker compose build python-ai-cn（不经镜像直传）
+# 国内节点部署 python-ai-cn：MW git pull → rsync 到 CN → 本地 docker build
+# （避免 Worker→CN 镜像直传；CN 无需单独配置 GitHub deploy key）
 #
-# 用法:
-#   bash deploy-cn-from-git.sh
-#   GIT_BRANCH=master bash deploy-cn-from-git.sh
-#
-# 前置: CN 已 init git（server-init-git.sh cn）且可 git pull
+# 用法: bash deploy-cn-from-git.sh
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -19,41 +16,62 @@ CN_HOST="${CN_HOST:-118.89.123.201}"
 CN_SSH="${CN_SSH:-root@${CN_HOST}}"
 MW_SSH="${MW_SSH:-root@${MW_HOST}}"
 WORKER_HOST="${WORKER_HOST:?WORKER_HOST required}"
+MW_DIR="${MW_REMOTE_DIR:-/opt/novel-agent}"
 CN_DIR="${CN_REMOTE_DIR:-/opt/novel-agent}"
 GIT_REPO_URL="${GIT_REPO_URL:-git@github.com:patton174/novel-agent.git}"
 GIT_BRANCH="${GIT_BRANCH:-master}"
 
 log() { echo "[$(date '+%H:%M:%S')] [cn-git] $*"; }
 
-log "CN=$CN_HOST via MW — git pull + build python-ai-cn"
+log "Step A: MW git pull ($GIT_BRANCH) ..."
+deploy_ssh "$MW_SSH" bash -s <<REMOTE
+set -eu
+DIR="$MW_DIR"
+BRANCH="$GIT_BRANCH"
+REPO="$GIT_REPO_URL"
+git config --global --add safe.directory "\$DIR" 2>/dev/null || true
+if [[ ! -d "\$DIR/.git" ]]; then
+  echo "ERROR: \$DIR 不是 git 仓库，请先在 MW 运行 server-init-git.sh" >&2
+  exit 1
+fi
+cd "\$DIR"
+git fetch origin "\$BRANCH"
+git checkout "\$BRANCH"
+git pull --ff-only origin "\$BRANCH"
+echo "MW HEAD \$(git rev-parse --short HEAD)"
+REMOTE
 
+log "Step B: MW → CN rsync 代码（进度条，不经 Docker 镜像）..."
+deploy_ssh "$MW_SSH" bash -s <<REMOTE
+set -eu
+CN="root@${CN_HOST}"
+SRC="$MW_DIR/"
+DST="$CN_DIR/"
+mkdir -p "\$DST"
+ssh -o BatchMode=yes "\$CN" "mkdir -p '$CN_DIR/python-ai'"
+rsync -av --info=progress2 --delete \
+  --exclude '.git' \
+  --exclude 'python-ai/.env' \
+  --exclude '**/node_modules' \
+  --exclude '**/target' \
+  -e "ssh -o BatchMode=yes" \
+  "\$SRC" "\${CN}:\$DST"
+echo "rsync OK"
+REMOTE
+
+log "Step C: CN docker build + up ..."
 deploy_ssh "$MW_SSH" ssh -o BatchMode=yes -o ConnectTimeout=30 "${CN_SSH#*@}" bash -s \
-  "$CN_DIR" "$GIT_REPO_URL" "$GIT_BRANCH" "$WORKER_HOST" <<'REMOTE'
+  "$CN_DIR" "$WORKER_HOST" <<'REMOTE'
 set -eu
 CN_DIR="$1"
-REPO_URL="$2"
-BRANCH="$3"
-WORKER_HOST="$4"
+WORKER_HOST="$2"
 DOCKER_DIR="$CN_DIR/novel-agent/agent-document/docs/deploy/docker"
 CF="$DOCKER_DIR/docker-compose.cn.yml"
 COMPOSE="docker compose"
 if ! docker compose version >/dev/null 2>&1; then COMPOSE="docker-compose"; fi
+git config --global --add safe.directory "$CN_DIR" 2>/dev/null || true
 
 progress() { echo "[$(date '+%H:%M:%S')] [cn] $*"; }
-
-if [[ -d "$CN_DIR/.git" ]]; then
-  progress "git fetch + pull ($BRANCH) ..."
-  cd "$CN_DIR"
-  git fetch origin "$BRANCH"
-  git checkout "$BRANCH"
-  git pull --ff-only origin "$BRANCH"
-  progress "HEAD $(git rev-parse --short HEAD)"
-else
-  progress "git clone $REPO_URL → $CN_DIR ..."
-  rm -rf "$CN_DIR"
-  git clone -b "$BRANCH" "$REPO_URL" "$CN_DIR"
-  progress "HEAD $(git -C "$CN_DIR" rev-parse --short HEAD)"
-fi
 
 mkdir -p "$CN_DIR/python-ai"
 if [[ ! -f "$CN_DIR/python-ai/.env" ]]; then
@@ -63,7 +81,7 @@ fi
 
 [[ -f "$CF" ]] || { echo "ERROR: missing $CF"; exit 1; }
 
-progress "[1/2] docker compose build python-ai-cn（BUILDKIT 实时日志）..."
+progress "[1/2] docker compose build python-ai-cn ..."
 export DOCKER_BUILDKIT=1
 export BUILDKIT_PROGRESS=plain
 cd "$CN_DIR"

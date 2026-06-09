@@ -21,6 +21,7 @@ set -euo pipefail
 DIR='$dir'
 REPO_URL='$REPO_URL'
 BRANCH='$BRANCH'
+git config --global --add safe.directory "\$DIR" 2>/dev/null || true
 if [[ -d "\$DIR/.git" ]]; then
   echo "[init-git] \$DIR 已是 git 仓库"
   cd "\$DIR" && git remote -v && git branch
@@ -53,6 +54,7 @@ set -euo pipefail
 DIR='$cn_dir'
 REPO_URL='$REPO_URL'
 BRANCH='$BRANCH'
+git config --global --add safe.directory "\$DIR" 2>/dev/null || true
 if [[ -d "\$DIR/.git" ]]; then
   echo "[init-git] \$DIR 已是 git 仓库"
   cd "\$DIR" && git remote -v && git branch
