@@ -66,6 +66,7 @@ fi
 log "Step B: MW → CN rsync（WireGuard 内网）..."
 deploy_ssh "$MW_SSH" bash -s <<REMOTE
 set -eu
+command -v rsync >/dev/null || dnf install -y -q rsync 2>/dev/null || yum install -y -q rsync
 CN="root@${CN_HOST}"
 rsync -av --info=progress2 --delete \
   --exclude '.git' \
