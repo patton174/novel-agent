@@ -232,7 +232,7 @@ step8_verify() {
 }
 
 step9_cn_python_ai() {
-  log "→ 国内机从 GitHub 拉取并构建 python-ai-cn（不经镜像直传）"
+  log "→ 国内机：MW git pull（Worker Clash 代理）+ rsync + CN build"
   GIT_BRANCH="${GIT_BRANCH:-master}" bash "$SCRIPT_DIR/deploy-cn-from-git.sh"
 }
 

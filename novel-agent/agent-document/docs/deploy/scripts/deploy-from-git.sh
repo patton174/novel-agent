@@ -25,6 +25,12 @@ source "$SPLIT_ENV"
 GIT_BRANCH="${GIT_BRANCH:-master}"
 SERVICE="${1:-}"
 TARGET="${2:-}"
+PROXY_ENV="$SCRIPT_DIR/mesh-proxy-env.sh"
+
+if [[ -f "$PROXY_ENV" ]]; then
+  deploy_scp "$PROXY_ENV" "${MW_SSH:-root@${MW_HOST}}:/tmp/mesh-proxy-env.sh" 2>/dev/null || true
+  deploy_scp "$PROXY_ENV" "${WORKER_SSH:-root@${WORKER_HOST}}:/tmp/mesh-proxy-env.sh" 2>/dev/null || true
+fi
 
 run_remote() {
   local ssh_host="$1"
@@ -45,6 +51,12 @@ cd "\$REMOTE_DIR"
 if [[ ! -d .git ]]; then
   echo "[deploy-from-git] 错误: \$REMOTE_DIR 不是 git 仓库，请先在服务器 clone"
   exit 1
+fi
+
+if [[ -f /tmp/mesh-proxy-env.sh ]]; then
+  # shellcheck source=/dev/null
+  source /tmp/mesh-proxy-env.sh
+  apply_mesh_proxy 2>/dev/null || true
 fi
 
 if [[ -n "\$GIT_REF" ]]; then
