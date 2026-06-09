@@ -43,4 +43,41 @@ EOF
 init_host "${MW_SSH:-root@${MW_HOST}}" "${MW_REMOTE_DIR:-/opt/novel-agent}"
 init_host "${WORKER_SSH:-root@${WORKER_HOST}}" "${WORKER_REMOTE_DIR:-/opt/novel-agent}"
 
-echo "[init-git] 完成。之后 push 到 $BRANCH 后运行 deploy-from-git.sh 或走 GitHub Actions"
+init_cn() {
+  local cn_host="${CN_HOST:-118.89.123.201}"
+  local cn_dir="${CN_REMOTE_DIR:-/opt/novel-agent}"
+  local mw="${MW_SSH:-root@${MW_HOST}}"
+  echo "[init-git] CN=$cn_host via $mw ..."
+  deploy_ssh "$mw" ssh -o BatchMode=yes -o ConnectTimeout=30 "root@${cn_host}" bash -s <<EOF
+set -euo pipefail
+DIR='$cn_dir'
+REPO_URL='$REPO_URL'
+BRANCH='$BRANCH'
+if [[ -d "\$DIR/.git" ]]; then
+  echo "[init-git] \$DIR 已是 git 仓库"
+  cd "\$DIR" && git remote -v && git branch
+  exit 0
+fi
+if [[ -d "\$DIR" ]] && [[ "\$(ls -A "\$DIR" 2>/dev/null | head -1)" ]]; then
+  echo "[init-git] \$DIR 已有文件，转为 git（保留 python-ai/.env 等）..."
+  cd "\$DIR"
+  git init
+  git remote add origin "\$REPO_URL"
+  git fetch origin "\$BRANCH"
+  git checkout -b "\$BRANCH" "origin/\$BRANCH" || git checkout "\$BRANCH"
+else
+  git clone -b "\$BRANCH" "\$REPO_URL" "\$DIR"
+fi
+echo "[init-git] OK: \$DIR @ \$(git -C "\$DIR" rev-parse --short HEAD)"
+EOF
+}
+
+if [[ "${3:-}" == "cn" || "${INIT_CN:-1}" == "1" ]]; then
+  # shellcheck source=/dev/null
+  source "$SCRIPT_DIR/_deploy-lib.sh" 2>/dev/null || true
+  if command -v deploy_ssh >/dev/null 2>&1; then
+    init_cn
+  fi
+fi
+
+echo "[init-git] 完成。之后 push 到 $BRANCH → deploy-from-git.sh / deploy-cn-from-git.sh / GitHub Actions"

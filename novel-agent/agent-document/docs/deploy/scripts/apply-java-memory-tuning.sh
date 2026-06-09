@@ -29,12 +29,12 @@ CF=novel-agent/agent-document/docs/deploy/docker/docker-compose.worker.yml
 ENV=novel-agent/agent-document/docs/deploy/docker/.env.worker
 COMPOSE="docker compose"
 if ! docker compose version >/dev/null 2>&1; then COMPOSE="docker-compose"; fi
-for svc in agent-content agent-consumer agent-pyai agent-billing; do
+for svc in agent-content agent-pyai; do
   echo "[mem-tune] recreate \$svc"
   \$COMPOSE -f "\$CF" --env-file "\$ENV" up -d --force-recreate --no-deps "\$svc"
 done
 sleep 20
-for url in 8091:content 8082:pyai 8090:consumer 8092:billing; do
+for url in 8091:content 8082:pyai; do
   port=\${url%%:*}
   name=\${url##*:}
   code=\$(curl -s -o /dev/null -w '%{http_code}' --connect-timeout 3 http://127.0.0.1:\$port/actuator/health 2>/dev/null || curl -s -o /dev/null -w '%{http_code}' --connect-timeout 3 http://127.0.0.1:\$port/ 2>/dev/null || echo 000)
@@ -56,17 +56,35 @@ cd '$DIR'
 CF=novel-agent/agent-document/docs/deploy/docker/docker-compose.mw.yml
 ENV=novel-agent/agent-document/docs/deploy/docker/.env.mw
 upsert() { local f="\$1" k="\$2" v="\$3"; grep -q "^\${k}=" "\$f" && sed -i "s|^\${k}=.*|\${k}=\${v}|" "\$f" || echo "\${k}=\${v}" >> "\$f"; }
-upsert "\$ENV" JAVA_OPTS_AUTH "-Xms64m -Xmx160m -XX:MaxMetaspaceSize=96m -XX:+UseSerialGC -XX:TieredStopAtLevel=1 -XX:+ExitOnOutOfMemoryError -Dfile.encoding=UTF-8"
+upsert "\$ENV" JAVA_OPTS_AUTH "-Xms64m -Xmx200m -XX:MaxMetaspaceSize=160m -XX:+UseSerialGC -XX:TieredStopAtLevel=1 -XX:+ExitOnOutOfMemoryError -Dfile.encoding=UTF-8"
 upsert "\$ENV" JAVA_OPTS_GATEWAY "-Xms64m -Xmx192m -XX:MaxMetaspaceSize=96m -XX:MaxDirectMemorySize=64m -XX:+UseSerialGC -XX:TieredStopAtLevel=1 -XX:+ExitOnOutOfMemoryError -Dfile.encoding=UTF-8"
-upsert "\$ENV" JAVA_MEM_LIMIT_AUTH "320m"
+upsert "\$ENV" JAVA_MEM_LIMIT_AUTH "448m"
 upsert "\$ENV" JAVA_MEM_LIMIT_GATEWAY "352m"
 COMPOSE="docker compose"
 if ! docker compose version >/dev/null 2>&1; then COMPOSE="docker-compose"; fi
-for svc in agent-auth agent-gateway; do
+restore_hot_jar() {
+  local svc="\$1" prefix="\$2"
+  local cid=\$(\$COMPOSE -f "\$CF" --env-file "\$ENV" ps -q "\$svc" 2>/dev/null || true)
+  local jar=\$(ls -t /opt/novel-agent/backups/\${prefix}-*.jar 2>/dev/null | head -1 || true)
+  if [[ -z "\$cid" || -z "\$jar" ]]; then
+    echo "[mem-tune] skip hot jar restore for \$svc (cid=\${cid:-none} jar=\${jar:-none})"
+    return 0
+  fi
+  echo "[mem-tune] restore \$svc from \$jar"
+  docker cp "\$jar" "\$cid:/app/app.jar"
+  docker restart "\$cid" >/dev/null
+}
+upsert "\$ENV" JAVA_OPTS_CONSUMER "-Xms48m -Xmx140m -XX:MaxMetaspaceSize=72m -XX:+UseSerialGC -XX:TieredStopAtLevel=1 -XX:+ExitOnOutOfMemoryError -Dfile.encoding=UTF-8"
+upsert "\$ENV" JAVA_OPTS_BILLING "-Xms48m -Xmx188m -XX:MaxMetaspaceSize=128m -XX:+UseSerialGC -XX:TieredStopAtLevel=1 -XX:+ExitOnOutOfMemoryError -Dfile.encoding=UTF-8"
+upsert "\$ENV" JAVA_MEM_LIMIT_CONSUMER "224m"
+upsert "\$ENV" JAVA_MEM_LIMIT_BILLING "384m"
+for svc in agent-auth agent-gateway agent-consumer agent-billing; do
   echo "[mem-tune] recreate \$svc"
   \$COMPOSE -f "\$CF" --env-file "\$ENV" up -d --force-recreate --no-deps "\$svc"
 done
-sleep 15
+restore_hot_jar agent-auth agent-auth
+restore_hot_jar agent-gateway agent-gateway
+sleep 25
 code=\$(curl -s -o /dev/null -w '%{http_code}' -X POST http://127.0.0.1:8080/api/auth/api/login -H 'Content-Type: application/json' -d '{"username":"_probe","password":"_probe"}' 2>/dev/null || echo 000)
 echo "[mem-tune] gateway probe HTTP \$code"
 free -h

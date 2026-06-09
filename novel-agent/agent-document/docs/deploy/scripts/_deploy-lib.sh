@@ -164,3 +164,73 @@ if [[ "\$ok" -ne 1 ]]; then
 fi
 EOF
 }
+
+# 在 jump 主机上执行：源机 docker save → 传输（进度条）→ 目标机 docker load
+deploy_docker_image_transfer() {
+  local jump_ssh="$1"
+  local src_spec="$2"
+  local dst_mode="$3"
+  local dst_spec="${4:-}"
+  local image="$5"
+  local label="$6"
+  local lib_dir
+  lib_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  local xfer_script="$lib_dir/docker-image-transfer.sh"
+  local remote_script="/tmp/novel-agent-docker-image-transfer-$$.sh"
+
+  [[ -f "$xfer_script" ]] || { echo "ERROR: missing $xfer_script" >&2; return 1; }
+
+  deploy_scp "$xfer_script" "$jump_ssh:$remote_script"
+  deploy_ssh "$jump_ssh" "sed -i 's/\\r$//' '$remote_script'"
+  if [[ "$dst_mode" == "local" ]]; then
+    deploy_ssh "$jump_ssh" "bash '$remote_script' '$src_spec' local - '$image' '$label'; rc=\$?; rm -f '$remote_script'; exit \$rc"
+  else
+    deploy_ssh "$jump_ssh" "bash '$remote_script' '$src_spec' remote '$dst_spec' '$image' '$label'; rc=\$?; rm -f '$remote_script'; exit \$rc"
+  fi
+}
+
+# 远端 rsync/scp 拉取单文件并显示进度
+deploy_remote_pull_file() {
+  local jump_ssh="$1"
+  local src_spec="$2"
+  local src_path="$3"
+  local dst_path="$4"
+  local label="$5"
+
+  deploy_ssh "$jump_ssh" bash -s -- "$src_spec" "$src_path" "$dst_path" "$label" <<'REMOTE'
+set -eu
+SRC="$1"
+SRC_PATH="$2"
+DST_PATH="$3"
+LABEL="$4"
+SSH_OPTS=(-o BatchMode=yes -o ConnectTimeout=120)
+total=$(ssh "${SSH_OPTS[@]}" "$SRC" "stat -c%s '$SRC_PATH' 2>/dev/null || echo 0")
+
+echo "[$(date +%H:%M:%S)] $LABEL: 拉取 $(basename "$SRC_PATH") ..."
+if command -v rsync >/dev/null 2>&1; then
+  rsync -av --info=progress2 -e "ssh ${SSH_OPTS[*]}" "${SRC}:${SRC_PATH}" "$DST_PATH"
+else
+  rm -f "${DST_PATH}.part"
+  ssh "${SSH_OPTS[@]}" "$SRC" "cat '$SRC_PATH'" > "${DST_PATH}.part" &
+  pid=$!
+  BAR_WIDTH=36
+  human_bytes() {
+    local b="${1:-0}"
+    command -v numfmt >/dev/null 2>&1 && numfmt --to=iec-i --suffix=B "$b" 2>/dev/null || echo "${b}B"
+  }
+  while kill -0 "$pid" 2>/dev/null; do
+    cur=$(stat -c%s "${DST_PATH}.part" 2>/dev/null || echo 0)
+    pct=0; [[ "$total" -gt 0 ]] && pct=$(( cur * 100 / total ))
+    filled=$(( pct * BAR_WIDTH / 100 ))
+    bar=$(printf '%*s' "$filled" '' | tr ' ' '#')
+    pad=$(printf '%*s' "$((BAR_WIDTH - filled))" '' | tr ' ' '.')
+    printf "\r[%s] %s [%s%s] %3d%%" "$(date +%H:%M:%S)" "$LABEL" "$bar" "$pad" "$pct"
+    sleep 1
+  done
+  wait "$pid"
+  echo ""
+  mv "${DST_PATH}.part" "$DST_PATH"
+fi
+ls -lh "$DST_PATH"
+REMOTE
+}

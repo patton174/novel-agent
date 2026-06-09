@@ -52,7 +52,7 @@ if ! docker compose version >/dev/null 2>&1; then COMPOSE="docker-compose"; fi
 set +e
 $COMPOSE -f "$CF" --env-file "$ENV_WK" up -d --no-deps python-lb
 $COMPOSE -f "$CF" --env-file "$ENV_WK" up -d --force-recreate python-ai
-$COMPOSE -f "$CF" --env-file "$ENV_WK" up -d python-ai-2
+# python-ai-2 已移除（爬虫走国内节点）
 set -e
 
 wait_http() {

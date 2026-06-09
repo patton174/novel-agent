@@ -1,8 +1,6 @@
 # Worker 机（2C2G / 物理 ~1.8G）
-# 内存预算（mem_limit 合计 ~1.72G；Swap 作尖峰缓冲）
-#   python-ai 304m + python-ai-2 256m — 日常 ~150m/实例，爬虫尖峰靠 limit 硬顶
-#   content 368m / billing 384m / pyai 240m / consumer 224m — SerialGC + 限制 Metaspace
-#   python-lb 24m + frontend 48m
+# 内存预算（mem_limit 合计 ~1.0G；consumer/billing 已迁 MW，爬虫走国内节点）
+#   python-ai 304m（仅 LLM）+ content 368m + pyai 240m + python-lb 24m + frontend 48m
 # 调优：docker-compose.worker.yml 默认 + .env.worker 覆盖；变更后需 recreate 容器
 name: novel-agent-worker
 
@@ -32,8 +30,6 @@ services:
     depends_on:
       python-ai:
         condition: service_healthy
-      python-ai-2:
-        condition: service_healthy
 
   python-ai:
     build:
@@ -53,31 +49,6 @@ services:
       - "8000:8000"
     networks:
       - novel-net
-    healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health')\""]
-      interval: 20s
-      timeout: 5s
-      retries: 6
-      start_period: 40s
-
-  python-ai-2:
-    image: novel-agent/python-ai:latest
-    restart: unless-stopped
-    env_file:
-      - ../../../../../python-ai/.env
-    environment:
-      LOG_LEVEL: ${PYTHON_LOG_LEVEL:-INFO}
-      CONTENT_BASE_URL: http://agent-content:8091
-      CRAWL_FETCH_CONCURRENCY: ${CRAWL_FETCH_CONCURRENCY:-2}
-      CRAWL_BROWSER_CONCURRENCY: ${CRAWL_BROWSER_CONCURRENCY:-1}
-    mem_limit: ${PYTHON_MEM_LIMIT_2:-256m}
-    ports:
-      - "8001:8000"
-    networks:
-      - novel-net
-    depends_on:
-      python-ai:
-        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health')\""]
       interval: 20s
@@ -110,29 +81,6 @@ services:
       python-lb:
         condition: service_started
 
-  agent-consumer:
-    build:
-      context: ../../../../../
-      dockerfile: novel-agent/agent-document/docs/deploy/docker/Dockerfile.java
-      args:
-        MODULE: agent-consumer
-        JAR: agent-consumer-1.0.0-SNAPSHOT.jar
-    image: novel-agent/consumer:latest
-    restart: unless-stopped
-    environment:
-      <<: *java-env
-      JAVA_OPTS: ${JAVA_OPTS_CONSUMER:--Xms48m -Xmx140m -XX:MaxMetaspaceSize=72m -XX:+UseSerialGC -XX:TieredStopAtLevel=1 -XX:+ExitOnOutOfMemoryError -Dfile.encoding=UTF-8}
-      AGENT_PYTHON_BASE_URL: ${AGENT_PYTHON_BASE_URL}
-      AGENT_CONTENT_BASE_URL: ${AGENT_CONTENT_BASE_URL}
-    mem_limit: ${JAVA_MEM_LIMIT_CONSUMER:-224m}
-    networks:
-      - novel-net
-    depends_on:
-      agent-content:
-        condition: service_started
-      python-lb:
-        condition: service_started
-
   agent-pyai:
     build:
       context: ../../../../../
@@ -148,7 +96,7 @@ services:
       SPRING_MAIN_WEB_APPLICATION_TYPE: reactive
       AGENT_PYTHON_BASE_URL: ${AGENT_PYTHON_BASE_URL}
       AGENT_CONTENT_BASE_URL: ${AGENT_CONTENT_BASE_URL}
-      BILLING_BASE_URL: http://agent-billing:8092
+      BILLING_BASE_URL: ${BILLING_BASE_URL:-http://${MW_HOST}:8092}
       BILLING_ENABLED: ${BILLING_ENABLED:-true}
     mem_limit: ${JAVA_MEM_LIMIT_PYAI:-240m}
     ports:
@@ -160,28 +108,6 @@ services:
         condition: service_started
       python-lb:
         condition: service_started
-
-  agent-billing:
-    build:
-      context: ../../../../../
-      dockerfile: novel-agent/agent-document/docs/deploy/docker/Dockerfile.java
-      args:
-        MODULE: agent-billing
-        JAR: agent-billing-1.0.0-SNAPSHOT.jar
-    image: novel-agent/billing:latest
-    restart: unless-stopped
-    environment:
-      <<: *java-env
-      JAVA_OPTS: ${JAVA_OPTS_BILLING:--Xms48m -Xmx188m -XX:MaxMetaspaceSize=128m -XX:+UseSerialGC -XX:TieredStopAtLevel=1 -XX:+ExitOnOutOfMemoryError -Dfile.encoding=UTF-8}
-      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
-      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
-      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
-      AGENT_INTERNAL_SERVICE_KEY: ${INTERNAL_SERVICE_KEY:-dev-internal-key-change-me}
-    mem_limit: ${JAVA_MEM_LIMIT_BILLING:-384m}
-    ports:
-      - "8092:8092"
-    networks:
-      - novel-net
 
   frontend:
     build:

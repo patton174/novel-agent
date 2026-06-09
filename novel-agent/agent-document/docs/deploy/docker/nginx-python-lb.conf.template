@@ -1,8 +1,6 @@
-# Python AI 负载均衡：双实例均在 Worker（MW 仅 nginx 入口，减轻 4G 机 CPU）
-upstream python_ai_cluster {
-    least_conn;
+# MW → Worker 单 python-ai 实例（LLM）；爬虫在 Worker nginx 内分流至国内节点
+upstream python_ai_worker {
     server ${WORKER_HOST}:8000 max_fails=3 fail_timeout=30s;
-    server ${WORKER_HOST}:8001 max_fails=3 fail_timeout=30s;
 }
 
 server {
@@ -10,7 +8,7 @@ server {
     server_name _;
 
     location / {
-        proxy_pass http://python_ai_cluster;
+        proxy_pass http://python_ai_worker;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -20,6 +18,6 @@ server {
     }
 
     location /health {
-        proxy_pass http://python_ai_cluster/api/health;
+        proxy_pass http://python_ai_worker/api/health;
     }
 }

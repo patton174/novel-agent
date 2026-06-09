@@ -1,0 +1,24 @@
+# 国内节点：WireGuard 内网 + python-ai 爬虫实例（不对公网 443 建站）
+name: novel-agent-cn
+
+services:
+  python-ai-cn:
+    build:
+      context: ../../../../../
+      dockerfile: novel-agent/agent-document/docs/deploy/docker/Dockerfile.python-ai
+    image: novel-agent/python-ai:latest
+    restart: unless-stopped
+    env_file:
+      - ../../../../../python-ai/.env
+    environment:
+      LOG_LEVEL: ${PYTHON_LOG_LEVEL:-INFO}
+      CONTENT_BASE_URL: http://${WORKER_WG_IP:-10.66.0.3}:8091
+    mem_limit: ${PYTHON_CN_MEM_LIMIT:-768m}
+    ports:
+      - "${PYTHON_CN_BIND:-10.66.0.1:8000}:8000"
+    networks:
+      - cn-net
+
+networks:
+  cn-net:
+    driver: bridge

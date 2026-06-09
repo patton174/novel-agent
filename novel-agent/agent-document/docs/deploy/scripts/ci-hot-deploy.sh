@@ -143,14 +143,10 @@ if want "${CHANGED_FRONTEND:-false}"; then
   CHANGED_CONTENT=true
 fi
 
-# billing 首次上线或 compose 新增服务：先同步 Worker compose；强制 recreate 以注入 DB/Redis 等 env
-if want "${CHANGED_BILLING:-false}"; then
-  echo "[ci-hot] billing changed → sync worker compose + recreate agent-billing"
-  export WORKER_INFRA_SYNC=1
-  export WORKER_JAVA_RECREATE=1
-  if ! want "${CHANGED_DEPLOY_CI:-false}"; then
-    export WORKER_COMPOSE_SYNC_ONLY=1
-  fi
+# billing/consumer 在 MW：变更时同步 MW compose
+if want "${CHANGED_BILLING:-false}" || want "${CHANGED_CONSUMER:-false}"; then
+  echo "[ci-hot] billing/consumer changed → sync MW compose"
+  export MW_INFRA_SYNC=1
 fi
 
 MODULES=()
@@ -190,13 +186,24 @@ if want "${WORKER_INFRA_SYNC:-false}"; then
   bash "$SCRIPT_DIR/update-worker-memory.sh"
 fi
 
+if want "${MW_INFRA_SYNC:-false}"; then
+  echo "[ci-hot] MW infra: sync compose (consumer/billing on MW)"
+  # shellcheck source=/dev/null
+  source "$SCRIPT_DIR/_deploy-lib.sh"
+  deploy_scp "$SCRIPT_DIR/../docker/docker-compose.mw.yml" \
+    "$MW_SSH:${MW_REMOTE_DIR:-/opt/novel-agent}/novel-agent/agent-document/docs/deploy/docker/docker-compose.mw.yml"
+fi
+
 PIDS=()
 hot() {
   local svc="$1" target="$2"
   echo "[ci-hot] deploy-fast $svc $target"
   local -a hot_env=(SKIP_BUILD=1)
-  if [[ "$target" == "worker" && "$svc" =~ ^(content|consumer|pyai|billing)$ ]]; then
+  if [[ "$target" == "worker" && "$svc" =~ ^(content|pyai)$ ]]; then
     hot_env+=(WORKER_JAVA_RECREATE="${WORKER_JAVA_RECREATE:-0}")
+  fi
+  if [[ "$target" == "mw" && "$svc" =~ ^(consumer|billing)$ ]]; then
+    hot_env+=(MW_JAVA_RECREATE="${MW_JAVA_RECREATE:-0}")
   fi
   if [[ "$svc" == "frontend" && "$target" == "worker" ]]; then
     # ci-hot 已预编译 dist，避免 deploy-fast 二次 build + 二次 crypto register
@@ -215,8 +222,8 @@ want "${CHANGED_AUTH:-false}" && hot auth mw
 want "${CHANGED_GATEWAY:-false}" && hot gateway mw
 want "${CHANGED_PYAI:-false}" && hot pyai worker
 want "${CHANGED_CONTENT:-false}" && hot content worker
-want "${CHANGED_CONSUMER:-false}" && hot consumer worker
-want "${CHANGED_BILLING:-false}" && hot billing worker
+want "${CHANGED_CONSUMER:-false}" && hot consumer mw
+want "${CHANGED_BILLING:-false}" && hot billing mw
 want "${CHANGED_FRONTEND:-false}" && hot frontend worker
 
 hot_python() {
@@ -271,7 +278,7 @@ if [[ ! -f "\$ENV" ]]; then
   exit 1
 fi
 \$COMPOSE -f "\$CF" --env-file "\$ENV" build python-ai
-\$COMPOSE -f "\$CF" --env-file "\$ENV" up -d --no-deps python-ai python-ai-2
+\$COMPOSE -f "\$CF" --env-file "\$ENV" up -d --no-deps python-ai
 EOF
 }
 
@@ -316,12 +323,12 @@ if want "${CHANGED_CONTENT:-false}"; then
 fi
 
 if want "${CHANGED_BILLING:-false}"; then
-  echo "[ci-hot] smoke: Worker billing /actuator/health"
+  echo "[ci-hot] smoke: MW billing /actuator/health"
   # shellcheck source=/dev/null
   source "$SCRIPT_DIR/_deploy-lib.sh"
   smoke_ok=0
   for i in $(seq 1 40); do
-    code=$(deploy_ssh "$WORKER_SSH" \
+    code=$(deploy_ssh "$MW_SSH" \
       "curl -s -o /dev/null -w '%{http_code}' --connect-timeout 2 http://127.0.0.1:8092/actuator/health" \
       2>/dev/null || echo 000)
     if [[ "$code" == "200" ]]; then

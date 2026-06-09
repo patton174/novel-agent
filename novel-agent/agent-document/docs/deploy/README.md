@@ -7,8 +7,9 @@
 
 | 角色 | 主机 | 典型职责 | 主要服务 |
 |------|------|----------|----------|
-| **MW** | `107.150.112.140` | 中间件、入口 Nginx、Gateway、Auth | PostgreSQL、Redis、RabbitMQ、Nacos |
-| **Worker** | `47.80.80.224` | 业务 Java、Python AI、前端静态 | Content、PyAI、Consumer、python-ai、前端 Nginx |
+| **MW** | `107.150.112.140` | 中间件、Gateway、Auth、Consumer、Billing | PostgreSQL、Redis、RabbitMQ、Nacos |
+| **Worker** | `47.80.80.224` | Content、PyAI、单 python-ai（LLM）、前端 | 爬虫分流至国内 `10.66.0.1` |
+| **国内** | `118.89.123.201` | WireGuard + python-ai-cn（爬虫） | 不对公网建站 |
 
 域名：`https://www.novel-agent.cn`
 

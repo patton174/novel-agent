@@ -57,7 +57,8 @@ run "mw-python-health" "http://${MW_HOST}:8000/api/health" 200
 echo ""
 echo "=== Worker 内网 ($WORKER_HOST) ==="
 run "worker-pyai-health" "http://${WORKER_HOST}:8082/actuator/health" 200
-run "worker-billing-health" "http://${WORKER_HOST}:8092/actuator/health" 200
+run "mw-billing-health" "http://${MW_HOST}:8092/actuator/health" 200
+run "mw-consumer-health" "http://${MW_HOST}:8090/" 200 404
 run_any "worker-content-health" "http://${WORKER_HOST}:8091/actuator/health" 200 404
 
 echo ""

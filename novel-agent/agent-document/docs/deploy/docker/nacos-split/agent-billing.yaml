@@ -1,6 +1,6 @@
-# MW 机 Consumer（MQ/Redis 在 MW；Content/Python 在 Worker）
+# MW 机 Billing（PG/Redis 在 MW）
 server:
-  port: 8090
+  port: 8092
 
 spring:
   cloud:
@@ -12,6 +12,11 @@ spring:
         - docker0
       preferred-networks:
         - 107.150.
+  datasource:
+    url: jdbc:postgresql://YOUR_MW_HOST:5432/novel_agent?sslmode=disable
+    username: postgres
+    password: YOUR_DB_PASSWORD
+    driver-class-name: org.postgresql.Driver
   data:
     redis:
       host: YOUR_MW_HOST
@@ -29,9 +34,5 @@ logging:
     com.novel.agent: info
 
 agent:
-  content:
-    base-url: http://WORKER_HOST_PLACEHOLDER:8091
-  python:
-    base-url: http://python-lb:8000
   internal:
     service-key: prod-internal-key-novel-agent

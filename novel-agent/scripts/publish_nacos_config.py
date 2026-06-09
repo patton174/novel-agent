@@ -86,6 +86,7 @@ if __name__ == "__main__":
             "agent-pyai.yaml",
             "agent-content.yaml",
             "agent-consumer.yaml",
+            "agent-billing.yaml",
         ):
             content = (ROOT / name).read_text(encoding="utf-8")
             publish(name, client, token, content)

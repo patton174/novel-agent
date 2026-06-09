@@ -1,4 +1,7 @@
 # MW HTTPS 入口：/api → Gateway，其余 → Worker 前端
+# Cloudflare 橙云：见 nginx-cloudflare-realip.conf（compose 挂载到 /etc/nginx/cloudflare-realip.conf）
+include /etc/nginx/cloudflare-realip.conf;
+
 map $http_upgrade $connection_upgrade {
     default upgrade;
     ''      close;
