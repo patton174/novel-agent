@@ -8,7 +8,7 @@ server {
     gzip_types text/plain text/css application/json application/javascript text/xml;
 
     location /api/ {
-        proxy_pass ${GATEWAY_UPSTREAM};
+        proxy_pass http://${MW_HOST}:8080;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -18,7 +18,7 @@ server {
     }
 
     location /g/ {
-        proxy_pass ${GATEWAY_UPSTREAM};
+        proxy_pass http://${MW_HOST}:8080;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;

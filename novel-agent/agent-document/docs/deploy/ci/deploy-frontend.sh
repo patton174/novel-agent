@@ -23,7 +23,14 @@ ci_setup_ssh
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 cp -a "$DIST" "$TMP/dist"
-cp "$DEPLOY_DIR/nginx-frontend-worker.conf" "$TMP/"
+NGINX_TMPL="$DEPLOY_DIR/nginx-frontend-worker.conf.template"
+NGINX_OUT="$TMP/nginx-frontend-worker.conf"
+if [[ -f "$DEPLOY_DIR/nginx-frontend-worker.conf" ]]; then
+  cp "$DEPLOY_DIR/nginx-frontend-worker.conf" "$NGINX_OUT"
+else
+  : "${MW_HOST:?MW_HOST 必填（渲染 nginx 模板）}"
+  sed "s/\${MW_HOST}/${MW_HOST}/g" "$NGINX_TMPL" > "$NGINX_OUT"
+fi
 cat > "$TMP/Dockerfile" <<'EOF'
 FROM nginx:1.27-alpine
 COPY nginx-frontend-worker.conf /etc/nginx/conf.d/default.conf
