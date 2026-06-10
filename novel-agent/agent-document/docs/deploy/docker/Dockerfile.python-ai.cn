@@ -1,0 +1,34 @@
+# CN 本机构建：国内 apt/pip 源 + 宿主机本机 Clash（默认 docker0 网关 172.17.0.1:7890）
+FROM python:3.12-slim-bookworm
+
+ARG HTTP_PROXY=http://172.17.0.1:7890
+ARG HTTPS_PROXY=http://172.17.0.1:7890
+
+WORKDIR /app
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PLAYWRIGHT_BROWSERS_PATH=/root/.cache/ms-playwright \
+    PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple \
+    PIP_TRUSTED_HOST=pypi.tuna.tsinghua.edu.cn \
+    HTTP_PROXY=${HTTP_PROXY} \
+    HTTPS_PROXY=${HTTPS_PROXY} \
+    http_proxy=${HTTP_PROXY} \
+    https_proxy=${HTTPS_PROXY}
+
+COPY python-ai/requirements.txt /app/requirements.txt
+
+RUN sed -i 's|deb.debian.org|mirrors.tencent.com|g; s|security.debian.org|mirrors.tencent.com|g' \
+      /etc/apt/sources.list.d/debian.sources 2>/dev/null || \
+    sed -i 's|deb.debian.org|mirrors.tencent.com|g; s|security.debian.org|mirrors.tencent.com|g' \
+      /etc/apt/sources.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates \
+    && rm -rf /var/lib/apt/lists/* \
+    && pip install --no-cache-dir -r requirements.txt \
+    && patchright install-deps chromium \
+    && patchright install chromium \
+    && rm -rf /root/.cache/pip
+
+COPY python-ai/app /app/app
+EXPOSE 8000
+CMD ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

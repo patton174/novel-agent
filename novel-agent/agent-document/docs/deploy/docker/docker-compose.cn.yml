@@ -5,7 +5,10 @@ services:
   python-ai-cn:
     build:
       context: ../../../../../
-      dockerfile: novel-agent/agent-document/docs/deploy/docker/Dockerfile.python-ai
+      dockerfile: novel-agent/agent-document/docs/deploy/docker/Dockerfile.python-ai.cn
+      args:
+        HTTP_PROXY: ${CN_BUILD_HTTP_PROXY:-http://172.17.0.1:7890}
+        HTTPS_PROXY: ${CN_BUILD_HTTPS_PROXY:-http://172.17.0.1:7890}
     image: novel-agent/python-ai:latest
     restart: unless-stopped
     env_file:

@@ -11,9 +11,7 @@ apply_mirror() {
   cat > /etc/docker/daemon.json <<'JSON'
 {
   "registry-mirrors": [
-    "https://mirror.ccs.tencentyun.com",
-    "https://docker.m.daocloud.io",
-    "https://docker.1ms.run"
+    "https://mirror.ccs.tencentyun.com"
   ],
   "max-concurrent-downloads": 10,
   "log-driver": "json-file",
@@ -46,9 +44,7 @@ mkdir -p /etc/docker
 cat > /etc/docker/daemon.json <<'JSON'
 {
   "registry-mirrors": [
-    "https://mirror.ccs.tencentyun.com",
-    "https://docker.m.daocloud.io",
-    "https://docker.1ms.run"
+    "https://mirror.ccs.tencentyun.com"
   ],
   "max-concurrent-downloads": 10,
   "log-driver": "json-file",
