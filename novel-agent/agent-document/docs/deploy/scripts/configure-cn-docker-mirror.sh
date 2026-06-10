@@ -4,23 +4,15 @@
 # 在国内机本机：bash configure-cn-docker-mirror.sh --local
 set -eu
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+source "${SCRIPT_DIR}/_cn-mirrors.sh"
+
 CN_HOST="${CN_HOST:-118.89.123.201}"
 
 apply_mirror() {
   mkdir -p /etc/docker
-  cat > /etc/docker/daemon.json <<'JSON'
-{
-  "registry-mirrors": [
-    "https://mirror.ccs.tencentyun.com"
-  ],
-  "max-concurrent-downloads": 10,
-  "log-driver": "json-file",
-  "log-opts": {
-    "max-size": "50m",
-    "max-file": "3"
-  }
-}
-JSON
+  cn_docker_daemon_json > /etc/docker/daemon.json
   systemctl daemon-reload
   systemctl restart docker
   sleep 2

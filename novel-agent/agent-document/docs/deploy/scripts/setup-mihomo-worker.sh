@@ -6,6 +6,10 @@
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+source "${SCRIPT_DIR}/_cn-mirrors.sh"
+
 MIHOMO_BIN=/usr/local/bin/mihomo
 CONF_DIR=/etc/mihomo
 SERVICE=/etc/systemd/system/mihomo.service
@@ -19,21 +23,15 @@ install_mihomo() {
   echo "Installing mihomo..."
   tmp=$(mktemp)
   ver=v1.19.12
-  file="mihomo-linux-amd64-${ver}.gz"
-  base="https://github.com/MetaCubeX/mihomo/releases/download/${ver}/${file}"
-  urls=(
-    "$base"
-    "https://ghfast.top/${base}"
-    "https://mirror.ghproxy.com/${base}"
-  )
   ok=0
-  for url in "${urls[@]}"; do
+  while IFS= read -r url; do
+    [[ -n "$url" ]] || continue
     echo "  try: $url"
-    if curl -fSL --connect-timeout 20 --retry 2 -o "${tmp}.gz" "$url"; then
+    if curl -fSL --connect-timeout 25 --retry 2 -o "${tmp}.gz" "$url"; then
       ok=1
       break
     fi
-  done
+  done < <(mihomo_release_urls "$ver")
   if [[ "$ok" -ne 1 ]]; then
     echo "  GitHub 下载失败，尝试从 Worker 拷贝 ..."
     for host in 10.66.0.3 47.80.80.224; do

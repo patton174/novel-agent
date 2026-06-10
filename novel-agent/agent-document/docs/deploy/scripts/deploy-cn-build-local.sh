@@ -4,6 +4,10 @@
 # 在 CN 上: bash deploy-cn-build-local.sh
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+source "${SCRIPT_DIR}/_cn-mirrors.sh"
+
 CN_DIR="${CN_DIR:-/opt/novel-agent}"
 COMPOSE="${CN_DIR}/novel-agent/agent-document/docs/deploy/docker/docker-compose.cn.yml"
 LOG="/tmp/cn-build.log"
@@ -43,12 +47,7 @@ Environment="HTTPS_PROXY=${LOCAL_PROXY}"
 Environment="NO_PROXY=127.0.0.1,localhost,10.66.0.0/24,118.89.123.201"
 EOF
 mkdir -p /etc/docker
-cat > /etc/docker/daemon.json <<'JSON'
-{
-  "registry-mirrors": ["https://mirror.ccs.tencentyun.com"],
-  "max-concurrent-downloads": 10
-}
-JSON
+cn_docker_daemon_json > /etc/docker/daemon.json
 systemctl daemon-reload && systemctl restart docker && sleep 2
 
 [[ -f "${CN_DIR}/python-ai/.env" ]] || {
