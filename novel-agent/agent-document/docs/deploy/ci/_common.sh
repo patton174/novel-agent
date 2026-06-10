@@ -6,16 +6,21 @@ CI_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DEPLOY_DIR="$(cd "$CI_DIR/../docker" && pwd)"
 REPO_ROOT="$(cd "$CI_DIR/../../../../../.." && pwd)"
 
-export MW_HOST="${MW_HOST:?设置 GitHub Secret MW_HOST}"
-export WORKER_HOST="${WORKER_HOST:?设置 GitHub Secret WORKER_HOST}"
-export MW_SSH="${MW_SSH:-root@${MW_HOST}}"
-export WORKER_SSH="${WORKER_SSH:-root@${WORKER_HOST}}"
-export MW_REMOTE_DIR="${MW_REMOTE_DIR:-/opt/novel-agent}"
-export WORKER_REMOTE_DIR="${WORKER_REMOTE_DIR:-/opt/novel-agent}"
 export DOCKER_REL="novel-agent/agent-document/docs/deploy/docker"
 export STAGING_DIR="deploy-staging"
 
+# 仅 deploy 脚本需要；build-* 脚本不调用
+ci_require_deploy_env() {
+  export MW_HOST="${MW_HOST:?设置 GitHub Secret MW_HOST}"
+  export WORKER_HOST="${WORKER_HOST:?设置 GitHub Secret WORKER_HOST}"
+  export MW_SSH="${MW_SSH:-root@${MW_HOST}}"
+  export WORKER_SSH="${WORKER_SSH:-root@${WORKER_HOST}}"
+  export MW_REMOTE_DIR="${MW_REMOTE_DIR:-/opt/novel-agent}"
+  export WORKER_REMOTE_DIR="${WORKER_REMOTE_DIR:-/opt/novel-agent}"
+}
+
 ci_setup_ssh() {
+  ci_require_deploy_env
   if [[ -n "${DEPLOY_SSH_OPTS:-}" ]]; then
     return 0
   fi

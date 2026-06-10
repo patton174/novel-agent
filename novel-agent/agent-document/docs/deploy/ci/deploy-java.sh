@@ -7,6 +7,7 @@ set -euo pipefail
 CI_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
 source "$CI_DIR/_common.sh"
+ci_require_deploy_env
 # shellcheck source=/dev/null
 source "$REPO_ROOT/novel-agent/agent-document/docs/deploy/scripts/_deploy-lib.sh" 2>/dev/null || true
 
