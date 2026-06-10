@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # 单服务 Docker 镜像重建（慢：rsync + 容器内 Maven + compose down）
-# 日常改代码请用：bash novel-agent/agent-document/docs/deploy/scripts/deploy-fast.sh gateway mw
+# 日常改代码请用：gh workflow run deploy-gateway.yml 或 ci-deploy-service.sh gateway mw
 #
 #   bash novel-agent/agent-document/docs/deploy/scripts/deploy-one.sh [service] [host]
 # 例: bash novel-agent/agent-document/docs/deploy/scripts/deploy-one.sh agent-auth mw

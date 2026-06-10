@@ -2,7 +2,7 @@
 # MW Auth 注册邮箱验证链接密钥 → Redis + .env.mw（幂等，不重启进程）
 #
 # 运行时 Auth 直接读 Redis（EmailLinkSecretService）；.env.mw 仅作冷启动备份。
-# 由 register-frontend-crypto.sh / ci-hot-deploy / deploy-fast auth 调用
+# 由 register-frontend-crypto.sh / deploy-java auth 调用
 #
 set -euo pipefail
 

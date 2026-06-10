@@ -1,0 +1,47 @@
+name: Deploy python-ai
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'python-ai/**'
+      - 'novel-agent/agent-document/docs/deploy/docker/Dockerfile.python-ai'
+      - 'novel-agent/agent-document/docs/deploy/ci/**'
+      - '.github/workflows/deploy-python-ai.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-python-ai
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate secrets
+        run: |
+          missing=()
+          [[ -n "${{ secrets.DEPLOY_SSH_KEY }}" ]] || missing+=(DEPLOY_SSH_KEY)
+          [[ -n "${{ secrets.WORKER_HOST }}" ]] || missing+=(WORKER_HOST)
+          [[ ${#missing[@]} -eq 0 ]] || { echo "::error::缺少 Secrets: ${missing[*]}"; exit 1; }
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "${{ secrets.WORKER_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Build python-ai image
+        run: bash novel-agent/agent-document/docs/deploy/ci/build-python-ai.sh
+
+      - name: Deploy python-ai
+        env:
+          WORKER_HOST: ${{ secrets.WORKER_HOST }}
+          MW_HOST: ${{ secrets.MW_HOST }}
+          DEPLOY_SSH_OPTS: -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes -o ConnectTimeout=60 -o BatchMode=yes
+          DEPLOY_SCP_OPTS: -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes -o ConnectTimeout=60 -o BatchMode=yes
+        run: bash novel-agent/agent-document/docs/deploy/ci/deploy-python-ai.sh

@@ -3,7 +3,7 @@
 # 用法：bash novel-agent/agent-document/docs/deploy/scripts/publish-and-rebuild.sh
 #
 # 需配置 novel-agent/agent-document/docs/deploy/docker/.env.split
-# 本地无 Java21 时自动 REMOTE_BUILD=1（服务器 Docker Maven 编译）
+# Java/前端通过 ci/ 脚本本地构建后部署（不在服务器 Maven 编译）
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -51,16 +51,14 @@ python "$REPO_ROOT/novel-agent/scripts/publish_nacos_config.py"
 export VITE_SECURITY_AES=true
 export VITE_ROUTE_OBFUSCATION=true
 export VITE_FIELD_ENCRYPTION=true
-export REMOTE_BUILD=1
-
 echo "=== [3/6] rebuild + deploy auth @ mw ==="
-bash "$SCRIPT_DIR/deploy-fast.sh" auth mw
+bash "$SCRIPT_DIR/ci-deploy-service.sh" auth mw
 
 echo "=== [4/6] rebuild + deploy gateway @ mw ==="
-bash "$SCRIPT_DIR/deploy-fast.sh" gateway mw
+bash "$SCRIPT_DIR/ci-deploy-service.sh" gateway mw
 
 echo "=== [5/6] rebuild + deploy frontend @ worker ==="
-bash "$SCRIPT_DIR/deploy-fast.sh" frontend worker
+bash "$SCRIPT_DIR/ci-deploy-service.sh" frontend worker
 
 echo "=== [6/6] register frontend crypto ==="
 bash "$SCRIPT_DIR/register-frontend-crypto.sh"

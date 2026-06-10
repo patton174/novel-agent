@@ -50,12 +50,6 @@ services:
       - novel-net
 
   agent-auth:
-    build:
-      context: ../../../../../
-      dockerfile: novel-agent/agent-document/docs/deploy/docker/Dockerfile.java
-      args:
-        MODULE: agent-auth
-        JAR: agent-auth-1.0.0-SNAPSHOT.jar
     image: novel-agent/auth:latest
     restart: unless-stopped
     environment:
@@ -75,12 +69,6 @@ services:
       - nacos_default
 
   agent-gateway:
-    build:
-      context: ../../../../../
-      dockerfile: novel-agent/agent-document/docs/deploy/docker/Dockerfile.java
-      args:
-        MODULE: agent-gateway
-        JAR: agent-gateway-1.0.0-SNAPSHOT.jar
     image: novel-agent/gateway:latest
     restart: unless-stopped
     environment:
@@ -99,12 +87,6 @@ services:
         condition: service_started
 
   agent-consumer:
-    build:
-      context: ../../../../../
-      dockerfile: novel-agent/agent-document/docs/deploy/docker/Dockerfile.java
-      args:
-        MODULE: agent-consumer
-        JAR: agent-consumer-1.0.0-SNAPSHOT.jar
     image: novel-agent/consumer:latest
     restart: unless-stopped
     environment:
@@ -124,12 +106,6 @@ services:
         condition: service_started
 
   agent-billing:
-    build:
-      context: ../../../../../
-      dockerfile: novel-agent/agent-document/docs/deploy/docker/Dockerfile.java
-      args:
-        MODULE: agent-billing
-        JAR: agent-billing-1.0.0-SNAPSHOT.jar
     image: novel-agent/billing:latest
     restart: unless-stopped
     environment:

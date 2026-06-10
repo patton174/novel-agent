@@ -1,0 +1,24 @@
+name: Deploy billing
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'novel-agent/agent-service/agent-billing/**'
+      - 'novel-agent/agent-common/**'
+      - 'novel-agent/agent-document/docs/deploy/ci/**'
+      - '.github/workflows/deploy-billing.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-billing
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/_java-deploy-reusable.yml
+    secrets: inherit
+    with:
+      service: billing
+      target: mw
+      module: agent-billing

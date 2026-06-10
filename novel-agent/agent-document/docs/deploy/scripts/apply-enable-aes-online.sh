@@ -32,7 +32,7 @@ REMOTE_DIR="${MW_REMOTE_DIR:-/opt/novel-agent}"
 echo "[aes] Step 1/3 — 部署带 AES 的前端 ..."
 export VITE_SECURITY_AES=true
 export SKIP_FRONTEND_BUILD="${SKIP_FRONTEND_BUILD:-0}"
-bash "$SCRIPT_DIR/deploy-fast.sh" frontend worker
+bash "$SCRIPT_DIR/ci-deploy-service.sh" frontend worker
 
 echo "[aes] Step 2/3 — 发布 Nacos（client-security.enabled + aes-required）..."
 NACOS_RENDER="$DEPLOY_DIR/nacos-split-rendered-aes"

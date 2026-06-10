@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Worker 机：Nacos 发布 + python-ai 重建（Java 由本机 deploy-fast 热更新）
+# Worker 机：Nacos 发布 + python-ai 重建（Java 走 CI / ci-deploy-service.sh）
 set -euo pipefail
 
 cd /opt/novel-agent

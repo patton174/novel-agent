@@ -30,19 +30,19 @@ export AGENT_INTERNAL_SERVICE_KEY="${AGENT_INTERNAL_SERVICE_KEY:-${INTERNAL_SERV
 do_auth() {
   [[ "${SKIP_AUTH:-0}" == "1" ]] && return 0
   echo "[v2] auth ..."
-  bash "$SCRIPT_DIR/deploy-fast.sh" auth mw
+  bash "$SCRIPT_DIR/trigger-ci-deploy.sh" auth
 }
 
 do_gateway() {
   [[ "${SKIP_GATEWAY:-0}" == "1" ]] && return 0
   echo "[v2] gateway ..."
-  bash "$SCRIPT_DIR/deploy-fast.sh" gateway mw
+  bash "$SCRIPT_DIR/trigger-ci-deploy.sh" gateway
 }
 
 do_frontend() {
   [[ "${SKIP_FRONTEND:-0}" == "1" ]] && return 0
   echo "[v2] frontend ..."
-  bash "$SCRIPT_DIR/deploy-fast.sh" frontend worker
+  bash "$SCRIPT_DIR/trigger-ci-deploy.sh" frontend
 }
 
 do_register() {

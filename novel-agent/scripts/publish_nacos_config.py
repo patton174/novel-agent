@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""将 docs/deploy/nacos 下的配置发布到 Nacos（dev 命名空间）。"""
+"""将 Nacos YAML 发布到指定命名空间（NACOS_NAMESPACE + SPRING_PROFILES_ACTIVE）。
+
+每个服务发布两份 dataId：agent-*.yaml 与 agent-*-{profile}.yaml（如 agent-gateway-prod.yaml）。
+生产：DEPLOY_ENV=prod NACOS_NAMESPACE=<prod-uuid> SPRING_PROFILES_ACTIVE=prod
+开发：DEPLOY_ENV=dev  NACOS_NAMESPACE=<dev-uuid>  SPRING_PROFILES_ACTIVE=dev
+"""
 from __future__ import annotations
 
 import os

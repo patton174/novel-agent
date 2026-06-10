@@ -1,0 +1,27 @@
+name: Deploy gateway
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'novel-agent/agent-service/agent-gateway/**'
+      - 'novel-agent/config/crypto-routes.yaml'
+      - 'novel-agent/agent-common/**'
+      - 'novel-agent/pom.xml'
+      - 'novel-agent/agent-service/pom.xml'
+      - 'novel-agent/agent-document/docs/deploy/ci/**'
+      - '.github/workflows/deploy-gateway.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-gateway
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/_java-deploy-reusable.yml
+    secrets: inherit
+    with:
+      service: gateway
+      target: mw
+      module: agent-gateway

@@ -32,9 +32,6 @@ services:
         condition: service_healthy
 
   python-ai:
-    build:
-      context: ../../../../../
-      dockerfile: novel-agent/agent-document/docs/deploy/docker/Dockerfile.python-ai
     image: novel-agent/python-ai:latest
     restart: unless-stopped
     env_file:
@@ -57,12 +54,6 @@ services:
       start_period: 40s
 
   agent-content:
-    build:
-      context: ../../../../../
-      dockerfile: novel-agent/agent-document/docs/deploy/docker/Dockerfile.java
-      args:
-        MODULE: agent-content
-        JAR: agent-content-1.0.0-SNAPSHOT.jar
     image: novel-agent/content:latest
     restart: unless-stopped
     environment:
@@ -82,12 +73,6 @@ services:
         condition: service_started
 
   agent-pyai:
-    build:
-      context: ../../../../../
-      dockerfile: novel-agent/agent-document/docs/deploy/docker/Dockerfile.java
-      args:
-        MODULE: agent-pyai
-        JAR: agent-pyai-1.0.0-SNAPSHOT.jar
     image: novel-agent/pyai:latest
     restart: unless-stopped
     environment:
@@ -110,9 +95,6 @@ services:
         condition: service_started
 
   frontend:
-    build:
-      context: ../../../../../
-      dockerfile: novel-agent/agent-document/docs/deploy/docker/Dockerfile.frontend-worker
     image: novel-agent/frontend-worker:latest
     restart: unless-stopped
     mem_limit: 48m

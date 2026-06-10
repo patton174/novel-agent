@@ -47,9 +47,9 @@ echo "[phase3] 本机 Maven 编译 (content / pyai / consumer) ..."
 
 echo "[phase3] 热更新 Java 服务 ..."
 export SKIP_BUILD=1
-bash "$SCRIPT_DIR/deploy-fast.sh" content worker
-bash "$SCRIPT_DIR/deploy-fast.sh" pyai worker
-bash "$SCRIPT_DIR/deploy-fast.sh" consumer worker
+bash "$SCRIPT_DIR/ci-deploy-service.sh" content worker
+bash "$SCRIPT_DIR/ci-deploy-service.sh" pyai worker
+bash "$SCRIPT_DIR/ci-deploy-service.sh" consumer mw
 
 echo "[phase3] Nacos + python-ai 重建 ..."
 deploy_scp_file "$SCRIPT_DIR/deploy-phase3-remote.sh" "$WORKER_SSH" "$WORKER_DIR/novel-agent/agent-document/docs/deploy/scripts/deploy-phase3-remote.sh"

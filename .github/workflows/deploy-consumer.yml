@@ -1,0 +1,24 @@
+name: Deploy consumer
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'novel-agent/agent-service/agent-consumer/**'
+      - 'novel-agent/agent-common/**'
+      - 'novel-agent/agent-document/docs/deploy/ci/**'
+      - '.github/workflows/deploy-consumer.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-consumer
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/_java-deploy-reusable.yml
+    secrets: inherit
+    with:
+      service: consumer
+      target: mw
+      module: agent-consumer

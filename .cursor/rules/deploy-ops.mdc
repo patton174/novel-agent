@@ -7,87 +7,64 @@ alwaysApply: true
 
 ## 环境与服务映射
 
-| 服务 | 部署目标 | 热更新命令 |
-|------|----------|------------|
-| gateway | MW | `deploy-fast.sh gateway mw` |
-| auth | MW | `deploy-fast.sh auth mw` |
-| pyai | Worker | `deploy-fast.sh pyai worker` |
-| content | Worker | `deploy-fast.sh content worker` |
-| consumer | Worker | `deploy-fast.sh consumer worker` |
-| frontend | Worker | `deploy-fast.sh frontend worker` |
-| python-ai | Worker | CI 路径过滤 或 `workflow_dispatch` 勾选 python-ai |
+| 服务 | 部署目标 | Workflow |
+|------|----------|----------|
+| gateway | MW | `deploy-gateway.yml` |
+| auth | MW | `deploy-auth.yml` |
+| consumer | MW | `deploy-consumer.yml` |
+| billing | MW | `deploy-billing.yml` |
+| pyai | Worker | `deploy-pyai.yml` |
+| content | Worker | `deploy-content.yml` |
+| frontend | Worker | `deploy-frontend.yml` |
+| python-ai | Worker | `deploy-python-ai.yml` |
 
 仓库路径：`/opt/novel-agent`（MW/Worker 默认）。
 
 ## GitHub Actions（推荐）
 
-- Workflow：`.github/workflows/deploy-split.yml`（push master 按路径自动部署）
+- **分服务独立 workflow**，一个失败不影响其他
+- GitHub 编译 → scp 产物 → 服务器 **仅 runtime Docker**（不在 MW 跑 Maven）
 - Secrets：`DEPLOY_SSH_KEY`、`MW_HOST=107.150.112.140`、`WORKER_HOST=47.80.80.224`
-- 手动补部署：`gh workflow run deploy-split.yml -f deploy_python_ai=true`（可多选 gateway/frontend…）
-- 排查：`gh run list --workflow=deploy-split.yml` → `gh run watch <id>`
+- 清单：`novel-agent/agent-document/docs/deploy/ci/SECRETS.example.md`
+- 手动：`gh workflow run deploy-gateway.yml`
+- 排查：`gh run list --workflow=deploy-gateway.yml` → `gh run watch <id>`
 
-路径 → 服务（`dorny/paths-filter`）：
+CI 脚本：`novel-agent/agent-document/docs/deploy/ci/`
 
-- `novel-agent/agent-gateway/**` → gateway
-- `novel-agent/agent-auth/**` → auth（security 变更会连带 gateway）
-- `novel-agent/agent-pyai/**` → pyai
-- `novel-agent/agent-content/**` → content
-- `novel-agent/agent-consumer/**` → consumer
-- `frontend/**` → frontend（CI 会连带 content）
-- `python-ai/**` → python-ai（rsync app + docker rebuild）
-
-`ci-hot-deploy.sh`：mvn 编译 → scp jar → docker cp → restart；frontend 带 `VITE_SECURITY_AES/ROUTE/FIELD/ENCRYPT_STREAM=true` 构建。
-
-## 日常热更新（本地/SSH）
+## 本地补部署（可选）
 
 ```bash
-bash novel-agent/agent-document/docs/deploy/scripts/deploy-fast.sh <service> <mw|worker>
+bash novel-agent/agent-document/docs/deploy/ci/build-java.sh agent-gateway
+bash novel-agent/agent-document/docs/deploy/ci/deploy-java.sh gateway mw
 ```
 
-| 变量 | 含义 |
-|------|------|
-| `SKIP_BUILD=1` | 用已有 jar |
-| `SKIP_FRONTEND_BUILD=1` | 仅同步 dist |
-| `VITE_CODE_OBFUSCATION=false` | 关闭混淆（调试） |
+回滚：`rollback.sh <service> <mw|worker>`
 
-路由脱敏 v2 全量：`deploy-route-v2.sh all`；首次 0e：`apply-enable-route-field-crypto.sh`。
+路由脱敏 v2：`deploy-route-v2.sh all`；首次 0e：`apply-enable-route-field-crypto.sh`。
 
 ## 客户端安全对齐（易踩坑）
 
 | 层 | 配置 |
 |----|------|
-| Gateway Nacos | `route-obfuscation`、`field-encryption`、`aes-required`；**`encrypt-stream: true`**（与前端一致） |
+| Gateway Nacos | `route-obfuscation`、`field-encryption`、`aes-required`；**`encrypt-stream: true`** |
 | 前端构建 | `VITE_SECURITY_AES`、`VITE_ROUTE_OBFUSCATION`、`VITE_FIELD_ENCRYPTION`、`VITE_SECURITY_ENCRYPT_STREAM=true` |
-| Gateway 行为 | `/chat/stream` 与其他 POST 一样走 AES 解密；字段 `__sec` 由 `FieldPayloadExpandGatewayFilter` 展开 |
-| 前端 stream | **不做**字段级 `__sec`（`secureFetch` 对 stream 跳过 `wrapFieldPayload`） |
-| 本地 dev 直连 PyAI | `VITE_LOCAL_PYAI` 时 `/api/agent` 不做 body AES（无 Gateway 解密层） |
+| Gateway 行为 | `/chat/stream` 走 AES 解密；字段 `__sec` 由 `FieldPayloadExpandGatewayFilter` 展开 |
+| 前端 stream | **不做**字段级 `__sec` |
 
-Sign：POST+envelope → body.sign；GET/无 body → URL `_na_t/_na_n/_na_k/_na_s`。不用 `X-Novel-Agent-*` 头。
+Sign：POST+envelope → body.sign；GET/无 body → URL `_na_t/_na_n/_na_k/_na_s`。
 
 详见 `.cursor/rules/security-deploy.mdc`。
 
 ## 运维禁忌
 
-1. **`docker compose --force-recreate agent-auth` 后必须再 `deploy-fast.sh auth mw`**（否则镜像旧 jar 覆盖热更新）
+1. **勿在 MW 上 `docker compose build` / Maven 全量编译**（易 OOM）
 2. **勿提交**：`.env.split`、`MAILTRAP_TOKEN`、`nacos-split-rendered-*`
-3. **勿本地启 Consumer 连生产 RabbitMQ**（`107.150.112.140:5672`）
+3. **勿本地启 Consumer 连生产 RabbitMQ**
 4. **勿用** `restart-dev.sh` / `start-dev*.bat`（已废弃）
 5. Auth/Gateway 安全变更必须 **同版本** 发布 MW
-6. `git commit` 仅用户明确要求时执行；部署后让用户硬刷新前端（`Ctrl+Shift+R`）
-
-## Worker SSH 常用
-
-```bash
-ssh root@47.80.80.224
-docker ps --filter name=novel-agent
-docker logs novel-agent-worker-python-ai-1 --tail 100
-docker exec novel-agent-worker-agent-content-1 ...
-```
-
-Python AI 环境：`/opt/novel-agent/python-ai/.env`（含 `CRAWL_ORCHESTRATOR_ENABLED`、`OPENAI_API_KEY`、`INTERNAL_SERVICE_KEY`）。
+6. `git commit` 仅用户明确要求时执行
 
 ## 验收
 
 - 线上：https://www.novel-agent.cn
-- Gateway 探活：CI smoke `POST :8080/api/auth/api/login`（期望非 000）
-- 前端小改：仅 `cd frontend && npm run dev`（勿启 Consumer）
+- 各 deploy workflow 独立绿即该服务部署成功

@@ -82,4 +82,4 @@ if [[ "${3:-}" == "cn" || "${INIT_CN:-1}" == "1" ]]; then
   fi
 fi
 
-echo "[init-git] 完成。之后 push 到 $BRANCH → deploy-from-git.sh / deploy-cn-from-git.sh / GitHub Actions"
+echo "[init-git] 完成。之后 push 到 $BRANCH → GitHub Actions deploy-*.yml 自动部署"

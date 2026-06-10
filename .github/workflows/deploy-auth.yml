@@ -1,0 +1,25 @@
+name: Deploy auth
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'novel-agent/agent-service/agent-auth/**'
+      - 'novel-agent/agent-common/agent-common-mail/**'
+      - 'novel-agent/agent-common/**'
+      - 'novel-agent/agent-document/docs/deploy/ci/**'
+      - '.github/workflows/deploy-auth.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-auth
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/_java-deploy-reusable.yml
+    secrets: inherit
+    with:
+      service: auth
+      target: mw
+      module: agent-auth

@@ -1,13 +1,10 @@
 #!/usr/bin/env bash
-# 一键回滚 deploy-fast 热替换的 Java 服务（恢复上一版 app.jar）
+# 回滚 CI 部署的 Java 服务（恢复 backups/ 中上一版 jar 并重建 runtime 镜像）
 #
 # 用法：
-#   bash novel-agent/agent-document/docs/deploy/scripts/rollback.sh pyai worker
-#   bash novel-agent/agent-document/docs/deploy/scripts/rollback.sh content worker
 #   bash novel-agent/agent-document/docs/deploy/scripts/rollback.sh gateway mw
-#
-# 可选第三参数为备份文件名（默认 deploy-fast 留下的 *-bak.jar）：
-#   bash novel-agent/agent-document/docs/deploy/scripts/rollback.sh pyai worker agent-pyai-abc1234.jar
+#   bash novel-agent/agent-document/docs/deploy/scripts/rollback.sh billing mw
+#   bash novel-agent/agent-document/docs/deploy/scripts/rollback.sh pyai worker
 #
 set -euo pipefail
 
@@ -23,16 +20,17 @@ fi
 : "${MW_HOST:?MW_HOST 未设置}"
 : "${WORKER_HOST:?WORKER_HOST 未设置}"
 
-SERVICE="${1:?用法: rollback.sh <gateway|auth|pyai|content|consumer> <mw|worker> [backup_jar_name]}"
+SERVICE="${1:?用法: rollback.sh <gateway|auth|consumer|billing|pyai|content> <mw|worker> [backup_jar_name]}"
 TARGET="${2:?用法: rollback.sh <service> <mw|worker>}"
 BACKUP_NAME="${3:-}"
 
 case "$SERVICE" in
-  gateway|gw) COMPOSE_SVC="agent-gateway" ;;
-  auth)       COMPOSE_SVC="agent-auth" ;;
-  pyai)       COMPOSE_SVC="agent-pyai" ;;
-  content)    COMPOSE_SVC="agent-content" ;;
-  consumer)   COMPOSE_SVC="agent-consumer" ;;
+  gateway|gw) COMPOSE_SVC="agent-gateway"; IMAGE="novel-agent/gateway:latest" ;;
+  auth)       COMPOSE_SVC="agent-auth";    IMAGE="novel-agent/auth:latest" ;;
+  consumer)   COMPOSE_SVC="agent-consumer"; IMAGE="novel-agent/consumer:latest" ;;
+  billing)    COMPOSE_SVC="agent-billing";  IMAGE="novel-agent/billing:latest" ;;
+  pyai)       COMPOSE_SVC="agent-pyai";     IMAGE="novel-agent/pyai:latest" ;;
+  content)    COMPOSE_SVC="agent-content";  IMAGE="novel-agent/content:latest" ;;
   *)
     echo "[rollback] 不支持的服务: $SERVICE"
     exit 1
@@ -57,49 +55,36 @@ set -euo pipefail
 cd '$REMOTE_DIR'
 COMPOSE="docker compose"
 if ! docker compose version >/dev/null 2>&1; then COMPOSE="docker-compose"; fi
-CID=\$(\$COMPOSE -f '$COMPOSE_FILE' --env-file '$ENV_REL' ps -q '$COMPOSE_SVC')
-if [[ -z "\$CID" ]]; then
-  echo "[rollback] 容器 $COMPOSE_SVC 未运行"
-  exit 1
-fi
 BACKUP=""
 if [[ -n "$BACKUP_NAME" ]]; then
-  if [[ -f "/opt/novel-agent/backups/$BACKUP_NAME" ]]; then
-    BACKUP="/opt/novel-agent/backups/$BACKUP_NAME"
-  elif [[ -f "/tmp/$BACKUP_NAME" ]]; then
-    BACKUP="/tmp/$BACKUP_NAME"
-  fi
-fi
-if [[ -z "\$BACKUP" && -f "/tmp/deploy-fast-${COMPOSE_SVC}-bak.jar" ]]; then
-  BACKUP="/tmp/deploy-fast-${COMPOSE_SVC}-bak.jar"
+  [[ -f "backups/$BACKUP_NAME" ]] && BACKUP="backups/$BACKUP_NAME"
 fi
 if [[ -z "\$BACKUP" ]]; then
-  LATEST=\$(ls -1t /opt/novel-agent/backups/${COMPOSE_SVC}-*.jar 2>/dev/null | head -1 || true)
-  BACKUP="\$LATEST"
+  BACKUP=\$(ls -1t backups/${SERVICE}-*-prev.jar backups/${SERVICE}-*.jar 2>/dev/null | head -1 || true)
 fi
 if [[ -z "\$BACKUP" || ! -f "\$BACKUP" ]]; then
-  echo "[rollback] 找不到可用备份（/tmp/deploy-fast-${COMPOSE_SVC}-bak.jar 或 /opt/novel-agent/backups/）"
+  echo "[rollback] 找不到 backups/${SERVICE}-*.jar"
   exit 1
 fi
-echo "[rollback] 使用备份: \$BACKUP"
-docker cp "\$BACKUP" "\$CID:/app/app.jar"
-docker restart "\$CID"
+echo "[rollback] 使用: \$BACKUP"
+STAGE='$REMOTE_DIR/deploy-staging/$SERVICE'
+mkdir -p "\$STAGE"
+cp "\$BACKUP" "\$STAGE/app.jar"
+cp novel-agent/agent-document/docs/deploy/docker/Dockerfile.java.runtime "\$STAGE/Dockerfile"
+cd "\$STAGE"
+docker build -f Dockerfile --build-arg JAR=app.jar -t '$IMAGE' .
+\$COMPOSE -f '$COMPOSE_FILE' --env-file '$ENV_REL' up -d --no-deps --no-build '$COMPOSE_SVC'
 sleep 8
-HEALTH_URL=""
 case '$COMPOSE_SVC' in
-  agent-gateway) HEALTH_URL="http://127.0.0.1:8080/actuator/health" ;;
-  agent-auth)    HEALTH_URL="http://127.0.0.1:8081/actuator/health" ;;
-  agent-pyai)    HEALTH_URL="http://127.0.0.1:8082/actuator/health" ;;
-  agent-content) HEALTH_URL="http://127.0.0.1:8091/actuator/health" ;;
-  agent-consumer) HEALTH_URL="http://127.0.0.1:8092/actuator/health" ;;
+  agent-gateway)  H="http://127.0.0.1:8080/actuator/health" ;;
+  agent-auth)     H="http://127.0.0.1:8081/actuator/health" ;;
+  agent-consumer) H="http://127.0.0.1:8090/actuator/health" ;;
+  agent-billing)  H="http://127.0.0.1:8092/actuator/health" ;;
+  agent-pyai)     H="http://127.0.0.1:8082/actuator/health" ;;
+  agent-content)  H="http://127.0.0.1:8091/actuator/health" ;;
 esac
-if [[ -n "\$HEALTH_URL" ]]; then
-  code=\$(curl -s -o /dev/null -w '%{http_code}' --connect-timeout 3 "\$HEALTH_URL" || echo 000)
-  echo "[rollback] health \$HEALTH_URL → HTTP \$code"
-  if [[ "\$code" != "200" ]]; then
-    echo "[rollback] WARN: health 未就绪，请手动检查日志"
-    exit 1
-  fi
-fi
-echo "[rollback] $COMPOSE_SVC 已回滚完成"
+code=\$(curl -s -o /dev/null -w '%{http_code}' --connect-timeout 3 "\$H" || echo 000)
+echo "[rollback] health \$H → HTTP \$code"
+[[ "\$code" == "200" ]] || exit 1
+echo "[rollback] $COMPOSE_SVC 已回滚"
 EOF

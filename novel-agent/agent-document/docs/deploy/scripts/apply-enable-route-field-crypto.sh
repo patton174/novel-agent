@@ -37,14 +37,14 @@ echo "[0e] 0/5 — 同步 internal service key ..."
 bash "$SCRIPT_DIR/ensure-internal-service-key.sh"
 
 echo "[0e] 1/4 — 部署 gateway + auth ..."
-bash "$SCRIPT_DIR/deploy-fast.sh" gateway mw
-bash "$SCRIPT_DIR/deploy-fast.sh" auth mw
+bash "$SCRIPT_DIR/ci-deploy-service.sh" gateway mw
+bash "$SCRIPT_DIR/ci-deploy-service.sh" auth mw
 
 echo "[0e] 2/4 — 部署前端（VITE_ROUTE_OBFUSCATION=true VITE_FIELD_ENCRYPTION=true）..."
 export VITE_SECURITY_AES=true
 export VITE_ROUTE_OBFUSCATION=true
 export VITE_FIELD_ENCRYPTION=true
-bash "$SCRIPT_DIR/deploy-fast.sh" frontend worker
+bash "$SCRIPT_DIR/ci-deploy-service.sh" frontend worker
 
 echo "[0e] 3/4 — 发布 Nacos（route-obfuscation + field-encryption=true）..."
 NACOS_RENDER="$DEPLOY_DIR/nacos-split-rendered-0e"
