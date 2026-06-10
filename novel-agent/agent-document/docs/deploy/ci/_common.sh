@@ -4,7 +4,7 @@ set -euo pipefail
 
 CI_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DEPLOY_DIR="$(cd "$CI_DIR/../docker" && pwd)"
-REPO_ROOT="$(cd "$CI_DIR/../../../../../.." && pwd)"
+REPO_ROOT="$(cd "$CI_DIR/../../../../.." && pwd)"
 
 export DOCKER_REL="novel-agent/agent-document/docs/deploy/docker"
 export STAGING_DIR="deploy-staging"

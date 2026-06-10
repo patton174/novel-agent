@@ -15,7 +15,7 @@ if [[ "$MODULE" == "agent-auth" ]]; then
   bash "$REPO_ROOT/novel-agent/agent-document/docs/deploy/scripts/build-email-templates.sh"
 fi
 
-mvn -B -q -pl ":$MODULE" -am package -DskipTests -Dspring-boot.repackage.skip=false
+mvn -B -q -pl "agent-service/${MODULE}" -am package -DskipTests -Dspring-boot.repackage.skip=false
 
 JAR="$REPO_ROOT/novel-agent/agent-service/$MODULE/target/${MODULE}-1.0.0-SNAPSHOT.jar"
 [[ -f "$JAR" ]] || { echo "缺少 $JAR"; exit 1; }
