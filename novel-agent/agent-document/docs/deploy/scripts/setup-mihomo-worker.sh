@@ -85,11 +85,46 @@ set -euo pipefail
 SUB_URL="${1:-}"
 if [ -z "$SUB_URL" ]; then
   echo "Usage: $0 <clash_subscription_url>"
+  echo "  或从 Worker 拷配置: $0 --from-worker"
   exit 1
 fi
 CONF=/etc/mihomo/config.yaml
 TMP=$(mktemp)
-curl -fsSL "$SUB_URL" -o "$TMP"
+
+fetch_sub() {
+  local url="$1" out="$2"
+  local ua
+  for ua in \
+    "ClashforWindows/0.20.39" \
+    "clash-verge/v1.4.7" \
+    "ClashMeta/1.19.0" \
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"; do
+    echo "  try User-Agent: $ua"
+    if curl -fsSL -A "$ua" -H "Accept: */*" --connect-timeout 30 --retry 1 "$url" -o "$out"; then
+      return 0
+    fi
+  done
+  return 1
+}
+
+if [[ "$SUB_URL" == "--from-worker" ]]; then
+  for host in 10.66.0.3 47.80.80.224; do
+    echo "  scp from root@${host}:/etc/mihomo/config.yaml ..."
+    if scp -o BatchMode=yes -o ConnectTimeout=15 "root@${host}:/etc/mihomo/config.yaml" "$CONF" 2>/dev/null; then
+      systemctl restart mihomo && sleep 2
+      curl -fsS -x http://127.0.0.1:7890 --max-time 15 https://api.ip.sb/ip && echo " proxy OK"
+      exit 0
+    fi
+  done
+  echo "ERROR: 无法从 Worker 拷贝 config.yaml" >&2
+  exit 1
+fi
+
+fetch_sub "$SUB_URL" "$TMP" || {
+  echo "ERROR: 订阅下载失败 (403/网络)。可尝试:" >&2
+  echo "  bash $0 --from-worker   # 从 Worker 复制已导入的配置" >&2
+  exit 1
+}
 # 部分订阅为 base64 单行
 if ! grep -qE '^(mixed-port|port|proxies):' "$TMP" 2>/dev/null; then
   if base64 -d "$TMP" > "${TMP}.yaml" 2>/dev/null; then
