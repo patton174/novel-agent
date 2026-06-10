@@ -19,8 +19,38 @@ install_mihomo() {
   echo "Installing mihomo..."
   tmp=$(mktemp)
   ver=v1.19.12
-  curl -fsSL -o "${tmp}.gz" "https://github.com/MetaCubeX/mihomo/releases/download/${ver}/mihomo-linux-amd64-${ver}.gz"
-  gunzip -f "${tmp}.gz"
+  file="mihomo-linux-amd64-${ver}.gz"
+  base="https://github.com/MetaCubeX/mihomo/releases/download/${ver}/${file}"
+  urls=(
+    "$base"
+    "https://ghfast.top/${base}"
+    "https://mirror.ghproxy.com/${base}"
+  )
+  ok=0
+  for url in "${urls[@]}"; do
+    echo "  try: $url"
+    if curl -fSL --connect-timeout 20 --retry 2 -o "${tmp}.gz" "$url"; then
+      ok=1
+      break
+    fi
+  done
+  if [[ "$ok" -ne 1 ]]; then
+    echo "  GitHub 下载失败，尝试从 Worker 拷贝 ..."
+    for host in 10.66.0.3 47.80.80.224; do
+      if scp -o BatchMode=yes -o ConnectTimeout=10 "root@${host}:/usr/local/bin/mihomo" "$tmp" 2>/dev/null; then
+        ok=1
+        break
+      fi
+    done
+  fi
+  if [[ "$ok" -ne 1 ]]; then
+    echo "ERROR: 无法安装 mihomo（GitHub SSL/网络失败，Worker 也无法 scp）" >&2
+    rm -f "$tmp" "${tmp}.gz"
+    exit 1
+  fi
+  if [[ -f "${tmp}.gz" ]]; then
+    gunzip -f "${tmp}.gz"
+  fi
   install -m 755 "$tmp" "$MIHOMO_BIN"
   rm -f "$tmp"
   echo "installed: $($MIHOMO_BIN -v || true)"
