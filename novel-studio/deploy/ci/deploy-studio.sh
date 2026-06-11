@@ -54,7 +54,7 @@ cp app.jar "\$RDIR/backups/novel-studio-\${SHA}.jar" 2>/dev/null || true
 cd "\$RDIR/\$DOCKER_REL"
 COMPOSE="docker compose"
 if ! docker compose version >/dev/null 2>&1; then COMPOSE="docker-compose"; fi
-\$COMPOSE -f "\$COMPOSE_FILE" --env-file "\$ENV_FILE" up -d --no-deps --no-build novel-studio
+\$COMPOSE -f "\$COMPOSE_FILE" --env-file "\$ENV_FILE" up -d --no-deps --no-build --force-recreate novel-studio
 echo "[deploy-studio] waiting for health..."
 ready=0
 for attempt in \$(seq 1 60); do

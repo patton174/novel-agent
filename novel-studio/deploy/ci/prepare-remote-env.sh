@@ -54,8 +54,12 @@ if [[ "$role" == "worker" ]]; then
   AGENT_INTERNAL_SERVICE_KEY="\$(env_get AGENT_INTERNAL_SERVICE_KEY "\$OLD/.env.worker")"
   [[ -n "\$JWT_SECRET" ]] || JWT_SECRET="\$(env_get JWT_SECRET "\$OLD/.env.mw")"
   [[ -n "\$AGENT_INTERNAL_SERVICE_KEY" ]] || AGENT_INTERNAL_SERVICE_KEY="\$(env_get AGENT_INTERNAL_SERVICE_KEY "\$OLD/.env.mw")"
-  PYTHON_MEM_LIMIT="\$(env_get PYTHON_MEM_LIMIT "\$OLD/.env.worker")"
   MAILTRAP_TOKEN="\$(env_get MAILTRAP_TOKEN "\$OLD/.env.worker")"
+  [[ -n "\$MAILTRAP_TOKEN" ]] || MAILTRAP_TOKEN="\$(env_get MAILTRAP_TOKEN "\$OLD/.env.mw")"
+  [[ -n "\$MAILTRAP_TOKEN" ]] || MAILTRAP_TOKEN="\$(env_get MAILTRAP_TOKEN "\$OLD/.env.split")"
+  AUTH_EMAIL_LINK_SECRET="\$(env_get AUTH_EMAIL_LINK_SECRET "\$OLD/.env.worker")"
+  [[ -n "\$AUTH_EMAIL_LINK_SECRET" ]] || AUTH_EMAIL_LINK_SECRET="\$(env_get AUTH_EMAIL_LINK_SECRET "\$OLD/.env.mw")"
+  [[ -n "\$AUTH_EMAIL_LINK_SECRET" ]] || AUTH_EMAIL_LINK_SECRET="\$(env_get AUTH_EMAIL_LINK_SECRET "\$OLD/.env.split")"
 
   if [[ -n "\$jdbc" ]]; then
     rest="\${jdbc#jdbc:postgresql://}"
@@ -106,11 +110,13 @@ RABBITMQ_USER=\${RABBITMQ_USER}
 RABBITMQ_PASSWORD=\${RABBITMQ_PASSWORD}
 JWT_SECRET=\${JWT_SECRET}
 AGENT_INTERNAL_SERVICE_KEY=\${AGENT_INTERNAL_SERVICE_KEY}
+MAILTRAP_TOKEN=\${MAILTRAP_TOKEN}
+AUTH_EMAIL_LINK_SECRET=\${AUTH_EMAIL_LINK_SECRET}
+AUTH_FRONTEND_BASE_URL=\${AUTH_FRONTEND_BASE_URL:-https://www.novel-agent.cn}
 PYTHON_AI_BASE_URL=http://python-lb:8000
 JAVA_OPTS_STUDIO=-Xms128m -Xmx448m -XX:MaxMetaspaceSize=192m -XX:+UseSerialGC -XX:TieredStopAtLevel=1 -XX:+ExitOnOutOfMemoryError -Dfile.encoding=UTF-8
 JAVA_MEM_LIMIT_STUDIO=640m
 PYTHON_MEM_LIMIT=\${PYTHON_MEM_LIMIT:-304m}
-MAILTRAP_TOKEN=\${MAILTRAP_TOKEN}
 ENVEOF
   echo "[prepare-env] 已从旧 worker env 生成 \$NEW/.env.worker"
   exit 0

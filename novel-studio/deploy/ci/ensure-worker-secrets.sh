@@ -86,7 +86,34 @@ ensure_key() {
   patch_env_remote "$REMOTE" "$ENV_REL" "$key" "$resolved"
 }
 
+sync_key_optional() {
+  local key="$1" min_len="${2:-8}" ci_val="${3:-}"
+  local current="" resolved=""
+
+  current="$(env_get_remote "$REMOTE" "$ENV_REL" "$key" || true)"
+  if [[ -n "$current" && ${#current} -ge "$min_len" ]]; then
+    echo "[ensure-secrets] $key ok on worker (${#current} chars)"
+    return 0
+  fi
+
+  if [[ -n "$ci_val" && ${#ci_val} -ge "$min_len" ]]; then
+    resolved="$ci_val"
+  else
+    resolved="$(read_secret "$key" || true)"
+  fi
+
+  if [[ -n "$resolved" && ${#resolved} -ge "$min_len" ]]; then
+    patch_env_remote "$REMOTE" "$ENV_REL" "$key" "$resolved"
+    echo "[ensure-secrets] $key synced to worker"
+    return 0
+  fi
+
+  echo "[ensure-secrets] WARN: $key missing on worker (email features disabled until set)"
+}
+
 echo "[ensure-secrets] checking $ENV_REL on worker..."
 ensure_key JWT_SECRET 32 "${JWT_SECRET:-}"
 ensure_key AGENT_INTERNAL_SERVICE_KEY 8 "${AGENT_INTERNAL_SERVICE_KEY:-}"
+sync_key_optional MAILTRAP_TOKEN 8 "${MAILTRAP_TOKEN:-}"
+sync_key_optional AUTH_EMAIL_LINK_SECRET 16 "${AUTH_EMAIL_LINK_SECRET:-}"
 echo "[ensure-secrets] done"
