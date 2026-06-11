@@ -83,6 +83,13 @@ echo "[deploy-studio] done"
 EOF
 
 echo "[deploy-studio] 刷新 crypto-runtime.json ..."
-bash "$CI_DIR/register-frontend-crypto.sh" || echo "[deploy-studio] crypto 注册跳过（可稍后单独跑 register-frontend-crypto.sh）"
+if ! bash "$CI_DIR/register-frontend-crypto.sh"; then
+  sec="$(deploy_ssh "$REMOTE" "grep -E '^CLIENT_SECURITY_ENABLED=' '$RDIR/$DOCKER_REL/.env.worker' 2>/dev/null | head -1 | cut -d= -f2- || true" 2>/dev/null || true)"
+  if [[ "${sec,,}" == "true" ]]; then
+    echo "[deploy-studio] ERROR: client security 已开启但 crypto 注册失败"
+    exit 1
+  fi
+  echo "[deploy-studio] crypto 注册跳过（client security 未开启）"
+fi
 
 echo "[deploy-studio] 完成"

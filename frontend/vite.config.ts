@@ -17,7 +17,7 @@ export default defineConfig(({ mode }) => {
     env.VITE_MONOLITH === '1' ||
     process.env.VITE_MONOLITH === 'true'
   const codeObfuscation = isCodeObfuscationEnabled(mode, env)
-  const securityDefault = monolith ? 'false' : mode === 'production' ? 'true' : 'false'
+  const securityDefault = mode === 'production' ? 'true' : 'false'
   const securityAes =
     env.VITE_SECURITY_AES ||
     process.env.VITE_SECURITY_AES ||

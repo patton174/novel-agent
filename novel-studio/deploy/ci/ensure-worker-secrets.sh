@@ -116,4 +116,20 @@ ensure_key JWT_SECRET 32 "${JWT_SECRET:-}"
 ensure_key AGENT_INTERNAL_SERVICE_KEY 8 "${AGENT_INTERNAL_SERVICE_KEY:-}"
 sync_key_optional MAILTRAP_TOKEN 8 "${MAILTRAP_TOKEN:-}"
 sync_key_optional AUTH_EMAIL_LINK_SECRET 16 "${AUTH_EMAIL_LINK_SECRET:-}"
+
+enable_client_security() {
+  local want="${CLIENT_SECURITY_ENABLED:-true}"
+  if [[ "${want,,}" != "true" ]]; then
+    echo "[ensure-secrets] CLIENT_SECURITY_ENABLED=$want，保持关闭"
+    return 0
+  fi
+  patch_env_remote "$REMOTE" "$ENV_REL" "CLIENT_SECURITY_ENABLED" "true"
+  patch_env_remote "$REMOTE" "$ENV_REL" "CLIENT_SECURITY_AES_REQUIRED" "true"
+  patch_env_remote "$REMOTE" "$ENV_REL" "CLIENT_SECURITY_ROUTE_OBFUSCATION" "true"
+  patch_env_remote "$REMOTE" "$ENV_REL" "CLIENT_SECURITY_FIELD_ENCRYPTION" "true"
+  patch_env_remote "$REMOTE" "$ENV_REL" "CLIENT_SECURITY_ENCRYPT_STREAM" "true"
+  echo "[ensure-secrets] client security flags → true"
+}
+
+enable_client_security
 echo "[ensure-secrets] done"

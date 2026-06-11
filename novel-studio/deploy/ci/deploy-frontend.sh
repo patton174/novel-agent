@@ -32,6 +32,7 @@ EOF
 tar -czf "$TMP/frontend.tgz" -C "$TMP" dist nginx-frontend-worker.conf Dockerfile
 
 echo "[deploy-frontend] → worker sha=$SHA"
+bash "$CI_DIR/ensure-worker-secrets.sh"
 deploy_ssh "$REMOTE" "mkdir -p '$STAGE'"
 deploy_scp "$TMP/frontend.tgz" "$REMOTE:$STAGE/frontend.tgz"
 

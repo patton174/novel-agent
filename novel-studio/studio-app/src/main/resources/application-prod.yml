@@ -1,8 +1,15 @@
-# 生产：客户端安全（与前端/crypto-runtime 对齐后再开）
+# 生产：客户端安全（与前端 VITE_* / crypto-runtime.json 对齐）
 auth:
+  cookie:
+    secure: true
+    domain: ${AUTH_COOKIE_DOMAIN:.novel-agent.cn}
   client-security:
-    enabled: false
-    aes-required: false
-    route-obfuscation: false
-    field-encryption: false
-    encrypt-stream: false
+    enabled: ${CLIENT_SECURITY_ENABLED:true}
+    aes-required: ${CLIENT_SECURITY_AES_REQUIRED:true}
+    route-obfuscation: ${CLIENT_SECURITY_ROUTE_OBFUSCATION:true}
+    field-encryption: ${CLIENT_SECURITY_FIELD_ENCRYPTION:true}
+    encrypt-stream: ${CLIENT_SECURITY_ENCRYPT_STREAM:true}
+    replay-window-seconds: ${CLIENT_SECURITY_REPLAY_WINDOW_SECONDS:120}
+    enforce-csrf: ${CLIENT_SECURITY_ENFORCE_CSRF:false}
+    enforce-fingerprint: ${CLIENT_SECURITY_ENFORCE_FINGERPRINT:false}
+    enforce-heartbeat: ${CLIENT_SECURITY_ENFORCE_HEARTBEAT:false}
