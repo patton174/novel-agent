@@ -11,6 +11,7 @@ import {
   setSessionUserId,
 } from '../security/sessionStore'
 import { getCachedFingerprint } from '../security/fingerprint'
+import { readUserIdFromAccessToken } from '../security/jwtPayload'
 
 const LEGACY_TOKEN_KEY = 'novel_agent_token'
 const LEGACY_USER_ID_KEY = 'novel_agent_user_id'
@@ -64,7 +65,7 @@ export function getAuthHeaders(): Record<string, string> {
     headers.Authorization = token
   }
   if (!DIRECT_PYTHON) {
-    const uid = getSessionUserId()
+    const uid = (token && readUserIdFromAccessToken(token)) || getSessionUserId()
     if (uid) {
       headers['X-User-Id'] = uid
     }

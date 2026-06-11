@@ -1,6 +1,6 @@
 package cn.novelstudio.module.auth.controller.auth;
 
-import cn.novelstudio.module.auth.security.JwtAuthService;
+import cn.novelstudio.module.auth.security.AuthUserIdResolver;
 import cn.novelstudio.module.auth.service.auth.biz.AuthEmailVerifyBiz;
 import cn.novelstudio.kernel.base.Result;
 import cn.novelstudio.platform.web.BaseController;
@@ -16,20 +16,13 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthEmailVerifyController extends BaseController {
 
     private final AuthEmailVerifyBiz biz;
-    private final JwtAuthService jwtAuthService;
+    private final AuthUserIdResolver userIdResolver;
 
     @PostMapping("/send-email-verify")
     public Result<Void> sendEmailVerify(
         @RequestHeader(value = "X-User-Id", required = false) String userIdHeader,
         @RequestHeader(value = "Authorization", required = false) String authorization
     ) {
-        return biz.sendVerifyLink(resolveUserId(userIdHeader, authorization));
-    }
-
-    private Long resolveUserId(String userIdHeader, String authorization) {
-        if (userIdHeader != null && !userIdHeader.isBlank()) {
-            return parseUserId(userIdHeader);
-        }
-        return jwtAuthService.parseAccessUserId(authorization);
+        return biz.sendVerifyLink(userIdResolver.resolve(userIdHeader, authorization));
     }
 }

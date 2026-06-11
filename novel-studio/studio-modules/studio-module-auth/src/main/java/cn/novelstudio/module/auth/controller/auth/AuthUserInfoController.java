@@ -1,6 +1,6 @@
 package cn.novelstudio.module.auth.controller.auth;
 
-import cn.novelstudio.module.auth.security.JwtAuthService;
+import cn.novelstudio.module.auth.security.AuthUserIdResolver;
 import cn.novelstudio.module.auth.service.auth.biz.AuthUserInfoBiz;
 import cn.novelstudio.module.auth.service.auth.resp.AuthUserInfoResp;
 import cn.novelstudio.kernel.base.Result;
@@ -17,21 +17,14 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthUserInfoController extends BaseController {
 
     private final AuthUserInfoBiz biz;
-    private final JwtAuthService jwtAuthService;
+    private final AuthUserIdResolver userIdResolver;
 
     @GetMapping("/info")
     public Result<AuthUserInfoResp> info(
         @RequestHeader(value = "X-User-Id", required = false) String userIdHeader,
         @RequestHeader(value = "Authorization", required = false) String authorization
     ) {
-        Long userId = resolveUserId(userIdHeader, authorization);
+        Long userId = userIdResolver.resolve(userIdHeader, authorization);
         return biz.getInfo(userId);
-    }
-
-    private Long resolveUserId(String userIdHeader, String authorization) {
-        if (userIdHeader != null && !userIdHeader.isBlank()) {
-            return parseUserId(userIdHeader);
-        }
-        return jwtAuthService.parseAccessUserId(authorization);
     }
 }

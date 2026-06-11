@@ -3,6 +3,7 @@ import type { SessionCryptoMaterial } from '../types/authSecurity'
 const CRYPTO_STORAGE_KEY = 'na_session_crypto'
 const TOKEN_STORAGE_KEY = 'na_access_token'
 const SESSION_ID_STORAGE_KEY = 'na_session_id'
+const USER_ID_STORAGE_KEY = 'na_user_id'
 
 let accessToken: string | null = null
 let userId: string | null = null
@@ -53,6 +54,12 @@ export function hydrateSessionFromStorage(): void {
   if (!sessionCrypto) {
     sessionCrypto = readJson<SessionCryptoMaterial>(CRYPTO_STORAGE_KEY)
   }
+  if (!userId) {
+    const storedUserId = sessionStorage?.getItem(USER_ID_STORAGE_KEY)
+    if (storedUserId) {
+      userId = storedUserId
+    }
+  }
 }
 
 export function setAccessToken(token: string | null): void {
@@ -75,6 +82,11 @@ export function isLoggedIn(): boolean {
 
 export function setSessionUserId(id: string | number | null): void {
   userId = id == null ? null : String(id)
+  if (userId) {
+    sessionStorage?.setItem(USER_ID_STORAGE_KEY, userId)
+  } else {
+    sessionStorage?.removeItem(USER_ID_STORAGE_KEY)
+  }
 }
 
 export function getSessionUserId(): string | null {
@@ -122,6 +134,7 @@ export function clearAuthSession(): void {
   sessionStorage?.removeItem(CRYPTO_STORAGE_KEY)
   sessionStorage?.removeItem(TOKEN_STORAGE_KEY)
   sessionStorage?.removeItem(SESSION_ID_STORAGE_KEY)
+  sessionStorage?.removeItem(USER_ID_STORAGE_KEY)
 }
 
 if (typeof sessionStorage !== 'undefined') {

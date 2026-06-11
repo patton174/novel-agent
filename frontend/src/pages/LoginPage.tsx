@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { fetchUserInfo } from '../api/userApi'
-import { useUserStore } from '../stores/userStore'
+import { useUserStore, type UserRole } from '../stores/userStore'
 import { login } from '../utils/authApi'
-import { setSessionCrypto } from '../security/sessionStore'
+import { clearAuthSession } from '../security/sessionStore'
 import { appToast } from '@/stores/appToastStore'
 import { AuthShell } from '../components/auth/AuthShell'
 import { AuthSubmitButton } from '../components/auth/AuthSubmitButton'
@@ -34,19 +34,29 @@ const LoginPage: React.FC = () => {
       return
     }
     setSubmitting(true)
-    setSessionCrypto(null)
+    clearAuthSession()
     try {
-      await login(username.trim(), password)
+      const loginResult = await login(username.trim(), password)
       try {
         const profile = await fetchUserInfo()
         useUserStore.getState().setProfile(profile)
       } catch (profileErr) {
-        appToast.error(
-          profileErr instanceof Error
-            ? `登录成功，但加载用户信息失败：${profileErr.message}`
-            : '登录成功，但加载用户信息失败',
-        )
-        return
+        if (loginResult.userId != null && loginResult.username) {
+          useUserStore.getState().setProfile({
+            userId: String(loginResult.userId),
+            username: loginResult.username,
+            email: '',
+            role: (loginResult.role as UserRole) ?? 'user',
+          })
+          appToast.info('已使用登录信息进入，个人资料将稍后同步')
+        } else {
+          appToast.error(
+            profileErr instanceof Error
+              ? `登录成功，但加载用户信息失败：${profileErr.message}`
+              : '登录成功，但加载用户信息失败',
+          )
+          return
+        }
       }
       localStorage.removeItem('draft_login_username')
       appToast.success('欢迎回来')
