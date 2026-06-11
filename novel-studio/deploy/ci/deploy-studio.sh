@@ -25,6 +25,7 @@ ci_setup_ssh
 
 echo "[deploy-studio] → worker ($IMAGE) sha=$SHA"
 bash "$CI_DIR/sync-compose.sh" worker
+bash "$CI_DIR/ensure-worker-secrets.sh"
 
 deploy_ssh "$REMOTE" "mkdir -p '$STAGE' '$RDIR/backups'"
 deploy_scp "$LOCAL_JAR" "$REMOTE:$STAGE/app.jar"
@@ -81,7 +82,6 @@ echo "[deploy-studio] done"
 \$COMPOSE -f "\$COMPOSE_FILE" --env-file "\$ENV_FILE" ps novel-studio
 EOF
 
-echo "[deploy-studio] 刷新 crypto-runtime.json ..."
 echo "[deploy-studio] 刷新 crypto-runtime.json ..."
 bash "$CI_DIR/register-frontend-crypto.sh" || echo "[deploy-studio] crypto 注册跳过（可稍后单独跑 register-frontend-crypto.sh）"
 

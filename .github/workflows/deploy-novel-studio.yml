@@ -30,6 +30,7 @@ jobs:
           missing=()
           [[ -n "${{ secrets.DEPLOY_SSH_KEY }}" ]] || missing+=(DEPLOY_SSH_KEY)
           [[ -n "${{ secrets.WORKER_HOST }}" ]] || missing+=(WORKER_HOST)
+          [[ -n "${{ secrets.MW_HOST }}" ]] || missing+=(MW_HOST)
           [[ ${#missing[@]} -eq 0 ]] || { echo "::error::缺少 Secrets: ${missing[*]}"; exit 1; }
 
       - name: Setup SSH
@@ -38,6 +39,7 @@ jobs:
           printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -H "${{ secrets.WORKER_HOST }}" >> ~/.ssh/known_hosts
+          ssh-keyscan -H "${{ secrets.MW_HOST }}" >> ~/.ssh/known_hosts
 
       - name: Build novel-studio
         run: bash novel-studio/deploy/ci/build-studio.sh
