@@ -19,7 +19,7 @@ services:
     image: novel-agent/python-ai:latest
     restart: unless-stopped
     env_file:
-      - ../../../../../python-ai/.env
+      - ${PYTHON_AI_ENV_FILE:-/opt/novel-agent/python-ai/.env}
     environment:
       LOG_LEVEL: ${PYTHON_LOG_LEVEL:-INFO}
       CONTENT_BASE_URL: http://novel-studio:8080
