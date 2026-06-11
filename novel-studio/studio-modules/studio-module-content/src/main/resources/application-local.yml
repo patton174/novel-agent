@@ -1,0 +1,53 @@
+server:
+  port: ${SERVER_PORT:8091}
+
+spring:
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:novel_agent}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:changeme}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+    table: flyway_schema_history_content
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:changeme}
+      database: ${REDIS_DB:0}
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+
+agent:
+  python:
+    base-url: ${AGENT_PYTHON_BASE_URL:http://127.0.0.1:8000}
+  billing:
+    base-url: ${BILLING_BASE_URL:http://127.0.0.1:8092}
+    enabled: ${BILLING_ENABLED:true}
+  runtime:
+    pg-session-dual-write: false
+    read-pg-session-first: false
+    lease-ttl-seconds: 900
+  internal:
+    service-key: ${INTERNAL_SERVICE_KEY:dev-internal-key-change-me}
+  image:
+    timeout-seconds: 120
+    cover-size: 768x1024
+
+logging:
+  level:
+    com.novel.agent: debug

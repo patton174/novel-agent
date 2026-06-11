@@ -12,23 +12,28 @@ import { viteObfuscatorPlugin } from './config/viteObfuscatorPlugin'
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
+  const monolith =
+    env.VITE_MONOLITH === 'true' ||
+    env.VITE_MONOLITH === '1' ||
+    process.env.VITE_MONOLITH === 'true'
   const codeObfuscation = isCodeObfuscationEnabled(mode, env)
+  const securityDefault = monolith ? 'false' : mode === 'production' ? 'true' : 'false'
   const securityAes =
     env.VITE_SECURITY_AES ||
     process.env.VITE_SECURITY_AES ||
-    (mode === 'production' ? 'true' : 'false')
+    securityDefault
   const routeObfuscation =
     env.VITE_ROUTE_OBFUSCATION ||
     process.env.VITE_ROUTE_OBFUSCATION ||
-    (mode === 'production' ? 'true' : 'false')
+    securityDefault
   const fieldEncryption =
     env.VITE_FIELD_ENCRYPTION ||
     process.env.VITE_FIELD_ENCRYPTION ||
-    (mode === 'production' ? 'true' : 'false')
+    securityDefault
   const securityEncryptStream =
     env.VITE_SECURITY_ENCRYPT_STREAM ||
     process.env.VITE_SECURITY_ENCRYPT_STREAM ||
-    (mode === 'production' ? 'true' : 'false')
+    securityDefault
   const directPython =
     env.VITE_DIRECT_PYTHON === 'true' || env.VITE_DIRECT_PYTHON === '1'
   const remoteGateway = env.VITE_REMOTE_GATEWAY?.replace(/\/$/, '')
@@ -38,8 +43,9 @@ export default defineConfig(({ mode }) => {
   const localPyai = env.VITE_LOCAL_PYAI || 'http://127.0.0.1:8082'
   const localContent = env.VITE_LOCAL_CONTENT || 'http://127.0.0.1:8091'
   const localBilling = env.VITE_LOCAL_BILLING || 'http://127.0.0.1:8092'
-  const apiProxyTarget = directPython ? 'http://127.0.0.1:8000' : 'http://127.0.0.1:8080'
-  const useRemoteDev = Boolean(authProxyTarget || env.VITE_LOCAL_PYAI)
+  const localMonolith = env.VITE_LOCAL_MONOLITH || 'http://127.0.0.1:8080'
+  const apiProxyTarget = directPython ? 'http://127.0.0.1:8000' : localMonolith
+  const useRemoteDev = !monolith && Boolean(authProxyTarget || env.VITE_LOCAL_PYAI)
 
   const apiProxy = useRemoteDev
     ? {

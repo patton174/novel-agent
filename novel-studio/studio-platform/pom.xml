@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>cn.novelstudio</groupId>
+        <artifactId>novel-studio</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>studio-platform</artifactId>
+    <packaging>pom</packaging>
+    <description>平台层 — Web / Security / MQ / Mail / Media</description>
+
+    <modules>
+        <module>studio-platform-web</module>
+        <module>studio-platform-security</module>
+        <module>studio-platform-messaging</module>
+        <module>studio-platform-mail</module>
+        <module>studio-platform-media</module>
+    </modules>
+</project>

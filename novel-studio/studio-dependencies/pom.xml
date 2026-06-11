@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>cn.novelstudio</groupId>
+    <artifactId>studio-dependencies</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+    <description>BOM — 统一依赖版本，不含 Spring Cloud / Nacos</description>
+
+    <properties>
+        <spring-boot.version>3.2.5</spring-boot.version>
+        <nimbus-jose-jwt.version>9.37.3</nimbus-jose-jwt.version>
+        <mailtrap-java.version>1.3.0</mailtrap-java.version>
+        <studio.version>0.1.0-SNAPSHOT</studio.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${spring-boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <!-- 内部模块 -->
+            <dependency>
+                <groupId>cn.novelstudio</groupId>
+                <artifactId>studio-kernel</artifactId>
+                <version>${studio.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.novelstudio</groupId>
+                <artifactId>studio-platform-web</artifactId>
+                <version>${studio.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.novelstudio</groupId>
+                <artifactId>studio-platform-security</artifactId>
+                <version>${studio.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.novelstudio</groupId>
+                <artifactId>studio-platform-messaging</artifactId>
+                <version>${studio.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.novelstudio</groupId>
+                <artifactId>studio-platform-mail</artifactId>
+                <version>${studio.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.novelstudio</groupId>
+                <artifactId>studio-platform-media</artifactId>
+                <version>${studio.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.novelstudio</groupId>
+                <artifactId>studio-module-auth</artifactId>
+                <version>${studio.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.novelstudio</groupId>
+                <artifactId>studio-module-content</artifactId>
+                <version>${studio.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.novelstudio</groupId>
+                <artifactId>studio-module-agent</artifactId>
+                <version>${studio.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.novelstudio</groupId>
+                <artifactId>studio-module-billing</artifactId>
+                <version>${studio.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.novelstudio</groupId>
+                <artifactId>studio-module-worker</artifactId>
+                <version>${studio.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.nimbusds</groupId>
+                <artifactId>nimbus-jose-jwt</artifactId>
+                <version>${nimbus-jose-jwt.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.mailtrap</groupId>
+                <artifactId>mailtrap-java</artifactId>
+                <version>${mailtrap-java.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+</project>

@@ -1,0 +1,9 @@
+${AnsiColor.BRIGHT_CYAN}
+  _   _                 _        _                    _
+ | \ | | _____   ____ _| | ___  / \   __ _  ___ _ __ | |_
+ |  \| |/ _ \ \ / / _` | |/ _ \/ _ \ / _` |/ _ \ '_ \| __|
+ | |\  |  __/\ V / (_| | |  __/ ___ \ (_| |  __/ | | | |_
+ |_| \_|\___| \_/ \__,_|_|\___/_/   \_\__, |\___|_| |_|\__|
+                                      |___/
+${AnsiColor.BRIGHT_YELLOW} :: novel-agent :: ${spring.application.name} ::${AnsiColor.DEFAULT}
+ Spring Boot ${spring-boot.version}

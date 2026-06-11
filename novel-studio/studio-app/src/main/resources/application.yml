@@ -1,0 +1,84 @@
+# Novel Studio 单体默认配置（开发友好：直连 /api，无路由混淆）
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  application:
+    name: novel-studio
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:novel_agent}
+    username: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: ${REDIS_DB:0}
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration/auth,classpath:db/migration/content,classpath:db/migration/billing
+    schemas: public
+    table: flyway_schema_history_studio
+
+# 单体：模块间进程内直调；仅 Python AI 走 HTTP
+agent:
+  python:
+    base-url: ${PYTHON_AI_BASE_URL:http://127.0.0.1:8000}
+  billing:
+    enabled: ${AGENT_BILLING_ENABLED:true}
+  internal:
+    service-key: ${AGENT_INTERNAL_SERVICE_KEY:${INTERNAL_SERVICE_KEY:dev-internal-key-change-me}}
+
+studio:
+  security:
+    client:
+      enabled: false
+      aes-required: false
+      route-obfuscation: false
+      field-encryption: false
+      encrypt-stream: false
+      replay-window-seconds: 120
+      enforce-csrf: false
+      enforce-fingerprint: false
+      enforce-heartbeat: false
+
+auth:
+  jwt:
+    issuer: novel-studio
+    secret: ${JWT_SECRET:novel-studio-dev-secret-change-in-production-32chars}
+    access-ttl-seconds: 3600
+
+python-ai:
+  base-url: ${PYTHON_AI_BASE_URL:http://localhost:8000}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      show-details: when_authorized
+
+logging:
+  level:
+    cn.novelstudio: info
+    org.springframework.web: warn

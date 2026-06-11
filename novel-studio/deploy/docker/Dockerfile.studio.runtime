@@ -1,0 +1,10 @@
+# 仅打包 CI 已编译的 JAR（服务器不做 Maven 编译）
+ARG JAR=app.jar
+FROM eclipse-temurin:21-jre-alpine
+ARG JAR
+WORKDIR /app
+RUN apk add --no-cache wget
+COPY ${JAR} /app/app.jar
+ENV JAVA_OPTS="-Xms128m -Xmx448m -Dfile.encoding=UTF-8"
+EXPOSE 8080
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar /app/app.jar"]

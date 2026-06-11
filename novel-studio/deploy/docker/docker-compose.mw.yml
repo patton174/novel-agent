@@ -1,0 +1,22 @@
+# MW 机：HTTPS 入口 nginx（全流量 → Worker 前端；无 Gateway / Nacos / Java 微服务）
+name: novel-studio-mw
+
+services:
+  entry-nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - "${ENTRY_PORT:-80}:80"
+      - "${ENTRY_SSL_PORT:-443}:443"
+    volumes:
+      - ./nginx-entry-mw.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx-cloudflare-realip.conf:/etc/nginx/cloudflare-realip.conf:ro
+      - ./letsencrypt:/etc/letsencrypt:ro
+      - ./certbot-www:/var/www/certbot:ro
+    mem_limit: 32m
+    networks:
+      - novel-net
+
+networks:
+  novel-net:
+    driver: bridge

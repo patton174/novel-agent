@@ -50,16 +50,16 @@ jobs:
       - run: python -m pytest tests/ -q
 
   java:
-    name: java
+    name: java (novel-studio)
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: novel-agent
+        working-directory: novel-studio
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 17
+          java-version: 21
           cache: maven
-      - run: mvn -B verify -DskipITs
+      - run: mvn -B -pl studio-app -am verify -DskipTests

@@ -1,0 +1,40 @@
+package cn.novelstudio.module.auth.service.api.biz;
+
+import cn.novelstudio.module.auth.dto.LoginRequest;
+import cn.novelstudio.module.auth.dto.RegisterRequest;
+import cn.novelstudio.module.auth.security.JwtAuthService;
+import cn.novelstudio.module.auth.service.AuthService;
+import cn.novelstudio.module.auth.service.RateLimitService;
+import cn.novelstudio.kernel.base.Result;
+import cn.novelstudio.kernel.biz.BaseBiz;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
+
+import java.time.Duration;
+
+@Component
+@RequiredArgsConstructor
+public class AuthPublicBiz extends BaseBiz {
+
+    private final AuthService authService;
+    private final RateLimitService rateLimitService;
+
+    public JwtAuthService.AuthSessionBundle login(LoginRequest request, String ip, String fingerprint) {
+        rateLimitService.checkComposite("login", ip, fingerprint, 20, Duration.ofMinutes(15));
+        return authService.login(request);
+    }
+
+    public Result<Void> register(RegisterRequest request, String ip, String fingerprint) {
+        authService.register(request, ip, fingerprint);
+        return ok(null);
+    }
+
+    public JwtAuthService.AuthSessionBundle refresh(String refreshToken) {
+        return authService.refresh(refreshToken);
+    }
+
+    public Result<Void> logout(String refreshToken) {
+        authService.logout(refreshToken);
+        return ok(null);
+    }
+}

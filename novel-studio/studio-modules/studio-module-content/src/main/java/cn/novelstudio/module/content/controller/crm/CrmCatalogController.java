@@ -1,0 +1,144 @@
+package cn.novelstudio.module.content.controller.crm;
+
+import cn.novelstudio.kernel.base.Page;
+import cn.novelstudio.kernel.base.Result;
+import cn.novelstudio.platform.web.BaseController;
+import cn.novelstudio.module.content.service.crawl.dto.CatalogChapterDetailDTO;
+import cn.novelstudio.module.content.service.crawl.dto.CatalogChapterSummaryDTO;
+import cn.novelstudio.module.content.service.crawl.dto.CatalogNovelDTO;
+import cn.novelstudio.module.content.service.crawl.dto.CatalogNovelProgressDTO;
+import cn.novelstudio.module.content.service.crawl.dto.CrawlOrchestratorStateDTO;
+import cn.novelstudio.module.content.service.crawl.dto.OrchestratorDecisionsDTO;
+import cn.novelstudio.module.content.service.crawl.dto.SetOrchestratorGoalRequest;
+import cn.novelstudio.module.content.service.crawl.dto.UpdateCatalogChapterRequest;
+import cn.novelstudio.module.content.service.crawl.dto.UpdateCatalogNovelRequest;
+import cn.novelstudio.module.content.service.crm.biz.CrmCatalogBiz;
+import cn.novelstudio.module.content.service.crm.biz.CrmCrawlBiz;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
+import java.util.Map;
+
+@RestController
+@RequiredArgsConstructor
+public class CrmCatalogController extends BaseController {
+
+    private final CrmCatalogBiz catalogBiz;
+    private final CrmCrawlBiz crawlBiz;
+
+    @GetMapping("/api/content/crm/catalog/novels/page")
+    public Result<Page<CatalogNovelDTO>> pageNovels(
+        @RequestParam(defaultValue = "1") int pageCurrent,
+        @RequestParam(defaultValue = "20") int pageSize
+    ) {
+        return catalogBiz.pageNovels(pageCurrent, pageSize);
+    }
+
+    @GetMapping("/api/content/crm/catalog/novels/incomplete")
+    public Result<List<CatalogNovelProgressDTO>> listIncomplete(
+        @RequestParam(defaultValue = "50") int limit
+    ) {
+        return catalogBiz.listIncomplete(limit);
+    }
+
+    @GetMapping("/api/content/crm/catalog/novels/{catalogNovelId}")
+    public Result<CatalogNovelDTO> getNovel(@PathVariable String catalogNovelId) {
+        return catalogBiz.getNovel(catalogNovelId);
+    }
+
+    @GetMapping("/api/content/crm/catalog/novels/{catalogNovelId}/progress")
+    public Result<CatalogNovelProgressDTO> getProgress(@PathVariable String catalogNovelId) {
+        return catalogBiz.getProgress(catalogNovelId);
+    }
+
+    @GetMapping("/api/content/crm/catalog/novels/{catalogNovelId}/chapters")
+    public Result<List<CatalogChapterSummaryDTO>> listChapters(@PathVariable String catalogNovelId) {
+        return catalogBiz.listChapters(catalogNovelId);
+    }
+
+    @GetMapping("/api/content/crm/catalog/novels/{catalogNovelId}/chapters/{chapterId}")
+    public Result<CatalogChapterDetailDTO> getChapter(
+        @PathVariable String catalogNovelId,
+        @PathVariable String chapterId
+    ) {
+        return catalogBiz.getChapter(catalogNovelId, chapterId);
+    }
+
+    @PutMapping("/api/content/crm/catalog/novels/{catalogNovelId}/chapters/{chapterId}")
+    public Result<CatalogChapterDetailDTO> updateChapter(
+        @PathVariable String catalogNovelId,
+        @PathVariable String chapterId,
+        @RequestBody UpdateCatalogChapterRequest request
+    ) {
+        return catalogBiz.updateChapter(catalogNovelId, chapterId, request);
+    }
+
+    @DeleteMapping("/api/content/crm/catalog/novels/{catalogNovelId}/chapters/{chapterId}")
+    public Result<Void> deleteChapter(
+        @PathVariable String catalogNovelId,
+        @PathVariable String chapterId
+    ) {
+        return catalogBiz.deleteChapter(catalogNovelId, chapterId);
+    }
+
+    @PutMapping("/api/content/crm/catalog/novels/{catalogNovelId}")
+    public Result<CatalogNovelDTO> updateNovel(
+        @PathVariable String catalogNovelId,
+        @RequestBody UpdateCatalogNovelRequest request
+    ) {
+        return catalogBiz.updateNovel(catalogNovelId, request);
+    }
+
+    @PutMapping("/api/content/crm/catalog/novels/{catalogNovelId}/cover")
+    public Result<CatalogNovelDTO> setCover(
+        @PathVariable String catalogNovelId,
+        @RequestBody Map<String, String> body
+    ) {
+        return catalogBiz.setCover(catalogNovelId, body);
+    }
+
+    @DeleteMapping("/api/content/crm/catalog/novels/{catalogNovelId}")
+    public Result<Void> deleteNovel(@PathVariable String catalogNovelId) {
+        return catalogBiz.deleteNovel(catalogNovelId);
+    }
+
+    @GetMapping("/api/content/crm/crawl/orchestrator")
+    public Result<CrawlOrchestratorStateDTO> getOrchestrator() {
+        return crawlBiz.getOrchestratorState();
+    }
+
+    @PutMapping("/api/content/crm/crawl/orchestrator/goal")
+    public Result<CrawlOrchestratorStateDTO> setOrchestratorGoal(
+        @Valid @RequestBody SetOrchestratorGoalRequest request
+    ) {
+        return crawlBiz.setOrchestratorGoal(request);
+    }
+
+    @PostMapping("/api/content/crm/crawl/orchestrator/wake")
+    public Result<CrawlOrchestratorStateDTO> wakeOrchestrator() {
+        return crawlBiz.wakeOrchestrator();
+    }
+
+    @PostMapping("/api/content/crm/crawl/orchestrator/clear")
+    public Result<CrawlOrchestratorStateDTO> clearOrchestratorGoal() {
+        return crawlBiz.clearOrchestratorGoal();
+    }
+
+    @GetMapping("/api/content/crm/crawl/orchestrator/decisions")
+    public Result<OrchestratorDecisionsDTO> listOrchestratorDecisions(
+        @RequestParam(defaultValue = "0") long afterSeq,
+        @RequestParam(defaultValue = "100") int limit
+    ) {
+        return crawlBiz.listOrchestratorDecisions(afterSeq, limit);
+    }
+}

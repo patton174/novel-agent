@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>cn.novelstudio</groupId>
+        <artifactId>novel-studio</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>studio-modules</artifactId>
+    <packaging>pom</packaging>
+    <description>业务域模块 — auth / content / agent / billing / worker</description>
+
+    <modules>
+        <module>studio-module-auth</module>
+        <module>studio-module-content</module>
+        <module>studio-module-agent</module>
+        <module>studio-module-billing</module>
+        <module>studio-module-worker</module>
+    </modules>
+</project>

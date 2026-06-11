@@ -1,0 +1,97 @@
+# 本地开发：PG / Redis 在本机（密码可通过环境变量覆盖）
+server:
+  port: ${SERVER_PORT:8081}
+
+spring:
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:novel_agent}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:changeme}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+    table: flyway_schema_history_auth
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:changeme}
+      database: ${REDIS_DB:0}
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+
+auth:
+  jwt:
+    issuer: novel-agent
+    secret: ${JWT_SECRET:novel-agent-dev-secret-change-in-production-32}
+    access-ttl-seconds: 3600
+    refresh-ttl-seconds: 2592000
+  cookie:
+    secure: false
+    domain: ${AUTH_COOKIE_DOMAIN:}
+  client-security:
+    enabled: false
+    aes-required: false
+    encrypt-stream: false
+    replay-window-seconds: 120
+    ws-ticket-ttl-seconds: 60
+    heartbeat-interval-seconds: 60
+    heartbeat-max-silence-seconds: 180
+    fingerprint-tolerance: 0.15
+    enforce-fingerprint: false
+    enforce-heartbeat: false
+    enforce-csrf: false
+  verification:
+    email-code-ttl-seconds: 600
+    email-cooldown-seconds: 60
+    email-daily-limit: 5
+    email-verify-link-ttl-seconds: 86400
+    frontend-base-url: ${AUTH_FRONTEND_BASE_URL:http://localhost:5173}
+    email-link-secret: ${AUTH_EMAIL_LINK_SECRET:dev-email-link-secret-change-me}
+    captcha-challenge-ttl-seconds: 300
+    captcha-token-ttl-seconds: 600
+    captcha-tolerance-px: 6
+
+mailtrap:
+  token: ${MAILTRAP_TOKEN:}
+  from-email: hello@noreply.novel-agent.cn
+  from-name: Novel Agent
+
+mail:
+  brand:
+    primary: "#4f46e5"
+    product-name: Novel Agent
+    tagline: 理解你的笔触与灵感
+    frontend-base-url: ${AUTH_FRONTEND_BASE_URL:http://localhost:5173}
+
+agent:
+  internal:
+    service-key: ${INTERNAL_SERVICE_KEY:dev-internal-key-change-me}
+  billing:
+    base-url: ${BILLING_BASE_URL:http://127.0.0.1:8092}
+    enabled: ${BILLING_ENABLED:true}
+  python:
+    base-url: ${AGENT_PYTHON_BASE_URL:http://127.0.0.1:8000}
+  image:
+    timeout-seconds: 120
+    captcha-enabled: true
+    captcha-size: 1024x768
+
+logging:
+  level:
+    com.novel.agent: debug
+    org.hibernate.SQL: debug

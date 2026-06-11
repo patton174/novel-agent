@@ -1,0 +1,13 @@
+package cn.novelstudio.module.content.repository.agent;
+
+import cn.novelstudio.module.content.entity.agent.AgentSessionEntity;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+
+public interface AgentSessionRepository extends JpaRepository<AgentSessionEntity, String> {
+
+    List<AgentSessionEntity> findByUserIdOrderByUpdatedAtDesc(Long userId);
+
+    List<AgentSessionEntity> findByUserIdAndNovelIdOrderByUpdatedAtDesc(Long userId, String novelId);
+}
