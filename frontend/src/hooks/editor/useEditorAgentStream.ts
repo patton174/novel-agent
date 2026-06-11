@@ -123,6 +123,7 @@ export function useEditorAgentStream({
   const lastContextUsageRef = useRef<AgentContextUsage | undefined>(undefined)
   const [contextUsageVersion, setContextUsageVersion] = useState(0)
   const titleGenerationInFlightRef = useRef<Set<string>>(new Set())
+  const sendInFlightRef = useRef(false)
   const messagesRef = useRef(messages)
   useEffect(() => {
     messagesRef.current = messages
@@ -137,8 +138,9 @@ export function useEditorAgentStream({
 
   const handleSend = async (overrideText?: string) => {
     const rawText = overrideText ?? inputValue
-    if (!rawText.trim() || isLoading) return
+    if (!rawText.trim() || isLoading || sendInFlightRef.current) return
 
+    sendInFlightRef.current = true
     const userText = rawText.trim()
 
     const userMessage: EditorMessage = {
@@ -525,6 +527,7 @@ export function useEditorAgentStream({
         })
       }
     } finally {
+      sendInFlightRef.current = false
       const hostDetached =
         sseDisconnectedEarly ||
         (hostModeEnabled &&

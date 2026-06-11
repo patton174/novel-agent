@@ -142,15 +142,24 @@ async function handleUnauthorized(logicalUrl: string, retried: boolean): Promise
 
 type SecureFetchInit = RequestInit & {
   __authRetried?: boolean
-  /** 防重放 nonce 冲突后仅重试一次 */
-  __signRetried?: boolean
+  /** 防重放 nonce 冲突后自动重试（每次重建 sign/nonce） */
+  __replayRetried?: number
+}
+
+const REPLAY_RETRY_MAX = 3
+const REPLAY_RETRY_DELAY_MS = 40
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms)
+  })
 }
 
 export async function secureFetch(input: RequestInfo | URL, init?: SecureFetchInit): Promise<Response> {
   const logicalUrl = typeof input === 'string' ? input : input.toString()
   const method = (init?.method ?? 'GET').toUpperCase()
   const retried = Boolean(init?.__authRetried)
-  const signRetried = Boolean(init?.__signRetried)
+  const replayRetried = init?.__replayRetried ?? 0
 
   const exec = async () => {
     const { fetchUrl, headers, body } = await buildRequest(logicalUrl, method, init)
@@ -191,10 +200,14 @@ export async function secureFetch(input: RequestInfo | URL, init?: SecureFetchIn
     const bodyText = await response.clone().text().catch(() => '')
     if (
       response.status === 400 &&
-      !signRetried &&
+      replayRetried < REPLAY_RETRY_MAX &&
       (bodyText.includes('REPLAY_NONCE') || bodyText.includes('REPLAY_WINDOW'))
     ) {
-      response = await secureFetch(input, { ...init, __signRetried: true })
+      await sleep(REPLAY_RETRY_DELAY_MS * (replayRetried + 1))
+      response = await secureFetch(input, {
+        ...init,
+        __replayRetried: replayRetried + 1,
+      })
     }
   }
 
