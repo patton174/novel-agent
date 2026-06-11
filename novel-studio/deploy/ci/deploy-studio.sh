@@ -59,6 +59,7 @@ echo "[deploy-studio] done"
 EOF
 
 echo "[deploy-studio] 刷新 crypto-runtime.json ..."
-bash "$CI_DIR/register-frontend-crypto.sh" || echo "[deploy-studio] crypto 注册跳过（novel-studio 未就绪或 frontend 未部署）"
+echo "[deploy-studio] 刷新 crypto-runtime.json ..."
+bash "$CI_DIR/register-frontend-crypto.sh" || echo "[deploy-studio] crypto 注册跳过（可稍后单独跑 register-frontend-crypto.sh）"
 
 echo "[deploy-studio] 完成"

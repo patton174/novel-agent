@@ -135,11 +135,11 @@ for attempt in $(seq 1 60); do
 set -euo pipefail
 for url in \
   "http://127.0.0.1:8080/actuator/health/liveness" \
-  "http://127.0.0.1:8080/actuator/health"; do
+  "http://127.0.0.1:8080/actuator/health" \
+  "http://127.0.0.1:8080/"; do
   code=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 2 --max-time 8 "$url" 2>/dev/null || echo "000")
-  if [[ "$code" == "200" ]]; then exit 0; fi
-  # 聚合 health 在 DB/Redis 未就绪时常返回 503，但 Tomcat 已监听
-  if [[ "$url" == *"/actuator/health" && "$code" == "503" ]]; then exit 0; fi
+  # 000=连接被拒；其余说明 Tomcat 已监听（含 401/403/404/503）
+  if [[ "$code" != "000" ]]; then exit 0; fi
 done
 exit 1
 EOS
