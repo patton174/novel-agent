@@ -75,7 +75,7 @@ ENV_FILE='$WORKER_RDIR/$NEW_DOCKER_REL/.env.worker'
 [[ -f "\$ENV_FILE" ]] || { echo "缺少 \$ENV_FILE（请从 .env.worker.example 复制并填写）"; exit 1; }
 env_get() {
   local key="\$1" file="\$2"
-  grep -E "^\${key}=" "\$file" 2>/dev/null | head -1 | cut -d= -f2- | sed 's/^"//;s/"\$//'
+  grep -E "^\${key}=" "\$file" 2>/dev/null | head -1 | cut -d= -f2- | sed 's/^"//;s/"\$//' || true
 }
 DB_HOST="\$(env_get DB_HOST "\$ENV_FILE")"
 DB_PORT="\$(env_get DB_PORT "\$ENV_FILE")"

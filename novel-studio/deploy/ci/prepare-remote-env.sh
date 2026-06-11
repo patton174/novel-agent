@@ -23,12 +23,14 @@ set -euo pipefail
 RDIR='$rdir'
 OLD="\$RDIR/$OLD_DOCKER_REL"
 NEW="\$RDIR/$NEW_DOCKER_REL"
+CI_MW_HOST='$MW_HOST'
+CI_WORKER_HOST='$WORKER_HOST'
 mkdir -p "\$NEW"
 
 env_get() {
   local key="\$1" file="\$2"
   [[ -f "\$file" ]] || return 0
-  grep -E "^\${key}=" "\$file" 2>/dev/null | head -1 | cut -d= -f2- | sed 's/^"//;s/"\$//'
+  grep -E "^\${key}=" "\$file" 2>/dev/null | head -1 | cut -d= -f2- | sed 's/^"//;s/"\$//' || true
 }
 
 if [[ "$role" == "worker" ]]; then
@@ -39,8 +41,10 @@ if [[ "$role" == "worker" ]]; then
   [[ -f "\$OLD/.env.worker" ]] || { echo "[prepare-env] 缺少 \$OLD/.env.worker"; exit 1; }
 
   MW_HOST="\$(env_get MW_HOST "\$OLD/.env.worker")"
+  MW_HOST="\${MW_HOST:-\$CI_MW_HOST}"
   HOST_IP="\$(env_get HOST_IP "\$OLD/.env.worker")"
   WORKER_HOST="\$(env_get WORKER_HOST "\$OLD/.env.worker")"
+  WORKER_HOST="\${WORKER_HOST:-\$CI_WORKER_HOST}"
   SPRING_PROFILES_ACTIVE="\$(env_get SPRING_PROFILES_ACTIVE "\$OLD/.env.worker")"
   FRONTEND_PORT="\$(env_get FRONTEND_PORT "\$OLD/.env.worker")"
   jdbc="\$(env_get SPRING_DATASOURCE_URL "\$OLD/.env.worker")"
@@ -116,7 +120,9 @@ if [[ -f "\$NEW/.env.mw" ]]; then
   echo "[prepare-env] mw .env.mw 已存在"
 else
   MW_HOST="\$(env_get MW_HOST "\$OLD/.env.mw")"
+  MW_HOST="\${MW_HOST:-\$CI_MW_HOST}"
   WORKER_HOST="\$(env_get WORKER_HOST "\$OLD/.env.mw")"
+  WORKER_HOST="\${WORKER_HOST:-\$CI_WORKER_HOST}"
   DOMAIN="\$(env_get DOMAIN "\$OLD/.env.mw")"
   DOMAIN_ALIASES="\$(env_get DOMAIN_ALIASES "\$OLD/.env.mw")"
   CERT_NAME="\$(env_get CERT_NAME "\$OLD/.env.mw")"
