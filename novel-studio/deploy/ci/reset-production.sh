@@ -35,10 +35,12 @@ NEW='$NEW_DOCKER_REL'
 compose_down() {
   local dir="\$1" file="\$2" env="\$3"
   [[ -f "\$dir/\$env" ]] || return 0
+  [[ -f "\$dir/\$file" ]] || return 0
   cd "\$dir"
   COMPOSE="docker compose"
   if ! docker compose version >/dev/null 2>&1; then COMPOSE="docker-compose"; fi
   \$COMPOSE -f "\$file" --env-file "\$env" down --remove-orphans 2>/dev/null || true
+  return 0
 }
 compose_down "\$RDIR/\$OLD" docker-compose.mw.yml .env.mw
 compose_down "\$RDIR/\$OLD" docker-compose.worker.yml .env.worker
@@ -55,7 +57,7 @@ for c in agent-gateway agent-auth agent-consumer agent-billing agent-content age
 done
 docker ps -a --format '{{.Names}}' | grep -E '^(agent-|novel-agent|novel-studio)' | while read -r c; do
   docker rm -f "\$c" 2>/dev/null || true
-done
+done || true
 docker rm -f novel-studio 2>/dev/null || true
 
 # 可选：清理旧 Java 微服务镜像（释放磁盘）
@@ -72,7 +74,7 @@ WORKER_RDIR="$(ci_remote_dir worker)"
 deploy_ssh "$(ci_remote worker)" bash -s <<EOF
 set -euo pipefail
 ENV_FILE='$WORKER_RDIR/$NEW_DOCKER_REL/.env.worker'
-[[ -f "\$ENV_FILE" ]] || { echo "缺少 \$ENV_FILE（请从 .env.worker.example 复制并填写）"; exit 1; }
+[[ -f "\$ENV_FILE" ]] || { echo "缺少 \$ENV_FILE"; exit 1; }
 env_get() {
   local key="\$1" file="\$2"
   grep -E "^\${key}=" "\$file" 2>/dev/null | head -1 | cut -d= -f2- | sed 's/^"//;s/"\$//' || true
@@ -84,13 +86,19 @@ DB_USER="\$(env_get DB_USER "\$ENV_FILE")"
 DB_PASSWORD="\$(env_get DB_PASSWORD "\$ENV_FILE")"
 DB_PORT="\${DB_PORT:-5432}"
 DB_NAME="\${DB_NAME:-novel_agent}"
-export PGPASSWORD="\${DB_PASSWORD}"
-psql -h "\${DB_HOST}" -p "\${DB_PORT:-5432}" -U "\${DB_USER}" -d postgres -v ON_ERROR_STOP=1 <<SQL
-SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '\${DB_NAME:-novel_agent}' AND pid <> pg_backend_pid();
-DROP DATABASE IF EXISTS \${DB_NAME:-novel_agent};
-CREATE DATABASE \${DB_NAME:-novel_agent};
-SQL
-echo "[reset] database \${DB_NAME:-novel_agent} recreated"
+run_psql() {
+  local sql="\$1"
+  if command -v psql >/dev/null 2>&1; then
+    PGPASSWORD="\${DB_PASSWORD}" psql -h "\${DB_HOST}" -p "\${DB_PORT}" -U "\${DB_USER}" -d postgres -v ON_ERROR_STOP=1 -c "\$sql"
+  else
+    docker run --rm -e PGPASSWORD="\${DB_PASSWORD}" postgres:16-alpine \
+      psql -h "\${DB_HOST}" -p "\${DB_PORT}" -U "\${DB_USER}" -d postgres -v ON_ERROR_STOP=1 -c "\$sql"
+  fi
+}
+run_psql "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '\${DB_NAME}' AND pid <> pg_backend_pid();"
+run_psql "DROP DATABASE IF EXISTS \${DB_NAME};"
+run_psql "CREATE DATABASE \${DB_NAME};"
+echo "[reset] database \${DB_NAME} recreated"
 EOF
 
 echo "[reset] === 3/6 同步 compose / nginx ==="
