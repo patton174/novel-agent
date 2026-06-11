@@ -51,6 +51,10 @@ public class ReplayGuardGatewayFilter implements GlobalFilter, Ordered {
             return chain.filter(exchange);
         }
 
+        if (Boolean.TRUE.equals(exchange.getAttribute(GatewayExchangeAttributes.REPLAY_GUARD_PASSED))) {
+            return chain.filter(exchange);
+        }
+
         long ts = ((Number) tsObj).longValue();
         long windowMs = properties.replayWindowSeconds() * 1000L;
         long now = Instant.now().toEpochMilli();
@@ -60,9 +64,15 @@ public class ReplayGuardGatewayFilter implements GlobalFilter, Ordered {
         }
 
         String nonce = String.valueOf(nonceObj);
-        if (!nonceStoreSupport.tryConsume(nonce, NONCE_TTL_SECONDS)) {
-            log.warn("duplicate nonce={}", nonce);
-            return reject(exchange, "REPLAY_NONCE");
+        synchronized (GatewayExchangeAttributes.replayGuardLock(exchange)) {
+            if (Boolean.TRUE.equals(exchange.getAttribute(GatewayExchangeAttributes.REPLAY_GUARD_PASSED))) {
+                return chain.filter(exchange);
+            }
+            if (!nonceStoreSupport.tryConsume(nonce, NONCE_TTL_SECONDS)) {
+                log.warn("duplicate nonce={} trace={}", nonce, exchange.getRequest().getHeaders().getFirst("X-Trace-Id"));
+                return reject(exchange, "REPLAY_NONCE");
+            }
+            exchange.getAttributes().put(GatewayExchangeAttributes.REPLAY_GUARD_PASSED, Boolean.TRUE);
         }
 
         return chain.filter(exchange);
