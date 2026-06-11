@@ -65,7 +65,7 @@ for img in novel-agent/gateway novel-agent/auth novel-agent/consumer novel-agent
   novel-agent/content novel-agent/pyai; do
   docker rmi "\$img:latest" 2>/dev/null || true
 done
-echo "[reset] \$role containers/images cleaned"
+echo "[reset] ${role} containers/images cleaned"
 EOF
 done
 
