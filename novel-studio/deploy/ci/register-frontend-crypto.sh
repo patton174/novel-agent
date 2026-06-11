@@ -31,35 +31,50 @@ load_internal_service_key() {
     echo "$key"
     return 0
   fi
-  for file in "$ENV_FILE" "$OLD_ENV_WORKER"; do
-    for name in AGENT_INTERNAL_SERVICE_KEY INTERNAL_SERVICE_KEY; do
-      key="$(remote_env_get "$file" "$name")"
-      if [[ -n "$key" ]]; then
-        echo "$key"
-        return 0
-      fi
-    done
-  done
-  key="$(remote_env_get "$NEW_ENV_MW" AGENT_INTERNAL_SERVICE_KEY)"
-  [[ -n "$key" ]] && { echo "$key"; return 0; }
-  key="$(remote_env_get "$OLD_ENV_MW" AGENT_INTERNAL_SERVICE_KEY)"
-  [[ -n "$key" ]] && { echo "$key"; return 0; }
-  if [[ -n "${MW_HOST:-}" ]]; then
-    local mw_ssh="${MW_SSH:-root@${MW_HOST}}"
-    key="$(deploy_ssh "$mw_ssh" "grep -E '^AGENT_INTERNAL_SERVICE_KEY=' '$OLD_ENV_MW' 2>/dev/null | head -1 | cut -d= -f2- || true" 2>/dev/null || true)"
-    [[ -n "$key" ]] && { echo "$key"; return 0; }
-  fi
-  key="$(deploy_ssh "$REMOTE" bash -s <<'EOS'
+  key="$(deploy_ssh "$REMOTE" bash -s <<EOS
 set -euo pipefail
-CID=$(docker ps -q --filter name=novel-studio 2>/dev/null | head -1)
-if [[ -n "$CID" ]]; then
-  docker exec "$CID" printenv AGENT_INTERNAL_SERVICE_KEY 2>/dev/null \
-    || docker exec "$CID" printenv INTERNAL_SERVICE_KEY 2>/dev/null \
-    || true
+RDIR='$RDIR'
+read_key_from() {
+  local f="\$1"
+  [[ -f "\$f" ]] || return 0
+  local line
+  line=\$(grep -E '^(AGENT_INTERNAL_SERVICE_KEY|INTERNAL_SERVICE_KEY)=' "\$f" 2>/dev/null | head -1 || true)
+  [[ -n "\$line" ]] || return 0
+  local v="\${line#*=}"
+  v="\${v%\"}"; v="\${v#\"}"
+  if [[ -n "\$v" ]]; then echo "\$v"; fi
+}
+for f in \\
+  "\$RDIR/novel-studio/deploy/docker/.env.worker" \\
+  "\$RDIR/novel-agent/agent-document/docs/deploy/docker/.env.worker" \\
+  "\$RDIR/novel-agent/agent-document/docs/deploy/docker/.env.mw" \\
+  "\$RDIR/python-ai/.env"; do
+  v=\$(read_key_from "\$f")
+  if [[ -n "\$v" ]]; then echo "\$v"; exit 0; fi
+done
+CID=\$(docker ps -qf 'ancestor=novel-studio/studio:latest' 2>/dev/null | head -1)
+if [[ -z "\$CID" ]]; then
+  CID=\$(docker ps --format '{{.Names}}' 2>/dev/null | grep -E 'novel-studio' | grep -v frontend | head -1 || true)
+  [[ -n "\$CID" ]] && CID=\$(docker ps -qf "name=\$CID" | head -1)
+fi
+if [[ -n "\$CID" ]]; then
+  docker inspect "\$CID" --format '{{range .Config.Env}}{{println .}}{{end}}' 2>/dev/null \\
+    | grep -E '^(AGENT_INTERNAL_SERVICE_KEY|INTERNAL_SERVICE_KEY)=' \\
+    | head -1 | cut -d= -f2- || true
 fi
 EOS
 )"
-  [[ -n "$key" ]] && { echo "$key"; return 0; }
+  key="$(echo "$key" | tr -d '\r' | head -1)"
+  if [[ -n "$key" ]]; then
+    echo "$key"
+    return 0
+  fi
+  if [[ -n "${MW_HOST:-}" ]]; then
+    local mw_ssh="${MW_SSH:-root@${MW_HOST}}"
+    key="$(deploy_ssh "$mw_ssh" "grep -E '^AGENT_INTERNAL_SERVICE_KEY=' '$OLD_ENV_MW' 2>/dev/null | head -1 | cut -d= -f2- || true" 2>/dev/null || true)"
+    key="$(echo "$key" | tr -d '\r')"
+    [[ -n "$key" ]] && { echo "$key"; return 0; }
+  fi
   return 1
 }
 
@@ -69,6 +84,20 @@ if [[ -z "$AGENT_INTERNAL_SERVICE_KEY" ]]; then
   exit 1
 fi
 echo "[crypto-register] 已加载 internal service key"
+
+# 回写 Worker .env.worker，避免下次部署再找不到
+deploy_ssh "$REMOTE" bash -s <<EOF
+set -euo pipefail
+ENV_FILE='$ENV_FILE'
+KEY='${AGENT_INTERNAL_SERVICE_KEY}'
+mkdir -p "\$(dirname "\$ENV_FILE")"
+touch "\$ENV_FILE"
+if grep -q '^AGENT_INTERNAL_SERVICE_KEY=' "\$ENV_FILE" 2>/dev/null; then
+  sed -i "s|^AGENT_INTERNAL_SERVICE_KEY=.*|AGENT_INTERNAL_SERVICE_KEY=\${KEY}|" "\$ENV_FILE"
+else
+  echo "AGENT_INTERNAL_SERVICE_KEY=\${KEY}" >> "\$ENV_FILE"
+fi
+EOF
 
 PYTHON="${PYTHON:-python}"
 if ! command -v "$PYTHON" >/dev/null 2>&1; then
