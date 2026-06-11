@@ -2,8 +2,6 @@ server:
   port: ${SERVER_PORT:8082}
 
 spring:
-  main:
-    web-application-type: reactive
   data:
     redis:
       host: ${REDIS_HOST:localhost}

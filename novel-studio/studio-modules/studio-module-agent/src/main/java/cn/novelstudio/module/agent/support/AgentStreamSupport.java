@@ -5,6 +5,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 
+import jakarta.servlet.http.HttpServletResponse;
 import java.util.List;
 
 public final class AgentStreamSupport {
@@ -16,6 +17,13 @@ public final class AgentStreamSupport {
         response.getHeaders().setCacheControl(CacheControl.noCache());
         response.getHeaders().add(HttpHeaders.CONNECTION, "keep-alive");
         response.getHeaders().add("X-Accel-Buffering", "no");
+    }
+
+    public static void applySseHeaders(HttpServletResponse response) {
+        response.setContentType(MediaType.TEXT_EVENT_STREAM_VALUE);
+        response.setHeader(HttpHeaders.CACHE_CONTROL, CacheControl.noCache().getHeaderValue());
+        response.setHeader(HttpHeaders.CONNECTION, "keep-alive");
+        response.setHeader("X-Accel-Buffering", "no");
     }
 
     public static boolean isContentFrame(String frame) {

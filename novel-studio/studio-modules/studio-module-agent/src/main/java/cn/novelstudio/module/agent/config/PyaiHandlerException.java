@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.bind.support.WebExchangeBindException;
@@ -66,6 +67,16 @@ public class PyaiHandlerException {
         log.error("IllegalStateException: {}", ex.getMessage(), ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
             .body(Result.fail(ResultCode.ERROR));
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<Result<Void>> handleMethodArgumentNotValid(MethodArgumentNotValidException ex) {
+        String message = ex.getBindingResult().getFieldErrors().stream()
+            .findFirst()
+            .map(err -> err.getDefaultMessage() == null ? ResultCode.BAD_REQUEST.getDefaultMessage() : err.getDefaultMessage())
+            .orElse(ResultCode.BAD_REQUEST.getDefaultMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+            .body(Result.fail(ResultCode.BAD_REQUEST.getCode(), message));
     }
 
     @ExceptionHandler(WebExchangeBindException.class)

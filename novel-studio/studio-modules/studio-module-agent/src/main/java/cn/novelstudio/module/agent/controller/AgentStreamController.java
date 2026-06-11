@@ -6,19 +6,20 @@ import cn.novelstudio.module.agent.support.AgentStreamSsePrelude;
 import cn.novelstudio.module.agent.support.AgentStreamSupport;
 import cn.novelstudio.module.agent.support.PyaiRequestSupport;
 import jakarta.validation.Valid;
-import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.MediaType;
-import org.springframework.http.server.reactive.ServerHttpResponse;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ServerWebExchange;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 
 @RestController
@@ -32,33 +33,40 @@ public class AgentStreamController {
     }
 
     @PostMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Mono<Void> stream(
+    public ResponseEntity<StreamingResponseBody> stream(
         @Valid @RequestBody AgentStreamRequest request,
         @RequestHeader(name = PyaiRequestSupport.USER_ID_HEADER, required = false) String userIdHeader,
-        @RequestParam(name = "contentOnly", defaultValue = "false") boolean contentOnly,
-        ServerWebExchange exchange
+        @RequestParam(name = "contentOnly", defaultValue = "false") boolean contentOnly
     ) {
         Long userId = PyaiRequestSupport.parseUserId(userIdHeader);
-        ServerHttpResponse response = exchange.getResponse();
-        AgentStreamSupport.applySseHeaders(response);
-
         AgentStreamBiz.StreamFrames session = biz.streamFrames(userId, request, contentOnly);
+
+        ResponseEntity.BodyBuilder builder = ResponseEntity.ok()
+            .contentType(MediaType.TEXT_EVENT_STREAM)
+            .header("Cache-Control", "no-cache")
+            .header("Connection", "keep-alive")
+            .header("X-Accel-Buffering", "no");
         String quotaWarning = session.quotaWarningHeader();
         if (quotaWarning != null && !quotaWarning.isBlank()) {
-            response.getHeaders().set("X-Quota-Warning", quotaWarning);
+            builder.header("X-Quota-Warning", quotaWarning);
         }
 
-        DataBuffer prelude = response.bufferFactory()
-            .wrap(AgentStreamSsePrelude.connectedFrame().getBytes(StandardCharsets.UTF_8));
-        Flux<DataBuffer> upstream = session.frames()
-            .map(frame -> response.bufferFactory().wrap(frame.getBytes(StandardCharsets.UTF_8)))
-            .onErrorResume(ex -> Flux.fromIterable(AgentStreamSupport.errorFrames(ex))
-                .map(frame -> response.bufferFactory().wrap(frame.getBytes(StandardCharsets.UTF_8))));
+        StreamingResponseBody body = outputStream -> {
+            writeFrame(outputStream, AgentStreamSsePrelude.connectedFrame());
+            session.frames()
+                .onErrorResume(ex -> Flux.fromIterable(AgentStreamSupport.errorFrames(ex)))
+                .doOnNext(frame -> writeFrame(outputStream, frame))
+                .blockLast();
+        };
+        return builder.body(body);
+    }
 
-        Flux<Flux<DataBuffer>> flushed = Flux.concat(
-            Flux.just(Flux.just(prelude)),
-            upstream.map(chunk -> Flux.just(chunk))
-        );
-        return response.writeAndFlushWith(flushed);
+    private static void writeFrame(OutputStream outputStream, String frame) {
+        try {
+            outputStream.write(frame.getBytes(StandardCharsets.UTF_8));
+            outputStream.flush();
+        } catch (IOException ex) {
+            throw new UncheckedIOException(ex);
+        }
     }
 }
