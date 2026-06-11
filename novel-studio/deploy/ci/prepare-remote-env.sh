@@ -25,18 +25,34 @@ OLD="\$RDIR/$OLD_DOCKER_REL"
 NEW="\$RDIR/$NEW_DOCKER_REL"
 mkdir -p "\$NEW"
 
+env_get() {
+  local key="\$1" file="\$2"
+  [[ -f "\$file" ]] || return 0
+  grep -E "^\${key}=" "\$file" 2>/dev/null | head -1 | cut -d= -f2- | sed 's/^"//;s/"\$//'
+}
+
 if [[ "$role" == "worker" ]]; then
   if [[ -f "\$NEW/.env.worker" ]]; then
     echo "[prepare-env] worker .env.worker 已存在"
     exit 0
   fi
   [[ -f "\$OLD/.env.worker" ]] || { echo "[prepare-env] 缺少 \$OLD/.env.worker"; exit 1; }
-  set -a
-  # shellcheck disable=SC1091
-  source "\$OLD/.env.worker"
-  set +a
 
-  jdbc="\${SPRING_DATASOURCE_URL:-}"
+  MW_HOST="\$(env_get MW_HOST "\$OLD/.env.worker")"
+  HOST_IP="\$(env_get HOST_IP "\$OLD/.env.worker")"
+  WORKER_HOST="\$(env_get WORKER_HOST "\$OLD/.env.worker")"
+  SPRING_PROFILES_ACTIVE="\$(env_get SPRING_PROFILES_ACTIVE "\$OLD/.env.worker")"
+  FRONTEND_PORT="\$(env_get FRONTEND_PORT "\$OLD/.env.worker")"
+  jdbc="\$(env_get SPRING_DATASOURCE_URL "\$OLD/.env.worker")"
+  DB_USER="\$(env_get DB_USER "\$OLD/.env.worker")"
+  DB_PASSWORD="\$(env_get DB_PASSWORD "\$OLD/.env.worker")"
+  JWT_SECRET="\$(env_get JWT_SECRET "\$OLD/.env.worker")"
+  AGENT_INTERNAL_SERVICE_KEY="\$(env_get AGENT_INTERNAL_SERVICE_KEY "\$OLD/.env.worker")"
+  [[ -n "\$JWT_SECRET" ]] || JWT_SECRET="\$(env_get JWT_SECRET "\$OLD/.env.mw")"
+  [[ -n "\$AGENT_INTERNAL_SERVICE_KEY" ]] || AGENT_INTERNAL_SERVICE_KEY="\$(env_get AGENT_INTERNAL_SERVICE_KEY "\$OLD/.env.mw")"
+  PYTHON_MEM_LIMIT="\$(env_get PYTHON_MEM_LIMIT "\$OLD/.env.worker")"
+  MAILTRAP_TOKEN="\$(env_get MAILTRAP_TOKEN "\$OLD/.env.worker")"
+
   if [[ -n "\$jdbc" ]]; then
     rest="\${jdbc#jdbc:postgresql://}"
     DB_HOST="\${rest%%:*}"
@@ -45,11 +61,26 @@ if [[ "$role" == "worker" ]]; then
     DB_NAME="\${rest#*/}"
     DB_NAME="\${DB_NAME%%\?*}"
   fi
+  [[ -n "\$(env_get SPRING_DATASOURCE_USERNAME "\$OLD/.env.worker")" ]] && DB_USER="\$(env_get SPRING_DATASOURCE_USERNAME "\$OLD/.env.worker")"
+  [[ -n "\$(env_get SPRING_DATASOURCE_PASSWORD "\$OLD/.env.worker")" ]] && DB_PASSWORD="\$(env_get SPRING_DATASOURCE_PASSWORD "\$OLD/.env.worker")"
+
   DB_HOST="\${DB_HOST:-\$MW_HOST}"
   DB_PORT="\${DB_PORT:-5432}"
   DB_NAME="\${DB_NAME:-novel_agent}"
-  DB_USER="\${DB_USER:-\${SPRING_DATASOURCE_USERNAME:-postgres}}"
-  DB_PASSWORD="\${DB_PASSWORD:-\${SPRING_DATASOURCE_PASSWORD:-}}"
+  DB_USER="\${DB_USER:-postgres}"
+  REDIS_HOST="\$(env_get REDIS_HOST "\$OLD/.env.worker")"
+  REDIS_HOST="\${REDIS_HOST:-\$(env_get SPRING_DATA_REDIS_HOST "\$OLD/.env.worker")}"
+  REDIS_HOST="\${REDIS_HOST:-\$MW_HOST}"
+  REDIS_PASSWORD="\$(env_get REDIS_PASSWORD "\$OLD/.env.worker")"
+  REDIS_PASSWORD="\${REDIS_PASSWORD:-\$(env_get SPRING_DATA_REDIS_PASSWORD "\$OLD/.env.worker")}"
+  RABBITMQ_HOST="\$(env_get RABBITMQ_HOST "\$OLD/.env.worker")"
+  RABBITMQ_HOST="\${RABBITMQ_HOST:-\$(env_get SPRING_RABBITMQ_HOST "\$OLD/.env.worker")}"
+  RABBITMQ_HOST="\${RABBITMQ_HOST:-\$MW_HOST}"
+  RABBITMQ_USER="\$(env_get RABBITMQ_USER "\$OLD/.env.worker")"
+  RABBITMQ_USER="\${RABBITMQ_USER:-\$(env_get SPRING_RABBITMQ_USERNAME "\$OLD/.env.worker")}"
+  RABBITMQ_USER="\${RABBITMQ_USER:-guest}"
+  RABBITMQ_PASSWORD="\$(env_get RABBITMQ_PASSWORD "\$OLD/.env.worker")"
+  RABBITMQ_PASSWORD="\${RABBITMQ_PASSWORD:-\$(env_get SPRING_RABBITMQ_PASSWORD "\$OLD/.env.worker")}"
 
   cat > "\$NEW/.env.worker" <<ENVEOF
 MW_HOST=\${MW_HOST}
@@ -62,20 +93,20 @@ DB_PORT=\${DB_PORT}
 DB_NAME=\${DB_NAME}
 DB_USER=\${DB_USER}
 DB_PASSWORD=\${DB_PASSWORD}
-REDIS_HOST=\${REDIS_HOST:-\${SPRING_DATA_REDIS_HOST:-\$MW_HOST}}
-REDIS_PORT=\${REDIS_PORT:-6379}
-REDIS_PASSWORD=\${REDIS_PASSWORD:-\${SPRING_DATA_REDIS_PASSWORD:-}}
-RABBITMQ_HOST=\${RABBITMQ_HOST:-\${SPRING_RABBITMQ_HOST:-\$MW_HOST}}
-RABBITMQ_PORT=\${RABBITMQ_PORT:-5672}
-RABBITMQ_USER=\${RABBITMQ_USER:-\${SPRING_RABBITMQ_USERNAME:-guest}}
-RABBITMQ_PASSWORD=\${RABBITMQ_PASSWORD:-\${SPRING_RABBITMQ_PASSWORD:-}}
+REDIS_HOST=\${REDIS_HOST}
+REDIS_PORT=6379
+REDIS_PASSWORD=\${REDIS_PASSWORD}
+RABBITMQ_HOST=\${RABBITMQ_HOST}
+RABBITMQ_PORT=5672
+RABBITMQ_USER=\${RABBITMQ_USER}
+RABBITMQ_PASSWORD=\${RABBITMQ_PASSWORD}
 JWT_SECRET=\${JWT_SECRET}
 AGENT_INTERNAL_SERVICE_KEY=\${AGENT_INTERNAL_SERVICE_KEY}
 PYTHON_AI_BASE_URL=http://python-lb:8000
 JAVA_OPTS_STUDIO=-Xms128m -Xmx448m -XX:MaxMetaspaceSize=192m -XX:+UseSerialGC -XX:TieredStopAtLevel=1 -XX:+ExitOnOutOfMemoryError -Dfile.encoding=UTF-8
 JAVA_MEM_LIMIT_STUDIO=640m
 PYTHON_MEM_LIMIT=\${PYTHON_MEM_LIMIT:-304m}
-MAILTRAP_TOKEN=\${MAILTRAP_TOKEN:-}
+MAILTRAP_TOKEN=\${MAILTRAP_TOKEN}
 ENVEOF
   echo "[prepare-env] 已从旧 worker env 生成 \$NEW/.env.worker"
   exit 0
@@ -83,27 +114,26 @@ fi
 
 if [[ -f "\$NEW/.env.mw" ]]; then
   echo "[prepare-env] mw .env.mw 已存在"
-  exit 0
-fi
-if [[ -f "\$OLD/.env.mw" ]]; then
-  set -a
-  # shellcheck disable=SC1091
-  source "\$OLD/.env.mw"
-  set +a
-fi
-DOMAIN="\${DOMAIN:-www.novel-agent.cn}"
-DOMAIN_ALIASES="\${DOMAIN_ALIASES:-novel-agent.cn}"
-CERT_NAME="\${CERT_NAME:-\$DOMAIN}"
-cat > "\$NEW/.env.mw" <<ENVEOF
+else
+  MW_HOST="\$(env_get MW_HOST "\$OLD/.env.mw")"
+  WORKER_HOST="\$(env_get WORKER_HOST "\$OLD/.env.mw")"
+  DOMAIN="\$(env_get DOMAIN "\$OLD/.env.mw")"
+  DOMAIN_ALIASES="\$(env_get DOMAIN_ALIASES "\$OLD/.env.mw")"
+  CERT_NAME="\$(env_get CERT_NAME "\$OLD/.env.mw")"
+  DOMAIN="\${DOMAIN:-www.novel-agent.cn}"
+  DOMAIN_ALIASES="\${DOMAIN_ALIASES:-novel-agent.cn}"
+  CERT_NAME="\${CERT_NAME:-\$DOMAIN}"
+  cat > "\$NEW/.env.mw" <<ENVEOF
 MW_HOST=\${MW_HOST}
 WORKER_HOST=\${WORKER_HOST}
 DOMAIN=\${DOMAIN}
 DOMAIN_ALIASES=\${DOMAIN_ALIASES}
 CERT_NAME=\${CERT_NAME}
-ENTRY_PORT=\${ENTRY_PORT:-80}
-ENTRY_SSL_PORT=\${ENTRY_SSL_PORT:-443}
+ENTRY_PORT=80
+ENTRY_SSL_PORT=443
 ENVEOF
-echo "[prepare-env] 已生成 \$NEW/.env.mw"
+  echo "[prepare-env] 已生成 \$NEW/.env.mw"
+fi
 
 if [[ ! -e "\$NEW/letsencrypt" && -d "\$OLD/letsencrypt" ]]; then
   ln -sfn "\$OLD/letsencrypt" "\$NEW/letsencrypt"

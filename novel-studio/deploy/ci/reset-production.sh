@@ -73,8 +73,17 @@ deploy_ssh "$(ci_remote worker)" bash -s <<EOF
 set -euo pipefail
 ENV_FILE='$WORKER_RDIR/$NEW_DOCKER_REL/.env.worker'
 [[ -f "\$ENV_FILE" ]] || { echo "缺少 \$ENV_FILE（请从 .env.worker.example 复制并填写）"; exit 1; }
-# shellcheck disable=SC1090
-source "\$ENV_FILE"
+env_get() {
+  local key="\$1" file="\$2"
+  grep -E "^\${key}=" "\$file" 2>/dev/null | head -1 | cut -d= -f2- | sed 's/^"//;s/"\$//'
+}
+DB_HOST="\$(env_get DB_HOST "\$ENV_FILE")"
+DB_PORT="\$(env_get DB_PORT "\$ENV_FILE")"
+DB_NAME="\$(env_get DB_NAME "\$ENV_FILE")"
+DB_USER="\$(env_get DB_USER "\$ENV_FILE")"
+DB_PASSWORD="\$(env_get DB_PASSWORD "\$ENV_FILE")"
+DB_PORT="\${DB_PORT:-5432}"
+DB_NAME="\${DB_NAME:-novel_agent}"
 export PGPASSWORD="\${DB_PASSWORD}"
 psql -h "\${DB_HOST}" -p "\${DB_PORT:-5432}" -U "\${DB_USER}" -d postgres -v ON_ERROR_STOP=1 <<SQL
 SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '\${DB_NAME:-novel_agent}' AND pid <> pg_backend_pid();
