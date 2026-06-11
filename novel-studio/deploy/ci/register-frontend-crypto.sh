@@ -16,15 +16,59 @@ REMOTE="$(ci_remote worker)"
 RDIR="$(ci_remote_dir worker)"
 ENV_FILE="$RDIR/$DOCKER_REL/.env.worker"
 COMPOSE_FILE="$RDIR/$DOCKER_REL/docker-compose.worker.yml"
+OLD_ENV_WORKER="$RDIR/novel-agent/agent-document/docs/deploy/docker/.env.worker"
+OLD_ENV_MW="$RDIR/novel-agent/agent-document/docs/deploy/docker/.env.mw"
+NEW_ENV_MW="$RDIR/$DOCKER_REL/.env.mw"
 
-AGENT_INTERNAL_SERVICE_KEY="${AGENT_INTERNAL_SERVICE_KEY:-${INTERNAL_SERVICE_KEY:-}}"
-if [[ -z "$AGENT_INTERNAL_SERVICE_KEY" ]]; then
-  AGENT_INTERNAL_SERVICE_KEY="$(deploy_ssh "$REMOTE" "grep -E '^AGENT_INTERNAL_SERVICE_KEY=' '$ENV_FILE' 2>/dev/null | head -1 | cut -d= -f2- || true")"
+remote_env_get() {
+  local file="$1" key="$2"
+  deploy_ssh "$REMOTE" "grep -E '^${key}=' '${file}' 2>/dev/null | head -1 | cut -d= -f2- | sed 's/^\"//;s/\"\$//' || true" 2>/dev/null || true
+}
+
+load_internal_service_key() {
+  local key="${AGENT_INTERNAL_SERVICE_KEY:-${INTERNAL_SERVICE_KEY:-}}"
+  if [[ -n "$key" ]]; then
+    echo "$key"
+    return 0
+  fi
+  for file in "$ENV_FILE" "$OLD_ENV_WORKER"; do
+    for name in AGENT_INTERNAL_SERVICE_KEY INTERNAL_SERVICE_KEY; do
+      key="$(remote_env_get "$file" "$name")"
+      if [[ -n "$key" ]]; then
+        echo "$key"
+        return 0
+      fi
+    done
+  done
+  key="$(remote_env_get "$NEW_ENV_MW" AGENT_INTERNAL_SERVICE_KEY)"
+  [[ -n "$key" ]] && { echo "$key"; return 0; }
+  key="$(remote_env_get "$OLD_ENV_MW" AGENT_INTERNAL_SERVICE_KEY)"
+  [[ -n "$key" ]] && { echo "$key"; return 0; }
+  if [[ -n "${MW_HOST:-}" ]]; then
+    local mw_ssh="${MW_SSH:-root@${MW_HOST}}"
+    key="$(deploy_ssh "$mw_ssh" "grep -E '^AGENT_INTERNAL_SERVICE_KEY=' '$OLD_ENV_MW' 2>/dev/null | head -1 | cut -d= -f2- || true" 2>/dev/null || true)"
+    [[ -n "$key" ]] && { echo "$key"; return 0; }
+  fi
+  key="$(deploy_ssh "$REMOTE" bash -s <<'EOS'
+set -euo pipefail
+CID=$(docker ps -q --filter name=novel-studio 2>/dev/null | head -1)
+if [[ -n "$CID" ]]; then
+  docker exec "$CID" printenv AGENT_INTERNAL_SERVICE_KEY 2>/dev/null \
+    || docker exec "$CID" printenv INTERNAL_SERVICE_KEY 2>/dev/null \
+    || true
 fi
+EOS
+)"
+  [[ -n "$key" ]] && { echo "$key"; return 0; }
+  return 1
+}
+
+AGENT_INTERNAL_SERVICE_KEY="$(load_internal_service_key || true)"
 if [[ -z "$AGENT_INTERNAL_SERVICE_KEY" ]]; then
-  echo "[crypto-register] 请在 Worker $ENV_FILE 设置 AGENT_INTERNAL_SERVICE_KEY"
+  echo "[crypto-register] 无法加载 AGENT_INTERNAL_SERVICE_KEY（检查 Worker/MW .env 或 novel-studio 容器）"
   exit 1
 fi
+echo "[crypto-register] 已加载 internal service key"
 
 PYTHON="${PYTHON:-python}"
 if ! command -v "$PYTHON" >/dev/null 2>&1; then

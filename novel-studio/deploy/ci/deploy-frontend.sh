@@ -52,6 +52,9 @@ if ! docker compose version >/dev/null 2>&1; then COMPOSE="docker-compose"; fi
 EOF
 
 echo "[deploy-frontend] 注册 crypto-runtime.json ..."
-bash "$CI_DIR/register-frontend-crypto.sh"
+if ! bash "$CI_DIR/register-frontend-crypto.sh"; then
+  echo "[deploy-frontend] 警告: crypto 注册失败，前端已部署但安全 bootstrap 可能未就绪"
+  exit 1
+fi
 
 echo "[deploy-frontend] 完成"
