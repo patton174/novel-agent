@@ -151,7 +151,13 @@ EOS
   sleep 3
 done
 if [[ "$ready" -ne 1 ]]; then
-  echo "[crypto-register] novel-studio 健康检查超时"
+  echo "[crypto-register] novel-studio 就绪探测超时，最近日志："
+  deploy_ssh "$REMOTE" bash -s <<'EOS' || true
+cid=$(docker ps -aq --filter "ancestor=novel-studio/studio:latest" | head -1)
+if [[ -n "$cid" ]]; then
+  docker logs --tail 80 "$cid" 2>&1 || true
+fi
+EOS
   exit 1
 fi
 
