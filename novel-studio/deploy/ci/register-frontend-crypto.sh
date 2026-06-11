@@ -130,12 +130,24 @@ print(json.dumps({'host': os.environ.get('WORKER_HOST', 'worker'), 'ttlSec': 172
 
 echo "[crypto-register] 等待 novel-studio 就绪..."
 ready=0
-for attempt in $(seq 1 40); do
-  if deploy_ssh "$REMOTE" "curl -sf http://127.0.0.1:8080/actuator/health >/dev/null 2>&1"; then
+for attempt in $(seq 1 60); do
+  if deploy_ssh "$REMOTE" bash -s <<'EOS'
+set -euo pipefail
+for url in \
+  "http://127.0.0.1:8080/actuator/health/liveness" \
+  "http://127.0.0.1:8080/actuator/health"; do
+  code=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 2 --max-time 8 "$url" 2>/dev/null || echo "000")
+  if [[ "$code" == "200" ]]; then exit 0; fi
+  # 聚合 health 在 DB/Redis 未就绪时常返回 503，但 Tomcat 已监听
+  if [[ "$url" == *"/actuator/health" && "$code" == "503" ]]; then exit 0; fi
+done
+exit 1
+EOS
+  then
     ready=1
     break
   fi
-  echo "[crypto-register] health 未就绪 $attempt/40 ..."
+  echo "[crypto-register] 未就绪 $attempt/60 ..."
   sleep 3
 done
 if [[ "$ready" -ne 1 ]]; then
