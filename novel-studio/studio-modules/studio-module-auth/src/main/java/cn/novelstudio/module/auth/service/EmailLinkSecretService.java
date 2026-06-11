@@ -29,14 +29,18 @@ public class EmailLinkSecretService {
 
     @PostConstruct
     void seedFromEnvIfMissing() {
-        String redisVal = redisTemplate.opsForValue().get(SecurityRedisKeys.EMAIL_LINK_SECRET_KEY);
-        if (redisVal != null && !redisVal.isBlank()) {
-            return;
-        }
-        String env = normalize(properties.getEmailLinkSecret());
-        if (!env.isBlank()) {
-            redisTemplate.opsForValue().set(SecurityRedisKeys.EMAIL_LINK_SECRET_KEY, env);
-            log.info("email link secret seeded from env");
+        try {
+            String redisVal = redisTemplate.opsForValue().get(SecurityRedisKeys.EMAIL_LINK_SECRET_KEY);
+            if (redisVal != null && !redisVal.isBlank()) {
+                return;
+            }
+            String env = normalize(properties.getEmailLinkSecret());
+            if (!env.isBlank()) {
+                redisTemplate.opsForValue().set(SecurityRedisKeys.EMAIL_LINK_SECRET_KEY, env);
+                log.info("email link secret seeded from env");
+            }
+        } catch (Exception ex) {
+            log.warn("email link secret seed skipped: {}", ex.getMessage());
         }
     }
 

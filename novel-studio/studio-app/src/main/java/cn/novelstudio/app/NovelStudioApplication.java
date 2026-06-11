@@ -2,6 +2,8 @@ package cn.novelstudio.app;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
@@ -11,7 +13,14 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  * 与 {@code novel-agent} 微服务完全独立：无 Nacos、无 Gateway 多进程；
  * 生产 profile 启用 {@code auth.client-security} Servlet Filter 链（AES / 路由混淆 / Sign）。
  */
-@SpringBootApplication(scanBasePackages = "cn.novelstudio")
+@SpringBootApplication
+@ComponentScan(
+    basePackages = "cn.novelstudio",
+    excludeFilters = @ComponentScan.Filter(
+        type = FilterType.REGEX,
+        pattern = "cn\\.novelstudio\\.platform\\.web\\.clientsecurity\\..*"
+    )
+)
 @EnableScheduling
 @EnableAsync
 public class NovelStudioApplication {

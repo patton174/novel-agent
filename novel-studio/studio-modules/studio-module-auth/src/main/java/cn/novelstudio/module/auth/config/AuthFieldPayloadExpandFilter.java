@@ -10,7 +10,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
@@ -27,7 +27,7 @@ import java.util.Set;
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE + 20)
 @RequiredArgsConstructor
-@ConditionalOnProperty(prefix = "auth.client-security", name = "field-encryption", havingValue = "false", matchIfMissing = true)
+@ConditionalOnExpression("${auth.client-security.enabled:false} == true && ${auth.client-security.field-encryption:false} == false")
 public class AuthFieldPayloadExpandFilter extends OncePerRequestFilter {
 
     private static final Set<String> EXPAND_PREFIXES = Set.of(

@@ -54,6 +54,29 @@ cd "\$RDIR/\$DOCKER_REL"
 COMPOSE="docker compose"
 if ! docker compose version >/dev/null 2>&1; then COMPOSE="docker-compose"; fi
 \$COMPOSE -f "\$COMPOSE_FILE" --env-file "\$ENV_FILE" up -d --no-deps --no-build novel-studio
+echo "[deploy-studio] waiting for health..."
+ready=0
+for attempt in \$(seq 1 60); do
+  if curl -sf --connect-timeout 2 --max-time 8 "http://127.0.0.1:8080/actuator/health/liveness" 2>/dev/null | grep -q UP; then
+    ready=1
+    break
+  fi
+  if curl -sf --connect-timeout 2 --max-time 8 "http://127.0.0.1:8080/actuator/health" 2>/dev/null | grep -q '"status":"UP"'; then
+    ready=1
+    break
+  fi
+  echo "[deploy-studio] not ready \$attempt/60"
+  sleep 3
+done
+if [[ "\$ready" -ne 1 ]]; then
+  echo "[deploy-studio] ERROR: novel-studio failed to become healthy"
+  \$COMPOSE -f "\$COMPOSE_FILE" --env-file "\$ENV_FILE" ps novel-studio || true
+  CID=\$(docker ps -aq --filter "name=novel-studio-worker-novel-studio" | head -1)
+  if [[ -n "\$CID" ]]; then
+    docker logs --tail 120 "\$CID" 2>&1 || true
+  fi
+  exit 1
+fi
 echo "[deploy-studio] done"
 \$COMPOSE -f "\$COMPOSE_FILE" --env-file "\$ENV_FILE" ps novel-studio
 EOF
