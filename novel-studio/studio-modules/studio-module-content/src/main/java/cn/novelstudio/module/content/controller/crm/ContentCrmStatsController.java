@@ -2,7 +2,7 @@ package cn.novelstudio.module.content.controller.crm;
 
 import cn.novelstudio.kernel.base.Result;
 import cn.novelstudio.platform.web.BaseController;
-import cn.novelstudio.module.content.service.crm.biz.CrmStatsBiz;
+import cn.novelstudio.module.content.service.crm.biz.ContentCrmStatsBiz;
 import cn.novelstudio.module.content.service.crm.resp.CrmStatsOverviewResp;
 import cn.novelstudio.module.content.service.crm.resp.CrmStatsTrendResp;
 import lombok.RequiredArgsConstructor;
@@ -14,9 +14,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/content/crm/stats")
 @RequiredArgsConstructor
-public class CrmStatsController extends BaseController {
+public class ContentCrmStatsController extends BaseController {
 
-    private final CrmStatsBiz biz;
+    private final ContentCrmStatsBiz biz;
 
     @GetMapping("/overview")
     public Result<CrmStatsOverviewResp> overview() {

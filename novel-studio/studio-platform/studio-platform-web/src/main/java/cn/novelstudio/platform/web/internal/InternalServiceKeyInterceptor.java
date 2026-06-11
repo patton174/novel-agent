@@ -1,6 +1,5 @@
-package cn.novelstudio.module.billing.support;
+package cn.novelstudio.platform.web.internal;
 
-import cn.novelstudio.platform.web.internal.InternalServiceGuard;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;

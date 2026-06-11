@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import cn.novelstudio.module.content.dto.ContentMessageDTO;
 import cn.novelstudio.module.content.dto.SessionDTO;
-import cn.novelstudio.module.content.config.AgentRuntimeProperties;
+import cn.novelstudio.module.content.config.ContentRuntimeProperties;
 import cn.novelstudio.module.content.service.agent.AgentSessionPgService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -32,7 +32,7 @@ public class ContentSessionService {
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
     private final AgentSessionPgService agentSessionPgService;
-    private final AgentRuntimeProperties runtimeProperties;
+    private final ContentRuntimeProperties runtimeProperties;
 
     public void upsertSession(String userId, String sessionId, String title) {
         upsertSession(userId, sessionId, title, null);

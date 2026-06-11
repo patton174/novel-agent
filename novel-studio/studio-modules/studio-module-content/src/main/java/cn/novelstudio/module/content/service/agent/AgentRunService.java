@@ -2,7 +2,7 @@ package cn.novelstudio.module.content.service.agent;
 
 import cn.novelstudio.module.content.agent.AgentRunStateMachine;
 import cn.novelstudio.module.content.agent.AgentRunStatus;
-import cn.novelstudio.module.content.config.AgentRuntimeProperties;
+import cn.novelstudio.module.content.config.ContentRuntimeProperties;
 import cn.novelstudio.module.content.dto.agent.*;
 import cn.novelstudio.module.content.entity.agent.*;
 import cn.novelstudio.kernel.tools.IdWorker;
@@ -25,7 +25,7 @@ public class AgentRunService {
     private final AgentRunCommandRepository commandRepository;
     private final AgentSessionPgService sessionPgService;
     private final AgentRunStateMachine stateMachine;
-    private final AgentRuntimeProperties runtimeProperties;
+    private final ContentRuntimeProperties runtimeProperties;
     private final RunLivePublisher runLivePublisher;
 
     @Transactional

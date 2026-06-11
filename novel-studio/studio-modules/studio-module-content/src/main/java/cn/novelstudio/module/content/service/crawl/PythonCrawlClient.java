@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import cn.novelstudio.module.content.config.AgentRuntimeProperties;
+import cn.novelstudio.module.content.config.ContentRuntimeProperties;
 import cn.novelstudio.module.content.entity.CrawlJobEntity;
 import cn.novelstudio.module.content.entity.CrawlSiteEntity;
 import cn.novelstudio.module.content.service.crawl.dto.CrawlJobDTO;
@@ -26,7 +26,7 @@ public class PythonCrawlClient {
     public PythonCrawlClient(
         RestClient pythonRestClient,
         ObjectMapper objectMapper,
-        AgentRuntimeProperties runtimeProperties
+        ContentRuntimeProperties runtimeProperties
     ) {
         this.restClient = pythonRestClient;
         this.objectMapper = objectMapper;

@@ -25,6 +25,12 @@ remote_env_get() {
   deploy_ssh "$REMOTE" "grep -E '^${key}=' '${file}' 2>/dev/null | head -1 | cut -d= -f2- | sed 's/^\"//;s/\"\$//' || true" 2>/dev/null || true
 }
 
+security_enabled="$(remote_env_get "$ENV_FILE" CLIENT_SECURITY_ENABLED)"
+if [[ "${security_enabled,,}" != "true" ]]; then
+  echo "[crypto-register] CLIENT_SECURITY_ENABLED!=true，跳过 crypto-runtime 注册"
+  exit 0
+fi
+
 load_internal_service_key() {
   local key="${AGENT_INTERNAL_SERVICE_KEY:-${INTERNAL_SERVICE_KEY:-}}"
   if [[ -n "$key" ]]; then

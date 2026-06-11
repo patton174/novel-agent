@@ -13,7 +13,7 @@ import java.time.ZoneOffset;
 
 @Component
 @RequiredArgsConstructor
-public class CrmStatsBiz extends BaseBiz {
+public class AuthCrmStatsBiz extends BaseBiz {
 
     private final UserInfoDao userInfoDao;
 

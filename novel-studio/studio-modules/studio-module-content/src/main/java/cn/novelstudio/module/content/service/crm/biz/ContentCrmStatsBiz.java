@@ -26,7 +26,7 @@ import java.util.Map;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class CrmStatsBiz extends BaseBiz {
+public class ContentCrmStatsBiz extends BaseBiz {
 
     private static final int DEFAULT_TREND_DAYS = 30;
     private static final int MAX_TREND_DAYS = 365;

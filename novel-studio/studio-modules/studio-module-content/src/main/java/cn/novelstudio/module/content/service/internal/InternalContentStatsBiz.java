@@ -1,7 +1,7 @@
 package cn.novelstudio.module.content.service.internal;
 
 import cn.novelstudio.kernel.biz.BaseBiz;
-import cn.novelstudio.module.content.service.crm.biz.CrmStatsBiz;
+import cn.novelstudio.module.content.service.crm.biz.ContentCrmStatsBiz;
 import cn.novelstudio.module.content.service.crm.resp.CrmStatsOverviewResp;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class InternalContentStatsBiz extends BaseBiz {
 
-    private final CrmStatsBiz crmStatsBiz;
+    private final ContentCrmStatsBiz crmStatsBiz;
 
     public CrmStatsOverviewResp overview() {
         return crmStatsBiz.overview().data();

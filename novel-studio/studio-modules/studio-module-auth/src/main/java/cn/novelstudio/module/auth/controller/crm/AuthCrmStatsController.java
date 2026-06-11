@@ -1,6 +1,6 @@
 package cn.novelstudio.module.auth.controller.crm;
 
-import cn.novelstudio.module.auth.service.crm.biz.CrmStatsBiz;
+import cn.novelstudio.module.auth.service.crm.biz.AuthCrmStatsBiz;
 import cn.novelstudio.module.auth.service.crm.resp.CrmPlatformStatsResp;
 import cn.novelstudio.kernel.base.Result;
 import cn.novelstudio.platform.web.BaseController;
@@ -12,9 +12,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/auth/crm/stats")
 @RequiredArgsConstructor
-public class CrmStatsController extends BaseController {
+public class AuthCrmStatsController extends BaseController {
 
-    private final CrmStatsBiz biz;
+    private final AuthCrmStatsBiz biz;
 
     @GetMapping("/overview")
     public Result<CrmPlatformStatsResp> overview() {

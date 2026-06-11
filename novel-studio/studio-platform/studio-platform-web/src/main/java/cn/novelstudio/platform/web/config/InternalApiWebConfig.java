@@ -1,5 +1,6 @@
-package cn.novelstudio.module.content.config;
+package cn.novelstudio.platform.web.config;
 
+import cn.novelstudio.platform.web.internal.InternalServiceKeyInterceptor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;

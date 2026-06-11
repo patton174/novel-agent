@@ -5,13 +5,16 @@ on:
     branches: [main, master]
     paths:
       - 'frontend/**'
-      - 'novel-studio/deploy/**'
+      - 'novel-studio/deploy/ci/build-frontend.sh'
+      - 'novel-studio/deploy/ci/deploy-frontend.sh'
+      - 'novel-studio/deploy/ci/register-frontend-crypto.sh'
+      - 'novel-studio/deploy/docker/nginx-frontend-worker.conf.template'
       - '.github/workflows/deploy-frontend.yml'
   workflow_dispatch:
 
 concurrency:
-  group: deploy-frontend
-  cancel-in-progress: false
+  group: deploy-frontend-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   deploy:

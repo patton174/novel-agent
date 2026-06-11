@@ -5,13 +5,19 @@ on:
     branches: [main, master]
     paths:
       - 'novel-studio/**'
-      - 'novel-studio/deploy/**'
       - '.github/workflows/deploy-novel-studio.yml'
+    paths-ignore:
+      # 仅影响前端 / python-ai 的 deploy 脚本，由对应 workflow 负责
+      - 'novel-studio/deploy/ci/build-frontend.sh'
+      - 'novel-studio/deploy/ci/deploy-frontend.sh'
+      - 'novel-studio/deploy/ci/register-frontend-crypto.sh'
+      - 'novel-studio/deploy/docker/nginx-frontend-worker.conf.template'
+      - 'novel-studio/deploy/ci/deploy-python-ai.sh'
   workflow_dispatch:
 
 concurrency:
-  group: deploy-novel-studio
-  cancel-in-progress: false
+  group: deploy-novel-studio-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   deploy:

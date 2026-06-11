@@ -4,7 +4,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
-public class AgentRuntimeProperties {
+public class ContentRuntimeProperties {
 
     @Value("${agent.runtime.pg-session-dual-write:false}")
     private boolean pgSessionDualWrite;

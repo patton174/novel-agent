@@ -2,7 +2,7 @@ package cn.novelstudio.module.auth.service.internal;
 
 import cn.novelstudio.module.auth.repository.AuthUserRepository;
 import cn.novelstudio.module.auth.service.crm.resp.CrmPlatformStatsResp;
-import cn.novelstudio.module.auth.service.crm.biz.CrmStatsBiz;
+import cn.novelstudio.module.auth.service.crm.biz.AuthCrmStatsBiz;
 import cn.novelstudio.kernel.biz.BaseBiz;
 import cn.novelstudio.kernel.tools.DateParseSupport;
 import cn.novelstudio.module.auth.dto.UserTrendPointDto;
@@ -25,7 +25,7 @@ public class InternalUserStatsBiz extends BaseBiz {
     private static final int DEFAULT_TREND_DAYS = 30;
     private static final int MAX_TREND_DAYS = 365;
 
-    private final CrmStatsBiz crmStatsBiz;
+    private final AuthCrmStatsBiz crmStatsBiz;
     private final AuthUserRepository authUserRepository;
 
     public UserStatsOverviewDto overview() {

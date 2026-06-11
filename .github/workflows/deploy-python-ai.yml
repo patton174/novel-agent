@@ -5,15 +5,15 @@ on:
     branches: [main, master]
     paths:
       - 'python-ai/**'
+      - 'novel-studio/deploy/ci/deploy-python-ai.sh'
       - 'novel-agent/agent-document/docs/deploy/docker/Dockerfile.python-ai'
       - 'novel-agent/agent-document/docs/deploy/ci/build-python-ai.sh'
-      - 'novel-studio/deploy/**'
       - '.github/workflows/deploy-python-ai.yml'
   workflow_dispatch:
 
 concurrency:
-  group: deploy-python-ai
-  cancel-in-progress: false
+  group: deploy-python-ai-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   deploy:
