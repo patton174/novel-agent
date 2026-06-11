@@ -2,8 +2,10 @@ package cn.novelstudio.app;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
@@ -14,12 +16,20 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  * 生产 profile 启用 {@code auth.client-security} Servlet Filter 链（AES / 路由混淆 / Sign）。
  */
 @SpringBootApplication
+@EnableJpaRepositories(basePackages = "cn.novelstudio")
+@EntityScan(basePackages = "cn.novelstudio")
 @ComponentScan(
     basePackages = "cn.novelstudio",
-    excludeFilters = @ComponentScan.Filter(
-        type = FilterType.REGEX,
-        pattern = "cn\\.novelstudio\\.platform\\.web\\.clientsecurity\\..*"
-    )
+    excludeFilters = {
+        @ComponentScan.Filter(
+            type = FilterType.REGEX,
+            pattern = "cn\\.novelstudio\\.platform\\.web\\.clientsecurity\\..*"
+        ),
+        @ComponentScan.Filter(
+            type = FilterType.REGEX,
+            pattern = "cn\\.novelstudio\\..*\\.com\\.novel\\.agent\\..*"
+        )
+    }
 )
 @EnableScheduling
 @EnableAsync
