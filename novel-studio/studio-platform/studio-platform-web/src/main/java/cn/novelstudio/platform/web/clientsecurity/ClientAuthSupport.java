@@ -39,7 +39,8 @@ public class ClientAuthSupport {
 
     private static final List<String> CRYPTO_EXEMPT = Arrays.asList(
         "/actuator/health",
-        "/api/auth/crypto-config"
+        "/api/auth/crypto-config",
+        "/internal/"
     );
 
     private static final List<String> WS_PATHS = Arrays.asList(
@@ -56,6 +57,9 @@ public class ClientAuthSupport {
     }
 
     public boolean isWhitePath(String path) {
+        if (path.startsWith("/internal/")) {
+            return true;
+        }
         return WHITE_LIST.stream().anyMatch(path::startsWith);
     }
 

@@ -53,7 +53,7 @@ EOF
 
 echo "[deploy-frontend] 注册 crypto-runtime.json ..."
 if ! bash "$CI_DIR/register-frontend-crypto.sh"; then
-  echo "[deploy-frontend] 警告: crypto 注册失败，前端已部署但安全 bootstrap 可能未就绪"
+  echo "[deploy-frontend] 警告: crypto 注册失败，请检查 novel-studio /internal API 或 AGENT_INTERNAL_SERVICE_KEY"
   exit 1
 fi
 
