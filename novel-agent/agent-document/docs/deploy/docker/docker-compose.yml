@@ -58,7 +58,9 @@ services:
         JAR: agent-content-1.0.0-SNAPSHOT.jar
     image: novel-agent/content:latest
     restart: unless-stopped
-    environment: *java-env
+    environment:
+      <<: *java-env
+      SERVER_PORT: "8091"
     ports:
       - "8091:8091"
     networks:

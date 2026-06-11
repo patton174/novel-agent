@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# 三机 WireGuard 星型组网：国内机 hub 10.66.0.1，MW 10.66.0.2，Worker 10.66.0.3
+# 三机 WireGuard：CN hub（10.66.0.1 爬虫）+ MW↔Worker 直连（业务 API，低延迟）
+# 勿再用星型 AllowedIPs=10.66.0.0/24 全走 CN，否则 MW↔Worker ~540ms
 # 在 MW 上执行（可 SSH 到 CN / Worker）：
 #   CN_HOST=118.89.123.201 MW_HOST=107.150.112.140 WORKER_HOST=47.80.80.224 bash setup-wireguard-mesh.sh
 set -eu
@@ -119,39 +120,38 @@ chmod 600 /etc/wireguard/wg0.conf"
 }
 
 write_client_config() {
-  local role="$1" addr="$2" hub_pub="$3" client_priv="$4" endpoint="$5"
+  local role="$1" addr="$2" hub_pub="$3" client_priv="$4" cn_host="$5"
+  local other_pub="$6" other_ep="$7" other_ip="$8" listen_port="$9"
   local host="$MW_HOST"
   [[ "$role" == "worker" ]] && host="$WORKER_HOST"
-  if is_mw_host "$host"; then
-    cat > /etc/wireguard/wg0.conf <<EOF
-[Interface]
+  local conf
+  conf="[Interface]
 Address = ${addr}/24
 PrivateKey = ${client_priv}
-PostUp = sysctl -w net.ipv4.ip_forward=1
+ListenPort = ${listen_port}
 
 [Peer]
-# CN hub
+# CN hub（仅爬虫）
 PublicKey = ${hub_pub}
-Endpoint = ${endpoint}:${WG_PORT}
-AllowedIPs = ${WG_NET}.0/24
+Endpoint = ${cn_host}:${WG_PORT}
+AllowedIPs = ${WG_NET}.1/32
 PersistentKeepalive = 25
-EOF
+
+[Peer]
+# MW/Worker 直连
+PublicKey = ${other_pub}
+Endpoint = ${other_ep}
+AllowedIPs = ${other_ip}/32
+PersistentKeepalive = 25
+"
+  if is_mw_host "$host"; then
+    printf '%s' "$conf" > /etc/wireguard/wg0.conf
     chmod 600 /etc/wireguard/wg0.conf
   else
-    ssh -o BatchMode=yes -o ConnectTimeout=20 -o StrictHostKeyChecking=accept-new "root@${host}" "cat > /etc/wireguard/wg0.conf <<EOF
-[Interface]
-Address = ${addr}/24
-PrivateKey = ${client_priv}
-PostUp = sysctl -w net.ipv4.ip_forward=1
-
-[Peer]
-# CN hub
-PublicKey = ${hub_pub}
-Endpoint = ${endpoint}:${WG_PORT}
-AllowedIPs = ${WG_NET}.0/24
-PersistentKeepalive = 25
+    ssh -o BatchMode=yes -o ConnectTimeout=20 -o StrictHostKeyChecking=accept-new "root@${host}" "cat > /etc/wireguard/wg0.conf" <<EOF
+$conf
 EOF
-chmod 600 /etc/wireguard/wg0.conf"
+    ssh -o BatchMode=yes -o ConnectTimeout=20 -o StrictHostKeyChecking=accept-new "root@${host}" "chmod 600 /etc/wireguard/wg0.conf"
   fi
 }
 
@@ -187,8 +187,8 @@ WK_PRIV="$(privkey "$WORKER_HOST")"
 
 echo "[wg] 写入配置 ..."
 write_cn_config "$MW_PUB" "$WK_PUB" "$CN_PRIV"
-write_client_config "mw" "${WG_NET}.2" "$CN_PUB" "$MW_PRIV" "$CN_HOST"
-write_client_config "worker" "${WG_NET}.3" "$CN_PUB" "$WK_PRIV" "$CN_HOST"
+write_client_config "mw" "${WG_NET}.2" "$CN_PUB" "$MW_PRIV" "$CN_HOST" "$WK_PUB" "${WORKER_HOST}:51821" "${WG_NET}.3" "51822"
+write_client_config "worker" "${WG_NET}.3" "$CN_PUB" "$WK_PRIV" "$CN_HOST" "$MW_PUB" "${MW_HOST}:51822" "${WG_NET}.2" "51821"
 
 echo "[wg] 启动隧道 ..."
 enable_wg "$CN_HOST"

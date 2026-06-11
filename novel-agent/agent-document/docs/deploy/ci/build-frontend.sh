@@ -7,6 +7,10 @@ CI_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$CI_DIR/_common.sh"
 
 cd "$REPO_ROOT/frontend"
+export VITE_SECURITY_AES="${VITE_SECURITY_AES:-true}"
+export VITE_ROUTE_OBFUSCATION="${VITE_ROUTE_OBFUSCATION:-true}"
+export VITE_FIELD_ENCRYPTION="${VITE_FIELD_ENCRYPTION:-true}"
+export VITE_SECURITY_ENCRYPT_STREAM="${VITE_SECURITY_ENCRYPT_STREAM:-true}"
 corepack enable 2>/dev/null || true
 if command -v pnpm >/dev/null 2>&1; then
   pnpm install --frozen-lockfile

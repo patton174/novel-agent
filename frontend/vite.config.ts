@@ -25,6 +25,10 @@ export default defineConfig(({ mode }) => {
     env.VITE_FIELD_ENCRYPTION ||
     process.env.VITE_FIELD_ENCRYPTION ||
     (mode === 'production' ? 'true' : 'false')
+  const securityEncryptStream =
+    env.VITE_SECURITY_ENCRYPT_STREAM ||
+    process.env.VITE_SECURITY_ENCRYPT_STREAM ||
+    (mode === 'production' ? 'true' : 'false')
   const directPython =
     env.VITE_DIRECT_PYTHON === 'true' || env.VITE_DIRECT_PYTHON === '1'
   const remoteGateway = env.VITE_REMOTE_GATEWAY?.replace(/\/$/, '')
@@ -128,6 +132,7 @@ export default defineConfig(({ mode }) => {
       'import.meta.env.VITE_SECURITY_AES': JSON.stringify(securityAes),
       'import.meta.env.VITE_ROUTE_OBFUSCATION': JSON.stringify(routeObfuscation),
       'import.meta.env.VITE_FIELD_ENCRYPTION': JSON.stringify(fieldEncryption),
+      'import.meta.env.VITE_SECURITY_ENCRYPT_STREAM': JSON.stringify(securityEncryptStream),
     },
     test: {
       globals: false,

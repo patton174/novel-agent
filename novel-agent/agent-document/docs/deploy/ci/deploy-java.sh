@@ -70,6 +70,10 @@ if ! docker compose version >/dev/null 2>&1; then COMPOSE="docker-compose"; fi
 \$COMPOSE -f "\$COMPOSE_FILE" --env-file "\$ENV_FILE" up -d --no-deps --no-build "\$COMPOSE_SVC"
 echo "[deploy-java] done \$COMPOSE_SVC"
 \$COMPOSE -f "\$COMPOSE_FILE" --env-file "\$ENV_FILE" ps "\$COMPOSE_SVC"
+if [[ '$COMPOSE_SVC' == 'agent-gateway' ]]; then
+  \$COMPOSE -f "\$COMPOSE_FILE" --env-file "\$ENV_FILE" restart entry-nginx 2>/dev/null || true
+  echo "[deploy-java] restarted entry-nginx (gateway IP may have changed)"
+fi
 EOF
 
 if [[ "$SERVICE" == "auth" ]]; then

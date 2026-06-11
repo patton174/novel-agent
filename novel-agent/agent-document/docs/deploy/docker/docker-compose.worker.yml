@@ -58,6 +58,8 @@ services:
     restart: unless-stopped
     environment:
       <<: *java-env
+      # Nacos server.port 在启动后才刷新，须显式指定以免默认 8080 与 8091 映射不一致
+      SERVER_PORT: "8091"
       JAVA_OPTS: ${JAVA_OPTS_CONTENT:--Xms64m -Xmx228m -XX:MaxMetaspaceSize=120m -XX:+UseSerialGC -XX:TieredStopAtLevel=1 -XX:+ExitOnOutOfMemoryError -Dfile.encoding=UTF-8}
       SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
       SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
