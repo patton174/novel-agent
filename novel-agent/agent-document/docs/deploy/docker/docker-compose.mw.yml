@@ -91,11 +91,12 @@ services:
     restart: unless-stopped
     environment:
       <<: *java-env
-      JAVA_OPTS: ${JAVA_OPTS_CONSUMER:--Xms48m -Xmx140m -XX:MaxMetaspaceSize=72m -XX:+UseSerialGC -XX:TieredStopAtLevel=1 -XX:+ExitOnOutOfMemoryError -Dfile.encoding=UTF-8}
+      JAVA_OPTS: ${JAVA_OPTS_CONSUMER:--Xms64m -Xmx220m -XX:MaxMetaspaceSize=96m -XX:+UseSerialGC -XX:TieredStopAtLevel=1 -XX:+ExitOnOutOfMemoryError -Dfile.encoding=UTF-8}
+      SERVER_PORT: "8090"
       AGENT_PYTHON_BASE_URL: ${AGENT_PYTHON_BASE_URL:-http://python-lb:8000}
       AGENT_CONTENT_BASE_URL: ${AGENT_CONTENT_BASE_URL:-http://${WORKER_HOST}:8091}
       NACOS_SERVER_ADDR: ${NACOS_SERVER_ADDR_DOCKER:-nacos-standalone:8848}
-    mem_limit: ${JAVA_MEM_LIMIT_CONSUMER:-224m}
+    mem_limit: ${JAVA_MEM_LIMIT_CONSUMER:-320m}
     ports:
       - "8090:8090"
     networks:

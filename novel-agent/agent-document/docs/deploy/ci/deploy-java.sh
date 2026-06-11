@@ -41,6 +41,7 @@ echo "[deploy-java] $SERVICE → $TARGET ($IMAGE) sha=$SHA"
 deploy_ssh "$REMOTE" "mkdir -p '$STAGE' '$RDIR/backups'"
 deploy_scp "$LOCAL_JAR" "$REMOTE:$STAGE/app.jar"
 deploy_scp "$DEPLOY_DIR/Dockerfile.java.runtime" "$REMOTE:$STAGE/Dockerfile"
+deploy_scp "$DEPLOY_DIR/$COMPOSE_FILE" "$REMOTE:$RDIR/$DOCKER_REL/$COMPOSE_FILE"
 
 deploy_ssh "$REMOTE" bash -s <<EOF
 set -euo pipefail
