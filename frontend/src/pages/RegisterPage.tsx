@@ -4,8 +4,13 @@ import { fetchPublicSiteSettings } from '@/api/billingApi'
 import { register, sendEmailCode } from '../utils/authApi'
 import { getFingerprint } from '../security/fingerprint'
 import SliderCaptchaModal from '../components/auth/SliderCaptchaModal'
-import { NovelAiWordmark } from '../components/marketing/NovelAiWordmark'
+import { AuthShell } from '../components/auth/AuthShell'
+import { AuthSubmitButton } from '../components/auth/AuthSubmitButton'
+import { AuthSpinner } from '../components/auth/AuthSpinner'
+import { authFieldClass } from '../components/auth/authFieldClass'
+import { appToast } from '@/stores/appToastStore'
 import { useFormDraft } from '../hooks/useJourneyTracker'
+import { cn } from '@/lib/utils'
 
 const RegisterPage: React.FC = () => {
   const navigate = useNavigate()
@@ -16,7 +21,6 @@ const RegisterPage: React.FC = () => {
     confirmPassword: '',
     emailCode: '',
   })
-  const [errorMessage, setErrorMessage] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [captchaOpen, setCaptchaOpen] = useState(false)
   const [sendingCode, setSendingCode] = useState(false)
@@ -38,7 +42,6 @@ const RegisterPage: React.FC = () => {
 
   const handleChange = (name: string, value: string) => {
     setFormData({ ...formData, [name]: value })
-    if (errorMessage) setErrorMessage('')
   }
 
   const startCooldown = () => {
@@ -56,23 +59,23 @@ const RegisterPage: React.FC = () => {
 
   const handleSendCodeClick = () => {
     if (!formData.email.trim()) {
-      setErrorMessage('请先填写邮箱')
+      appToast.error('请先填写邮箱')
       return
     }
-    if (cooldown > 0) return
+    if (cooldown > 0 || sendingCode) return
     setCaptchaOpen(true)
   }
 
   const handleCaptchaVerified = async (captchaToken: string) => {
     setSendingCode(true)
-    setErrorMessage('')
     try {
       const fingerprint = await getFingerprint()
       await sendEmailCode(formData.email.trim(), captchaToken, fingerprint)
       setCodeSent(true)
       startCooldown()
+      appToast.success('验证码已发送至您的邮箱')
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : '验证码发送失败')
+      appToast.error(err instanceof Error ? err.message : '验证码发送失败')
     } finally {
       setSendingCode(false)
     }
@@ -82,221 +85,210 @@ const RegisterPage: React.FC = () => {
     e.preventDefault()
     const { username, email, password, confirmPassword, emailCode } = formData
     if (!username.trim() || !email.trim() || !password.trim() || !confirmPassword.trim() || !emailCode.trim()) {
-      setErrorMessage('请填写所有字段')
+      appToast.error('请填写所有字段')
       return
     }
     if (password !== confirmPassword) {
-      setErrorMessage('两次密码不一致')
+      appToast.error('两次密码不一致')
       return
     }
     if (!/^\d{6}$/.test(emailCode.trim())) {
-      setErrorMessage('请输入6位邮箱验证码')
+      appToast.error('请输入 6 位邮箱验证码')
       return
     }
     setSubmitting(true)
-    setErrorMessage('')
     try {
       await register(username.trim(), password, email.trim(), emailCode.trim())
       clearDraft()
+      appToast.success('注册成功，请登录')
       navigate('/login')
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : '注册失败')
+      appToast.error(err instanceof Error ? err.message : '注册失败')
     } finally {
       setSubmitting(false)
     }
   }
 
+  const sendCodeLabel = () => {
+    if (sendingCode) return null
+    if (cooldown > 0) return `${cooldown}s`
+    return codeSent ? '重新发送' : '获取验证码'
+  }
+
   return (
-    <div className="min-h-screen bg-background flex">
-      {/* Left Side - Marketing Info */}
-      <div className="hidden lg:flex flex-col justify-between w-1/2 bg-primary text-white p-12 relative overflow-hidden">
-        {/* Decorative background elements */}
-        <div className="absolute top-[-10%] left-[-10%] w-[120%] h-[120%] bg-gradient-to-br from-white/10 to-transparent rounded-full blur-[100px] pointer-events-none" />
-        <div className="absolute bottom-0 right-0 w-full h-[50%] bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
-
-        <div className="relative z-10">
-          <Link to="/" className="inline-block hover:opacity-80 transition-opacity">
-            <NovelAiWordmark size="md" animate={false} className="text-white" />
-          </Link>
-        </div>
-
-        <div className="relative z-10 space-y-6 max-w-lg">
-          <h1 className="text-4xl font-bold leading-tight">
-            开启您的<br />智能创作之旅
-          </h1>
-          <p className="text-lg text-white/80 leading-relaxed">
-            加入我们，体验前所未有的小说创作方式。AI 助手将成为您最得力的合伙人，助您突破创作瓶颈。
-          </p>
-          <div className="space-y-4 pt-4">
-            <div className="flex items-center gap-3 text-white/90">
-              <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-sm">✓</div>
-              <span>每月免费赠送 10,000 Tokens</span>
-            </div>
-            <div className="flex items-center gap-3 text-white/90">
-              <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-sm">✓</div>
-              <span>完整的世界观记忆与大纲推演</span>
-            </div>
-            <div className="flex items-center gap-3 text-white/90">
-              <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-sm">✓</div>
-              <span>多端同步，随时随地创作</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="relative z-10 text-sm text-white/60">
-          © {new Date().getFullYear()} Novel Agent. All rights reserved.
-        </div>
-      </div>
-
-      {/* Right Side - Form */}
-      <div className="flex-1 flex flex-col justify-center items-center p-6 lg:p-12 relative">
-        <Link to="/" className="lg:hidden mb-8 hover:opacity-80 transition-opacity">
-          <NovelAiWordmark size="md" animate={false} />
-        </Link>
-
-        <div className="w-full max-w-[360px]">
-          <div className="mb-6">
-            <h2 className="text-2xl font-bold text-foreground mb-2">创建账号</h2>
-            <p className="text-sm text-muted-foreground">只需几步，即可开始体验</p>
-          </div>
-
-          {registrationClosed ? (
-            <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-6 text-center dark:border-amber-900/50 dark:bg-amber-950/30">
-              <p className="text-sm font-medium text-amber-900 dark:text-amber-100">注册功能暂时关闭</p>
-              <p className="mt-2 text-xs text-amber-800/80 dark:text-amber-200/70">
-                平台正在维护中，暂不接受新用户注册。如有疑问请联系管理员。
-              </p>
-              <Link
-                to="/login"
-                className="mt-4 inline-block text-sm font-medium text-primary hover:underline"
-              >
-                已有账号？去登录
-              </Link>
-            </div>
-          ) : (
-          <form onSubmit={handleSubmit} className="space-y-3">
-            <div className="space-y-1">
-              <label htmlFor="reg-username" className="text-sm font-medium text-foreground">
-                用户名
-              </label>
-              <input
-                id="reg-username"
-                name="username"
-                autoComplete="username"
-                placeholder="yourname"
-                value={formData.username}
-                onChange={(e) => handleChange('username', e.target.value)}
-                className="w-full h-10 px-3 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm"
-              />
-            </div>
-            
-            <div className="space-y-1">
-              <label htmlFor="reg-email" className="text-sm font-medium text-foreground">
-                邮箱
-              </label>
-              <input
-                id="reg-email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                placeholder="your@email.com"
-                value={formData.email}
-                onChange={(e) => handleChange('email', e.target.value)}
-                className="w-full h-10 px-3 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label htmlFor="reg-email-code" className="text-sm font-medium text-foreground">
-                邮箱验证码
-              </label>
-              <div className="flex gap-2">
-                <input
-                  id="reg-email-code"
-                  name="emailCode"
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                  placeholder="6 位验证码"
-                  value={formData.emailCode}
-                  onChange={(e) => handleChange('emailCode', e.target.value.replace(/\D/g, '').slice(0, 6))}
-                  className="flex-1 h-10 px-3 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm"
-                />
-                <button
-                  type="button"
-                  disabled={sendingCode || cooldown > 0}
-                  onClick={handleSendCodeClick}
-                  className="h-10 px-4 rounded-lg border border-border bg-surface hover:bg-surface-hover text-sm font-medium text-foreground transition-all disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-                >
-                  {cooldown > 0 ? `${cooldown}s` : codeSent ? '重新发送' : '获取验证码'}
-                </button>
+    <AuthShell
+      title="创建账号"
+      subtitle="只需几步，即可开始体验"
+      marketing={{
+        headline: (
+          <>
+            开启您的
+            <br />
+            智能创作之旅
+          </>
+        ),
+        description:
+          '加入我们，体验前所未有的小说创作方式。AI 助手将成为您最得力的合伙人，助您突破创作瓶颈。',
+        footer: (
+          <div className="space-y-3.5 pt-2">
+            {['每月免费赠送 10,000 Tokens', '完整的世界观记忆与大纲推演', '多端同步，随时随地创作'].map((text) => (
+              <div key={text} className="flex items-center gap-3 text-white/90 text-sm">
+                <div className="w-6 h-6 rounded-full bg-white/15 flex items-center justify-center text-xs shrink-0">
+                  ✓
+                </div>
+                <span>{text}</span>
               </div>
-            </div>
-
-            <div className="space-y-1">
-              <label htmlFor="reg-password" className="text-sm font-medium text-foreground">
-                密码
-              </label>
-              <input
-                id="reg-password"
-                name="password"
-                type="password"
-                autoComplete="new-password"
-                placeholder="至少 6 位"
-                value={formData.password}
-                onChange={(e) => handleChange('password', e.target.value)}
-                className="w-full h-10 px-3 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label htmlFor="reg-confirm" className="text-sm font-medium text-foreground">
-                确认密码
-              </label>
-              <input
-                id="reg-confirm"
-                name="confirmPassword"
-                type="password"
-                autoComplete="new-password"
-                placeholder="再次输入密码"
-                value={formData.confirmPassword}
-                onChange={(e) => handleChange('confirmPassword', e.target.value)}
-                className="w-full h-10 px-3 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm"
-              />
-            </div>
-
-            {errorMessage && <p className="text-sm text-danger pt-1">{errorMessage}</p>}
-
-            <button 
-              type="submit" 
-              disabled={submitting}
-              className="w-full h-10 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary-hover transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-4"
-            >
-              {submitting ? '注册中…' : '注册'}
-            </button>
-            
-            <p className="text-xs text-center text-muted-foreground mt-3">
-              注册即表示同意<Link to="/terms" className="hover:underline">《用户协议》</Link>和<Link to="/privacy" className="hover:underline">《隐私政策》</Link>
-            </p>
-          </form>
-          )}
-
-          {!registrationClosed && (
-          <div className="mt-6 text-center text-sm text-muted-foreground">
+            ))}
+          </div>
+        ),
+      }}
+      footer={
+        !registrationClosed ? (
+          <>
             已有账号？{' '}
             <Link to="/login" className="text-primary font-medium hover:underline">
               登录
             </Link>
-          </div>
-          )}
+          </>
+        ) : undefined
+      }
+    >
+      {registrationClosed ? (
+        <div className="rounded-xl border border-amber-200/80 bg-amber-50/90 px-5 py-6 text-center dark:border-amber-900/50 dark:bg-amber-950/30">
+          <p className="text-sm font-medium text-amber-900 dark:text-amber-100">注册功能暂时关闭</p>
+          <p className="mt-2 text-xs text-amber-800/80 dark:text-amber-200/70 leading-relaxed">
+            平台正在维护中，暂不接受新用户注册。如有疑问请联系管理员。
+          </p>
+          <Link to="/login" className="mt-4 inline-block text-sm font-medium text-primary hover:underline">
+            已有账号？去登录
+          </Link>
         </div>
-      </div>
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-3.5">
+          <div className="space-y-1.5">
+            <label htmlFor="reg-username" className="text-sm font-medium text-foreground">
+              用户名
+            </label>
+            <input
+              id="reg-username"
+              name="username"
+              autoComplete="username"
+              placeholder="yourname"
+              value={formData.username}
+              onChange={(e) => handleChange('username', e.target.value)}
+              className={authFieldClass}
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label htmlFor="reg-email" className="text-sm font-medium text-foreground">
+              邮箱
+            </label>
+            <input
+              id="reg-email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              placeholder="your@email.com"
+              value={formData.email}
+              onChange={(e) => handleChange('email', e.target.value)}
+              className={authFieldClass}
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label htmlFor="reg-email-code" className="text-sm font-medium text-foreground">
+              邮箱验证码
+            </label>
+            <div className="flex gap-2">
+              <input
+                id="reg-email-code"
+                name="emailCode"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                placeholder="6 位验证码"
+                value={formData.emailCode}
+                onChange={(e) => handleChange('emailCode', e.target.value.replace(/\D/g, '').slice(0, 6))}
+                className={cn(authFieldClass, 'flex-1')}
+              />
+              <button
+                type="button"
+                disabled={sendingCode || cooldown > 0}
+                onClick={handleSendCodeClick}
+                className={cn(
+                  'h-11 min-w-[108px] px-4 rounded-xl border text-sm font-medium transition-all duration-200',
+                  'border-border bg-surface hover:bg-surface-hover text-foreground',
+                  'disabled:opacity-50 disabled:cursor-not-allowed',
+                  sendingCode && 'border-primary/30 bg-primary/5',
+                )}
+              >
+                {sendingCode ? (
+                  <span className="flex items-center justify-center gap-1.5">
+                    <AuthSpinner size="sm" />
+                    发送中
+                  </span>
+                ) : (
+                  sendCodeLabel()
+                )}
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label htmlFor="reg-password" className="text-sm font-medium text-foreground">
+              密码
+            </label>
+            <input
+              id="reg-password"
+              name="password"
+              type="password"
+              autoComplete="new-password"
+              placeholder="至少 6 位"
+              value={formData.password}
+              onChange={(e) => handleChange('password', e.target.value)}
+              className={authFieldClass}
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label htmlFor="reg-confirm" className="text-sm font-medium text-foreground">
+              确认密码
+            </label>
+            <input
+              id="reg-confirm"
+              name="confirmPassword"
+              type="password"
+              autoComplete="new-password"
+              placeholder="再次输入密码"
+              value={formData.confirmPassword}
+              onChange={(e) => handleChange('confirmPassword', e.target.value)}
+              className={authFieldClass}
+            />
+          </div>
+
+          <AuthSubmitButton loading={submitting} loadingText="注册中…" className="mt-3">
+            注册
+          </AuthSubmitButton>
+
+          <p className="text-xs text-center text-muted-foreground pt-1">
+            注册即表示同意
+            <Link to="/terms" className="hover:underline text-foreground/80">
+              《用户协议》
+            </Link>
+            和
+            <Link to="/privacy" className="hover:underline text-foreground/80">
+              《隐私政策》
+            </Link>
+          </p>
+        </form>
+      )}
 
       <SliderCaptchaModal
         open={captchaOpen}
         onClose={() => setCaptchaOpen(false)}
         onVerified={handleCaptchaVerified}
       />
-    </div>
+    </AuthShell>
   )
 }
 

@@ -1,149 +1,70 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import styled from 'styled-components'
+import { AnimatePresence, motion } from 'framer-motion'
 import { fetchSliderCaptcha, verifySliderCaptcha } from '../../utils/authApi'
 import type { SliderCaptchaChallenge } from '../../utils/authApi'
-import { palette } from '../../styles/theme'
-
-const Overlay = styled.div`
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.55);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-`
-
-const Panel = styled.div`
-  width: min(360px, 92vw);
-  background: ${palette.bgElevated};
-  border-radius: 12px;
-  padding: 16px;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
-`
-
-const Title = styled.h3`
-  margin: 0 0 12px;
-  font-size: 16px;
-  color: ${palette.text};
-`
-
-const ImageWrap = styled.div<{ $width: number; $height: number }>`
-  position: relative;
-  width: ${(p) => p.$width}px;
-  max-width: 100%;
-  height: ${(p) => p.$height}px;
-  margin: 0 auto 12px;
-  overflow: hidden;
-  border-radius: 8px;
-  user-select: none;
-`
-
-const BgImg = styled.img`
-  width: 100%;
-  height: 100%;
-  display: block;
-`
-
-const PuzzleImg = styled.img<{ $x: number; $y: number }>`
-  position: absolute;
-  left: ${(p) => p.$x}px;
-  top: ${(p) => p.$y}px;
-  width: 44px;
-  height: 44px;
-  pointer-events: none;
-`
-
-const Track = styled.div`
-  position: relative;
-  height: 42px;
-  background: rgba(255, 255, 255, 0.06);
-  border-radius: 21px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-`
-
-const Handle = styled.div<{ $x: number }>`
-  position: absolute;
-  left: ${(p) => p.$x}px;
-  top: 3px;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: ${palette.accent};
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
-  cursor: grab;
-  touch-action: none;
-`
-
-const Hint = styled.p`
-  margin: 8px 0 0;
-  font-size: 12px;
-  color: ${palette.textSecondary};
-  text-align: center;
-`
-
-const ErrorText = styled.p`
-  margin: 8px 0 0;
-  font-size: 13px;
-  color: #f87171;
-  text-align: center;
-`
-
-const Actions = styled.div`
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 12px;
-`
-
-const Btn = styled.button`
-  border: none;
-  border-radius: 8px;
-  padding: 8px 14px;
-  cursor: pointer;
-  font-size: 13px;
-`
+import { appToast } from '@/stores/appToastStore'
+import { AuthSpinner } from './AuthSpinner'
+import { cn } from '@/lib/utils'
 
 const SLIDER_HEIGHT = 150
 const PUZZLE_SIZE = 44
 
+type Phase = 'loading' | 'ready' | 'verifying' | 'success'
+
 interface Props {
   open: boolean
   onClose: () => void
-  onVerified: (captchaToken: string) => void
+  onVerified: (captchaToken: string) => void | Promise<void>
 }
 
 export const SliderCaptchaModal: React.FC<Props> = ({ open, onClose, onVerified }) => {
   const [challenge, setChallenge] = useState<SliderCaptchaChallenge | null>(null)
   const [offsetX, setOffsetX] = useState(0)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const [phase, setPhase] = useState<Phase>('loading')
+  const [imagesReady, setImagesReady] = useState(false)
   const dragging = useRef(false)
   const trackRef = useRef<HTMLDivElement>(null)
+  const loadedCount = useRef(0)
+
+  const maxOffset = challenge ? Math.max(0, challenge.sliderWidth - PUZZLE_SIZE - 4) : 0
+  const busy = phase === 'loading' || phase === 'verifying' || phase === 'success'
+
+  const resetLocal = () => {
+    setChallenge(null)
+    setOffsetX(0)
+    setImagesReady(false)
+    loadedCount.current = 0
+    dragging.current = false
+  }
 
   const loadChallenge = useCallback(async () => {
-    setLoading(true)
-    setError('')
-    setOffsetX(0)
+    setPhase('loading')
+    resetLocal()
     try {
       const data = await fetchSliderCaptcha()
       setChallenge(data)
+      setPhase('ready')
     } catch (err) {
-      setError(err instanceof Error ? err.message : '验证码加载失败')
-    } finally {
-      setLoading(false)
+      const msg = err instanceof Error ? err.message : '验证码加载失败'
+      appToast.error(msg)
+      onClose()
     }
-  }, [])
+  }, [onClose])
 
   useEffect(() => {
-    if (open) {
-      void loadChallenge()
-    }
+    if (open) void loadChallenge()
+    else resetLocal()
   }, [open, loadChallenge])
 
-  const maxOffset = challenge ? Math.max(0, challenge.sliderWidth - PUZZLE_SIZE - 4) : 0
+  const onImageLoaded = () => {
+    loadedCount.current += 1
+    if (loadedCount.current >= 2) {
+      setImagesReady(true)
+    }
+  }
 
   const updateOffset = (clientX: number) => {
+    if (busy) return
     const track = trackRef.current
     if (!track) return
     const rect = track.getBoundingClientRect()
@@ -152,67 +73,202 @@ export const SliderCaptchaModal: React.FC<Props> = ({ open, onClose, onVerified 
   }
 
   const finishDrag = async () => {
-    if (!dragging.current || !challenge) return
+    if (!dragging.current || !challenge || busy) return
     dragging.current = false
-    setLoading(true)
-    setError('')
+    setPhase('verifying')
     try {
       const token = await verifySliderCaptcha(challenge.captchaId, Math.round(offsetX))
-      onVerified(token)
+      setPhase('success')
+      await new Promise((r) => setTimeout(r, 420))
+      await onVerified(token)
       onClose()
     } catch (err) {
-      setError(err instanceof Error ? err.message : '验证失败')
+      const msg = err instanceof Error ? err.message : '验证失败，请重试'
+      appToast.error(msg)
       void loadChallenge()
-    } finally {
-      setLoading(false)
     }
   }
 
-  if (!open) return null
-
   return (
-    <Overlay onClick={onClose}>
-      <Panel onClick={(e) => e.stopPropagation()}>
-        <Title>安全验证</Title>
-        {challenge ? (
-          <ImageWrap $width={challenge.sliderWidth} $height={SLIDER_HEIGHT}>
-            <BgImg src={`data:image/png;base64,${challenge.backgroundImage}`} alt="" draggable={false} />
-            <PuzzleImg
-              src={`data:image/png;base64,${challenge.puzzleImage}`}
-              alt=""
-              $x={offsetX}
-              $y={challenge.puzzleY}
-              draggable={false}
-            />
-          </ImageWrap>
-        ) : null}
-        <Track
-          ref={trackRef}
-          onPointerDown={(e) => {
-            dragging.current = true
-            updateOffset(e.clientX)
-            e.currentTarget.setPointerCapture(e.pointerId)
-          }}
-          onPointerMove={(e) => {
-            if (dragging.current) updateOffset(e.clientX)
-          }}
-          onPointerUp={() => void finishDrag()}
-          onPointerCancel={() => {
-            dragging.current = false
-          }}
+    <AnimatePresence>
+      {open ? (
+        <motion.div
+          className="fixed inset-0 z-[1200] flex items-center justify-center p-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.22 }}
         >
-          <Handle $x={offsetX} />
-        </Track>
-        <Hint>拖动滑块，将拼图移至缺口位置</Hint>
-        {error ? <ErrorText>{error}</ErrorText> : null}
-        <Actions>
-          <Btn type="button" onClick={onClose}>取消</Btn>
-          <Btn type="button" onClick={() => void loadChallenge()} disabled={loading}>
-            刷新
-          </Btn>
-        </Actions>
-      </Panel>
-    </Overlay>
+          <motion.button
+            type="button"
+            aria-label="关闭验证"
+            className="absolute inset-0 bg-slate-900/50 backdrop-blur-[6px]"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+          />
+
+          <motion.div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="captcha-title"
+            className="relative w-full max-w-[400px] rounded-2xl border border-border/80 bg-background shadow-2xl shadow-primary/10 overflow-hidden"
+            initial={{ opacity: 0, y: 20, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 12, scale: 0.98 }}
+            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="h-1 bg-gradient-to-r from-primary/80 via-indigo-400/70 to-primary/40" />
+
+            <div className="p-5 sm:p-6">
+              <div className="flex items-start justify-between gap-3 mb-4">
+                <div>
+                  <h3 id="captcha-title" className="text-base font-semibold text-foreground tracking-tight">
+                    安全验证
+                  </h3>
+                  <p className="mt-0.5 text-xs text-muted-foreground">拖动滑块完成拼图，保护您的账号安全</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="shrink-0 size-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+                  aria-label="关闭"
+                >
+                  ×
+                </button>
+              </div>
+
+              <div
+                className="relative mx-auto mb-4 rounded-xl overflow-hidden border border-border bg-muted/30"
+                style={{
+                  width: challenge?.sliderWidth ?? '100%',
+                  maxWidth: '100%',
+                  height: SLIDER_HEIGHT,
+                }}
+              >
+                <AnimatePresence mode="wait">
+                  {phase === 'loading' || !challenge ? (
+                    <motion.div
+                      key="skeleton"
+                      className="absolute inset-0 flex flex-col items-center justify-center gap-3"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                    >
+                      <div className="absolute inset-0 bg-muted/60 animate-pulse" />
+                      <AuthSpinner />
+                      <p className="relative z-10 text-xs font-medium text-muted-foreground">
+                        AI 正在生成验证图…
+                      </p>
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="images"
+                      className="absolute inset-0"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: imagesReady ? 1 : 0 }}
+                      transition={{ duration: 0.35 }}
+                    >
+                      <img
+                        src={`data:image/png;base64,${challenge.backgroundImage}`}
+                        alt=""
+                        draggable={false}
+                        className="w-full h-full object-cover select-none"
+                        onLoad={onImageLoaded}
+                      />
+                      <img
+                        src={`data:image/png;base64,${challenge.puzzleImage}`}
+                        alt=""
+                        draggable={false}
+                        className="absolute w-11 h-11 pointer-events-none drop-shadow-md select-none"
+                        style={{ left: offsetX, top: challenge.puzzleY }}
+                        onLoad={onImageLoaded}
+                      />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {(phase === 'verifying' || phase === 'success') && (
+                  <motion.div
+                    className="absolute inset-0 flex items-center justify-center bg-background/55 backdrop-blur-[2px]"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                  >
+                    {phase === 'success' ? (
+                      <motion.span
+                        className="flex size-12 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-600 text-xl font-bold"
+                        initial={{ scale: 0.6, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ type: 'spring', stiffness: 380, damping: 22 }}
+                      >
+                        ✓
+                      </motion.span>
+                    ) : (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <AuthSpinner />
+                        验证中…
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+              </div>
+
+              <div
+                ref={trackRef}
+                className={cn(
+                  'relative h-11 rounded-full border border-border bg-muted/40 transition-opacity',
+                  busy && 'opacity-60 pointer-events-none',
+                )}
+                onPointerDown={(e) => {
+                  if (busy || !challenge) return
+                  dragging.current = true
+                  updateOffset(e.clientX)
+                  e.currentTarget.setPointerCapture(e.pointerId)
+                }}
+                onPointerMove={(e) => {
+                  if (dragging.current) updateOffset(e.clientX)
+                }}
+                onPointerUp={() => void finishDrag()}
+                onPointerCancel={() => {
+                  dragging.current = false
+                }}
+              >
+                <div className="absolute inset-y-0 left-3 right-3 flex items-center pointer-events-none">
+                  <span className="text-xs text-muted-foreground pl-10">拖动滑块对齐缺口</span>
+                </div>
+                <div
+                  className="absolute top-1 size-9 rounded-full bg-primary text-primary-foreground shadow-md shadow-primary/25 cursor-grab active:cursor-grabbing flex items-center justify-center transition-[left] duration-75 ease-out"
+                  style={{ left: offsetX }}
+                >
+                  <span className="text-sm">››</span>
+                </div>
+              </div>
+
+              <div className="mt-4 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="h-9 px-4 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+                >
+                  取消
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void loadChallenge()}
+                  disabled={phase === 'loading' || phase === 'verifying'}
+                  className="h-9 px-4 rounded-lg text-sm font-medium text-primary hover:bg-primary/8 transition-colors disabled:opacity-50 inline-flex items-center gap-1.5"
+                >
+                  {phase === 'loading' ? <AuthSpinner size="sm" /> : null}
+                  换一张
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      ) : null}
+    </AnimatePresence>
   )
 }
 
