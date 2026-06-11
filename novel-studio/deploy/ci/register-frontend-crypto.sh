@@ -44,6 +44,21 @@ read_key_from() {
   v="\${v%\"}"; v="\${v#\"}"
   if [[ -n "\$v" ]]; then echo "\$v"; fi
 }
+container_key() {
+  local cid
+  cid=\$(docker ps -qf 'ancestor=novel-studio/studio:latest' 2>/dev/null | head -1)
+  if [[ -z "\$cid" ]]; then
+    cid=\$(docker ps --format '{{.Names}}' 2>/dev/null | grep -E 'novel-studio' | grep -v frontend | head -1 || true)
+    [[ -n "\$cid" ]] && cid=\$(docker ps -qf "name=\$cid" | head -1)
+  fi
+  if [[ -n "\$cid" ]]; then
+    docker inspect "\$cid" --format '{{range .Config.Env}}{{println .}}{{end}}' 2>/dev/null \\
+      | grep -E '^(AGENT_INTERNAL_SERVICE_KEY|INTERNAL_SERVICE_KEY)=' \\
+      | head -1 | cut -d= -f2- || true
+  fi
+}
+v=\$(container_key)
+if [[ -n "\$v" ]]; then echo "\$v"; exit 0; fi
 for f in \\
   "\$RDIR/novel-studio/deploy/docker/.env.worker" \\
   "\$RDIR/novel-agent/agent-document/docs/deploy/docker/.env.worker" \\
@@ -52,16 +67,6 @@ for f in \\
   v=\$(read_key_from "\$f")
   if [[ -n "\$v" ]]; then echo "\$v"; exit 0; fi
 done
-CID=\$(docker ps -qf 'ancestor=novel-studio/studio:latest' 2>/dev/null | head -1)
-if [[ -z "\$CID" ]]; then
-  CID=\$(docker ps --format '{{.Names}}' 2>/dev/null | grep -E 'novel-studio' | grep -v frontend | head -1 || true)
-  [[ -n "\$CID" ]] && CID=\$(docker ps -qf "name=\$CID" | head -1)
-fi
-if [[ -n "\$CID" ]]; then
-  docker inspect "\$CID" --format '{{range .Config.Env}}{{println .}}{{end}}' 2>/dev/null \\
-    | grep -E '^(AGENT_INTERNAL_SERVICE_KEY|INTERNAL_SERVICE_KEY)=' \\
-    | head -1 | cut -d= -f2- || true
-fi
 EOS
 )"
   key="$(echo "$key" | tr -d '\r' | head -1)"
@@ -123,24 +128,48 @@ import json, os
 print(json.dumps({'host': os.environ.get('WORKER_HOST', 'worker'), 'ttlSec': 172800}))
 " > "$PAYLOAD_TMP"
 
+echo "[crypto-register] 等待 novel-studio 就绪..."
+ready=0
+for attempt in $(seq 1 40); do
+  if deploy_ssh "$REMOTE" "curl -sf http://127.0.0.1:8080/actuator/health >/dev/null 2>&1"; then
+    ready=1
+    break
+  fi
+  echo "[crypto-register] health 未就绪 $attempt/40 ..."
+  sleep 3
+done
+if [[ "$ready" -ne 1 ]]; then
+  echo "[crypto-register] novel-studio 健康检查超时"
+  exit 1
+fi
+
 deploy_scp "$PAYLOAD_TMP" "$REMOTE:/tmp/crypto-register-payload.json"
 register_ok=0
 for attempt in $(seq 1 8); do
   if deploy_ssh "$REMOTE" bash -s > "$RUNTIME_TMP" <<EOF
 set -euo pipefail
-curl -sf -X POST "http://127.0.0.1:8080/internal/crypto/register-frontend-server" \\
+code=\$(curl -s -o /tmp/crypto-runtime-out.json -w "%{http_code}" -X POST "http://127.0.0.1:8080/internal/crypto/register-frontend-server" \\
   -H "Content-Type: application/json" \\
   -H "X-Internal-Service-Key: ${AGENT_INTERNAL_SERVICE_KEY}" \\
-  --data-binary @/tmp/crypto-register-payload.json
-rm -f /tmp/crypto-register-payload.json
+  --data-binary @/tmp/crypto-register-payload.json || echo "000")
+if [[ "\$code" == "200" ]]; then
+  cat /tmp/crypto-runtime-out.json
+  rm -f /tmp/crypto-register-payload.json /tmp/crypto-runtime-out.json
+  exit 0
+fi
+echo "[crypto-register] HTTP \$code" >&2
+head -c 500 /tmp/crypto-runtime-out.json >&2 || true
+rm -f /tmp/crypto-runtime-out.json
+exit 1
 EOF
   then
     register_ok=1
     break
   fi
-  echo "[crypto-register] novel-studio 未就绪，重试 $attempt/8 ..."
+  echo "[crypto-register] 注册失败，重试 $attempt/8 ..."
   sleep 3
 done
+deploy_ssh "$REMOTE" "rm -f /tmp/crypto-register-payload.json" 2>/dev/null || true
 if [[ "$register_ok" -ne 1 ]]; then
   echo "[crypto-register] 注册失败：novel-studio internal API 无响应"
   exit 1
