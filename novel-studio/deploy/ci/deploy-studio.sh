@@ -58,4 +58,7 @@ echo "[deploy-studio] done"
 \$COMPOSE -f "\$COMPOSE_FILE" --env-file "\$ENV_FILE" ps novel-studio
 EOF
 
+echo "[deploy-studio] 刷新 crypto-runtime.json ..."
+bash "$CI_DIR/register-frontend-crypto.sh" || echo "[deploy-studio] crypto 注册跳过（novel-studio 未就绪或 frontend 未部署）"
+
 echo "[deploy-studio] 完成"

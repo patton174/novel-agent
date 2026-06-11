@@ -50,21 +50,26 @@ agent:
 studio:
   security:
     client:
+      # 已迁移至 auth.client-security（Servlet Filter 链）
       enabled: false
-      aes-required: false
-      route-obfuscation: false
-      field-encryption: false
-      encrypt-stream: false
-      replay-window-seconds: 120
-      enforce-csrf: false
-      enforce-fingerprint: false
-      enforce-heartbeat: false
 
 auth:
   jwt:
     issuer: novel-studio
     secret: ${JWT_SECRET:novel-studio-dev-secret-change-in-production-32chars}
     access-ttl-seconds: 3600
+  client-security:
+    enabled: ${CLIENT_SECURITY_ENABLED:false}
+    aes-required: ${CLIENT_SECURITY_AES_REQUIRED:false}
+    route-obfuscation: ${CLIENT_SECURITY_ROUTE_OBFUSCATION:false}
+    field-encryption: ${CLIENT_SECURITY_FIELD_ENCRYPTION:false}
+    encrypt-stream: ${CLIENT_SECURITY_ENCRYPT_STREAM:false}
+    replay-window-seconds: ${CLIENT_SECURITY_REPLAY_WINDOW_SECONDS:120}
+    enforce-csrf: ${CLIENT_SECURITY_ENFORCE_CSRF:false}
+    enforce-fingerprint: ${CLIENT_SECURITY_ENFORCE_FINGERPRINT:false}
+    enforce-heartbeat: ${CLIENT_SECURITY_ENFORCE_HEARTBEAT:false}
+    heartbeat-max-silence-seconds: ${CLIENT_SECURITY_HEARTBEAT_MAX_SILENCE_SECONDS:180}
+    fingerprint-tolerance: ${CLIENT_SECURITY_FINGERPRINT_TOLERANCE:0.15}
 
 python-ai:
   base-url: ${PYTHON_AI_BASE_URL:http://localhost:8000}

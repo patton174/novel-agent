@@ -51,4 +51,7 @@ if ! docker compose version >/dev/null 2>&1; then COMPOSE="docker-compose"; fi
 \$COMPOSE -f docker-compose.worker.yml --env-file .env.worker up -d --no-deps --no-build frontend
 EOF
 
+echo "[deploy-frontend] 注册 crypto-runtime.json ..."
+bash "$CI_DIR/register-frontend-crypto.sh"
+
 echo "[deploy-frontend] 完成"

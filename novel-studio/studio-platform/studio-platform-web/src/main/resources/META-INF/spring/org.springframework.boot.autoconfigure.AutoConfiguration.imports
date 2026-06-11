@@ -1,1 +1,2 @@
 cn.novelstudio.platform.web.config.CommonServiceAutoConfiguration
+cn.novelstudio.platform.web.clientsecurity.ClientSecurityAutoConfiguration

@@ -1,0 +1,14 @@
+# 生产：与旧 agent-gateway Nacos 对齐的客户端安全链
+auth:
+  client-security:
+    enabled: true
+    aes-required: true
+    route-obfuscation: true
+    field-encryption: true
+    encrypt-stream: true
+    replay-window-seconds: 120
+    enforce-csrf: false
+    heartbeat-max-silence-seconds: 180
+    fingerprint-tolerance: 0.15
+    enforce-fingerprint: false
+    enforce-heartbeat: false
