@@ -60,7 +60,9 @@ docker ps -a --format '{{.Names}}' | grep -E '^(agent-|novel-agent|novel-studio)
 done || true
 docker rm -f novel-studio 2>/dev/null || true
 
-# 可选：清理旧 Java 微服务镜像（释放磁盘）
+echo "[reset] 清理 Docker 磁盘..."
+docker system prune -af 2>/dev/null || true
+docker builder prune -af 2>/dev/null || true
 for img in novel-agent/gateway novel-agent/auth novel-agent/consumer novel-agent/billing \
   novel-agent/content novel-agent/pyai; do
   docker rmi "\$img:latest" 2>/dev/null || true
