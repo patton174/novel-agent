@@ -37,8 +37,8 @@
 - [x] CatalogReaderModal 移动目录/正文同屏优化（全高抽屉 + 目录头关闭 + 搜索）
 - [x] CrawlJobDetailModal 增加 footer 操作
 - [x] StatsPage 日期范围选择（7/30/90 日）
-- [ ] 营销 GSAP / styled-components 与 Tailwind rhythm 统一（ redesign 级）
-- [ ] 编辑器 neumorphic 与 shadcn 视觉融合（ redesign 级）
+- [x] 营销 demo（EditorApp / AgentTrace / CapabilityMini）styled → `marketingDemoClasses.ts` + Tailwind
+- [x] 编辑器全模块 neumorphic/styled → shadcn/Tailwind（`components/editor/**` 零 styled-components）
 
 ## Phase 2C — 本批执行
 
@@ -89,6 +89,15 @@
 - [x] **NovelSessionList** 会话列表 / 批量栏 / 加载更多 → Tailwind
 - [x] **MotionSegmentRail** 记忆 Modal Tab 指示器 → Tailwind（保留 morph 过渡）
 - [x] **EditorButton** `choice` / `chapter` / `volume` / `segment` → shadcn（仅 `send` 仍 styled）
+
+## Phase 2J — 收尾（编辑器 + 营销 demo + Button 全量）
+
+- [x] **EditorPageLayout** / **EditorCenterTabs** / **EditorChatPanel** / **EditorChatMessageList** / **EditorChatMessage** → Tailwind
+- [x] **EditorStoryPanel** / **ChapterInlineDiff** → Tailwind
+- [x] **ChatMessageSurface** → `chatMessageSurfaceClasses.ts`
+- [x] **EditorButton** 全 variant shadcn/Tailwind；**删除** `EditorButton.styles.ts`（~370 行）
+- [x] **营销 demo** 三组件 + `marketingDemoClasses.ts`；删除 `marketingEditorAppDemo.ts` / `marketingAgentDemo.ts`
+- [x] **删除** 零引用 `styles/chatMessageSurface.ts`
 
 ---
 

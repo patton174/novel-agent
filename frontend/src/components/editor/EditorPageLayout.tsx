@@ -1,26 +1,18 @@
-import styled from 'styled-components'
-import { editorLayout, editorTheme } from '../../styles/editorTheme'
+import type { HTMLAttributes } from 'react'
+import { cn } from '@/lib/utils'
 
-export const EditorPageWrapper = styled.div`
-  height: 100vh;
-  display: flex;
-  background: ${editorTheme.bg};
-  overflow: hidden;
-`
+export function EditorPageWrapper({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
+  return <div className={cn('flex h-screen overflow-hidden bg-background', className)} {...props} />
+}
 
-export const EditorMainContainer = styled.main`
-  flex: 1;
-  min-width: 0;
-  height: 100vh;
-  margin-left: ${editorLayout.sidebarWidthPx}px;
-  margin-right: 0;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  z-index: 1;
-  overflow: hidden;
-
-  @media (max-width: 767px) {
-    margin-left: 0;
-  }
-`
+export function EditorMainContainer({ className, ...props }: HTMLAttributes<HTMLElement>) {
+  return (
+    <main
+      className={cn(
+        'relative z-[1] ml-[284px] flex h-screen min-w-0 flex-1 flex-col overflow-hidden max-md:ml-0',
+        className,
+      )}
+      {...props}
+    />
+  )
+}

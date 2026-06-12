@@ -1,20 +1,23 @@
+import { cn } from '@/lib/utils'
 import {
-  DemoAgentChrome,
-  DemoAgentConsole,
-  DemoOrchHeader,
-  DemoStatusDot,
-  DemoStreamBlock,
-  DemoStreamCursor,
-  DemoStreamLabel,
-  DemoStreamLine,
-  DemoSubagentWrap,
-  DemoThinkBlock,
-  DemoThinkCursor,
-  DemoThinkHeader,
-  DemoThinkLine,
-  DemoToolList,
-  DemoToolRow,
-} from '../../../styles/surfaces/marketingAgentDemo'
+  DEMO_AGENT_CHROME,
+  DEMO_AGENT_CHROME_DOT,
+  DEMO_AGENT_CHROME_LABEL,
+  DEMO_AGENT_CONSOLE,
+  DEMO_ORCH_HEADER,
+  DEMO_STREAM_BLOCK,
+  DEMO_STREAM_CURSOR,
+  DEMO_STREAM_LABEL,
+  DEMO_STREAM_LINE,
+  DEMO_SUBAGENT_WRAP,
+  DEMO_THINK_CURSOR,
+  DEMO_THINK_LINE,
+  DEMO_TOOL_LIST,
+  DEMO_TOOL_ROW,
+  demoStatusDotClass,
+  demoThinkBlockClass,
+  demoThinkHeaderClass,
+} from '@/lib/marketingDemoClasses'
 
 import type { MarketingAgentDemoVariant } from './MarketingEditorAppDemo'
 export type { MarketingAgentDemoVariant } from './MarketingEditorAppDemo'
@@ -47,7 +50,7 @@ const STREAM_LINES = [
 function ToolIcon({ status }: { status: 'idle' | 'loading' | 'success' }) {
   return (
     <span className="lead" aria-hidden>
-      <DemoStatusDot $status={status} />
+      <span className={demoStatusDotClass(status)} />
     </span>
   )
 }
@@ -62,7 +65,7 @@ function ToolRows({
   return (
     <>
       {tools.map((tool) => (
-        <DemoToolRow key={tool.name} className={classPrefix}>
+        <div key={tool.name} className={cn(DEMO_TOOL_ROW, classPrefix)}>
           <ToolIcon status={tool.status} />
           <div className="body">
             <div className="headline">
@@ -71,7 +74,7 @@ function ToolRows({
             </div>
             {tool.excerpt ? <div className="excerpt">{tool.excerpt}</div> : null}
           </div>
-        </DemoToolRow>
+        </div>
       ))}
     </>
   )
@@ -79,47 +82,47 @@ function ToolRows({
 
 export function MarketingAgentTraceDemo({ variant }: { variant: MarketingAgentDemoVariant }) {
   return (
-    <DemoAgentConsole className="demo-agent-console" data-variant={variant}>
-      <DemoAgentChrome>
-        <span className="dot red" />
-        <span className="dot yellow" />
-        <span className="dot green" />
-        <span className="label">Agent 助手</span>
-      </DemoAgentChrome>
+    <div className={cn(DEMO_AGENT_CONSOLE, 'demo-agent-console')} data-variant={variant}>
+      <div className={DEMO_AGENT_CHROME}>
+        <span className={cn(DEMO_AGENT_CHROME_DOT, 'bg-[#ff5f56]')} />
+        <span className={cn(DEMO_AGENT_CHROME_DOT, 'bg-[#ffbd2e]')} />
+        <span className={cn(DEMO_AGENT_CHROME_DOT, 'bg-[#27c93f]')} />
+        <span className={DEMO_AGENT_CHROME_LABEL}>Agent 助手</span>
+      </div>
 
       {variant === 'think' ? (
-        <DemoThinkBlock className="demo-think-block" $active>
-          <DemoThinkHeader className="demo-think-header" $active>
+        <div className={cn(demoThinkBlockClass(true), 'demo-think-block')}>
+          <div className={cn(demoThinkHeaderClass(true), 'demo-think-header')}>
             <span className="title">思考</span>
             <span className="meta demo-think-meta">进行中</span>
-          </DemoThinkHeader>
+          </div>
           {THINK_LINES.map((line) => (
-            <DemoThinkLine key={line} className="demo-think-line">
+            <p key={line} className={cn(DEMO_THINK_LINE, 'demo-think-line')}>
               {line}
-            </DemoThinkLine>
+            </p>
           ))}
-          <DemoThinkLine className="demo-think-line demo-think-tail">
+          <p className={cn(DEMO_THINK_LINE, 'demo-think-line demo-think-tail')}>
             准备调用 <strong>plan</strong> 生成步骤…
-            <DemoThinkCursor className="demo-think-cursor" />
-          </DemoThinkLine>
-        </DemoThinkBlock>
+            <span className={cn(DEMO_THINK_CURSOR, 'demo-think-cursor')} />
+          </p>
+        </div>
       ) : null}
 
       {variant === 'orchestrate' ? (
         <>
-          <DemoOrchHeader className="demo-orch-header" type="button" aria-expanded>
+          <button type="button" className={cn(DEMO_ORCH_HEADER, 'demo-orch-header')} aria-expanded>
             <span className="chevron" />
             <span className="title">编排中 · 续写第二章</span>
-          </DemoOrchHeader>
-          <DemoToolList className="demo-tool-list">
+          </button>
+          <div className={cn(DEMO_TOOL_LIST, 'demo-tool-list')}>
             <ToolRows tools={ORCH_TOOLS} />
-          </DemoToolList>
+          </div>
         </>
       ) : null}
 
       {variant === 'subagent' ? (
         <>
-          <DemoToolRow className="demo-tool-row demo-parent-tool">
+          <div className={cn(DEMO_TOOL_ROW, 'demo-tool-row demo-parent-tool')}>
             <ToolIcon status="success" />
             <div className="body">
               <div className="headline">
@@ -127,30 +130,30 @@ export function MarketingAgentTraceDemo({ variant }: { variant: MarketingAgentDe
                 <span className="args">角色一致性校验</span>
               </div>
             </div>
-          </DemoToolRow>
-          <DemoSubagentWrap className="demo-subagent-wrap">
+          </div>
+          <div className={cn(DEMO_SUBAGENT_WRAP, 'demo-subagent-wrap')}>
             <div className="sub-head">子代理 · 角色校对</div>
             <div className="demo-subagent-inner">
               <ToolRows tools={SUBAGENT_TOOLS} classPrefix="demo-sub-tool-row" />
             </div>
-          </DemoSubagentWrap>
+          </div>
         </>
       ) : null}
 
       {variant === 'stream' ? (
-        <DemoStreamBlock className="demo-stream-block">
-          <DemoStreamLabel>chapter_create · 流式输出</DemoStreamLabel>
+        <div className={cn(DEMO_STREAM_BLOCK, 'demo-stream-block')}>
+          <span className={DEMO_STREAM_LABEL}>chapter_create · 流式输出</span>
           {STREAM_LINES.map((line) => (
-            <DemoStreamLine key={line} className="demo-stream-line">
+            <p key={line} className={cn(DEMO_STREAM_LINE, 'demo-stream-line')}>
               {line}
-            </DemoStreamLine>
+            </p>
           ))}
-          <DemoStreamLine className="demo-stream-line demo-stream-tail">
+          <p className={cn(DEMO_STREAM_LINE, 'demo-stream-line demo-stream-tail')}>
             剑尖挑起一道寒芒，直指苍穹。
-            <DemoStreamCursor className="demo-stream-cursor" />
-          </DemoStreamLine>
-        </DemoStreamBlock>
+            <span className={cn(DEMO_STREAM_CURSOR, 'demo-stream-cursor')} />
+          </p>
+        </div>
       ) : null}
-    </DemoAgentConsole>
+    </div>
   )
 }

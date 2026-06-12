@@ -100,3 +100,14 @@ export function editorSegmentButtonClass(active?: boolean, className?: string) {
 
 export const EDITOR_SESSION_LOAD_MORE =
   'mt-1 w-full rounded-lg border border-dashed border-border bg-transparent px-2 py-1.5 text-[11px] text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground'
+
+export function editorSendButtonClass(streaming?: boolean, className?: string) {
+  return cn(
+    'relative inline-flex shrink-0 items-center justify-center overflow-hidden p-0 text-primary-foreground transition-all duration-500 ease-[cubic-bezier(0.34,1.15,0.64,1)]',
+    'hover:scale-105 active:scale-[0.96] disabled:scale-100 disabled:cursor-not-allowed disabled:opacity-45',
+    streaming
+      ? 'rounded-[10px] bg-destructive shadow-md shadow-destructive/30'
+      : 'rounded-full bg-primary shadow-md',
+    className,
+  )
+}

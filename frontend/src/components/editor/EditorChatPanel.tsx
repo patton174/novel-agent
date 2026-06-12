@@ -1,17 +1,18 @@
 import { useRef } from 'react'
-import styled from 'styled-components'
 import { useComposerSafeInset } from '../../hooks/editor/useComposerSafeInset'
 import { ChatComposer } from '../chat/ChatComposer'
-import type { AgentChoiceOption, AgentContextUsage, AgentInteractionPayload, AskUserAnswers } from '../../types/agent'
+import type {
+  AgentChoiceOption,
+  AgentContextUsage,
+  AgentInteractionPayload,
+  AskUserAnswers,
+} from '../../types/agent'
 import type { EditorMessage } from '../../types/editor'
-import {
-  filterVisibleChatMessages,
-  isInitialChatView,
-} from '../../types/editor'
+import { filterVisibleChatMessages, isInitialChatView } from '../../types/editor'
 import type { Novel } from '../../types/novel'
-import { editorLayout, editorTheme } from '../../styles/editorTheme'
-import { palette } from '../../styles/theme'
+import { editorLayout } from '../../styles/theme'
 import { EditorChatMessageList } from './EditorChatMessageList'
+import { cn } from '@/lib/utils'
 
 export interface EditorChatPanelProps {
   sessionTitle: string
@@ -43,9 +44,7 @@ export interface EditorChatPanelProps {
   messagesEndRef: React.Ref<HTMLDivElement>
   onEditUserMessage?: (content: string) => void
   contextUsage?: AgentContextUsage | null
-  /** 首页营销分镜：滚动 scrub 时保持流式态，驱动编排动画 */
   marketingScrubPlaying?: boolean
-  /** 首页营销分镜：scrub 时强制展开编排层 */
   marketingPinOrchestration?: boolean
   hideComposer?: boolean
 }
@@ -82,25 +81,45 @@ export function EditorChatPanel({
   const composerBottomInset = useComposerSafeInset(composerRef, !isInitial)
 
   return (
-    <ChatSection $initial={isInitial}>
+    <section className="flex min-h-0 flex-1 flex-col bg-background">
       {!isInitial ? (
-        <ChatTopBar>
-          <ChatTopTitle>{sessionTitle}</ChatTopTitle>
-        </ChatTopBar>
+        <div
+          className="shrink-0 bg-background pb-1.5 pt-2"
+          style={{ paddingLeft: editorLayout.mainPaddingX, paddingRight: editorLayout.mainPaddingX }}
+        >
+          <h2 className="m-0 w-full truncate text-left text-[15px] font-semibold text-foreground">
+            {sessionTitle}
+          </h2>
+        </div>
       ) : null}
 
-      <ChatViewport $initial={isInitial}>
+      <div
+        className={cn(
+          'relative flex min-h-0 flex-1 flex-col overflow-hidden box-border',
+          isInitial && 'items-center justify-center',
+        )}
+        style={{ paddingLeft: editorLayout.mainPaddingX, paddingRight: editorLayout.mainPaddingX }}
+      >
         {!isInitial && hostBannerText ? (
-          <HostModeBanner
+          <div
             data-testid="host-mode-banner"
-            $recovering={hostBannerRecovering}
+            className={cn(
+              'z-[2] mb-1.5 w-full shrink-0 rounded-[10px] px-3.5 py-2 text-center text-xs font-medium',
+              hostBannerRecovering
+                ? 'border border-amber-400/35 bg-amber-400/10 text-amber-800'
+                : 'border border-primary/30 bg-primary/10 text-primary',
+            )}
+            style={{ maxWidth: editorLayout.contentMaxWidth }}
           >
             {hostBannerText}
-          </HostModeBanner>
+          </div>
         ) : null}
 
         {!isInitial ? (
-          <MessagesScrollWrap>
+          <div
+            className="mx-auto flex min-h-0 w-full flex-1 flex-col overflow-hidden"
+            style={{ maxWidth: editorLayout.contentMaxWidth }}
+          >
             <EditorChatMessageList
               messages={visibleMessages}
               isLoading={isLoading}
@@ -116,14 +135,26 @@ export function EditorChatPanel({
               marketingScrubPlaying={marketingScrubPlaying}
               marketingPinOrchestration={marketingPinOrchestration}
             />
-          </MessagesScrollWrap>
+          </div>
         ) : (
-          <InitialScrollAnchor ref={messagesAreaRef} aria-hidden />
+          <div ref={messagesAreaRef} className="hidden" aria-hidden />
         )}
 
         {!hideComposer && (
-          <ComposerFloat ref={composerRef} $initial={isInitial}>
-            <ComposerWidthAlign>
+          <div
+            ref={composerRef}
+            className={cn(
+              'z-[12] mx-auto box-border w-full pointer-events-none [&>*]:pointer-events-auto',
+              isInitial
+                ? 'relative shrink-0 bg-transparent'
+                : 'absolute inset-x-0 bottom-0 bg-gradient-to-t from-background from-[12%] via-background/95 via-[42%] to-transparent',
+            )}
+            style={{
+              maxWidth: editorLayout.contentMaxWidth,
+              padding: isInitial ? `0 ${editorLayout.mainPaddingX}` : '0 0 0.65rem',
+            }}
+          >
+            <div className="mx-auto w-full" style={{ maxWidth: editorLayout.contentMaxWidth }}>
               <ChatComposer
                 value={inputValue}
                 onChange={onInputChange}
@@ -135,134 +166,10 @@ export function EditorChatPanel({
                 onStreamAbort={onStreamAbort}
                 contextUsage={contextUsage}
               />
-            </ComposerWidthAlign>
-          </ComposerFloat>
+            </div>
+          </div>
         )}
-      </ChatViewport>
-    </ChatSection>
+      </div>
+    </section>
   )
 }
-
-const ChatSection = styled.section<{ $initial?: boolean }>`
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  background: ${editorTheme.bg};
-`
-
-const ChatViewport = styled.div<{ $initial?: boolean }>`
-  flex: 1;
-  min-height: 0;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  padding-left: ${editorLayout.mainPaddingX};
-  padding-right: ${editorLayout.mainPaddingX};
-  box-sizing: border-box;
-  ${({ $initial }) =>
-    $initial
-      ? `
-    justify-content: center;
-    align-items: center;
-  `
-      : ''}
-`
-
-const ChatTopBar = styled.div`
-  flex-shrink: 0;
-  padding: 0.55rem ${editorLayout.mainPaddingX} 0.35rem;
-  background: ${editorTheme.bg};
-`
-
-const ChatTopTitle = styled.h2`
-  margin: 0;
-  width: 100%;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: ${editorTheme.text};
-  text-align: left;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-`
-
-const InitialScrollAnchor = styled.div`
-  display: none;
-`
-
-const MessagesScrollWrap = styled.div`
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  width: 100%;
-  max-width: ${editorLayout.contentMaxWidth};
-  margin: 0 auto;
-  box-sizing: border-box;
-`
-
-const HostModeBanner = styled.div<{ $recovering?: boolean }>`
-  flex-shrink: 0;
-  margin: 0 auto 0.35rem;
-  max-width: ${editorLayout.contentMaxWidth};
-  width: calc(100% - 2 * ${editorLayout.mainPaddingX});
-  padding: 0.5rem 0.85rem;
-  border-radius: 10px;
-  background: ${({ $recovering }) =>
-    $recovering ? 'rgba(255, 196, 0, 0.12)' : editorTheme.accentSoft};
-  border: 1px solid ${({ $recovering }) =>
-    $recovering ? 'rgba(255, 196, 0, 0.35)' : 'rgba(79, 70, 229, 0.28)'};
-  color: ${({ $recovering }) => ($recovering ? palette.bannerRecovering : palette.bannerHost)};
-  font-size: 0.75rem;
-  font-weight: 500;
-  text-align: center;
-  z-index: 2;
-`
-
-/** 与 MessagesInner 同宽：外层仅负责与消息区一致的水平留白 */
-const ComposerWidthAlign = styled.div`
-  width: 100%;
-  max-width: ${editorLayout.contentMaxWidth};
-  margin: 0 auto;
-  box-sizing: border-box;
-`
-
-const ComposerFloat = styled.div<{ $initial?: boolean }>`
-  z-index: 12;
-  width: 100%;
-  max-width: ${editorLayout.contentMaxWidth};
-  margin-left: auto;
-  margin-right: auto;
-  box-sizing: border-box;
-  padding: ${({ $initial }) =>
-    $initial ? `0 ${editorLayout.mainPaddingX}` : `0 0 0.65rem`};
-  pointer-events: none;
-
-  ${({ $initial }) =>
-    $initial
-      ? `
-    position: relative;
-    flex-shrink: 0;
-    background: transparent;
-  `
-      : `
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    margin: 0 auto;
-    background: linear-gradient(
-      to top,
-      ${editorTheme.bg} 12%,
-      rgba(232, 232, 232, 0.94) 42%,
-      rgba(232, 232, 232, 0) 100%
-    );
-  `}
-
-  & > * {
-    pointer-events: auto;
-  }
-`

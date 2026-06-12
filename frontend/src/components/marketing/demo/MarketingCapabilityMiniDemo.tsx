@@ -1,84 +1,16 @@
 import { useEffect, useState } from 'react'
-import styled, { keyframes } from 'styled-components'
 import {
-  DemoOrchHeader,
-  DemoStatusDot,
-  DemoStreamBlock,
-  DemoToolList,
-  DemoToolRow,
-} from '../../../styles/surfaces/marketingAgentDemo'
-import { cursorTheme } from '../../../styles/surfaces/cursorLanding'
+  DEMO_MINI_CURSOR,
+  DEMO_MINI_STREAM_LINE,
+  DEMO_MINI_WRAP,
+  DEMO_ORCH_HEADER_STATIC,
+  DEMO_STREAM_BLOCK_FLAT,
+  DEMO_TOOL_LIST_COMPACT,
+  DEMO_TOOL_ROW_COMPACT,
+  demoOrchLineClass,
+  demoStatusDotClass,
+} from '@/lib/marketingDemoClasses'
 import { prefersReducedMotion } from '../scroll/useMarketingGsapEffect'
-
-const blink = keyframes`
-  50% { opacity: 0; }
-`
-
-const MiniWrap = styled.div`
-  margin-top: 0.85rem;
-  padding: 0.65rem 0.7rem;
-  border-radius: 10px;
-  background: ${cursorTheme.card};
-  border: 1px solid ${cursorTheme.border};
-  text-align: left;
-  min-height: 5.5rem;
-  font-size: 0.72rem;
-  color: ${cursorTheme.textMuted};
-`
-
-const OrchHeaderStatic = styled(DemoOrchHeader).attrs({ type: 'button' as const })`
-  pointer-events: none;
-  margin-bottom: 0.35rem;
-`
-
-const StreamBlockFlat = styled(DemoStreamBlock)`
-  padding: 0;
-  background: transparent;
-  border: none;
-`
-
-const ToolListCompact = styled(DemoToolList)`
-  gap: 0.25rem;
-`
-
-const ToolRowCompact = styled(DemoToolRow)`
-  padding: 0.15rem 0;
-`
-
-const OrchLine = styled.div<{ $active?: boolean }>`
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.2rem 0;
-  opacity: ${({ $active }) => ($active ? 1 : 0.45)};
-  transition: opacity 0.25s ease;
-  color: ${cursorTheme.text};
-
-  .name {
-    font-weight: 600;
-    font-family: ui-monospace, monospace;
-    font-size: 0.68rem;
-  }
-`
-
-const StreamLine = styled.div`
-  line-height: 1.45;
-  color: ${cursorTheme.text};
-
-  .tail {
-    display: inline;
-  }
-`
-
-const Cursor = styled.span`
-  display: inline-block;
-  width: 2px;
-  height: 0.85em;
-  margin-left: 1px;
-  vertical-align: text-bottom;
-  background: ${cursorTheme.green};
-  animation: ${blink} 1s step-end infinite;
-`
 
 const ORCH_STEPS = [
   { name: 'memory_read', label: '读取角色记忆' },
@@ -106,16 +38,16 @@ function OrchestrationLoop() {
 
   return (
     <>
-      <OrchHeaderStatic aria-expanded>
+      <button type="button" className={DEMO_ORCH_HEADER_STATIC} aria-expanded>
         <span className="chevron" />
         <span className="title">编排中 · 续写第二章</span>
-      </OrchHeaderStatic>
+      </button>
       {ORCH_STEPS.map((item, i) => (
-        <OrchLine key={item.name} $active={i <= step}>
-          <DemoStatusDot $status={i < step ? 'success' : i === step ? 'loading' : 'idle'} />
+        <div key={item.name} className={demoOrchLineClass(i <= step)}>
+          <span className={demoStatusDotClass(i < step ? 'success' : i === step ? 'loading' : 'idle')} />
           <span className="name">{item.name}</span>
           <span>{item.label}</span>
-        </OrchLine>
+        </div>
       ))}
     </>
   )
@@ -144,38 +76,38 @@ function StreamingLoop() {
   const typing = chars < STREAM_TEXT.length
 
   return (
-    <StreamBlockFlat>
-      <StreamLine>
-        {visible}
-        {typing ? <Cursor aria-hidden /> : null}
-      </StreamLine>
-    </StreamBlockFlat>
+    <div className={DEMO_STREAM_BLOCK_FLAT}>
+      <div className={DEMO_MINI_STREAM_LINE}>
+        <span className="tail">{visible}</span>
+        {typing ? <span className={DEMO_MINI_CURSOR} aria-hidden /> : null}
+      </div>
+    </div>
   )
 }
 
 export function MarketingCapabilityMiniDemo({ kind }: { kind: 'orchestrate' | 'stream' }) {
   if (kind === 'orchestrate') {
     return (
-      <MiniWrap>
+      <div className={DEMO_MINI_WRAP}>
         <OrchestrationLoop />
-      </MiniWrap>
+      </div>
     )
   }
 
   return (
-    <MiniWrap>
-      <ToolListCompact>
-        <ToolRowCompact>
-          <DemoStatusDot $status="loading" />
+    <div className={DEMO_MINI_WRAP}>
+      <div className={DEMO_TOOL_LIST_COMPACT}>
+        <div className={DEMO_TOOL_ROW_COMPACT}>
+          <span className={demoStatusDotClass('loading')} />
           <div className="body">
             <div className="headline">
               <span className="name">chapter_create</span>
               <span className="args">流式输出</span>
             </div>
           </div>
-        </ToolRowCompact>
-      </ToolListCompact>
+        </div>
+      </div>
       <StreamingLoop />
-    </MiniWrap>
+    </div>
   )
 }

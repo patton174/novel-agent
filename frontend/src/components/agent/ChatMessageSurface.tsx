@@ -1,12 +1,11 @@
-import styled from 'styled-components'
-import { chatMessageSurfaceCss, chatMessageSurfacePadding } from '../../styles/chatMessageSurface'
+import type { HTMLAttributes } from 'react'
+import { CHAT_MESSAGE_SURFACE, CHAT_MESSAGE_SURFACE_BODY } from '@/lib/chatMessageSurfaceClasses'
+import { cn } from '@/lib/utils'
 
-/** 与编排时间线一致的圆角卡片容器 */
-export const ChatMessageSurface = styled.div`
-  ${chatMessageSurfaceCss}
-`
+export function ChatMessageSurface({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
+  return <div className={cn(CHAT_MESSAGE_SURFACE, className)} {...props} />
+}
 
-/** 正文 / 加载占位等需要内边距的内容区 */
-export const ChatMessageSurfaceBody = styled(ChatMessageSurface)`
-  ${chatMessageSurfacePadding}
-`
+export function ChatMessageSurfaceBody({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
+  return <div className={cn(CHAT_MESSAGE_SURFACE_BODY, className)} {...props} />
+}

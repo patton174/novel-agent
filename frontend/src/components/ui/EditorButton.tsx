@@ -1,6 +1,7 @@
 import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from 'react'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { editorTheme } from '@/styles/theme'
 import {
   editorChapterButtonClass,
   editorChoiceButtonClass,
@@ -9,11 +10,11 @@ import {
   editorNavButtonClass,
   editorPanelButtonClass,
   editorSegmentButtonClass,
+  editorSendButtonClass,
   editorTabButtonClass,
   editorToggleButtonClass,
   editorVolumeButtonClass,
 } from '@/lib/editorButtonClasses'
-import { EditorButtonRoot, sendMorph } from './EditorButton.styles'
 
 export type EditorButtonVariant =
   | 'primary'
@@ -45,26 +46,6 @@ export interface EditorButtonProps extends ButtonHTMLAttributes<HTMLButtonElemen
   streaming?: boolean
   children?: ReactNode
 }
-
-const SHADCN_EDITOR_VARIANTS = new Set<EditorButtonVariant>([
-  'primary',
-  'secondary',
-  'ghost',
-  'close',
-  'danger',
-  'accent',
-  'tool',
-  'icon',
-  'nav',
-  'tab',
-  'dashed',
-  'panel',
-  'toggle',
-  'choice',
-  'chapter',
-  'volume',
-  'segment',
-])
 
 function shadcnVariant(variant: EditorButtonVariant) {
   switch (variant) {
@@ -167,52 +148,37 @@ export function EditorButton({
   type = 'button',
   ...rest
 }: EditorButtonProps) {
-  if (SHADCN_EDITOR_VARIANTS.has(variant)) {
-    return (
-      <Button
-        type={type}
-        variant={shadcnVariant(variant)}
-        size={shadcnSize(variant, size)}
-        className={shadcnEditorClass(variant, size, active, fullWidth, className)}
-        data-active={active || undefined}
-        {...rest}
-      >
-        {children}
-      </Button>
-    )
-  }
-
   if (variant === 'send') {
+    const sendSize = editorTheme.composerControlHeight
     return (
-      <EditorButtonRoot
-        $variant={variant}
-        $size={size}
-        $active={active}
-        $fullWidth={fullWidth}
-        $streaming={streaming}
+      <button
         type={type}
-        className={className}
+        className={editorSendButtonClass(streaming, className)}
+        style={{
+          width: sendSize,
+          height: sendSize,
+          minWidth: sendSize,
+          minHeight: sendSize,
+        }}
         {...rest}
       >
         {children}
-      </EditorButtonRoot>
+      </button>
     )
   }
 
   return (
-    <EditorButtonRoot
-      $variant={variant}
-      $size={size}
-      $active={active}
-      $fullWidth={fullWidth}
-      $streaming={streaming}
+    <Button
       type={type}
-      className={className}
+      variant={shadcnVariant(variant)}
+      size={shadcnSize(variant, size)}
+      className={shadcnEditorClass(variant, size, active, fullWidth, className)}
+      data-active={active || undefined}
       {...rest}
     >
       {children}
-    </EditorButtonRoot>
+    </Button>
   )
 }
 
-export { EditorButtonRoot, sendMorph, buttonVariants }
+export { buttonVariants }

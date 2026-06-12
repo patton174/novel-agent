@@ -1,4 +1,3 @@
-import styled from 'styled-components'
 import type {
   AgentAssistantStreamPhase,
   AgentChoiceOption,
@@ -8,8 +7,6 @@ import type {
 } from '../../types/agent'
 import { normalizeToolName } from '../../utils/agentToolNames'
 import type { EditorMessage } from '../../types/editor'
-import { editorTheme } from '../../styles/editorTheme'
-import { palette } from '../../styles/theme'
 import { AssistantStreamTimeline } from '../agent/AssistantStreamTimeline'
 import { AssistantMessageAgentTrace } from '../agent/AssistantMessageAgentTrace'
 import { AgentMarkdown } from '../agent/AgentMarkdown'
@@ -60,9 +57,7 @@ export function EditorChatMessage({
 }: EditorChatMessageProps) {
   const phase: AgentAssistantStreamPhase =
     message.agentStreamPhase ?? (isActiveStream ? 'connecting' : 'completed')
-  const hasChoiceSteps = Boolean(
-    message.agentSteps?.some((s) => (s.choices?.length ?? 0) > 0),
-  )
+  const hasChoiceSteps = Boolean(message.agentSteps?.some((s) => (s.choices?.length ?? 0) > 0))
   const replayTimeline = ensureReplayTimeline(message)
   const hasTimeline = replayTimeline.length > 0
   const hasTrace = hasAgentTrace(message)
@@ -83,14 +78,13 @@ export function EditorChatMessage({
     !hasTrace &&
     phase === 'connecting' &&
     !message.agentAwaitingInteraction &&
-    !(message.agentSteps?.some((s) => (s.choices?.length ?? 0) > 0))
+    !message.agentSteps?.some((s) => (s.choices?.length ?? 0) > 0)
   const showAgentTimeline =
     !showConnectingPlaceholder && (hasTimeline || hasTrace || streamActive)
   const timelineShowsContent = replayTimeline.some(
     (block) => block.kind === 'text' && block.content.trim().length > 0,
   )
-  const showDeliveryBody =
-    !timelineShowsContent && Boolean(message.content?.trim())
+  const showDeliveryBody = !timelineShowsContent && Boolean(message.content?.trim())
   const hasOrchestrationTrace = replayTimeline.some(
     (block) =>
       block.kind === 'transition' ||
@@ -104,16 +98,14 @@ export function EditorChatMessage({
 
   if (message.role === 'user') {
     return (
-      <MessageRow $role="user">
+      <div className="flex w-full flex-col items-end">
         <UserChatBubble
           content={message.content}
           onEdit={
-            onEditUserMessage
-              ? () => onEditUserMessage(message.content)
-              : undefined
+            onEditUserMessage ? () => onEditUserMessage(message.content) : undefined
           }
         />
-      </MessageRow>
+      </div>
     )
   }
 
@@ -131,21 +123,25 @@ export function EditorChatMessage({
   })()
 
   const showMessageTodoPanel = todoItems.length > 0
+
   return (
-    <MessageRow $role="assistant">
-      <AssistantMessageBlock>
+    <div className="flex w-full flex-col items-start">
+      <div className="flex w-full max-w-full flex-col gap-2 text-[15px] leading-relaxed text-foreground">
         {message.agentStreamError && phase === 'error' && (
-          <StreamErrorBanner role="alert">
+          <div
+            className="mb-2.5 rounded-lg border border-destructive/25 bg-destructive/10 px-2.5 py-2 text-xs leading-snug text-destructive"
+            role="alert"
+          >
             {sanitizeAgentStreamError(message.agentStreamError)}
-          </StreamErrorBanner>
+          </div>
         )}
         {showConnectingPlaceholder && (
-          <AssistLoadingBlock aria-hidden>
+          <ChatMessageSurfaceBody className="flex min-h-7 items-center" aria-hidden>
             <ShimmerScanText active>正在准备创作…</ShimmerScanText>
-          </AssistLoadingBlock>
+          </ChatMessageSurfaceBody>
         )}
         {showAgentTimeline ? (
-          <AssistantStreamShell data-testid="assistant-stream-shell">
+          <div className="flex w-full max-w-full flex-col" data-testid="assistant-stream-shell">
             <AssistantStreamTimeline
               timeline={replayTimeline}
               stepStates={message.agentSteps ?? []}
@@ -169,11 +165,11 @@ export function EditorChatMessage({
                 streamLive={streamActive && !streamFinished}
               />
             ) : null}
-          </AssistantStreamShell>
+          </div>
         ) : !showConnectingPlaceholder && hasChoiceSteps ? (
           <>
             {(thinkText?.trim() || (isActiveStream && isLoading && message.agentIsThinking)) ? (
-              <ThinkPanelWrap>
+              <ChatMessageSurfaceBody className="pb-2">
                 <AgentThinkPanel
                   text={thinkText ?? ''}
                   isThinking={Boolean(
@@ -185,7 +181,7 @@ export function EditorChatMessage({
                   showCursor={false}
                   autoCollapseWhenDone
                 />
-              </ThinkPanelWrap>
+              </ChatMessageSurfaceBody>
             ) : null}
             <AssistantMessageAgentTrace
               thinkText={undefined}
@@ -200,203 +196,66 @@ export function EditorChatMessage({
             />
           </>
         ) : !showConnectingPlaceholder && message.content?.trim() ? (
-          <ChatMarkdownBody>
+          <div className="flex w-full max-w-full flex-col gap-1.5 px-0 py-0.5">
             <AgentMarkdown text={message.content} variant="chat" />
-          </ChatMarkdownBody>
+          </div>
         ) : null}
         {message.writing && (
-          <WritingSection>
-            <WritingLabel>
+          <div className="border-t border-primary/10 bg-primary/5 px-4 py-2.5">
+            <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold text-primary [&_svg]:size-3">
               <EditorIcons.Edit3 />
               <span>{message.writing.status === 'writing' ? '写作中...' : '写作完成'}</span>
-            </WritingLabel>
+            </div>
             {message.writing.content && (
-              <WritingContent>{message.writing.content}</WritingContent>
+              <div className="rounded-lg border border-primary/10 bg-background/80 px-3 py-2 text-[13px] leading-relaxed text-foreground">
+                {message.writing.content}
+              </div>
             )}
-          </WritingSection>
+          </div>
         )}
         {message.toolCalls && message.toolCalls.length > 0 && (
-          <ToolsSection>
-            <ToolsSectionLabel>
+          <div className="border-t border-border px-4 py-2">
+            <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground [&_svg]:size-3">
               <EditorIcons.Settings />
               <span>工具调用</span>
-            </ToolsSectionLabel>
+            </div>
             {message.toolCalls.map((tool, i) => (
-              <ToolItem key={i}>
-                <span className="status" />
+              <div
+                key={i}
+                className="mb-1 flex items-center gap-2 rounded-md bg-muted/40 px-2 py-1 text-xs text-muted-foreground last:mb-0"
+              >
+                <span className="size-1.5 shrink-0 rounded-full bg-emerald-500" />
                 <span>{tool.name}</span>
-                {tool.result && <span className="result">{tool.result}</span>}
-              </ToolItem>
+                {tool.result ? (
+                  <span className="ml-auto text-muted-foreground/80">{tool.result}</span>
+                ) : null}
+              </div>
             ))}
-          </ToolsSection>
+          </div>
         )}
         {message.skillCalls && message.skillCalls.length > 0 && (
-          <ToolsSection>
-            <ToolsSectionLabel>
+          <div className="border-t border-border px-4 py-2">
+            <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground [&_svg]:size-3">
               <EditorIcons.PenTool />
               <span>技能调用</span>
-            </ToolsSectionLabel>
-            <SkillWrap>
+            </div>
+            <div className="flex flex-wrap">
               {message.skillCalls.map((skill, i) => (
-                <SkillItem key={i}>
-                  <span className="status" />
+                <div
+                  key={i}
+                  className="mb-1.5 mr-1.5 inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-[11px] text-muted-foreground"
+                >
+                  <span className="size-1.5 shrink-0 rounded-full bg-emerald-500" />
                   <span>{skill.name}</span>
-                </SkillItem>
+                </div>
               ))}
-            </SkillWrap>
-          </ToolsSection>
+            </div>
+          </div>
         )}
         {showMessageTodoPanel ? (
           <MessageTodoPanel todos={todoItems} streamLive={streamActive} />
         ) : null}
-      </AssistantMessageBlock>
-    </MessageRow>
+      </div>
+    </div>
   )
 }
-
-const MessageRow = styled.div<{ $role: 'user' | 'assistant' }>`
-  display: flex;
-  flex-direction: column;
-  align-items: ${props => props.$role === 'user' ? 'flex-end' : 'flex-start'};
-  width: 100%;
-`
-
-const ThinkPanelWrap = styled(ChatMessageSurfaceBody)`
-  padding-bottom: 0.45rem;
-`
-
-const AssistantStreamShell = styled.div`
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  max-width: 100%;
-`
-
-const AssistantMessageBlock = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  width: 100%;
-  max-width: 100%;
-  font-size: 0.9rem;
-  line-height: 1.7;
-  color: ${editorTheme.text};
-`
-
-const StreamErrorBanner = styled.div`
-  margin: 0 0 0.65rem;
-  padding: 0.45rem 0.65rem;
-  font-size: 0.76rem;
-  line-height: 1.45;
-  color: ${palette.errorUser};
-  background: ${palette.errorBg};
-  border: 1px solid rgba(192, 57, 43, 0.25);
-  border-radius: 8px;
-`
-
-const AssistLoadingBlock = styled(ChatMessageSurfaceBody)`
-  display: flex;
-  align-items: center;
-  min-height: 1.75rem;
-`
-
-const ChatMarkdownBody = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  width: 100%;
-  max-width: 100%;
-  padding: 0.05rem 0 0.15rem;
-`
-
-const WritingSection = styled.div`
-  background: ${palette.accentSoft};
-  border-top: 1px solid ${palette.accentMuted};
-  padding: 0.6rem 1rem;
-`
-
-const WritingLabel = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: ${palette.accent};
-  margin-bottom: 0.4rem;
-  svg { width: 12px; height: 12px; }
-`
-
-const WritingContent = styled.div`
-  font-size: 0.8rem;
-  color: ${palette.text};
-  line-height: 1.6;
-  padding: 0.5rem 0.75rem;
-  background: ${palette.surfaceGlass};
-  border-radius: 8px;
-  border: 1px solid ${palette.accentMuted};
-`
-
-const ToolsSection = styled.div`
-  border-top: 1px solid ${palette.border};
-  padding: 0.5rem 1rem;
-`
-
-const ToolsSectionLabel = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: ${palette.textMuted};
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 0.4rem;
-  svg { width: 12px; height: 12px; }
-`
-
-const ToolItem = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 0.3rem 0.5rem;
-  font-size: 0.75rem;
-  color: ${palette.textSecondary};
-  background: ${palette.proseTableStripe};
-  border-radius: 6px;
-  margin-bottom: 0.25rem;
-  &:last-child { margin-bottom: 0; }
-  .status {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: ${palette.traceOk};
-  }
-  .result {
-    color: ${palette.textMuted};
-    margin-left: auto;
-  }
-`
-
-const SkillWrap = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-`
-
-const SkillItem = styled.div`
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 0.25rem 0.6rem;
-  font-size: 0.7rem;
-  color: ${palette.textDim};
-  background: ${palette.accentSoft};
-  border-radius: 20px;
-  margin-right: 0.35rem;
-  margin-bottom: 0.35rem;
-  .status {
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-    background: ${palette.traceOk};
-  }
-`

@@ -1,9 +1,9 @@
-import styled from 'styled-components'
 import { MotionTabBar } from '../motion/MotionTabBar'
-import { editorLayout, editorTheme } from '../../styles/editorTheme'
+import { editorLayout } from '../../styles/theme'
 import { EditorIcons } from './icons'
+import type { EditorCenterTab } from './EditorCenterTabs.types'
 
-export type EditorCenterTab = 'chat' | 'story'
+export type { EditorCenterTab } from './EditorCenterTabs.types'
 
 export interface EditorCenterTabsProps {
   activeTab: EditorCenterTab
@@ -17,23 +17,16 @@ const TAB_ITEMS = [
 
 export function EditorCenterTabs({ activeTab, onTabChange }: EditorCenterTabsProps) {
   return (
-    <CenterTabBar>
+    <div
+      className="box-border flex items-center border-b border-border bg-background"
+      style={{ minHeight: editorLayout.chromeMinHeight, padding: `0 ${editorLayout.mainPaddingX}` }}
+    >
       <MotionTabBar
         items={TAB_ITEMS}
         activeId={activeTab}
         onChange={onTabChange}
         aria-label="编辑区标签"
       />
-    </CenterTabBar>
+    </div>
   )
 }
-
-const CenterTabBar = styled.div`
-  display: flex;
-  align-items: center;
-  min-height: ${editorLayout.chromeMinHeight};
-  box-sizing: border-box;
-  padding: 0 ${editorLayout.mainPaddingX};
-  background: ${editorTheme.bg};
-  border-bottom: 1px solid ${editorTheme.border};
-`

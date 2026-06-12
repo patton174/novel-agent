@@ -1,9 +1,7 @@
 import { useMemo } from 'react'
-import styled from 'styled-components'
 import type { AgentChoiceOption, AgentInteractionPayload, AskUserAnswers } from '../../types/agent'
 import type { EditorMessage } from '../../types/editor'
-import { editorLayout } from '../../styles/editorTheme'
-import { hideScrollbarCss } from '../../styles/theme'
+import { editorLayout } from '../../styles/theme'
 import { EditorChatMessage } from './EditorChatMessage'
 
 export interface EditorChatMessageListProps {
@@ -24,7 +22,6 @@ export interface EditorChatMessageListProps {
   ) => void
   messagesAreaRef: React.Ref<HTMLDivElement>
   messagesEndRef: React.Ref<HTMLDivElement>
-  /** 悬浮输入框高度（px），用于底部留白 */
   composerBottomInset?: number
   onEditUserMessage?: (content: string) => void
   marketingScrubPlaying?: boolean
@@ -50,17 +47,23 @@ export function EditorChatMessageList({
     const map = new Map<string, boolean | undefined>()
     for (const message of messages) {
       const userThinkPinned = Object.prototype.hasOwnProperty.call(thinkPanelOpen, message.id)
-      map.set(
-        message.id,
-        userThinkPinned ? thinkPanelOpen[message.id] : undefined,
-      )
+      map.set(message.id, userThinkPinned ? thinkPanelOpen[message.id] : undefined)
     }
     return map
   }, [messages, thinkPanelOpen])
 
   return (
-    <MessagesArea ref={messagesAreaRef} $bottomInset={composerBottomInset}>
-      <MessagesInner>
+    <div
+      ref={messagesAreaRef}
+      className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto overscroll-contain py-3 [scrollbar-width:none] [-ms-overflow-style:none] [-webkit-overflow-scrolling:touch] [&::-webkit-scrollbar]:hidden"
+      style={{
+        paddingBottom: composerBottomInset != null ? `${composerBottomInset}px` : '10.5rem',
+      }}
+    >
+      <div
+        className="mx-auto flex w-full flex-col gap-5 max-md:gap-3.5"
+        style={{ maxWidth: editorLayout.contentMaxWidth }}
+      >
         {messages.map((message) => (
           <EditorChatMessage
             key={message.id}
@@ -84,44 +87,8 @@ export function EditorChatMessageList({
             onEditUserMessage={onEditUserMessage}
           />
         ))}
-        <ScrollEndAnchor ref={messagesEndRef} aria-hidden />
-      </MessagesInner>
-    </MessagesArea>
+        <div ref={messagesEndRef} className="h-px w-full shrink-0 scroll-mb-2" aria-hidden />
+      </div>
+    </div>
   )
 }
-
-const MessagesArea = styled.div<{ $bottomInset?: number }>`
-  flex: 1;
-  min-height: 0;
-  min-width: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
-  overscroll-behavior: contain;
-  padding: 0.75rem 0;
-  padding-bottom: ${({ $bottomInset }) =>
-    $bottomInset != null ? `${$bottomInset}px` : '10.5rem'};
-  display: flex;
-  flex-direction: column;
-  -webkit-overflow-scrolling: touch;
-  ${hideScrollbarCss}
-`
-
-const ScrollEndAnchor = styled.div`
-  flex-shrink: 0;
-  width: 100%;
-  height: 1px;
-  scroll-margin-bottom: 0.5rem;
-`
-
-const MessagesInner = styled.div`
-  width: 100%;
-  max-width: ${editorLayout.contentMaxWidth};
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-
-  @media (max-width: 767px) {
-    gap: 0.85rem;
-  }
-`

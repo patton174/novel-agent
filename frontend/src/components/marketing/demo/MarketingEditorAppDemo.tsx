@@ -1,37 +1,54 @@
+import { cn } from '@/lib/utils'
+import {
+  DEMO_APP_AGENT_MODEL,
+  DEMO_APP_AGENT_PANE,
+  DEMO_APP_AGENT_SCROLL,
+  DEMO_APP_AGENT_SESSION,
+  DEMO_APP_AGENT_TIMELINE,
+  DEMO_APP_AGENT_TOP,
+  DEMO_APP_BROWSER_BAR,
+  DEMO_APP_COMPOSER_BOX,
+  DEMO_APP_COMPOSER_PLACEHOLDER,
+  DEMO_APP_COMPOSER_SEND,
+  DEMO_APP_COMPOSER_STUB,
+  DEMO_APP_EDITOR_BODY,
+  DEMO_APP_EDITOR_LINE,
+  DEMO_APP_EDITOR_LINE_MUTED,
+  DEMO_APP_EDITOR_LINE_STREAM,
+  DEMO_APP_EDITOR_PANE,
+  DEMO_APP_EDITOR_TITLE,
+  DEMO_APP_MOCK_ROOT,
+  DEMO_APP_SIDEBAR,
+  DEMO_APP_SIDEBAR_NOVEL,
+  DEMO_APP_SIDEBAR_NOVEL_META,
+  DEMO_APP_SIDEBAR_NOVEL_NAME,
+  DEMO_APP_USER_BUBBLE,
+  DEMO_APP_WORKSPACE,
+  DEMO_BROWSER_DOT,
+  DEMO_BROWSER_DOT_GREEN,
+  DEMO_BROWSER_DOT_RED,
+  DEMO_BROWSER_DOT_YELLOW,
+  DEMO_BROWSER_LIVE,
+  DEMO_BROWSER_TITLE,
+  DEMO_BROWSER_TRAFFIC,
+  DEMO_BROWSER_URL,
+  DEMO_ORCH_HEADER,
+  DEMO_STREAM_BLOCK,
+  DEMO_STREAM_CURSOR,
+  DEMO_STREAM_LABEL,
+  DEMO_STREAM_LINE,
+  DEMO_SUBAGENT_WRAP,
+  DEMO_THINK_CURSOR,
+  DEMO_THINK_LINE,
+  DEMO_TOOL_LIST,
+  DEMO_TOOL_ROW,
+  demoChapterItemClass,
+  demoStatusDotClass,
+  demoThinkBlockClass,
+  demoThinkHeaderClass,
+} from '@/lib/marketingDemoClasses'
+
 export type MarketingAgentDemoVariant = 'think' | 'orchestrate' | 'subagent' | 'stream'
-import {
-  DemoOrchHeader,
-  DemoStatusDot,
-  DemoStreamBlock,
-  DemoStreamCursor,
-  DemoStreamLabel,
-  DemoStreamLine,
-  DemoSubagentWrap,
-  DemoThinkBlock,
-  DemoThinkCursor,
-  DemoThinkHeader,
-  DemoThinkLine,
-  DemoToolList,
-  DemoToolRow,
-} from '../../../styles/surfaces/marketingAgentDemo'
-import {
-  AppAgentPane,
-  AppAgentScroll,
-  AppAgentTimeline,
-  AppAgentTop,
-  AppBrowserBar,
-  AppChapterItem,
-  AppComposerStub,
-  AppEditorBody,
-  AppEditorLine,
-  AppEditorPane,
-  AppEditorTitle,
-  AppMockRoot,
-  AppSidebar,
-  AppSidebarNovel,
-  AppUserBubble,
-  AppWorkspace,
-} from '../../../styles/surfaces/marketingEditorAppDemo'
 
 const NOVEL = { title: '诸天神祇有价', meta: '玄幻 · 连载中' }
 
@@ -73,7 +90,7 @@ const SUBAGENT_TOOLS = [
 function ToolIcon({ status }: { status: 'idle' | 'loading' | 'success' }) {
   return (
     <span className="lead" aria-hidden>
-      <DemoStatusDot $status={status} />
+      <span className={demoStatusDotClass(status)} />
     </span>
   )
 }
@@ -88,7 +105,7 @@ function ToolRows({
   return (
     <>
       {tools.map((tool) => (
-        <DemoToolRow key={tool.name} className={classPrefix}>
+        <div key={tool.name} className={cn(DEMO_TOOL_ROW, classPrefix)}>
           <ToolIcon status={tool.status} />
           <div className="body">
             <div className="headline">
@@ -97,7 +114,7 @@ function ToolRows({
             </div>
             {tool.excerpt ? <div className="excerpt">{tool.excerpt}</div> : null}
           </div>
-        </DemoToolRow>
+        </div>
       ))}
     </>
   )
@@ -106,34 +123,34 @@ function ToolRows({
 function AgentTimeline({ variant }: { variant: MarketingAgentDemoVariant }) {
   if (variant === 'think') {
     return (
-      <DemoThinkBlock className="demo-think-block" $active>
-        <DemoThinkHeader className="demo-think-header" $active>
+      <div className={cn(demoThinkBlockClass(true), 'demo-think-block')}>
+        <div className={cn(demoThinkHeaderClass(true), 'demo-think-header')}>
           <span className="title">思考</span>
           <span className="meta demo-think-meta">进行中</span>
-        </DemoThinkHeader>
+        </div>
         {THINK_LINES.map((line) => (
-          <DemoThinkLine key={line} className="demo-think-line">
+          <p key={line} className={cn(DEMO_THINK_LINE, 'demo-think-line')}>
             {line}
-          </DemoThinkLine>
+          </p>
         ))}
-        <DemoThinkLine className="demo-think-line demo-think-tail">
+        <p className={cn(DEMO_THINK_LINE, 'demo-think-line demo-think-tail')}>
           准备调用 <strong>plan</strong> 生成步骤…
-          <DemoThinkCursor className="demo-think-cursor" />
-        </DemoThinkLine>
-      </DemoThinkBlock>
+          <span className={cn(DEMO_THINK_CURSOR, 'demo-think-cursor')} />
+        </p>
+      </div>
     )
   }
 
   if (variant === 'orchestrate') {
     return (
       <>
-        <DemoOrchHeader className="demo-orch-header" type="button" aria-expanded>
+        <button type="button" className={cn(DEMO_ORCH_HEADER, 'demo-orch-header')} aria-expanded>
           <span className="chevron" />
           <span className="title">编排中 · 续写第二章</span>
-        </DemoOrchHeader>
-        <DemoToolList className="demo-tool-list">
+        </button>
+        <div className={cn(DEMO_TOOL_LIST, 'demo-tool-list')}>
           <ToolRows tools={ORCH_TOOLS} />
-        </DemoToolList>
+        </div>
       </>
     )
   }
@@ -141,7 +158,7 @@ function AgentTimeline({ variant }: { variant: MarketingAgentDemoVariant }) {
   if (variant === 'subagent') {
     return (
       <>
-        <DemoToolRow className="demo-tool-row demo-parent-tool">
+        <div className={cn(DEMO_TOOL_ROW, 'demo-tool-row demo-parent-tool')}>
           <ToolIcon status="success" />
           <div className="body">
             <div className="headline">
@@ -149,30 +166,30 @@ function AgentTimeline({ variant }: { variant: MarketingAgentDemoVariant }) {
               <span className="args">角色一致性校验</span>
             </div>
           </div>
-        </DemoToolRow>
-        <DemoSubagentWrap className="demo-subagent-wrap">
+        </div>
+        <div className={cn(DEMO_SUBAGENT_WRAP, 'demo-subagent-wrap')}>
           <div className="sub-head">子代理 · 角色校对</div>
           <div className="demo-subagent-inner">
             <ToolRows tools={SUBAGENT_TOOLS} classPrefix="demo-sub-tool-row" />
           </div>
-        </DemoSubagentWrap>
+        </div>
       </>
     )
   }
 
   return (
-    <DemoStreamBlock className="demo-stream-block">
-      <DemoStreamLabel>chapter_create · 流式输出</DemoStreamLabel>
+    <div className={cn(DEMO_STREAM_BLOCK, 'demo-stream-block')}>
+      <span className={DEMO_STREAM_LABEL}>chapter_create · 流式输出</span>
       {EDITOR_STREAM.map((line) => (
-        <DemoStreamLine key={line} className="demo-stream-line">
+        <p key={line} className={cn(DEMO_STREAM_LINE, 'demo-stream-line')}>
           {line}
-        </DemoStreamLine>
+        </p>
       ))}
-      <DemoStreamLine className="demo-stream-line demo-stream-tail">
+      <p className={cn(DEMO_STREAM_LINE, 'demo-stream-line demo-stream-tail')}>
         剑尖挑起一道寒芒，直指苍穹。
-        <DemoStreamCursor className="demo-stream-cursor" />
-      </DemoStreamLine>
-    </DemoStreamBlock>
+        <span className={cn(DEMO_STREAM_CURSOR, 'demo-stream-cursor')} />
+      </p>
+    </div>
   )
 }
 
@@ -180,33 +197,53 @@ function EditorContent({ variant }: { variant: MarketingAgentDemoVariant }) {
   const showStream = variant === 'stream'
 
   return (
-    <AppEditorPane data-demo-editor-pane>
-      <AppEditorTitle>第二章 · 银月森林首战</AppEditorTitle>
-      <AppEditorBody>
+    <main className={DEMO_APP_EDITOR_PANE} data-demo-editor-pane>
+      <h3 className={DEMO_APP_EDITOR_TITLE}>第二章 · 银月森林首战</h3>
+      <div className={DEMO_APP_EDITOR_BODY}>
         {EDITOR_PRIOR.map((line) => (
-          <AppEditorLine key={line} className="muted demo-editor-line demo-editor-prior">
+          <p
+            key={line}
+            className={cn(
+              DEMO_APP_EDITOR_LINE,
+              DEMO_APP_EDITOR_LINE_MUTED,
+              'demo-editor-line demo-editor-prior',
+            )}
+          >
             {line}
-          </AppEditorLine>
+          </p>
         ))}
         {showStream
           ? EDITOR_STREAM.map((line) => (
-              <AppEditorLine key={line} className="stream demo-editor-line demo-editor-stream">
+              <p
+                key={line}
+                className={cn(
+                  DEMO_APP_EDITOR_LINE,
+                  DEMO_APP_EDITOR_LINE_STREAM,
+                  'demo-editor-line demo-editor-stream',
+                )}
+              >
                 {line}
-              </AppEditorLine>
+              </p>
             ))
           : null}
         {showStream ? (
-          <AppEditorLine className="stream demo-editor-line demo-editor-tail">
+          <p
+            className={cn(
+              DEMO_APP_EDITOR_LINE,
+              DEMO_APP_EDITOR_LINE_STREAM,
+              'demo-editor-line demo-editor-tail',
+            )}
+          >
             那件从未在任何数据库中出现过的装备，在雨中泛着幽光。
-            <DemoThinkCursor className="demo-stream-cursor" />
-          </AppEditorLine>
+            <span className={cn(DEMO_THINK_CURSOR, 'demo-stream-cursor')} />
+          </p>
         ) : (
-          <AppEditorLine className="muted demo-editor-line">
+          <p className={cn(DEMO_APP_EDITOR_LINE, DEMO_APP_EDITOR_LINE_MUTED, 'demo-editor-line')}>
             {variant === 'orchestrate' ? '（等待 chapter_create 写入正文…）' : '（Agent 运行中…）'}
-          </AppEditorLine>
+          </p>
         )}
-      </AppEditorBody>
-    </AppEditorPane>
+      </div>
+    </main>
   )
 }
 
@@ -217,64 +254,63 @@ export interface MarketingEditorAppDemoProps {
 /** 仿真实编辑器三栏 + Agent 助手，供滚动分镜 scrub 驱动 */
 export function MarketingEditorAppDemo({ variant }: MarketingEditorAppDemoProps) {
   return (
-    <AppMockRoot
-      className="demo-app-mock demo-agent-console"
+    <div
+      className={cn(DEMO_APP_MOCK_ROOT, 'demo-app-mock demo-agent-console')}
       data-variant={variant}
       aria-label="Novel AI 编辑器 Agent 演示"
     >
-      <AppBrowserBar>
-        <div className="traffic" aria-hidden>
-          <span className="dot red" />
-          <span className="dot yellow" />
-          <span className="dot green" />
+      <div className={DEMO_APP_BROWSER_BAR}>
+        <div className={DEMO_BROWSER_TRAFFIC} aria-hidden>
+          <span className={cn(DEMO_BROWSER_DOT, DEMO_BROWSER_DOT_RED)} />
+          <span className={cn(DEMO_BROWSER_DOT, DEMO_BROWSER_DOT_YELLOW)} />
+          <span className={cn(DEMO_BROWSER_DOT, DEMO_BROWSER_DOT_GREEN)} />
         </div>
-        <span className="title">Novel AI</span>
-        <span className="url">localhost:3000/editor?novel=诸天神祇有价</span>
-        <span className="live">Agent 运行中</span>
-      </AppBrowserBar>
+        <span className={DEMO_BROWSER_TITLE}>Novel AI</span>
+        <span className={DEMO_BROWSER_URL}>localhost:3000/editor?novel=诸天神祇有价</span>
+        <span className={DEMO_BROWSER_LIVE}>Agent 运行中</span>
+      </div>
 
-      <AppWorkspace>
-        <AppSidebar className="demo-app-sidebar">
-          <AppSidebarNovel>
-            <div className="name">{NOVEL.title}</div>
-            <div className="meta">{NOVEL.meta}</div>
-          </AppSidebarNovel>
+      <div className={DEMO_APP_WORKSPACE}>
+        <aside className={cn(DEMO_APP_SIDEBAR, 'demo-app-sidebar')}>
+          <div className={DEMO_APP_SIDEBAR_NOVEL}>
+            <div className={DEMO_APP_SIDEBAR_NOVEL_NAME}>{NOVEL.title}</div>
+            <div className={DEMO_APP_SIDEBAR_NOVEL_META}>{NOVEL.meta}</div>
+          </div>
           {CHAPTERS.map((ch) => (
-            <AppChapterItem
+            <div
               key={ch.idx}
-              className="demo-sidebar-chapter"
-              $active={ch.active}
+              className={cn(demoChapterItemClass(ch.active), 'demo-sidebar-chapter')}
               data-active={ch.active ? '1' : '0'}
             >
               <span className="idx">{ch.idx}</span>
               <span>{ch.title}</span>
-            </AppChapterItem>
+            </div>
           ))}
-        </AppSidebar>
+        </aside>
 
         <EditorContent variant={variant} />
 
-        <AppAgentPane data-demo-agent-pane>
-          <AppAgentTop>
-            <span className="session">续写 · 第二章</span>
-            <span className="model">Agent</span>
-          </AppAgentTop>
-          <AppAgentScroll>
-            <AppUserBubble className="demo-user-msg">
+        <aside className={DEMO_APP_AGENT_PANE} data-demo-agent-pane>
+          <div className={DEMO_APP_AGENT_TOP}>
+            <span className={DEMO_APP_AGENT_SESSION}>续写 · 第二章</span>
+            <span className={DEMO_APP_AGENT_MODEL}>Agent</span>
+          </div>
+          <div className={DEMO_APP_AGENT_SCROLL}>
+            <div className={cn(DEMO_APP_USER_BUBBLE, 'demo-user-msg')}>
               继续写第二章，衔接银月森林首战，要有掉宝爽点。
-            </AppUserBubble>
-            <AppAgentTimeline>
-              <AgentTimeline variant={variant} />
-            </AppAgentTimeline>
-          </AppAgentScroll>
-          <AppComposerStub>
-            <div className="box">
-              <span className="placeholder">描述情节或指令…</span>
-              <span className="send" aria-hidden />
             </div>
-          </AppComposerStub>
-        </AppAgentPane>
-      </AppWorkspace>
-    </AppMockRoot>
+            <div className={DEMO_APP_AGENT_TIMELINE}>
+              <AgentTimeline variant={variant} />
+            </div>
+          </div>
+          <div className={DEMO_APP_COMPOSER_STUB}>
+            <div className={DEMO_APP_COMPOSER_BOX}>
+              <span className={DEMO_APP_COMPOSER_PLACEHOLDER}>描述情节或指令…</span>
+              <span className={DEMO_APP_COMPOSER_SEND} aria-hidden />
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
   )
 }
