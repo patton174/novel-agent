@@ -13,6 +13,7 @@ import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.util.ServletRequestPathUtils;
 
 import java.io.IOException;
 import java.net.URI;
@@ -84,6 +85,7 @@ public class EncryptedRouteServletFilter extends OncePerRequestFilter {
                 RequestSignCodec.parseQuery(request.getQueryString())
             );
             HttpServletRequest rewritten = new RewrittenPathHttpServletRequest(request, pathPart, mergedQuery);
+            ServletRequestPathUtils.clearParsedRequestPath(request);
             filterChain.doFilter(rewritten, response);
         } catch (Exception ex) {
             log.warn("route decrypt failed: {}", ex.getMessage());

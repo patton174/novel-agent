@@ -10,7 +10,7 @@ final class RewrittenPathHttpServletRequest extends HttpServletRequestWrapper {
 
     RewrittenPathHttpServletRequest(HttpServletRequest request, String path, String query) {
         super(request);
-        this.path = path;
+        this.path = path.startsWith("/") ? path : "/" + path;
         this.query = query;
     }
 
@@ -22,6 +22,24 @@ final class RewrittenPathHttpServletRequest extends HttpServletRequestWrapper {
     @Override
     public String getServletPath() {
         return path;
+    }
+
+    @Override
+    public String getPathInfo() {
+        return null;
+    }
+
+    @Override
+    public StringBuffer getRequestURL() {
+        StringBuffer url = new StringBuffer();
+        String scheme = getScheme();
+        int port = getServerPort();
+        url.append(scheme).append("://").append(getServerName());
+        if (("http".equals(scheme) && port != 80) || ("https".equals(scheme) && port != 443)) {
+            url.append(':').append(port);
+        }
+        url.append(path);
+        return url;
     }
 
     @Override
