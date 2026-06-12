@@ -343,7 +343,7 @@ export default function PlansPage() {
                 onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="grid gap-2">
                 <label htmlFor="plan-price" className="text-sm font-medium">
                   月价（元）
@@ -386,7 +386,7 @@ export default function PlansPage() {
                 />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="grid gap-2">
                 <label htmlFor="plan-tokens" className="text-sm font-medium">
                   月 Token 配额

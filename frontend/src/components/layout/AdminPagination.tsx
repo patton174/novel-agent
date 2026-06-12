@@ -14,6 +14,10 @@ export function AdminPagination({
   loading?: boolean
   onPageChange: (page: number) => void
 }) {
+  if (totalCount === 0 && !loading) {
+    return null
+  }
+
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
       <p className="text-muted-foreground">

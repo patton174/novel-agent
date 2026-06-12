@@ -167,12 +167,24 @@ export default function SiteContentPage() {
                 isDirty ? '有未保存的更改' : '编辑 Markdown，保存后公开页与仪表盘公告即时生效。'
               }
               action={
-                <div className="flex shrink-0 gap-2">
-                  <Button type="button" variant="outline" size="sm" onClick={() => setPreview((p) => !p)}>
+                <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:shrink-0">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 sm:flex-none"
+                    onClick={() => setPreview((p) => !p)}
+                  >
                     <Eye className="mr-1.5 size-4" />
                     {preview ? '编辑' : '预览'}
                   </Button>
-                  <Button type="button" size="sm" disabled={saving || !isDirty} onClick={() => void handleSave()}>
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="flex-1 sm:flex-none"
+                    disabled={saving || !isDirty}
+                    onClick={() => void handleSave()}
+                  >
                     <Save className="mr-1.5 size-4" />
                     {saving ? '保存中…' : '保存'}
                   </Button>

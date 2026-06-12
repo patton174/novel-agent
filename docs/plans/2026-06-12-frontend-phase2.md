@@ -1,0 +1,51 @@
+# Frontend Phase 2 — Admin 移动 + 营销抛光
+
+> **Goal:** 完成 `docs/frontend-ui-audit.md` 中 Phase 1 统一后剩余的可交付项：Admin 移动可用性、营销移动体验、图表可读性。
+
+**Architecture:** 不引入新 UI 框架；沿用「移动卡片 + 桌面表格」双轨、`ConfirmDialogHost`、Skeleton 加载。优先改共享组件（`DataTableFrame`、`CrawlJobRow`、图表），再改单页。
+
+**Tech Stack:** React、Tailwind、shadcn、Recharts
+
+---
+
+## 状态总览
+
+| 项 | 状态 | 说明 |
+|---|---|---|
+| Modal / Loader / Button 统一 | ✅ Phase 1 | `EditorModalShell`、`ConfirmDialogHost`、Button `rounded-xl` |
+| UserTable / Audit / Plans 移动卡片 | ✅ 已有 | 各页独立实现 |
+| Admin 顶栏返回创作台 | ✅ 已有 | `AdminLayout` sm 以下 icon |
+| Billing 用量移动卡片 | ✅ 已有 | `UsageEventCard` |
+| Home 对比表滑动提示 | ✅ 已有 | Feasibility section |
+| Pricing 高亮卡 mobile scale | ✅ 已有 | 仅 `md:scale` |
+
+---
+
+## Phase 2A — 本批执行
+
+- [x] **UsersPage**：去掉冗余「搜索」按钮，450ms debounce + 提示文案
+- [x] **PlansPage Dialog**：表单 `grid-cols-1 sm:grid-cols-2`，移动单列
+- [x] **CrawlJobRow**：错误信息 `line-clamp-2`，运维可读
+- [x] **RevenueCharts**：饼图下方模型图例（label 已关，靠 Tooltip 不够）
+- [x] **SiteContentPage**：移动顶栏 action 换行，避免 header 挤压
+- [x] **OrchestratorLogTerminal**：移动高度再收紧
+- [x] **AdminPagination**：0 条时隐藏分页区（与 Audit 一致）
+- [x] **AppShellCardHeader**：小屏 action 区纵向堆叠（全局 Admin 卡片）
+
+## Phase 2B — 后续（未在本批）
+
+- [ ] CatalogReaderModal 移动目录/正文同屏优化
+- [ ] CrawlJobDetailModal 增加 footer 操作
+- [ ] StatsPage 日期范围选择
+- [ ] 营销 GSAP / styled-components 与 Tailwind rhythm 统一（ redesign 级）
+- [ ] 编辑器 neumorphic 与 shadcn 视觉融合（ redesign 级）
+
+---
+
+## 验收
+
+1. `/admin/users` 输入即搜，无多余按钮
+2. `/admin/plans` 编辑套餐 Dialog 手机单列不挤
+3. `/admin/crawler` 失败任务错误可读两行
+4. `/admin/revenue` 饼图有图例
+5. `/admin/site-content` 预览/保存按钮小屏不溢出

@@ -43,7 +43,7 @@ export const CrawlJobRow = memo(function CrawlJobRow({
   const jobGoal = parseCrawlJobGoal(job.configJson)
   const title = crawlJobDisplayTitle(job, jobGoal)
   const progressLabel = crawlJobProgressLabel(job)
-  const errorPreview = truncateError(job.errorMessage, 80)
+  const errorPreview = truncateError(job.errorMessage, 160)
   const actions = crawlJobActions(job.status)
   const isActive = job.status === 'RUNNING' || job.status === 'PENDING'
 
@@ -93,7 +93,9 @@ export const CrawlJobRow = memo(function CrawlJobRow({
           </div>
         ) : null}
         {errorPreview ? (
-          <p className="truncate text-[11px] text-destructive">{errorPreview}</p>
+          <p className="line-clamp-2 text-[11px] leading-snug text-destructive" title={job.errorMessage ?? undefined}>
+            {errorPreview}
+          </p>
         ) : null}
       </div>
       {actions.length > 0 ? (

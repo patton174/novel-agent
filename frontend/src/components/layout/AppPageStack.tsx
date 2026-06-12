@@ -64,7 +64,7 @@ export function AppShellCardHeader({
   return (
     <div
       className={cn(
-        'flex items-start justify-between gap-3 border-b border-border/60 px-6 py-5',
+        'flex flex-col gap-3 border-b border-border/60 px-6 py-5 sm:flex-row sm:items-start sm:justify-between',
         className,
       )}
     >

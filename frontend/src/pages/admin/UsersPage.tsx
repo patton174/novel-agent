@@ -5,7 +5,6 @@ import { UserEditDialog } from '@/components/admin/UserEditDialog'
 import { UserTable } from '@/components/admin/UserTable'
 import { AppPageStack, AppShellCard, AppShellCardBody, AppShellCardHeader } from '@/components/layout/AppPageStack'
 import { AdminPagination } from '@/components/layout/AdminPagination'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useMarkRouteSeen } from '@/hooks/useMarkRouteSeen'
 import { appToast } from '@/stores/appToastStore'
@@ -62,12 +61,6 @@ export default function UsersPage() {
 
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE))
 
-  const handleSearch = (event: React.FormEvent) => {
-    event.preventDefault()
-    setPageCurrent(1)
-    setKeyword(searchInput.trim())
-  }
-
   const openEdit = (user: AdminUser) => {
     setEditingUser(user)
     setDialogOpen(true)
@@ -85,20 +78,17 @@ export default function UsersPage() {
       <AppShellCard>
         <AppShellCardHeader title="用户列表" description="按用户名搜索并编辑角色、配额" />
         <AppShellCardBody className="py-4">
-          <form onSubmit={handleSearch} className="flex max-w-md gap-2">
-            <div className="relative flex-1">
-              <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                placeholder="按用户名搜索"
-                className="pl-8 rounded-xl"
-              />
-            </div>
-            <Button type="submit" variant="secondary" className="rounded-xl">
-              搜索
-            </Button>
-          </form>
+          <div className="relative max-w-md">
+            <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder="按用户名搜索"
+              className="rounded-xl pl-8"
+              aria-label="按用户名搜索"
+            />
+          </div>
+          <p className="mt-2 text-[11px] text-muted-foreground">输入后自动搜索，无需点击按钮</p>
         </AppShellCardBody>
       </AppShellCard>
 

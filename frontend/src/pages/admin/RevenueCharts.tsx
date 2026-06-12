@@ -115,34 +115,51 @@ export default function RevenueCharts({ trends, modelBreakdown }: RevenueChartsP
           {pieData.length === 0 ? (
             <div className={APP_CHART_EMPTY}>暂无数据</div>
           ) : (
-            <div className={APP_CHART_HEIGHT}>
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={pieData}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={88}
-                    label={false}
-                  >
-                    {pieData.map((_, i) => (
-                      <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    labelFormatter={(label) => String(label)}
-                    formatter={(value, name, item) => {
-                      const payload = item?.payload as { tokens?: number } | undefined
-                      return [
-                        `${formatCostMicros(Number(value))} · ${(payload?.tokens ?? 0).toLocaleString('zh-CN')} tok`,
-                        String(name),
-                      ]
-                    }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
+            <div className="space-y-3">
+              <div className={APP_CHART_HEIGHT}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={pieData}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={88}
+                      label={false}
+                    >
+                      {pieData.map((_, i) => (
+                        <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      labelFormatter={(label) => String(label)}
+                      formatter={(value, name, item) => {
+                        const payload = item?.payload as { tokens?: number } | undefined
+                        return [
+                          `${formatCostMicros(Number(value))} · ${(payload?.tokens ?? 0).toLocaleString('zh-CN')} tok`,
+                          String(name),
+                        ]
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <ul className="flex flex-wrap gap-x-4 gap-y-1.5 px-1 text-xs">
+                {pieData.map((entry, i) => (
+                  <li key={entry.name} className="flex min-w-0 items-center gap-1.5">
+                    <span
+                      aria-hidden
+                      className="size-2 shrink-0 rounded-full"
+                      style={{ backgroundColor: PIE_COLORS[i % PIE_COLORS.length] }}
+                    />
+                    <span className="truncate text-muted-foreground">{entry.name}</span>
+                    <span className="shrink-0 font-medium tabular-nums text-foreground">
+                      {formatCostMicros(entry.value)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
         </AppChartCard>
