@@ -58,9 +58,9 @@ export function HomeDanmakuSection() {
         ) : null}
       </div>
 
-      <div className="relative mb-6 h-[228px] w-full">
-        <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-24 bg-gradient-to-r from-[#070a14] to-transparent sm:w-32" />
-        <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-24 bg-gradient-to-l from-[#070a14] to-transparent sm:w-32" />
+      <div className="relative mb-6 h-[200px] w-full max-md:h-[200px] md:h-[228px]">
+        <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 bg-gradient-to-r from-[#070a14] to-transparent sm:w-24 md:w-32" />
+        <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 bg-gradient-to-l from-[#070a14] to-transparent sm:w-24 md:w-32" />
 
         {loading ? (
           <div className="flex h-full items-center justify-center text-sm text-slate-500">

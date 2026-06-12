@@ -39,7 +39,7 @@ export function HomeFeasibilitySection() {
             <Sparkles className="size-3" />
             {t('home.feasibility.eyebrow')}
           </p>
-          <h2 className="mb-3 text-3xl font-bold tracking-tight text-foreground md:text-4xl lg:text-[2.75rem]">
+          <h2 className="mb-3 text-3xl font-bold tracking-tight text-foreground md:text-4xl lg:text-4xl">
             {t('home.feasibility.title')}
           </h2>
           <p className="text-base leading-relaxed text-muted-foreground md:text-lg">{t('home.feasibility.subtitle')}</p>

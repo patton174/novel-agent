@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import { MarketingPageLayout } from '@/components/marketing/MarketingPageLayout'
 import { MarketingSubpageHero } from '@/components/marketing/MarketingSubpageHero'
+import { MKT_CTA_PRIMARY, MKT_CTA_SECONDARY } from '@/lib/marketingCta'
 
 const VALUE_ICONS = [Brain, Eye, Shield] as const
 
@@ -23,8 +24,14 @@ export default function AboutPage() {
         eyebrow={t('about.eyebrow')}
         title={t('about.title')}
         subtitle={t('about.subtitle')}
+        action={
+          <Link to="/register" className={MKT_CTA_PRIMARY}>
+            {t('nav.register')}
+            <ArrowRight className="size-4" />
+          </Link>
+        }
       >
-        <dl className="flex flex-wrap gap-8 border-t border-white/10 pt-8">
+        <dl className="flex flex-wrap gap-6 border-t border-white/10 pt-8 sm:gap-8">
           {metrics.map((m) => (
             <div key={m.label}>
               <dt className="text-xs uppercase tracking-wider text-slate-500">{m.label}</dt>
@@ -64,16 +71,10 @@ export default function AboutPage() {
         </div>
 
         <div className="mt-10 flex flex-wrap gap-3 border-t border-border/60 pt-10">
-          <Link
-            to="/pricing"
-            className="inline-flex items-center gap-2 rounded-full border border-border bg-white/80 px-6 py-3 text-sm font-semibold text-foreground shadow-sm backdrop-blur-sm transition hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md"
-          >
+          <Link to="/pricing" className={MKT_CTA_SECONDARY}>
             {t('nav.pricing')}
           </Link>
-          <Link
-            to="/register"
-            className="mkt-cta-glow inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition hover:-translate-y-0.5 hover:bg-primary-hover"
-          >
+          <Link to="/register" className={MKT_CTA_PRIMARY}>
             {t('nav.register')}
             <ArrowRight className="size-4" />
           </Link>

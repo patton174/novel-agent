@@ -207,7 +207,7 @@ export default function NovelsPage() {
                     asChild
                     className="w-full rounded-xl"
                   >
-                    <Link to="/editor">继续写作</Link>
+                    <Link to={`/editor?novelId=${encodeURIComponent(novel.id)}`}>继续写作</Link>
                   </Button>
                 </div>
               </article>

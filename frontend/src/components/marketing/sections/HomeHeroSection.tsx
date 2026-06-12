@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import { isLoggedIn } from '../../../utils/auth'
 import { MarketingHeroDemo } from '../demo/MarketingHeroDemo'
 import { MarketingAmbient } from '../MarketingAmbient'
+import { MKT_CTA_PRIMARY_LG, MKT_CTA_SECONDARY } from '@/lib/marketingCta'
 import { ArrowIcon } from '../icons'
 
 const TRUST_KEYS = ['trustFree', 'trustZh', 'trustStream', 'trustMemory'] as const
@@ -60,19 +61,11 @@ export function HomeHeroSection() {
         {...fade(0.24)}
         className="mb-8 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4"
       >
-        <button
-          type="button"
-          onClick={goStart}
-          className="mkt-cta-glow flex items-center gap-2 rounded-full bg-primary px-8 py-3.5 text-base font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5 hover:bg-primary-hover"
-        >
+        <button type="button" onClick={goStart} className={MKT_CTA_PRIMARY_LG}>
           {t('home.hero.ctaPrimary')}
           <ArrowIcon />
         </button>
-        <button
-          type="button"
-          onClick={scrollToFeasibility}
-          className="flex items-center gap-2 rounded-full border border-border/80 bg-white/80 px-8 py-3.5 text-base font-semibold text-foreground shadow-sm backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:border-primary/25 hover:bg-white hover:shadow-md"
-        >
+        <button type="button" onClick={scrollToFeasibility} className={MKT_CTA_SECONDARY}>
           {t('home.hero.ctaSecondary')}
         </button>
       </motion.div>
@@ -88,7 +81,7 @@ export function HomeHeroSection() {
         ))}
       </motion.div>
 
-      <motion.div {...fade(0.4)} className="relative mx-auto max-w-4xl">
+      <motion.div {...fade(0.4)} className="relative mx-auto hidden max-w-4xl sm:block">
         <div
           aria-hidden
           className="pointer-events-none absolute -inset-6 rounded-[2rem] bg-gradient-to-r from-indigo-500/25 via-violet-500/20 to-indigo-500/25 blur-3xl motion-reduce:opacity-70"
@@ -115,7 +108,7 @@ export function HomeHeroSection() {
   return (
     <section
       id="hero"
-      className="relative flex min-h-[min(100vh,880px)] flex-col items-center justify-center overflow-hidden bg-background pb-8 pt-20 md:min-h-[92vh] md:pb-12 md:pt-24"
+      className="relative flex min-h-[min(100svh,720px)] flex-col items-center justify-center overflow-hidden bg-background pb-6 pt-20 sm:min-h-[min(100vh,880px)] md:min-h-[92vh] md:pb-12 md:pt-24"
     >
       <MarketingAmbient variant="hero" />
       <div className="mkt-grid-bg pointer-events-none absolute inset-0" />

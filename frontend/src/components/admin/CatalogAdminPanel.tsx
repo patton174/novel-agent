@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   BookOpen,
-  ChevronLeft,
   ChevronRight,
   Loader2,
   Pencil,
@@ -23,6 +22,7 @@ import {
   AppShellCardBody,
   AppShellCardHeader,
 } from '@/components/layout/AppPageStack'
+import { AdminPagination } from '@/components/layout/AdminPagination'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -179,7 +179,58 @@ export function CatalogAdminPanel({ onOpenJob }: CatalogAdminPanelProps) {
           {query.trim() ? '无匹配结果' : '书库为空，请先通过爬虫入库'}
         </p>
       ) : (
-        <div className="space-y-2">
+        <>
+          {/* 移动端卡片 */}
+          <div className="space-y-3 md:hidden">
+            {filtered.map((n) => (
+              <article
+                key={n.id}
+                className="rounded-xl border border-border/70 bg-surface p-3 shadow-sm"
+              >
+                <button
+                  type="button"
+                  className="flex w-full items-start gap-3 text-left"
+                  onClick={() => openNovel(n)}
+                >
+                  {n.coverUrl ? (
+                    <img src={n.coverUrl} alt="" className="size-14 shrink-0 rounded-lg object-cover" />
+                  ) : (
+                    <div className="flex size-14 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                      <BookOpen className="size-6" />
+                    </div>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium leading-snug">{n.title}</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {n.chapterCount} 章 · {n.author || '未知作者'}
+                    </p>
+                  </div>
+                </button>
+                <div className="mt-3 flex flex-wrap gap-2 border-t border-border/60 pt-3">
+                  <Button type="button" size="sm" variant="outline" className="flex-1" onClick={() => openReader(n)}>
+                    <BookOpen className="mr-1 size-3.5" />
+                    阅读
+                  </Button>
+                  <Button type="button" size="sm" variant="outline" className="flex-1" onClick={() => openNovel(n)}>
+                    <Pencil className="mr-1 size-3.5" />
+                    概览
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="text-destructive hover:text-destructive"
+                    disabled={actingId === n.id}
+                    onClick={(e) => void handleDeleteNovel(n, e)}
+                  >
+                    {actingId === n.id ? <Loader2 className="size-3.5 animate-spin" /> : <Trash2 className="size-3.5" />}
+                  </Button>
+                </div>
+              </article>
+            ))}
+          </div>
+
+          <div className="hidden space-y-2 md:block">
           {filtered.map((n) => (
             <div
               key={n.id}
@@ -192,7 +243,7 @@ export function CatalogAdminPanel({ onOpenJob }: CatalogAdminPanelProps) {
                   openNovel(n)
                 }
               }}
-              className="group flex cursor-pointer items-center gap-3 rounded-xl border border-border/80 p-3 transition-colors hover:bg-muted/30"
+              className="group flex cursor-pointer flex-col gap-2 rounded-xl border border-border/80 p-3 transition-colors hover:bg-muted/30 sm:flex-row sm:items-center sm:gap-3"
             >
               {n.coverUrl ? (
                 <img src={n.coverUrl} alt="" className="size-14 shrink-0 rounded-lg object-cover" />
@@ -210,7 +261,7 @@ export function CatalogAdminPanel({ onOpenJob }: CatalogAdminPanelProps) {
                   <p className="mt-0.5 truncate text-xs text-muted-foreground/80">{n.sourceUrl}</p>
                 ) : null}
               </div>
-              <div className="flex shrink-0 items-center gap-1 opacity-100 md:opacity-0 md:transition-opacity md:group-hover:opacity-100">
+              <div className="flex w-full shrink-0 items-center justify-end gap-1 sm:w-auto sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100">
                 <Button
                   type="button"
                   size="sm"
@@ -253,36 +304,17 @@ export function CatalogAdminPanel({ onOpenJob }: CatalogAdminPanelProps) {
               <ChevronRight className="hidden size-4 shrink-0 text-muted-foreground md:block md:opacity-0 md:transition-opacity md:group-hover:opacity-100" />
             </div>
           ))}
-        </div>
+          </div>
+        </>
       )}
 
-      {totalPages > 1 ? (
-        <div className="flex items-center justify-center gap-3 pt-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={page <= 1 || loading}
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-          >
-            <ChevronLeft className="size-4" />
-            上一页
-          </Button>
-          <span className="text-sm text-muted-foreground">
-            {page} / {totalPages}
-          </span>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={page >= totalPages || loading}
-            onClick={() => setPage((p) => p + 1)}
-          >
-            下一页
-            <ChevronRight className="size-4" />
-          </Button>
-        </div>
-      ) : null}
+      <AdminPagination
+        pageCurrent={page}
+        totalPages={totalPages}
+        totalCount={totalCount}
+        loading={loading}
+        onPageChange={setPage}
+      />
       </AppShellCardBody>
     </AppShellCard>
 

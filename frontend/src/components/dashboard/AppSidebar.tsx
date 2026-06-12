@@ -93,7 +93,7 @@ export function AppSidebar({ embedded = false, onNavigate }: AppSidebarProps) {
             className={cn(
               'flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition-colors hover:bg-surface-hover',
               unverified
-                ? 'border-amber-300/80 bg-amber-50/80 dark:border-amber-700/50 dark:bg-amber-950/30'
+                ? 'border-sky-300/80 bg-sky-50/80 dark:border-sky-700/50 dark:bg-sky-950/30'
                 : 'border-border bg-background',
             )}
             title="快捷打开账户设置"
@@ -105,7 +105,7 @@ export function AppSidebar({ embedded = false, onNavigate }: AppSidebarProps) {
                 </AvatarFallback>
               </Avatar>
               {unverified ? (
-                <span className="absolute -right-0.5 -top-0.5 size-2.5 rounded-full bg-amber-500 ring-2 ring-surface" />
+                <span className="absolute -right-0.5 -top-0.5 size-2.5 rounded-full bg-sky-500 ring-2 ring-surface" />
               ) : null}
             </div>
             <div className="min-w-0 flex-1">
@@ -115,7 +115,7 @@ export function AppSidebar({ embedded = false, onNavigate }: AppSidebarProps) {
               <p
                 className={cn(
                   'truncate text-xs',
-                  unverified ? 'font-medium text-amber-700 dark:text-amber-300' : 'text-muted-foreground',
+                  unverified ? 'font-medium text-sky-700 dark:text-sky-300' : 'text-muted-foreground',
                 )}
               >
                 {unverified ? '邮箱未验证 · 点击设置' : '账户设置'}

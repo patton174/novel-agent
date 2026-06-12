@@ -32,6 +32,7 @@ export function useEditorPage() {
   const [hostModeEnabled, setHostModeEnabled] = useState(readHostModePreference)
 
   const landingPromptSeeded = useRef(false)
+  const novelParamHandled = useRef(false)
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 767px)')
     const onChange = () => {
@@ -42,14 +43,6 @@ export function useEditorPage() {
     return () => mq.removeEventListener('change', onChange)
   }, [])
 
-  useEffect(() => {
-    if (landingPromptSeeded.current) return
-    const prompt = searchParams.get('prompt')?.trim()
-    if (!prompt) return
-    landingPromptSeeded.current = true
-    setInputValue(prompt)
-    setActiveCenterTab('chat')
-  }, [searchParams])
   const [hostRunningInBackground, setHostRunningInBackground] = useState(false)
 
   const agentSessionIdRef = useRef(getOrCreateAgentSessionId())
@@ -62,12 +55,12 @@ export function useEditorPage() {
 
   const novels = useNovelStore((s) => s.novels)
   const activeNovelId = useNovelStore((s) => s.activeNovelId)
+  const selectNovel = useNovelStore((s) => s.selectNovel)
   const activeChapterId = useNovelStore((s) => s.activeChapterId)
   const chapterContent = useNovelStore((s) => s.chapterContent)
   const chapterDirty = useNovelStore((s) => s.chapterDirty)
   const chapters = useNovelStore((s) => s.chapters)
   const loadNovels = useNovelStore((s) => s.loadNovels)
-  const selectNovel = useNovelStore((s) => s.selectNovel)
   const createNovel = useNovelStore((s) => s.createNovel)
   const deleteNovel = useNovelStore((s) => s.deleteNovel)
   const updateChapterContent = useNovelStore((s) => s.updateChapterContent)
@@ -187,6 +180,25 @@ export function useEditorPage() {
   useEffect(() => {
     setVersionPreview(null)
   }, [activeChapterId])
+
+  useEffect(() => {
+    if (landingPromptSeeded.current) return
+    const prompt = searchParams.get('prompt')?.trim()
+    if (!prompt) return
+    landingPromptSeeded.current = true
+    setInputValue(prompt)
+    setActiveCenterTab('chat')
+  }, [searchParams])
+
+  useEffect(() => {
+    if (novelParamHandled.current) return
+    const novelId = searchParams.get('novelId')?.trim()
+    if (!novelId) return
+    if (!novels.some((n) => n.id === novelId)) return
+    novelParamHandled.current = true
+    void selectNovel(novelId)
+    setActiveCenterTab('story')
+  }, [novels, searchParams, selectNovel])
 
   useEffect(() => {
     if (typeof window === 'undefined') return

@@ -6,7 +6,8 @@ import {
   type ContentStats,
   type PlatformStats,
 } from '@/api/adminApi'
-import { AppPageStack, AppStatCard } from '@/components/layout/AppPageStack'
+import { AppPageStack, AppShellCard, AppShellCardBody, AppShellCardHeader, AppStatCard } from '@/components/layout/AppPageStack'
+import { AdminQuickLinks } from '@/components/admin/AdminQuickLinks'
 import { appToast } from '@/stores/appToastStore'
 
 const STAT_CARDS = [
@@ -106,7 +107,14 @@ export default function AdminHomePage() {
   const loading = platform === null || content === null
 
   return (
-    <AppPageStack>
+    <AppPageStack className="gap-5">
+      <AppShellCard>
+        <AppShellCardHeader title="快捷入口" description="常用管理功能" />
+        <AppShellCardBody className="pt-2">
+          <AdminQuickLinks />
+        </AppShellCardBody>
+      </AppShellCard>
+
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
         {STAT_CARDS.map((stat) => (
           <AppStatCard

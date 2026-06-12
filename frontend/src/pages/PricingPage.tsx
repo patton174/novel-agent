@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { Check, ChevronDown } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { fetchPlans, formatTokenCount, type PlanPublic } from '@/api/billingApi'
-import { Button } from '@/components/ui/button'
+import { MKT_CTA_PRIMARY, MKT_CTA_TIER_HIGHLIGHT, MKT_CTA_TIER_OUTLINE } from '@/lib/marketingCta'
 import { Skeleton } from '@/components/ui/skeleton'
 import { MarketingPageLayout } from '@/components/marketing/MarketingPageLayout'
 import { MarketingSubpageHero } from '@/components/marketing/MarketingSubpageHero'
@@ -41,10 +41,7 @@ export default function PricingPage() {
         eyebrow={t('nav.pricing')}
         title={t('pricing.title')}
         action={
-          <Link
-            to="/register"
-            className="mkt-cta-glow inline-flex shrink-0 items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition hover:-translate-y-0.5 hover:bg-primary-hover"
-          >
+          <Link to="/register" className={MKT_CTA_PRIMARY}>
             {t('footer.ctaRegister')}
           </Link>
         }
@@ -68,7 +65,7 @@ export default function PricingPage() {
           <div className="mx-auto grid max-w-5xl gap-8 md:grid-cols-3">
             {plans === null
               ? Array.from({ length: 3 }).map((_, i) => (
-                  <Skeleton key={i} className="h-[440px] rounded-3xl" />
+                  <Skeleton key={i} className="min-h-[380px] rounded-3xl" />
                 ))
               : plans.map((tier) => (
                   <div
@@ -142,17 +139,12 @@ export default function PricingPage() {
                       ) : null}
                     </ul>
 
-                    <Button
-                      variant={tier.highlight ? 'default' : 'outline'}
-                      className={`h-12 w-full rounded-xl text-base font-semibold transition-all duration-300 ${
-                        tier.highlight
-                          ? 'shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30'
-                          : 'group-hover:border-primary/40'
-                      }`}
-                      asChild
+                    <Link
+                      to={tier.code === 'hobby' ? '/register' : '/contact'}
+                      className={tier.highlight ? MKT_CTA_TIER_HIGHLIGHT : MKT_CTA_TIER_OUTLINE}
                     >
-                      <Link to={tier.code === 'hobby' ? '/register' : '/contact'}>{tier.cta}</Link>
-                    </Button>
+                      {tier.cta}
+                    </Link>
                   </div>
                 ))}
           </div>

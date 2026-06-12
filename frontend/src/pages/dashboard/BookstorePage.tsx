@@ -8,7 +8,7 @@ import {
   type CatalogNovel,
 } from '@/api/catalogApi'
 import { Button } from '@/components/ui/button'
-import { ContentPending } from '@/components/loading/ContentPending'
+import { Skeleton } from '@/components/ui/skeleton'
 import { useMarkRouteSeen } from '@/hooks/useMarkRouteSeen'
 import { appToast } from '@/stores/appToastStore'
 
@@ -81,7 +81,11 @@ export default function BookstorePage() {
       />
 
       {loading ? (
-        <ContentPending label="正在加载书库" />
+        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="aspect-[3/4] min-h-[320px] rounded-2xl" />
+          ))}
+        </div>
       ) : loadError ? (
         <AppEmptyState
           icon={BookMarked}
