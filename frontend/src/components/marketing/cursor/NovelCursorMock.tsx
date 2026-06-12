@@ -1,23 +1,24 @@
+import { cn } from '@/lib/utils'
 import {
-  CursorAgentCol,
-  CursorAgentList,
-  CursorAgentNarrative,
-  CursorAgentScroll,
-  CursorComposer,
-  CursorDocPane,
-  CursorFileChip,
-  CursorStatusLine,
-  CursorSummaryCard,
-  CursorTab,
-  CursorTabs,
-  CursorTaskBtn,
-  CursorTaskCol,
-  CursorThinking,
-  CursorUserPrompt,
-  CursorWin,
-  CursorWinBar,
-  CursorWinBody,
-} from '../../../styles/surfaces/cursorLanding'
+  CURSOR_AGENT_COL,
+  CURSOR_AGENT_LIST,
+  CURSOR_AGENT_NARRATIVE,
+  CURSOR_AGENT_SCROLL,
+  CURSOR_COMPOSER,
+  CURSOR_DOC_PANE,
+  CURSOR_FILE_CHIP,
+  CURSOR_STATUS_LINE,
+  CURSOR_SUMMARY_CARD,
+  CURSOR_TABS,
+  CURSOR_TASK_COL,
+  CURSOR_THINKING,
+  CURSOR_USER_PROMPT,
+  CURSOR_WIN,
+  CURSOR_WIN_BAR,
+  CURSOR_WIN_BODY,
+  cursorTabClass,
+  cursorTaskBtnClass,
+} from '@/lib/cursorLandingClasses'
 
 export type NovelCursorMockVariant = 'hero' | 'prd' | 'parallel' | 'stream'
 
@@ -33,12 +34,12 @@ function WinDots() {
 
 function AgentComposer() {
   return (
-    <CursorComposer>
+    <div className={CURSOR_COMPOSER}>
       <span className="input">规划、续写、检索一切…</span>
       <span className="pill">Agent</span>
       <span className="pill">Composer</span>
       <span className="send" aria-hidden />
-    </CursorComposer>
+    </div>
   )
 }
 
@@ -53,14 +54,14 @@ export function CursorDesktopMock({
   const isParallel = variant === 'parallel'
 
   return (
-    <CursorWin className={className} data-cursor-mock="desktop">
-      <CursorWinBar>
+    <div className={cn(CURSOR_WIN, className)} data-cursor-mock="desktop">
+      <div className={CURSOR_WIN_BAR}>
         <WinDots />
         <span className="title">Novel Agent · 编辑器</span>
-      </CursorWinBar>
-      <CursorWinBody>
-        <CursorTaskCol>
-          <CursorTaskBtn className="cursor-task" $state="done" data-step="task-0">
+      </div>
+      <div className={CURSOR_WIN_BODY}>
+        <div className={CURSOR_TASK_COL}>
+          <div className={cn(cursorTaskBtnClass('done'), 'cursor-task')} data-step="task-0">
             <div className="row">
               <span className="name">续写第二章</span>
               <span className="time">12m</span>
@@ -68,45 +69,45 @@ export function CursorDesktopMock({
             <span className="diff">
               <span className="add">+1840</span> <span className="del">-12</span>
             </span>
-          </CursorTaskBtn>
-          <CursorTaskBtn className="cursor-task" $state="active" data-step="task-1">
+          </div>
+          <div className={cn(cursorTaskBtnClass('active'), 'cursor-task')} data-step="task-1">
             <div className="row">
               <span className="name">分析角色一致性</span>
               <span className="time">进行中</span>
             </div>
-          </CursorTaskBtn>
-          <CursorTaskBtn className="cursor-task" $state="idle" data-step="task-2">
+          </div>
+          <div className={cn(cursorTaskBtnClass('idle'), 'cursor-task')} data-step="task-2">
             <div className="row">
               <span className="name">规划第三章结构</span>
               <span className="time">队列</span>
             </div>
-          </CursorTaskBtn>
+          </div>
           {isParallel ? (
-            <CursorTaskBtn className="cursor-task" $state="idle" data-step="task-3">
+            <div className={cn(cursorTaskBtnClass('idle'), 'cursor-task')} data-step="task-3">
               <div className="row">
                 <span className="name">子代理 · 世界观校对</span>
                 <span className="time">并行</span>
               </div>
-            </CursorTaskBtn>
+            </div>
           ) : null}
-        </CursorTaskCol>
+        </div>
 
-        <CursorAgentCol data-demo-agent-pane>
-          <CursorAgentScroll>
-            <CursorUserPrompt className="cursor-user-prompt" data-step="prompt">
+        <div className={CURSOR_AGENT_COL} data-demo-agent-pane>
+          <div className={CURSOR_AGENT_SCROLL}>
+            <div className={cn(CURSOR_USER_PROMPT, 'cursor-user-prompt')} data-step="prompt">
               {variant === 'prd'
                 ? '根据大纲续写第二章，银月森林首战要有掉宝爽点，人设对齐 Tang_Yun。'
                 : variant === 'parallel'
                   ? '同时校对角色卡并生成第二章正文，完成后更新记忆。'
                   : '继续写第二章，衔接银月森林首战。'}
-            </CursorUserPrompt>
+            </div>
 
-            <CursorThinking className="cursor-thinking" data-step="thinking">
+            <div className={cn(CURSOR_THINKING, 'cursor-thinking')} data-step="thinking">
               <span className="dot" />
               Thinking 6s
-            </CursorThinking>
+            </div>
 
-            <CursorAgentList className="cursor-agent-list">
+            <ul className={cn(CURSOR_AGENT_LIST, 'cursor-agent-list')}>
               <li className="cursor-step" data-step="step-0">
                 读取 chapter_01.md · 世界观记忆
               </li>
@@ -121,60 +122,60 @@ export function CursorDesktopMock({
                   启动子代理 memory_update · 角色校对
                 </li>
               ) : null}
-            </CursorAgentList>
+            </ul>
 
-            <CursorAgentNarrative className="cursor-narrative" data-step="narrative">
+            <p className={cn(CURSOR_AGENT_NARRATIVE, 'cursor-narrative')} data-step="narrative">
               将先以 5 只小怪验证 100% 掉宝节奏，再抛出「全服唯一」强化石；正文流式写入编辑器，记忆自动回写。
-            </CursorAgentNarrative>
+            </p>
 
-            <CursorFileChip className="cursor-chip" data-step="chip-0">
+            <div className={cn(CURSOR_FILE_CHIP, 'cursor-chip')} data-step="chip-0">
               <span className="badge">MD</span>
               <span>chapters/02_银月森林.md</span>
               <span className="add">+520</span>
               <span className="del">-0</span>
-            </CursorFileChip>
+            </div>
 
             {variant !== 'hero' ? (
-              <CursorFileChip className="cursor-chip" data-step="chip-1">
+              <div className={cn(CURSOR_FILE_CHIP, 'cursor-chip')} data-step="chip-1">
                 <span className="badge">MEM</span>
                 <span>memory/characters/Tang_Yun</span>
                 <span className="add">+48</span>
                 <span className="del">-3</span>
-              </CursorFileChip>
+              </div>
             ) : null}
 
             {variant === 'parallel' ? (
-              <CursorStatusLine className="cursor-status" data-step="status">
+              <div className={cn(CURSOR_STATUS_LINE, 'cursor-status')} data-step="status">
                 <span className="ok">✓</span>
                 子代理已完成 · 2 个工具 · 14s
-              </CursorStatusLine>
+              </div>
             ) : null}
 
             {variant === 'stream' ? (
-              <CursorSummaryCard className="cursor-summary" data-step="summary">
+              <div className={cn(CURSOR_SUMMARY_CARD, 'cursor-summary')} data-step="summary">
                 <div className="label">Summary</div>
                 <div className="text">
                   第二章正文已流式写入，共 1840 字；掉宝段落与大纲一致，已同步章节记忆。
                 </div>
-              </CursorSummaryCard>
+              </div>
             ) : null}
-          </CursorAgentScroll>
+          </div>
           <AgentComposer />
-        </CursorAgentCol>
-      </CursorWinBody>
-    </CursorWin>
+        </div>
+      </div>
+    </div>
   )
 }
 
 /** 预览窗：章节阅读 + 高亮（对齐 Cursor localhost 预览） */
 export function CursorPreviewMock({ className }: { className?: string }) {
   return (
-    <CursorWin className={className} data-cursor-mock="preview">
-      <CursorWinBar>
+    <div className={cn(CURSOR_WIN, className)} data-cursor-mock="preview">
+      <div className={CURSOR_WIN_BAR}>
         <WinDots />
         <span className="url">localhost:3000 · 阅读</span>
-      </CursorWinBar>
-      <CursorDocPane>
+      </div>
+      <div className={CURSOR_DOC_PANE}>
         <h4>诸天神祇有价 · 第二章</h4>
         <p>唐云踏入银月森林，雨水顺着发梢滑落。</p>
         <p>
@@ -186,42 +187,42 @@ export function CursorPreviewMock({ className }: { className?: string }) {
         <p className="cursor-stream-line" data-step="stream-line-0" style={{ opacity: 0.4 }}>
           剑尖挑起一道寒芒，直指苍穹。
         </p>
-      </CursorDocPane>
-    </CursorWin>
+      </div>
+    </div>
   )
 }
 
 /** 小浮窗：精简 Agent 状态（对齐 Cursor CLI 卡片） */
 export function CursorFloatCardMock({ className }: { className?: string }) {
   return (
-    <CursorWin className={className} data-cursor-mock="float">
-      <CursorWinBar>
+    <div className={cn(CURSOR_WIN, className)} data-cursor-mock="float">
+      <div className={CURSOR_WIN_BAR}>
         <WinDots />
         <span className="title">Novel Agent</span>
-      </CursorWinBar>
-      <CursorAgentScroll style={{ padding: '0.55rem 0.65rem' }}>
-        <CursorUserPrompt className="cursor-user-prompt" data-step="float-prompt">
+      </div>
+      <div className={CURSOR_AGENT_SCROLL} style={{ padding: '0.55rem 0.65rem' }}>
+        <div className={cn(CURSOR_USER_PROMPT, 'cursor-user-prompt')} data-step="float-prompt">
           继续第二章，要有掉宝爽点
-        </CursorUserPrompt>
-        <CursorThinking className="cursor-thinking" data-step="float-think">
+        </div>
+        <div className={cn(CURSOR_THINKING, 'cursor-thinking')} data-step="float-think">
           <span className="dot" />
           Thinking 4s
-        </CursorThinking>
-        <CursorAgentList className="cursor-agent-list">
+        </div>
+        <ul className={cn(CURSOR_AGENT_LIST, 'cursor-agent-list')}>
           <li className="cursor-step" data-step="float-step-0">
             memory_read · 角色库
           </li>
           <li className="cursor-step" data-step="float-step-1">
             chapter_create · 流式输出
           </li>
-        </CursorAgentList>
-        <CursorFileChip className="cursor-chip" data-step="float-chip">
+        </ul>
+        <div className={cn(CURSOR_FILE_CHIP, 'cursor-chip')} data-step="float-chip">
           <span className="badge">MD</span>
           <span>02_银月森林.md</span>
           <span className="add">+1840</span>
-        </CursorFileChip>
-      </CursorAgentScroll>
-    </CursorWin>
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -229,29 +230,34 @@ export function CursorFloatCardMock({ className }: { className?: string }) {
 export function CursorPrdFeatureMock() {
   return (
     <div className="demo-app-mock demo-agent-console" data-variant="prd" style={{ height: '100%' }}>
-      <CursorWin data-cursor-mock="prd" style={{ position: 'relative', width: '100%', height: '100%', boxShadow: 'none' }}>
-        <CursorTabs>
-          <CursorTab $active>outline.md</CursorTab>
-          <CursorTab>chapter_02.md</CursorTab>
-          <CursorTab>memory/Tang_Yun</CursorTab>
-        </CursorTabs>
-        <CursorWinBody style={{ minHeight: 360 }}>
-          <CursorDocPane style={{ width: '42%', borderRight: `1px solid rgba(0,0,0,0.08)` }}>
+      <div
+        className={cn(CURSOR_WIN, '!relative h-full w-full shadow-none')}
+        data-cursor-mock="prd"
+      >
+        <div className={CURSOR_TABS}>
+          <div className={cursorTabClass(true)}>outline.md</div>
+          <div className={cursorTabClass()}>chapter_02.md</div>
+          <div className={cursorTabClass()}>memory/Tang_Yun</div>
+        </div>
+        <div className={CURSOR_WIN_BODY} style={{ minHeight: 360 }}>
+          <div
+            className={cn(CURSOR_DOC_PANE, 'w-[42%] border-r border-black/[0.08]')}
+          >
             <h4>第二章大纲</h4>
             <p>1. 银月森林入口 · 氛围铺垫</p>
             <p>2. 首战小怪 · 100% 掉宝验证</p>
             <p>3. 全服唯一装备 · 章末钩子</p>
-          </CursorDocPane>
-          <CursorAgentCol data-demo-agent-pane style={{ flex: 1 }}>
-            <CursorAgentScroll>
-              <CursorUserPrompt className="cursor-user-prompt" data-step="prompt">
+          </div>
+          <div className={cn(CURSOR_AGENT_COL, 'flex-1')} data-demo-agent-pane>
+            <div className={CURSOR_AGENT_SCROLL}>
+              <div className={cn(CURSOR_USER_PROMPT, 'cursor-user-prompt')} data-step="prompt">
                 根据大纲续写第二章，银月森林首战要有掉宝爽点。
-              </CursorUserPrompt>
-              <CursorThinking className="cursor-thinking" data-step="thinking">
+              </div>
+              <div className={cn(CURSOR_THINKING, 'cursor-thinking')} data-step="thinking">
                 <span className="dot" />
                 Thinking 5s
-              </CursorThinking>
-              <CursorAgentList className="cursor-agent-list">
+              </div>
+              <ul className={cn(CURSOR_AGENT_LIST, 'cursor-agent-list')}>
                 <li className="cursor-step" data-step="step-0">
                   读取 outline.md
                 </li>
@@ -261,17 +267,17 @@ export function CursorPrdFeatureMock() {
                 <li className="cursor-step" data-step="step-2">
                   chapter_create 流式写入
                 </li>
-              </CursorAgentList>
-              <CursorFileChip className="cursor-chip" data-step="chip-0">
+              </ul>
+              <div className={cn(CURSOR_FILE_CHIP, 'cursor-chip')} data-step="chip-0">
                 <span className="badge">MD</span>
                 <span>chapter_02.md</span>
                 <span className="add">+520</span>
-              </CursorFileChip>
-            </CursorAgentScroll>
+              </div>
+            </div>
             <AgentComposer />
-          </CursorAgentCol>
-        </CursorWinBody>
-      </CursorWin>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

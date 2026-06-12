@@ -1,4 +1,7 @@
-import { CursorHeroLayer, CursorHeroStackWrap } from '../../../styles/surfaces/cursorLanding'
+import {
+  CURSOR_HERO_STACK_WRAP,
+  cursorHeroLayerClass,
+} from '@/lib/cursorLandingClasses'
 import {
   CursorDesktopMock,
   CursorFloatCardMock,
@@ -8,16 +11,16 @@ import {
 /** Hero 区层叠产品窗 — 结构对齐 cursor.com 首屏 */
 export function CursorHeroStack() {
   return (
-    <CursorHeroStackWrap className="cursor-hero-stack" aria-hidden>
-      <CursorHeroLayer $layer="back">
+    <div className={`${CURSOR_HERO_STACK_WRAP} cursor-hero-stack`} aria-hidden>
+      <div className={cursorHeroLayerClass('back')}>
         <CursorDesktopMock variant="hero" />
-      </CursorHeroLayer>
-      <CursorHeroLayer $layer="mid">
+      </div>
+      <div className={cursorHeroLayerClass('mid')}>
         <CursorPreviewMock />
-      </CursorHeroLayer>
-      <CursorHeroLayer $layer="front">
+      </div>
+      <div className={cursorHeroLayerClass('front')}>
         <CursorFloatCardMock />
-      </CursorHeroLayer>
-    </CursorHeroStackWrap>
+      </div>
+    </div>
   )
 }

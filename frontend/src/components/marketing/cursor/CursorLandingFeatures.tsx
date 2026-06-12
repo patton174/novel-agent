@@ -1,16 +1,17 @@
 import { useRef } from 'react'
+import { cn } from '@/lib/utils'
 import {
-  CursorFeatureBody,
-  CursorFeatureCard,
-  CursorFeatureCopy,
-  CursorFeatureGrid,
-  CursorFeatureInner,
-  CursorFeatureLink,
-  CursorFeaturePin,
-  CursorFeatureSection,
-  CursorFeatureTitle,
-  CursorLandingRoot,
-} from '../../../styles/surfaces/cursorLanding'
+  CURSOR_FEATURE_BODY,
+  CURSOR_FEATURE_CARD,
+  CURSOR_FEATURE_INNER,
+  CURSOR_FEATURE_LINK,
+  CURSOR_FEATURE_PIN,
+  CURSOR_FEATURE_SECTION,
+  CURSOR_FEATURE_TITLE,
+  CURSOR_LANDING_ROOT,
+  cursorFeatureCopyClass,
+  cursorFeatureGridClass,
+} from '@/lib/cursorLandingClasses'
 import { NovelCursorMock } from './NovelCursorMock'
 import { useCursorFeatureScroll } from '../scroll/useCursorFeatureScroll'
 
@@ -46,22 +47,22 @@ function FeatureBlock({
   variant,
 }: (typeof FEATURES)[number]) {
   return (
-    <CursorFeatureSection id={id} className="cursor-feature-section">
-      <CursorFeaturePin className="cursor-feature-pin story-pin">
-        <CursorFeatureInner>
-          <CursorFeatureGrid>
-            <CursorFeatureCopy className="story-copy cursor-feature-copy">
-              <CursorFeatureTitle>{title}</CursorFeatureTitle>
-              <CursorFeatureBody>{body}</CursorFeatureBody>
-              <CursorFeatureLink>{link}</CursorFeatureLink>
-            </CursorFeatureCopy>
-            <CursorFeatureCard className="cursor-feature-card demo-app-mock">
+    <section id={id} className={cn(CURSOR_FEATURE_SECTION, 'cursor-feature-section')}>
+      <div className={cn(CURSOR_FEATURE_PIN, 'cursor-feature-pin story-pin')}>
+        <div className={CURSOR_FEATURE_INNER}>
+          <div className={cursorFeatureGridClass()}>
+            <div className={cn(cursorFeatureCopyClass(), 'story-copy cursor-feature-copy')}>
+              <h3 className={CURSOR_FEATURE_TITLE}>{title}</h3>
+              <p className={CURSOR_FEATURE_BODY}>{body}</p>
+              <span className={CURSOR_FEATURE_LINK}>{link}</span>
+            </div>
+            <div className={cn(CURSOR_FEATURE_CARD, 'cursor-feature-card demo-app-mock')}>
               <NovelCursorMock variant={variant} />
-            </CursorFeatureCard>
-          </CursorFeatureGrid>
-        </CursorFeatureInner>
-      </CursorFeaturePin>
-    </CursorFeatureSection>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
   )
 }
 
@@ -70,10 +71,10 @@ export function CursorLandingFeatures() {
   useCursorFeatureScroll(rootRef)
 
   return (
-    <CursorLandingRoot ref={rootRef} data-scroll-story>
+    <div ref={rootRef} className={CURSOR_LANDING_ROOT} data-scroll-story>
       {FEATURES.map((f) => (
         <FeatureBlock key={f.id} {...f} />
       ))}
-    </CursorLandingRoot>
+    </div>
   )
 }

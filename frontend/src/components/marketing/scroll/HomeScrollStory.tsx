@@ -4,7 +4,7 @@ import { Sparkles } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { MarketingChatScene } from '../demo/MarketingChatScene'
 import { useMarketingStoryReveal } from './useMarketingStoryReveal'
-import { CursorLandingRoot } from '../../../styles/surfaces/cursorLanding'
+import { CURSOR_LANDING_ROOT } from '@/lib/cursorLandingClasses'
 
 const ACTS = [
   { id: 'story-context', scene: 'orchestrate' as const, layout: 'copy-left' as const, act: '01', key: '1' },
@@ -44,7 +44,7 @@ export function HomeScrollStory() {
         </motion.div>
       </section>
 
-      <CursorLandingRoot ref={rootRef} data-scroll-story>
+      <div ref={rootRef} className={CURSOR_LANDING_ROOT} data-scroll-story>
         {ACTS.map(({ id, scene, layout, act, key, wash }) => {
           const prefix = `home.story.acts.${key}`
           const points = [1, 2, 3].map((n) => ({
@@ -67,7 +67,7 @@ export function HomeScrollStory() {
             />
           )
         })}
-      </CursorLandingRoot>
+      </div>
     </div>
   )
 }

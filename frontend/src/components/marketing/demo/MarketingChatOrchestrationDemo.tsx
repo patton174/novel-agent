@@ -1,9 +1,41 @@
 import { useEffect, useMemo, useRef, useState, type RefObject } from 'react'
-import styled, { keyframes } from 'styled-components'
 import type { MarketingSceneId } from '../../../utils/marketing/buildMarketingSceneDemo'
-import { MarketingChatDemoFrame } from '../../../styles/surfaces/marketingEditorShowcase'
-import { cursorTheme } from '../../../styles/surfaces/cursorLanding'
-import { editorTheme, palette } from '../../../styles/editorTheme'
+import {
+  MARKETING_CHAT_DEMO_FRAME_HERO,
+  MARKETING_CHAT_DEMO_FRAME_STORY,
+} from '@/lib/marketingEditorShowcaseClasses'
+import {
+  ORCH_DEMO_BODY,
+  ORCH_DEMO_COMPOSER_ACTION_ROW,
+  ORCH_DEMO_COMPOSER_CARD,
+  ORCH_DEMO_COMPOSER_DISCLAIMER,
+  ORCH_DEMO_COMPOSER_PLACEHOLDER,
+  ORCH_DEMO_COMPOSER_TEXT,
+  ORCH_DEMO_EMPTY_HINT,
+  ORCH_DEMO_HEADER,
+  ORCH_DEMO_HOST_MODE,
+  ORCH_DEMO_OUTPUT_TEXT,
+  ORCH_DEMO_PROMPT_BUBBLE,
+  ORCH_DEMO_SHELL,
+  ORCH_DEMO_STATUS_LINE,
+  ORCH_DEMO_STEP_META,
+  ORCH_DEMO_STEP_TITLE,
+  ORCH_DEMO_SUBAGENT_BRANCH,
+  ORCH_DEMO_SUBAGENT_HEADER,
+  ORCH_DEMO_SUBAGENT_LINE,
+  ORCH_DEMO_SUBAGENT_SUMMARY,
+  ORCH_DEMO_SUBAGENT_TITLE,
+  ORCH_DEMO_SUBAGENT_WRAP,
+  ORCH_DEMO_SWITCH_MOCK,
+  ORCH_DEMO_THINK_BODY,
+  ORCH_DEMO_TIMELINE,
+  ORCH_DEMO_TOOL_ROW,
+  orchDemoComposerClass,
+  orchDemoSendButtonClass,
+  orchDemoSubagentDotClass,
+  orchDemoThinkBlockClass,
+  orchDemoTimelineIconClass,
+} from '@/lib/marketingOrchestrationDemoClasses'
 import { ToolIcon } from '../../../utils/toolIcons'
 
 const SCENE_TIMING: Record<
@@ -199,7 +231,8 @@ export function MarketingChatOrchestrationDemo({
   const timing = SCENE_TIMING[scene]
   const elapsed = useVisiblePlayback(rootRef, variant === 'hero', timing.loopMs)
   const copy = SCENE_COPY[scene]
-  const Frame = variant === 'hero' ? HeroFrame : StoryFrame
+  const frameClass =
+    variant === 'hero' ? MARKETING_CHAT_DEMO_FRAME_HERO : MARKETING_CHAT_DEMO_FRAME_STORY
 
   const state = useMemo((): DemoPlaybackState => {
     const inputText = revealText(copy.prompt, 250, elapsed, 1_900)
@@ -277,37 +310,43 @@ export function MarketingChatOrchestrationDemo({
 
   return (
     <div ref={sectionRef ? undefined : fallbackRef}>
-      <Frame className="demo-app-mock demo-agent-console">
-        <DemoShell>
-          <DemoBody>
-            <DemoHeader>{copy.title}</DemoHeader>
-            {state.promptVisible ? <PromptBubble>{copy.prompt}</PromptBubble> : null}
+      <div className={`${frameClass} demo-app-mock demo-agent-console`}>
+        <div className={ORCH_DEMO_SHELL}>
+          <div className={ORCH_DEMO_BODY}>
+            <div className={ORCH_DEMO_HEADER}>{copy.title}</div>
+            {state.promptVisible ? (
+              <div className={ORCH_DEMO_PROMPT_BUBBLE}>{copy.prompt}</div>
+            ) : null}
 
-            <Timeline>
+            <div className={ORCH_DEMO_TIMELINE}>
               {state.orchestrationVisible ? (
-                <StatusLine>
-                  <TimelineIcon $status="loading">
+                <div className={ORCH_DEMO_STATUS_LINE}>
+                  <span className={orchDemoTimelineIconClass('loading')}>
                     <ToolIcon name="reasoning" size={14} animate />
-                  </TimelineIcon>
+                  </span>
                   <strong>编排中…</strong>
-                </StatusLine>
+                </div>
               ) : null}
 
               {state.thinkVisible ? (
-                <ThinkBlock $expanded={state.thinkExpanded}>
-                  <StepTitle>
-                    <TimelineIcon $status={state.thinkActive ? 'loading' : 'success'}>
+                <div className={orchDemoThinkBlockClass(state.thinkExpanded)}>
+                  <div className={ORCH_DEMO_STEP_TITLE}>
+                    <span
+                      className={orchDemoTimelineIconClass(state.thinkActive ? 'loading' : 'success')}
+                    >
                       <ToolIcon name="think" size={14} animate={state.thinkActive} />
-                    </TimelineIcon>
+                    </span>
                     <span>思考</span>
-                    <StepMeta>
+                    <span className={ORCH_DEMO_STEP_META}>
                       {state.thinkActive ? '进行中 · 4 秒' : '已完成 · 4 秒'}
-                    </StepMeta>
-                  </StepTitle>
+                    </span>
+                  </div>
                   {state.thinkExpanded ? (
-                    <ThinkBody>{state.thinkText || '正在梳理章节上下文…'}</ThinkBody>
+                    <div className={ORCH_DEMO_THINK_BODY}>
+                      {state.thinkText || '正在梳理章节上下文…'}
+                    </div>
                   ) : null}
-                </ThinkBlock>
+                </div>
               ) : null}
 
               {scene === 'subagent' ? (
@@ -325,90 +364,102 @@ export function MarketingChatOrchestrationDemo({
               ) : scene === 'think' ? (
                 <>
                   {state.planVisible ? (
-                    <ToolRow $active={Boolean(state.planActive)}>
-                      <TimelineIcon $status={state.planActive ? 'loading' : 'success'}>
+                    <div className={ORCH_DEMO_TOOL_ROW}>
+                      <span
+                        className={orchDemoTimelineIconClass(state.planActive ? 'loading' : 'success')}
+                      >
                         <ToolIcon name="TodoWrite" size={14} animate={Boolean(state.planActive)} />
-                      </TimelineIcon>
+                      </span>
                       <span>{copy.firstTool}</span>
-                      <StepMeta>
+                      <span className={ORCH_DEMO_STEP_META}>
                         {state.planActive ? '进行中' : '已完成 · 首战 → 掉宝 → 钩子'}
-                      </StepMeta>
-                    </ToolRow>
+                      </span>
+                    </div>
                   ) : null}
                 </>
               ) : scene === 'stream' ? (
                 <>
                   {state.writeVisible ? (
-                    <ToolRow $active={Boolean(state.writeActive)}>
-                      <TimelineIcon $status={state.writeActive ? 'loading' : 'success'}>
+                    <div className={ORCH_DEMO_TOOL_ROW}>
+                      <span
+                        className={orchDemoTimelineIconClass(state.writeActive ? 'loading' : 'success')}
+                      >
                         <ToolIcon name="Write" size={14} animate={Boolean(state.writeActive)} />
-                      </TimelineIcon>
+                      </span>
                       <span>{copy.firstTool}</span>
-                      <StepMeta>
+                      <span className={ORCH_DEMO_STEP_META}>
                         {state.writeActive ? '进行中 · 流式写入' : '已完成 · 第二章开头'}
-                      </StepMeta>
-                    </ToolRow>
+                      </span>
+                    </div>
                   ) : null}
                 </>
               ) : (
                 <>
                   {state.memoryVisible ? (
-                    <ToolRow $active={Boolean(state.memoryActive)}>
-                      <TimelineIcon $status={state.memoryActive ? 'loading' : 'success'}>
+                    <div className={ORCH_DEMO_TOOL_ROW}>
+                      <span
+                        className={orchDemoTimelineIconClass(state.memoryActive ? 'loading' : 'success')}
+                      >
                         <ToolIcon name="Read" size={14} animate={Boolean(state.memoryActive)} />
-                      </TimelineIcon>
+                      </span>
                       <span>{copy.firstTool}</span>
-                      <StepMeta>{state.memoryActive ? '进行中' : '已完成 · 读取内容'}</StepMeta>
-                    </ToolRow>
+                      <span className={ORCH_DEMO_STEP_META}>
+                        {state.memoryActive ? '进行中' : '已完成 · 读取内容'}
+                      </span>
+                    </div>
                   ) : null}
 
                   {state.chapterVisible ? (
-                    <ToolRow $active={Boolean(state.chapterActive)}>
-                      <TimelineIcon $status={state.chapterActive ? 'loading' : 'success'}>
+                    <div className={ORCH_DEMO_TOOL_ROW}>
+                      <span
+                        className={orchDemoTimelineIconClass(state.chapterActive ? 'loading' : 'success')}
+                      >
                         <ToolIcon name="Read" size={14} animate={Boolean(state.chapterActive)} />
-                      </TimelineIcon>
+                      </span>
                       <span>{copy.secondTool}</span>
-                      <StepMeta>{state.chapterActive ? '进行中' : '已完成 · 第一章 · 天赋觉醒'}</StepMeta>
-                    </ToolRow>
+                      <span className={ORCH_DEMO_STEP_META}>
+                        {state.chapterActive ? '进行中' : '已完成 · 第一章 · 天赋觉醒'}
+                      </span>
+                    </div>
                   ) : null}
                 </>
               )}
-            </Timeline>
+            </div>
 
             {state.outputVisible ? (
-              <OutputText>{state.outputText || '开始输出正文…'}</OutputText>
+              <p className={ORCH_DEMO_OUTPUT_TEXT}>{state.outputText || '开始输出正文…'}</p>
             ) : (
-              <EmptyHint>
-                <TimelineIcon $status="idle">
+              <div className={ORCH_DEMO_EMPTY_HINT}>
+                <span className={orchDemoTimelineIconClass('idle')}>
                   <ToolIcon name="Agent" size={14} />
-                </TimelineIcon>
+                </span>
                 {state.promptVisible ? '等待编排完成后开始流式输出正文' : '输入指令后启动 Agent'}
-              </EmptyHint>
+              </div>
             )}
-          </DemoBody>
+          </div>
 
-          <DemoComposer $sending={state.sending} $streaming={state.runActive}>
-            <ComposerCard>
-              <ComposerText>
+          <div className={orchDemoComposerClass(state.sending)}>
+            <div className={ORCH_DEMO_COMPOSER_CARD}>
+              <div className={ORCH_DEMO_COMPOSER_TEXT}>
                 {state.composerText ||
                   (state.showComposerPlaceholder ? (
-                    <Placeholder>给 AI 发送消息...</Placeholder>
+                    <span className={ORCH_DEMO_COMPOSER_PLACEHOLDER}>给 AI 发送消息...</span>
                   ) : null)}
-              </ComposerText>
-              <ComposerActionRow>
-                <HostModeMock>
+              </div>
+              <div className={ORCH_DEMO_COMPOSER_ACTION_ROW}>
+                <div className={ORCH_DEMO_HOST_MODE}>
                   <span>托管</span>
-                  <SwitchMock />
-                </HostModeMock>
-                <SendButton $sending={state.sending} $streaming={state.runActive}>
+                  <span className={ORCH_DEMO_SWITCH_MOCK} />
+                </div>
+                <span className={orchDemoSendButtonClass(state.sending, state.runActive)}>
                   {state.runActive ? <StopIcon /> : <ArrowUpIcon />}
-                </SendButton>
-              </ComposerActionRow>
-            </ComposerCard>
-            <ComposerDisclaimer>内容由 AI 生成，请谨慎参考</ComposerDisclaimer>
-          </DemoComposer>
-        </DemoShell>
-      </Frame>
+                </span>
+              </div>
+            </div>
+            <p className={ORCH_DEMO_COMPOSER_DISCLAIMER}>内容由 AI 生成，请谨慎参考</p>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
@@ -431,390 +482,49 @@ function SubagentDemoPanel({
   complete: boolean
 }) {
   return (
-    <SubagentWrap>
-      <SubagentHeader>
-        <TimelineIcon $status={active ? 'loading' : 'success'}>
+    <div className={ORCH_DEMO_SUBAGENT_WRAP}>
+      <div className={ORCH_DEMO_SUBAGENT_HEADER}>
+        <span className={orchDemoTimelineIconClass(active ? 'loading' : 'success')}>
           <ToolIcon name="Agent" size={14} animate={active} />
-        </TimelineIcon>
-        <SubagentTitle>子代理 · 角色校对</SubagentTitle>
-        <StepMeta>
+        </span>
+        <span className={ORCH_DEMO_SUBAGENT_TITLE}>子代理 · 角色校对</span>
+        <span className={ORCH_DEMO_STEP_META}>
           {active ? '运行中 · 12 turns' : '已完成 · 角色校对'}
-        </StepMeta>
-      </SubagentHeader>
+        </span>
+      </div>
 
-      <SubagentBranch>
+      <div className={ORCH_DEMO_SUBAGENT_BRANCH}>
         {thinkVisible ? (
-          <SubagentLine>
-            <SubagentDot $active={active && !memoryVisible} />
+          <div className={ORCH_DEMO_SUBAGENT_LINE}>
+            <span className={orchDemoSubagentDotClass(active && !memoryVisible)} />
             <span>校对角色卡与当前章节语气</span>
-          </SubagentLine>
+          </div>
         ) : null}
         {memoryVisible ? (
-          <SubagentLine>
-            <SubagentDot $active={memoryActive} />
+          <div className={ORCH_DEMO_SUBAGENT_LINE}>
+            <span className={orchDemoSubagentDotClass(memoryActive)} />
             <span>读取角色卡</span>
-            <StepMeta>
+            <span className={ORCH_DEMO_STEP_META}>
               {memoryActive ? '进行中' : '已完成 · Tang Yun 人设无冲突'}
-            </StepMeta>
-          </SubagentLine>
+            </span>
+          </div>
         ) : null}
         {outputVisible ? (
-          <SubagentLine>
-            <SubagentDot $active={outputActive} />
+          <div className={ORCH_DEMO_SUBAGENT_LINE}>
+            <span className={orchDemoSubagentDotClass(outputActive)} />
             <span>校对摘要</span>
-            <StepMeta>
+            <span className={ORCH_DEMO_STEP_META}>
               {outputActive ? '进行中' : '已完成 · 已同步至记忆'}
-            </StepMeta>
-          </SubagentLine>
+            </span>
+          </div>
         ) : null}
         {complete ? (
-          <SubagentSummary>角色校对完成，可安全续写第二章。</SubagentSummary>
+          <div className={ORCH_DEMO_SUBAGENT_SUMMARY}>角色校对完成，可安全续写第二章。</div>
         ) : null}
-      </SubagentBranch>
-    </SubagentWrap>
+      </div>
+    </div>
   )
 }
-
-const HeroFrame = styled(MarketingChatDemoFrame)`
-  height: min(460px, 58vh);
-  max-width: 640px;
-  margin: 0 auto;
-  box-shadow: ${cursorTheme.shadowSm};
-  border-color: ${cursorTheme.border};
-`
-
-const StoryFrame = styled(MarketingChatDemoFrame)`
-  height: min(560px, 66vh);
-  min-height: 460px;
-`
-
-const fadeUp = keyframes`
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-`
-
-const DemoShell = styled.div`
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  padding: 1.15rem 1.5rem 1rem;
-  background: ${editorTheme.bg};
-  color: ${editorTheme.text};
-  overflow: hidden;
-`
-
-const DemoBody = styled.div`
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-`
-
-const DemoHeader = styled.div`
-  flex-shrink: 0;
-  font-size: 0.92rem;
-  font-weight: 650;
-  letter-spacing: -0.02em;
-  color: ${editorTheme.text};
-`
-
-const PromptBubble = styled.div`
-  align-self: flex-end;
-  max-width: min(70%, 26rem);
-  margin: 0.95rem 0 1.25rem;
-  padding: 0.6rem 1rem;
-  border: 1px solid rgba(79, 70, 229, 0.14);
-  border-radius: 18px;
-  background: ${editorTheme.accentSoft};
-  color: ${editorTheme.text};
-  font-size: 0.88rem;
-  line-height: 1.62;
-  font-weight: 400;
-  box-shadow: none;
-`
-
-const Timeline = styled.div`
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.38rem;
-`
-
-const StatusLine = styled.div`
-  animation: ${fadeUp} 0.22s ease-out;
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  color: ${editorTheme.textSecondary};
-  font-size: 0.84rem;
-  font-weight: 600;
-`
-
-const ThinkBlock = styled.div<{ $expanded: boolean }>`
-  animation: ${fadeUp} 0.22s ease-out;
-  position: relative;
-  padding-left: 0;
-
-  ${({ $expanded }) =>
-    $expanded &&
-    `
-      &::before {
-        content: '';
-        position: absolute;
-        left: 0.62rem;
-        top: 1.45rem;
-        bottom: 0.05rem;
-        width: 2px;
-        border-radius: 1px;
-        background: ${editorTheme.border};
-      }
-    `}
-`
-
-const StepTitle = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  min-height: 1.3rem;
-  color: ${editorTheme.textSecondary};
-  font-size: 0.84rem;
-  font-weight: 600;
-`
-
-const StepMeta = styled.span`
-  color: ${editorTheme.textMuted};
-  font-size: 0.76rem;
-  font-weight: 400;
-`
-
-const ThinkBody = styled.div`
-  margin-top: 0.26rem;
-  margin-left: 1.75rem;
-  max-width: 92%;
-  color: ${editorTheme.textSecondary};
-  font-size: 0.82rem;
-  line-height: 1.58;
-`
-
-const ToolRow = styled.div<{ $active: boolean }>`
-  animation: ${fadeUp} 0.22s ease-out;
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding-left: 1.75rem;
-  color: ${editorTheme.textSecondary};
-  font-size: 0.84rem;
-  font-weight: 600;
-`
-
-const SubagentWrap = styled.div`
-  animation: ${fadeUp} 0.22s ease-out;
-  padding-left: 1.75rem;
-`
-
-const SubagentHeader = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  min-height: 1.35rem;
-`
-
-const SubagentTitle = styled.span`
-  color: ${editorTheme.textSecondary};
-  font-size: 0.84rem;
-  font-weight: 600;
-`
-
-const SubagentBranch = styled.div`
-  position: relative;
-  margin: 0.2rem 0 0 0.68rem;
-  padding: 0.2rem 0 0.05rem 1rem;
-
-  &::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0.15rem;
-    width: 1.5px;
-    border-radius: 1px;
-    background: ${editorTheme.border};
-  }
-`
-
-const SubagentLine = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  min-height: 1.35rem;
-  color: ${editorTheme.textSecondary};
-  font-size: 0.8rem;
-  font-weight: 500;
-  white-space: nowrap;
-`
-
-const SubagentDot = styled.span<{ $active: boolean }>`
-  width: 0.38rem;
-  height: 0.38rem;
-  border-radius: 999px;
-  background: ${({ $active }) => ($active ? editorTheme.accent : editorTheme.textMuted)};
-  box-shadow: ${({ $active }) =>
-    $active ? `0 0 0 3px ${palette.accentSoft}` : 'none'};
-  opacity: ${({ $active }) => ($active ? 0.9 : 0.55)};
-`
-
-const SubagentSummary = styled.div`
-  margin-top: 0.22rem;
-  color: ${editorTheme.textMuted};
-  font-size: 0.78rem;
-  line-height: 1.5;
-`
-
-const OutputText = styled.p`
-  animation: ${fadeUp} 0.22s ease-out;
-  margin: 1.25rem 0 0;
-  max-width: 100%;
-  color: ${editorTheme.text};
-  font-size: clamp(0.92rem, 1.6vw, 1.02rem);
-  line-height: 1.78;
-  letter-spacing: 0.01em;
-`
-
-const EmptyHint = styled.div`
-  margin-top: auto;
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  color: ${editorTheme.textMuted};
-  font-size: 0.78rem;
-`
-
-function iconColor(status: 'loading' | 'success' | 'idle') {
-  if (status === 'loading') return editorTheme.textMuted
-  if (status === 'success') return palette.accent
-  return palette.textFaint
-}
-
-const TimelineIcon = styled.span<{ $status: 'loading' | 'success' | 'idle' }>`
-  display: inline-flex;
-  width: 1.35rem;
-  height: 1.35rem;
-  flex: 0 0 1.35rem;
-  align-items: center;
-  justify-content: center;
-  color: ${({ $status }) => iconColor($status)};
-`
-
-const DemoComposer = styled.div<{ $sending: boolean; $streaming: boolean }>`
-  flex-shrink: 0;
-  width: 100%;
-  margin-top: 0.9rem;
-  opacity: ${({ $sending }) => ($sending ? 0.9 : 1)};
-  transform: translateY(${({ $sending }) => ($sending ? '1px' : '0')});
-  transition:
-    opacity 0.22s ease,
-    transform 0.22s ease;
-`
-
-const ComposerCard = styled.div`
-  width: min(92%, 520px);
-  margin: 0 auto;
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid rgba(0, 0, 0, 0.07);
-  border-radius: ${editorTheme.radiusMd};
-  box-shadow:
-    0 18px 48px rgba(15, 23, 42, 0.08),
-    0 2px 8px rgba(15, 23, 42, 0.04);
-  padding: 0.45rem 0.65rem 0.42rem;
-  box-sizing: border-box;
-`
-
-const ComposerText = styled.div`
-  min-height: 2.5rem;
-  padding: 0.12rem 0.1rem;
-  color: ${editorTheme.text};
-  font-size: 0.86rem;
-  line-height: 1.45;
-  white-space: pre-wrap;
-`
-
-const Placeholder = styled.span`
-  color: ${editorTheme.textMuted};
-`
-
-const ComposerActionRow = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-`
-
-const HostModeMock = styled.div`
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: ${editorTheme.textSecondary};
-  font-size: 0.72rem;
-  font-weight: 600;
-`
-
-const SwitchMock = styled.span`
-  position: relative;
-  width: 34px;
-  height: 18px;
-  border-radius: 999px;
-  background: ${palette.bgInset};
-  box-shadow: inset 0 1px 3px rgba(15, 23, 42, 0.16);
-
-  &::after {
-    content: '';
-    position: absolute;
-    top: 3px;
-    left: 4px;
-    width: 12px;
-    height: 12px;
-    border-radius: 999px;
-    background: #fff;
-    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.22);
-  }
-`
-
-const SendButton = styled.span<{ $sending: boolean; $streaming: boolean }>`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  border-radius: ${({ $streaming }) => ($streaming ? '10px' : '11px')};
-  color: #fff;
-  background: ${({ $streaming }) => ($streaming ? '#ef4444' : editorTheme.accent)};
-  opacity: ${({ $sending }) => ($sending ? 0.88 : 1)};
-  transform: scale(${({ $sending }) => ($sending ? 0.94 : 1)});
-  transition:
-    background 0.12s ease,
-    border-radius 0.12s ease,
-    opacity 0.12s ease,
-    transform 0.12s ease;
-
-  svg {
-    width: 17px;
-    height: 17px;
-  }
-`
-
-const ComposerDisclaimer = styled.p`
-  margin: 0.28rem 0 0;
-  text-align: center;
-  color: ${editorTheme.textMuted};
-  font-size: 0.66rem;
-`
 
 function ArrowUpIcon() {
   return (

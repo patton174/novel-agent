@@ -6,7 +6,7 @@ import { HomeTimelineSection } from '../components/marketing/sections/HomeTimeli
 import { HomeDanmakuSection } from '../components/marketing/sections/HomeDanmakuSection'
 import { HomeFooterSection } from '../components/marketing/sections/HomeFooterSection'
 import { HomeHeroSection } from '../components/marketing/sections/HomeHeroSection'
-import { MarketingMain } from '../styles/surfaces/marketing'
+import { MARKETING_MAIN } from '@/lib/marketingShellClasses'
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { isLoggedIn } from '../utils/auth'
@@ -34,13 +34,13 @@ export default function HomePage() {
   return (
     <MarketingShell>
       <MarketingNav />
-      <MarketingMain>
+      <main className={MARKETING_MAIN}>
         <HomeHeroSection />
         <HomeFeasibilitySection />
         <HomeScrollStory />
         <HomeTimelineSection />
         <HomeDanmakuSection />
-      </MarketingMain>
+      </main>
       <HomeFooterSection />
     </MarketingShell>
   )

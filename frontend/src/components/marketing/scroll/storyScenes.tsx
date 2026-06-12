@@ -1,15 +1,16 @@
+import { cn } from '@/lib/utils'
 import { MarketingEditorAppDemo } from '../demo/MarketingEditorAppDemo'
 import {
-  StoryScene,
-  StorySceneBody,
-  StorySceneCopy,
-  StorySceneInner,
-  StorySceneList,
-  StoryPin,
-  StorySceneTag,
-  StorySceneTitle,
-  StoryVisualStage,
-} from '../../../styles/surfaces/marketingScroll'
+  STORY_PIN,
+  STORY_SCENE,
+  STORY_SCENE_BODY,
+  STORY_SCENE_COPY,
+  STORY_SCENE_INNER,
+  STORY_SCENE_LIST,
+  STORY_SCENE_TAG,
+  STORY_SCENE_TITLE,
+  STORY_VISUAL_STAGE,
+} from '@/lib/marketingScrollClasses'
 
 function SceneCopy({
   tag,
@@ -23,25 +24,25 @@ function SceneCopy({
   bullets: string[]
 }) {
   return (
-    <StorySceneCopy className="story-copy">
-      <StorySceneTag>{tag}</StorySceneTag>
-      <StorySceneTitle>{title}</StorySceneTitle>
-      <StorySceneBody>{body}</StorySceneBody>
-      <StorySceneList>
+    <div className={cn(STORY_SCENE_COPY, 'story-copy')}>
+      <span className={STORY_SCENE_TAG}>{tag}</span>
+      <h2 className={STORY_SCENE_TITLE}>{title}</h2>
+      <p className={STORY_SCENE_BODY}>{body}</p>
+      <ul className={STORY_SCENE_LIST}>
         {bullets.map((item) => (
           <li key={item}>{item}</li>
         ))}
-      </StorySceneList>
-    </StorySceneCopy>
+      </ul>
+    </div>
   )
 }
 
 /** 第一幕：思维链滚动书写 */
 export function ThinkScene() {
   return (
-    <StoryScene id="story-think">
-      <StoryPin className="story-pin">
-        <StorySceneInner>
+    <section id="story-think" className={STORY_SCENE}>
+      <div className={cn(STORY_PIN, 'story-pin')}>
+        <div className={STORY_SCENE_INNER}>
           <SceneCopy
             tag="第一幕 · 思维链"
             title="思考过程透明，像对话一样可见"
@@ -52,21 +53,21 @@ export function ThinkScene() {
               '完成后自动收起，聚焦编排与成稿',
             ]}
           />
-          <StoryVisualStage className="story-visual">
+          <div className={cn(STORY_VISUAL_STAGE, 'story-visual')}>
             <MarketingEditorAppDemo variant="think" />
-          </StoryVisualStage>
-        </StorySceneInner>
-      </StoryPin>
-    </StoryScene>
+          </div>
+        </div>
+      </div>
+    </section>
   )
 }
 
 /** 第二幕：编排与工具链 */
 export function OrchestrationScene() {
   return (
-    <StoryScene id="story-orchestrate">
-      <StoryPin className="story-pin">
-        <StorySceneInner>
+    <section id="story-orchestrate" className={STORY_SCENE}>
+      <div className={cn(STORY_PIN, 'story-pin')}>
+        <div className={STORY_SCENE_INNER}>
           <SceneCopy
             tag="第二幕 · 智能编排"
             title="Plan 拆解步骤，工具依次就位"
@@ -77,21 +78,21 @@ export function OrchestrationScene() {
               '长任务可托管，断线后继续同步',
             ]}
           />
-          <StoryVisualStage className="story-visual">
+          <div className={cn(STORY_VISUAL_STAGE, 'story-visual')}>
             <MarketingEditorAppDemo variant="orchestrate" />
-          </StoryVisualStage>
-        </StorySceneInner>
-      </StoryPin>
-    </StoryScene>
+          </div>
+        </div>
+      </div>
+    </section>
   )
 }
 
 /** 第三幕：子代理 */
 export function SubagentScene() {
   return (
-    <StoryScene id="story-subagent">
-      <StoryPin className="story-pin">
-        <StorySceneInner>
+    <section id="story-subagent" className={STORY_SCENE}>
+      <div className={cn(STORY_PIN, 'story-pin')}>
+        <div className={STORY_SCENE_INNER}>
           <SceneCopy
             tag="第三幕 · 子代理"
             title="复杂任务拆分，子代理优雅执行"
@@ -102,21 +103,21 @@ export function SubagentScene() {
               '失败可定位到具体子任务',
             ]}
           />
-          <StoryVisualStage className="story-visual">
+          <div className={cn(STORY_VISUAL_STAGE, 'story-visual')}>
             <MarketingEditorAppDemo variant="subagent" />
-          </StoryVisualStage>
-        </StorySceneInner>
-      </StoryPin>
-    </StoryScene>
+          </div>
+        </div>
+      </div>
+    </section>
   )
 }
 
 /** 第四幕：流式成稿 */
 export function StreamScene() {
   return (
-    <StoryScene id="story-stream">
-      <StoryPin className="story-pin">
-        <StorySceneInner>
+    <section id="story-stream" className={STORY_SCENE}>
+      <div className={cn(STORY_PIN, 'story-pin')}>
+        <div className={STORY_SCENE_INNER}>
           <SceneCopy
             tag="第四幕 · 流式成稿"
             title="章节正文丝滑流出，所见即所得"
@@ -127,11 +128,11 @@ export function StreamScene() {
               '成稿后自动回写章节记忆',
             ]}
           />
-          <StoryVisualStage className="story-visual">
+          <div className={cn(STORY_VISUAL_STAGE, 'story-visual')}>
             <MarketingEditorAppDemo variant="stream" />
-          </StoryVisualStage>
-        </StorySceneInner>
-      </StoryPin>
-    </StoryScene>
+          </div>
+        </div>
+      </div>
+    </section>
   )
 }

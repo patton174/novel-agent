@@ -1,5 +1,5 @@
-import { useId, useLayoutEffect, useRef, useState } from 'react'
-import styled, { css, keyframes } from 'styled-components'
+import { useId, useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
+import { cn } from '@/lib/utils'
 import { font, palette } from '../../styles/theme'
 
 export type NovelAiWordmarkSize = 'sm' | 'md' | 'lg' | 'hero'
@@ -13,36 +13,6 @@ const SIZE_MAP: Record<
   lg: { width: 248, height: 46, novelSize: 34, aiSize: 26, gap: 10 },
   hero: { width: 340, height: 64, novelSize: 48, aiSize: 36, gap: 12 },
 }
-
-const fillReveal = keyframes`
-  from {
-    opacity: 0;
-    transform: translateY(4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-`
-
-const aiGlow = keyframes`
-  0%,
-  100% {
-    filter: drop-shadow(0 0 0 rgba(79, 70, 229, 0));
-  }
-  50% {
-    filter: drop-shadow(0 0 10px rgba(79, 70, 229, 0.45));
-  }
-`
-
-const underlineGrow = keyframes`
-  from {
-    stroke-dashoffset: 120;
-  }
-  to {
-    stroke-dashoffset: 0;
-  }
-`
 
 export interface NovelAiWordmarkProps {
   size?: NovelAiWordmarkSize
@@ -84,18 +54,21 @@ export function NovelAiWordmark({
   const baseline = dims.height - 10
   const aiX = novelX + dims.novelSize * 2.35 + dims.gap
 
+  const svgStyle = {
+    '--wordmark-novel-len': novelLen,
+    '--wordmark-ai-len': aiLen,
+  } as CSSProperties
+
   return (
-    <WordmarkSvg
-      className={className}
+    <svg
+      className={cn('mkt-wordmark-svg', animate && 'mkt-wordmark-svg--animate', className)}
+      style={svgStyle}
       role="img"
       aria-label={label}
       xmlns="http://www.w3.org/2000/svg"
       viewBox={`0 0 ${dims.width} ${dims.height}`}
       width={dims.width}
       height={dims.height}
-      $animate={animate}
-      $novelLen={novelLen}
-      $aiLen={aiLen}
     >
       <defs>
         <linearGradient id={`${uid}-ai-fill`} x1="0%" y1="0%" x2="100%" y2="100%">
@@ -110,7 +83,7 @@ export function NovelAiWordmark({
       </defs>
 
       <path
-        className="wordmark-underline"
+        className="mkt-wordmark-underline"
         d={`M ${novelX} ${baseline + 6} Q ${dims.width * 0.35} ${baseline + 14} ${aiX + dims.aiSize * 0.9} ${baseline + 5}`}
         fill="none"
         stroke={palette.accent}
@@ -123,7 +96,7 @@ export function NovelAiWordmark({
 
       <text
         ref={novelStrokeRef}
-        className="stroke-layer novel-stroke"
+        className="mkt-wordmark-novel-stroke"
         x={novelX}
         y={baseline}
         fontSize={dims.novelSize}
@@ -135,7 +108,7 @@ export function NovelAiWordmark({
         Novel
       </text>
       <text
-        className="fill-layer novel-fill"
+        className="mkt-wordmark-fill"
         x={novelX}
         y={baseline}
         fontSize={dims.novelSize}
@@ -150,7 +123,7 @@ export function NovelAiWordmark({
 
       <text
         ref={aiStrokeRef}
-        className="stroke-layer ai-stroke"
+        className="mkt-wordmark-ai-stroke"
         x={aiX}
         y={baseline}
         fontSize={dims.aiSize}
@@ -161,7 +134,7 @@ export function NovelAiWordmark({
         Agent
       </text>
       <text
-        className="fill-layer ai-fill"
+        className="mkt-wordmark-fill"
         x={aiX}
         y={baseline}
         fontSize={dims.aiSize}
@@ -172,109 +145,6 @@ export function NovelAiWordmark({
       >
         Agent
       </text>
-    </WordmarkSvg>
+    </svg>
   )
 }
-
-const WordmarkSvg = styled.svg<{
-  $animate: boolean
-  $novelLen: number
-  $aiLen: number
-}>`
-  display: block;
-  overflow: visible;
-
-  .stroke-layer {
-    fill: none;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-    paint-order: stroke fill;
-  }
-
-  .novel-stroke {
-    stroke: ${palette.ink};
-    stroke-width: 1.35;
-    stroke-dasharray: ${({ $novelLen }) => $novelLen};
-    stroke-dashoffset: ${({ $novelLen, $animate }) => ($animate ? 0 : $novelLen)};
-    transition: stroke-dashoffset 0.05s;
-    ${({ $animate, $novelLen }) =>
-      $animate &&
-      css`
-        animation: novel-draw 1.35s cubic-bezier(0.45, 0, 0.2, 1) forwards;
-        @keyframes novel-draw {
-          from {
-            stroke-dashoffset: ${$novelLen};
-          }
-          to {
-            stroke-dashoffset: 0;
-          }
-        }
-      `}
-  }
-
-  .ai-stroke {
-    stroke: ${palette.accentDeep};
-    stroke-width: 1.6;
-    stroke-dasharray: ${({ $aiLen }) => $aiLen};
-    stroke-dashoffset: ${({ $animate, $aiLen }) => ($animate ? 0 : $aiLen)};
-    ${({ $animate, $aiLen }) =>
-      $animate &&
-      css`
-        animation: ai-draw 1s cubic-bezier(0.45, 0, 0.2, 1) 0.55s forwards;
-        @keyframes ai-draw {
-          from {
-            stroke-dashoffset: ${$aiLen};
-          }
-          to {
-            stroke-dashoffset: 0;
-          }
-        }
-      `}
-  }
-
-  .fill-layer {
-    opacity: 0;
-    ${({ $animate }) =>
-      $animate
-        ? css`
-            &.novel-fill {
-              animation: ${fillReveal} 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.85s forwards;
-            }
-            &.ai-fill {
-              animation:
-                ${fillReveal} 0.65s cubic-bezier(0.22, 1, 0.36, 1) 1.15s forwards,
-                ${aiGlow} 3s ease-in-out 2s infinite;
-            }
-          `
-        : css`
-            opacity: 1;
-          `}
-  }
-
-  .wordmark-underline {
-    stroke-dasharray: 120;
-    stroke-dashoffset: 120;
-    ${({ $animate }) =>
-      $animate
-        ? css`
-            animation: ${underlineGrow} 1.1s cubic-bezier(0.45, 0, 0.2, 1) 1.4s forwards;
-          `
-        : css`
-            stroke-dashoffset: 0;
-          `}
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .novel-stroke,
-    .ai-stroke,
-    .wordmark-underline {
-      animation: none !important;
-      stroke-dashoffset: 0;
-      transition: none;
-    }
-    .fill-layer {
-      animation: none !important;
-      opacity: 1;
-    }
-  }
-`

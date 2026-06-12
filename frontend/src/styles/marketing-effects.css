@@ -1,5 +1,13 @@
 /* 营销页视觉特效 — 配合 prefers-reduced-motion 降级 */
 
+/* 营销 shell 背景渐变（原 MarketingBackgroundPattern） */
+.mkt-shell-bg-pattern {
+  background:
+    radial-gradient(ellipse 120% 70% at 50% -15%, rgba(79, 70, 229, 0.1), transparent 58%),
+    radial-gradient(ellipse 60% 50% at 100% 20%, rgba(129, 140, 248, 0.06), transparent 50%),
+    linear-gradient(180deg, #f8fafc 0%, #f7f7f4 45%, #f8fafc 100%);
+}
+
 @keyframes mkt-gradient-shift {
   0%,
   100% {
@@ -213,6 +221,55 @@
 
 /* 营销 demo 动效（编辑器 mock / Agent trace） */
 
+@keyframes mkt-demo-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.mkt-demo-fade-up {
+  animation: mkt-demo-fade-up 0.22s ease-out;
+}
+
+.mkt-demo-think-block-expanded::before {
+  content: '';
+  position: absolute;
+  left: 0.62rem;
+  top: 1.45rem;
+  bottom: 0.05rem;
+  width: 2px;
+  border-radius: 1px;
+  background: #e2e8f0;
+}
+
+.mkt-demo-subagent-branch::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0.15rem;
+  width: 1.5px;
+  border-radius: 1px;
+  background: #e2e8f0;
+}
+
+.mkt-demo-switch-mock::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 4px;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.22);
+}
+
 @keyframes mkt-url-shimmer {
   0%,
   100% {
@@ -255,6 +312,24 @@
   }
 }
 
+@keyframes mkt-cursor-pulse {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.mkt-font-display {
+  font-family: 'Songti SC', 'Noto Serif SC', 'Source Han Serif SC', Georgia, serif;
+}
+
+.mkt-cursor-thinking-dot {
+  animation: mkt-cursor-pulse 1.2s ease-in-out infinite;
+}
+
 @keyframes mkt-think-title-shimmer {
   0% {
     background-position: 100% 50%;
@@ -293,6 +368,123 @@
   animation: mkt-think-title-shimmer 2.2s linear infinite;
 }
 
+/* NovelAiWordmark — stroke draw + fill reveal (--wordmark-*-len on svg) */
+
+@keyframes mkt-wordmark-novel-draw {
+  from {
+    stroke-dashoffset: var(--wordmark-novel-len);
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes mkt-wordmark-ai-draw {
+  from {
+    stroke-dashoffset: var(--wordmark-ai-len);
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes mkt-wordmark-fill-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes mkt-wordmark-ai-glow {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 0 rgba(79, 70, 229, 0));
+  }
+  50% {
+    filter: drop-shadow(0 0 10px rgba(79, 70, 229, 0.45));
+  }
+}
+
+@keyframes mkt-wordmark-underline-grow {
+  from {
+    stroke-dashoffset: 120;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.mkt-wordmark-svg {
+  display: block;
+  overflow: visible;
+}
+
+.mkt-wordmark-novel-stroke,
+.mkt-wordmark-ai-stroke {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  paint-order: stroke fill;
+}
+
+.mkt-wordmark-novel-stroke {
+  stroke: #0f172a;
+  stroke-width: 1.35;
+  stroke-dasharray: var(--wordmark-novel-len);
+  stroke-dashoffset: var(--wordmark-novel-len);
+  transition: stroke-dashoffset 0.05s;
+}
+
+.mkt-wordmark-ai-stroke {
+  stroke: #312e81;
+  stroke-width: 1.6;
+  stroke-dasharray: var(--wordmark-ai-len);
+  stroke-dashoffset: var(--wordmark-ai-len);
+}
+
+.mkt-wordmark-svg--animate .mkt-wordmark-novel-stroke {
+  animation: mkt-wordmark-novel-draw 1.35s cubic-bezier(0.45, 0, 0.2, 1) forwards;
+}
+
+.mkt-wordmark-svg--animate .mkt-wordmark-ai-stroke {
+  animation: mkt-wordmark-ai-draw 1s cubic-bezier(0.45, 0, 0.2, 1) 0.55s forwards;
+}
+
+.mkt-wordmark-fill {
+  opacity: 0;
+}
+
+.mkt-wordmark-svg:not(.mkt-wordmark-svg--animate) .mkt-wordmark-fill {
+  opacity: 1;
+}
+
+.mkt-wordmark-svg--animate .mkt-wordmark-novel-stroke + .mkt-wordmark-fill {
+  animation: mkt-wordmark-fill-reveal 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.85s forwards;
+}
+
+.mkt-wordmark-svg--animate .mkt-wordmark-ai-stroke + .mkt-wordmark-fill {
+  animation:
+    mkt-wordmark-fill-reveal 0.65s cubic-bezier(0.22, 1, 0.36, 1) 1.15s forwards,
+    mkt-wordmark-ai-glow 3s ease-in-out 2s infinite;
+}
+
+.mkt-wordmark-underline {
+  stroke-dasharray: 120;
+  stroke-dashoffset: 120;
+}
+
+.mkt-wordmark-svg:not(.mkt-wordmark-svg--animate) .mkt-wordmark-underline {
+  stroke-dashoffset: 0;
+}
+
+.mkt-wordmark-svg--animate .mkt-wordmark-underline {
+  animation: mkt-wordmark-underline-grow 1.1s cubic-bezier(0.45, 0, 0.2, 1) 1.4s forwards;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .mkt-gradient-text,
   .mkt-cta-glow::after,
@@ -305,11 +497,26 @@
   .mkt-demo-blink-cursor,
   .mkt-demo-blink-cursor-fast,
   .mkt-demo-console-glow,
-  .mkt-demo-think-title-shimmer {
+  .mkt-demo-think-title-shimmer,
+  .mkt-demo-fade-up,
+  .mkt-cursor-thinking-dot {
     animation: none !important;
   }
 
   .mkt-card-lift:hover {
     transform: none;
+  }
+
+  .mkt-wordmark-svg--animate .mkt-wordmark-novel-stroke,
+  .mkt-wordmark-svg--animate .mkt-wordmark-ai-stroke,
+  .mkt-wordmark-svg--animate .mkt-wordmark-underline {
+    animation: none !important;
+    stroke-dashoffset: 0;
+    transition: none;
+  }
+
+  .mkt-wordmark-svg--animate .mkt-wordmark-fill {
+    animation: none !important;
+    opacity: 1;
   }
 }

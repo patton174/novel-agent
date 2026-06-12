@@ -5,7 +5,7 @@ import { loadNamespace } from '@/i18n'
 import { MarketingShell } from './MarketingShell'
 import { MarketingNav } from './MarketingNav'
 import { HomeFooterSection } from './sections/HomeFooterSection'
-import { MarketingMain } from '@/styles/surfaces/marketing'
+import { MARKETING_MAIN } from '@/lib/marketingShellClasses'
 
 import { MarketingSubpageCtaBand } from './MarketingSubpageCtaBand'
 
@@ -30,7 +30,7 @@ export function MarketingPageLayout({
   return (
     <MarketingShell>
       <MarketingNav />
-      <MarketingMain>{children}</MarketingMain>
+      <main className={MARKETING_MAIN}>{children}</main>
       {subpageCta ? <MarketingSubpageCtaBand /> : null}
       <HomeFooterSection variant={footerVariant} />
     </MarketingShell>

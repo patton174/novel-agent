@@ -4,11 +4,10 @@ import { MarketingChatOrchestrationDemo } from './MarketingChatOrchestrationDemo
 import type { MarketingSceneId } from '../../../utils/marketing/buildMarketingSceneDemo'
 import { MarketingStoryCopy, type StoryPoint } from '../story/MarketingStoryCopy'
 import {
-  CursorFeatureGrid,
-  CursorFeatureInner,
-  CursorFeatureSection,
-} from '../../../styles/surfaces/cursorLanding'
-import styled, { css } from 'styled-components'
+  CURSOR_FEATURE_INNER,
+  cursorFeatureGridClass,
+  cursorFeatureSectionClass,
+} from '@/lib/cursorLandingClasses'
 
 export type MarketingSceneLayout = 'copy-left' | 'copy-right'
 
@@ -25,18 +24,6 @@ export interface MarketingChatSceneProps {
   /** 中间幕轻背景，增强节奏感 */
   wash?: boolean
 }
-
-const SceneSection = styled(CursorFeatureSection)<{ $wash?: boolean }>`
-  ${({ $wash }) =>
-    $wash &&
-    css`
-      background: linear-gradient(
-        180deg,
-        rgba(79, 70, 229, 0.04) 0%,
-        rgba(248, 250, 252, 0) 72%
-      );
-    `}
-`
 
 export function MarketingChatScene({
   scene,
@@ -59,9 +46,14 @@ export function MarketingChatScene({
   )
 
   return (
-    <SceneSection ref={sectionRef} id={id} data-marketing-scene={scene} $wash={wash}>
-      <CursorFeatureInner>
-        <CursorFeatureGrid $flip={flip}>
+    <section
+      ref={sectionRef}
+      id={id}
+      data-marketing-scene={scene}
+      className={cursorFeatureSectionClass(wash)}
+    >
+      <div className={CURSOR_FEATURE_INNER}>
+        <div className={cursorFeatureGridClass(flip)}>
           <MarketingStoryCopy
             className="story-copy"
             alignEnd={flip}
@@ -86,8 +78,8 @@ export function MarketingChatScene({
               {demo}
             </motion.div>
           )}
-        </CursorFeatureGrid>
-      </CursorFeatureInner>
-    </SceneSection>
+        </div>
+      </div>
+    </section>
   )
 }

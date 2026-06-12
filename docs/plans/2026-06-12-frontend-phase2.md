@@ -99,6 +99,16 @@
 - [x] **营销 demo** 三组件 + `marketingDemoClasses.ts`；删除 `marketingEditorAppDemo.ts` / `marketingAgentDemo.ts`
 - [x] **删除** 零引用 `styles/chatMessageSurface.ts`
 
+## Phase 3 — 营销 landing / GSAP 分镜 Tailwind 化
+
+- [x] **marketing.ts** shell 删除；`marketingShellClasses.ts`（PageWrapper / Background / Main）
+- [x] **cursorLanding.ts** + **marketingScroll.ts** + **marketingEditorShowcase.ts** 删除
+- [x] **cursorLandingClasses.ts** / **marketingScrollClasses.ts** / **marketingEditorShowcaseClasses.ts**
+- [x] CursorLanding / NovelCursorMock / CursorHeroStack / HomeScrollStory / storyScenes / MarketingChatScene / MarketingStoryCopy
+- [x] **MarketingChatOrchestrationDemo** + **MarketingHeroDemo** → `marketingOrchestrationDemoClasses.ts`
+- [x] **NovelAiWordmark** → CSS 变量动画（`marketing-effects.css`）
+- [x] `components/marketing/**` 零 styled-components
+
 ---
 
 ## Phase 2B 验收
