@@ -1,4 +1,3 @@
-import styled from 'styled-components'
 import { AgentMarkdown } from '../agent/AgentMarkdown'
 import { EditorButton } from '../ui/EditorButton'
 import { MotionSegmentRail } from '../motion/MotionSegmentRail'
@@ -10,7 +9,6 @@ import {
   EditorModalPanel,
   useEditorModalEscape,
 } from '../editor/EditorModalShell'
-import { palette } from '../../styles/theme'
 import type {
   MemoryTabId,
   NormalizedStoryMemory,
@@ -23,19 +21,19 @@ import {
   isBodyOnlyGroup,
 } from '../../utils/storyMemoryModel'
 import {
-  EmptyState,
-  EntryBody,
-  EntryCard,
-  EntryKey,
-  EntryList,
-  GroupCard,
-  GroupHeader,
-  GroupMeta,
-  GroupSummary,
-  GroupTitle,
-  PlainValue,
-  RoleBadge,
-} from './storyMemoryModalStyles'
+  MEMORY_EMPTY_STATE,
+  MEMORY_ENTRY_BODY,
+  MEMORY_ENTRY_KEY,
+  MEMORY_ENTRY_LIST,
+  MEMORY_GROUP_CARD,
+  MEMORY_GROUP_HEADER,
+  MEMORY_GROUP_META,
+  MEMORY_GROUP_SUMMARY,
+  MEMORY_GROUP_TITLE,
+  MEMORY_PLAIN_VALUE,
+  MEMORY_ROLE_BADGE,
+  memoryEntryCardClass,
+} from '@/lib/storyMemoryModalClasses'
 
 export type { MemoryTabId } from '../../types/storyMemory'
 
@@ -58,7 +56,7 @@ const TABS: { id: MemoryTabId; label: string; hint: string }[] = [
 
 function MemoryFieldBody({ field }: { field: StoryMemoryField }) {
   if (field.format === 'plain') {
-    return <PlainValue>{field.value}</PlainValue>
+    return <div className={MEMORY_PLAIN_VALUE}>{field.value}</div>
   }
   return <AgentMarkdown text={field.value} variant="memory" />
 }
@@ -73,42 +71,42 @@ function GroupEntries({
   character: boolean
 }) {
   if (groups.length === 0) {
-    return <EmptyState>{emptyLabel}</EmptyState>
+    return <div className={MEMORY_EMPTY_STATE}>{emptyLabel}</div>
   }
   return (
-    <EntryList>
+    <div className={MEMORY_ENTRY_LIST}>
       {groups.map((group) => {
         const preview = character ? characterPreview(group) : null
         const bodyOnly = !character && isBodyOnlyGroup(group)
         return (
-          <GroupCard key={group.id}>
-            <GroupHeader>
-              <GroupTitle>{group.displayTitle?.trim() || group.id}</GroupTitle>
+          <div key={group.id} className={MEMORY_GROUP_CARD}>
+            <div className={MEMORY_GROUP_HEADER}>
+              <div className={MEMORY_GROUP_TITLE}>{group.displayTitle?.trim() || group.id}</div>
               {preview ? (
-                <GroupMeta>
-                  <RoleBadge>{preview.roleLabel}</RoleBadge>
-                  <GroupSummary>{preview.summary}</GroupSummary>
-                </GroupMeta>
+                <div className={MEMORY_GROUP_META}>
+                  <span className={MEMORY_ROLE_BADGE}>{preview.roleLabel}</span>
+                  <div className={MEMORY_GROUP_SUMMARY}>{preview.summary}</div>
+                </div>
               ) : null}
-            </GroupHeader>
+            </div>
             {bodyOnly ? (
-              <EntryBody>
+              <div className={MEMORY_ENTRY_BODY}>
                 <MemoryFieldBody field={group.fields[0]} />
-              </EntryBody>
+              </div>
             ) : (
               group.fields.map((field) => (
-                <EntryCard key={`${group.id}-${field.key}`} $nested>
-                  <EntryKey>{field.key}</EntryKey>
-                  <EntryBody>
+                <div key={`${group.id}-${field.key}`} className={memoryEntryCardClass(true)}>
+                  <div className={MEMORY_ENTRY_KEY}>{field.key}</div>
+                  <div className={MEMORY_ENTRY_BODY}>
                     <MemoryFieldBody field={field} />
-                  </EntryBody>
-                </EntryCard>
+                  </div>
+                </div>
               ))
             )}
-          </GroupCard>
+          </div>
         )
       })}
-    </EntryList>
+    </div>
   )
 }
 
@@ -136,19 +134,21 @@ export function StoryMemoryModal({
         onClick={(e) => e.stopPropagation()}
       >
         <EditorModalHeader>
-          <HeaderText>
-            <Title id="memory-modal-title">记忆管理</Title>
-            <Subtitle>
+          <div className="min-w-0 flex-1">
+            <h2 id="memory-modal-title" className="m-0 text-[17px] font-bold text-foreground">
+              记忆管理
+            </h2>
+            <p className="mt-1 text-[11px] text-muted-foreground">
               只读展示{updatedAt ? ` · 更新于 ${updatedAt.toLocaleTimeString()}` : ''}
-            </Subtitle>
-          </HeaderText>
+            </p>
+          </div>
           <EditorButton variant="close" type="button" onClick={onClose} aria-label="关闭">
             ×
           </EditorButton>
         </EditorModalHeader>
 
         <EditorModalBody className="grid min-h-0 grid-cols-1 max-[720px]:grid-rows-[auto_1fr] min-[721px]:grid-cols-[168px_1fr]">
-          <TabRail>
+          <div className="flex flex-col gap-1.5 border-border/60 bg-muted/20 p-3.5 max-[720px]:flex-row max-[720px]:overflow-x-auto max-[720px]:border-b min-[721px]:border-r">
             <MotionSegmentRail
               items={TABS.map((tab) => ({
                 id: tab.id,
@@ -159,15 +159,15 @@ export function StoryMemoryModal({
               onChange={onTabChange}
               aria-label="记忆分类"
             />
-          </TabRail>
+          </div>
 
-          <ContentPane>
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
             <MotionPane paneKey={activeTab}>
-              <PaneHeader>
-                <PaneTitle>{activeMeta.label}</PaneTitle>
-                <PaneHint>{activeMeta.hint}</PaneHint>
-              </PaneHeader>
-              <PaneScroll>
+              <div className="px-4 pb-2 pt-3.5">
+                <h3 className="m-0 text-[15px] font-bold text-foreground">{activeMeta.label}</h3>
+                <p className="mt-0.5 text-[11px] text-muted-foreground">{activeMeta.hint}</p>
+              </div>
+              <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded [&::-webkit-scrollbar-thumb]:bg-border">
                 {activeTab === 'novel' && (
                   <GroupEntries
                     groups={memory.novel}
@@ -203,87 +203,11 @@ export function StoryMemoryModal({
                     character={false}
                   />
                 )}
-              </PaneScroll>
+              </div>
             </MotionPane>
-          </ContentPane>
+          </div>
         </EditorModalBody>
       </EditorModalPanel>
     </EditorModalOverlay>
   )
 }
-
-const HeaderText = styled.div`
-  min-width: 0;
-  flex: 1;
-`
-
-const Title = styled.h2`
-  margin: 0;
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: ${palette.text};
-`
-
-const Subtitle = styled.p`
-  margin: 0.25rem 0 0;
-  font-size: 0.72rem;
-  color: ${palette.textSubtle};
-`
-
-const TabRail = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  padding: 0.85rem;
-  border-right: 1px solid rgba(0, 0, 0, 0.06);
-  background: rgba(255, 255, 255, 0.22);
-
-  @media (max-width: 720px) {
-    flex-direction: row;
-    overflow-x: auto;
-    border-right: none;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-  }
-`
-
-const ContentPane = styled.div`
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  min-width: 0;
-  flex: 1;
-  overflow: hidden;
-`
-
-const PaneHeader = styled.div`
-  padding: 0.85rem 1rem 0.55rem;
-`
-
-const PaneTitle = styled.h3`
-  margin: 0;
-  font-size: 0.92rem;
-  font-weight: 700;
-  color: ${palette.inkHover};
-`
-
-const PaneHint = styled.p`
-  margin: 0.2rem 0 0;
-  font-size: 0.68rem;
-  color: ${palette.textMuted};
-`
-
-const PaneScroll = styled.div`
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  padding: 0 1rem 1rem;
-
-  &::-webkit-scrollbar {
-    width: 6px;
-  }
-  &::-webkit-scrollbar-thumb {
-    background: ${palette.scrollbarThumb};
-    border-radius: 4px;
-  }
-`
-

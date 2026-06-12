@@ -1,9 +1,6 @@
 import { useLayoutEffect, useRef } from 'react'
-import styled from 'styled-components'
 import type { AgentSubagentState } from '../../../types/agent'
 import { deriveSubagentDisplayMeta } from '../../../utils/subagentDisplayMeta'
-import { editorTheme } from '../../../styles/editorTheme'
-import { palette, textStyle } from '../../../styles/theme'
 import { EditorButton } from '../../ui/EditorButton'
 import {
   EditorModalBody,
@@ -71,23 +68,34 @@ export function SubagentDetailModal({
         aria-labelledby="subagent-modal-title"
       >
         <EditorModalHeader>
-          <HeaderText>
-            <TitleRow>
-              <Title id="subagent-modal-title">{meta.name}</Title>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 id="subagent-modal-title" className="m-0 text-[15px] font-bold text-foreground">
+                {meta.name}
+              </h2>
               <SubagentStatusChip $kind={meta.statusKind}>{meta.statusLabel}</SubagentStatusChip>
-            </TitleRow>
-            {meta.description ? <Subtitle>{meta.description}</Subtitle> : null}
+            </div>
+            {meta.description ? (
+              <p className="mt-1.5 whitespace-pre-wrap text-sm leading-snug text-muted-foreground">
+                {meta.description}
+              </p>
+            ) : null}
             {runActive && meta.currentStep ? (
-              <StepHint>
+              <p className="mt-1.5 text-[11px] text-muted-foreground">
                 当前步骤：
-                <strong>{meta.currentStep}</strong>
+                <strong className="font-semibold text-primary">{meta.currentStep}</strong>
                 {meta.turnHint ? <span> · {meta.turnHint}</span> : null}
-              </StepHint>
+              </p>
             ) : null}
             {!runActive && meta.toolStats ? (
-              <StatsHint data-testid="subagent-modal-stats">{meta.toolStats}</StatsHint>
+              <p
+                className="mt-1.5 text-[11px] leading-snug text-muted-foreground"
+                data-testid="subagent-modal-stats"
+              >
+                {meta.toolStats}
+              </p>
             ) : null}
-          </HeaderText>
+          </div>
           <EditorButton variant="close" type="button" onClick={onClose} aria-label="关闭">
             ×
           </EditorButton>
@@ -102,48 +110,3 @@ export function SubagentDetailModal({
     </EditorModalOverlay>
   )
 }
-
-const HeaderText = styled.div`
-  min-width: 0;
-  flex: 1;
-`
-
-const TitleRow = styled.div`
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-`
-
-const Title = styled.h2`
-  margin: 0;
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: ${editorTheme.text};
-`
-
-const Subtitle = styled.p`
-  margin: 0.35rem 0 0;
-  ${textStyle('uiSm')}
-  color: ${editorTheme.textSecondary};
-  line-height: 1.45;
-  white-space: pre-wrap;
-`
-
-const StepHint = styled.p`
-  margin: 0.35rem 0 0;
-  ${textStyle('micro')}
-  color: ${editorTheme.textMuted};
-
-  strong {
-    color: ${palette.accentDeep};
-    font-weight: 600;
-  }
-`
-
-const StatsHint = styled.p`
-  margin: 0.35rem 0 0;
-  ${textStyle('micro')}
-  color: ${editorTheme.textMuted};
-  line-height: 1.45;
-`

@@ -40,11 +40,14 @@ const SHADCN_EDITOR_VARIANTS = new Set<EditorButtonVariant>([
   'ghost',
   'close',
   'danger',
+  'accent',
+  'tool',
 ])
 
 function shadcnVariant(variant: EditorButtonVariant) {
   switch (variant) {
     case 'primary':
+    case 'accent':
       return 'default' as const
     case 'secondary':
       return 'secondary' as const
@@ -53,6 +56,8 @@ function shadcnVariant(variant: EditorButtonVariant) {
       return 'ghost' as const
     case 'danger':
       return 'destructive' as const
+    case 'tool':
+      return 'outline' as const
     default:
       return 'default' as const
   }
@@ -60,6 +65,7 @@ function shadcnVariant(variant: EditorButtonVariant) {
 
 function shadcnSize(variant: EditorButtonVariant, size: EditorButtonSize) {
   if (variant === 'close') return 'icon-sm' as const
+  if (variant === 'tool') return size === 'sm' ? ('sm' as const) : ('default' as const)
   return size === 'sm' ? ('sm' as const) : ('default' as const)
 }
 

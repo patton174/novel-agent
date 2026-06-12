@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
-import styled from 'styled-components'
-import { editorTheme } from '../../styles/editorTheme'
-import { palette } from '../../styles/theme'
-import { textStyle } from '../../styles/typography'
-import { CcChoiceButton, ChoiceDesc, ChoiceTitle } from './timeline/timelineStyles'
 import { EditorButton } from '../ui/EditorButton'
+import { editorFieldClass } from '@/lib/editorFieldClasses'
+import {
+  AGENT_CHOICE_DESC,
+  AGENT_CHOICE_TITLE,
+  agentChoiceButtonClass,
+} from '@/lib/agentFormClasses'
 import type {
   AgentChoiceOption,
   AgentInteractionPayload,
@@ -92,25 +93,33 @@ export function AskUserForm({ interaction, onSubmit }: AskUserFormProps) {
       ? 'user_input'
       : current.type
 
+  const progressRatio = (stepIndex + 1) / total
+
   return (
-    <Wrap>
-      {interaction.prompt && stepIndex === 0 ? <Overview>{interaction.prompt}</Overview> : null}
+    <div className="mt-0.5 flex flex-col gap-2 max-md:gap-1.5">
+      {interaction.prompt && stepIndex === 0 ? (
+        <p className="m-0 text-sm leading-snug text-muted-foreground">{interaction.prompt}</p>
+      ) : null}
 
-      <ProgressRow>
-        <ProgressText>
+      <div className="flex flex-col gap-1.5">
+        <div className="text-[11px] font-semibold text-muted-foreground">
           第 {stepIndex + 1} / {total} 题
-        </ProgressText>
-        <ProgressBar aria-hidden>
-          <ProgressFill $ratio={(stepIndex + 1) / total} />
-        </ProgressBar>
-      </ProgressRow>
+        </div>
+        <div className="h-0.5 overflow-hidden rounded-full bg-border" aria-hidden>
+          <div
+            className="h-full rounded-full bg-primary transition-[width] duration-200 ease-out"
+            style={{ width: `${Math.min(100, Math.max(0, progressRatio * 100))}%` }}
+          />
+        </div>
+      </div>
 
-      <QuestionBlock>
-        <QuestionTitle>{current.prompt}</QuestionTitle>
+      <div className="flex flex-col gap-1.5 py-0.5 max-md:gap-1">
+        <div className="text-sm font-semibold leading-snug text-foreground">{current.prompt}</div>
 
         {effectiveType === 'user_input' ? (
           <>
-            <TextInput
+            <input
+              className={editorFieldClass}
               value={answers[current.id]?.input ?? ''}
               placeholder={current.free_text_hint ?? interaction.free_text_hint ?? '请输入…'}
               autoFocus
@@ -119,209 +128,102 @@ export function AskUserForm({ interaction, onSubmit }: AskUserFormProps) {
               }
               onKeyDown={(e) => handleInputKeyDown(current, e)}
             />
-            <ActionRow>
-              {stepIndex > 0 ? (
-                <EditorButton
-                  variant="tool"
-                  type="button"
-                  onClick={() => setStepIndex((i) => Math.max(0, i - 1))}
-                >
-                  上一题
-                </EditorButton>
-              ) : (
-                <span />
-              )}
-              <EditorButton
-                variant="accent"
-                type="button"
-                disabled={!currentAnswered}
-                onClick={() => advanceOrSubmit(answers)}
-              >
-                {isLast ? '提交' : '下一题'}
-              </EditorButton>
-            </ActionRow>
+            <ActionRow
+              stepIndex={stepIndex}
+              onPrev={() => setStepIndex((i) => Math.max(0, i - 1))}
+              disabled={!currentAnswered}
+              label={isLast ? '提交' : '下一题'}
+              onAction={() => advanceOrSubmit(answers)}
+            />
           </>
         ) : null}
 
         {effectiveType === 'single_select'
           ? selectOptions.map((opt) => (
-              <CcChoiceButton
+              <button
                 key={opt.id}
                 type="button"
-                $active={answers[current.id]?.choice?.id === opt.id}
+                className={agentChoiceButtonClass(answers[current.id]?.choice?.id === opt.id)}
                 onClick={() => pickSingle(current, opt)}
               >
-                <ChoiceTitle>{opt.title}</ChoiceTitle>
-                {opt.description ? <ChoiceDesc>{opt.description}</ChoiceDesc> : null}
-              </CcChoiceButton>
+                <div className={AGENT_CHOICE_TITLE}>{opt.title}</div>
+                {opt.description ? <div className={AGENT_CHOICE_DESC}>{opt.description}</div> : null}
+              </button>
             ))
           : null}
 
         {effectiveType === 'single_select' ? (
-          <ActionRow>
-            {stepIndex > 0 ? (
-              <EditorButton
-                variant="tool"
-                type="button"
-                onClick={() => setStepIndex((i) => Math.max(0, i - 1))}
-              >
-                上一题
-              </EditorButton>
-            ) : (
-              <span />
-            )}
-            <EditorButton
-              variant="accent"
-              type="button"
-              disabled={!canAdvanceSingle}
-              onClick={() => advanceOrSubmit(answers)}
-            >
-              {isLast ? '提交' : '下一题'}
-            </EditorButton>
-          </ActionRow>
+          <ActionRow
+            stepIndex={stepIndex}
+            onPrev={() => setStepIndex((i) => Math.max(0, i - 1))}
+            disabled={!canAdvanceSingle}
+            label={isLast ? '提交' : '下一题'}
+            onAction={() => advanceOrSubmit(answers)}
+          />
         ) : null}
 
         {effectiveType === 'multi_select' ? (
           <>
-            <MultiHint>可多选，选完后点「下一题」</MultiHint>
+            <div className="text-[11px] text-muted-foreground">可多选，选完后点「下一题」</div>
             {selectOptions.map((opt) => {
               const selected = answers[current.id]?.selected?.some((c) => c.id === opt.id)
               return (
-                <CcChoiceButton
+                <button
                   key={opt.id}
                   type="button"
-                  $active={selected}
+                  className={agentChoiceButtonClass(selected)}
                   onClick={() => toggleMulti(current, opt)}
                 >
-                  <ChoiceTitle>{opt.title}</ChoiceTitle>
-                  {opt.description ? <ChoiceDesc>{opt.description}</ChoiceDesc> : null}
-                </CcChoiceButton>
+                  <div className={AGENT_CHOICE_TITLE}>{opt.title}</div>
+                  {opt.description ? (
+                    <div className={AGENT_CHOICE_DESC}>{opt.description}</div>
+                  ) : null}
+                </button>
               )
             })}
-            <ActionRow>
-              {stepIndex > 0 ? (
-                <EditorButton
-                  variant="tool"
-                  type="button"
-                  onClick={() => setStepIndex((i) => Math.max(0, i - 1))}
-                >
-                  上一题
-                </EditorButton>
-              ) : (
-                <span />
-              )}
-              <EditorButton
-                variant="accent"
-                type="button"
-                disabled={!canAdvanceMulti}
-                onClick={() => advanceOrSubmit(answers)}
-              >
-                {isLast ? '提交' : '下一题'}
-                {multiCount > 0 ? ` (${multiCount})` : ''}
-              </EditorButton>
-            </ActionRow>
+            <ActionRow
+              stepIndex={stepIndex}
+              onPrev={() => setStepIndex((i) => Math.max(0, i - 1))}
+              disabled={!canAdvanceMulti}
+              label={
+                isLast
+                  ? `提交${multiCount > 0 ? ` (${multiCount})` : ''}`
+                  : `下一题${multiCount > 0 ? ` (${multiCount})` : ''}`
+              }
+              onAction={() => advanceOrSubmit(answers)}
+            />
           </>
         ) : null}
-      </QuestionBlock>
-    </Wrap>
+      </div>
+    </div>
   )
 }
 
-const Wrap = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 0.55rem;
-  margin-top: 0.1rem;
-
-  @media (max-width: 767px) {
-    gap: 0.4rem;
-  }
-`
-
-const Overview = styled.p`
-  margin: 0;
-  ${textStyle('uiSm')}
-  color: ${editorTheme.textSecondary};
-  line-height: 1.45;
-`
-
-const ProgressRow = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-`
-
-const ProgressText = styled.div`
-  ${textStyle('micro')}
-  font-weight: 600;
-  color: ${editorTheme.textMuted};
-`
-
-const ProgressBar = styled.div`
-  height: 2px;
-  border-radius: 999px;
-  background: ${editorTheme.border};
-  overflow: hidden;
-`
-
-const ProgressFill = styled.div<{ $ratio: number }>`
-  height: 100%;
-  width: ${({ $ratio }) => `${Math.min(100, Math.max(0, $ratio * 100))}%`};
-  background: ${palette.progressFill};
-  border-radius: inherit;
-  transition: width 0.2s ease;
-`
-
-const QuestionBlock = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  padding: 0.15rem 0;
-
-  @media (max-width: 767px) {
-    gap: 0.28rem;
-  }
-`
-
-const QuestionTitle = styled.div`
-  ${textStyle('uiSm')}
-  font-weight: 600;
-  line-height: 1.45;
-  color: ${editorTheme.text};
-`
-
-const MultiHint = styled.div`
-  ${textStyle('micro')}
-  color: ${editorTheme.textMuted};
-`
-
-const TextInput = styled.input`
-  border: 1px solid ${editorTheme.border};
-  border-radius: ${editorTheme.radiusSm};
-  padding: 0.42rem 0.5rem;
-  background: ${editorTheme.bgElevated};
-  color: ${editorTheme.text};
-  ${textStyle('uiSm')}
-
-  &::placeholder {
-    color: ${editorTheme.textMuted};
-  }
-
-  &:focus {
-    outline: none;
-    border-color: ${palette.accentBorder};
-  }
-`
-
-const ActionRow = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  margin-top: 0.25rem;
-
-  @media (max-width: 767px) {
-    gap: 0.35rem;
-    margin-top: 0.15rem;
-  }
-`
+function ActionRow({
+  stepIndex,
+  onPrev,
+  disabled,
+  label,
+  onAction,
+}: {
+  stepIndex: number
+  onPrev: () => void
+  disabled: boolean
+  label: string
+  onAction: () => void
+}) {
+  return (
+    <div className="mt-1 flex items-center justify-between gap-2 max-md:mt-0.5 max-md:gap-1.5">
+      {stepIndex > 0 ? (
+        <EditorButton variant="tool" type="button" size="sm" onClick={onPrev}>
+          上一题
+        </EditorButton>
+      ) : (
+        <span />
+      )}
+      <EditorButton variant="accent" type="button" size="sm" disabled={disabled} onClick={onAction}>
+        {label}
+      </EditorButton>
+    </div>
+  )
+}

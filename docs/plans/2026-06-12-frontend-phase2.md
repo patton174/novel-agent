@@ -71,6 +71,13 @@
 - [x] **CreateNovelModal** 结构对齐 `EditorModalHeader` / `EditorModalBody` + 关闭按钮
 - [x] **EditorButton** `primary` / `secondary` / `ghost` / `close` / `danger` → shadcn `Button`（其余 variant 仍走 styled）
 
+## Phase 2G — 本批执行
+
+- [x] **StoryMemoryModal** + `storyMemoryModalClasses`：布局与卡片 Tailwind 化，删除 `storyMemoryModalStyles.ts`
+- [x] **TodoDetailModal** / **SubagentDetailModal** 头部 styled → Tailwind
+- [x] **AskUserForm** 输入/进度/选项 Tailwind + `agentFormClasses` + `editorFieldClass`
+- [x] **EditorButton** `accent` / `tool` → shadcn `Button`
+
 ---
 
 ## Phase 2B 验收

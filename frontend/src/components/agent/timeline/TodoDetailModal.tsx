@@ -1,7 +1,4 @@
-import styled from 'styled-components'
 import type { AgentTodoItem } from '../../../types/agent'
-import { editorTheme } from '../../../styles/editorTheme'
-import { textStyle } from '../../../styles/typography'
 import { formatTodoProgress } from '../../../utils/todoDisplay'
 import { EditorButton } from '../../ui/EditorButton'
 import {
@@ -40,13 +37,17 @@ export function TodoDetailModal({
     >
       <EditorModalPanel size="todo" role="dialog" aria-modal="true" aria-labelledby="todo-modal-title">
         <EditorModalHeader>
-          <HeaderText>
-            <TitleRow>
-              <Title id="todo-modal-title">待办</Title>
-              <Progress>{formatTodoProgress(todos)}</Progress>
-            </TitleRow>
-            <Subtitle>共 {todos.length} 项任务</Subtitle>
-          </HeaderText>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+              <h2 id="todo-modal-title" className="m-0 text-sm font-semibold text-foreground">
+                待办
+              </h2>
+              <span className="whitespace-nowrap text-[11px] font-normal text-muted-foreground">
+                {formatTodoProgress(todos)}
+              </span>
+            </div>
+            <p className="mt-1 text-[11px] text-muted-foreground">共 {todos.length} 项任务</p>
+          </div>
           <EditorButton variant="close" type="button" onClick={onClose} aria-label="关闭">
             ×
           </EditorButton>
@@ -58,35 +59,3 @@ export function TodoDetailModal({
     </EditorModalOverlay>
   )
 }
-
-const HeaderText = styled.div`
-  min-width: 0;
-  flex: 1;
-`
-
-const TitleRow = styled.div`
-  display: flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 0.35rem 0.5rem;
-`
-
-const Title = styled.h2`
-  margin: 0;
-  ${textStyle('uiSm')}
-  font-weight: 600;
-  color: ${editorTheme.text};
-`
-
-const Progress = styled.span`
-  ${textStyle('micro')}
-  font-weight: 400;
-  color: ${editorTheme.textMuted};
-  white-space: nowrap;
-`
-
-const Subtitle = styled.p`
-  margin: 0.28rem 0 0;
-  ${textStyle('micro')}
-  color: ${editorTheme.textMuted};
-`
