@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Check } from 'lucide-react'
-import { fetchPlans, type PlanPublic } from '@/api/billingApi'
-import { Button } from '../components/ui/button'
-import { MarketingNav } from '../components/marketing/MarketingNav'
-import { HomeFooterSection } from '../components/marketing/sections/HomeFooterSection'
+import { Check, Sparkles } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
+import { fetchPlans, formatTokenCount, type PlanPublic } from '@/api/billingApi'
+import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import { MarketingPageLayout } from '@/components/marketing/MarketingPageLayout'
+import { BreathingHotBadge } from '@/components/marketing/BreathingHotBadge'
 
 export default function PricingPage() {
+  const { t } = useTranslation('marketing')
   const [plans, setPlans] = useState<PlanPublic[] | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -17,115 +19,124 @@ export default function PricingPage() {
       .then((data) => {
         if (!cancelled) setPlans(data)
       })
-      .catch((err: unknown) => {
+      .catch(() => {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : '加载失败')
+          setError(t('pricing.loadError'))
           setPlans([])
         }
       })
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [t])
 
   return (
-    <div className="min-h-screen bg-background flex flex-col selection:bg-primary/20">
-      <MarketingNav />
+    <MarketingPageLayout>
+      <div className="relative overflow-hidden px-6 pb-24 pt-28">
+        <div className="pointer-events-none absolute -top-24 left-1/2 h-[480px] w-[900px] -translate-x-1/2 rounded-full bg-primary/12 blur-[100px]" />
+        <div className="pointer-events-none absolute bottom-0 right-0 h-64 w-64 rounded-full bg-indigo-400/10 blur-3xl" />
 
-      <main className="flex-1 pt-32 pb-24 px-6 relative overflow-hidden">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[400px] bg-primary/10 blur-[120px] rounded-full pointer-events-none -z-10" />
-
-        <div className="max-w-6xl mx-auto space-y-16">
-          <div className="text-center space-y-4">
-            <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-foreground">
-              Simple, transparent pricing
+        <div className="relative mx-auto max-w-6xl space-y-16">
+          <div className="mx-auto max-w-2xl space-y-4 text-center">
+            <div className="inline-flex items-center gap-2 rounded-full border border-primary/15 bg-primary/5 px-4 py-1.5 text-xs font-medium text-primary">
+              <Sparkles className="size-3.5" />
+              {t('nav.pricing')}
+            </div>
+            <h1 className="text-4xl font-bold tracking-tight text-foreground md:text-5xl">
+              {t('pricing.title')}
             </h1>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Choose the perfect plan for your writing journey. No hidden fees, cancel anytime.
-            </p>
+            <p className="text-lg leading-relaxed text-muted-foreground">{t('pricing.subtitle')}</p>
           </div>
 
-          {error ? (
-            <p className="text-center text-sm text-destructive">{error}</p>
-          ) : null}
+          {error ? <p className="text-center text-sm text-destructive">{error}</p> : null}
 
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+          <div className="mx-auto grid max-w-5xl gap-8 md:grid-cols-3">
             {plans === null
               ? Array.from({ length: 3 }).map((_, i) => (
-                  <Skeleton key={i} className="h-[420px] rounded-3xl" />
+                  <Skeleton key={i} className="h-[440px] rounded-3xl" />
                 ))
               : plans.map((tier) => (
                   <div
                     key={tier.code}
-                    className={`relative flex flex-col p-8 rounded-3xl bg-surface border transition-all duration-300 hover:-translate-y-1 ${
+                    className={`group relative flex flex-col rounded-3xl border bg-surface/80 p-8 backdrop-blur-sm transition-all duration-500 hover:-translate-y-1.5 ${
                       tier.highlight
-                        ? 'border-primary shadow-hover ring-1 ring-primary/20'
-                        : 'border-border shadow-soft hover:shadow-hover'
+                        ? 'z-10 scale-[1.02] border-primary/40 shadow-[0_20px_60px_-20px_rgba(79,70,229,0.45)] ring-1 ring-primary/25 md:-my-2'
+                        : 'border-border/80 shadow-soft hover:border-primary/20 hover:shadow-hover'
                     }`}
                   >
                     {tier.highlight ? (
-                      <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wider">
-                        Most Popular
+                      <div className="absolute -top-5 left-1/2 -translate-x-1/2">
+                        <BreathingHotBadge label={t('pricing.hotBadge')} />
                       </div>
                     ) : null}
 
-                    <div className="mb-6">
+                    <div className="mb-6 pt-2">
                       <h3
-                        className={`text-xl font-semibold mb-2 ${tier.highlight ? 'text-primary' : 'text-foreground'}`}
+                        className={`mb-2 text-xl font-semibold tracking-tight ${
+                          tier.highlight ? 'text-primary' : 'text-foreground'
+                        }`}
                       >
                         {tier.name}
                       </h3>
                       <div className="flex items-baseline gap-1">
-                        <span className="text-4xl font-bold text-foreground">{tier.priceLabel}</span>
+                        <span className="text-4xl font-bold tabular-nums text-foreground">
+                          {tier.priceLabel}
+                        </span>
                         {tier.periodLabel ? (
-                          <span className="text-muted-foreground font-medium">{tier.periodLabel}</span>
+                          <span className="font-medium text-muted-foreground">{tier.periodLabel}</span>
                         ) : null}
                       </div>
                       {tier.description ? (
-                        <p className="text-sm text-muted-foreground mt-4">{tier.description}</p>
+                        <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
+                          {tier.description}
+                        </p>
                       ) : null}
                     </div>
 
-                    <div className="flex-1">
-                      <ul className="space-y-4 mb-8">
-                        {tier.features.map((feature) => (
-                          <li key={feature} className="flex items-start gap-3">
-                            <Check className="w-5 h-5 text-primary shrink-0" />
-                            <span className="text-foreground text-sm">{feature}</span>
-                          </li>
-                        ))}
-                        {tier.monthlyTokenQuota != null ? (
-                          <li className="flex items-start gap-3">
-                            <Check className="w-5 h-5 text-primary shrink-0" />
-                            <span className="text-foreground text-sm">
-                              {tier.monthlyTokenQuota.toLocaleString('en-US')} AI Tokens / month
-                            </span>
-                          </li>
-                        ) : tier.code === 'enterprise' ? (
-                          <li className="flex items-start gap-3">
-                            <Check className="w-5 h-5 text-primary shrink-0" />
-                            <span className="text-foreground text-sm">Unlimited AI Tokens</span>
-                          </li>
-                        ) : null}
-                      </ul>
-                    </div>
+                    <ul className="mb-8 flex-1 space-y-3.5">
+                      {tier.features.map((feature) => (
+                        <li key={feature} className="flex items-start gap-3">
+                          <Check
+                            className={`mt-0.5 size-4 shrink-0 ${
+                              tier.highlight ? 'text-primary' : 'text-primary/80'
+                            }`}
+                          />
+                          <span className="text-sm text-foreground/90">{feature}</span>
+                        </li>
+                      ))}
+                      {tier.monthlyTokenQuota != null ? (
+                        <li className="flex items-start gap-3">
+                          <Check className="mt-0.5 size-4 shrink-0 text-primary/80" />
+                          <span className="text-sm text-foreground/90">
+                            {t('pricing.tokensPerMonth', {
+                              count: formatTokenCount(tier.monthlyTokenQuota),
+                            })}
+                          </span>
+                        </li>
+                      ) : tier.code === 'enterprise' ? (
+                        <li className="flex items-start gap-3">
+                          <Check className="mt-0.5 size-4 shrink-0 text-primary/80" />
+                          <span className="text-sm text-foreground/90">{t('pricing.unlimitedTokens')}</span>
+                        </li>
+                      ) : null}
+                    </ul>
 
                     <Button
                       variant={tier.highlight ? 'default' : 'outline'}
-                      className={`w-full h-12 rounded-xl text-base font-semibold ${tier.highlight ? 'shadow-md shadow-primary/20' : ''}`}
+                      className={`h-12 w-full rounded-xl text-base font-semibold transition-all duration-300 ${
+                        tier.highlight
+                          ? 'shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30'
+                          : 'group-hover:border-primary/40'
+                      }`}
                       asChild
                     >
-                      <Link to={tier.code === 'hobby' ? '/register' : '/contact'}>
-                        {tier.cta}
-                      </Link>
+                      <Link to={tier.code === 'hobby' ? '/register' : '/contact'}>{tier.cta}</Link>
                     </Button>
                   </div>
                 ))}
           </div>
         </div>
-      </main>
-
-      <HomeFooterSection />
-    </div>
+      </div>
+    </MarketingPageLayout>
   )
 }

@@ -171,13 +171,38 @@ export async function fetchSiteContent(key: string): Promise<SiteContent | null>
   return parseResultResponse<SiteContent>(res)
 }
 
-export async function fetchDanmakuList(): Promise<SiteDanmaku[]> {
-  const res = await secureFetch('/api/billing/auth/danmaku')
+export interface SiteDanmakuPage {
+  list: SiteDanmaku[]
+  hasMore: boolean
+  nextBeforeId: number | null
+}
+
+export async function fetchDanmakuPage(params?: {
+  pageSize?: number
+  beforeId?: number | null
+}): Promise<SiteDanmakuPage> {
+  const search = new URLSearchParams({
+    pageSize: String(params?.pageSize ?? 30),
+  })
+  if (params?.beforeId != null && params.beforeId > 0) {
+    search.set('beforeId', String(params.beforeId))
+  }
+  const res = await secureFetch(`/api/billing/auth/danmaku?${search.toString()}`)
   if (!res.ok) {
     throw new Error('加载弹幕失败')
   }
-  const data = await parseResultResponse<SiteDanmaku[]>(res)
-  return Array.isArray(data) ? data : []
+  const data = await parseResultResponse<SiteDanmakuPage>(res)
+  return {
+    list: Array.isArray(data?.list) ? data.list : [],
+    hasMore: Boolean(data?.hasMore),
+    nextBeforeId: data?.nextBeforeId ?? null,
+  }
+}
+
+/** @deprecated 使用 fetchDanmakuPage */
+export async function fetchDanmakuList(): Promise<SiteDanmaku[]> {
+  const page = await fetchDanmakuPage({ pageSize: 120 })
+  return page.list
 }
 
 export async function postDanmaku(message: string): Promise<SiteDanmaku> {

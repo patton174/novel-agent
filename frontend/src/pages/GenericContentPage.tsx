@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react'
 import { fetchSiteContent } from '@/api/billingApi'
 import { AgentMarkdown } from '@/components/agent/AgentMarkdown'
-import { MarketingNav } from '../components/marketing/MarketingNav'
-import { HomeFooterSection } from '../components/marketing/sections/HomeFooterSection'
+import { MarketingPageLayout } from '@/components/marketing/MarketingPageLayout'
 import { Skeleton } from '@/components/ui/skeleton'
 
 interface GenericContentPageProps {
@@ -36,12 +35,11 @@ export default function GenericContentPage({ contentKey, fallbackTitle }: Generi
   }, [contentKey, fallbackTitle])
 
   return (
-    <div className="min-h-screen bg-background flex flex-col selection:bg-primary/20">
-      <MarketingNav />
-      <main className="flex-1 pt-32 pb-24 px-6 relative overflow-hidden">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[400px] bg-primary/10 blur-[120px] rounded-full pointer-events-none -z-10" />
-        <div className="max-w-3xl mx-auto bg-white p-10 md:p-16 rounded-3xl shadow-soft border border-border">
-          <h1 className="text-3xl font-bold tracking-tight text-foreground mb-8">{title}</h1>
+    <MarketingPageLayout>
+      <div className="relative overflow-hidden px-6 pb-24 pt-28">
+        <div className="pointer-events-none absolute -top-16 left-1/2 h-80 w-[800px] -translate-x-1/2 rounded-full bg-primary/8 blur-3xl" />
+        <div className="relative mx-auto max-w-3xl rounded-3xl border border-border/70 bg-surface/95 p-10 shadow-soft backdrop-blur-sm md:p-14">
+          <h1 className="mb-8 text-3xl font-bold tracking-tight text-foreground">{title}</h1>
           {loading ? (
             <div className="space-y-3">
               <Skeleton className="h-4 w-full" />
@@ -56,8 +54,7 @@ export default function GenericContentPage({ contentKey, fallbackTitle }: Generi
             <p className="text-muted-foreground">内容暂未发布，请稍后再来查看。</p>
           )}
         </div>
-      </main>
-      <HomeFooterSection />
-    </div>
+      </div>
+    </MarketingPageLayout>
   )
 }

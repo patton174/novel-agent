@@ -1,8 +1,9 @@
 import i18n from 'i18next'
 import { initReactI18next } from 'react-i18next'
 import commonZh from './locales/zh/common.json'
+import marketingZh from './locales/zh/marketing.json'
 
-const loadedBundles = new Set<string>(['zh:common'])
+const loadedBundles = new Set<string>(['zh:common', 'zh:marketing'])
 
 function bundleKey(ns: string, lng: string): string {
   return `${lng}:${ns}`
@@ -12,9 +13,9 @@ void i18n.use(initReactI18next).init({
   lng: 'zh',
   fallbackLng: 'zh',
   defaultNS: 'common',
-  ns: ['common'],
+  ns: ['common', 'marketing'],
   resources: {
-    zh: { common: commonZh },
+    zh: { common: commonZh, marketing: marketingZh },
   },
   interpolation: { escapeValue: false },
   react: { useSuspense: false },

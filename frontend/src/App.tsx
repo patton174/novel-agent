@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect } from 'react'
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom'
 import { ThemeProvider } from 'styled-components'
 import { AnimatePresence } from 'framer-motion'
 import { theme } from './styles/theme'
@@ -25,8 +25,8 @@ const HomePage = lazy(() => import('./pages/HomePage'))
 const LoginPage = lazy(() => import('./pages/LoginPage'))
 const RegisterPage = lazy(() => import('./pages/RegisterPage'))
 const PricingPage = lazy(() => import('./pages/PricingPage'))
-const FeaturesPage = lazy(() => import('./pages/FeaturesPage'))
-const TestimonialsPage = lazy(() => import('./pages/TestimonialsPage'))
+const GuidePage = lazy(() => import('./pages/GuidePage'))
+const AboutPage = lazy(() => import('./pages/AboutPage'))
 const GenericContentPage = lazy(() => import('./pages/GenericContentPage'))
 const EditorPage = lazy(() => import('./pages/EditorPage'))
 const DashboardHomePage = lazy(() => import('./pages/dashboard/DashboardHomePage'))
@@ -61,9 +61,11 @@ function AppRouteTree() {
     <RouteErrorBoundary>
       <Routes location={location}>
         <Route path="/" element={<HomePage />} />
-        <Route path="/features" element={<FeaturesPage />} />
+        <Route path="/guide" element={<GuidePage />} />
         <Route path="/pricing" element={<PricingPage />} />
-        <Route path="/testimonials" element={<TestimonialsPage />} />
+        <Route path="/about" element={<AboutPage />} />
+        <Route path="/features" element={<Navigate to="/guide" replace />} />
+        <Route path="/testimonials" element={<Navigate to="/about" replace />} />
         <Route path="/privacy" element={<GenericContentPage contentKey="privacy" fallbackTitle="隐私政策" />} />
         <Route path="/terms" element={<GenericContentPage contentKey="terms" fallbackTitle="用户协议" />} />
         <Route path="/contact" element={<GenericContentPage contentKey="contact" fallbackTitle="联系我们" />} />

@@ -27,7 +27,12 @@ export default function RouteFallbackShell() {
   if (pathname.startsWith('/editor')) {
     return <BrandLoaderLite label="正在打开编辑器" />
   }
-  if (pathname === '/' || pathname.startsWith('/features') || pathname.startsWith('/pricing')) {
+  if (
+    pathname === '/' ||
+    pathname.startsWith('/guide') ||
+    pathname.startsWith('/about') ||
+    pathname.startsWith('/pricing')
+  ) {
     return <MarketingPageSkeleton />
   }
 
