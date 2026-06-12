@@ -1,11 +1,13 @@
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { PenLine, Shield } from 'lucide-react'
 import { useUserStore } from '@/stores/userStore'
 import { Button } from '@/components/ui/button'
 
 export function DashboardQuickActions() {
+  const location = useLocation()
   const profile = useUserStore((s) => s.profile)
   const isAdmin = profile?.role === 'admin'
+  const hideEditorCta = location.pathname === '/dashboard'
 
   return (
     <div className="flex shrink-0 items-center gap-2">
@@ -22,12 +24,14 @@ export function DashboardQuickActions() {
           </Link>
         </Button>
       ) : null}
-      <Button asChild size="sm" className="h-9 gap-1.5 rounded-xl px-4 text-xs font-semibold">
-        <Link to="/editor">
-          <PenLine className="size-3.5" />
-          进入编辑器
-        </Link>
-      </Button>
+      {!hideEditorCta ? (
+        <Button asChild size="sm" className="h-9 gap-1.5 rounded-xl px-4 text-xs font-semibold">
+          <Link to="/editor">
+            <PenLine className="size-3.5" />
+            进入编辑器
+          </Link>
+        </Button>
+      ) : null}
     </div>
   )
 }

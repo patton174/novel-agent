@@ -120,4 +120,8 @@ const MessagesInner = styled.div`
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
+
+  @media (max-width: 767px) {
+    gap: 0.85rem;
+  }
 `

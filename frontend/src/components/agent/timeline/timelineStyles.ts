@@ -628,6 +628,11 @@ const CcChoiceButton = styled.button<{ $active?: boolean }>`
     outline: none;
     box-shadow: inset 0 0 0 2px ${palette.accentBorderLight};
   }
+
+  @media (max-width: 767px) {
+    padding: 0.32rem 0.45rem;
+    gap: 0.08rem;
+  }
 `
 
 const StepPrompt = styled.div`

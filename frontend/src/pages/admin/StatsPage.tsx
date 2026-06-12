@@ -1,7 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { fetchStatsTrends, type TrendPoint } from '@/api/adminApi'
 import { AppPageStack } from '@/components/layout/AppPageStack'
-import { ContentPending } from '@/components/loading/ContentPending'
 import { useMarkRouteSeen } from '@/hooks/useMarkRouteSeen'
 import { appToast } from '@/stores/appToastStore'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -19,6 +18,7 @@ export default function StatsPage() {
   useMarkRouteSeen()
   const [agentRunTrend, setAgentRunTrend] = useState<TrendPoint[] | null>(null)
   const [registrationTrend, setRegistrationTrend] = useState<TrendPoint[] | null>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     let cancelled = false
@@ -35,23 +35,28 @@ export default function StatsPage() {
         setRegistrationTrend([])
         appToast.error(err instanceof Error ? err.message : '加载趋势数据失败')
       })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
 
     return () => {
       cancelled = true
     }
   }, [])
 
-  const loading = agentRunTrend === null
-
-  if (loading) {
-    return <ContentPending label="正在加载趋势数据" />
+  if (loading || agentRunTrend === null) {
+    return (
+      <AppPageStack>
+        {chartAreaFallback}
+      </AppPageStack>
+    )
   }
 
   return (
     <Suspense fallback={chartAreaFallback}>
       <AppPageStack>
         <StatsTrendCharts
-          agentRunTrend={agentRunTrend!}
+          agentRunTrend={agentRunTrend}
           registrationTrend={registrationTrend ?? []}
         />
       </AppPageStack>

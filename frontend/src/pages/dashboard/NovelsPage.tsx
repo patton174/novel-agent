@@ -6,7 +6,7 @@ import { BookOpen, Clock, ImagePlus, Plus, Sparkles } from 'lucide-react'
 import { CoverGenerateDialog } from '@/components/dashboard/CoverGenerateDialog'
 import { CoverImageGeneratingOverlay } from '@/components/dashboard/CoverImageGeneratingOverlay'
 import { Button } from '@/components/ui/button'
-import { ContentPending } from '@/components/loading/ContentPending'
+import { Skeleton } from '@/components/ui/skeleton'
 import { InlineBrandLoader } from '@/components/loading/BrandLoader'
 import { useMarkRouteSeen } from '@/hooks/useMarkRouteSeen'
 import { fetchNovels, generateNovelCover, type DashboardNovel } from '@/api/dashboardApi'
@@ -113,7 +113,11 @@ export default function NovelsPage() {
       />
 
       {loading ? (
-        <ContentPending label="正在加载作品列表" />
+        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="min-h-[360px] rounded-2xl" />
+          ))}
+        </div>
       ) : novels!.length === 0 ? (
         <AppEmptyState
           icon={Sparkles}

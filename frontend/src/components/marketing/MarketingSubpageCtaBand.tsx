@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { ArrowRight } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { MKT_CTA_PRIMARY, MKT_CTA_SECONDARY } from '@/lib/marketingCta'
 
 /** 营销子页底部转化带（轻量版，补全 linksOnly Footer 的漏斗断裂） */
 export function MarketingSubpageCtaBand() {
@@ -16,17 +17,11 @@ export function MarketingSubpageCtaBand() {
           {t('footer.ctaDesc')}
         </p>
         <div className="flex flex-col gap-3 sm:flex-row">
-          <Link
-            to="/register"
-            className="mkt-cta-glow inline-flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition hover:-translate-y-0.5 hover:bg-primary-hover"
-          >
+          <Link to="/register" className={MKT_CTA_PRIMARY}>
             {t('footer.ctaRegister')}
             <ArrowRight className="size-4" />
           </Link>
-          <Link
-            to="/login"
-            className="inline-flex items-center justify-center gap-2 rounded-full border border-border bg-white/80 px-6 py-3 text-sm font-semibold text-foreground shadow-sm backdrop-blur-sm transition hover:-translate-y-0.5 hover:border-primary/30"
-          >
+          <Link to="/login" className={MKT_CTA_SECONDARY}>
             {t('footer.ctaLogin')}
           </Link>
         </div>

@@ -96,7 +96,7 @@ const LoginPage: React.FC = () => {
       }
     >
       {sessionHint ? (
-        <p className="mb-3 rounded-lg border border-amber-200/80 bg-amber-50/90 px-3 py-2 text-xs text-amber-900 dark:border-amber-800/50 dark:bg-amber-950/40 dark:text-amber-100">
+        <p className="mb-3 rounded-lg border border-sky-200/80 bg-sky-50/90 px-3 py-2 text-xs text-sky-900 dark:border-sky-800/50 dark:bg-sky-950/40 dark:text-sky-100">
           {sessionHint}
         </p>
       ) : null}

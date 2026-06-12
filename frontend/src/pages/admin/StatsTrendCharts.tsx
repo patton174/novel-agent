@@ -68,11 +68,13 @@ export default function StatsTrendCharts({ agentRunTrend, registrationTrend }: S
         )}
       </AppChartCard>
 
-      {registrationTrend.length > 0 ? (
-        <AppChartCard title="注册趋势" description="近 30 日新用户注册">
+      <AppChartCard title="注册趋势" description="近 30 日新用户注册">
+        {registrationTrend.length === 0 ? (
+          <div className={APP_CHART_EMPTY}>暂无注册数据</div>
+        ) : (
           <TrendChart data={registrationTrend} valueLabel="注册数" />
-        </AppChartCard>
-      ) : null}
+        )}
+      </AppChartCard>
     </>
   )
 }

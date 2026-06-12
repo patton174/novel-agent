@@ -6,6 +6,7 @@ import { AuthResultCard } from '@/components/auth/AuthResultCard'
 import { AuthSpinner } from '@/components/auth/AuthSpinner'
 import { confirmEmailVerify, fetchUserInfo } from '@/api/userApi'
 import { NovelAiWordmark } from '@/components/marketing/NovelAiWordmark'
+import { MKT_CTA_AUTH, MKT_CTA_AUTH_OUTLINE } from '@/lib/marketingCta'
 import { useUserStore } from '@/stores/userStore'
 import { cn } from '@/lib/utils'
 
@@ -20,9 +21,6 @@ const STATE_RING: Record<Exclude<VerifyState, 'loading'>, string> = {
   success: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
   error: 'bg-destructive/10 text-destructive',
 }
-
-const authCtaClass =
-  'mkt-cta-glow inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-primary text-sm font-medium text-primary-foreground transition-all hover:bg-primary-hover'
 
 export default function VerifyEmailPage() {
   const [searchParams] = useSearchParams()
@@ -106,27 +104,21 @@ export default function VerifyEmailPage() {
       {state !== 'loading' ? (
         <div className="mt-6 flex flex-col gap-2">
           {state === 'success' ? (
-            <Link to="/dashboard" className={authCtaClass}>
+            <Link to="/dashboard" className={MKT_CTA_AUTH}>
               进入创作台
             </Link>
           ) : (
             <>
-              <Link to="/login" className={authCtaClass}>
+              <Link to="/login" className={MKT_CTA_AUTH}>
                 <LogIn className="size-4" />
                 返回登录
               </Link>
               {isLoggedIn ? (
-                <Link
-                  to="/dashboard/settings"
-                  className="inline-flex h-10 w-full items-center justify-center rounded-xl border border-border text-sm font-medium text-foreground hover:bg-muted/50"
-                >
+                <Link to="/dashboard/settings" className={MKT_CTA_AUTH_OUTLINE}>
                   账户设置 · 重发验证邮件
                 </Link>
               ) : (
-                <Link
-                  to="/register"
-                  className="inline-flex h-10 w-full items-center justify-center rounded-xl border border-border text-sm font-medium text-foreground hover:bg-muted/50"
-                >
+                <Link to="/register" className={MKT_CTA_AUTH_OUTLINE}>
                   重新注册
                 </Link>
               )}
