@@ -30,15 +30,21 @@ function pickDelay(seed: number): number {
 
 export function HomeDanmakuSection() {
   const [items, setItems] = useState<SiteDanmaku[]>([])
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [message, setMessage] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
   const load = useCallback(async () => {
+    setLoading(true)
+    setLoadError(null)
     try {
       const list = await fetchDanmakuList()
       setItems(list)
     } catch {
-      /* 静默失败，保留空态 */
+      setLoadError('弹幕加载失败，请刷新页面后重试')
+    } finally {
+      setLoading(false)
     }
   }, [])
 
@@ -79,6 +85,7 @@ export function HomeDanmakuSection() {
       const created = await postDanmaku(text)
       setItems((prev) => [created, ...prev].slice(0, 120))
       setMessage('')
+      setLoadError(null)
       appToast.success(isLoggedIn() ? '弹幕已发送' : '弹幕已发送，感谢分享')
     } catch {
       appToast.error('发送失败，请稍后再试')
@@ -90,7 +97,7 @@ export function HomeDanmakuSection() {
   return (
     <section
       id="voices"
-      className="relative w-full scroll-mt-16 overflow-hidden border-t border-border/60 bg-slate-950 py-20 text-white"
+      className="relative w-full scroll-mt-16 overflow-hidden bg-slate-950 pb-0 pt-20 text-white"
     >
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(79,70,229,0.18),transparent_55%)]" />
 
@@ -116,9 +123,24 @@ export function HomeDanmakuSection() {
         />
 
         <div className="relative h-full w-full overflow-hidden">
-          {trackItems.length === 0 ? (
+          {loading ? (
             <div className="flex h-full items-center justify-center text-sm text-slate-500">
               加载创作者弹幕中…
+            </div>
+          ) : loadError ? (
+            <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
+              <p className="text-sm text-slate-400">{loadError}</p>
+              <button
+                type="button"
+                onClick={() => void load()}
+                className="rounded-full border border-white/15 bg-white/5 px-4 py-1.5 text-xs font-medium text-indigo-200 transition hover:bg-white/10"
+              >
+                重新加载
+              </button>
+            </div>
+          ) : trackItems.length === 0 ? (
+            <div className="flex h-full items-center justify-center text-sm text-slate-500">
+              还没有弹幕，做第一个分享感受的人吧
             </div>
           ) : (
             Array.from({ length: TRACK_COUNT }).map((_, trackIndex) => (
@@ -152,7 +174,7 @@ export function HomeDanmakuSection() {
 
       <form
         onSubmit={(e) => void handleSubmit(e)}
-        className="relative mx-auto flex max-w-2xl gap-3 px-6"
+        className="relative mx-auto flex max-w-2xl gap-3 px-6 pb-16"
       >
         <div className="flex w-full gap-3 rounded-2xl border border-white/10 bg-white/5 p-2 backdrop-blur-md">
           <input
@@ -172,6 +194,12 @@ export function HomeDanmakuSection() {
           </button>
         </div>
       </form>
+
+      {/* 与下方 CTA 的渐变衔接 */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-b from-transparent via-slate-950/40 to-indigo-700/90"
+      />
 
       <style>{`
         @keyframes danmaku-fly {

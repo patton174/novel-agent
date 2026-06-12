@@ -81,7 +81,7 @@ export function HomeTimelineSection() {
         <div
           aria-hidden
           data-timeline-line
-          className="absolute bottom-0 left-1/2 top-0 w-0.5 -translate-x-1/2 bg-gradient-to-b from-primary/30 via-primary to-indigo-400/80"
+          className="absolute bottom-0 left-1/2 top-0 w-1 -translate-x-1/2 origin-top bg-gradient-to-b from-primary/50 via-primary to-indigo-500 shadow-[0_0_12px_rgba(79,70,229,0.35)]"
         />
 
         <div className="relative space-y-16 md:space-y-20">

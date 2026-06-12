@@ -23,9 +23,9 @@ export function HomeFooterSection() {
   const year = new Date().getFullYear()
 
   return (
-    <footer className="relative z-10 mt-4 w-full">
-      {/* CTA */}
-      <div className="border-y border-primary/20 bg-gradient-to-br from-primary via-indigo-600 to-indigo-700 px-6 py-14 text-white">
+    <footer className="relative z-10 -mt-16 w-full">
+      {/* CTA — 与弹幕区渐变叠合，去掉硬切分隔 */}
+      <div className="bg-gradient-to-br from-indigo-700 via-indigo-600 to-primary px-6 pb-14 pt-20 text-white">
         <div className="mx-auto flex max-w-4xl flex-col items-center gap-6 text-center">
           <h2 className="text-2xl font-bold tracking-tight md:text-3xl">
             准备好开始你的下一章了吗？

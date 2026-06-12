@@ -174,7 +174,7 @@ export async function fetchSiteContent(key: string): Promise<SiteContent | null>
 export async function fetchDanmakuList(): Promise<SiteDanmaku[]> {
   const res = await secureFetch('/api/billing/auth/danmaku')
   if (!res.ok) {
-    return []
+    throw new Error('加载弹幕失败')
   }
   const data = await parseResultResponse<SiteDanmaku[]>(res)
   return Array.isArray(data) ? data : []
