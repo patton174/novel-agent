@@ -11,8 +11,12 @@ import { AuthSubmitButton } from '../components/auth/AuthSubmitButton'
 import { AuthSpinner } from '../components/auth/AuthSpinner'
 import { authFieldClass } from '../components/auth/authFieldClass'
 import { appToast } from '@/stores/appToastStore'
+import { MKT_CTA_AUTH_OUTLINE } from '@/lib/marketingCta'
 import { useFormDraft } from '../hooks/useJourneyTracker'
 import { cn } from '@/lib/utils'
+
+type RegisterField = 'username' | 'email' | 'password' | 'confirmPassword' | 'emailCode'
+type RegisterErrors = Partial<Record<RegisterField, string>>
 
 const RegisterPage: React.FC = () => {
   const navigate = useNavigate()
@@ -29,6 +33,7 @@ const RegisterPage: React.FC = () => {
   const [codeSent, setCodeSent] = useState(false)
   const [cooldown, setCooldown] = useState(0)
   const [registrationClosed, setRegistrationClosed] = useState(false)
+  const [fieldErrors, setFieldErrors] = useState<RegisterErrors>({})
 
   useEffect(() => {
     let cancelled = false
@@ -42,8 +47,30 @@ const RegisterPage: React.FC = () => {
     }
   }, [])
 
-  const handleChange = (name: string, value: string) => {
+  const handleChange = (name: RegisterField, value: string) => {
     setFormData({ ...formData, [name]: value })
+    setFieldErrors((prev) => ({ ...prev, [name]: undefined }))
+  }
+
+  const validateEmail = (email: string): string | undefined => {
+    if (!email.trim()) return '请输入邮箱'
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return '请输入有效邮箱地址'
+    return undefined
+  }
+
+  const collectRegisterErrors = (): RegisterErrors => {
+    const { username, email, password, confirmPassword, emailCode } = formData
+    const next: RegisterErrors = {}
+    if (!username.trim()) next.username = '请输入用户名'
+    const emailErr = validateEmail(email)
+    if (emailErr) next.email = emailErr
+    if (!emailCode.trim()) next.emailCode = '请输入邮箱验证码'
+    else if (!/^\d{6}$/.test(emailCode.trim())) next.emailCode = '请输入 6 位数字验证码'
+    if (!password.trim()) next.password = '请输入密码'
+    else if (password.length < 6) next.password = '密码至少 6 位'
+    if (!confirmPassword.trim()) next.confirmPassword = '请再次输入密码'
+    else if (password !== confirmPassword) next.confirmPassword = '两次密码不一致'
+    return next
   }
 
   const startCooldown = () => {
@@ -61,12 +88,9 @@ const RegisterPage: React.FC = () => {
 
   const handleSendCodeClick = () => {
     const email = formData.email.trim()
-    if (!email) {
-      appToast.error('请先填写邮箱')
-      return
-    }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      appToast.error('请输入有效邮箱地址')
+    const emailErr = validateEmail(email)
+    if (emailErr) {
+      setFieldErrors((prev) => ({ ...prev, email: emailErr }))
       return
     }
     if (cooldown > 0 || sendingCode || captchaOpen) return
@@ -91,23 +115,12 @@ const RegisterPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    const { username, email, password, confirmPassword, emailCode } = formData
-    if (!username.trim() || !email.trim() || !password.trim() || !confirmPassword.trim() || !emailCode.trim()) {
-      appToast.error('请填写所有字段')
+    const nextErrors = collectRegisterErrors()
+    if (Object.keys(nextErrors).length > 0) {
+      setFieldErrors(nextErrors)
       return
     }
-    if (password !== confirmPassword) {
-      appToast.error('两次密码不一致')
-      return
-    }
-    if (password.length < 6) {
-      appToast.error('密码至少 6 位')
-      return
-    }
-    if (!/^\d{6}$/.test(emailCode.trim())) {
-      appToast.error('请输入 6 位邮箱验证码')
-      return
-    }
+    const { username, email, password, emailCode } = formData
     setSubmitting(true)
     try {
       await register(username.trim(), password, email.trim(), emailCode.trim())
@@ -177,6 +190,7 @@ const RegisterPage: React.FC = () => {
               autoComplete="username"
               placeholder="yourname"
               value={formData.username}
+              error={fieldErrors.username}
               onChange={(e) => handleChange('username', e.target.value)}
             />
             <AuthField
@@ -187,6 +201,7 @@ const RegisterPage: React.FC = () => {
               autoComplete="email"
               placeholder="you@email.com"
               value={formData.email}
+              error={fieldErrors.email}
               onChange={(e) => handleChange('email', e.target.value)}
             />
           </div>
@@ -203,16 +218,23 @@ const RegisterPage: React.FC = () => {
                 autoComplete="one-time-code"
                 placeholder="6 位数字"
                 value={formData.emailCode}
+                aria-invalid={fieldErrors.emailCode ? true : undefined}
+                aria-describedby={fieldErrors.emailCode ? 'reg-email-code-error' : undefined}
                 onChange={(e) => handleChange('emailCode', e.target.value.replace(/\D/g, '').slice(0, 6))}
-                className={cn(authFieldClass, 'h-10 min-w-0 flex-1')}
+                className={cn(
+                  authFieldClass,
+                  'h-10 min-w-0 flex-1',
+                  fieldErrors.emailCode &&
+                    'border-destructive/60 focus:border-destructive/60 focus:ring-destructive/20',
+                )}
               />
               <button
                 type="button"
                 disabled={sendingCode || cooldown > 0 || captchaOpen}
                 onClick={handleSendCodeClick}
                 className={cn(
-                  'inline-flex h-10 shrink-0 items-center justify-center rounded-xl border px-3 text-xs font-medium transition-colors',
-                  'border-border bg-background text-foreground hover:bg-muted/50',
+                  MKT_CTA_AUTH_OUTLINE,
+                  'h-10 w-auto shrink-0 px-3 text-xs',
                   'disabled:cursor-not-allowed disabled:opacity-50',
                 )}
               >
@@ -226,7 +248,11 @@ const RegisterPage: React.FC = () => {
                 )}
               </button>
             </div>
-            {codeSent ? (
+            {fieldErrors.emailCode ? (
+              <p id="reg-email-code-error" className="text-[11px] leading-snug text-destructive">
+                {fieldErrors.emailCode}
+              </p>
+            ) : codeSent ? (
               <p className="text-[11px] text-emerald-600 dark:text-emerald-400">
                 验证码已发送，请查收邮件（含垃圾箱）
               </p>
@@ -242,6 +268,7 @@ const RegisterPage: React.FC = () => {
               autoComplete="new-password"
               placeholder="至少 6 位"
               value={formData.password}
+              error={fieldErrors.password}
               onChange={(e) => handleChange('password', e.target.value)}
             />
             <AuthField
@@ -252,6 +279,7 @@ const RegisterPage: React.FC = () => {
               autoComplete="new-password"
               placeholder="再次输入"
               value={formData.confirmPassword}
+              error={fieldErrors.confirmPassword}
               onChange={(e) => handleChange('confirmPassword', e.target.value)}
             />
           </div>

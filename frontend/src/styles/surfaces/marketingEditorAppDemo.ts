@@ -104,6 +104,16 @@ export const AppBrowserBar = styled.div`
       animation: none;
     }
   }
+
+  @media (max-width: 640px) {
+    padding: 0.45rem 0.55rem;
+    gap: 0.45rem;
+
+    .url,
+    .live {
+      display: none;
+    }
+  }
 `
 
 export const AppWorkspace = styled.div`
@@ -115,6 +125,11 @@ export const AppWorkspace = styled.div`
   @media (max-width: 820px) {
     grid-template-columns: 1fr;
     max-height: none;
+    min-height: 300px;
+  }
+
+  @media (max-width: 640px) {
+    min-height: 260px;
   }
 `
 
@@ -189,6 +204,10 @@ export const AppEditorPane = styled.main`
   gap: 0.55rem;
   background: ${palette.bg};
   overflow: hidden;
+
+  @media (max-width: 640px) {
+    display: none;
+  }
 `
 
 export const AppEditorTitle = styled.h3`

@@ -4,6 +4,7 @@ import { DataTableFrame } from '@/components/layout/DataTableFrame'
 import { AppShellCard } from '@/components/layout/AppPageStack'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { APP_BTN } from '@/lib/appButtonTokens'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   Table,
@@ -51,7 +52,7 @@ function UserMobileCard({
           type="button"
           variant="outline"
           size="sm"
-          className="h-8 shrink-0 rounded-lg px-2.5 text-xs"
+          className={`h-8 shrink-0 px-2.5 text-xs ${APP_BTN}`}
           onClick={(e) => {
             e.stopPropagation()
             onEdit(user)

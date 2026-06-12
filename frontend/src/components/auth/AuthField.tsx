@@ -5,6 +5,7 @@ import { authFieldClass } from './authFieldClass'
 export function AuthField({
   label,
   hint,
+  error,
   id,
   className,
   inputClassName,
@@ -12,6 +13,7 @@ export function AuthField({
 }: InputHTMLAttributes<HTMLInputElement> & {
   label: string
   hint?: ReactNode
+  error?: string
   inputClassName?: string
 }) {
   return (
@@ -22,7 +24,23 @@ export function AuthField({
         </label>
         {hint}
       </div>
-      <input id={id} className={cn(authFieldClass, inputClassName)} {...props} />
+      <input
+        id={id}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error ? `${id}-error` : undefined}
+        className={cn(
+          authFieldClass,
+          error &&
+            'border-destructive/60 focus:border-destructive/60 focus:ring-destructive/20',
+          inputClassName,
+        )}
+        {...props}
+      />
+      {error ? (
+        <p id={`${id}-error`} className="text-[11px] leading-snug text-destructive">
+          {error}
+        </p>
+      ) : null}
     </div>
   )
 }

@@ -121,6 +121,11 @@ const Overlay = styled.div`
   justify-content: center;
   padding: 1.25rem;
   animation: ${fadeIn} 0.18s ease both;
+
+  @media (max-width: 767px) {
+    padding: 0;
+    align-items: stretch;
+  }
 `
 
 const Dialog = styled.div`
@@ -133,6 +138,14 @@ const Dialog = styled.div`
   box-shadow: ${editorModalSurface.dialogShadow};
   overflow: hidden;
   animation: ${slideUp} 0.22s ease both;
+
+  @media (max-width: 767px) {
+    width: 100%;
+    max-height: none;
+    height: 100%;
+    border-radius: 0;
+    animation: ${fadeIn} 0.18s ease both;
+  }
 `
 
 const DialogHeader = styled.div`
@@ -142,6 +155,11 @@ const DialogHeader = styled.div`
   gap: 1rem;
   padding: 1rem 1.15rem 0.85rem;
   border-bottom: 1px solid ${editorTheme.border};
+
+  @media (max-width: 767px) {
+    padding: 0.85rem 0.9rem 0.75rem;
+    gap: 0.65rem;
+  }
 `
 
 const HeaderText = styled.div`
@@ -195,6 +213,10 @@ const DialogBody = styled.div`
   overflow-y: auto;
   padding: 0.75rem 1.15rem 1.15rem;
   scroll-behavior: smooth;
+
+  @media (max-width: 767px) {
+    padding: 0.65rem 0.9rem 1rem;
+  }
 
   &::-webkit-scrollbar {
     width: 6px;

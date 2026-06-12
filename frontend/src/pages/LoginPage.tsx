@@ -23,13 +23,18 @@ const LoginPage: React.FC = () => {
   const [username, setUsername] = useFormDraft('login_username', '')
   const [password, setPassword] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [fieldErrors, setFieldErrors] = useState<{ username?: string; password?: string }>({})
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!username.trim() || !password.trim()) {
-      appToast.error('请填写用户名和密码')
+    const next: { username?: string; password?: string } = {}
+    if (!username.trim()) next.username = '请输入用户名'
+    if (!password.trim()) next.password = '请输入密码'
+    if (Object.keys(next).length > 0) {
+      setFieldErrors(next)
       return
     }
+    setFieldErrors({})
     setSubmitting(true)
     clearAuthSession()
     try {
@@ -108,7 +113,11 @@ const LoginPage: React.FC = () => {
           autoComplete="username"
           placeholder="输入用户名"
           value={username}
-          onChange={(e) => setUsername(e.target.value)}
+          error={fieldErrors.username}
+          onChange={(e) => {
+            setUsername(e.target.value)
+            setFieldErrors((prev) => ({ ...prev, username: undefined }))
+          }}
         />
 
         <AuthField
@@ -119,7 +128,11 @@ const LoginPage: React.FC = () => {
           autoComplete="current-password"
           placeholder="输入密码"
           value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          error={fieldErrors.password}
+          onChange={(e) => {
+            setPassword(e.target.value)
+            setFieldErrors((prev) => ({ ...prev, password: undefined }))
+          }}
           hint={
             <Link
               to="/contact"
