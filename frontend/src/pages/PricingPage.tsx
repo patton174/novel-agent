@@ -35,11 +35,19 @@ export default function PricingPage() {
   }, [t])
 
   return (
-    <MarketingPageLayout>
+    <MarketingPageLayout subpageCta>
       <MarketingSubpageHero
         variant="light"
         eyebrow={t('nav.pricing')}
         title={t('pricing.title')}
+        action={
+          <Link
+            to="/register"
+            className="mkt-cta-glow inline-flex shrink-0 items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition hover:-translate-y-0.5 hover:bg-primary-hover"
+          >
+            {t('footer.ctaRegister')}
+          </Link>
+        }
         subtitle={
           <>
             {t('pricing.subtitle')}

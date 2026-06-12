@@ -14,7 +14,7 @@ export function DashboardQuickActions() {
           asChild
           variant="outline"
           size="sm"
-          className="hidden h-9 gap-1.5 rounded-lg border-border/80 bg-background/80 px-3 text-xs font-medium sm:inline-flex"
+          className="hidden h-9 gap-1.5 rounded-xl border-border/80 bg-background/80 px-3 text-xs font-medium sm:inline-flex"
         >
           <Link to="/admin">
             <Shield className="size-3.5" />
@@ -22,7 +22,7 @@ export function DashboardQuickActions() {
           </Link>
         </Button>
       ) : null}
-      <Button asChild size="sm" className="h-9 gap-1.5 rounded-lg px-4 text-xs font-semibold">
+      <Button asChild size="sm" className="h-9 gap-1.5 rounded-xl px-4 text-xs font-semibold">
         <Link to="/editor">
           <PenLine className="size-3.5" />
           进入编辑器

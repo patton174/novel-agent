@@ -8,6 +8,12 @@ import {
   AppShellCardHeader,
 } from '@/components/layout/AppPageStack'
 import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { ContentPending } from '@/components/loading/ContentPending'
 import { useMarkRouteSeen } from '@/hooks/useMarkRouteSeen'
@@ -35,6 +41,7 @@ export default function AuditLogPage() {
   const [action, setAction] = useState('')
   const [actorIdInput, setActorIdInput] = useState('')
   const [loading, setLoading] = useState(true)
+  const [detailLog, setDetailLog] = useState<AuditLogItem | null>(null)
 
   const load = useCallback(async (page: number, actionFilter: string, actorFilter: string) => {
     setLoading(true)
@@ -66,6 +73,8 @@ export default function AuditLogPage() {
   if (loading && logs === null) {
     return <ContentPending label="加载审计日志…" />
   }
+
+  const list = logs ?? []
 
   return (
     <AppPageStack className="gap-4">
@@ -100,83 +109,173 @@ export default function AuditLogPage() {
         </AppShellCardBody>
       </AppShellCard>
 
-      <AppShellCard>
-        <AppShellCardHeader title="审计日志" description={`共 ${totalCount.toLocaleString('zh-CN')} 条记录`} />
-        <DataTableFrame embedded>
-        <table className="w-full min-w-[720px] text-sm">
-          <thead className="bg-muted/40 text-left text-xs text-muted-foreground">
-            <tr>
-              <th className="px-4 py-3 font-medium">时间</th>
-              <th className="px-4 py-3 font-medium">操作</th>
-              <th className="px-4 py-3 font-medium">操作者</th>
-              <th className="px-4 py-3 font-medium">目标</th>
-              <th className="px-4 py-3 font-medium">变更</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {(logs ?? []).length === 0 ? (
-              <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
-                  暂无审计记录
-                </td>
-              </tr>
-            ) : (
-              (logs ?? []).map((log) => (
-                <tr key={log.id} className="align-top">
-                  <td className="px-4 py-3 whitespace-nowrap text-xs text-muted-foreground">
-                    {new Date(log.createdAt).toLocaleString('zh-CN')}
-                  </td>
-                  <td className="px-4 py-3 font-mono text-xs">{log.action}</td>
-                  <td className="px-4 py-3 tabular-nums">{log.actorId}</td>
-                  <td className="px-4 py-3 text-xs">
+      {/* 移动端卡片 */}
+      <div className="space-y-3 md:hidden">
+        {list.length === 0 ? (
+          <p className="py-8 text-center text-sm text-muted-foreground">暂无审计记录</p>
+        ) : (
+          list.map((log) => (
+            <article
+              key={log.id}
+              className="rounded-xl border border-border/70 bg-surface p-4 shadow-sm"
+            >
+              <p className="text-xs text-muted-foreground">
+                {new Date(log.createdAt).toLocaleString('zh-CN')}
+              </p>
+              <p className="mt-1 font-mono text-sm font-medium text-foreground">{log.action}</p>
+              <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+                <div>
+                  <dt className="text-muted-foreground">操作者</dt>
+                  <dd className="tabular-nums">{log.actorId}</dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">目标</dt>
+                  <dd className="truncate">
                     {log.targetType ?? '—'}
                     {log.targetId ? ` #${log.targetId}` : ''}
-                  </td>
-                  <td className="max-w-xs px-4 py-3 font-mono text-[10px] leading-relaxed text-muted-foreground">
-                    {log.beforeJson ? `− ${truncate(log.beforeJson)}` : null}
-                    {log.afterJson ? (
-                      <div className="text-foreground">+ {truncate(log.afterJson)}</div>
-                    ) : null}
+                  </dd>
+                </div>
+              </dl>
+              {(log.beforeJson || log.afterJson) && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="mt-3 h-8 w-full rounded-lg text-xs"
+                  onClick={() => setDetailLog(log)}
+                >
+                  查看变更详情
+                </Button>
+              )}
+            </article>
+          ))
+        )}
+      </div>
+
+      <AppShellCard className="hidden md:block">
+        <AppShellCardHeader title="审计日志" description={`共 ${totalCount.toLocaleString('zh-CN')} 条记录`} />
+        <DataTableFrame embedded scrollHint={false}>
+          <table className="w-full min-w-[720px] text-sm">
+            <thead className="bg-muted/40 text-left text-xs text-muted-foreground">
+              <tr>
+                <th className="px-4 py-3 font-medium">时间</th>
+                <th className="px-4 py-3 font-medium">操作</th>
+                <th className="px-4 py-3 font-medium">操作者</th>
+                <th className="px-4 py-3 font-medium">目标</th>
+                <th className="px-4 py-3 font-medium">变更</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {list.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
+                    暂无审计记录
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </DataTableFrame>
+              ) : (
+                list.map((log) => (
+                  <tr key={log.id} className="align-top">
+                    <td className="px-4 py-3 whitespace-nowrap text-xs text-muted-foreground">
+                      {new Date(log.createdAt).toLocaleString('zh-CN')}
+                    </td>
+                    <td className="px-4 py-3 font-mono text-xs">{log.action}</td>
+                    <td className="px-4 py-3 tabular-nums">{log.actorId}</td>
+                    <td className="px-4 py-3 text-xs">
+                      {log.targetType ?? '—'}
+                      {log.targetId ? ` #${log.targetId}` : ''}
+                    </td>
+                    <td className="max-w-xs px-4 py-3">
+                      {log.beforeJson || log.afterJson ? (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 px-2 text-xs text-primary"
+                          onClick={() => setDetailLog(log)}
+                        >
+                          查看 JSON
+                        </Button>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </DataTableFrame>
       </AppShellCard>
 
-      {totalPages > 1 ? (
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">
-            第 {pageCurrent}/{totalPages} 页
-          </span>
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={pageCurrent <= 1 || loading}
-              onClick={() => setPageCurrent((p) => Math.max(1, p - 1))}
-            >
-              上一页
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={pageCurrent >= totalPages || loading}
-              onClick={() => setPageCurrent((p) => p + 1)}
-            >
-              下一页
-            </Button>
-          </div>
-        </div>
-      ) : null}
+      <div className="flex items-center justify-between text-sm md:mt-0">
+        <span className="text-muted-foreground md:hidden">共 {totalCount.toLocaleString('zh-CN')} 条</span>
+        {totalPages > 1 ? (
+          <>
+            <span className="hidden text-muted-foreground md:inline">
+              第 {pageCurrent}/{totalPages} 页
+            </span>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={pageCurrent <= 1 || loading}
+                onClick={() => setPageCurrent((p) => Math.max(1, p - 1))}
+              >
+                上一页
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={pageCurrent >= totalPages || loading}
+                onClick={() => setPageCurrent((p) => p + 1)}
+              >
+                下一页
+              </Button>
+            </div>
+          </>
+        ) : null}
+      </div>
+
+      <Dialog open={detailLog != null} onOpenChange={(open) => !open && setDetailLog(null)}>
+        <DialogContent className="max-h-[85vh] max-w-lg overflow-y-auto sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle className="font-mono text-sm">{detailLog?.action}</DialogTitle>
+          </DialogHeader>
+          {detailLog ? (
+            <div className="space-y-4 text-xs">
+              <p className="text-muted-foreground">
+                {new Date(detailLog.createdAt).toLocaleString('zh-CN')} · 操作者 {detailLog.actorId}
+              </p>
+              {detailLog.beforeJson ? (
+                <div>
+                  <p className="mb-1 font-medium text-destructive">变更前</p>
+                  <pre className="max-h-48 overflow-auto rounded-lg border border-border bg-muted/40 p-3 font-mono text-[11px] leading-relaxed whitespace-pre-wrap break-all">
+                    {formatJson(detailLog.beforeJson)}
+                  </pre>
+                </div>
+              ) : null}
+              {detailLog.afterJson ? (
+                <div>
+                  <p className="mb-1 font-medium text-emerald-700 dark:text-emerald-400">变更后</p>
+                  <pre className="max-h-48 overflow-auto rounded-lg border border-border bg-muted/40 p-3 font-mono text-[11px] leading-relaxed whitespace-pre-wrap break-all">
+                    {formatJson(detailLog.afterJson)}
+                  </pre>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </AppPageStack>
   )
 }
 
-function truncate(json: string, max = 120): string {
-  return json.length <= max ? json : `${json.slice(0, max)}…`
+function formatJson(raw: string): string {
+  try {
+    return JSON.stringify(JSON.parse(raw), null, 2)
+  } catch {
+    return raw
+  }
 }

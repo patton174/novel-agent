@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Search } from 'lucide-react'
 import { fetchUserPage, type AdminUser } from '@/api/adminApi'
 import { UserEditDialog } from '@/components/admin/UserEditDialog'
@@ -22,6 +22,7 @@ export default function UsersPage() {
   const [loading, setLoading] = useState(true)
   const [editingUser, setEditingUser] = useState<AdminUser | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const debounceReady = useRef(false)
 
   const loadUsers = useCallback(async (page: number, usernameKeyword: string) => {
     setLoading(true)
@@ -46,6 +47,18 @@ export default function UsersPage() {
   useEffect(() => {
     void loadUsers(pageCurrent, keyword)
   }, [loadUsers, pageCurrent, keyword])
+
+  useEffect(() => {
+    if (!debounceReady.current) {
+      debounceReady.current = true
+      return
+    }
+    const timer = window.setTimeout(() => {
+      setPageCurrent(1)
+      setKeyword(searchInput.trim())
+    }, 450)
+    return () => window.clearTimeout(timer)
+  }, [searchInput])
 
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE))
 

@@ -44,7 +44,7 @@ export default function GenericContentPage({ contentKey, fallbackTitle }: Generi
     contentKey === 'contact' ? t('generic.subtitleContact') : t('generic.subtitleLegal')
 
   return (
-    <MarketingPageLayout>
+    <MarketingPageLayout subpageCta>
       <MarketingSubpageHero
         variant="soft"
         eyebrow={eyebrow}

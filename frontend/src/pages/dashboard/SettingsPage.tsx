@@ -1,16 +1,18 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { Settings } from 'lucide-react'
 import { fetchSubscription, fetchUsageCurrent, formatTokenCount } from '@/api/billingApi'
 import { fetchUserInfo } from '@/api/userApi'
 import { AccountSettingsPanel } from '@/components/dashboard/AccountSettingsPanel'
 import {
+  AppPageIntro,
   AppPageStack,
   AppShellCard,
   AppShellCardBody,
   AppShellCardHeader,
 } from '@/components/layout/AppPageStack'
 import { Button } from '@/components/ui/button'
-import { ContentPending } from '@/components/loading/ContentPending'
+import { Skeleton } from '@/components/ui/skeleton'
 import { useMarkRouteSeen } from '@/hooks/useMarkRouteSeen'
 import { useUserStore } from '@/stores/userStore'
 import type { UserProfile } from '@/stores/userStore'
@@ -49,41 +51,60 @@ export default function SettingsPage() {
     }
   }, [setProfile])
 
-  if (loading) {
-    return <ContentPending label="加载账户设置…" />
-  }
-
   return (
     <AppPageStack narrow>
+      <AppPageIntro
+        eyebrow="账户"
+        title={loading ? '加载中…' : profile?.username ?? '账户设置'}
+        icon={Settings}
+      />
+
       <AppShellCard>
         <AppShellCardHeader title="账户信息" description="邮箱验证与基本资料" />
         <AppShellCardBody>
-          <AccountSettingsPanel
-            profile={profile}
-            onVerified={() => {
-              void fetchUserInfo().then((user) => {
-                setLocalProfile(user)
-                setProfile(user)
-              })
-            }}
-          />
+          {loading ? (
+            <div className="space-y-3">
+              <Skeleton className="h-16 w-full rounded-lg" />
+              <Skeleton className="h-10 w-full rounded-lg" />
+              <Skeleton className="h-10 w-full rounded-lg" />
+            </div>
+          ) : (
+            <AccountSettingsPanel
+              profile={profile}
+              onVerified={() => {
+                void fetchUserInfo().then((user) => {
+                  setLocalProfile(user)
+                  setProfile(user)
+                })
+              }}
+            />
+          )}
         </AppShellCardBody>
       </AppShellCard>
 
       <AppShellCard>
         <AppShellCardHeader title="订阅与用量" description="当前套餐与本月 Token 使用情况" />
         <AppShellCardBody className="flex flex-col gap-4">
-          <div className="flex items-center justify-between rounded-xl border border-border bg-muted/30 px-4 py-3 text-sm">
-            <span className="text-muted-foreground">当前套餐</span>
-            <span className="font-medium">{planName ?? '—'}</span>
-          </div>
-          <div className="flex items-center justify-between rounded-xl border border-border bg-muted/30 px-4 py-3 text-sm">
-            <span className="text-muted-foreground">本月 Tokens</span>
-            <span className="font-medium tabular-nums">{tokenSummary ?? '—'}</span>
-          </div>
-          <Button asChild variant="outline" className="w-full sm:w-auto">
-            <Link to="/dashboard/billing">查看账单与升级</Link>
-          </Button>
+          {loading ? (
+            <>
+              <Skeleton className="h-12 w-full rounded-xl" />
+              <Skeleton className="h-12 w-full rounded-xl" />
+            </>
+          ) : (
+            <>
+              <div className="flex items-center justify-between rounded-xl border border-border bg-muted/30 px-4 py-3 text-sm">
+                <span className="text-muted-foreground">当前套餐</span>
+                <span className="font-medium">{planName ?? '—'}</span>
+              </div>
+              <div className="flex items-center justify-between rounded-xl border border-border bg-muted/30 px-4 py-3 text-sm">
+                <span className="text-muted-foreground">本月 Tokens</span>
+                <span className="font-medium tabular-nums">{tokenSummary ?? '—'}</span>
+              </div>
+              <Button asChild variant="outline" className="w-full rounded-xl sm:w-auto">
+                <Link to="/dashboard/billing">查看账单与升级</Link>
+              </Button>
+            </>
+          )}
         </AppShellCardBody>
       </AppShellCard>
     </AppPageStack>
