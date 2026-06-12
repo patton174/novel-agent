@@ -136,6 +136,21 @@
 - [x] **AppStatCard** 移动端 KPI 字号收紧（label `text-xs`、value `text-xl sm:text-2xl`）
 - [x] **BookstorePage** 卡片去掉与 intro「我的作品库」重复的「查看我的作品」按钮
 
+## Phase 7 — 品牌与 Admin 收尾（审计清单闭环）
+
+- [x] **品牌统一 Novel AI**：欢迎语、滚动分镜 Mock、可行性对比表列头（与 Wordmark / Footer / i18n 一致）
+- [x] **AuthLegalNotice** 协议文案 `text-xs`，链接保持 `min-h-9` 触控区
+- [x] **SiteContentPage** 未保存时 `beforeunload` 提示，切换 key 已有 confirm
+
+## 审计清单闭环状态
+
+`docs/frontend-ui-audit.md` 中可交付项均已通过 Phase 1–7 落地；**未纳入范围**（需单独产品/工程规划）：
+
+- Editor 移动写作路径（drawer → tab → overlay → 选章）深度重构
+- Agent timeline 单条消息多屏信息密度
+- Modal/Loader 进一步合并（已压至 EditorModalShell + shadcn Dialog + Skeleton + BrandLoader）
+- Admin 全表移动卡片（Users/Audit/Plans/Catalog 已有；其余低流量页保留横滑）
+
 ---
 
 ## Phase 2B 验收

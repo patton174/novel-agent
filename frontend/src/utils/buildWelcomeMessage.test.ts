@@ -4,7 +4,7 @@ import { buildWelcomeMessage } from './buildWelcomeMessage'
 describe('buildWelcomeMessage', () => {
   it('returns generic welcome without novel', () => {
     const msg = buildWelcomeMessage(null)
-    expect(msg).toContain('Novel Agent')
+    expect(msg).toContain('Novel AI')
   })
 
   it('includes novel title and description hint', () => {

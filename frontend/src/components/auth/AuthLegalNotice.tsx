@@ -26,7 +26,7 @@ export function AuthLegalNotice({
   const { lead, showAi } = COPY[variant]
 
   return (
-    <div className={cn('space-y-2 text-[11px] leading-relaxed text-muted-foreground', className)}>
+    <div className={cn('space-y-2 text-xs leading-relaxed text-muted-foreground', className)}>
       <p>
         {lead}
         <Link to="/terms" className="mx-0.5 inline-flex min-h-9 items-center font-medium text-foreground/80 underline-offset-2 hover:text-primary hover:underline">
@@ -45,7 +45,7 @@ export function AuthLegalNotice({
         <p>会话凭证加密传输；异常登录可通过邮箱验证找回访问权限。</p>
       ) : null}
       {showAi ? (
-        <p className="rounded-lg border border-border/60 bg-muted/30 px-2.5 py-2 text-[10px] leading-snug">
+        <p className="rounded-lg border border-border/60 bg-muted/30 px-2.5 py-2 text-xs leading-snug">
           <span className="font-medium text-foreground/70">关于验证图：</span>
           拼图背景由服务端程序实时生成，仅用于防机器人，非用户上传内容，不会用于模型训练或公开展示。
         </p>

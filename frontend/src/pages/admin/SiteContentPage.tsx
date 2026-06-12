@@ -68,6 +68,15 @@ export default function SiteContentPage() {
     void load()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
+  useEffect(() => {
+    if (!isDirty) return
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault()
+    }
+    window.addEventListener('beforeunload', onBeforeUnload)
+    return () => window.removeEventListener('beforeunload', onBeforeUnload)
+  }, [isDirty])
+
   const selectKey = (key: string) => {
     if (key === selectedKey) return
     if (isDirty && !window.confirm('有未保存的更改，确定切换页面？')) return

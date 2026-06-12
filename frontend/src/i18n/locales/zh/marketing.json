@@ -122,7 +122,7 @@
       "compareHeaders": {
         "feature": "维度",
         "generic": "通用对话 AI",
-        "us": "Novel Agent"
+        "us": "Novel AI"
       },
       "compareRows": {
         "context": { "feature": "作品上下文", "generic": "单次对话，易遗忘", "us": "项目级持久化" },
