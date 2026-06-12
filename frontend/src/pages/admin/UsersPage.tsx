@@ -4,6 +4,7 @@ import { fetchUserPage, type AdminUser } from '@/api/adminApi'
 import { UserEditDialog } from '@/components/admin/UserEditDialog'
 import { UserTable } from '@/components/admin/UserTable'
 import { AppPageStack, AppShellCard, AppShellCardBody, AppShellCardHeader } from '@/components/layout/AppPageStack'
+import { AdminPagination } from '@/components/layout/AdminPagination'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ContentPending } from '@/components/loading/ContentPending'
@@ -113,29 +114,13 @@ export default function UsersPage() {
         />
       )}
 
-      <div className="flex items-center justify-between gap-4">
-        <p className="text-sm text-muted-foreground">
-          共 {totalCount.toLocaleString('zh-CN')} 条，第 {pageCurrent} / {totalPages} 页
-        </p>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={pageCurrent <= 1 || loading}
-            onClick={() => setPageCurrent((p) => Math.max(1, p - 1))}
-          >
-            上一页
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={pageCurrent >= totalPages || loading}
-            onClick={() => setPageCurrent((p) => p + 1)}
-          >
-            下一页
-          </Button>
-        </div>
-      </div>
+      <AdminPagination
+        pageCurrent={pageCurrent}
+        totalPages={totalPages}
+        totalCount={totalCount}
+        loading={loading}
+        onPageChange={setPageCurrent}
+      />
 
       <UserEditDialog
         user={editingUser}

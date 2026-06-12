@@ -8,12 +8,11 @@ import {
 import {
   AppPageStack,
   AppShellCard,
-  AppShellCardBody,
   AppShellCardHeader,
 } from '@/components/layout/AppPageStack'
 import { Button } from '@/components/ui/button'
-import { ContentPending } from '@/components/loading/ContentPending'
 import { Input } from '@/components/ui/input'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
 import { useMarkRouteSeen } from '@/hooks/useMarkRouteSeen'
 import { appToast } from '@/stores/appToastStore'
@@ -90,59 +89,72 @@ export default function SystemSettingsPage() {
     }
   }
 
-  if (loading || !settings) {
-    return <ContentPending label="加载系统参数…" />
-  }
-
   return (
-    <AppPageStack narrow>
+    <AppPageStack narrow className="pb-20">
       <p className="text-sm text-muted-foreground">
         参数保存后约 60 秒内对各服务生效。关闭注册会立即拦截新用户注册请求。
       </p>
 
       <AppShellCard>
         <AppShellCardHeader title="运行参数" description="注册、Agent 与爬虫全局配置" />
-        <div className="divide-y divide-border/60">
-          {SETTING_FIELDS.map((field) => (
-            <div
-              key={field.key}
-              className="flex flex-col gap-3 px-6 py-4 sm:flex-row sm:items-center sm:justify-between"
-            >
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium">{field.label}</p>
-                <p className="text-xs text-muted-foreground">{field.description}</p>
+        {loading || !settings ? (
+          <div className="divide-y divide-border/60">
+            {SETTING_FIELDS.map((field) => (
+              <div key={field.key} className="flex flex-col gap-3 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0 flex-1 space-y-2">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-3 w-48" />
+                </div>
+                <Skeleton className="h-9 w-36 shrink-0" />
               </div>
-              <div className="shrink-0">
-                {field.type === 'boolean' ? (
-                  <Switch
-                    checked={Boolean(settings[field.key])}
-                    onCheckedChange={(checked) => setValue(field.key, checked)}
-                  />
-                ) : field.type === 'number' ? (
-                  <Input
-                    type="number"
-                    className="w-36"
-                    value={String(settings[field.key] ?? '')}
-                    onChange={(e) => setValue(field.key, Number(e.target.value) || 0)}
-                  />
-                ) : (
-                  <Input
-                    className="w-48"
-                    value={String(settings[field.key] ?? '')}
-                    onChange={(e) => setValue(field.key, e.target.value)}
-                  />
-                )}
+            ))}
+          </div>
+        ) : (
+          <div className="divide-y divide-border/60">
+            {SETTING_FIELDS.map((field) => (
+              <div
+                key={field.key}
+                className="flex flex-col gap-3 px-6 py-4 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium">{field.label}</p>
+                  <p className="text-xs text-muted-foreground">{field.description}</p>
+                </div>
+                <div className="shrink-0">
+                  {field.type === 'boolean' ? (
+                    <Switch
+                      checked={Boolean(settings[field.key])}
+                      onCheckedChange={(checked) => setValue(field.key, checked)}
+                    />
+                  ) : field.type === 'number' ? (
+                    <Input
+                      type="number"
+                      className="w-36"
+                      value={String(settings[field.key] ?? '')}
+                      onChange={(e) => setValue(field.key, Number(e.target.value) || 0)}
+                    />
+                  ) : (
+                    <Input
+                      className="w-48"
+                      value={String(settings[field.key] ?? '')}
+                      onChange={(e) => setValue(field.key, e.target.value)}
+                    />
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-        <AppShellCardBody className="border-t border-border/60 bg-muted/20">
-          <Button type="button" disabled={saving} onClick={() => void handleSave()}>
+            ))}
+          </div>
+        )}
+      </AppShellCard>
+
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border/80 bg-background/95 px-4 py-3 backdrop-blur-md md:static md:border-0 md:bg-transparent md:p-0 md:backdrop-blur-none">
+        <div className="mx-auto flex max-w-2xl justify-end">
+          <Button type="button" disabled={saving || loading || !settings} onClick={() => void handleSave()}>
             <Save className="mr-1.5 size-4" />
             {saving ? '保存中…' : '保存参数'}
           </Button>
-        </AppShellCardBody>
-      </AppShellCard>
+        </div>
+      </div>
     </AppPageStack>
   )
 }

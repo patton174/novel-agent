@@ -350,14 +350,13 @@ export default function CrawlerPage() {
               setOrchGoal(e.target.value)
               setGoalDirty(true)
             }}
-            rows={2}
-            disabled={orchBlocked || orchBusy}
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm disabled:opacity-50"
+            rows={4}
+            className="min-h-[5.5rem] w-full rounded-md border border-input bg-background px-3 py-2 text-sm disabled:opacity-50"
             placeholder={DEFAULT_GOAL}
           />
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
           <Button
             disabled={!canSetGoal || orchBusy}
             onClick={() => void handleSetOrchestratorGoal()}
@@ -382,7 +381,7 @@ export default function CrawlerPage() {
           </AppShellCardBody>
         </AppShellCard>
 
-        <AppShellCard className="flex min-h-[280px] flex-col">
+        <AppShellCard className="flex min-h-0 flex-col max-md:min-h-[200px] md:min-h-[280px]">
           <AppShellCardHeader title="主编排决策日志" />
           <AppShellCardBody className="flex min-h-0 flex-1 flex-col pt-2">
             <OrchestratorLogTerminal

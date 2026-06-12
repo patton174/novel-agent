@@ -35,7 +35,7 @@ function TimelineNode({
       }`}
     >
       <motion.div
-        className="absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2"
+      className="absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 max-md:hidden"
         initial={reduced ? false : { scale: 0.4, opacity: 0.3 }}
         whileInView={{ scale: 1, opacity: 1 }}
         viewport={{ once: true, amount: 0.6, margin: '0px 0px -15% 0px' }}
@@ -93,7 +93,7 @@ export function HomeTimelineSection() {
 
   return (
     <section
-      id="capabilities"
+      id="timeline"
       className="relative scroll-mt-16 overflow-hidden border-t border-border/40 bg-gradient-to-b from-[#fafaf8] via-white to-[#f8fafc] px-6 py-20 md:py-28"
     >
       <MarketingAmbient variant="section" />
@@ -108,10 +108,10 @@ export function HomeTimelineSection() {
       </div>
 
       <div ref={trackRef} className="relative mx-auto max-w-4xl pb-4">
-        <div aria-hidden className="absolute bottom-0 left-1/2 top-0 w-px -translate-x-1/2 bg-border/80" />
+        <div aria-hidden className="absolute bottom-0 left-1/2 top-0 hidden w-px -translate-x-1/2 bg-border/80 md:block" />
         <motion.div
           aria-hidden
-          className="absolute bottom-0 left-1/2 top-0 w-1 -translate-x-1/2 origin-top rounded-full bg-gradient-to-b from-indigo-400 via-primary to-violet-600 shadow-[0_0_28px_rgba(79,70,229,0.45)]"
+          className="absolute bottom-0 left-1/2 top-0 hidden w-1 -translate-x-1/2 origin-top rounded-full bg-gradient-to-b from-indigo-400 via-primary to-violet-600 shadow-[0_0_28px_rgba(79,70,229,0.45)] md:block"
           style={reduced ? { scaleY: 1 } : { scaleY: lineScale }}
         />
 

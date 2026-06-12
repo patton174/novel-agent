@@ -7,6 +7,7 @@ import {
   AppShellCardBody,
   AppShellCardHeader,
 } from '@/components/layout/AppPageStack'
+import { AdminPagination } from '@/components/layout/AdminPagination'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -207,36 +208,13 @@ export default function AuditLogPage() {
         </DataTableFrame>
       </AppShellCard>
 
-      <div className="flex items-center justify-between text-sm md:mt-0">
-        <span className="text-muted-foreground md:hidden">共 {totalCount.toLocaleString('zh-CN')} 条</span>
-        {totalPages > 1 ? (
-          <>
-            <span className="hidden text-muted-foreground md:inline">
-              第 {pageCurrent}/{totalPages} 页
-            </span>
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={pageCurrent <= 1 || loading}
-                onClick={() => setPageCurrent((p) => Math.max(1, p - 1))}
-              >
-                上一页
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={pageCurrent >= totalPages || loading}
-                onClick={() => setPageCurrent((p) => p + 1)}
-              >
-                下一页
-              </Button>
-            </div>
-          </>
-        ) : null}
-      </div>
+      <AdminPagination
+        pageCurrent={pageCurrent}
+        totalPages={totalPages}
+        totalCount={totalCount}
+        loading={loading}
+        onPageChange={setPageCurrent}
+      />
 
       <Dialog open={detailLog != null} onOpenChange={(open) => !open && setDetailLog(null)}>
         <DialogContent className="max-h-[85vh] max-w-lg overflow-y-auto sm:max-w-xl">

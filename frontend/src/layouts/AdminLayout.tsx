@@ -66,6 +66,11 @@ export default function AdminLayout() {
           leading={<MobileAdminDrawer />}
           actions={
             <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+              <Button asChild variant="outline" size="icon" className="size-9 sm:hidden" aria-label="返回用户端">
+                <Link to="/dashboard">
+                  <ArrowLeft className="size-4" />
+                </Link>
+              </Button>
               <Button asChild variant="outline" size="sm" className="hidden h-9 sm:inline-flex">
                 <Link to="/dashboard">
                   <ArrowLeft className="size-4" />

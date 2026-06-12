@@ -169,7 +169,73 @@ export default function PlansPage() {
           }
         />
 
-        <DataTableFrame embedded>
+        {/* 移动端卡片 */}
+        <div className="space-y-3 px-4 pb-4 md:hidden">
+          {(plans ?? []).length === 0 ? (
+            <p className="py-6 text-center text-sm text-muted-foreground">暂无套餐</p>
+          ) : (
+            (plans ?? []).map((plan) => (
+              <article
+                key={plan.id}
+                className="rounded-xl border border-border/70 bg-surface p-4 shadow-sm"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 font-medium">
+                      {plan.name}
+                      {plan.isFeatured ? (
+                        <Star className="size-3.5 fill-amber-400 text-amber-400" />
+                      ) : null}
+                    </div>
+                    <p className="font-mono text-xs text-muted-foreground">{plan.code}</p>
+                  </div>
+                  <Badge variant={plan.isActive ? 'secondary' : 'outline'}>
+                    {plan.isActive ? '上架' : '停用'}
+                  </Badge>
+                </div>
+                <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
+                  <div>
+                    <dt className="text-muted-foreground">月价</dt>
+                    <dd className="tabular-nums font-medium">{formatPlanPrice(plan.priceCents)}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">Token</dt>
+                    <dd className="tabular-nums">{formatTokenQuota(plan.monthlyTokenQuota)}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">Run</dt>
+                    <dd className="tabular-nums">
+                      {plan.monthlyRunQuota == null ? '不限' : plan.monthlyRunQuota}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">RPM</dt>
+                    <dd className="tabular-nums">{plan.rateLimitRpm}</dd>
+                  </div>
+                </dl>
+                <div className="mt-3 flex gap-2">
+                  <Button type="button" variant="outline" size="sm" className="flex-1" onClick={() => openEdit(plan)}>
+                    <Pencil className="mr-1 size-3.5" />
+                    编辑
+                  </Button>
+                  {plan.isActive ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="text-destructive"
+                      onClick={() => void handleDeactivate(plan)}
+                    >
+                      停用
+                    </Button>
+                  ) : null}
+                </div>
+              </article>
+            ))
+          )}
+        </div>
+
+        <DataTableFrame embedded className="hidden md:block">
         <table className="w-full min-w-[880px] text-sm">
           <thead className="bg-muted/40 text-left text-xs text-muted-foreground">
             <tr>
@@ -268,18 +334,32 @@ export default function PlansPage() {
             <div className="grid grid-cols-2 gap-3">
               <div className="grid gap-2">
                 <label htmlFor="plan-price" className="text-sm font-medium">
-                  月价（分）
+                  月价（元）
                 </label>
                 <Input
                   id="plan-price"
                   type="number"
-                  value={form.priceCents ?? ''}
-                  onChange={(e) =>
+                  min={0}
+                  step={0.01}
+                  value={
+                    form.priceCents != null && form.priceCents !== 0
+                      ? (form.priceCents / 100).toFixed(2)
+                      : form.priceCents === 0
+                        ? '0'
+                        : ''
+                  }
+                  onChange={(e) => {
+                    const raw = e.target.value
+                    if (raw === '') {
+                      setForm((f) => ({ ...f, priceCents: 0 }))
+                      return
+                    }
+                    const yuan = Number(raw)
                     setForm((f) => ({
                       ...f,
-                      priceCents: e.target.value === '' ? null : Number(e.target.value),
+                      priceCents: Number.isFinite(yuan) ? Math.round(yuan * 100) : 0,
                     }))
-                  }
+                  }}
                 />
               </div>
               <div className="grid gap-2">

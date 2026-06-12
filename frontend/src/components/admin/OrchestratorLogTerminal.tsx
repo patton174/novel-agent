@@ -148,7 +148,7 @@ export function OrchestratorLogTerminal({
       ) : null}
       <div
         ref={scrollRef}
-        className="h-[min(36vh,320px)] overflow-y-auto px-3 py-2 font-mono text-xs leading-relaxed"
+        className="h-[min(36vh,320px)] max-md:h-[min(28vh,220px)] overflow-y-auto px-3 py-2 font-mono text-xs leading-relaxed"
       >
         {loading && logs.length === 0 ? (
           <InlineBrandLoader label="加载日志" className="text-zinc-500" />

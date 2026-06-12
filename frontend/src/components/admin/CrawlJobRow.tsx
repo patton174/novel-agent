@@ -59,7 +59,7 @@ export const CrawlJobRow = memo(function CrawlJobRow({
         }
       }}
       className={cn(
-        'group flex cursor-pointer items-center gap-3 rounded-xl border px-3 py-2.5 transition-colors hover:bg-muted/40',
+        'group flex cursor-pointer flex-col gap-2 rounded-xl border px-3 py-2.5 transition-colors hover:bg-muted/40 sm:flex-row sm:items-center sm:gap-3',
         isActive ? 'border-primary/25 bg-primary/[0.03]' : 'border-border/70',
       )}
     >
@@ -97,7 +97,7 @@ export const CrawlJobRow = memo(function CrawlJobRow({
         ) : null}
       </div>
       {actions.length > 0 ? (
-        <div className="flex shrink-0 items-center gap-1">
+        <div className="flex w-full shrink-0 items-center justify-end gap-1 sm:w-auto">
           {actions.map((action) => {
             const meta = ACTION_META[action]
             const Icon = meta.icon

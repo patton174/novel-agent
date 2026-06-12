@@ -27,8 +27,9 @@ export function HomeScrollStory() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: '-10% 0px' }}
           transition={{ duration: 0.45 }}
-          className="relative mx-auto max-w-3xl text-center"
+          className="relative mx-auto max-w-6xl"
         >
+          <div className="mx-auto max-w-2xl text-center">
           <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-primary/15 bg-primary/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-primary">
             <Sparkles className="size-3" />
             {t('home.story.introEyebrow')}
@@ -39,6 +40,7 @@ export function HomeScrollStory() {
           <p className="text-sm leading-relaxed text-muted-foreground md:text-base">
             {t('home.story.introSubtitle')}
           </p>
+          </div>
         </motion.div>
       </section>
 

@@ -189,7 +189,7 @@ export const CursorHeroStackWrap = styled.div`
   margin: 2.5rem auto 0;
   height: clamp(420px, 52vw, 560px);
 
-  @media (max-width: 768px) {
+  @media (max-width: 767px) {
     height: auto;
     display: flex;
     flex-direction: column;
@@ -228,7 +228,7 @@ export const CursorHeroLayer = styled.div<{ $layer: 'back' | 'mid' | 'front' }>`
       transform: rotate(-0.5deg);
     `}
 
-  @media (max-width: 768px) {
+  @media (max-width: 767px) {
     position: relative;
     width: 100% !important;
     left: auto !important;
@@ -277,7 +277,7 @@ export const CursorWin = styled.div<{ $layer?: 'back' | 'mid' | 'front' }>`
       transform: rotate(-0.5deg);
     `}
 
-  @media (max-width: 768px) {
+  @media (max-width: 767px) {
     width: 92% !important;
     left: 4% !important;
     right: auto !important;

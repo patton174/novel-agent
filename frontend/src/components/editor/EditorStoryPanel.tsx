@@ -345,7 +345,7 @@ export function EditorStoryPanel({
 
             ) : !hasChapter ? (
 
-              <StoryPlaceholder>在左侧目录选择或新建章节</StoryPlaceholder>
+              <StoryPlaceholder>打开章节目录，选择或新建章节后开始写作</StoryPlaceholder>
 
             ) : showVersionDiff ? (
 

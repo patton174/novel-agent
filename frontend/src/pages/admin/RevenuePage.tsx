@@ -29,7 +29,7 @@ function StatCard({
       <AppShellCardBody className="py-4">
         <p className="text-sm text-muted-foreground">{title}</p>
         <p className="mt-1 text-2xl font-bold tabular-nums text-foreground">{value}</p>
-        {hint ? <p className="mt-2 text-xs text-muted-foreground">{hint}</p> : null}
+        {hint ? <p className="mt-2 line-clamp-2 text-xs text-muted-foreground" title={hint}>{hint}</p> : null}
       </AppShellCardBody>
     </AppShellCard>
   )
@@ -39,6 +39,7 @@ export default function RevenuePage() {
   useMarkRouteSeen()
   const [overview, setOverview] = useState<PlatformUsageOverview | null>(null)
   const [trends, setTrends] = useState<PlatformUsageTrendPoint[] | null>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     let cancelled = false
@@ -54,10 +55,31 @@ export default function RevenuePage() {
         setTrends([])
         appToast.error(err instanceof Error ? err.message : '加载收入数据失败')
       })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
     return () => {
       cancelled = true
     }
   }, [])
+
+  if (loading) {
+    return (
+      <AppPageStack>
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => (
+            <AppShellCard key={i}>
+              <AppShellCardBody className="py-4">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="mt-3 h-8 w-32" />
+              </AppShellCardBody>
+            </AppShellCard>
+          ))}
+        </div>
+        <Skeleton className="h-64 w-full rounded-xl" />
+      </AppPageStack>
+    )
+  }
 
   if (!overview || trends === null) {
     return <ContentPending label="加载收入与成本…" />

@@ -125,18 +125,19 @@ export default function RevenueCharts({ trends, modelBreakdown }: RevenueChartsP
                     cx="50%"
                     cy="50%"
                     outerRadius={88}
-                    label={({ name }) => String(name)}
+                    label={false}
                   >
                     {pieData.map((_, i) => (
                       <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
                     ))}
                   </Pie>
                   <Tooltip
-                    formatter={(value, _name, item) => {
+                    labelFormatter={(label) => String(label)}
+                    formatter={(value, name, item) => {
                       const payload = item?.payload as { tokens?: number } | undefined
                       return [
                         `${formatCostMicros(Number(value))} · ${(payload?.tokens ?? 0).toLocaleString('zh-CN')} tok`,
-                        '成本',
+                        String(name),
                       ]
                     }}
                   />

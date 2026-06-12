@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Activity, BarChart3, CreditCard, Loader2, Receipt, X } from 'lucide-react'
+import { Activity, BarChart3, CreditCard, Receipt, X } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
 import {
   fetchUsageCurrent,
@@ -66,9 +66,10 @@ export default function BillingPage() {
         />
         <AppShellCardBody className="flex flex-col gap-5">
           {loading ? (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="size-4 animate-spin" />
-              加载用量…
+            <div className="space-y-3">
+              <Skeleton className="h-4 w-full rounded" />
+              <Skeleton className="h-2 w-full rounded-full" />
+              <Skeleton className="h-12 w-full rounded-xl" />
             </div>
           ) : usage ? (
             <>
@@ -120,7 +121,11 @@ export default function BillingPage() {
         <AppShellCardHeader title="账单概览" description="当前计费周期预估费用" />
         <AppShellCardBody className="flex flex-col gap-5">
           {loading ? (
-            <Skeleton className="h-10 w-32" />
+            <div className="space-y-3">
+              <Skeleton className="h-10 w-32" />
+              <Skeleton className="h-16 w-full rounded-lg" />
+              <Skeleton className="h-10 w-full rounded-xl" />
+            </div>
           ) : usage ? (
             <div className="flex items-end justify-between">
               <div>
@@ -164,50 +169,56 @@ export default function BillingPage() {
         </AppShellCardBody>
       </AppShellCard>
 
-      {events.length > 0 || runFilter ? (
-        <AppShellCard>
-          <AppShellCardHeader
-            title={runFilter ? 'Run 用量明细' : '最近用量明细'}
-            description={
-              runFilter
-                ? `runId: ${runFilter}`
-                : '点击 runId 可筛选该次对话的全部 LLM 调用'
-            }
-            action={
-              runFilter ? (
-                <Button type="button" variant="ghost" size="sm" onClick={() => setSearchParams({})}>
-                  <X className="mr-1 size-3.5" />
-                  清除筛选
-                </Button>
-              ) : undefined
-            }
-          />
-          <AppShellCardBody className="px-0 py-0">
-            {events.length === 0 ? (
-              <p className="px-6 py-4 text-sm text-muted-foreground">该 run 暂无用量记录</p>
-            ) : (
-              <DataTableFrame embedded>
-                <table className="w-full min-w-[640px] text-sm">
-                  <thead className="bg-muted/40 text-left text-xs text-muted-foreground">
-                    <tr>
-                      <th className="px-4 py-3 font-medium">类型</th>
-                      <th className="px-4 py-3 font-medium">Tokens</th>
-                      <th className="px-4 py-3 font-medium">模型</th>
-                      <th className="px-4 py-3 font-medium">时间</th>
-                      <th className="px-4 py-3 font-medium">关联</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border">
-                    {events.map((ev) => (
-                      <UsageEventRow key={ev.id} ev={ev} runFilter={runFilter} />
-                    ))}
-                  </tbody>
-                </table>
-              </DataTableFrame>
-            )}
-          </AppShellCardBody>
-        </AppShellCard>
-      ) : null}
+      <AppShellCard>
+        <AppShellCardHeader
+          title={runFilter ? 'Run 用量明细' : '最近用量明细'}
+          description={
+            runFilter
+              ? `runId: ${runFilter}`
+              : '点击 runId 可筛选该次对话的全部 LLM 调用'
+          }
+          action={
+            runFilter ? (
+              <Button type="button" variant="ghost" size="sm" onClick={() => setSearchParams({})}>
+                <X className="mr-1 size-3.5" />
+                清除筛选
+              </Button>
+            ) : undefined
+          }
+        />
+        <AppShellCardBody className="px-0 py-0">
+          {loading ? (
+            <div className="space-y-2 px-6 py-4">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+          ) : events.length === 0 ? (
+            <p className="px-6 py-8 text-center text-sm text-muted-foreground">
+              {runFilter ? '该 run 暂无用量记录' : '暂无用量明细，使用 Agent 后将在此展示最近调用'}
+            </p>
+          ) : (
+            <DataTableFrame embedded>
+              <table className="w-full min-w-[640px] text-sm">
+                <thead className="bg-muted/40 text-left text-xs text-muted-foreground">
+                  <tr>
+                    <th className="px-4 py-3 font-medium">类型</th>
+                    <th className="px-4 py-3 font-medium">Tokens</th>
+                    <th className="px-4 py-3 font-medium">模型</th>
+                    <th className="px-4 py-3 font-medium">时间</th>
+                    <th className="px-4 py-3 font-medium">关联</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {events.map((ev) => (
+                    <UsageEventRow key={ev.id} ev={ev} runFilter={runFilter} />
+                  ))}
+                </tbody>
+              </table>
+            </DataTableFrame>
+          )}
+        </AppShellCardBody>
+      </AppShellCard>
     </AppPageStack>
   )
 }

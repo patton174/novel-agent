@@ -10,6 +10,12 @@ function useIsHome() {
   return pathname === '/'
 }
 
+const HOME_ANCHORS = [
+  { id: 'feasibility', labelKey: 'nav.feasibility' as const },
+  { id: 'demo-story', labelKey: 'nav.demo' as const },
+  { id: 'timeline', labelKey: 'nav.timeline' as const },
+] as const
+
 export function MarketingNav() {
   const { t } = useTranslation('marketing')
   const location = useLocation()
@@ -33,8 +39,6 @@ export function MarketingNav() {
       location.pathname === path ? 'text-foreground font-semibold' : 'text-muted-foreground'
     }`
 
-  const anchorClass = 'text-muted-foreground transition-colors hover:text-foreground'
-
   const scrollTo = (id: string) => {
     setOpen(false)
     if (isHome) {
@@ -43,6 +47,22 @@ export function MarketingNav() {
   }
 
   const navGlass = scrolled || !isHome
+
+  const anchorLinks = (
+    <div className="flex items-center gap-5 text-sm font-medium">
+      {HOME_ANCHORS.map(({ id, labelKey }) =>
+        isHome ? (
+          <button key={id} type="button" onClick={() => scrollTo(id)} className="text-muted-foreground transition-colors hover:text-foreground">
+            {t(labelKey)}
+          </button>
+        ) : (
+          <Link key={id} to={`/#${id}`} className="text-muted-foreground transition-colors hover:text-foreground">
+            {t(labelKey)}
+          </Link>
+        ),
+      )}
+    </div>
+  )
 
   return (
     <header
@@ -63,16 +83,7 @@ export function MarketingNav() {
         </Link>
 
         <div className="hidden items-center gap-6 md:flex">
-          {isHome ? (
-            <div className="flex items-center gap-6 text-sm font-medium">
-              <button type="button" onClick={() => scrollTo('feasibility')} className={anchorClass}>
-                {t('nav.feasibility')}
-              </button>
-              <button type="button" onClick={() => scrollTo('demo-story')} className={anchorClass}>
-                {t('nav.demo')}
-              </button>
-            </div>
-          ) : null}
+          {anchorLinks}
           <div className="flex items-center gap-7 text-sm font-medium">
             <Link to="/guide" className={linkClass('/guide')}>
               {t('nav.guide')}
@@ -104,7 +115,7 @@ export function MarketingNav() {
           type="button"
           className="inline-flex size-10 items-center justify-center rounded-lg border border-border/80 bg-white/80 text-foreground backdrop-blur-sm md:hidden"
           aria-expanded={open}
-          aria-label={open ? '关闭菜单' : '打开菜单'}
+          aria-label={open ? t('nav.close') : t('nav.menu')}
           onClick={() => setOpen((v) => !v)}
         >
           {open ? <X className="size-5" /> : <Menu className="size-5" />}
@@ -114,16 +125,26 @@ export function MarketingNav() {
       {open ? (
         <div className="border-t border-border/60 bg-background/95 px-6 py-4 backdrop-blur-xl md:hidden">
           <div className="flex flex-col gap-1 text-sm font-medium">
-            {isHome ? (
-              <>
-                <button type="button" className="rounded-lg px-3 py-2.5 text-left hover:bg-surface-hover" onClick={() => scrollTo('feasibility')}>
-                  {t('nav.feasibility')}
+            {HOME_ANCHORS.map(({ id, labelKey }) =>
+              isHome ? (
+                <button
+                  key={id}
+                  type="button"
+                  className="rounded-lg px-3 py-2.5 text-left hover:bg-surface-hover"
+                  onClick={() => scrollTo(id)}
+                >
+                  {t(labelKey)}
                 </button>
-                <button type="button" className="rounded-lg px-3 py-2.5 text-left hover:bg-surface-hover" onClick={() => scrollTo('demo-story')}>
-                  {t('nav.demo')}
-                </button>
-              </>
-            ) : null}
+              ) : (
+                <Link
+                  key={id}
+                  to={`/#${id}`}
+                  className="rounded-lg px-3 py-2.5 hover:bg-surface-hover"
+                >
+                  {t(labelKey)}
+                </Link>
+              ),
+            )}
             <Link to="/guide" className={`rounded-lg px-3 py-2.5 hover:bg-surface-hover ${linkClass('/guide')}`}>
               {t('nav.guide')}
             </Link>

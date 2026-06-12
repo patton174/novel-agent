@@ -188,6 +188,16 @@ export function useEditorPage() {
     setVersionPreview(null)
   }, [activeChapterId])
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    if (!window.matchMedia('(max-width: 767px)').matches) return
+    if (activeCenterTab !== 'story') return
+    if (!activeNovelId) return
+    if (chapters.length === 0 || !activeChapterId) {
+      setStoryOutlineCollapsed(false)
+    }
+  }, [activeCenterTab, activeNovelId, activeChapterId, chapters.length])
+
   const handleHostModeChange = useCallback((enabled: boolean) => {
     setHostModeEnabled(enabled)
     writeHostModePreference(enabled)
