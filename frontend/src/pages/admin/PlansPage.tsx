@@ -33,6 +33,7 @@ import { useMarkRouteSeen } from '@/hooks/useMarkRouteSeen'
 import { appToast } from '@/stores/appToastStore'
 import { confirmAction } from '@/stores/confirmDialogStore'
 import { cn } from '@/lib/utils'
+import { APP_MODAL_FORM } from '@/lib/appModalClasses'
 
 const emptyForm = (): AdminPlanUpsertPayload => ({
   code: '',
@@ -314,7 +315,7 @@ export default function PlansPage() {
       </AppShellCard>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+        <DialogContent className={cn('max-h-[90vh] overflow-y-auto sm:max-w-lg', APP_MODAL_FORM)}>
           <DialogHeader>
             <DialogTitle>{editing ? '编辑套餐' : '新建套餐'}</DialogTitle>
             <DialogDescription>调整价格、配额与功能项，保存后立即对用户可见。</DialogDescription>

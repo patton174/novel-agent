@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { BookOpen, ExternalLink, Loader2, Pencil, Trash2 } from 'lucide-react'
-import { InlineBrandLoader } from '@/components/loading/BrandLoader'
+import { PanelLoadingSkeleton } from '@/components/loading/PageSkeletons'
 import {
   deleteCatalogNovel,
   fetchCatalogProgress,
@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
+import { APP_MODAL_READER } from '@/lib/appModalClasses'
 import { confirmAction } from '@/stores/confirmDialogStore'
 import { appToast } from '@/stores/appToastStore'
 
@@ -115,7 +116,7 @@ export function CatalogOverviewDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg gap-0 overflow-hidden p-0">
+      <DialogContent className={cn('max-w-lg gap-0 overflow-hidden p-0', APP_MODAL_READER)}>
         <div className="flex gap-4 border-b border-border bg-muted/30 p-5">
           {coverUrl || novel.coverUrl ? (
             <img
@@ -138,7 +139,7 @@ export function CatalogOverviewDialog({
 
         <div className="space-y-4 px-5 py-4">
           {loading ? (
-            <InlineBrandLoader label="加载进度" className="text-sm text-muted-foreground" />
+            <PanelLoadingSkeleton rows={3} />
           ) : progress ? (
             <div
               className={cn(

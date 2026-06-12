@@ -1,8 +1,13 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import styled from 'styled-components'
 import { editorTheme } from '../../styles/editorTheme'
-import { editorModalSurface } from '../../styles/editorModal'
 import { EditorButton } from './EditorButton'
+import {
+  EditorModalOverlay,
+  EditorModalPanel,
+  EditorModalPanelInset,
+  useEditorModalEscape,
+} from '../editor/EditorModalShell'
 
 export type AppDialogVariant = 'confirm' | 'prompt'
 
@@ -37,15 +42,12 @@ export function AppDialog({
   const inputRef = useRef<HTMLInputElement>(null)
   const [value, setValue] = useState(defaultValue)
 
+  useEditorModalEscape(open, onClose)
+
   useEffect(() => {
     if (!open) return
     setValue(defaultValue)
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [open, defaultValue, onClose])
+  }, [open, defaultValue])
 
   useEffect(() => {
     if (open && variant === 'prompt') {
@@ -67,80 +69,45 @@ export function AppDialog({
   }
 
   return (
-    <Overlay onClick={onClose} role="presentation">
-      <Dialog
+    <EditorModalOverlay onClick={onClose} role="presentation">
+      <EditorModalPanel
+        $size="confirm"
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
         onClick={(e) => e.stopPropagation()}
       >
-        <Title id={titleId}>{title}</Title>
-        {description ? <Description>{description}</Description> : null}
-        <Form onSubmit={handleSubmit}>
-          {variant === 'prompt' ? (
-            <TextInput
-              ref={inputRef}
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-              placeholder={placeholder}
-              aria-label={title}
-            />
-          ) : null}
-          <Actions>
-            <EditorButton type="button" variant="ghost" onClick={onClose}>
-              {cancelLabel}
-            </EditorButton>
-            <EditorButton
-              type="submit"
-              variant={danger ? 'danger' : 'primary'}
-              disabled={variant === 'prompt' && !value.trim()}
-            >
-              {confirmLabel}
-            </EditorButton>
-          </Actions>
-        </Form>
-      </Dialog>
-    </Overlay>
+        <EditorModalPanelInset>
+          <Title id={titleId}>{title}</Title>
+          {description ? <Description>{description}</Description> : null}
+          <Form onSubmit={handleSubmit}>
+            {variant === 'prompt' ? (
+              <TextInput
+                ref={inputRef}
+                value={value}
+                onChange={(e) => setValue(e.target.value)}
+                placeholder={placeholder}
+                aria-label={title}
+              />
+            ) : null}
+            <Actions>
+              <EditorButton type="button" variant="ghost" onClick={onClose}>
+                {cancelLabel}
+              </EditorButton>
+              <EditorButton
+                type="submit"
+                variant={danger ? 'danger' : 'primary'}
+                disabled={variant === 'prompt' && !value.trim()}
+              >
+                {confirmLabel}
+              </EditorButton>
+            </Actions>
+          </Form>
+        </EditorModalPanelInset>
+      </EditorModalPanel>
+    </EditorModalOverlay>
   )
 }
-
-const Overlay = styled.div`
-  position: fixed;
-  inset: 0;
-  z-index: 1200;
-  background: ${editorModalSurface.overlay};
-  backdrop-filter: ${editorModalSurface.overlayBlur};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1.25rem;
-  animation: fadeIn 0.18s ease;
-
-  @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
-`
-
-const Dialog = styled.div`
-  width: min(420px, 100%);
-  padding: 1.5rem 1.75rem;
-  border-radius: 18px;
-  background: ${editorModalSurface.dialogBg};
-  box-shadow: ${editorModalSurface.dialogShadow};
-  animation: slideUp 0.22s ease;
-
-  @keyframes slideUp {
-    from {
-      opacity: 0;
-      transform: translateY(12px) scale(0.98);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0) scale(1);
-    }
-  }
-`
 
 const Title = styled.h2`
   margin: 0 0 0.5rem;
@@ -182,4 +149,13 @@ const Actions = styled.div`
   display: flex;
   justify-content: flex-end;
   gap: 0.75rem;
+
+  @media (max-width: 767px) {
+    flex-direction: column-reverse;
+
+    button {
+      width: 100%;
+      justify-content: center;
+    }
+  }
 `

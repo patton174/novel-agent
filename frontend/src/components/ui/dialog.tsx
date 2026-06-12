@@ -3,6 +3,7 @@ import { Dialog as DialogPrimitive } from "radix-ui"
 import { XIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { APP_MODAL_MOBILE_FULL } from "@/lib/appModalClasses"
 import { Button } from "@/components/ui/button"
 
 function Dialog({
@@ -49,9 +50,12 @@ function DialogContent({
   className,
   children,
   showCloseButton = true,
+  mobileFullscreen = true,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean
+  /** @default true — full-screen sheet below md (767px), aligned with editor modals */
+  mobileFullscreen?: boolean
 }) {
   return (
     <DialogPortal>
@@ -60,6 +64,7 @@ function DialogContent({
         data-slot="dialog-content"
         className={cn(
           "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-6 text-popover-foreground shadow-lg ring-1 ring-foreground/10 duration-200 outline-none data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 sm:max-w-lg",
+          mobileFullscreen && APP_MODAL_MOBILE_FULL,
           className
         )}
         {...props}

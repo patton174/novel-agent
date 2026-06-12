@@ -1,5 +1,6 @@
 import { BrandLoader } from '@/components/loading/BrandLoader'
 import { Skeleton } from '@/components/ui/skeleton'
+import { cn } from '@/lib/utils'
 
 function ShellSidebar() {
   return (
@@ -235,6 +236,35 @@ export function AuthPageSkeleton() {
         </div>
       </div>
     </div>
+  )
+}
+
+/** Inline panel / section loading — prefer over InlineBrandLoader in content areas */
+export function PanelLoadingSkeleton({
+  rows = 4,
+  className,
+}: {
+  rows?: number
+  className?: string
+}) {
+  return (
+    <div className={className} role="status" aria-live="polite" aria-label="加载中">
+      <div className="space-y-2">
+        {Array.from({ length: rows }).map((_, i) => (
+          <Skeleton key={i} className="h-9 w-full rounded-lg" />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+export function InlineTitleSkeleton({ className }: { className?: string }) {
+  return (
+    <Skeleton
+      className={cn('h-7 w-36 rounded-md', className)}
+      role="status"
+      aria-label="加载中"
+    />
   )
 }
 

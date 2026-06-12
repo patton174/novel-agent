@@ -36,6 +36,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { Switch } from '@/components/ui/switch'
+import { APP_MODAL_FORM } from '@/lib/appModalClasses'
 import { cn } from '@/lib/utils'
 import { appToast } from '@/stores/appToastStore'
 import type { UserRole } from '@/stores/userStore'
@@ -165,7 +166,7 @@ export function UserEditDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+        <DialogContent className={cn('max-h-[90vh] overflow-y-auto sm:max-w-lg', APP_MODAL_FORM)}>
           <DialogHeader>
             <DialogTitle>编辑用户</DialogTitle>
             <DialogDescription>

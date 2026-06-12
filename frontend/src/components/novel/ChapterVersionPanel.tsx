@@ -5,7 +5,7 @@ import { EditorButton } from '../ui/EditorButton'
 import { api } from '../../utils/api'
 import type { ChapterVersion } from '../../types/novel'
 import { confirmAction } from '../../stores/confirmDialogStore'
-import { InlineBrandLoader } from '../loading/BrandLoader'
+import { PanelLoadingSkeleton } from '@/components/loading/PageSkeletons'
 
 interface ChapterVersionPanelProps {
   chapterId: string | null
@@ -86,9 +86,7 @@ export const ChapterVersionPanel: React.FC<ChapterVersionPanelProps> = ({
           {!chapterId ? (
             <Hint>选择章节后可查看版本</Hint>
           ) : loading ? (
-            <Hint>
-              <InlineBrandLoader label="加载版本历史" />
-            </Hint>
+            <PanelLoadingSkeleton rows={3} />
           ) : versions.length === 0 ? (
             <Hint>暂无历史版本</Hint>
           ) : (

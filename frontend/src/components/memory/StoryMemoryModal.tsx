@@ -1,10 +1,15 @@
-import { useEffect } from 'react'
-import styled, { keyframes } from 'styled-components'
+import styled from 'styled-components'
 import { AgentMarkdown } from '../agent/AgentMarkdown'
 import { EditorButton } from '../ui/EditorButton'
 import { MotionSegmentRail } from '../motion/MotionSegmentRail'
 import { MotionPane } from '../motion/MotionPane'
-import { editorModalSurface } from '../../styles/editorModal'
+import {
+  EditorModalBody,
+  EditorModalHeader,
+  EditorModalOverlay,
+  EditorModalPanel,
+  useEditorModalEscape,
+} from '../editor/EditorModalShell'
 import { palette } from '../../styles/theme'
 import type {
   MemoryTabId,
@@ -115,28 +120,22 @@ export function StoryMemoryModal({
   onTabChange,
   updatedAt,
 }: StoryMemoryModalProps) {
-  useEffect(() => {
-    if (!open) return
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [open, onClose])
+  useEditorModalEscape(open, onClose)
 
   if (!open) return null
 
   const activeMeta = TABS.find((t) => t.id === activeTab) ?? TABS[0]
 
   return (
-    <Overlay onClick={onClose} role="presentation">
-      <Dialog
+    <EditorModalOverlay onClick={onClose} role="presentation">
+      <EditorModalPanel
+        $size="memory"
         role="dialog"
         aria-modal="true"
         aria-labelledby="memory-modal-title"
         onClick={(e) => e.stopPropagation()}
       >
-        <DialogHeader>
+        <EditorModalHeader>
           <HeaderText>
             <Title id="memory-modal-title">记忆管理</Title>
             <Subtitle>
@@ -146,9 +145,9 @@ export function StoryMemoryModal({
           <EditorButton variant="close" type="button" onClick={onClose} aria-label="关闭">
             ×
           </EditorButton>
-        </DialogHeader>
+        </EditorModalHeader>
 
-        <DialogBody>
+        <MemoryBody>
           <TabRail>
             <MotionSegmentRail
               items={TABS.map((tab) => ({
@@ -207,61 +206,15 @@ export function StoryMemoryModal({
               </PaneScroll>
             </MotionPane>
           </ContentPane>
-        </DialogBody>
-      </Dialog>
-    </Overlay>
+        </MemoryBody>
+      </EditorModalPanel>
+    </EditorModalOverlay>
   )
 }
 
-const fadeIn = keyframes`
-  from { opacity: 0; }
-  to { opacity: 1; }
-`
-
-const slideUp = keyframes`
-  from { opacity: 0; transform: translateY(12px) scale(0.98); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
-`
-
-const Overlay = styled.div`
-  position: fixed;
-  inset: 0;
-  z-index: 1200;
-  background: ${editorModalSurface.overlay};
-  backdrop-filter: ${editorModalSurface.overlayBlur};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1.25rem;
-  animation: ${fadeIn} 0.18s ease both;
-`
-
-const Dialog = styled.div`
-  width: min(920px, 100%);
-  min-width: min(680px, 100%);
-  height: min(78vh, 700px);
-  min-height: 520px;
-  max-height: min(82vh, 760px);
-  display: flex;
-  flex-direction: column;
-  border-radius: 18px;
-  background: ${editorModalSurface.dialogBg};
-  box-shadow: ${editorModalSurface.dialogShadow};
-  overflow: hidden;
-  animation: ${slideUp} 0.22s ease both;
-`
-
-const DialogHeader = styled.div`
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 1.1rem 1.25rem 0.85rem;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-`
-
 const HeaderText = styled.div`
   min-width: 0;
+  flex: 1;
 `
 
 const Title = styled.h2`
@@ -277,11 +230,10 @@ const Subtitle = styled.p`
   color: ${palette.textSubtle};
 `
 
-const DialogBody = styled.div`
+const MemoryBody = styled(EditorModalBody)`
   display: grid;
   grid-template-columns: 168px 1fr;
   min-height: 0;
-  flex: 1;
 
   @media (max-width: 720px) {
     grid-template-columns: 1fr;

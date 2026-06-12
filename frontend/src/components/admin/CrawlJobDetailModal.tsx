@@ -15,6 +15,7 @@ import {
   truncateError,
 } from '@/pages/admin/crawlJobUi'
 import { parseCrawlJobGoal } from '@/api/crawlAdminApi'
+import { APP_MODAL_READER } from '@/lib/appModalClasses'
 import { cn } from '@/lib/utils'
 
 interface CrawlJobDetailModalProps {
@@ -34,7 +35,7 @@ export function CrawlJobDetailModal({ job, open, onOpenChange }: CrawlJobDetailM
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[90vh] max-w-3xl flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl">
+      <DialogContent className={cn('flex max-h-[90vh] max-w-3xl flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl', APP_MODAL_READER)}>
         <DialogHeader className="space-y-3 border-b border-border px-6 py-4 text-left">
           <div className="flex flex-wrap items-center gap-2 pr-8">
             <DialogTitle className="text-lg">{job.title || '解析中…'}</DialogTitle>

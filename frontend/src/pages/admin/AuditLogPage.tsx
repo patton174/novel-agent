@@ -19,6 +19,8 @@ import {
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useMarkRouteSeen } from '@/hooks/useMarkRouteSeen'
+import { APP_MODAL_FORM } from '@/lib/appModalClasses'
+import { cn } from '@/lib/utils'
 import { appToast } from '@/stores/appToastStore'
 
 const PAGE_SIZE = 20
@@ -228,7 +230,7 @@ export default function AuditLogPage() {
       />
 
       <Dialog open={detailLog != null} onOpenChange={(open) => !open && setDetailLog(null)}>
-        <DialogContent className="max-h-[85vh] max-w-lg overflow-y-auto sm:max-w-xl">
+        <DialogContent className={cn('max-h-[85vh] max-w-lg overflow-y-auto sm:max-w-xl', APP_MODAL_FORM)}>
           <DialogHeader>
             <DialogTitle className="font-mono text-sm">{detailLog?.action}</DialogTitle>
           </DialogHeader>

@@ -18,6 +18,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import { APP_MODAL_READER } from '@/lib/appModalClasses'
 import { cn } from '@/lib/utils'
 import { confirmAction } from '@/stores/confirmDialogStore'
 import { appToast } from '@/stores/appToastStore'
@@ -159,7 +160,7 @@ export function CatalogReaderModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[90vh] max-w-5xl flex-col gap-0 overflow-hidden p-0 sm:max-w-5xl" showCloseButton={false}>
+      <DialogContent className={cn('flex max-h-[90vh] max-w-5xl flex-col gap-0 overflow-hidden p-0 sm:max-w-5xl', APP_MODAL_READER)} showCloseButton={false}>
         <div className="flex shrink-0 items-center justify-between gap-4 border-b border-border px-5 py-3">
           <div className="min-w-0 pr-2">
             <DialogTitle className="truncate text-base font-semibold">{novel.title}</DialogTitle>

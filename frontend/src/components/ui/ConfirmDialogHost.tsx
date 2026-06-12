@@ -9,6 +9,8 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { APP_MODAL_FORM } from '@/lib/appModalClasses'
+import { cn } from '@/lib/utils'
 import { closeAppDialog, useAppDialogStore } from '@/stores/confirmDialogStore'
 
 export function ConfirmDialogHost() {
@@ -49,7 +51,7 @@ export function ConfirmDialogHost() {
         if (!next) closeAppDialog(kind === 'prompt' ? null : false)
       }}
     >
-      <DialogContent className="max-w-md gap-0 p-0 sm:max-w-md">
+      <DialogContent className={cn('max-w-md gap-0 p-0 sm:max-w-md', APP_MODAL_FORM)}>
         <DialogHeader className="space-y-2 px-6 pt-6 text-left">
           <DialogTitle>{title}</DialogTitle>
           {description ? <DialogDescription>{description}</DialogDescription> : null}

@@ -5,7 +5,7 @@ import {
   type OrchestratorDecisionEntry,
 } from '@/api/orchestratorAdminApi'
 import { cn } from '@/lib/utils'
-import { InlineBrandLoader } from '@/components/loading/BrandLoader'
+import { Skeleton } from '@/components/ui/skeleton'
 
 const MAX_LOG_LINES = 250
 
@@ -151,7 +151,11 @@ export function OrchestratorLogTerminal({
         className="h-[min(36vh,320px)] max-md:h-[min(28vh,220px)] overflow-y-auto px-3 py-2 font-mono text-xs leading-relaxed"
       >
         {loading && logs.length === 0 ? (
-          <InlineBrandLoader label="加载日志" className="text-zinc-500" />
+          <div className="space-y-2 py-1" role="status" aria-label="加载日志">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={i} className="h-4 w-full rounded-sm bg-zinc-800/80" />
+            ))}
+          </div>
         ) : logs.length === 0 ? (
           <p className="text-zinc-500">暂无决策日志，设定目标或唤醒后将显示主编排决策</p>
         ) : (

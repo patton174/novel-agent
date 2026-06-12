@@ -11,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { APP_MODAL_READER } from '@/lib/appModalClasses'
 import { cn } from '@/lib/utils'
 import { appToast } from '@/stores/appToastStore'
 
@@ -89,7 +90,7 @@ export function CoverGenerateDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-lg">
+      <DialogContent className={cn('gap-0 overflow-hidden p-0 sm:max-w-lg', APP_MODAL_READER)}>
         <div className="h-0.5 bg-gradient-to-r from-primary/0 via-primary/70 to-violet-500/70" />
         <div className="space-y-5 p-6">
           <DialogHeader className="space-y-2 text-left">

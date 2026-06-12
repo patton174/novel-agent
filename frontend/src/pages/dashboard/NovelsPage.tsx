@@ -8,7 +8,7 @@ import { CoverImageGeneratingOverlay } from '@/components/dashboard/CoverImageGe
 import { Button } from '@/components/ui/button'
 import { APP_BTN_FULL_MD, APP_BTN_MD, APP_BTN_OUTLINE_FULL } from '@/lib/appButtonTokens'
 import { Skeleton } from '@/components/ui/skeleton'
-import { InlineBrandLoader } from '@/components/loading/BrandLoader'
+import { InlineTitleSkeleton } from '@/components/loading/PageSkeletons'
 import { useMarkRouteSeen } from '@/hooks/useMarkRouteSeen'
 import { fetchNovels, generateNovelCover, type DashboardNovel } from '@/api/dashboardApi'
 import { dashboardCache } from '@/stores/dashboardCacheStore'
@@ -97,7 +97,7 @@ export default function NovelsPage() {
         eyebrow="作品库"
         title={
           loading ? (
-            <InlineBrandLoader label="正在加载作品" className="text-base" />
+            <InlineTitleSkeleton className="h-8 w-40" />
           ) : (
             `共 ${novels!.length} 部作品`
           )

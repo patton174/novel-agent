@@ -2,7 +2,12 @@ import React, { useState } from 'react'
 import styled from 'styled-components'
 import type { CreateNovelPayload } from '../../types/novel'
 import { EditorButton } from '../ui/EditorButton'
-import { editorModalSurface } from '../../styles/editorModal'
+import {
+  EditorModalOverlay,
+  EditorModalPanel,
+  EditorModalPanelInset,
+  useEditorModalEscape,
+} from '../editor/EditorModalShell'
 import { palette, shadow, transition } from '../../styles/theme'
 
 interface CreateNovelModalProps {
@@ -48,6 +53,8 @@ export const CreateNovelModal: React.FC<CreateNovelModalProps> = ({
   const [submitting, setSubmitting] = useState(false)
   const [titleError, setTitleError] = useState<string | undefined>()
 
+  useEditorModalEscape(open, onClose)
+
   if (!open) return null
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -78,15 +85,17 @@ export const CreateNovelModal: React.FC<CreateNovelModalProps> = ({
   }
 
   return (
-    <Overlay onClick={onClose} role="presentation">
-      <Dialog
+    <EditorModalOverlay onClick={onClose} role="presentation">
+      <EditorModalPanel
+        $size="form"
         role="dialog"
         aria-modal="true"
         aria-labelledby="create-novel-title"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 id="create-novel-title">创建小说</h2>
-        <Form onSubmit={(e) => void handleSubmit(e)}>
+        <EditorModalPanelInset>
+          <ModalTitle id="create-novel-title">创建小说</ModalTitle>
+          <Form onSubmit={(e) => void handleSubmit(e)}>
           <Field>
             <span className="label">小说名称 *</span>
             <input
@@ -137,50 +146,16 @@ export const CreateNovelModal: React.FC<CreateNovelModalProps> = ({
             </EditorButton>
           </Actions>
         </Form>
-      </Dialog>
-    </Overlay>
+        </EditorModalPanelInset>
+      </EditorModalPanel>
+    </EditorModalOverlay>
   )
 }
 
-const Overlay = styled.div`
-  position: fixed;
-  inset: 0;
-  z-index: 1200;
-  background: ${editorModalSurface.overlay};
-  backdrop-filter: ${editorModalSurface.overlayBlur};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1.25rem;
-
-  @media (max-width: 767px) {
-    padding: 0;
-    align-items: stretch;
-  }
-`
-
-const Dialog = styled.div`
-  background: ${editorModalSurface.dialogBg};
-  border-radius: 16px;
-  padding: 1.75rem;
-  width: min(480px, 100%);
-  max-height: min(90vh, 640px);
-  overflow-y: auto;
-  box-shadow: ${editorModalSurface.dialogShadow};
-
-  @media (max-width: 767px) {
-    width: 100%;
-    max-height: none;
-    height: 100%;
-    border-radius: 0;
-    padding: 1.25rem 1rem 1.5rem;
-  }
-
-  h2 {
-    margin: 0 0 1.25rem;
-    font-size: 1.2rem;
-    color: ${palette.text};
-  }
+const ModalTitle = styled.h2`
+  margin: 0 0 1.25rem;
+  font-size: 1.2rem;
+  color: ${palette.text};
 `
 
 const Form = styled.form`
