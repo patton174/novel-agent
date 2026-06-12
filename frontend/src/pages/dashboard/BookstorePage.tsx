@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AppEmptyState, AppPageIntro, AppPageStack } from '@/components/layout/AppPageStack'
-import { BookMarked, BookOpen, Loader2, Plus } from 'lucide-react'
+import { BookMarked, BookOpen, Loader2, Plus, RefreshCw } from 'lucide-react'
 import {
   addCatalogToLibrary,
   fetchCatalogNovels,
@@ -34,14 +34,17 @@ function CatalogCover({ novel }: { novel: CatalogNovel }) {
 export default function BookstorePage() {
   useMarkRouteSeen()
   const [novels, setNovels] = useState<CatalogNovel[] | null>(null)
+  const [loadError, setLoadError] = useState(false)
   const [addingId, setAddingId] = useState<string | null>(null)
 
   const load = useCallback(async () => {
+    setLoadError(false)
     try {
       const page = await fetchCatalogNovels(1, 50)
       setNovels(page.list)
     } catch (err) {
       setNovels([])
+      setLoadError(true)
       appToast.error(err instanceof Error ? err.message : '加载书库失败')
     }
   }, [])
@@ -70,10 +73,27 @@ export default function BookstorePage() {
         eyebrow="公共书库"
         title="浏览 AI 爬取的作品，一键加入我的小说"
         icon={BookMarked}
+        action={
+          <Button asChild variant="outline" className="rounded-xl">
+            <Link to="/dashboard/novels">我的作品库</Link>
+          </Button>
+        }
       />
 
       {loading ? (
         <ContentPending label="正在加载书库" />
+      ) : loadError ? (
+        <AppEmptyState
+          icon={BookMarked}
+          title="书库加载失败"
+          description="暂时无法获取公共书库列表，请检查网络后重试。"
+          action={
+            <Button className="rounded-xl" onClick={() => void load()}>
+              <RefreshCw className="mr-2 size-4" />
+              重新加载
+            </Button>
+          }
+        />
       ) : novels.length === 0 ? (
         <AppEmptyState
           icon={BookMarked}
@@ -127,7 +147,7 @@ export default function BookstorePage() {
                   加入我的作品
                 </Button>
                 <Button asChild variant="outline" className="w-full rounded-xl border-border/90">
-                  <Link to="/dashboard/novels">去作品库</Link>
+                  <Link to="/dashboard/novels">查看我的作品</Link>
                 </Button>
               </div>
             </article>

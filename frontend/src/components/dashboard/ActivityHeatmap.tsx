@@ -2,7 +2,6 @@ import { Fragment, useMemo, useState } from 'react'
 import { cn } from '@/lib/utils'
 import type { DashboardActivity, DashboardActivityDay } from '@/api/dashboardApi'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
 
 export type ActivityMode = 'all' | 'writing' | 'agent'
 
@@ -316,8 +315,8 @@ export function ActivityHeatmap({ activity, loading }: ActivityHeatmapProps) {
   const gridColumns = heatmapGridColumns(weekCount)
 
   return (
-    <Card className="py-0 shadow-none">
-      <CardHeader className="border-b px-5 py-4 [.border-b]:pb-4">
+    <div className="py-0">
+      <div className="border-b border-border/60 px-1 py-4">
         <div className="flex items-center justify-between gap-4">
           <div className="min-w-0">
             <p className="text-xs font-medium text-muted-foreground">{activeMode.metricLabel}</p>
@@ -347,9 +346,9 @@ export function ActivityHeatmap({ activity, loading }: ActivityHeatmapProps) {
             ))}
           </div>
         </div>
-      </CardHeader>
+      </div>
 
-      <CardContent className="px-5 py-4">
+      <div className="px-1 py-4">
         {loading ? (
           <Skeleton className="mx-auto h-[95px] w-full max-w-md rounded-lg" />
         ) : weekCount === 0 ? (
@@ -448,7 +447,7 @@ export function ActivityHeatmap({ activity, loading }: ActivityHeatmapProps) {
             <span>多</span>
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }

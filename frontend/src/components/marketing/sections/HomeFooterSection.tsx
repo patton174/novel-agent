@@ -17,13 +17,13 @@ export function HomeFooterSection({ variant = 'full' }: { variant?: FooterVarian
   const accountLinks = [
     { label: t('nav.login'), to: '/login' },
     { label: t('nav.register'), to: '/register' },
-    { label: '创作台', to: '/editor' },
+    { label: t('footer.dashboard'), to: '/dashboard' },
   ] as const
 
   const legalLinks = [
-    { label: '隐私政策', to: '/privacy' },
-    { label: '用户协议', to: '/terms' },
-    { label: '联系我们', to: '/contact' },
+    { label: t('footer.privacy'), to: '/privacy' },
+    { label: t('footer.terms'), to: '/terms' },
+    { label: t('footer.contact'), to: '/contact' },
   ] as const
 
   return (
@@ -64,7 +64,7 @@ export function HomeFooterSection({ variant = 'full' }: { variant?: FooterVarian
         <div className="mx-auto grid max-w-6xl gap-10 md:grid-cols-2 lg:grid-cols-4">
           <div className="space-y-4 lg:col-span-1">
             <Link to="/" className="inline-block text-lg font-bold tracking-tight text-white">
-              Novel<span className="text-indigo-400"> Agent</span>
+              {t('brand')}
             </Link>
             <p className="max-w-xs text-sm leading-relaxed text-slate-400">{t('footer.tagline')}</p>
           </div>

@@ -3,9 +3,9 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { CheckCircle2, LogIn, XCircle } from 'lucide-react'
 import { AuthResultCard } from '@/components/auth/AuthResultCard'
-import { InlineBrandLoader } from '@/components/loading/BrandLoader'
+import { AuthSpinner } from '@/components/auth/AuthSpinner'
 import { confirmEmailVerify, fetchUserInfo } from '@/api/userApi'
-import { Button } from '@/components/ui/button'
+import { NovelAiWordmark } from '@/components/marketing/NovelAiWordmark'
 import { useUserStore } from '@/stores/userStore'
 import { cn } from '@/lib/utils'
 
@@ -21,9 +21,13 @@ const STATE_RING: Record<Exclude<VerifyState, 'loading'>, string> = {
   error: 'bg-destructive/10 text-destructive',
 }
 
+const authCtaClass =
+  'mkt-cta-glow inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-primary text-sm font-medium text-primary-foreground transition-all hover:bg-primary-hover'
+
 export default function VerifyEmailPage() {
   const [searchParams] = useSearchParams()
   const setProfile = useUserStore((s) => s.setProfile)
+  const isLoggedIn = useUserStore((s) => s.profile != null)
   const [state, setState] = useState<VerifyState>('loading')
   const [message, setMessage] = useState('正在验证邮箱…')
 
@@ -67,8 +71,15 @@ export default function VerifyEmailPage() {
 
   return (
     <AuthResultCard>
+      <Link to="/" className="mx-auto mb-4 inline-block transition-opacity hover:opacity-85">
+        <NovelAiWordmark size="sm" animate={false} />
+      </Link>
+
       {state === 'loading' ? (
-        <InlineBrandLoader label="正在验证邮箱" className="mx-auto py-4" size="md" />
+        <div className="flex flex-col items-center gap-2 py-4">
+          <AuthSpinner size="md" />
+          <p className="text-sm text-muted-foreground">正在验证邮箱…</p>
+        </div>
       ) : Icon ? (
         <motion.div
           initial={{ scale: 0.85, opacity: 0 }}
@@ -83,33 +94,42 @@ export default function VerifyEmailPage() {
         </motion.div>
       ) : null}
 
-      <h1 className="mt-5 text-xl font-bold tracking-tight text-foreground">
-        {state === 'loading' ? '验证中' : state === 'success' ? '验证成功' : '验证失败'}
-      </h1>
-
       {state !== 'loading' ? (
-        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{message}</p>
-      ) : (
-        <p className="mt-2 text-sm text-muted-foreground">请稍候，正在确认您的邮箱…</p>
-      )}
+        <>
+          <h1 className="mt-5 text-xl font-bold tracking-tight text-foreground">
+            {state === 'success' ? '验证成功' : '验证失败'}
+          </h1>
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{message}</p>
+        </>
+      ) : null}
 
       {state !== 'loading' ? (
         <div className="mt-6 flex flex-col gap-2">
           {state === 'success' ? (
-            <Button asChild className="h-10 w-full rounded-xl">
-              <Link to="/dashboard">进入创作台</Link>
-            </Button>
+            <Link to="/dashboard" className={authCtaClass}>
+              进入创作台
+            </Link>
           ) : (
             <>
-              <Button asChild className="h-10 w-full rounded-xl">
-                <Link to="/login">
-                  <LogIn className="mr-2 size-4" />
-                  返回登录
+              <Link to="/login" className={authCtaClass}>
+                <LogIn className="size-4" />
+                返回登录
+              </Link>
+              {isLoggedIn ? (
+                <Link
+                  to="/dashboard/settings"
+                  className="inline-flex h-10 w-full items-center justify-center rounded-xl border border-border text-sm font-medium text-foreground hover:bg-muted/50"
+                >
+                  账户设置 · 重发验证邮件
                 </Link>
-              </Button>
-              <Button asChild variant="outline" className="h-10 w-full rounded-xl">
-                <Link to="/dashboard">打开账户设置</Link>
-              </Button>
+              ) : (
+                <Link
+                  to="/register"
+                  className="inline-flex h-10 w-full items-center justify-center rounded-xl border border-border text-sm font-medium text-foreground hover:bg-muted/50"
+                >
+                  重新注册
+                </Link>
+              )}
             </>
           )}
         </div>

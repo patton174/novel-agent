@@ -38,7 +38,7 @@ function TimelineNode({
         className="absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2"
         initial={reduced ? false : { scale: 0.4, opacity: 0.3 }}
         whileInView={{ scale: 1, opacity: 1 }}
-        viewport={{ once: false, amount: 0.6, margin: '0px 0px -15% 0px' }}
+        viewport={{ once: true, amount: 0.6, margin: '0px 0px -15% 0px' }}
         transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
       >
         <div className="size-4 rounded-full border-2 border-primary bg-background shadow-[0_0_0_6px_rgba(79,70,229,0.18)]" />
@@ -53,14 +53,14 @@ function TimelineNode({
         }`}
         initial={reduced ? false : { scaleX: 0 }}
         whileInView={{ scaleX: 1 }}
-        viewport={{ once: false, amount: 0.5, margin: '0px 0px -15% 0px' }}
+        viewport={{ once: true, amount: 0.5, margin: '0px 0px -15% 0px' }}
         transition={{ duration: 0.45, delay: 0.06, ease: [0.22, 1, 0.36, 1] }}
       />
 
       <motion.article
         initial={reduced ? false : { opacity: 0, x: xFrom, filter: 'blur(8px)' }}
         whileInView={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
-        viewport={{ once: false, amount: 0.45, margin: '0px 0px -12% 0px' }}
+        viewport={{ once: true, amount: 0.45, margin: '0px 0px -12% 0px' }}
         transition={{ duration: 0.55, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
         className={`group mkt-card-lift w-full max-w-md rounded-2xl border border-border/60 bg-white/90 p-6 shadow-[0_12px_48px_-16px_rgba(79,70,229,0.18)] backdrop-blur-sm md:w-[calc(50%-2.75rem)] ${
           side === 'left' ? 'md:mr-auto' : 'md:ml-auto'

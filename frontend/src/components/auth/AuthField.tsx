@@ -22,7 +22,7 @@ export function AuthField({
         </label>
         {hint}
       </div>
-      <input id={id} className={cn(authFieldClass, 'h-10', inputClassName)} {...props} />
+      <input id={id} className={cn(authFieldClass, inputClassName)} {...props} />
     </div>
   )
 }

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { fetchUserInfo } from '../api/userApi'
 import { useUserStore, type UserRole } from '../stores/userStore'
@@ -23,10 +23,6 @@ const LoginPage: React.FC = () => {
   const [username, setUsername] = useFormDraft('login_username', '')
   const [password, setPassword] = useState('')
   const [submitting, setSubmitting] = useState(false)
-
-  useEffect(() => {
-    if (sessionHint) appToast.info(sessionHint)
-  }, [sessionHint])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -99,6 +95,11 @@ const LoginPage: React.FC = () => {
         </>
       }
     >
+      {sessionHint ? (
+        <p className="mb-3 rounded-lg border border-amber-200/80 bg-amber-50/90 px-3 py-2 text-xs text-amber-900 dark:border-amber-800/50 dark:bg-amber-950/40 dark:text-amber-100">
+          {sessionHint}
+        </p>
+      ) : null}
       <form onSubmit={handleSubmit} className="space-y-3">
         <AuthField
           id="login-username"
@@ -120,8 +121,11 @@ const LoginPage: React.FC = () => {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           hint={
-            <Link to="/contact" className="text-[10px] text-primary hover:underline">
-              忘记密码？
+            <Link
+              to="/contact"
+              className="inline-flex min-h-9 items-center py-1 text-xs text-primary hover:underline"
+            >
+              忘记密码？联系客服
             </Link>
           }
         />

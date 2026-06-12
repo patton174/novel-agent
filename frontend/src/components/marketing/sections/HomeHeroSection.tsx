@@ -115,7 +115,7 @@ export function HomeHeroSection() {
   return (
     <section
       id="hero"
-      className="relative flex min-h-[100vh] flex-col items-center justify-center overflow-hidden bg-background pb-8 pt-20 md:pb-12 md:pt-24"
+      className="relative flex min-h-[min(100vh,880px)] flex-col items-center justify-center overflow-hidden bg-background pb-8 pt-20 md:min-h-[92vh] md:pb-12 md:pt-24"
     >
       <MarketingAmbient variant="hero" />
       <div className="mkt-grid-bg pointer-events-none absolute inset-0" />

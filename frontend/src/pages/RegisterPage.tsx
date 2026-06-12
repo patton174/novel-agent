@@ -169,7 +169,7 @@ const RegisterPage: React.FC = () => {
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-3.5">
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3 min-[480px]:grid-cols-2">
             <AuthField
               id="reg-username"
               name="username"
@@ -227,11 +227,13 @@ const RegisterPage: React.FC = () => {
               </button>
             </div>
             {codeSent ? (
-              <p className="text-[10px] text-emerald-600">验证码已发送，请查收邮件（含垃圾箱）</p>
+              <p className="text-[11px] text-emerald-600 dark:text-emerald-400">
+                验证码已发送，请查收邮件（含垃圾箱）
+              </p>
             ) : null}
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3 min-[480px]:grid-cols-2">
             <AuthField
               id="reg-password"
               name="password"
@@ -255,7 +257,7 @@ const RegisterPage: React.FC = () => {
           </div>
 
           <AuthSubmitButton loading={submitting} loadingText="注册中…" className="!mt-1">
-            注册并登录
+            完成注册
           </AuthSubmitButton>
         </form>
       )}

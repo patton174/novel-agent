@@ -148,9 +148,6 @@ export default function DashboardHomePage() {
             <Button asChild variant="outline" className="rounded-xl">
               <Link to="/dashboard/novels">管理作品</Link>
             </Button>
-            <Button asChild className="rounded-xl px-6 shadow-md shadow-primary/20">
-              <Link to="/editor">进入编辑器</Link>
-            </Button>
           </div>
         </div>
       </section>

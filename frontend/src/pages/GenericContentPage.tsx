@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { fetchSiteContent } from '@/api/billingApi'
 import { AgentMarkdown } from '@/components/agent/AgentMarkdown'
 import { MarketingPageLayout } from '@/components/marketing/MarketingPageLayout'
@@ -11,13 +12,8 @@ interface GenericContentPageProps {
   fallbackTitle: string
 }
 
-const EYEBROW: Record<string, string> = {
-  privacy: '法律与合规',
-  terms: '法律与合规',
-  contact: '帮助与支持',
-}
-
 export default function GenericContentPage({ contentKey, fallbackTitle }: GenericContentPageProps) {
+  const { t } = useTranslation('marketing')
   const [title, setTitle] = useState(fallbackTitle)
   const [bodyMd, setBodyMd] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -42,7 +38,10 @@ export default function GenericContentPage({ contentKey, fallbackTitle }: Generi
     }
   }, [contentKey, fallbackTitle])
 
-  const eyebrow = EYEBROW[contentKey] ?? 'Novel Agent'
+  const eyebrow =
+    contentKey === 'contact' ? t('generic.eyebrowSupport') : t('generic.eyebrowLegal')
+  const subtitle =
+    contentKey === 'contact' ? t('generic.subtitleContact') : t('generic.subtitleLegal')
 
   return (
     <MarketingPageLayout>
@@ -50,15 +49,11 @@ export default function GenericContentPage({ contentKey, fallbackTitle }: Generi
         variant="soft"
         eyebrow={eyebrow}
         title={title}
-        subtitle={
-          contentKey === 'contact'
-            ? '产品咨询、商务合作与技术支持，欢迎与我们联系。'
-            : '请仔细阅读以下条款，使用本服务即表示您理解并同意相关内容。'
-        }
+        subtitle={subtitle}
       />
 
       <section className="relative px-6 pb-24">
-        <div className="relative z-10 mx-auto max-w-3xl -mt-6 md:-mt-10">
+        <div className="relative z-10 mx-auto max-w-3xl pt-4 md:pt-6">
           <div
             className={cn(
               'overflow-hidden rounded-2xl border border-border/70 bg-surface shadow-soft',
@@ -89,8 +84,8 @@ export default function GenericContentPage({ contentKey, fallbackTitle }: Generi
                 </article>
               ) : (
                 <div className="py-8 text-center">
-                  <p className="text-base font-medium text-foreground">内容暂未发布</p>
-                  <p className="mt-2 text-sm text-muted-foreground">请稍后再来查看，或联系管理员更新站点内容。</p>
+                  <p className="text-base font-medium text-foreground">{t('generic.emptyTitle')}</p>
+                  <p className="mt-2 text-sm text-muted-foreground">{t('generic.emptyDesc')}</p>
                 </div>
               )}
             </div>

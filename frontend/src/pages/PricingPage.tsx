@@ -67,7 +67,7 @@ export default function PricingPage() {
                     key={tier.code}
                     className={`group relative flex flex-col rounded-3xl border bg-surface/80 p-8 backdrop-blur-sm transition-all duration-500 hover:-translate-y-1.5 ${
                       tier.highlight
-                        ? 'z-10 scale-[1.03] border-primary/50 shadow-[0_24px_70px_-20px_rgba(79,70,229,0.55)] ring-2 ring-primary/20 md:-my-3'
+                        ? 'z-10 border-primary/50 shadow-[0_24px_70px_-20px_rgba(79,70,229,0.55)] ring-2 ring-primary/20 md:-my-3 md:scale-[1.03]'
                         : 'border-border/80 shadow-soft hover:border-primary/25 hover:shadow-[0_20px_50px_-20px_rgba(79,70,229,0.2)]'
                     }`}
                   >

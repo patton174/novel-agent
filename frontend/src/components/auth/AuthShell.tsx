@@ -81,7 +81,7 @@ export function AuthShell({ title, subtitle, marketing, children, legal, footer,
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
         >
-          <div className="mkt-form-card rounded-2xl border border-border/70 bg-white/92 p-6 shadow-[0_16px_48px_-20px_rgba(79,70,229,0.22)] backdrop-blur-md sm:p-7">
+          <div className="mkt-form-card rounded-2xl border border-border/70 bg-surface/95 p-6 shadow-[0_16px_48px_-20px_rgba(79,70,229,0.22)] backdrop-blur-md sm:p-7">
             <div className="mb-5">
               <h2 className="text-xl font-bold tracking-tight text-foreground">{title}</h2>
               <p className="mt-1 text-xs text-muted-foreground">{subtitle}</p>

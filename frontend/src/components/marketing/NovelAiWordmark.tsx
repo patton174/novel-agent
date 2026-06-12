@@ -8,10 +8,10 @@ const SIZE_MAP: Record<
   NovelAiWordmarkSize,
   { width: number; height: number; novelSize: number; aiSize: number; gap: number }
 > = {
-  sm: { width: 118, height: 28, novelSize: 22, aiSize: 20, gap: 6 },
-  md: { width: 148, height: 36, novelSize: 28, aiSize: 26, gap: 8 },
-  lg: { width: 188, height: 46, novelSize: 34, aiSize: 32, gap: 10 },
-  hero: { width: 268, height: 64, novelSize: 48, aiSize: 44, gap: 12 },
+  sm: { width: 158, height: 28, novelSize: 22, aiSize: 17, gap: 6 },
+  md: { width: 198, height: 36, novelSize: 28, aiSize: 21, gap: 8 },
+  lg: { width: 248, height: 46, novelSize: 34, aiSize: 26, gap: 10 },
+  hero: { width: 340, height: 64, novelSize: 48, aiSize: 36, gap: 12 },
 }
 
 const fillReveal = keyframes`
@@ -57,7 +57,7 @@ export function NovelAiWordmark({
   size = 'md',
   animate = true,
   className,
-  label = 'Novel AI',
+  label = 'Novel Agent',
 }: NovelAiWordmarkProps) {
   const uid = useId().replace(/:/g, '')
   const novelStrokeRef = useRef<SVGTextElement>(null)
@@ -156,9 +156,9 @@ export function NovelAiWordmark({
         fontSize={dims.aiSize}
         fontFamily={font.body}
         fontWeight={800}
-        letterSpacing="0.06em"
+        letterSpacing="0.04em"
       >
-        AI
+        Agent
       </text>
       <text
         className="fill-layer ai-fill"
@@ -167,10 +167,10 @@ export function NovelAiWordmark({
         fontSize={dims.aiSize}
         fontFamily={font.body}
         fontWeight={800}
-        letterSpacing="0.06em"
+        letterSpacing="0.04em"
         fill={`url(#${uid}-ai-fill)`}
       >
-        AI
+        Agent
       </text>
     </WordmarkSvg>
   )

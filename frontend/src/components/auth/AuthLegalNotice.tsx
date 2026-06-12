@@ -29,11 +29,11 @@ export function AuthLegalNotice({
     <div className={cn('space-y-2 text-[11px] leading-relaxed text-muted-foreground', className)}>
       <p>
         {lead}
-        <Link to="/terms" className="mx-0.5 font-medium text-foreground/80 underline-offset-2 hover:text-primary hover:underline">
+        <Link to="/terms" className="mx-0.5 inline-flex min-h-9 items-center font-medium text-foreground/80 underline-offset-2 hover:text-primary hover:underline">
           《用户协议》
         </Link>
         与
-        <Link to="/privacy" className="mx-0.5 font-medium text-foreground/80 underline-offset-2 hover:text-primary hover:underline">
+        <Link to="/privacy" className="mx-0.5 inline-flex min-h-9 items-center font-medium text-foreground/80 underline-offset-2 hover:text-primary hover:underline">
           《隐私政策》
         </Link>
         。

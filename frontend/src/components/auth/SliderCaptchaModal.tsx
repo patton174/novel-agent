@@ -126,7 +126,7 @@ export const SliderCaptchaModal: React.FC<Props> = ({ open, onClose, onVerified 
     <AnimatePresence>
       {open ? (
         <motion.div
-          className="fixed inset-0 z-[1200] flex items-end justify-center p-4 sm:items-center"
+          className="fixed inset-0 z-[1200] flex items-end justify-center p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:items-center"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -159,7 +159,7 @@ export const SliderCaptchaModal: React.FC<Props> = ({ open, onClose, onVerified 
                   <h3 id="captcha-title" className="text-sm font-semibold text-foreground">
                     安全验证
                   </h3>
-                  <p className="mt-0.5 truncate text-[11px] text-muted-foreground">{statusLabel()}</p>
+                  <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">{statusLabel()}</p>
                 </div>
                 <button
                   type="button"

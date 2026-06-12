@@ -21,6 +21,10 @@
     "product": "产品",
     "account": "账号",
     "legal": "条款",
+    "dashboard": "创作台",
+    "privacy": "隐私政策",
+    "terms": "用户协议",
+    "contact": "联系我们",
     "copyright": "保留所有权利",
     "slogan": "创作无限可能"
   },
@@ -195,5 +199,13 @@
         "resume": { "title": "托管续跑", "desc": "长任务后台执行，断线重连进度仍在。" }
       }
     }
+  },
+  "generic": {
+    "eyebrowLegal": "法律与合规",
+    "eyebrowSupport": "帮助与支持",
+    "subtitleLegal": "请仔细阅读以下条款，使用本服务即表示您理解并同意相关内容。",
+    "subtitleContact": "产品咨询、商务合作与技术支持，欢迎与我们联系。",
+    "emptyTitle": "内容暂未发布",
+    "emptyDesc": "请稍后再来查看，或联系管理员更新站点内容。"
   }
 }
