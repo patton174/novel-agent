@@ -7,7 +7,6 @@ import { AppPageStack, AppShellCard, AppShellCardBody, AppShellCardHeader } from
 import { AdminPagination } from '@/components/layout/AdminPagination'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { ContentPending } from '@/components/loading/ContentPending'
 import { useMarkRouteSeen } from '@/hooks/useMarkRouteSeen'
 import { appToast } from '@/stores/appToastStore'
 
@@ -93,10 +92,10 @@ export default function UsersPage() {
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 placeholder="按用户名搜索"
-                className="pl-8"
+                className="pl-8 rounded-xl"
               />
             </div>
-            <Button type="submit" variant="secondary">
+            <Button type="submit" variant="secondary" className="rounded-xl">
               搜索
             </Button>
           </form>
@@ -104,11 +103,11 @@ export default function UsersPage() {
       </AppShellCard>
 
       {loading && users === null ? (
-        <ContentPending label="正在加载用户列表" />
+        <UserTable users={[]} loading onEdit={openEdit} onRowClick={openEdit} />
       ) : (
         <UserTable
           users={users ?? []}
-          loading={loading}
+          loading={false}
           onEdit={openEdit}
           onRowClick={openEdit}
         />

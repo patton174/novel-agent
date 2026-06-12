@@ -22,7 +22,7 @@ import { CrawlJobRow } from '@/components/admin/CrawlJobRow'
 import { OrchestratorLogTerminal } from '@/components/admin/OrchestratorLogTerminal'
 import { Button } from '@/components/ui/button'
 import { AdminPagination } from '@/components/layout/AdminPagination'
-import { ContentPending } from '@/components/loading/ContentPending'
+import { Skeleton } from '@/components/ui/skeleton'
 import {
   AppPageStack,
   AppShellCard,
@@ -442,7 +442,7 @@ export default function CrawlerPage() {
                   setJobPage(1)
                 }}
                 className={cn(
-                  'rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
+                  'rounded-lg px-3 py-1.5 text-xs font-medium transition-colors',
                   jobFilter === key
                     ? 'bg-background text-foreground shadow-sm'
                     : 'text-muted-foreground hover:text-foreground',
@@ -454,7 +454,11 @@ export default function CrawlerPage() {
           </div>
 
         {jobsLoading && jobs === null ? (
-          <ContentPending label="正在加载爬虫任务" />
+          <div className="space-y-1.5">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={i} className="h-[4.5rem] w-full rounded-xl" />
+            ))}
+          </div>
         ) : filteredJobs.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             {jobFilter === 'all'

@@ -17,7 +17,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { ContentPending } from '@/components/loading/ContentPending'
+import { Skeleton } from '@/components/ui/skeleton'
 import { useMarkRouteSeen } from '@/hooks/useMarkRouteSeen'
 import { appToast } from '@/stores/appToastStore'
 
@@ -72,11 +72,8 @@ export default function AuditLogPage() {
 
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE))
 
-  if (loading && logs === null) {
-    return <ContentPending label="加载审计日志…" />
-  }
-
   const list = logs ?? []
+  const initialLoading = loading && logs === null
 
   return (
     <AppPageStack className="gap-4">
@@ -112,7 +109,11 @@ export default function AuditLogPage() {
 
       {/* 移动端卡片 */}
       <div className="space-y-3 md:hidden">
-        {list.length === 0 ? (
+        {initialLoading ? (
+          Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-28 w-full rounded-xl" />
+          ))
+        ) : list.length === 0 ? (
           <p className="py-8 text-center text-sm text-muted-foreground">暂无审计记录</p>
         ) : (
           list.map((log) => (
@@ -167,7 +168,17 @@ export default function AuditLogPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {list.length === 0 ? (
+              {initialLoading ? (
+                Array.from({ length: 6 }).map((_, i) => (
+                  <tr key={i}>
+                    {Array.from({ length: 5 }).map((__, j) => (
+                      <td key={j} className="px-4 py-3">
+                        <Skeleton className="h-4 w-full max-w-28" />
+                      </td>
+                    ))}
+                  </tr>
+                ))
+              ) : list.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
                     暂无审计记录

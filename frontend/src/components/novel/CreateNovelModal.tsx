@@ -46,12 +46,17 @@ export const CreateNovelModal: React.FC<CreateNovelModalProps> = ({
   const [style, setStyle] = useState('')
   const [targetWords, setTargetWords] = useState('3000')
   const [submitting, setSubmitting] = useState(false)
+  const [titleError, setTitleError] = useState<string | undefined>()
 
   if (!open) return null
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!title.trim()) return
+    if (!title.trim()) {
+      setTitleError('请输入小说名称')
+      return
+    }
+    setTitleError(undefined)
     setSubmitting(true)
     try {
       await onSubmit({
@@ -73,17 +78,27 @@ export const CreateNovelModal: React.FC<CreateNovelModalProps> = ({
   }
 
   return (
-    <Overlay onClick={onClose}>
-      <Dialog onClick={(e) => e.stopPropagation()}>
-        <h2>创建小说</h2>
+    <Overlay onClick={onClose} role="presentation">
+      <Dialog
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="create-novel-title"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 id="create-novel-title">创建小说</h2>
         <Form onSubmit={(e) => void handleSubmit(e)}>
           <Field>
             <span className="label">小说名称 *</span>
             <input
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              aria-invalid={titleError ? true : undefined}
+              onChange={(e) => {
+                setTitle(e.target.value)
+                if (titleError) setTitleError(undefined)
+              }}
               placeholder="例：星辰之途"
             />
+            {titleError ? <span className="error">{titleError}</span> : null}
           </Field>
           <Field>
             <span className="label">简介 / 设定</span>
@@ -137,6 +152,11 @@ const Overlay = styled.div`
   align-items: center;
   justify-content: center;
   padding: 1.25rem;
+
+  @media (max-width: 767px) {
+    padding: 0;
+    align-items: stretch;
+  }
 `
 
 const Dialog = styled.div`
@@ -147,6 +167,14 @@ const Dialog = styled.div`
   max-height: min(90vh, 640px);
   overflow-y: auto;
   box-shadow: ${editorModalSurface.dialogShadow};
+
+  @media (max-width: 767px) {
+    width: 100%;
+    max-height: none;
+    height: 100%;
+    border-radius: 0;
+    padding: 1.25rem 1rem 1.5rem;
+  }
 
   h2 {
     margin: 0 0 1.25rem;
@@ -182,6 +210,12 @@ const Field = styled.label`
     resize: vertical;
     min-height: 5rem;
   }
+
+  .error {
+    font-size: 0.72rem;
+    color: ${palette.errorBright};
+    line-height: 1.35;
+  }
 `
 
 const PairRow = styled.div`
@@ -190,7 +224,7 @@ const PairRow = styled.div`
   gap: 0.75rem;
   min-width: 0;
 
-  @media (max-width: 480px) {
+  @media (max-width: 767px) {
     grid-template-columns: 1fr;
   }
 `
@@ -200,4 +234,13 @@ const Actions = styled.div`
   justify-content: flex-end;
   gap: 0.75rem;
   margin-top: 0.35rem;
+
+  @media (max-width: 767px) {
+    flex-direction: column-reverse;
+
+    button {
+      width: 100%;
+      justify-content: center;
+    }
+  }
 `
