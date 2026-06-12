@@ -17,7 +17,10 @@ export const MarketingPageWrapper = styled.div`
 export const MarketingBackgroundPattern = styled.div`
   position: absolute;
   inset: 0;
-  background: #f7f7f4;
+  background:
+    radial-gradient(ellipse 120% 70% at 50% -15%, rgba(79, 70, 229, 0.1), transparent 58%),
+    radial-gradient(ellipse 60% 50% at 100% 20%, rgba(129, 140, 248, 0.06), transparent 50%),
+    linear-gradient(180deg, #f8fafc 0%, #f7f7f4 45%, #f8fafc 100%);
   pointer-events: none;
 `
 

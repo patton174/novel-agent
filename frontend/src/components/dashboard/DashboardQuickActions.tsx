@@ -22,11 +22,7 @@ export function DashboardQuickActions() {
           </Link>
         </Button>
       ) : null}
-      <Button
-        asChild
-        size="sm"
-        className="h-9 gap-1.5 rounded-lg bg-foreground px-4 text-xs font-semibold text-background hover:bg-foreground/90"
-      >
+      <Button asChild size="sm" className="h-9 gap-1.5 rounded-lg px-4 text-xs font-semibold">
         <Link to="/editor">
           <PenLine className="size-3.5" />
           进入编辑器

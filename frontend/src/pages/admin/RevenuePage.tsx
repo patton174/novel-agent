@@ -8,13 +8,7 @@ import {
   type PlatformUsageTrendPoint,
 } from '@/api/billingAdminApi'
 import { ContentPending } from '@/components/loading/ContentPending'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+import { AppPageStack, AppShellCard, AppShellCardBody } from '@/components/layout/AppPageStack'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useMarkRouteSeen } from '@/hooks/useMarkRouteSeen'
 import { appToast } from '@/stores/appToastStore'
@@ -31,15 +25,13 @@ function StatCard({
   hint?: string
 }) {
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardDescription>{title}</CardDescription>
-        <CardTitle className="text-2xl tabular-nums">{value}</CardTitle>
-      </CardHeader>
-      {hint ? (
-        <CardContent className="pt-0 text-xs text-muted-foreground">{hint}</CardContent>
-      ) : null}
-    </Card>
+    <AppShellCard>
+      <AppShellCardBody className="py-4">
+        <p className="text-sm text-muted-foreground">{title}</p>
+        <p className="mt-1 text-2xl font-bold tabular-nums text-foreground">{value}</p>
+        {hint ? <p className="mt-2 text-xs text-muted-foreground">{hint}</p> : null}
+      </AppShellCardBody>
+    </AppShellCard>
   )
 }
 
@@ -77,7 +69,7 @@ export default function RevenuePage() {
     .join(' · ')
 
   return (
-    <div className="space-y-6">
+    <AppPageStack>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           title="MRR（月经常性收入）"
@@ -108,6 +100,6 @@ export default function RevenuePage() {
       >
         <RevenueCharts trends={trends} modelBreakdown={overview.modelBreakdown} />
       </Suspense>
-    </div>
+    </AppPageStack>
   )
 }

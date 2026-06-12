@@ -41,7 +41,7 @@ export function DashboardAnnouncementBanner() {
 
   return (
     <div className="border-b border-amber-200/80 bg-amber-50 px-4 py-3 text-sm text-amber-950 dark:border-amber-800/60 dark:bg-amber-950/40 dark:text-amber-50 md:px-8">
-      <div className="mx-auto flex max-w-5xl items-start gap-3">
+      <div className="mx-auto flex max-w-[1440px] items-start gap-3">
         <div className="min-w-0 flex-1 prose prose-sm prose-amber max-w-none dark:prose-invert">
           <AgentMarkdown text={bodyMd} variant="memory" />
         </div>

@@ -19,8 +19,8 @@ export function AuthSubmitButton({
       type="submit"
       disabled={disabled || loading}
       className={cn(
-        'relative w-full h-11 rounded-xl bg-primary text-primary-foreground font-medium',
-        'shadow-sm shadow-primary/20 hover:bg-primary-hover',
+        'mkt-cta-glow relative h-11 w-full rounded-xl bg-primary font-medium text-primary-foreground',
+        'hover:bg-primary-hover',
         'transition-all duration-200 ease-out',
         'disabled:opacity-60 disabled:cursor-not-allowed disabled:shadow-none',
         'active:scale-[0.99]',

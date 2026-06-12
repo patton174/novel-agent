@@ -5,6 +5,7 @@ import {
   BookOpen,
   CreditCard,
   LayoutDashboard,
+  Settings,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { fetchUserInfo, needsEmailVerification } from '@/api/userApi'
@@ -25,6 +26,7 @@ const mainNav: NavItem[] = [
   { label: '我的小说', to: '/dashboard/novels', icon: BookOpen },
   { label: '书库', to: '/dashboard/bookstore', icon: BookMarked },
   { label: '用量与账单', to: '/dashboard/billing', icon: CreditCard },
+  { label: '账户设置', to: '/dashboard/settings', icon: Settings },
 ]
 
 interface AppSidebarProps {
@@ -94,6 +96,7 @@ export function AppSidebar({ embedded = false, onNavigate }: AppSidebarProps) {
                 ? 'border-amber-300/80 bg-amber-50/80 dark:border-amber-700/50 dark:bg-amber-950/30'
                 : 'border-border bg-background',
             )}
+            title="快捷打开账户设置"
           >
             <div className="relative shrink-0">
               <Avatar size="sm" className="size-9 rounded-full">

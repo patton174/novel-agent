@@ -1,145 +1,133 @@
 import { useRef } from 'react'
-import {
-  Brain,
-  GitBranch,
-  PenLine,
-  Search,
-  ShieldCheck,
-  Zap,
-  type LucideIcon,
-} from 'lucide-react'
+import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion'
+import { Brain, GitBranch, PenLine, ShieldCheck, type LucideIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { useHomeTimelineScroll } from '../scroll/useHomeTimelineScroll'
+import { MarketingAmbient } from '../MarketingAmbient'
 
-const TIMELINE_ITEMS: {
-  icon: LucideIcon
-  key: string
-}[] = [
-  { icon: PenLine, key: 'write' },
+const ITEMS: { icon: LucideIcon; key: string }[] = [
   { icon: Brain, key: 'memory' },
   { icon: GitBranch, key: 'orchestrate' },
-  { icon: Search, key: 'search' },
-  { icon: Zap, key: 'stream' },
+  { icon: PenLine, key: 'stream' },
   { icon: ShieldCheck, key: 'resume' },
 ]
 
-const TIMELINE_COPY: Record<string, { title: string; desc: string }> = {
-  write: { title: '章节续写', desc: '按你的指令与文风续写正文，支持目标字数与节奏控制。' },
-  memory: { title: '世界观记忆', desc: '角色、势力、设定分层沉淀，长程创作不跑偏。' },
-  orchestrate: { title: '智能编排', desc: '规划过程透明可见，复杂任务自动拆解与串联。' },
-  search: { title: '语义检索', desc: '基于语义召回相关章节与设定片段，不用翻找。' },
-  stream: { title: '流式成稿', desc: '字句实时生成，所见即所得进入编辑器。' },
-  resume: { title: '托管续跑', desc: '长任务后台执行，断线后仍可同步进度。' },
+function TimelineNode({
+  index,
+  side,
+  icon: Icon,
+  title,
+  desc,
+  reduced,
+}: {
+  index: number
+  side: 'left' | 'right'
+  icon: LucideIcon
+  title: string
+  desc: string
+  reduced: boolean
+}) {
+  const xFrom = side === 'left' ? -56 : 56
+
+  return (
+    <div
+      className={`relative flex min-h-[6.5rem] items-center ${
+        side === 'left' ? 'justify-start md:pr-[52%]' : 'justify-end md:pl-[52%]'
+      }`}
+    >
+      <motion.div
+        className="absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2"
+        initial={reduced ? false : { scale: 0.4, opacity: 0.3 }}
+        whileInView={{ scale: 1, opacity: 1 }}
+        viewport={{ once: false, amount: 0.6, margin: '0px 0px -15% 0px' }}
+        transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+      >
+        <div className="size-4 rounded-full border-2 border-primary bg-background shadow-[0_0_0_6px_rgba(79,70,229,0.18)]" />
+      </motion.div>
+
+      <motion.div
+        aria-hidden
+        className={`absolute top-1/2 hidden h-0.5 -translate-y-1/2 md:block ${
+          side === 'left'
+            ? 'right-1/2 mr-4 w-[calc(50%-1.75rem)] origin-right bg-gradient-to-l from-primary to-primary/20'
+            : 'left-1/2 ml-4 w-[calc(50%-1.75rem)] origin-left bg-gradient-to-r from-primary/20 to-primary'
+        }`}
+        initial={reduced ? false : { scaleX: 0 }}
+        whileInView={{ scaleX: 1 }}
+        viewport={{ once: false, amount: 0.5, margin: '0px 0px -15% 0px' }}
+        transition={{ duration: 0.45, delay: 0.06, ease: [0.22, 1, 0.36, 1] }}
+      />
+
+      <motion.article
+        initial={reduced ? false : { opacity: 0, x: xFrom, filter: 'blur(8px)' }}
+        whileInView={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
+        viewport={{ once: false, amount: 0.45, margin: '0px 0px -12% 0px' }}
+        transition={{ duration: 0.55, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
+        className={`group mkt-card-lift w-full max-w-md rounded-2xl border border-border/60 bg-white/90 p-6 shadow-[0_12px_48px_-16px_rgba(79,70,229,0.18)] backdrop-blur-sm md:w-[calc(50%-2.75rem)] ${
+          side === 'left' ? 'md:mr-auto' : 'md:ml-auto'
+        }`}
+      >
+        <div className="mb-3 flex items-center gap-3">
+          <div className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary/15 to-indigo-500/5 ring-1 ring-primary/15 transition group-hover:from-primary/25 group-hover:ring-primary/25">
+            <Icon className="size-5 text-primary" strokeWidth={1.75} />
+          </div>
+          <span className="text-[11px] font-semibold tabular-nums tracking-widest text-muted-foreground/50">
+            {String(index + 1).padStart(2, '0')}
+          </span>
+        </div>
+        <h3 className="mb-1.5 text-lg font-semibold tracking-tight text-foreground">{title}</h3>
+        <p className="text-sm leading-relaxed text-muted-foreground">{desc}</p>
+      </motion.article>
+    </div>
+  )
 }
 
 export function HomeTimelineSection() {
-  const rootRef = useRef<HTMLElement>(null)
   const { t } = useTranslation('marketing')
-  useHomeTimelineScroll(rootRef)
+  const reduced = useReducedMotion()
+  const trackRef = useRef<HTMLDivElement>(null)
+  const { scrollYProgress } = useScroll({
+    target: trackRef,
+    offset: ['start 0.85', 'end 0.15'],
+  })
+  const lineScale = useTransform(scrollYProgress, [0, 1], [0, 1])
 
   return (
     <section
       id="capabilities"
-      ref={rootRef}
-      className="relative w-full scroll-mt-16 overflow-hidden bg-gradient-to-b from-background via-slate-50/50 to-background px-6 py-28"
+      className="relative scroll-mt-16 overflow-hidden border-t border-border/40 bg-gradient-to-b from-[#fafaf8] via-white to-[#f8fafc] px-6 py-20 md:py-28"
     >
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
-
-      <div className="relative mx-auto mb-16 max-w-3xl text-center">
-        <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-primary/80">
+      <MarketingAmbient variant="section" />
+      <div className="relative mx-auto mb-14 max-w-3xl text-center">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.22em] text-primary/75">
           {t('home.timeline.eyebrow')}
         </p>
-        <h2 className="mb-4 text-3xl font-bold tracking-tight text-foreground md:text-4xl">
+        <h2 className="mb-2 text-3xl font-bold tracking-tight text-foreground md:text-4xl">
           {t('home.timeline.title')}
         </h2>
-        <p className="text-lg text-muted-foreground">{t('home.timeline.subtitle')}</p>
+        <p className="text-sm text-muted-foreground md:text-base">{t('home.timeline.subtitle')}</p>
       </div>
 
-      <div className="relative mx-auto max-w-4xl pb-8" data-timeline-track>
-        {/* 静态轨道 */}
-        <div
+      <div ref={trackRef} className="relative mx-auto max-w-4xl pb-4">
+        <div aria-hidden className="absolute bottom-0 left-1/2 top-0 w-px -translate-x-1/2 bg-border/80" />
+        <motion.div
           aria-hidden
-          className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-border/70"
+          className="absolute bottom-0 left-1/2 top-0 w-1 -translate-x-1/2 origin-top rounded-full bg-gradient-to-b from-indigo-400 via-primary to-violet-600 shadow-[0_0_28px_rgba(79,70,229,0.45)]"
+          style={reduced ? { scaleY: 1 } : { scaleY: lineScale }}
         />
-        {/* GSAP 动画主线 — 独立层，避免 transform 冲突 */}
-        <div
-          aria-hidden
-          className="absolute inset-y-0 left-1/2 w-0 -translate-x-1/2"
-        >
-          <div
-            data-timeline-line
-            className="absolute inset-y-0 left-1/2 h-full w-1 -translate-x-1/2 origin-top rounded-full bg-gradient-to-b from-primary/40 via-primary to-indigo-500 shadow-[0_0_16px_rgba(79,70,229,0.4)]"
-          />
-        </div>
 
-        <div className="relative space-y-16 md:space-y-24">
-          {TIMELINE_ITEMS.map((item, index) => {
+        <div className="relative space-y-14 md:space-y-20">
+          {ITEMS.map((item, index) => {
             const side = index % 2 === 0 ? 'left' : 'right'
-            const Icon = item.icon
-            const copy = TIMELINE_COPY[item.key]
-
             return (
-              <div
+              <TimelineNode
                 key={item.key}
-                data-timeline-node
-                data-side={side}
-                className={`relative flex min-h-[7.5rem] items-center ${
-                  side === 'left' ? 'justify-start md:pr-[52%]' : 'justify-end md:pl-[52%]'
-                }`}
-              >
-                {/* 中心节点：外层定位，内层 GSAP 缩放 */}
-                <div className="absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2">
-                  <div
-                    aria-hidden
-                    data-timeline-dot
-                    className="size-4 rounded-full border-2 border-primary bg-background shadow-[0_0_0_6px_rgba(79,70,229,0.15)]"
-                  />
-                </div>
-
-                {/* 分支线：外层定位，内层 scaleX */}
-                <div
-                  className={`absolute top-1/2 hidden -translate-y-1/2 md:block ${
-                    side === 'left'
-                      ? 'right-1/2 mr-4 w-[calc(50%-1.75rem)]'
-                      : 'left-1/2 ml-4 w-[calc(50%-1.75rem)]'
-                  }`}
-                >
-                  <div
-                    aria-hidden
-                    data-timeline-branch
-                    data-side={side}
-                    className={`h-0.5 w-full origin-left bg-gradient-to-r ${
-                      side === 'left'
-                        ? 'from-primary to-primary/25'
-                        : 'from-primary/25 to-primary'
-                    }`}
-                    style={{
-                      transformOrigin: side === 'left' ? 'right center' : 'left center',
-                    }}
-                  />
-                </div>
-
-                <article
-                  data-timeline-card
-                  data-side={side}
-                  className={`group relative w-full max-w-md rounded-2xl border border-border/70 bg-white/95 p-6 shadow-soft backdrop-blur-sm transition-shadow duration-300 hover:shadow-hover md:w-[calc(50%-2.75rem)] ${
-                    side === 'left' ? 'md:mr-auto' : 'md:ml-auto'
-                  }`}
-                >
-                  <div className="mb-4 flex items-center gap-3">
-                    <div className="flex size-10 items-center justify-center rounded-xl border border-primary/10 bg-primary/[0.08] transition-colors group-hover:bg-primary/[0.12]">
-                      <Icon className="size-5 text-primary" strokeWidth={1.75} />
-                    </div>
-                    <span className="text-[11px] font-medium tabular-nums tracking-widest text-muted-foreground/60">
-                      {String(index + 1).padStart(2, '0')}
-                    </span>
-                  </div>
-                  <h3 className="mb-2 text-lg font-semibold tracking-tight text-foreground">
-                    {copy.title}
-                  </h3>
-                  <p className="text-sm leading-relaxed text-muted-foreground">{copy.desc}</p>
-                </article>
-              </div>
+                index={index}
+                side={side}
+                icon={item.icon}
+                title={t(`home.timeline.items.${item.key}.title`)}
+                desc={t(`home.timeline.items.${item.key}.desc`)}
+                reduced={Boolean(reduced)}
+              />
             )
           })}
         </div>

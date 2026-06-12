@@ -3,6 +3,7 @@ import { Search } from 'lucide-react'
 import { fetchUserPage, type AdminUser } from '@/api/adminApi'
 import { UserEditDialog } from '@/components/admin/UserEditDialog'
 import { UserTable } from '@/components/admin/UserTable'
+import { AppPageStack, AppShellCard, AppShellCardBody, AppShellCardHeader } from '@/components/layout/AppPageStack'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ContentPending } from '@/components/loading/ContentPending'
@@ -67,21 +68,26 @@ export default function UsersPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <form onSubmit={handleSearch} className="flex max-w-md gap-2">
-        <div className="relative flex-1">
-          <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            placeholder="按用户名搜索"
-            className="pl-8"
-          />
-        </div>
-        <Button type="submit" variant="secondary">
-          搜索
-        </Button>
-      </form>
+    <AppPageStack className="gap-4">
+      <AppShellCard>
+        <AppShellCardHeader title="用户列表" description="按用户名搜索并编辑角色、配额" />
+        <AppShellCardBody className="py-4">
+          <form onSubmit={handleSearch} className="flex max-w-md gap-2">
+            <div className="relative flex-1">
+              <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                placeholder="按用户名搜索"
+                className="pl-8"
+              />
+            </div>
+            <Button type="submit" variant="secondary">
+              搜索
+            </Button>
+          </form>
+        </AppShellCardBody>
+      </AppShellCard>
 
       {loading && users === null ? (
         <ContentPending label="正在加载用户列表" />
@@ -124,6 +130,6 @@ export default function UsersPage() {
         onOpenChange={setDialogOpen}
         onSaved={handleSaved}
       />
-    </div>
+    </AppPageStack>
   )
 }

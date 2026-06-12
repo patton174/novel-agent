@@ -6,8 +6,9 @@ import { login } from '../utils/authApi'
 import { clearAuthSession } from '../security/sessionStore'
 import { appToast } from '@/stores/appToastStore'
 import { AuthShell } from '../components/auth/AuthShell'
+import { AuthField } from '../components/auth/AuthField'
+import { AuthLegalNotice } from '../components/auth/AuthLegalNotice'
 import { AuthSubmitButton } from '../components/auth/AuthSubmitButton'
-import { authFieldClass } from '../components/auth/authFieldClass'
 import { useFormDraft } from '../hooks/useJourneyTracker'
 
 const LoginPage: React.FC = () => {
@@ -71,80 +72,61 @@ const LoginPage: React.FC = () => {
   return (
     <AuthShell
       title="欢迎回来"
-      subtitle="继续你的 AI 辅助创作之旅"
+      subtitle="登录以继续创作与同步项目"
       marketing={{
-        headline: (
-          <>
-            专为小说创作打造的
-            <br />
-            智能 Agent
-          </>
-        ),
-        description:
-          '从世界观构建到章节续写，思维链、编排、子代理、流式成稿，为您提供一站式 AI 辅助创作体验。',
+        headline: '可编排、可记忆的连载助手',
+        description: '登录后恢复章节、会话与世界观记忆，从上次停笔处继续。',
         footer: (
-          <div className="flex items-center gap-4 pt-2">
-            <div className="flex -space-x-3">
-              {['玄', '科', '言'].map((c) => (
-                <div
-                  key={c}
-                  className="w-10 h-10 rounded-full border-2 border-white/20 bg-white/10 backdrop-blur-sm flex items-center justify-center text-xs font-bold"
-                >
-                  {c}
-                </div>
-              ))}
-            </div>
-            <p className="text-sm text-white/90 font-medium">已有超过 10,000 名创作者加入</p>
+          <div className="flex flex-wrap gap-2 pt-1">
+            {['流式成稿', '记忆持久化', '用量透明'].map((text) => (
+              <span
+                key={text}
+                className="rounded-full border border-white/20 bg-white/10 px-2.5 py-0.5 text-[11px] font-medium text-white/90"
+              >
+                {text}
+              </span>
+            ))}
           </div>
         ),
       }}
+      legal={<AuthLegalNotice variant="login" />}
       footer={
         <>
           还没有账号？{' '}
-          <Link to="/register" className="text-primary font-medium hover:underline">
+          <Link to="/register" className="font-medium text-primary hover:underline">
             免费注册
           </Link>
         </>
       }
     >
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-1.5">
-          <label htmlFor="login-username" className="text-sm font-medium text-foreground">
-            用户名
-          </label>
-          <input
-            id="login-username"
-            name="username"
-            autoComplete="username"
-            placeholder="输入用户名"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            className={authFieldClass}
-          />
-        </div>
+      <form onSubmit={handleSubmit} className="space-y-3">
+        <AuthField
+          id="login-username"
+          name="username"
+          label="用户名"
+          autoComplete="username"
+          placeholder="输入用户名"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+        />
 
-        <div className="space-y-1.5">
-          <div className="flex items-center justify-between">
-            <label htmlFor="login-password" className="text-sm font-medium text-foreground">
-              密码
-            </label>
-            <Link to="#" className="text-xs text-primary hover:underline">
+        <AuthField
+          id="login-password"
+          name="password"
+          type="password"
+          label="密码"
+          autoComplete="current-password"
+          placeholder="输入密码"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          hint={
+            <Link to="/contact" className="text-[10px] text-primary hover:underline">
               忘记密码？
             </Link>
-          </div>
-          <input
-            id="login-password"
-            name="password"
-            type="password"
-            autoComplete="current-password"
-            placeholder="输入密码"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className={authFieldClass}
-          />
-        </div>
+          }
+        />
 
-        <AuthSubmitButton loading={submitting} loadingText="登录中…" className="mt-2">
+        <AuthSubmitButton loading={submitting} loadingText="登录中…" className="!mt-1">
           登录
         </AuthSubmitButton>
       </form>

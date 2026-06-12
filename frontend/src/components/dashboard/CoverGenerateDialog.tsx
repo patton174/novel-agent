@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Sparkles } from 'lucide-react'
 import { suggestNovelCoverPrompt } from '@/api/dashboardApi'
 import { EditorIcons } from '@/components/editor/icons'
 import { Button } from '@/components/ui/button'
@@ -89,74 +89,89 @@ export function CoverGenerateDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>生成封面</DialogTitle>
-          <DialogDescription>
-            为「{novelTitle}」自定义封面提示词，或使用 AI 补全/优化当前描述。
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-lg">
+        <div className="h-0.5 bg-gradient-to-r from-primary/0 via-primary/70 to-violet-500/70" />
+        <div className="space-y-5 p-6">
+          <DialogHeader className="space-y-2 text-left">
+            <div className="flex items-center gap-2">
+              <div className="flex size-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <Sparkles className="size-4" />
+              </div>
+              <DialogTitle className="text-lg">AI 生成封面</DialogTitle>
+            </div>
+            <DialogDescription className="text-sm leading-relaxed">
+              为「<span className="font-medium text-foreground">{novelTitle}</span>」描述画面氛围与构图，或使用右侧按钮让 AI 补全提示词。
+            </DialogDescription>
+          </DialogHeader>
 
-        <div className="space-y-2">
-          <div className="flex items-end gap-2">
-            <textarea
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              disabled={loadingPrompt || submitting}
-              rows={6}
-              placeholder={loadingPrompt ? '正在加载建议提示词…' : '描述封面画面、氛围、构图…'}
-              className={cn(
-                'min-h-[140px] flex-1 resize-y rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground shadow-xs outline-none',
-                'placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50',
-                'disabled:cursor-not-allowed disabled:opacity-60',
-              )}
-            />
+          <div className="space-y-2">
+            <label className="text-xs font-medium text-muted-foreground">封面提示词</label>
+            <div className="flex items-start gap-2">
+              <textarea
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                disabled={loadingPrompt || submitting}
+                rows={5}
+                placeholder={loadingPrompt ? '正在加载建议提示词…' : '例如：古风仙侠、云雾山峦、主角剪影、电影海报构图…'}
+                className={cn(
+                  'min-h-[120px] flex-1 resize-y rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground shadow-xs outline-none',
+                  'placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50',
+                  'disabled:cursor-not-allowed disabled:opacity-60',
+                )}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="size-10 shrink-0 rounded-xl border-border text-foreground hover:bg-primary/10 hover:text-primary"
+                disabled={loadingPrompt || enhancing || submitting || !novelId}
+                onClick={() => void handleEnhance()}
+                aria-label="AI 生成或优化提示词"
+                title="AI 生成或优化提示词"
+              >
+                {enhancing ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <span className="inline-flex size-4 shrink-0 [&_svg]:size-full">
+                    <EditorIcons.Sparkles />
+                  </span>
+                )}
+              </Button>
+            </div>
+          </div>
+
+          <p className="rounded-xl border border-border/60 bg-muted/30 px-3 py-2.5 text-[11px] leading-relaxed text-muted-foreground">
+            <span className="font-medium text-foreground/75">AI 生成说明：</span>
+            封面由 AI 图像模型根据你的提示词实时生成，仅供创作参考；请确认不侵犯他人版权或肖像权，生成结果可能因模型随机性略有差异。
+          </p>
+
+          <DialogFooter className="gap-2 sm:gap-2">
             <Button
               type="button"
               variant="outline"
-              size="icon"
-              className="shrink-0 border-border text-foreground hover:bg-primary/10 hover:text-primary"
-              disabled={loadingPrompt || enhancing || submitting || !novelId}
-              onClick={() => void handleEnhance()}
-              aria-label="AI 生成或优化提示词"
-              title="AI 生成或优化提示词"
+              className="rounded-xl border-border text-foreground"
+              disabled={submitting}
+              onClick={() => onOpenChange(false)}
             >
-              {enhancing ? (
-                <Loader2 className="size-4 animate-spin" />
+              取消
+            </Button>
+            <Button
+              type="button"
+              className="rounded-xl"
+              disabled={loadingPrompt || submitting || !prompt.trim()}
+              onClick={() => void handleSubmit()}
+            >
+              {submitting ? (
+                <>
+                  <Loader2 className="mr-2 size-4 animate-spin" />
+                  生成中…
+                </>
               ) : (
-                <span className="inline-flex size-4 shrink-0 [&_svg]:size-full">
-                  <EditorIcons.Sparkles />
-                </span>
+                '开始生成'
               )}
             </Button>
-          </div>
+          </DialogFooter>
         </div>
-
-        <DialogFooter>
-          <Button
-            type="button"
-            variant="outline"
-            className="border-border text-foreground"
-            disabled={submitting}
-            onClick={() => onOpenChange(false)}
-          >
-            取消
-          </Button>
-          <Button
-            type="button"
-            disabled={loadingPrompt || submitting || !prompt.trim()}
-            onClick={() => void handleSubmit()}
-          >
-            {submitting ? (
-              <>
-                <Loader2 className="mr-2 size-4 animate-spin" />
-                生成中…
-              </>
-            ) : (
-              '开始生成'
-            )}
-          </Button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

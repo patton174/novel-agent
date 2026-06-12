@@ -1,4 +1,5 @@
 import { useRef } from 'react'
+import { motion, useReducedMotion } from 'framer-motion'
 import { MarketingChatOrchestrationDemo } from './MarketingChatOrchestrationDemo'
 import type { MarketingSceneId } from '../../../utils/marketing/buildMarketingSceneDemo'
 import { MarketingStoryCopy, type StoryPoint } from '../story/MarketingStoryCopy'
@@ -51,6 +52,11 @@ export function MarketingChatScene({
 }: MarketingChatSceneProps) {
   const sectionRef = useRef<HTMLElement>(null)
   const flip = layout === 'copy-right'
+  const reduced = useReducedMotion()
+
+  const demo = (
+    <MarketingChatOrchestrationDemo scene={scene} variant="story" sectionRef={sectionRef} />
+  )
 
   return (
     <SceneSection ref={sectionRef} id={id} data-marketing-scene={scene} $wash={wash}>
@@ -67,11 +73,19 @@ export function MarketingChatScene({
             points={points}
           />
 
-          <MarketingChatOrchestrationDemo
-            scene={scene}
-            variant="story"
-            sectionRef={sectionRef}
-          />
+          {reduced ? (
+            demo
+          ) : (
+            <motion.div
+              className="demo-app-mock"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-8% 0px', amount: 0.25 }}
+              transition={{ duration: 0.55, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
+            >
+              {demo}
+            </motion.div>
+          )}
         </CursorFeatureGrid>
       </CursorFeatureInner>
     </SceneSection>

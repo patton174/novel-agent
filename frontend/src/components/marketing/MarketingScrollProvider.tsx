@@ -57,7 +57,6 @@ export function MarketingScrollProvider({ children }: { children: ReactNode }) {
         clearTimeout(refreshTimer)
         refreshTimer = null
       }
-      ScrollTrigger.getAll().forEach((st) => st.kill())
     }
   }, [])
 

@@ -1,3 +1,4 @@
+import { motion, useReducedMotion } from 'framer-motion'
 import styled, { css } from 'styled-components'
 import { cursorTheme } from '../../../styles/surfaces/cursorLanding'
 import { font } from '../../../styles/theme'
@@ -7,7 +8,6 @@ export interface StoryPoint {
   text: string
 }
 
-/** 文案块：右对齐分镜内仍保持左对齐排版，避免 text-align:right 导致断行错位 */
 export const StoryCopyBlock = styled.div`
   width: 100%;
   max-width: 21rem;
@@ -153,26 +153,43 @@ export function MarketingStoryCopy({
   alignEnd,
   className,
 }: MarketingStoryCopyProps) {
+  const reduced = useReducedMotion()
+
+  const inner = (
+    <StoryCopyBlock>
+      <StoryActRow>
+        <StoryActIndex>{act}</StoryActIndex>
+        <StoryActLabel>{label}</StoryActLabel>
+      </StoryActRow>
+      <StoryTitle>
+        {title}
+        <StoryTitleAccent>{titleAccent}</StoryTitleAccent>
+      </StoryTitle>
+      <StoryLead>{lead}</StoryLead>
+      <StoryPointList>
+        {points.map((point) => (
+          <StoryPointItem key={point.highlight}>
+            <strong>{point.highlight}</strong> · {point.text}
+          </StoryPointItem>
+        ))}
+      </StoryPointList>
+    </StoryCopyBlock>
+  )
+
   return (
     <StoryCopyRoot className={className} $alignEnd={alignEnd}>
-      <StoryCopyBlock>
-        <StoryActRow>
-          <StoryActIndex>{act}</StoryActIndex>
-          <StoryActLabel>{label}</StoryActLabel>
-        </StoryActRow>
-        <StoryTitle>
-          {title}
-          <StoryTitleAccent>{titleAccent}</StoryTitleAccent>
-        </StoryTitle>
-        <StoryLead>{lead}</StoryLead>
-        <StoryPointList>
-          {points.map((point) => (
-            <StoryPointItem key={point.highlight}>
-              <strong>{point.highlight}</strong> · {point.text}
-            </StoryPointItem>
-          ))}
-        </StoryPointList>
-      </StoryCopyBlock>
+      {reduced ? (
+        inner
+      ) : (
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-10% 0px', amount: 0.35 }}
+          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+        >
+          {inner}
+        </motion.div>
+      )}
     </StoryCopyRoot>
   )
 }

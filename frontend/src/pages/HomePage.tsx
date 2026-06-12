@@ -1,5 +1,6 @@
 import { MarketingShell } from '../components/marketing/MarketingShell'
 import { MarketingNav } from '../components/marketing/MarketingNav'
+import { HomeFeasibilitySection } from '../components/marketing/sections/HomeFeasibilitySection'
 import { HomeScrollStory } from '../components/marketing/scroll/HomeScrollStory'
 import { HomeTimelineSection } from '../components/marketing/sections/HomeTimelineSection'
 import { HomeDanmakuSection } from '../components/marketing/sections/HomeDanmakuSection'
@@ -21,11 +22,21 @@ export default function HomePage() {
     }
   }, [authReady, navigate])
 
+  useEffect(() => {
+    const hash = window.location.hash.replace('#', '')
+    if (!hash) return
+    const timer = window.setTimeout(() => {
+      document.getElementById(hash)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 120)
+    return () => window.clearTimeout(timer)
+  }, [])
+
   return (
     <MarketingShell>
       <MarketingNav />
       <MarketingMain>
         <HomeHeroSection />
+        <HomeFeasibilitySection />
         <HomeScrollStory />
         <HomeTimelineSection />
         <HomeDanmakuSection />

@@ -2,7 +2,9 @@ import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { ArrowIcon } from '../icons'
 
-export function HomeFooterSection() {
+type FooterVariant = 'full' | 'linksOnly'
+
+export function HomeFooterSection({ variant = 'full' }: { variant?: FooterVariant }) {
   const { t } = useTranslation('marketing')
   const year = new Date().getFullYear()
 
@@ -25,28 +27,38 @@ export function HomeFooterSection() {
   ] as const
 
   return (
-    <footer className="relative z-10 -mt-16 w-full">
-      <div className="bg-gradient-to-br from-indigo-700 via-indigo-600 to-primary px-6 pb-14 pt-20 text-white">
-        <div className="mx-auto flex max-w-4xl flex-col items-center gap-6 text-center">
-          <h2 className="text-2xl font-bold tracking-tight md:text-3xl">{t('footer.ctaTitle')}</h2>
-          <p className="max-w-xl text-sm leading-relaxed text-white/80 md:text-base">{t('footer.ctaDesc')}</p>
-          <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Link
-              to="/register"
-              className="inline-flex items-center gap-2 rounded-full bg-white px-7 py-3 text-sm font-semibold text-primary shadow-md transition-all hover:-translate-y-0.5 hover:bg-slate-50"
-            >
-              {t('footer.ctaRegister')}
-              <ArrowIcon />
-            </Link>
-            <Link
-              to="/login"
-              className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-7 py-3 text-sm font-semibold text-white backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:bg-white/15"
-            >
-              {t('footer.ctaLogin')}
-            </Link>
+    <footer className={`relative z-10 w-full ${variant === 'full' ? '-mt-16' : ''}`}>
+      {variant === 'full' ? (
+        <div className="mkt-footer-cta-band relative overflow-hidden px-6 pb-14 pt-20 text-white">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 opacity-30"
+            style={{
+              background:
+                'radial-gradient(circle at 20% 50%, rgba(255,255,255,0.15) 0%, transparent 40%), radial-gradient(circle at 80% 30%, rgba(255,255,255,0.1) 0%, transparent 35%)',
+            }}
+          />
+          <div className="relative mx-auto flex max-w-4xl flex-col items-center gap-6 text-center">
+            <h2 className="text-2xl font-bold tracking-tight drop-shadow-sm md:text-4xl">{t('footer.ctaTitle')}</h2>
+            <p className="max-w-xl text-sm leading-relaxed text-white/85 md:text-base">{t('footer.ctaDesc')}</p>
+            <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
+              <Link
+                to="/register"
+                className="inline-flex items-center gap-2 rounded-full bg-white px-7 py-3.5 text-sm font-semibold text-primary shadow-lg shadow-black/20 transition-all hover:-translate-y-0.5 hover:bg-slate-50 hover:shadow-xl"
+              >
+                {t('footer.ctaRegister')}
+                <ArrowIcon />
+              </Link>
+              <Link
+                to="/login"
+                className="inline-flex items-center gap-2 rounded-full border border-white/35 bg-white/10 px-7 py-3.5 text-sm font-semibold text-white backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:bg-white/20"
+              >
+                {t('footer.ctaLogin')}
+              </Link>
+            </div>
           </div>
         </div>
-      </div>
+      ) : null}
 
       <div className="bg-slate-900 px-6 py-12 text-slate-300">
         <div className="mx-auto grid max-w-6xl gap-10 md:grid-cols-2 lg:grid-cols-4">

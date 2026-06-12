@@ -5,6 +5,12 @@ import {
   updateAdminSiteSettings,
   type SiteSettingsMap,
 } from '@/api/billingAdminApi'
+import {
+  AppPageStack,
+  AppShellCard,
+  AppShellCardBody,
+  AppShellCardHeader,
+} from '@/components/layout/AppPageStack'
 import { Button } from '@/components/ui/button'
 import { ContentPending } from '@/components/loading/ContentPending'
 import { Input } from '@/components/ui/input'
@@ -89,47 +95,54 @@ export default function SystemSettingsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-4">
+    <AppPageStack narrow>
       <p className="text-sm text-muted-foreground">
         参数保存后约 60 秒内对各服务生效。关闭注册会立即拦截新用户注册请求。
       </p>
 
-      <div className="divide-y divide-border rounded-xl border border-border">
-        {SETTING_FIELDS.map((field) => (
-          <div key={field.key} className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium">{field.label}</p>
-              <p className="text-xs text-muted-foreground">{field.description}</p>
+      <AppShellCard>
+        <AppShellCardHeader title="运行参数" description="注册、Agent 与爬虫全局配置" />
+        <div className="divide-y divide-border/60">
+          {SETTING_FIELDS.map((field) => (
+            <div
+              key={field.key}
+              className="flex flex-col gap-3 px-6 py-4 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium">{field.label}</p>
+                <p className="text-xs text-muted-foreground">{field.description}</p>
+              </div>
+              <div className="shrink-0">
+                {field.type === 'boolean' ? (
+                  <Switch
+                    checked={Boolean(settings[field.key])}
+                    onCheckedChange={(checked) => setValue(field.key, checked)}
+                  />
+                ) : field.type === 'number' ? (
+                  <Input
+                    type="number"
+                    className="w-36"
+                    value={String(settings[field.key] ?? '')}
+                    onChange={(e) => setValue(field.key, Number(e.target.value) || 0)}
+                  />
+                ) : (
+                  <Input
+                    className="w-48"
+                    value={String(settings[field.key] ?? '')}
+                    onChange={(e) => setValue(field.key, e.target.value)}
+                  />
+                )}
+              </div>
             </div>
-            <div className="shrink-0">
-              {field.type === 'boolean' ? (
-                <Switch
-                  checked={Boolean(settings[field.key])}
-                  onCheckedChange={(checked) => setValue(field.key, checked)}
-                />
-              ) : field.type === 'number' ? (
-                <Input
-                  type="number"
-                  className="w-36"
-                  value={String(settings[field.key] ?? '')}
-                  onChange={(e) => setValue(field.key, Number(e.target.value) || 0)}
-                />
-              ) : (
-                <Input
-                  className="w-48"
-                  value={String(settings[field.key] ?? '')}
-                  onChange={(e) => setValue(field.key, e.target.value)}
-                />
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <Button type="button" disabled={saving} onClick={() => void handleSave()}>
-        <Save className="mr-1.5 size-4" />
-        {saving ? '保存中…' : '保存参数'}
-      </Button>
-    </div>
+          ))}
+        </div>
+        <AppShellCardBody className="border-t border-border/60 bg-muted/20">
+          <Button type="button" disabled={saving} onClick={() => void handleSave()}>
+            <Save className="mr-1.5 size-4" />
+            {saving ? '保存中…' : '保存参数'}
+          </Button>
+        </AppShellCardBody>
+      </AppShellCard>
+    </AppPageStack>
   )
 }

@@ -22,6 +22,12 @@ import { CrawlJobRow } from '@/components/admin/CrawlJobRow'
 import { OrchestratorLogTerminal } from '@/components/admin/OrchestratorLogTerminal'
 import { Button } from '@/components/ui/button'
 import { ContentPending } from '@/components/loading/ContentPending'
+import {
+  AppPageStack,
+  AppShellCard,
+  AppShellCardBody,
+  AppShellCardHeader,
+} from '@/components/layout/AppPageStack'
 import { useMarkRouteSeen } from '@/hooks/useMarkRouteSeen'
 import {
   type CrawlJobAction,
@@ -293,31 +299,34 @@ export default function CrawlerPage() {
   const orchBusy = actingKey?.startsWith('orch-') ?? false
 
   return (
-    <div className="space-y-5">
-      <section className="space-y-4 rounded-2xl border border-border bg-surface p-5 shadow-soft">
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-          <span
-            className={cn(
-              'rounded-full px-2.5 py-0.5 text-xs font-medium',
-              isOrchRunning
-                ? 'bg-primary/15 text-primary'
-                : 'bg-muted text-muted-foreground',
-            )}
-          >
-            主编排 · {isOrchRunning ? '运行中' : '睡眠'}
-          </span>
-          <span className="text-sm text-muted-foreground">
-            并行 {orchState?.runningJobCount ?? 0}/{orchState?.maxConcurrentJobs ?? 3}
-          </span>
+    <AppPageStack className="gap-5">
+      <div className="grid gap-5 xl:grid-cols-2">
+        <AppShellCard>
+          <AppShellCardHeader
+            title="主编排控制"
+            description={`并行 ${orchState?.runningJobCount ?? 0}/${orchState?.maxConcurrentJobs ?? 3}`}
+            action={
+              <span
+                className={cn(
+                  'rounded-full px-2.5 py-0.5 text-xs font-medium',
+                  isOrchRunning
+                    ? 'bg-primary/15 text-primary'
+                    : 'bg-muted text-muted-foreground',
+                )}
+              >
+                {isOrchRunning ? '运行中' : '睡眠'}
+              </span>
+            }
+          />
+          <AppShellCardBody className="space-y-4">
           {incompleteCount > 0 ? (
             <Link
               to="/admin/catalog"
-              className="text-sm text-primary underline-offset-4 hover:underline"
+              className="inline-block text-sm text-primary underline-offset-4 hover:underline"
             >
-              书库未完成 {incompleteCount} 本
+              书库未完成 {incompleteCount} 本 →
             </Link>
           ) : null}
-        </div>
 
         {orchBanner === 'orchestrator-disabled' ? (
           <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-800 dark:text-amber-300">
@@ -370,18 +379,40 @@ export default function CrawlerPage() {
             清空 / 睡眠
           </Button>
         </div>
+          </AppShellCardBody>
+        </AppShellCard>
 
-        <OrchestratorLogTerminal
-          status={orchState?.status}
-          refreshKey={logRefreshKey}
-          clearKey={logClearKey}
-          paused={!pageVisible}
+        <AppShellCard className="flex min-h-[280px] flex-col">
+          <AppShellCardHeader title="主编排决策日志" />
+          <AppShellCardBody className="flex min-h-0 flex-1 flex-col pt-2">
+            <OrchestratorLogTerminal
+              status={orchState?.status}
+              refreshKey={logRefreshKey}
+              clearKey={logClearKey}
+              paused={!pageVisible}
+            />
+          </AppShellCardBody>
+        </AppShellCard>
+      </div>
+
+      <AppShellCard>
+        <AppShellCardHeader
+          title="子任务列表"
+          description="点击行查看详情与日志"
+          action={
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => void refreshAll()}
+              disabled={jobsLoading && jobs === null}
+            >
+              <RefreshCw className={`mr-1.5 size-3.5 ${jobsLoading ? 'animate-spin' : ''}`} />
+              刷新
+            </Button>
+          }
         />
-      </section>
-
-      <section className="rounded-2xl border border-border bg-surface p-5 shadow-soft">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap gap-1 rounded-lg border border-border bg-muted/30 p-1">
+        <AppShellCardBody className="space-y-4 pt-2">
+        <div className="flex flex-wrap gap-1 rounded-lg border border-border bg-muted/30 p-1">
             {(
               [
                 ['all', '全部', jobCounts.all],
@@ -404,19 +435,6 @@ export default function CrawlerPage() {
               </button>
             ))}
           </div>
-          <div className="flex items-center gap-3">
-            <span className="text-xs text-muted-foreground">点击行查看详情与日志</span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => void refreshAll()}
-              disabled={jobsLoading && jobs === null}
-            >
-              <RefreshCw className={`mr-1.5 size-3.5 ${jobsLoading ? 'animate-spin' : ''}`} />
-              刷新
-            </Button>
-          </div>
-        </div>
 
         {jobsLoading && jobs === null ? (
           <ContentPending label="正在加载爬虫任务" />
@@ -439,7 +457,8 @@ export default function CrawlerPage() {
             ))}
           </div>
         )}
-      </section>
+        </AppShellCardBody>
+      </AppShellCard>
 
       <CrawlJobDetailModal
         job={detailJob}
@@ -449,6 +468,6 @@ export default function CrawlerPage() {
           if (!open) setDetailJob(null)
         }}
       />
-    </div>
+    </AppPageStack>
   )
 }

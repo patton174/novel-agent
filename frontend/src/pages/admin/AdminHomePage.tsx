@@ -6,22 +6,58 @@ import {
   type ContentStats,
   type PlatformStats,
 } from '@/api/adminApi'
+import { AppPageStack, AppStatCard } from '@/components/layout/AppPageStack'
 import { appToast } from '@/stores/appToastStore'
-import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import { Skeleton } from '@/components/ui/skeleton'
 
 const STAT_CARDS = [
-  { key: 'totalUsers', label: '总用户', icon: Users, source: 'platform' as const },
-  { key: 'todayRegistrations', label: '今日注册', icon: UserPlus, source: 'platform' as const },
-  { key: 'activeUsers', label: '活跃用户', icon: UserCheck, source: 'platform' as const },
-  { key: 'totalNovels', label: '总小说', icon: BookOpen, source: 'content' as const },
-  { key: 'totalChapters', label: '总章节', icon: FileText, source: 'content' as const },
-  { key: 'totalAgentRuns', label: 'Agent 总调用', icon: Bot, source: 'content' as const },
+  {
+    key: 'totalUsers',
+    label: '总用户',
+    icon: Users,
+    source: 'platform' as const,
+    iconClassName: 'text-blue-600',
+    iconBgClassName: 'bg-blue-500/10',
+  },
+  {
+    key: 'todayRegistrations',
+    label: '今日注册',
+    icon: UserPlus,
+    source: 'platform' as const,
+    iconClassName: 'text-emerald-600',
+    iconBgClassName: 'bg-emerald-500/10',
+  },
+  {
+    key: 'activeUsers',
+    label: '活跃用户',
+    icon: UserCheck,
+    source: 'platform' as const,
+    iconClassName: 'text-violet-600',
+    iconBgClassName: 'bg-violet-500/10',
+  },
+  {
+    key: 'totalNovels',
+    label: '总小说',
+    icon: BookOpen,
+    source: 'content' as const,
+    iconClassName: 'text-amber-600',
+    iconBgClassName: 'bg-amber-500/10',
+  },
+  {
+    key: 'totalChapters',
+    label: '总章节',
+    icon: FileText,
+    source: 'content' as const,
+    iconClassName: 'text-cyan-600',
+    iconBgClassName: 'bg-cyan-500/10',
+  },
+  {
+    key: 'totalAgentRuns',
+    label: 'Agent 总调用',
+    icon: Bot,
+    source: 'content' as const,
+    iconClassName: 'text-rose-600',
+    iconBgClassName: 'bg-rose-500/10',
+  },
 ] as const
 
 type StatKey = (typeof STAT_CARDS)[number]['key']
@@ -70,26 +106,20 @@ export default function AdminHomePage() {
   const loading = platform === null || content === null
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
+    <AppPageStack>
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
         {STAT_CARDS.map((stat) => (
-          <Card key={stat.key} size="sm">
-            <CardHeader className="pb-0">
-              <div className="flex items-center justify-between">
-                <CardDescription>{stat.label}</CardDescription>
-                <stat.icon className="size-4 text-muted-foreground" />
-              </div>
-              <CardTitle className="text-2xl tabular-nums">
-                {loading ? (
-                  <Skeleton className="h-8 w-16" />
-                ) : (
-                  getStatValue(platform, content, stat.key, stat.source)!.toLocaleString('zh-CN')
-                )}
-              </CardTitle>
-            </CardHeader>
-          </Card>
+          <AppStatCard
+            key={stat.key}
+            label={stat.label}
+            icon={stat.icon}
+            iconClassName={stat.iconClassName}
+            iconBgClassName={stat.iconBgClassName}
+            loading={loading}
+            value={getStatValue(platform, content, stat.key, stat.source)!.toLocaleString('zh-CN')}
+          />
         ))}
       </div>
-    </div>
+    </AppPageStack>
   )
 }

@@ -1,5 +1,6 @@
 import { Pencil } from 'lucide-react'
 import type { AdminUser } from '@/api/adminApi'
+import { DataTableFrame } from '@/components/layout/DataTableFrame'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -35,7 +36,7 @@ export function UserTable({ users, loading, onEdit, onRowClick }: UserTableProps
   }
 
   return (
-    <div className="rounded-lg border border-border">
+    <DataTableFrame>
       <Table>
         <TableHeader>
           <TableRow>
@@ -92,6 +93,6 @@ export function UserTable({ users, loading, onEdit, onRowClick }: UserTableProps
               ))}
         </TableBody>
       </Table>
-    </div>
+    </DataTableFrame>
   )
 }

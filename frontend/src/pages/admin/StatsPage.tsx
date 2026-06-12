@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { fetchStatsTrends, type TrendPoint } from '@/api/adminApi'
+import { AppPageStack } from '@/components/layout/AppPageStack'
 import { ContentPending } from '@/components/loading/ContentPending'
 import { useMarkRouteSeen } from '@/hooks/useMarkRouteSeen'
 import { appToast } from '@/stores/appToastStore'
@@ -48,12 +49,12 @@ export default function StatsPage() {
 
   return (
     <Suspense fallback={chartAreaFallback}>
-      <div className="space-y-6">
+      <AppPageStack>
         <StatsTrendCharts
           agentRunTrend={agentRunTrend!}
           registrationTrend={registrationTrend ?? []}
         />
-      </div>
+      </AppPageStack>
     </Suspense>
   )
 }

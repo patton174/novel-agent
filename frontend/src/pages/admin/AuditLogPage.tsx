@@ -1,5 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
 import { fetchAuditLogs, type AuditLogItem } from '@/api/billingAdminApi'
+import { DataTableFrame } from '@/components/layout/DataTableFrame'
+import {
+  AppPageStack,
+  AppShellCard,
+  AppShellCardBody,
+  AppShellCardHeader,
+} from '@/components/layout/AppPageStack'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ContentPending } from '@/components/loading/ContentPending'
@@ -61,35 +68,42 @@ export default function AuditLogPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap gap-2">
-        <select
-          value={action}
-          onChange={(e) => {
-            setPageCurrent(1)
-            setAction(e.target.value)
-          }}
-          className="h-9 rounded-md border border-border bg-background px-3 text-sm"
-        >
-          {ACTION_OPTIONS.map((opt) => (
-            <option key={opt.value || 'all'} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
-        <Input
-          className="w-40"
-          placeholder="操作者 ID"
-          value={actorIdInput}
-          onChange={(e) => {
-            setPageCurrent(1)
-            setActorIdInput(e.target.value)
-          }}
-        />
-      </div>
+    <AppPageStack className="gap-4">
+      <AppShellCard>
+        <AppShellCardHeader title="筛选" description="按操作类型或操作者 ID 过滤审计记录" />
+        <AppShellCardBody className="py-4">
+          <div className="flex flex-wrap gap-2">
+            <select
+              value={action}
+              onChange={(e) => {
+                setPageCurrent(1)
+                setAction(e.target.value)
+              }}
+              className="h-9 rounded-md border border-border bg-background px-3 text-sm"
+            >
+              {ACTION_OPTIONS.map((opt) => (
+                <option key={opt.value || 'all'} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+            <Input
+              className="w-40"
+              placeholder="操作者 ID"
+              value={actorIdInput}
+              onChange={(e) => {
+                setPageCurrent(1)
+                setActorIdInput(e.target.value)
+              }}
+            />
+          </div>
+        </AppShellCardBody>
+      </AppShellCard>
 
-      <div className="overflow-hidden rounded-xl border border-border">
-        <table className="w-full text-sm">
+      <AppShellCard>
+        <AppShellCardHeader title="审计日志" description={`共 ${totalCount.toLocaleString('zh-CN')} 条记录`} />
+        <DataTableFrame embedded>
+        <table className="w-full min-w-[720px] text-sm">
           <thead className="bg-muted/40 text-left text-xs text-muted-foreground">
             <tr>
               <th className="px-4 py-3 font-medium">时间</th>
@@ -129,12 +143,13 @@ export default function AuditLogPage() {
             )}
           </tbody>
         </table>
-      </div>
+      </DataTableFrame>
+      </AppShellCard>
 
       {totalPages > 1 ? (
         <div className="flex items-center justify-between text-sm">
           <span className="text-muted-foreground">
-            共 {totalCount} 条 · 第 {pageCurrent}/{totalPages} 页
+            第 {pageCurrent}/{totalPages} 页
           </span>
           <div className="flex gap-2">
             <Button
@@ -158,7 +173,7 @@ export default function AuditLogPage() {
           </div>
         </div>
       ) : null}
-    </div>
+    </AppPageStack>
   )
 }
 

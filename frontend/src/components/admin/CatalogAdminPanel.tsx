@@ -18,6 +18,11 @@ import {
 } from '@/api/catalogAdminApi'
 import { CatalogOverviewDialog } from '@/components/admin/CatalogOverviewDialog'
 import { CatalogReaderModal } from '@/components/admin/CatalogReaderModal'
+import {
+  AppShellCard,
+  AppShellCardBody,
+  AppShellCardHeader,
+} from '@/components/layout/AppPageStack'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -115,30 +120,30 @@ export function CatalogAdminPanel({ onOpenJob }: CatalogAdminPanelProps) {
   }
 
   return (
-    <section className="space-y-4 rounded-2xl border border-border bg-surface p-5 shadow-soft">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <BookOpen className="size-5 text-primary" />
-          <h2 className="text-lg font-semibold">书库管理</h2>
-          <span className="text-sm text-muted-foreground">共 {totalCount} 本</span>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="搜索书名 / 作者 / 来源"
-              className="w-56 pl-8"
-            />
+    <>
+    <AppShellCard>
+      <AppShellCardHeader
+        title="书库管理"
+        description={`共 ${totalCount} 本 · 搜索书名 / 作者 / 来源`}
+        action={
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="搜索…"
+                className="w-44 pl-8 sm:w-56"
+              />
+            </div>
+            <Button type="button" variant="outline" size="sm" onClick={() => void load()}>
+              <RefreshCw className="mr-1.5 size-4" />
+              刷新
+            </Button>
           </div>
-          <Button type="button" variant="outline" size="sm" onClick={() => void load()}>
-            <RefreshCw className="mr-1.5 size-4" />
-            刷新
-          </Button>
-        </div>
-      </div>
-
+        }
+      />
+      <AppShellCardBody className="space-y-4">
       {incomplete.length > 0 ? (
         <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-3">
           <p className="mb-2 text-sm font-medium text-amber-700 dark:text-amber-400">
@@ -205,7 +210,7 @@ export function CatalogAdminPanel({ onOpenJob }: CatalogAdminPanelProps) {
                   <p className="mt-0.5 truncate text-xs text-muted-foreground/80">{n.sourceUrl}</p>
                 ) : null}
               </div>
-              <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+              <div className="flex shrink-0 items-center gap-1 opacity-100 md:opacity-0 md:transition-opacity md:group-hover:opacity-100">
                 <Button
                   type="button"
                   size="sm"
@@ -245,7 +250,7 @@ export function CatalogAdminPanel({ onOpenJob }: CatalogAdminPanelProps) {
                   )}
                 </Button>
               </div>
-              <ChevronRight className="size-4 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+              <ChevronRight className="hidden size-4 shrink-0 text-muted-foreground md:block md:opacity-0 md:transition-opacity md:group-hover:opacity-100" />
             </div>
           ))}
         </div>
@@ -278,6 +283,8 @@ export function CatalogAdminPanel({ onOpenJob }: CatalogAdminPanelProps) {
           </Button>
         </div>
       ) : null}
+      </AppShellCardBody>
+    </AppShellCard>
 
       <CatalogOverviewDialog
         novel={selectedNovel}
@@ -306,6 +313,6 @@ export function CatalogAdminPanel({ onOpenJob }: CatalogAdminPanelProps) {
         }}
         onUpdated={() => void load()}
       />
-    </section>
+    </>
   )
 }

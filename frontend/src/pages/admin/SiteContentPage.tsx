@@ -7,6 +7,12 @@ import {
   type SiteContentItem,
 } from '@/api/billingAdminApi'
 import { AgentMarkdown } from '@/components/agent/AgentMarkdown'
+import {
+  AppPageStack,
+  AppShellCard,
+  AppShellCardBody,
+  AppShellCardHeader,
+} from '@/components/layout/AppPageStack'
 import { Button } from '@/components/ui/button'
 import { ContentPending } from '@/components/loading/ContentPending'
 import { Input } from '@/components/ui/input'
@@ -70,72 +76,85 @@ export default function SiteContentPage() {
     }
   }
 
+  const selectedLabel =
+    SITE_CONTENT_KEYS.find((k) => k.key === selectedKey)?.label ?? selectedKey
+
   if (loading) {
     return <ContentPending label="加载站点内容…" />
   }
 
   return (
-    <div className="flex flex-col gap-4 lg:flex-row lg:gap-6">
-      <aside className="w-full shrink-0 lg:w-48">
-        <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">页面</p>
-        <ul className="space-y-1">
-          {SITE_CONTENT_KEYS.map((item) => (
-            <li key={item.key}>
-              <button
-                type="button"
-                onClick={() => selectKey(item.key)}
-                className={cn(
-                  'flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors',
-                  selectedKey === item.key
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-muted-foreground hover:bg-muted',
-                )}
-              >
-                <FileText className="size-4 shrink-0" />
-                {item.label}
-              </button>
-            </li>
-          ))}
-        </ul>
-      </aside>
+    <AppPageStack>
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+        <aside className="w-full shrink-0 lg:sticky lg:top-6 lg:w-52">
+          <AppShellCard>
+            <AppShellCardHeader title="页面" description="隐私 · 条款 · 公告" />
+            <AppShellCardBody className="py-2">
+              <ul className="space-y-0.5">
+                {SITE_CONTENT_KEYS.map((item) => (
+                  <li key={item.key}>
+                    <button
+                      type="button"
+                      onClick={() => selectKey(item.key)}
+                      className={cn(
+                        'flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors',
+                        selectedKey === item.key
+                          ? 'bg-primary/10 font-medium text-primary'
+                          : 'text-muted-foreground hover:bg-muted',
+                      )}
+                    >
+                      <FileText className="size-4 shrink-0" />
+                      {item.label}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </AppShellCardBody>
+          </AppShellCard>
+        </aside>
 
-      <div className="min-w-0 flex-1 space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="text-sm text-muted-foreground">
-            编辑 Markdown，保存后公开页与仪表盘公告即时生效。
-          </p>
-          <div className="flex gap-2">
-            <Button type="button" variant="outline" size="sm" onClick={() => setPreview((p) => !p)}>
-              <Eye className="mr-1.5 size-4" />
-              {preview ? '编辑' : '预览'}
-            </Button>
-            <Button type="button" size="sm" disabled={saving} onClick={() => void handleSave()}>
-              <Save className="mr-1.5 size-4" />
-              {saving ? '保存中…' : '保存'}
-            </Button>
-          </div>
-        </div>
-
-        {preview ? (
-          <div className="rounded-xl border border-border bg-card p-6">
-            <h2 className="mb-4 text-xl font-semibold">{title || '预览'}</h2>
-            <div className="prose prose-slate max-w-none text-muted-foreground">
-              <AgentMarkdown text={bodyMd || '*（空）*'} variant="memory" />
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="标题" />
-            <textarea
-              value={bodyMd}
-              onChange={(e) => setBodyMd(e.target.value)}
-              rows={18}
-              className="w-full rounded-xl border border-border bg-background px-3 py-2 font-mono text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-primary/30"
-              placeholder="Markdown 正文"
+        <div className="min-w-0 flex-1">
+          <AppShellCard>
+            <AppShellCardHeader
+              title={selectedLabel}
+              description="编辑 Markdown，保存后公开页与仪表盘公告即时生效。"
+              action={
+                <div className="flex shrink-0 gap-2">
+                  <Button type="button" variant="outline" size="sm" onClick={() => setPreview((p) => !p)}>
+                    <Eye className="mr-1.5 size-4" />
+                    {preview ? '编辑' : '预览'}
+                  </Button>
+                  <Button type="button" size="sm" disabled={saving} onClick={() => void handleSave()}>
+                    <Save className="mr-1.5 size-4" />
+                    {saving ? '保存中…' : '保存'}
+                  </Button>
+                </div>
+              }
             />
-          </div>
-        )}
+            <AppShellCardBody>
+              {preview ? (
+                <div>
+                  <h3 className="mb-4 text-xl font-semibold">{title || '预览'}</h3>
+                  <div className="prose prose-slate max-w-none text-muted-foreground">
+                    <AgentMarkdown text={bodyMd || '*（空）*'} variant="memory" />
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="标题" />
+                  <textarea
+                    value={bodyMd}
+                    onChange={(e) => setBodyMd(e.target.value)}
+                    rows={18}
+                    className="w-full rounded-xl border border-border bg-background px-3 py-2 font-mono text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    placeholder="Markdown 正文"
+                  />
+                </div>
+              )}
+            </AppShellCardBody>
+          </AppShellCard>
+        </div>
       </div>
-    </div>
+    </AppPageStack>
   )
 }

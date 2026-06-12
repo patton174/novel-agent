@@ -7,7 +7,15 @@ import { MarketingNav } from './MarketingNav'
 import { HomeFooterSection } from './sections/HomeFooterSection'
 import { MarketingMain } from '@/styles/surfaces/marketing'
 
-export function MarketingPageLayout({ children }: { children: ReactNode }) {
+type FooterVariant = 'full' | 'linksOnly'
+
+export function MarketingPageLayout({
+  children,
+  footerVariant = 'linksOnly',
+}: {
+  children: ReactNode
+  footerVariant?: FooterVariant
+}) {
   const { i18n } = useTranslation()
 
   useEffect(() => {
@@ -18,7 +26,7 @@ export function MarketingPageLayout({ children }: { children: ReactNode }) {
     <MarketingShell>
       <MarketingNav />
       <MarketingMain>{children}</MarketingMain>
-      <HomeFooterSection />
+      <HomeFooterSection variant={footerVariant} />
     </MarketingShell>
   )
 }

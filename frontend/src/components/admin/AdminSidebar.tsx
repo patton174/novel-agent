@@ -43,7 +43,7 @@ export function AdminSidebar({ embedded = false, onNavigate }: AdminSidebarProps
 
   return (
     <aside className={shellClass}>
-      <div className="flex h-14 items-center gap-2 px-4">
+      <div className="flex h-16 items-center gap-2 border-b border-sidebar-border px-4">
         <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
           <Shield className="size-4" />
         </div>

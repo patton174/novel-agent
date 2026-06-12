@@ -116,6 +116,37 @@ function revealText(text: string, startedAt: number, elapsed: number, duration: 
   return chars.slice(0, Math.round(chars.length * progress)).join('')
 }
 
+interface DemoPlaybackState {
+  composerText: string
+  showComposerPlaceholder: boolean
+  runActive: boolean
+  sending: boolean
+  promptVisible: boolean
+  orchestrationVisible: boolean
+  thinkVisible: boolean
+  thinkActive: boolean
+  thinkExpanded: boolean
+  thinkText: string
+  outputVisible: boolean
+  outputText: string
+  planVisible?: boolean
+  planActive?: boolean
+  writeVisible?: boolean
+  writeActive?: boolean
+  subagentVisible?: boolean
+  subagentActive?: boolean
+  subagentThinkVisible?: boolean
+  subagentMemoryVisible?: boolean
+  subagentMemoryActive?: boolean
+  subagentOutputVisible?: boolean
+  subagentOutputActive?: boolean
+  subagentComplete?: boolean
+  memoryVisible?: boolean
+  memoryActive?: boolean
+  chapterVisible?: boolean
+  chapterActive?: boolean
+}
+
 function useVisiblePlayback(
   ref: RefObject<HTMLElement | null>,
   autoPlay: boolean,
@@ -170,7 +201,7 @@ export function MarketingChatOrchestrationDemo({
   const copy = SCENE_COPY[scene]
   const Frame = variant === 'hero' ? HeroFrame : StoryFrame
 
-  const state = useMemo(() => {
+  const state = useMemo((): DemoPlaybackState => {
     const inputText = revealText(copy.prompt, 250, elapsed, 1_900)
     const runActive = elapsed >= timing.sendAt && elapsed < timing.runEnd
     const sending = elapsed >= timing.sendAt && elapsed < timing.sendAt + 280
@@ -282,59 +313,39 @@ export function MarketingChatOrchestrationDemo({
               {scene === 'subagent' ? (
                 state.subagentVisible ? (
                   <SubagentDemoPanel
-                    active={state.subagentActive}
-                    thinkVisible={state.subagentThinkVisible}
-                    memoryVisible={state.subagentMemoryVisible}
-                    memoryActive={state.subagentMemoryActive}
-                    outputVisible={state.subagentOutputVisible}
-                    outputActive={state.subagentOutputActive}
-                    complete={state.subagentComplete}
+                    active={Boolean(state.subagentActive)}
+                    thinkVisible={Boolean(state.subagentThinkVisible)}
+                    memoryVisible={Boolean(state.subagentMemoryVisible)}
+                    memoryActive={Boolean(state.subagentMemoryActive)}
+                    outputVisible={Boolean(state.subagentOutputVisible)}
+                    outputActive={Boolean(state.subagentOutputActive)}
+                    complete={Boolean(state.subagentComplete)}
                   />
                 ) : null
               ) : scene === 'think' ? (
                 <>
-                  {'planVisible' in state && state.planVisible ? (
-                    <ToolRow $active={'planActive' in state && Boolean(state.planActive)}>
-                      <TimelineIcon
-                        $status={
-                          'planActive' in state && state.planActive ? 'loading' : 'success'
-                        }
-                      >
-                        <ToolIcon
-                          name="TodoWrite"
-                          size={14}
-                          animate={'planActive' in state && Boolean(state.planActive)}
-                        />
+                  {state.planVisible ? (
+                    <ToolRow $active={Boolean(state.planActive)}>
+                      <TimelineIcon $status={state.planActive ? 'loading' : 'success'}>
+                        <ToolIcon name="TodoWrite" size={14} animate={Boolean(state.planActive)} />
                       </TimelineIcon>
                       <span>{copy.firstTool}</span>
                       <StepMeta>
-                        {'planActive' in state && state.planActive
-                          ? '进行中'
-                          : '已完成 · 首战 → 掉宝 → 钩子'}
+                        {state.planActive ? '进行中' : '已完成 · 首战 → 掉宝 → 钩子'}
                       </StepMeta>
                     </ToolRow>
                   ) : null}
                 </>
               ) : scene === 'stream' ? (
                 <>
-                  {'writeVisible' in state && state.writeVisible ? (
-                    <ToolRow $active={'writeActive' in state && Boolean(state.writeActive)}>
-                      <TimelineIcon
-                        $status={
-                          'writeActive' in state && state.writeActive ? 'loading' : 'success'
-                        }
-                      >
-                        <ToolIcon
-                          name="Write"
-                          size={14}
-                          animate={'writeActive' in state && Boolean(state.writeActive)}
-                        />
+                  {state.writeVisible ? (
+                    <ToolRow $active={Boolean(state.writeActive)}>
+                      <TimelineIcon $status={state.writeActive ? 'loading' : 'success'}>
+                        <ToolIcon name="Write" size={14} animate={Boolean(state.writeActive)} />
                       </TimelineIcon>
                       <span>{copy.firstTool}</span>
                       <StepMeta>
-                        {'writeActive' in state && state.writeActive
-                          ? '进行中 · 流式写入'
-                          : '已完成 · 第二章开头'}
+                        {state.writeActive ? '进行中 · 流式写入' : '已完成 · 第二章开头'}
                       </StepMeta>
                     </ToolRow>
                   ) : null}
@@ -342,9 +353,9 @@ export function MarketingChatOrchestrationDemo({
               ) : (
                 <>
                   {state.memoryVisible ? (
-                    <ToolRow $active={state.memoryActive}>
+                    <ToolRow $active={Boolean(state.memoryActive)}>
                       <TimelineIcon $status={state.memoryActive ? 'loading' : 'success'}>
-                        <ToolIcon name="Read" size={14} animate={state.memoryActive} />
+                        <ToolIcon name="Read" size={14} animate={Boolean(state.memoryActive)} />
                       </TimelineIcon>
                       <span>{copy.firstTool}</span>
                       <StepMeta>{state.memoryActive ? '进行中' : '已完成 · 读取内容'}</StepMeta>
@@ -352,9 +363,9 @@ export function MarketingChatOrchestrationDemo({
                   ) : null}
 
                   {state.chapterVisible ? (
-                    <ToolRow $active={state.chapterActive}>
+                    <ToolRow $active={Boolean(state.chapterActive)}>
                       <TimelineIcon $status={state.chapterActive ? 'loading' : 'success'}>
-                        <ToolIcon name="Read" size={14} animate={state.chapterActive} />
+                        <ToolIcon name="Read" size={14} animate={Boolean(state.chapterActive)} />
                       </TimelineIcon>
                       <span>{copy.secondTool}</span>
                       <StepMeta>{state.chapterActive ? '进行中' : '已完成 · 第一章 · 天赋觉醒'}</StepMeta>

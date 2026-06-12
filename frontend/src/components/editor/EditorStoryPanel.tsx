@@ -1,4 +1,4 @@
-import styled from 'styled-components'
+import styled, { css } from 'styled-components'
 
 import { ChapterInlineDiff } from './ChapterInlineDiff'
 
@@ -194,6 +194,14 @@ export function EditorStoryPanel({
     <StorySection>
 
       <StoryLayout>
+
+        {!outlineCollapsed ? (
+          <OutlineBackdrop
+            type="button"
+            aria-label="关闭章节目录"
+            onClick={() => onOutlineCollapsedChange(true)}
+          />
+        ) : null}
 
         <StoryOutlineAside $collapsed={outlineCollapsed}>
 
@@ -447,6 +455,36 @@ const StoryLayout = styled.div`
 
   overflow: hidden;
 
+  position: relative;
+
+`
+
+
+
+const OutlineBackdrop = styled.button`
+
+  display: none;
+
+  @media (max-width: 767px) {
+
+    display: block;
+
+    position: absolute;
+
+    inset: 0;
+
+    z-index: 20;
+
+    border: none;
+
+    padding: 0;
+
+    background: rgba(15, 23, 42, 0.38);
+
+    cursor: pointer;
+
+  }
+
 `
 
 
@@ -472,6 +510,21 @@ const StoryOutlineAside = styled.aside<{ $collapsed: boolean }>`
   transition: width 0.32s cubic-bezier(0.4, 0, 0.2, 1);
 
   overflow: hidden;
+
+  @media (max-width: 767px) {
+
+    ${({ $collapsed }) =>
+      !$collapsed &&
+      css`
+        position: absolute;
+        z-index: 24;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: min(280px, 88vw);
+        box-shadow: 4px 0 24px rgba(15, 23, 42, 0.14);
+      `}
+  }
 
 `
 
@@ -601,11 +654,21 @@ const StoryToolbar = styled.div`
 
   align-items: center;
 
+  gap: 0.75rem;
+
   padding: 0.75rem 1.5rem;
 
   background: ${editorTheme.bg};
 
   border-top: 1px solid rgba(0, 0, 0, 0.05);
+
+  @media (max-width: 767px) {
+
+    flex-wrap: wrap;
+
+    padding: 0.65rem 1rem;
+
+  }
 
 `
 
@@ -619,6 +682,22 @@ const StoryTitle = styled.span`
 
   color: ${editorTheme.text};
 
+  min-width: 0;
+
+  flex: 1;
+
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+
+  white-space: nowrap;
+
+  @media (max-width: 767px) {
+
+    flex-basis: 100%;
+
+  }
+
 `
 
 
@@ -628,6 +707,14 @@ const StoryActions = styled.div`
   display: flex;
 
   gap: 0.5rem;
+
+  flex-shrink: 0;
+
+  @media (max-width: 767px) {
+
+    margin-left: auto;
+
+  }
 
 `
 
@@ -644,6 +731,12 @@ const StoryContent = styled.div`
   background: ${editorTheme.bg};
 
   ${hideScrollbarCss}
+
+  @media (max-width: 767px) {
+
+    padding: 1rem;
+
+  }
 
 `
 
@@ -674,6 +767,16 @@ const ChapterEditor = styled.textarea<{ $streaming?: boolean }>`
   outline: none;
 
   white-space: pre-wrap;
+
+  @media (max-width: 767px) {
+
+    font-size: 1rem;
+
+    line-height: 1.85;
+
+    padding: 0;
+
+  }
 
   ${({ $streaming }) =>
 

@@ -8,6 +8,7 @@ import { DashboardAnnouncementBanner } from '../components/dashboard/DashboardAn
 import { DashboardHeader } from '../components/dashboard/DashboardHeader'
 import { DashboardQuickActions } from '../components/dashboard/DashboardQuickActions'
 import { MobileSidebarDrawer } from '../components/dashboard/MobileSidebarDrawer'
+import { AppShellMain } from '../components/layout/AppShellMain'
 import { LayoutOutletSkeleton } from '../components/loading/LayoutOutletSkeleton'
 import { useUserStore } from '../stores/userStore'
 
@@ -46,7 +47,7 @@ export default function DashboardLayout() {
   const meta = PAGE_META[location.pathname] ?? { title: '仪表盘' }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#eef1f6] text-foreground dark:bg-background">
+    <div className="flex h-screen overflow-hidden bg-background text-foreground">
       <div className="hidden h-full shrink-0 md:block">
         <AppSidebar />
       </div>
@@ -58,13 +59,11 @@ export default function DashboardLayout() {
           actions={<DashboardQuickActions />}
         />
         <DashboardAnnouncementBanner />
-        <main className="flex-1 overflow-y-auto bg-gradient-to-br from-[#eef1f6] via-background to-slate-50/80 dark:from-background dark:via-background dark:to-background">
-          <div className="mx-auto w-full max-w-[1440px] px-4 py-6 md:px-8 md:py-8">
-            <Suspense fallback={<LayoutOutletSkeleton />}>
-              <Outlet />
-            </Suspense>
-          </div>
-        </main>
+        <AppShellMain>
+          <Suspense fallback={<LayoutOutletSkeleton />}>
+            <Outlet />
+          </Suspense>
+        </AppShellMain>
       </div>
     </div>
   )

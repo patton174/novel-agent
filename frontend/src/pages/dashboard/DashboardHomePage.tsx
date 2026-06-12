@@ -18,14 +18,14 @@ import {
 } from '@/api/dashboardApi'
 import { ActivityHeatmap } from '@/components/dashboard/ActivityHeatmap'
 import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import {
+  AppPageStack,
+  AppShellCard,
+  AppShellCardBody,
+  AppShellCardHeader,
+  AppStatCard,
+} from '@/components/layout/AppPageStack'
 import { useMarkRouteSeen } from '@/hooks/useMarkRouteSeen'
 import { dashboardCache } from '@/stores/dashboardCacheStore'
 
@@ -127,16 +127,17 @@ export default function DashboardHomePage() {
   const activityLoading = activity === null
 
   return (
-    <div className="flex w-full flex-col gap-6">
-      <section className="relative overflow-hidden rounded-2xl border border-border/70 bg-gradient-to-r from-white via-white to-indigo-50/60 p-6 shadow-sm dark:from-surface dark:via-surface dark:to-indigo-950/20 md:p-8">
-        <div className="pointer-events-none absolute -right-16 -top-16 size-48 rounded-full bg-primary/10 blur-3xl" />
+    <AppPageStack>
+      <section className="relative overflow-hidden rounded-2xl border border-border/70 bg-gradient-to-br from-surface via-surface to-indigo-50/60 p-6 shadow-[0_20px_60px_-24px_rgba(79,70,229,0.25)] md:p-8">
+        <div className="pointer-events-none absolute -right-20 -top-20 size-56 rounded-full bg-primary/15 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-16 -left-16 size-48 rounded-full bg-violet-400/10 blur-3xl" />
         <div className="relative flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <p className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-primary/15 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
+            <p className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/8 px-3 py-1 text-xs font-semibold text-primary shadow-sm">
               <Sparkles className="size-3.5" />
               创作工作台
             </p>
-            <h2 className="text-2xl font-bold tracking-tight text-foreground md:text-3xl">
+            <h2 className="text-2xl font-bold tracking-tight text-foreground md:text-3xl lg:text-4xl">
               继续你的故事
             </h2>
             <p className="mt-2 max-w-xl text-sm text-muted-foreground md:text-base">
@@ -147,7 +148,7 @@ export default function DashboardHomePage() {
             <Button asChild variant="outline" className="rounded-xl">
               <Link to="/dashboard/novels">管理作品</Link>
             </Button>
-            <Button asChild className="rounded-xl bg-foreground px-6 text-background hover:bg-foreground/90">
+            <Button asChild className="rounded-xl px-6 shadow-md shadow-primary/20">
               <Link to="/editor">进入编辑器</Link>
             </Button>
           </div>
@@ -156,54 +157,45 @@ export default function DashboardHomePage() {
 
       <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         {STAT_CARDS.map((stat) => (
-          <Card key={stat.key} size="sm" className="border-border/70 bg-white/90 py-0 shadow-sm dark:bg-surface">
-            <CardContent className="flex items-center gap-3 px-4 py-4">
-              <div
-                className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${stat.bg}`}
-              >
-                <stat.icon className={`size-4.5 ${stat.color}`} />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-[11px] font-medium text-muted-foreground">{stat.label}</p>
-                <p className="mt-1 text-2xl font-bold tabular-nums leading-none text-foreground">
-                  {loading ? (
-                    <Skeleton className="mt-1 h-7 w-14" />
-                  ) : stat.format ? (
-                    stat.format(summary![stat.key])
-                  ) : (
-                    summary![stat.key].toLocaleString('zh-CN')
-                  )}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+          <AppStatCard
+            key={stat.key}
+            label={stat.label}
+            icon={stat.icon}
+            iconClassName={stat.color}
+            iconBgClassName={stat.bg}
+            loading={loading}
+            value={
+              loading
+                ? '—'
+                : stat.format
+                  ? stat.format(summary![stat.key])
+                  : summary![stat.key].toLocaleString('zh-CN')
+            }
+          />
         ))}
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
-        <Card className="border-border/70 bg-white/90 py-0 shadow-sm dark:bg-surface">
-          <CardHeader className="border-b border-border/60 px-6 py-4 [.border-b]:pb-4">
-            <CardTitle className="text-base font-semibold">创作活跃度</CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 md:p-6">
+        <AppShellCard>
+          <AppShellCardHeader title="创作活跃度" />
+          <AppShellCardBody className="pt-2">
             <ActivityHeatmap activity={activity} loading={activityLoading} />
-          </CardContent>
-        </Card>
+          </AppShellCardBody>
+        </AppShellCard>
 
-        <Card className="flex flex-col border-border/70 bg-white/90 py-0 shadow-sm dark:bg-surface">
-          <CardHeader className="border-b border-border/60 px-6 py-4 [.border-b]:pb-4">
-            <CardTitle className="text-base font-semibold">最近编辑</CardTitle>
-            <CardAction>
+        <AppShellCard className="flex flex-col">
+          <AppShellCardHeader
+            title="最近编辑"
+            action={
               <Button asChild variant="ghost" size="sm" className="h-7 gap-1 px-2 text-xs text-primary">
                 <Link to="/dashboard/novels">
                   查看全部
                   <ArrowRight className="size-3.5" />
                 </Link>
               </Button>
-            </CardAction>
-          </CardHeader>
-
-          <CardContent className="flex flex-1 flex-col p-0">
+            }
+          />
+          <AppShellCardBody className="flex flex-1 flex-col p-0">
             {loading ? (
               <div className="divide-y divide-border">
                 {Array.from({ length: 4 }).map((_, i) => (
@@ -261,11 +253,7 @@ export default function DashboardHomePage() {
                         最近编辑 {formatUpdatedAt(novel.updatedAt)}
                       </p>
                     </div>
-                    <Button
-                      asChild
-                      size="sm"
-                      className="shrink-0 rounded-lg bg-foreground px-3 text-background hover:bg-foreground/90"
-                    >
+                    <Button asChild size="sm" className="shrink-0 rounded-lg px-3">
                       <Link
                         to={
                           novel.lastChapterId ? `/editor/${novel.lastChapterId}` : '/editor'
@@ -278,9 +266,9 @@ export default function DashboardHomePage() {
                 ))}
               </div>
             )}
-          </CardContent>
-        </Card>
+          </AppShellCardBody>
+        </AppShellCard>
       </div>
-    </div>
+    </AppPageStack>
   )
 }

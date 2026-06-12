@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
+import { AppEmptyState, AppPageIntro, AppPageStack } from '@/components/layout/AppPageStack'
 import { BookOpen, Clock, ImagePlus, Plus, Sparkles } from 'lucide-react'
 import { CoverGenerateDialog } from '@/components/dashboard/CoverGenerateDialog'
 import { CoverImageGeneratingOverlay } from '@/components/dashboard/CoverImageGeneratingOverlay'
@@ -73,7 +74,7 @@ export default function NovelsPage() {
   const loading = novels === null
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 pb-12">
+    <AppPageStack wide>
       <CoverGenerateDialog
         open={dialogNovel != null}
         novelId={dialogNovel?.id ?? null}
@@ -91,58 +92,51 @@ export default function NovelsPage() {
         }}
       />
 
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-border bg-gradient-to-br from-primary/[0.04] via-surface to-violet-500/[0.06] px-5 py-4">
-        <div className="flex items-center gap-3">
-          <div className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary shadow-sm">
-            <BookOpen className="size-5" />
-          </div>
-          <div>
-            <p className="text-sm font-medium text-muted-foreground">作品库</p>
-            <p className="text-lg font-bold tabular-nums text-foreground">
-              {loading ? (
-                <InlineBrandLoader label="正在加载作品" className="text-base" />
-              ) : (
-                `共 ${novels!.length} 部作品`
-              )}
-            </p>
-          </div>
-        </div>
-        <Button
-          asChild
-          className="rounded-xl bg-primary px-5 text-primary-foreground shadow-sm transition-all hover:bg-primary/90 hover:text-white"
-        >
-          <Link to="/editor">
-            <Plus className="mr-2 size-4" />
-            新建小说
-          </Link>
-        </Button>
-      </div>
+      <AppPageIntro
+        eyebrow="作品库"
+        title={
+          loading ? (
+            <InlineBrandLoader label="正在加载作品" className="text-base" />
+          ) : (
+            `共 ${novels!.length} 部作品`
+          )
+        }
+        icon={BookOpen}
+        action={
+          <Button asChild className="rounded-xl px-5">
+            <Link to="/editor">
+              <Plus className="mr-2 size-4" />
+              新建小说
+            </Link>
+          </Button>
+        }
+      />
 
       {loading ? (
         <ContentPending label="正在加载作品列表" />
       ) : novels!.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-border bg-surface px-6 py-24 text-center shadow-sm">
-          <div className="mb-6 flex size-20 items-center justify-center rounded-full bg-primary/10">
-            <Sparkles className="size-9 text-primary" />
-          </div>
-          <h3 className="text-xl font-bold text-foreground">
-            {error ? '加载失败' : '开始你的创作之旅'}
-          </h3>
-          <p className="mt-2 max-w-md text-base text-muted-foreground">
-            {error
-              ? '暂时无法加载小说列表，请稍后重试'
-              : '创建一个新的小说项目，让 AI 助手帮你构建世界观、大纲和章节。'}
-          </p>
-          <Button
-            asChild
-            className="mt-8 rounded-xl bg-primary px-8 py-6 text-base text-primary-foreground shadow-md transition-all hover:bg-primary/90 hover:text-white"
-          >
-            <Link to="/editor">
-              <Plus className="mr-2 size-5" />
-              创建第一部作品
-            </Link>
-          </Button>
-        </div>
+        <AppEmptyState
+          icon={Sparkles}
+          title={error ? '加载失败' : '开始你的创作之旅'}
+          description={
+            error
+              ? '暂时无法加载小说列表，请稍后刷新重试。'
+              : '创建一个新的小说项目，让 AI 助手帮你构建世界观、大纲和章节。'
+          }
+          action={
+            !error ? (
+              <Button
+                asChild
+                className="rounded-xl bg-primary px-8 text-primary-foreground shadow-md hover:bg-primary/90"
+              >
+                <Link to="/editor">
+                  <Plus className="mr-2 size-5" />
+                  创建第一部作品
+                </Link>
+              </Button>
+            ) : undefined
+          }
+        />
       ) : (
         <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
           {novels!.map((novel, index) => {
@@ -197,13 +191,13 @@ export default function NovelsPage() {
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-2 border-t border-border/80 p-4 pt-0">
+                <div className="flex flex-col gap-2 border-t border-border/80 p-4">
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
                     disabled={isGenerating}
-                    className="mt-4 w-full rounded-xl border-border/90 text-foreground hover:border-primary/40 hover:bg-primary/5 hover:text-primary"
+                    className="w-full rounded-xl border-border/90 text-foreground hover:border-primary/40 hover:bg-primary/5 hover:text-primary"
                     onClick={() => setDialogNovel(novel)}
                   >
                     <ImagePlus className="mr-2 size-4" />
@@ -211,7 +205,7 @@ export default function NovelsPage() {
                   </Button>
                   <Button
                     asChild
-                    className="w-full rounded-xl bg-foreground text-background hover:bg-foreground/90"
+                    className="w-full rounded-xl"
                   >
                     <Link to="/editor">继续写作</Link>
                   </Button>
@@ -221,6 +215,6 @@ export default function NovelsPage() {
           })}
         </div>
       )}
-    </div>
+    </AppPageStack>
   )
 }

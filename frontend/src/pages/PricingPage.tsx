@@ -1,17 +1,21 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Check, Sparkles } from 'lucide-react'
+import { Check, ChevronDown } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { fetchPlans, formatTokenCount, type PlanPublic } from '@/api/billingApi'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { MarketingPageLayout } from '@/components/marketing/MarketingPageLayout'
+import { MarketingSubpageHero } from '@/components/marketing/MarketingSubpageHero'
 import { BreathingHotBadge } from '@/components/marketing/BreathingHotBadge'
+
+const FAQ_KEYS = ['1', '2', '3'] as const
 
 export default function PricingPage() {
   const { t } = useTranslation('marketing')
   const [plans, setPlans] = useState<PlanPublic[] | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [openFaq, setOpenFaq] = useState<string | null>('1')
 
   useEffect(() => {
     let cancelled = false
@@ -32,22 +36,25 @@ export default function PricingPage() {
 
   return (
     <MarketingPageLayout>
-      <div className="relative overflow-hidden px-6 pb-24 pt-28">
-        <div className="pointer-events-none absolute -top-24 left-1/2 h-[480px] w-[900px] -translate-x-1/2 rounded-full bg-primary/12 blur-[100px]" />
-        <div className="pointer-events-none absolute bottom-0 right-0 h-64 w-64 rounded-full bg-indigo-400/10 blur-3xl" />
+      <MarketingSubpageHero
+        variant="light"
+        eyebrow={t('nav.pricing')}
+        title={t('pricing.title')}
+        subtitle={
+          <>
+            {t('pricing.subtitle')}
+            <span className="mt-3 block text-sm text-muted-foreground">
+              {t('pricing.feasibilityNote')}{' '}
+              <Link to="/#feasibility" className="font-medium text-primary hover:underline">
+                {t('pricing.feasibilityLink')}
+              </Link>
+            </span>
+          </>
+        }
+      />
 
-        <div className="relative mx-auto max-w-6xl space-y-16">
-          <div className="mx-auto max-w-2xl space-y-4 text-center">
-            <div className="inline-flex items-center gap-2 rounded-full border border-primary/15 bg-primary/5 px-4 py-1.5 text-xs font-medium text-primary">
-              <Sparkles className="size-3.5" />
-              {t('nav.pricing')}
-            </div>
-            <h1 className="text-4xl font-bold tracking-tight text-foreground md:text-5xl">
-              {t('pricing.title')}
-            </h1>
-            <p className="text-lg leading-relaxed text-muted-foreground">{t('pricing.subtitle')}</p>
-          </div>
-
+      <div className="relative px-6 pb-24">
+        <div className="relative mx-auto max-w-6xl space-y-16 pt-12">
           {error ? <p className="text-center text-sm text-destructive">{error}</p> : null}
 
           <div className="mx-auto grid max-w-5xl gap-8 md:grid-cols-3">
@@ -60,17 +67,23 @@ export default function PricingPage() {
                     key={tier.code}
                     className={`group relative flex flex-col rounded-3xl border bg-surface/80 p-8 backdrop-blur-sm transition-all duration-500 hover:-translate-y-1.5 ${
                       tier.highlight
-                        ? 'z-10 scale-[1.02] border-primary/40 shadow-[0_20px_60px_-20px_rgba(79,70,229,0.45)] ring-1 ring-primary/25 md:-my-2'
-                        : 'border-border/80 shadow-soft hover:border-primary/20 hover:shadow-hover'
+                        ? 'z-10 scale-[1.03] border-primary/50 shadow-[0_24px_70px_-20px_rgba(79,70,229,0.55)] ring-2 ring-primary/20 md:-my-3'
+                        : 'border-border/80 shadow-soft hover:border-primary/25 hover:shadow-[0_20px_50px_-20px_rgba(79,70,229,0.2)]'
                     }`}
                   >
                     {tier.highlight ? (
-                      <div className="absolute -top-5 left-1/2 -translate-x-1/2">
-                        <BreathingHotBadge label={t('pricing.hotBadge')} />
-                      </div>
+                      <>
+                        <div
+                          aria-hidden
+                          className="pointer-events-none absolute -inset-px rounded-3xl bg-gradient-to-b from-primary/20 via-transparent to-violet-500/10 opacity-80"
+                        />
+                        <div className="absolute -top-5 left-1/2 -translate-x-1/2">
+                          <BreathingHotBadge label={t('pricing.hotBadge')} />
+                        </div>
+                      </>
                     ) : null}
 
-                    <div className="mb-6 pt-2">
+                    <div className="relative mb-6 pt-2">
                       <h3
                         className={`mb-2 text-xl font-semibold tracking-tight ${
                           tier.highlight ? 'text-primary' : 'text-foreground'
@@ -109,7 +122,7 @@ export default function PricingPage() {
                           <Check className="mt-0.5 size-4 shrink-0 text-primary/80" />
                           <span className="text-sm text-foreground/90">
                             {t('pricing.tokensPerMonth', {
-                              count: formatTokenCount(tier.monthlyTokenQuota),
+                              label: formatTokenCount(tier.monthlyTokenQuota),
                             })}
                           </span>
                         </li>
@@ -134,6 +147,33 @@ export default function PricingPage() {
                     </Button>
                   </div>
                 ))}
+          </div>
+
+          <div className="mx-auto max-w-2xl">
+            <h2 className="mb-6 text-center text-xl font-semibold text-foreground">{t('pricing.faqTitle')}</h2>
+            <div className="divide-y divide-border/60 overflow-hidden rounded-2xl border border-border/70 bg-white/80 shadow-[0_12px_40px_-16px_rgba(79,70,229,0.12)] backdrop-blur-sm">
+              {FAQ_KEYS.map((key) => {
+                const open = openFaq === key
+                return (
+                  <div key={key}>
+                    <button
+                      type="button"
+                      className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left text-sm font-medium text-foreground hover:bg-surface-hover"
+                      aria-expanded={open}
+                      onClick={() => setOpenFaq(open ? null : key)}
+                    >
+                      {t(`pricing.faq.${key}.q`)}
+                      <ChevronDown className={`size-4 shrink-0 text-muted-foreground transition-transform ${open ? 'rotate-180' : ''}`} />
+                    </button>
+                    {open ? (
+                      <p className="px-5 pb-4 text-sm leading-relaxed text-muted-foreground">
+                        {t(`pricing.faq.${key}.a`)}
+                      </p>
+                    ) : null}
+                  </div>
+                )
+              })}
+            </div>
           </div>
         </div>
       </div>

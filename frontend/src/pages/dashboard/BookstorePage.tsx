@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { BookMarked, Loader2, Plus } from 'lucide-react'
+import { AppEmptyState, AppPageIntro, AppPageStack } from '@/components/layout/AppPageStack'
+import { BookMarked, BookOpen, Loader2, Plus } from 'lucide-react'
 import {
   addCatalogToLibrary,
   fetchCatalogNovels,
@@ -10,6 +11,25 @@ import { Button } from '@/components/ui/button'
 import { ContentPending } from '@/components/loading/ContentPending'
 import { useMarkRouteSeen } from '@/hooks/useMarkRouteSeen'
 import { appToast } from '@/stores/appToastStore'
+
+function CatalogCover({ novel }: { novel: CatalogNovel }) {
+  if (novel.coverUrl) {
+    return (
+      <img
+        src={novel.coverUrl}
+        alt={`${novel.title} 封面`}
+        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+        loading="lazy"
+      />
+    )
+  }
+
+  return (
+    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/10 to-violet-500/10">
+      <BookOpen className="size-12 text-primary/40" />
+    </div>
+  )
+}
 
 export default function BookstorePage() {
   useMarkRouteSeen()
@@ -45,43 +65,57 @@ export default function BookstorePage() {
   const loading = novels === null
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 pb-12">
-      <div className="rounded-2xl border border-border bg-gradient-to-br from-violet-500/[0.06] via-surface to-primary/[0.04] px-5 py-4">
-        <div className="flex items-center gap-3">
-          <div className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
-            <BookMarked className="size-5" />
-          </div>
-          <div>
-            <p className="text-sm font-medium text-muted-foreground">公共书库</p>
-            <p className="text-lg font-bold">浏览 AI 爬取的作品，一键加入我的小说</p>
-          </div>
-        </div>
-      </div>
+    <AppPageStack wide>
+      <AppPageIntro
+        eyebrow="公共书库"
+        title="浏览 AI 爬取的作品，一键加入我的小说"
+        icon={BookMarked}
+      />
 
       {loading ? (
         <ContentPending label="正在加载书库" />
       ) : novels.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-border px-6 py-16 text-center text-muted-foreground">
-          书库暂无作品，管理员启动爬虫后会出现在这里
-        </div>
+        <AppEmptyState
+          icon={BookMarked}
+          title="书库暂无作品"
+          description="管理员启动爬虫任务后，收录的作品会出现在这里，你可以一键加入个人作品库继续创作。"
+        />
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {novels.map((novel) => (
+        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+          {novels.map((novel, index) => (
             <article
               key={novel.id}
-              className="flex flex-col rounded-2xl border border-border bg-surface p-5 shadow-soft"
+              className="group relative flex flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-soft transition-all duration-300 hover:-translate-y-1 hover:border-primary/25 hover:shadow-hover"
             >
-              <h3 className="line-clamp-2 text-lg font-bold">{novel.title}</h3>
-              {novel.author ? (
-                <p className="mt-1 text-sm text-muted-foreground">{novel.author}</p>
-              ) : null}
-              {novel.description ? (
-                <p className="mt-2 line-clamp-3 text-sm text-muted-foreground">{novel.description}</p>
-              ) : null}
-              <p className="mt-auto pt-4 text-xs text-muted-foreground">共 {novel.chapterCount} 章</p>
-              <div className="mt-3 flex gap-2">
+              <div
+                className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary via-violet-500 to-indigo-400"
+                style={{ opacity: 0.35 + (index % 3) * 0.15 }}
+              />
+              <div className="relative aspect-[3/4] w-full overflow-hidden bg-muted">
+                <CatalogCover novel={novel} />
+              </div>
+
+              <div className="flex flex-1 flex-col p-5">
+                <h3
+                  className="line-clamp-2 text-lg font-bold leading-snug text-foreground"
+                  title={novel.title}
+                >
+                  {novel.title}
+                </h3>
+                {novel.author ? (
+                  <p className="mt-1 text-sm text-muted-foreground">{novel.author}</p>
+                ) : null}
+                {novel.description ? (
+                  <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-muted-foreground">
+                    {novel.description}
+                  </p>
+                ) : null}
+                <p className="mt-auto pt-3 text-xs text-muted-foreground">共 {novel.chapterCount} 章</p>
+              </div>
+
+              <div className="flex flex-col gap-2 border-t border-border/80 p-4">
                 <Button
-                  className="flex-1 rounded-xl"
+                  className="w-full rounded-xl"
                   disabled={addingId === novel.id}
                   onClick={() => void handleAdd(novel.id)}
                 >
@@ -92,7 +126,7 @@ export default function BookstorePage() {
                   )}
                   加入我的作品
                 </Button>
-                <Button asChild variant="outline" className="rounded-xl">
+                <Button asChild variant="outline" className="w-full rounded-xl border-border/90">
                   <Link to="/dashboard/novels">去作品库</Link>
                 </Button>
               </div>
@@ -100,6 +134,6 @@ export default function BookstorePage() {
           ))}
         </div>
       )}
-    </div>
+    </AppPageStack>
   )
 }

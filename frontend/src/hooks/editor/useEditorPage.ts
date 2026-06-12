@@ -21,7 +21,9 @@ import { useEditorBootstrap } from './useEditorBootstrap'
 export function useEditorPage() {
   const [activeCenterTab, setActiveCenterTab] = useState<EditorCenterTab>('chat')
   const [showCreateNovel, setShowCreateNovel] = useState(false)
-  const [storyOutlineCollapsed, setStoryOutlineCollapsed] = useState(false)
+  const [storyOutlineCollapsed, setStoryOutlineCollapsed] = useState(() =>
+    typeof window !== 'undefined' ? window.matchMedia('(max-width: 767px)').matches : false,
+  )
   const [versionsExpanded, setVersionsExpanded] = useState(false)
   const [versionPreview, setVersionPreview] = useState<ChapterVersion | null>(null)
   const [messages, setMessages] = useState<EditorMessage[]>([INITIAL_ASSISTANT_MESSAGE])
@@ -30,6 +32,16 @@ export function useEditorPage() {
   const [hostModeEnabled, setHostModeEnabled] = useState(readHostModePreference)
 
   const landingPromptSeeded = useRef(false)
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)')
+    const onChange = () => {
+      if (mq.matches) setStoryOutlineCollapsed(true)
+    }
+    onChange()
+    mq.addEventListener('change', onChange)
+    return () => mq.removeEventListener('change', onChange)
+  }, [])
+
   useEffect(() => {
     if (landingPromptSeeded.current) return
     const prompt = searchParams.get('prompt')?.trim()

@@ -1,0 +1,225 @@
+/* 营销页视觉特效 — 配合 prefers-reduced-motion 降级 */
+
+@keyframes mkt-gradient-shift {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes mkt-float-slow {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(28px, -36px) scale(1.06);
+  }
+  66% {
+    transform: translate(-18px, 22px) scale(0.96);
+  }
+}
+
+@keyframes mkt-float-slower {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(-32px, 28px) scale(1.08);
+  }
+}
+
+@keyframes mkt-shimmer {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(120%);
+  }
+}
+
+@keyframes mkt-text-shine {
+  0% {
+    background-position: 0% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+@keyframes mkt-glow-breathe {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.04);
+  }
+}
+
+@keyframes mkt-footer-gradient {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.mkt-gradient-text {
+  background: linear-gradient(
+    105deg,
+    #4338ca 0%,
+    #6366f1 22%,
+    #a78bfa 45%,
+    #818cf8 68%,
+    #4f46e5 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: mkt-text-shine 7s linear infinite;
+}
+
+.mkt-cta-glow {
+  position: relative;
+  overflow: hidden;
+  box-shadow:
+    0 0 0 1px rgba(79, 70, 229, 0.25),
+    0 6px 20px rgba(79, 70, 229, 0.35),
+    0 20px 50px -12px rgba(79, 70, 229, 0.28);
+}
+
+.mkt-cta-glow::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 35%,
+    rgba(255, 255, 255, 0.28) 50%,
+    transparent 65%
+  );
+  animation: mkt-shimmer 4s ease-in-out infinite;
+}
+
+.mkt-glass-pill {
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 2px 12px rgba(15, 23, 42, 0.06);
+}
+
+.mkt-grid-bg {
+  background-image:
+    linear-gradient(rgba(79, 70, 229, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(79, 70, 229, 0.04) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 85% 75% at 50% 35%, black 15%, transparent 72%);
+}
+
+.mkt-orb {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(72px);
+  pointer-events: none;
+  will-change: transform;
+}
+
+.mkt-orb--slow {
+  animation: mkt-float-slow 20s ease-in-out infinite;
+}
+
+.mkt-orb--slower {
+  animation: mkt-float-slower 26s ease-in-out infinite;
+}
+
+.mkt-card-lift {
+  transition:
+    transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.35s;
+}
+
+.mkt-card-lift:hover {
+  transform: translateY(-8px);
+  box-shadow:
+    0 28px 56px -16px rgba(79, 70, 229, 0.22),
+    0 12px 24px -8px rgba(15, 23, 42, 0.08);
+  border-color: rgba(79, 70, 229, 0.28);
+}
+
+.mkt-hero-demo-glow {
+  box-shadow:
+    0 0 0 1px rgba(79, 70, 229, 0.12),
+    0 32px 80px -28px rgba(79, 70, 229, 0.55),
+    0 16px 40px -20px rgba(15, 23, 42, 0.12);
+}
+
+.mkt-footer-cta-band {
+  background: linear-gradient(
+    125deg,
+    #312e81 0%,
+    #4338ca 28%,
+    #4f46e5 52%,
+    #6366f1 78%,
+    #4338ca 100%
+  );
+  background-size: 200% 200%;
+  animation: mkt-footer-gradient 12s ease infinite;
+}
+
+.mkt-starfield {
+  background-image: radial-gradient(1.5px 1.5px at 20px 30px, rgba(255, 255, 255, 0.35), transparent),
+    radial-gradient(1px 1px at 80px 120px, rgba(255, 255, 255, 0.2), transparent),
+    radial-gradient(1.5px 1.5px at 160px 60px, rgba(199, 210, 254, 0.4), transparent),
+    radial-gradient(1px 1px at 240px 180px, rgba(255, 255, 255, 0.15), transparent),
+    radial-gradient(1px 1px at 320px 40px, rgba(165, 180, 252, 0.3), transparent);
+  background-size: 360px 220px;
+  opacity: 0.7;
+}
+
+.mkt-auth-panel {
+  background: linear-gradient(
+    145deg,
+    #1e1b4b 0%,
+    #312e81 35%,
+    #4338ca 65%,
+    #4f46e5 100%
+  );
+  background-size: 200% 200%;
+  animation: mkt-footer-gradient 18s ease infinite;
+}
+
+.mkt-form-card {
+  transition: box-shadow 0.35s ease;
+}
+
+.mkt-form-card:focus-within {
+  box-shadow:
+    0 0 0 1px rgba(79, 70, 229, 0.15),
+    0 24px 64px -20px rgba(79, 70, 229, 0.28);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mkt-gradient-text,
+  .mkt-cta-glow::after,
+  .mkt-orb--slow,
+  .mkt-orb--slower,
+  .mkt-footer-cta-band,
+  .mkt-auth-panel {
+    animation: none !important;
+  }
+
+  .mkt-card-lift:hover {
+    transform: none;
+  }
+}

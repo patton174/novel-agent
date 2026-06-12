@@ -3,8 +3,8 @@ import styled from 'styled-components'
 
 const Wrap = styled.div`
   width: 100%;
-  margin: 2.5rem auto 0;
-  padding: 0 0.5rem;
+  margin: 0 auto;
+  padding: 0;
 `
 
 /** 首屏：聊天流式编排循环演示 */

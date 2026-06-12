@@ -6,6 +6,8 @@ import { ArrowLeft } from 'lucide-react'
 import { fetchUserInfo } from '../api/userApi'
 import { AdminSidebar } from '../components/admin/AdminSidebar'
 import { MobileAdminDrawer } from '../components/admin/MobileAdminDrawer'
+import { AppShellHeader } from '../components/layout/AppShellHeader'
+import { AppShellMain } from '../components/layout/AppShellMain'
 import { LayoutOutletSkeleton } from '../components/loading/LayoutOutletSkeleton'
 import { Avatar, AvatarFallback } from '../components/ui/avatar'
 import { Badge } from '../components/ui/badge'
@@ -58,40 +60,37 @@ export default function AdminLayout() {
         <AdminSidebar />
       </div>
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-border px-4 md:px-6">
-          <div className="flex min-w-0 flex-1 items-center gap-2">
-            <MobileAdminDrawer />
-            <div className="min-w-0">
-            <h1 className="text-base font-semibold leading-none">{meta.title}</h1>
-            {meta.description ? (
-              <p className="mt-1 text-xs text-muted-foreground">{meta.description}</p>
-            ) : null}
+        <AppShellHeader
+          title={meta.title}
+          description={meta.description}
+          leading={<MobileAdminDrawer />}
+          actions={
+            <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+              <Button asChild variant="outline" size="sm" className="hidden h-9 sm:inline-flex">
+                <Link to="/dashboard">
+                  <ArrowLeft className="size-4" />
+                  返回用户端
+                </Link>
+              </Button>
+              <Badge variant="secondary" className="hidden sm:inline-flex">
+                管理员
+              </Badge>
+              <div className="flex items-center gap-2">
+                <span className="hidden max-w-[8rem] truncate text-sm text-muted-foreground md:inline">
+                  {profile?.username || '管理员'}
+                </span>
+                <Avatar size="sm">
+                  <AvatarFallback>{initials}</AvatarFallback>
+                </Avatar>
+              </div>
             </div>
-          </div>
-
-          <div className="flex shrink-0 items-center gap-3">
-            <Button asChild variant="outline" size="sm" className="hidden sm:inline-flex">
-              <Link to="/dashboard">
-                <ArrowLeft className="size-4" />
-                返回用户端
-              </Link>
-            </Button>
-            <Badge variant="secondary">管理员</Badge>
-            <div className="flex items-center gap-2">
-              <span className="hidden text-sm text-muted-foreground sm:inline">
-                {profile?.username || '管理员'}
-              </span>
-              <Avatar size="sm">
-                <AvatarFallback>{initials}</AvatarFallback>
-              </Avatar>
-            </div>
-          </div>
-        </header>
-        <main className="flex-1 overflow-y-auto p-6">
+          }
+        />
+        <AppShellMain>
           <Suspense fallback={<LayoutOutletSkeleton />}>
             <Outlet />
           </Suspense>
-        </main>
+        </AppShellMain>
       </div>
     </div>
   )

@@ -13,6 +13,12 @@ import {
 } from '@/api/billingAdminApi'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { DataTableFrame } from '@/components/layout/DataTableFrame'
+import {
+  AppPageStack,
+  AppShellCard,
+  AppShellCardHeader,
+} from '@/components/layout/AppPageStack'
 import {
   Dialog,
   DialogContent,
@@ -25,6 +31,7 @@ import { Input } from '@/components/ui/input'
 import { ContentPending } from '@/components/loading/ContentPending'
 import { useMarkRouteSeen } from '@/hooks/useMarkRouteSeen'
 import { appToast } from '@/stores/appToastStore'
+import { confirmAction } from '@/stores/confirmDialogStore'
 import { cn } from '@/lib/utils'
 
 const emptyForm = (): AdminPlanUpsertPayload => ({
@@ -125,7 +132,14 @@ export default function PlansPage() {
   }
 
   const handleDeactivate = async (plan: AdminPlan) => {
-    if (!window.confirm(`确定停用套餐「${plan.name}」？Pricing 页将不再展示。`)) {
+    if (
+      !(await confirmAction({
+        title: '停用套餐',
+        description: `确定停用「${plan.name}」？Pricing 页将不再展示。`,
+        confirmLabel: '停用',
+        danger: true,
+      }))
+    ) {
       return
     }
     try {
@@ -142,19 +156,21 @@ export default function PlansPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-sm text-muted-foreground">
-          修改价格或配额后，Pricing / Billing 页刷新即生效。
-        </p>
-        <Button type="button" variant="outline" size="sm" onClick={openCreate}>
-          <Plus className="mr-1.5 size-4" />
-          新建套餐
-        </Button>
-      </div>
+    <AppPageStack>
+      <AppShellCard>
+        <AppShellCardHeader
+          title="套餐列表"
+          description="修改价格或配额后，Pricing / Billing 页刷新即生效。"
+          action={
+            <Button type="button" variant="outline" size="sm" onClick={openCreate}>
+              <Plus className="mr-1.5 size-4" />
+              新建套餐
+            </Button>
+          }
+        />
 
-      <div className="overflow-hidden rounded-xl border border-border">
-        <table className="w-full text-sm">
+        <DataTableFrame embedded>
+        <table className="w-full min-w-[880px] text-sm">
           <thead className="bg-muted/40 text-left text-xs text-muted-foreground">
             <tr>
               <th className="px-4 py-3 font-medium">套餐</th>
@@ -217,7 +233,8 @@ export default function PlansPage() {
             ))}
           </tbody>
         </table>
-      </div>
+      </DataTableFrame>
+      </AppShellCard>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
@@ -354,6 +371,6 @@ export default function PlansPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </AppPageStack>
   )
 }

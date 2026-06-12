@@ -4,12 +4,11 @@ import { fetchSubscription, fetchUsageCurrent, formatTokenCount } from '@/api/bi
 import { fetchUserInfo } from '@/api/userApi'
 import { AccountSettingsPanel } from '@/components/dashboard/AccountSettingsPanel'
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+  AppPageStack,
+  AppShellCard,
+  AppShellCardBody,
+  AppShellCardHeader,
+} from '@/components/layout/AppPageStack'
 import { Button } from '@/components/ui/button'
 import { ContentPending } from '@/components/loading/ContentPending'
 import { useMarkRouteSeen } from '@/hooks/useMarkRouteSeen'
@@ -55,13 +54,10 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
-      <Card className="py-0 shadow-none">
-        <CardHeader className="border-b px-6 py-5 [.border-b]:pb-5">
-          <CardTitle className="text-base font-semibold">账户信息</CardTitle>
-          <CardDescription>邮箱验证与基本资料</CardDescription>
-        </CardHeader>
-        <CardContent className="px-6 py-5">
+    <AppPageStack narrow>
+      <AppShellCard>
+        <AppShellCardHeader title="账户信息" description="邮箱验证与基本资料" />
+        <AppShellCardBody>
           <AccountSettingsPanel
             profile={profile}
             onVerified={() => {
@@ -71,28 +67,25 @@ export default function SettingsPage() {
               })
             }}
           />
-        </CardContent>
-      </Card>
+        </AppShellCardBody>
+      </AppShellCard>
 
-      <Card className="py-0 shadow-none">
-        <CardHeader className="border-b px-6 py-5 [.border-b]:pb-5">
-          <CardTitle className="text-base font-semibold">订阅与用量</CardTitle>
-          <CardDescription>当前套餐与本月 Token 使用情况</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4 px-6 py-5">
-          <div className="flex items-center justify-between rounded-lg border border-border px-4 py-3 text-sm">
+      <AppShellCard>
+        <AppShellCardHeader title="订阅与用量" description="当前套餐与本月 Token 使用情况" />
+        <AppShellCardBody className="flex flex-col gap-4">
+          <div className="flex items-center justify-between rounded-xl border border-border bg-muted/30 px-4 py-3 text-sm">
             <span className="text-muted-foreground">当前套餐</span>
             <span className="font-medium">{planName ?? '—'}</span>
           </div>
-          <div className="flex items-center justify-between rounded-lg border border-border px-4 py-3 text-sm">
+          <div className="flex items-center justify-between rounded-xl border border-border bg-muted/30 px-4 py-3 text-sm">
             <span className="text-muted-foreground">本月 Tokens</span>
             <span className="font-medium tabular-nums">{tokenSummary ?? '—'}</span>
           </div>
           <Button asChild variant="outline" className="w-full sm:w-auto">
             <Link to="/dashboard/billing">查看账单与升级</Link>
           </Button>
-        </CardContent>
-      </Card>
-    </div>
+        </AppShellCardBody>
+      </AppShellCard>
+    </AppPageStack>
   )
 }

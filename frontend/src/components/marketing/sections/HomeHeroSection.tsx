@@ -1,60 +1,125 @@
 import { motion, useReducedMotion } from 'framer-motion'
+import { ChevronDown, Sparkles } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { isLoggedIn } from '../../../utils/auth'
+import { MarketingHeroDemo } from '../demo/MarketingHeroDemo'
+import { MarketingAmbient } from '../MarketingAmbient'
 import { ArrowIcon } from '../icons'
 
+const TRUST_KEYS = ['trustFree', 'trustZh', 'trustStream', 'trustMemory'] as const
+
 export function HomeHeroSection() {
+  const { t } = useTranslation('marketing')
   const navigate = useNavigate()
   const reduced = useReducedMotion()
 
-  const goStart = () => navigate(isLoggedIn() ? '/dashboard' : '/login')
+  const goStart = () => navigate(isLoggedIn() ? '/dashboard' : '/register')
+  const scrollToFeasibility = () => {
+    document.getElementById('feasibility')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
 
-  const content = (
-    <div className="relative max-w-5xl mx-auto px-6 text-center">
-      {/* Background glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-primary/10 blur-[120px] rounded-full pointer-events-none -z-10" />
+  const fade = (delay: number) =>
+    reduced
+      ? {}
+      : {
+          initial: { opacity: 0, y: 24 },
+          animate: { opacity: 1, y: 0 },
+          transition: { duration: 0.65, delay, ease: [0.22, 1, 0.36, 1] as const },
+        }
 
-      <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-foreground mb-8 leading-tight">
-        专为小说创作打造的 Agent<br />
-        <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-indigo-400">理解你的笔触与灵感</span>
-      </h1>
-      
-      <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-12 leading-relaxed">
-        从世界观构建到章节续写 — 思维链、编排、子代理、流式成稿，一站完成。
-      </p>
-      
-      <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-        <button 
+  const inner = (
+    <div className="relative mx-auto max-w-6xl px-6 text-center">
+      <motion.p
+        {...fade(0)}
+        className="mb-5 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-white/70 px-4 py-1.5 text-xs font-semibold tracking-wide text-primary shadow-sm backdrop-blur-md"
+      >
+        <Sparkles className="size-3.5" />
+        {t('home.hero.eyebrow')}
+      </motion.p>
+
+      <motion.h1
+        {...fade(0.08)}
+        className="mb-6 text-4xl font-bold leading-[1.1] tracking-tight text-foreground sm:text-5xl md:text-6xl lg:text-[4.25rem]"
+      >
+        {t('home.hero.title')}
+        <br />
+        <span className={reduced ? 'text-primary' : 'mkt-gradient-text'}>
+          {t('home.hero.titleAccent')}
+        </span>
+      </motion.h1>
+
+      <motion.p
+        {...fade(0.16)}
+        className="mx-auto mb-8 max-w-2xl text-lg leading-relaxed text-muted-foreground md:text-xl"
+      >
+        {t('home.hero.subtitle')}
+      </motion.p>
+
+      <motion.div
+        {...fade(0.24)}
+        className="mb-8 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4"
+      >
+        <button
+          type="button"
           onClick={goStart}
-          className="flex items-center gap-2 bg-primary text-primary-foreground px-8 py-4 rounded-full text-lg font-semibold hover:bg-primary-hover transition-all hover:-translate-y-1 shadow-md hover:shadow-lg"
+          className="mkt-cta-glow flex items-center gap-2 rounded-full bg-primary px-8 py-3.5 text-base font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5 hover:bg-primary-hover"
         >
-          开始创作
+          {t('home.hero.ctaPrimary')}
           <ArrowIcon />
         </button>
-        <button 
-          onClick={() => navigate('/login')}
-          className="flex items-center gap-2 bg-white text-foreground border border-border px-8 py-4 rounded-full text-lg font-semibold hover:bg-surface-hover transition-all hover:-translate-y-1 shadow-sm hover:shadow-md"
+        <button
+          type="button"
+          onClick={scrollToFeasibility}
+          className="flex items-center gap-2 rounded-full border border-border/80 bg-white/80 px-8 py-3.5 text-base font-semibold text-foreground shadow-sm backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:border-primary/25 hover:bg-white hover:shadow-md"
         >
-          登录账号
+          {t('home.hero.ctaSecondary')}
         </button>
-      </div>
+      </motion.div>
+
+      <motion.div
+        {...fade(0.32)}
+        className="mb-10 flex flex-wrap items-center justify-center gap-2"
+      >
+        {TRUST_KEYS.map((key) => (
+          <span key={key} className="mkt-glass-pill rounded-full px-3 py-1 text-xs font-medium text-muted-foreground">
+            {t(`home.hero.${key}`)}
+          </span>
+        ))}
+      </motion.div>
+
+      <motion.div {...fade(0.4)} className="relative mx-auto max-w-4xl">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -inset-6 rounded-[2rem] bg-gradient-to-r from-indigo-500/25 via-violet-500/20 to-indigo-500/25 blur-3xl motion-reduce:opacity-70"
+          style={reduced ? undefined : { animation: 'mkt-glow-breathe 5s ease-in-out infinite' }}
+        />
+        <div className="mkt-hero-demo-glow relative overflow-hidden rounded-2xl border border-white/70 bg-white/50 p-1 ring-1 ring-indigo-500/10 backdrop-blur-md">
+          <MarketingHeroDemo />
+        </div>
+      </motion.div>
+
+      <motion.button
+        {...fade(0.48)}
+        type="button"
+        onClick={scrollToFeasibility}
+        className="group mx-auto mt-10 flex flex-col items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-primary"
+        aria-label={t('home.hero.scrollHint')}
+      >
+        <span>{t('home.hero.scrollHint')}</span>
+        <ChevronDown className="size-4 animate-bounce motion-reduce:animate-none" />
+      </motion.button>
     </div>
   )
 
   return (
-    <section id="hero" className="relative overflow-hidden bg-background min-h-screen flex items-center justify-center pt-16">
-      {reduced ? (
-        content
-      ) : (
-        <motion.div
-          initial={{ opacity: 0, y: 28 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-          className="w-full"
-        >
-          {content}
-        </motion.div>
-      )}
+    <section
+      id="hero"
+      className="relative flex min-h-[100vh] flex-col items-center justify-center overflow-hidden bg-background pb-8 pt-20 md:pb-12 md:pt-24"
+    >
+      <MarketingAmbient variant="hero" />
+      <div className="mkt-grid-bg pointer-events-none absolute inset-0" />
+      <div className="w-full">{inner}</div>
     </section>
   )
 }

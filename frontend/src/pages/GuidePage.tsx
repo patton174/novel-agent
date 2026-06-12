@@ -1,84 +1,108 @@
-import { Link } from 'react-router-dom'
-import {
-  BookOpen,
-  GitBranch,
-  PenLine,
-  Rocket,
-  ArrowRight,
-} from 'lucide-react'
-import { useTranslation } from 'react-i18next'
-import { MarketingPageLayout } from '@/components/marketing/MarketingPageLayout'
-
-const STEP_ICONS = [BookOpen, GitBranch, PenLine, Rocket] as const
-
-export default function GuidePage() {
-  const { t } = useTranslation('marketing')
-
-  const steps = [1, 2, 3, 4] as const
-
-  return (
-    <MarketingPageLayout>
-      <div className="relative overflow-hidden px-6 pb-24 pt-28">
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
-        <div className="pointer-events-none absolute left-1/2 top-20 h-72 w-72 -translate-x-1/2 rounded-full bg-primary/8 blur-3xl" />
-
-        <div className="relative mx-auto max-w-4xl space-y-16">
-          <header className="space-y-4 text-center">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary/80">
-              {t('guide.eyebrow')}
-            </p>
-            <h1 className="text-4xl font-bold tracking-tight text-foreground md:text-5xl">
-              {t('guide.title')}
-            </h1>
-            <p className="mx-auto max-w-2xl text-lg leading-relaxed text-muted-foreground">
-              {t('guide.subtitle')}
-            </p>
-          </header>
-
-          <ol className="relative space-y-0">
-            <div
-              aria-hidden
-              className="absolute bottom-4 left-8 top-4 hidden w-px bg-gradient-to-b from-primary/40 via-primary/20 to-transparent md:block"
-            />
-            {steps.map((n, index) => {
-              const Icon = STEP_ICONS[index]
-              return (
-                <li
-                  key={n}
-                  className="group relative grid gap-6 pb-12 md:grid-cols-[4rem_1fr] md:gap-10"
-                >
-                  <div className="relative z-10 flex md:justify-center">
-                    <div className="flex size-16 items-center justify-center rounded-2xl border border-primary/15 bg-gradient-to-br from-primary/10 to-indigo-500/5 shadow-soft transition-all duration-500 group-hover:scale-105 group-hover:border-primary/30 group-hover:shadow-hover">
-                      <Icon className="size-7 text-primary" strokeWidth={1.75} />
-                    </div>
-                  </div>
-                  <article className="rounded-2xl border border-border/70 bg-surface/90 p-8 shadow-soft backdrop-blur-sm transition-all duration-500 group-hover:-translate-y-0.5 group-hover:border-primary/20 group-hover:shadow-hover">
-                    <span className="mb-3 inline-block text-[11px] font-semibold tabular-nums tracking-widest text-primary/70">
-                      STEP {String(n).padStart(2, '0')}
-                    </span>
-                    <h2 className="mb-3 text-xl font-semibold tracking-tight text-foreground">
-                      {t(`guide.steps.${n}.title`)}
-                    </h2>
-                    <p className="text-sm leading-relaxed text-muted-foreground">
-                      {t(`guide.steps.${n}.desc`)}
-                    </p>
-                  </article>
-                </li>
-              )
-            })}
-          </ol>
-
-          <div className="flex justify-center pt-4">
-            <Link
-              to="/register"
-              className="inline-flex items-center gap-2 rounded-full bg-primary px-8 py-3.5 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/25 transition-all hover:-translate-y-0.5 hover:bg-primary-hover hover:shadow-xl"
-            >
-              {t('guide.cta')}
-              <ArrowRight className="size-4" />
-            </Link>
-          </div>
-        </div>
-      </div>
-    </MarketingPageLayout>
-  )
-}
+import { Link } from 'react-router-dom'
+import { BookOpen, GitBranch, PenLine, Rocket, ArrowRight, CheckCircle2 } from 'lucide-react'
+import { motion } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
+import { MarketingPageLayout } from '@/components/marketing/MarketingPageLayout'
+import { MarketingSubpageHero } from '@/components/marketing/MarketingSubpageHero'
+
+const STEP_ICONS = [BookOpen, GitBranch, PenLine, Rocket] as const
+const SUITABILITY_KEYS = ['1', '2', '3'] as const
+
+export default function GuidePage() {
+  const { t } = useTranslation('marketing')
+  const steps = [1, 2, 3, 4] as const
+
+  return (
+    <MarketingPageLayout>
+      <MarketingSubpageHero
+        variant="soft"
+        eyebrow={t('guide.eyebrow')}
+        title={t('guide.title')}
+        subtitle={t('guide.subtitle')}
+        action={
+          <Link
+            to="/register"
+            className="mkt-cta-glow inline-flex shrink-0 items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition hover:-translate-y-0.5 hover:bg-primary-hover"
+          >
+            {t('guide.cta')}
+            <ArrowRight className="size-4" />
+          </Link>
+        }
+      />
+
+      <div className="mx-auto grid max-w-6xl gap-12 px-6 py-16 lg:grid-cols-[220px_1fr] lg:gap-16">
+        <aside className="space-y-8">
+          <nav className="hidden lg:block">
+            <div className="sticky top-28 space-y-1 rounded-2xl border border-border/60 bg-white/80 p-4 shadow-sm backdrop-blur-sm">
+              <p className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+                {t('guide.toc')}
+              </p>
+              {steps.map((n) => (
+                <a
+                  key={n}
+                  href={`#step-${n}`}
+                  className="block rounded-lg px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-primary/5 hover:text-primary"
+                >
+                  {String(n).padStart(2, '0')} · {t(`guide.steps.${n}.title`)}
+                </a>
+              ))}
+            </div>
+          </nav>
+
+          <div className="rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/[0.08] to-violet-500/[0.04] p-5 shadow-[0_12px_40px_-16px_rgba(79,70,229,0.2)] lg:sticky lg:top-[22rem]">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-primary">
+              {t('guide.suitabilityTitle')}
+            </p>
+            <ul className="space-y-2.5">
+              {SUITABILITY_KEYS.map((key) => (
+                <li key={key} className="flex gap-2 text-sm leading-relaxed text-muted-foreground">
+                  <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-primary/80" />
+                  {t(`guide.suitability.${key}`)}
+                </li>
+              ))}
+            </ul>
+            <Link
+              to="/#feasibility"
+              className="mt-4 inline-flex text-xs font-semibold text-primary hover:underline"
+            >
+              {t('pricing.feasibilityLink')} →
+            </Link>
+          </div>
+        </aside>
+
+        <ol className="space-y-6">
+          {steps.map((n, index) => {
+            const Icon = STEP_ICONS[index]
+            return (
+              <motion.li
+                id={`step-${n}`}
+                key={n}
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: '-8% 0px' }}
+                transition={{ duration: 0.45, delay: index * 0.05 }}
+                className="mkt-card-lift scroll-mt-28 rounded-2xl border border-border/70 bg-white/90 p-6 shadow-[0_8px_32px_-12px_rgba(79,70,229,0.1)] backdrop-blur-sm md:p-8"
+              >
+                <div className="mb-4 flex items-center gap-3">
+                  <div className="flex size-11 items-center justify-center rounded-xl bg-gradient-to-br from-primary/15 to-indigo-500/5 ring-1 ring-primary/15">
+                    <Icon className="size-5 text-primary" strokeWidth={1.75} />
+                  </div>
+                  <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-semibold tabular-nums tracking-widest text-muted-foreground">
+                    STEP {String(n).padStart(2, '0')}
+                  </span>
+                </div>
+                <h2 className="mb-2 text-xl font-semibold tracking-tight text-foreground md:text-2xl">
+                  {t(`guide.steps.${n}.title`)}
+                </h2>
+                <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground md:text-base">
+                  {t(`guide.steps.${n}.desc`)}
+                </p>
+              </motion.li>
+            )
+          })}
+        </ol>
+      </div>
+    </MarketingPageLayout>
+  )
+}
+
