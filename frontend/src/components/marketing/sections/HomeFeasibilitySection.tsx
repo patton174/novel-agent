@@ -80,11 +80,9 @@ export function HomeFeasibilitySection() {
         >
           <div className="border-b border-border/60 bg-gradient-to-r from-primary/[0.04] to-transparent px-5 py-4 md:px-6">
             <h3 className="text-sm font-semibold text-foreground">{t('home.feasibility.compareTitle')}</h3>
+            <p className="mt-1 text-[11px] text-muted-foreground md:hidden">← 左右滑动查看更多 →</p>
           </div>
           <div className="relative overflow-x-auto">
-            <p className="pointer-events-none absolute right-3 top-2 z-10 rounded-full bg-background/90 px-2 py-0.5 text-[10px] font-medium text-muted-foreground shadow-sm md:hidden">
-              ← 左右滑动查看更多 →
-            </p>
             <table className="w-full min-w-[520px] text-left text-sm">
               <thead>
                 <tr className="border-b border-border/50 text-xs uppercase tracking-wider text-muted-foreground">

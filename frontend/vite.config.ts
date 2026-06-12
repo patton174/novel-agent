@@ -126,7 +126,6 @@ export default defineConfig(({ mode }) => {
             if (id.includes('framer-motion')) return 'motion'
             if (id.includes('/gsap')) return 'gsap'
             if (id.includes('react-markdown') || id.includes('remark-')) return 'markdown'
-            if (id.includes('styled-components')) return 'styled'
             if (id.includes('@radix-ui') || id.includes('radix-ui')) return 'radix'
             if (id.includes('lucide-react')) return 'icons'
             if (id.includes('i18next')) return 'i18n'

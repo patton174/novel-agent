@@ -120,6 +120,14 @@
 - [x] 剩余 timeline todo/excerpt/subagent → Tailwind
 - [x] **App.tsx** 移除 `ThemeProvider`（styled-components 运行时包已从 bundle 剔除）
 
+## Phase 5 — Auth 抛光 + 依赖收尾
+
+- [x] **认证控件高度统一** `h-11`（44px）：`authFieldClass`、`AuthSubmitButton`、`AuthCodeField`、`MKT_CTA_AUTH` / `MKT_CTA_AUTH_OUTLINE`、注册页验证码按钮
+- [x] **RegisterPage** 营销侧栏 footer → 与 Login 一致的 pill 标签（去掉 ✓ 列表）
+- [x] **删除死代码** `components/login/button/Button.tsx`、`components/login/input/Input.tsx` 及空目录
+- [x] **移除 styled-components**：`pnpm remove styled-components`、删除 `types/styled.d.ts`、vite `manualChunks` 去掉 `styled`
+- [x] **HomeFeasibilitySection** 对比表标题下增加移动端横向滑动提示文案
+
 ---
 
 ## Phase 2B 验收

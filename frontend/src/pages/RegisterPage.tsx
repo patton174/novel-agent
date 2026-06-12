@@ -173,14 +173,16 @@ const RegisterPage: React.FC = () => {
         headline: '免费开始你的连载项目',
         description: '注册即可体验透明编排、世界观记忆与流式成稿。免费套餐含月度 AI 额度。',
         footer: (
-          <ul className="space-y-2 pt-1 text-sm text-white/85">
-            {['完整 Agent 流程可试用', '章节与记忆云端保存', '用量在创作台透明可见'].map((text) => (
-              <li key={text} className="flex items-center gap-2">
-                <span className="text-indigo-200">✓</span>
+          <div className="flex flex-wrap gap-2 pt-1">
+            {['Agent 可试用', '云端保存', '用量透明'].map((text) => (
+              <span
+                key={text}
+                className="rounded-full border border-white/20 bg-white/10 px-2.5 py-0.5 text-[11px] font-medium text-white/90"
+              >
                 {text}
-              </li>
+              </span>
             ))}
-          </ul>
+          </div>
         ),
       }}
       legal={!registrationClosed ? <AuthLegalNotice variant="register" /> : undefined}
@@ -249,7 +251,7 @@ const RegisterPage: React.FC = () => {
                 onClick={handleSendCodeClick}
                 className={cn(
                   MKT_CTA_AUTH_OUTLINE,
-                  'h-10 w-auto shrink-0 px-3 text-xs',
+                  'h-11 w-auto shrink-0 px-3 text-xs',
                   'disabled:cursor-not-allowed disabled:opacity-50',
                 )}
               >

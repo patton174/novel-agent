@@ -30,7 +30,7 @@ export function AuthCodeField({
           aria-describedby={error ? `${id}-error` : hint ? `${id}-hint` : undefined}
           className={cn(
             authFieldClass,
-            'h-10 min-w-0 flex-1',
+            'min-w-0 flex-1',
             error &&
               'border-destructive/60 focus:border-destructive/60 focus:ring-destructive/20',
             inputClassName,

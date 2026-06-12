@@ -17,9 +17,9 @@ export const MKT_CTA_TIER_HIGHLIGHT =
 export const MKT_CTA_TIER_OUTLINE =
   `${MKT_CTA_TIER} border border-border bg-surface text-foreground hover:border-primary/40 hover:bg-surface-hover`
 
-/** 认证页全宽按钮（与 AuthField h-10 对齐） */
+/** 认证页全宽按钮（与 AuthField h-11 对齐） */
 export const MKT_CTA_AUTH =
-  'mkt-cta-glow inline-flex h-10 w-full items-center justify-center gap-2 rounded-full bg-primary text-sm font-medium text-primary-foreground transition hover:bg-primary-hover'
+  'mkt-cta-glow inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-primary text-sm font-medium text-primary-foreground transition hover:bg-primary-hover'
 
 export const MKT_CTA_AUTH_OUTLINE =
-  'inline-flex h-10 w-full items-center justify-center rounded-full border border-border text-sm font-medium text-foreground transition hover:bg-muted/50'
+  'inline-flex h-11 w-full items-center justify-center rounded-full border border-border text-sm font-medium text-foreground transition hover:bg-muted/50'
