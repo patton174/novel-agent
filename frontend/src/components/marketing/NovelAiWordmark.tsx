@@ -57,7 +57,7 @@ export function NovelAiWordmark({
   size = 'md',
   animate = true,
   className,
-  label = 'Novel Agent',
+  label = 'Novel AI',
 }: NovelAiWordmarkProps) {
   const uid = useId().replace(/:/g, '')
   const novelStrokeRef = useRef<SVGTextElement>(null)

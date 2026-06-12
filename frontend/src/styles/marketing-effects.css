@@ -149,12 +149,14 @@
     border-color 0.35s;
 }
 
-.mkt-card-lift:hover {
-  transform: translateY(-8px);
-  box-shadow:
-    0 28px 56px -16px rgba(79, 70, 229, 0.22),
-    0 12px 24px -8px rgba(15, 23, 42, 0.08);
-  border-color: rgba(79, 70, 229, 0.28);
+@media (hover: hover) and (pointer: fine) {
+  .mkt-card-lift:hover {
+    transform: translateY(-8px);
+    box-shadow:
+      0 28px 56px -16px rgba(79, 70, 229, 0.22),
+      0 12px 24px -8px rgba(15, 23, 42, 0.08);
+    border-color: rgba(79, 70, 229, 0.28);
+  }
 }
 
 .mkt-hero-demo-glow {

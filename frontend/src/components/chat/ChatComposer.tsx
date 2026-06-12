@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import styled from 'styled-components'
 import { ContextUsageMeter } from '../agent/ContextUsageMeter'
 import type { AgentContextUsage } from '../../types/agent'
-import { NeumorphicSwitch } from '../ui/NeumorphicSwitch'
+import { Switch } from '../ui/switch'
 import { EditorButton, EditorSendIconLayer } from '../ui/EditorButton'
 import { editorTheme } from '../../styles/editorTheme'
 import { editorModalSurface } from '../../styles/editorModal'
@@ -99,10 +99,9 @@ export function ChatComposer({
               title={hostModeEnabled ? 'AI 持续盯防，可后台长时运行' : '关闭时为单次对话'}
             >
               <HostModeTitle>托管</HostModeTitle>
-              <NeumorphicSwitch
-                size="composer"
+              <Switch
                 checked={hostModeEnabled}
-                onChange={onHostModeChange}
+                onCheckedChange={onHostModeChange}
                 aria-label="托管模式"
               />
             </HostModeControl>

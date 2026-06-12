@@ -34,7 +34,7 @@ export function HomeScrollStory() {
             <Sparkles className="size-3" />
             {t('home.story.introEyebrow')}
           </p>
-          <h2 className="mb-2 text-2xl font-bold tracking-tight text-foreground md:text-3xl lg:text-4xl">
+          <h2 className="mb-2 text-3xl font-bold tracking-tight text-foreground md:text-4xl lg:text-4xl">
             {t('home.story.introTitle')}
           </h2>
           <p className="text-sm leading-relaxed text-muted-foreground md:text-base">

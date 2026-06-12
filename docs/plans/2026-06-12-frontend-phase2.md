@@ -40,6 +40,16 @@
 - [ ] 营销 GSAP / styled-components 与 Tailwind rhythm 统一（ redesign 级）
 - [ ] 编辑器 neumorphic 与 shadcn 视觉融合（ redesign 级）
 
+## Phase 2C — 本批执行
+
+- [x] **品牌统一**：i18n / Wordmark / demo 标题 → Novel AI
+- [x] **滚动分镜 rhythm**：`CursorFeatureSection` padding 对齐 `py-20`（5rem）
+- [x] **Story intro 标题**：与 Feasibility 同级 `text-3xl md:text-4xl`
+- [x] **Hero demo 移动可见**：小屏 `scale-[0.94]`，不再 `hidden sm:block`
+- [x] **mkt-card-lift**：仅 `(hover: hover)` 设备生效
+- [x] **MarketingSubpageHero**：小屏 action 全宽
+- [x] **编辑器 Switch**：`NeumorphicSwitch` → shadcn `Switch`（Composer + Settings）
+
 ---
 
 ## Phase 2B 验收

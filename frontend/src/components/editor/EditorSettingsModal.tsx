@@ -1,5 +1,5 @@
 import styled from 'styled-components'
-import { NeumorphicSwitch } from '../ui/NeumorphicSwitch'
+import { Switch } from '../ui/switch'
 import { EditorButton } from '../ui/EditorButton'
 import { editorTheme } from '../../styles/editorTheme'
 import {
@@ -57,10 +57,9 @@ export function EditorSettingsModal({
                 <ToggleLabel>AI 盯防模式</ToggleLabel>
                 <ToggleHint>开启后任务可在后台长时运行；关闭则为单次对话</ToggleHint>
               </ToggleText>
-              <NeumorphicSwitch
-                size="xs"
+              <Switch
                 checked={hostModeEnabled}
-                onChange={onHostModeChange}
+                onCheckedChange={onHostModeChange}
                 aria-label="AI 盯防模式"
               />
             </ToggleRow>

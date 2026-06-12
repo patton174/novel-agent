@@ -44,7 +44,7 @@ export const CursorLandingRoot = styled.div`
 export const CursorFeatureSection = styled.section`
   position: relative;
   width: 100%;
-  padding: 4.5rem 1.5rem 5rem;
+  padding: 5rem 1.5rem;
   scroll-margin-top: 72px;
 `
 

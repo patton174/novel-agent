@@ -98,7 +98,9 @@ export function MarketingSubpageHero({
           ) : null}
           {children}
         </motion.div>
-        {action ? <div className="shrink-0 self-start md:self-auto">{action}</div> : null}
+        {action ? (
+          <div className="w-full shrink-0 self-stretch sm:w-auto sm:self-auto">{action}</div>
+        ) : null}
       </div>
     </section>
   )

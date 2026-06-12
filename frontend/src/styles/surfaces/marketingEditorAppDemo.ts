@@ -37,6 +37,11 @@ export const AppMockRoot = styled.div`
     0 24px 64px rgba(0, 0, 0, 0.12);
   transform-style: preserve-3d;
   will-change: transform, opacity;
+
+  @media (max-width: 640px) {
+    border-radius: ${radius.lg};
+    font-size: 0.94em;
+  }
 `
 
 export const AppBrowserBar = styled.div`
