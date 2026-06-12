@@ -1,6 +1,7 @@
 package cn.novelstudio.module.billing.service.biz;
 
 import cn.novelstudio.module.billing.dto.SiteDanmakuCreateReq;
+import cn.novelstudio.module.billing.dto.SiteDanmakuPageResp;
 import cn.novelstudio.module.billing.dto.SiteDanmakuResp;
 import cn.novelstudio.module.billing.entity.SiteDanmakuEntity;
 import cn.novelstudio.module.billing.repository.SiteDanmakuRepository;
@@ -10,6 +11,7 @@ import cn.novelstudio.kernel.biz.BaseBiz;
 import cn.novelstudio.kernel.enums.ResultCode;
 import cn.novelstudio.kernel.exception.BizException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +29,21 @@ public class SiteDanmakuBiz extends BaseBiz {
             .map(this::toResp)
             .toList();
         return ok(list);
+    }
+
+    public Result<SiteDanmakuPageResp> listPage(int pageSize, Long beforeId) {
+        int size = Math.max(1, Math.min(pageSize, 50));
+        PageRequest page = PageRequest.of(0, size + 1);
+        List<SiteDanmakuEntity> rows = beforeId == null || beforeId <= 0
+            ? siteDanmakuRepository.findByOrderByCreatedAtDesc(page)
+            : siteDanmakuRepository.findByIdLessThanOrderByCreatedAtDesc(beforeId, page);
+
+        boolean hasMore = rows.size() > size;
+        List<SiteDanmakuEntity> slice = hasMore ? rows.subList(0, size) : rows;
+        List<SiteDanmakuResp> list = slice.stream().map(this::toResp).toList();
+        Long nextBeforeId = list.isEmpty() ? null : list.get(list.size() - 1).id();
+
+        return ok(new SiteDanmakuPageResp(list, hasMore, nextBeforeId));
     }
 
     @Transactional

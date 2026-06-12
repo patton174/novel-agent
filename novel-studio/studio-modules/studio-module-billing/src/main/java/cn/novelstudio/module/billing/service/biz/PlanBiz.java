@@ -43,9 +43,9 @@ public class PlanBiz extends BaseBiz {
             .map(f -> featureLabel(f.getFeatureKey()))
             .toList();
         String priceLabel = plan.getPriceCents() == null
-            ? "Custom"
-            : (plan.getPriceCents() == 0 ? "Free" : "¥" + (plan.getPriceCents() / 100));
-        String periodLabel = plan.getPriceCents() != null && plan.getPriceCents() > 0 ? "/mo" : null;
+            ? "定制"
+            : (plan.getPriceCents() == 0 ? "免费" : "¥" + (plan.getPriceCents() / 100));
+        String periodLabel = plan.getPriceCents() != null && plan.getPriceCents() > 0 ? "/月" : null;
         String cta = switch (plan.getCode()) {
             case "hobby" -> "免费开始";
             case "pro" -> "联系升级";
@@ -69,13 +69,13 @@ public class PlanBiz extends BaseBiz {
 
     private static String featureLabel(String key) {
         return switch (key) {
-            case "basic_editor" -> "Basic Editor";
-            case "txt_export" -> "Export to TXT";
-            case "pdf_export" -> "Export to PDF/EPUB";
-            case "custom_model" -> "Custom AI Models";
-            case "priority_support" -> "Priority Support";
-            case "team_collaboration" -> "Team Collaboration";
-            case "custom_integrations" -> "Custom Integrations";
+            case "basic_editor" -> "智能编辑器";
+            case "txt_export" -> "导出 TXT";
+            case "pdf_export" -> "导出 PDF / EPUB";
+            case "custom_model" -> "自定义 AI 模型";
+            case "priority_support" -> "优先技术支持";
+            case "team_collaboration" -> "团队协作";
+            case "custom_integrations" -> "定制集成";
             default -> key;
         };
     }

@@ -86,8 +86,11 @@ public class BillingAuthController extends BaseController {
     }
 
     @GetMapping("/danmaku")
-    public Result<List<SiteDanmakuResp>> danmakuList() {
-        return siteDanmakuBiz.listRecent();
+    public Result<SiteDanmakuPageResp> danmakuList(
+        @RequestParam(defaultValue = "30") int pageSize,
+        @RequestParam(required = false) Long beforeId
+    ) {
+        return siteDanmakuBiz.listPage(pageSize, beforeId);
     }
 
     @PostMapping("/danmaku")
