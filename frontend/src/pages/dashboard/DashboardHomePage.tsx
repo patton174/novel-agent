@@ -18,6 +18,7 @@ import {
 } from '@/api/dashboardApi'
 import { ActivityHeatmap } from '@/components/dashboard/ActivityHeatmap'
 import { Button } from '@/components/ui/button'
+import { APP_BTN, APP_BTN_MD } from '@/lib/appButtonTokens'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   AppPageStack,
@@ -145,7 +146,7 @@ export default function DashboardHomePage() {
             </p>
           </div>
           <div className="flex shrink-0 flex-wrap gap-3">
-            <Button asChild variant="outline" className="rounded-xl">
+            <Button asChild variant="outline" className={APP_BTN_MD}>
               <Link to="/dashboard/novels">管理作品</Link>
             </Button>
           </div>
@@ -219,7 +220,7 @@ export default function DashboardHomePage() {
                     ? '暂时无法加载数据，请稍后重试'
                     : '创建一个新的小说项目，让 AI 助手帮你构建世界观和章节。'}
                 </p>
-                <Button asChild className="mt-5 rounded-xl px-6">
+                <Button asChild className={`mt-5 px-6 ${APP_BTN_MD}`}>
                   <Link to="/editor">新建小说</Link>
                 </Button>
               </div>
@@ -250,11 +251,9 @@ export default function DashboardHomePage() {
                         最近编辑 {formatUpdatedAt(novel.updatedAt)}
                       </p>
                     </div>
-                    <Button asChild size="sm" className="shrink-0 rounded-lg px-3">
+                    <Button asChild size="sm" className={`shrink-0 px-3 ${APP_BTN}`}>
                       <Link
-                        to={
-                          novel.lastChapterId ? `/editor/${novel.lastChapterId}` : '/editor'
-                        }
+                        to={`/editor?novelId=${encodeURIComponent(novel.novelId)}`}
                       >
                         继续写作
                       </Link>

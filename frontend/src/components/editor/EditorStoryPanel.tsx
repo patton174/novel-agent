@@ -664,9 +664,9 @@ const StoryToolbar = styled.div`
 
   @media (max-width: 767px) {
 
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
 
-    padding: 0.65rem 1rem;
+    padding: 0.55rem 1rem;
 
   }
 
@@ -694,7 +694,9 @@ const StoryTitle = styled.span`
 
   @media (max-width: 767px) {
 
-    flex-basis: 100%;
+    flex: 1;
+
+    min-width: 0;
 
   }
 
@@ -712,7 +714,7 @@ const StoryActions = styled.div`
 
   @media (max-width: 767px) {
 
-    margin-left: auto;
+    flex-shrink: 0;
 
   }
 

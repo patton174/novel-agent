@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Loader2, Pencil, Save, Search, Trash2, X } from 'lucide-react'
+import { ChevronDown, List, Loader2, Pencil, Save, Search, Trash2, X } from 'lucide-react'
 import {
   deleteCatalogChapter,
   fetchCatalogChapter,
@@ -48,6 +48,11 @@ export function CatalogReaderModal({
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [query, setQuery] = useState('')
+  const [mobileChapterOpen, setMobileChapterOpen] = useState(false)
+
+  useEffect(() => {
+    if (!open) setMobileChapterOpen(false)
+  }, [open])
 
   const loadChapters = useCallback(async (novelId: string) => {
     const list = await fetchCatalogChapters(novelId)
@@ -180,8 +185,22 @@ export function CatalogReaderModal({
           </div>
         </div>
 
-        <div className="grid min-h-0 flex-1 grid-cols-1 md:grid-cols-[240px_minmax(0,1fr)]">
-          <aside className="flex min-h-0 flex-col border-b border-border md:border-b-0 md:border-r">
+        <div className="relative grid min-h-0 flex-1 grid-cols-1 md:grid-cols-[240px_minmax(0,1fr)]">
+          {mobileChapterOpen ? (
+            <button
+              type="button"
+              aria-label="关闭目录"
+              className="absolute inset-0 z-10 bg-black/40 md:hidden"
+              onClick={() => setMobileChapterOpen(false)}
+            />
+          ) : null}
+          <aside
+            className={cn(
+              'flex min-h-0 flex-col border-b border-border md:border-b-0 md:border-r',
+              'max-md:absolute max-md:inset-y-0 max-md:left-0 max-md:z-20 max-md:w-[min(280px,88vw)] max-md:border-r max-md:bg-background max-md:shadow-xl',
+              !mobileChapterOpen && 'max-md:hidden',
+            )}
+          >
             <div className="border-b border-border px-3 py-2">
               <div className="relative">
                 <Search className="absolute left-2 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -209,7 +228,10 @@ export function CatalogReaderModal({
                     <li key={ch.id}>
                       <button
                         type="button"
-                        onClick={() => setSelectedChapterId(ch.id)}
+                        onClick={() => {
+                          setSelectedChapterId(ch.id)
+                          setMobileChapterOpen(false)
+                        }}
                         className={cn(
                           'flex w-full flex-col gap-0.5 border-l-2 border-transparent px-3 py-2 text-left text-sm transition-colors hover:bg-muted/50',
                           selectedChapterId === ch.id &&
@@ -234,9 +256,25 @@ export function CatalogReaderModal({
           </aside>
 
           <div className="flex min-h-0 flex-col">
+            <div className="flex shrink-0 items-center gap-2 border-b border-border px-4 py-2 md:hidden">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="shrink-0 rounded-xl"
+                onClick={() => setMobileChapterOpen(true)}
+              >
+                <List className="mr-1.5 size-3.5" />
+                目录
+              </Button>
+              <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
+                {chapterDetail?.title ?? (selectedChapterId ? '加载中…' : '选择章节')}
+              </span>
+              <ChevronDown className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+            </div>
             {!selectedChapterId ? (
               <div className="flex flex-1 items-center justify-center p-8 text-sm text-muted-foreground">
-                请从左侧选择章节
+                请从目录选择章节
               </div>
             ) : loadingChapter ? (
               <div className="flex flex-1 items-center justify-center gap-2 p-8 text-sm text-muted-foreground">

@@ -21,6 +21,7 @@ import { CrawlJobDetailModal } from '@/components/admin/CrawlJobDetailModal'
 import { CrawlJobRow } from '@/components/admin/CrawlJobRow'
 import { OrchestratorLogTerminal } from '@/components/admin/OrchestratorLogTerminal'
 import { Button } from '@/components/ui/button'
+import { AdminPagination } from '@/components/layout/AdminPagination'
 import { ContentPending } from '@/components/loading/ContentPending'
 import {
   AppPageStack,
@@ -41,6 +42,8 @@ import { appToast } from '@/stores/appToastStore'
 const DEFAULT_GOAL =
   '把链接中的小说全部章节抓取并清洗正文，入库公共书库（书籍页、目录页、章节页均可）'
 
+const JOBS_PAGE_SIZE = 20
+
 type JobFilter = 'all' | 'active' | 'failed'
 
 export default function CrawlerPage() {
@@ -59,6 +62,7 @@ export default function CrawlerPage() {
   const [logRefreshKey, setLogRefreshKey] = useState(0)
   const [logClearKey, setLogClearKey] = useState(0)
   const [jobFilter, setJobFilter] = useState<JobFilter>('all')
+  const [jobPage, setJobPage] = useState(1)
   const orchGoalSyncedRef = useRef(false)
 
   const serverGoal = orchState?.goal?.trim() ?? ''
@@ -290,6 +294,17 @@ export default function CrawlerPage() {
     }
   }, [jobs])
 
+  useEffect(() => {
+    setJobPage(1)
+  }, [jobFilter])
+
+  const jobTotalPages = Math.max(1, Math.ceil(filteredJobs.length / JOBS_PAGE_SIZE))
+
+  const paginatedJobs = useMemo(() => {
+    const start = (jobPage - 1) * JOBS_PAGE_SIZE
+    return filteredJobs.slice(start, start + JOBS_PAGE_SIZE)
+  }, [filteredJobs, jobPage])
+
   const orchBanner = orchState?.agentEnabled === false
     ? 'orchestrator-disabled'
     : orchState?.agentLlmConfigured === false
@@ -422,7 +437,10 @@ export default function CrawlerPage() {
               <button
                 key={key}
                 type="button"
-                onClick={() => setJobFilter(key)}
+                onClick={() => {
+                  setJobFilter(key)
+                  setJobPage(1)
+                }}
                 className={cn(
                   'rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
                   jobFilter === key
@@ -444,17 +462,26 @@ export default function CrawlerPage() {
               : '当前筛选下没有子任务。'}
           </p>
         ) : (
-          <div className="space-y-1.5">
-            {filteredJobs.map((job) => (
-              <CrawlJobRow
-                key={job.id}
-                job={job}
-                actingKey={actingKey}
-                onOpen={openDetail}
-                onAction={runAction}
-              />
-            ))}
-          </div>
+          <>
+            <div className="space-y-1.5">
+              {paginatedJobs.map((job) => (
+                <CrawlJobRow
+                  key={job.id}
+                  job={job}
+                  actingKey={actingKey}
+                  onOpen={openDetail}
+                  onAction={runAction}
+                />
+              ))}
+            </div>
+            <AdminPagination
+              pageCurrent={jobPage}
+              totalPages={jobTotalPages}
+              totalCount={filteredJobs.length}
+              loading={jobsLoading}
+              onPageChange={setJobPage}
+            />
+          </>
         )}
         </AppShellCardBody>
       </AppShellCard>

@@ -704,6 +704,13 @@ const ChoiceDesc = styled.div`
   ${textStyle('micro')}
   color: ${editorTheme.textMuted};
   line-height: 1.4;
+
+  @media (max-width: 767px) {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
 `
 
 /** 子 Agent 嵌套卡片（挂在 Agent 工具分支下） */

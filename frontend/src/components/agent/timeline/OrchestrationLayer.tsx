@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEditorMobile } from '../../../hooks/useMediaQuery'
 import type { AgentStepState } from '../../../types/agent'
 import {
   deriveOrchestrationHeadline,
@@ -52,8 +53,9 @@ export function OrchestrationLayer({
   ) => ReactNode
 }) {
   const isActive = status === 'active' && streamLive && !streamFinished
+  const isMobile = useEditorMobile()
   const userToggledRef = useRef(false)
-  const [expanded, setExpanded] = useState(true)
+  const [expanded, setExpanded] = useState(() => !isMobile)
 
   useEffect(() => {
     if (pinExpanded) {
@@ -68,6 +70,11 @@ export function OrchestrationLayer({
       setExpanded(true)
     }
   }, [status, isActive, pinExpanded])
+
+  useEffect(() => {
+    userToggledRef.current = false
+    setExpanded(!isMobile)
+  }, [messageKey, isMobile])
 
   const headline = deriveOrchestrationHeadline(
     rounds,

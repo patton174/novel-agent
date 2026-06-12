@@ -232,6 +232,10 @@ const Wrap = styled.div`
   flex-direction: column;
   gap: 0.55rem;
   margin-top: 0.1rem;
+
+  @media (max-width: 767px) {
+    gap: 0.4rem;
+  }
 `
 
 const Overview = styled.p`
@@ -273,6 +277,10 @@ const QuestionBlock = styled.div`
   flex-direction: column;
   gap: 0.35rem;
   padding: 0.15rem 0;
+
+  @media (max-width: 767px) {
+    gap: 0.28rem;
+  }
 `
 
 const QuestionTitle = styled.div`
@@ -311,4 +319,9 @@ const ActionRow = styled.div`
   justify-content: space-between;
   gap: 0.5rem;
   margin-top: 0.25rem;
+
+  @media (max-width: 767px) {
+    gap: 0.35rem;
+    margin-top: 0.15rem;
+  }
 `
