@@ -128,10 +128,10 @@ export function ChatComposer({
             aria-label={streaming ? '停止' : '发送'}
             data-testid={streaming ? 'stream-stop-btn' : 'send-btn'}
           >
-            <EditorSendIconLayer $visible={!streaming} aria-hidden={streaming}>
+            <EditorSendIconLayer visible={!streaming} aria-hidden={streaming}>
               <Icons.ArrowUp />
             </EditorSendIconLayer>
-            <EditorSendIconLayer $visible={streaming} aria-hidden={!streaming}>
+            <EditorSendIconLayer visible={streaming} aria-hidden={!streaming}>
               <Icons.Stop />
             </EditorSendIconLayer>
           </EditorButton>

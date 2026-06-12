@@ -65,7 +65,7 @@ export function SubagentDetailModal({
       }}
     >
       <EditorModalPanel
-        $size="detail"
+        size="detail"
         role="dialog"
         aria-modal="true"
         aria-labelledby="subagent-modal-title"
@@ -92,9 +92,12 @@ export function SubagentDetailModal({
             ×
           </EditorButton>
         </EditorModalHeader>
-        <DetailBody ref={bodyRef}>
+        <EditorModalBody
+          ref={bodyRef}
+          className="scroll-smooth px-[1.15rem] pb-[1.15rem] pt-3 max-md:px-[0.9rem] max-md:pb-4 max-md:pt-2.5"
+        >
           <SubagentTimelineContent subagent={subagent} loading={loading} />
-        </DetailBody>
+        </EditorModalBody>
       </EditorModalPanel>
     </EditorModalOverlay>
   )
@@ -143,17 +146,4 @@ const StatsHint = styled.p`
   ${textStyle('micro')}
   color: ${editorTheme.textMuted};
   line-height: 1.45;
-`
-
-const DetailBody = styled(EditorModalBody)`
-  padding: 0.75rem 1.15rem 1.15rem;
-  scroll-behavior: smooth;
-
-  @media (max-width: 767px) {
-    padding: 0.65rem 0.9rem 1rem;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background: ${palette.scrollbarThumb};
-  }
 `

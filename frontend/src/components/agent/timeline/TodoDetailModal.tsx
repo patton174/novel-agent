@@ -38,7 +38,7 @@ export function TodoDetailModal({
         }
       }}
     >
-      <EditorModalPanel $size="todo" role="dialog" aria-modal="true" aria-labelledby="todo-modal-title">
+      <EditorModalPanel size="todo" role="dialog" aria-modal="true" aria-labelledby="todo-modal-title">
         <EditorModalHeader>
           <HeaderText>
             <TitleRow>
@@ -51,9 +51,9 @@ export function TodoDetailModal({
             ×
           </EditorButton>
         </EditorModalHeader>
-        <TodoBody>
+        <EditorModalBody className="px-[1.15rem] pb-[1.1rem] pt-[0.85rem] max-md:px-[0.9rem] max-md:pb-4 max-md:pt-3">
           <TimelineTodoList todos={todos} embedded />
-        </TodoBody>
+        </EditorModalBody>
       </EditorModalPanel>
     </EditorModalOverlay>
   )
@@ -89,12 +89,4 @@ const Subtitle = styled.p`
   margin: 0.28rem 0 0;
   ${textStyle('micro')}
   color: ${editorTheme.textMuted};
-`
-
-const TodoBody = styled(EditorModalBody)`
-  padding: 0.85rem 1.15rem 1.1rem;
-
-  @media (max-width: 767px) {
-    padding: 0.75rem 0.9rem 1rem;
-  }
 `

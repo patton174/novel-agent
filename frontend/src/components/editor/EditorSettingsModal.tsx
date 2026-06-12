@@ -35,7 +35,7 @@ export function EditorSettingsModal({
   return (
     <EditorModalOverlay onClick={onClose} role="presentation">
       <EditorModalPanel
-        $size="settings"
+        size="settings"
         role="dialog"
         aria-modal="true"
         aria-labelledby="editor-settings-title"

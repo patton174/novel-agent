@@ -1,31 +1,10 @@
-import styled, { css, keyframes } from 'styled-components'
+import styled, { css } from 'styled-components'
 import { editorTheme } from '../../styles/editorTheme'
 import { palette } from '../../styles/theme'
 import { motionTransition } from '../../styles/motion'
 import type { EditorButtonSize, EditorButtonVariant } from './EditorButton'
 
 export const sendMorph = editorTheme.transitionMorph
-
-const iconFadeIn = keyframes`
-  from { opacity: 0; transform: scale(0.72) rotate(-8deg); }
-  to { opacity: 1; transform: scale(1) rotate(0deg); }
-`
-
-const iconFadeOut = keyframes`
-  from { opacity: 1; transform: scale(1); }
-  to { opacity: 0; transform: scale(0.72); }
-`
-
-export const EditorSendIconLayer = styled.span<{ $visible: boolean }>`
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
-  animation: ${({ $visible }) => ($visible ? iconFadeIn : iconFadeOut)} 0.32s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-  opacity: ${({ $visible }) => ($visible ? 1 : 0)};
-`
 
 export const EditorButtonRoot = styled.button<{
   $variant: EditorButtonVariant

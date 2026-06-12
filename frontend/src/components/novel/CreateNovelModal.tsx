@@ -86,8 +86,7 @@ export const CreateNovelModal: React.FC<CreateNovelModalProps> = ({
 
   return (
     <EditorModalOverlay onClick={onClose} role="presentation">
-      <EditorModalPanel
-        $size="form"
+      <EditorModalPanel size="form"
         role="dialog"
         aria-modal="true"
         aria-labelledby="create-novel-title"

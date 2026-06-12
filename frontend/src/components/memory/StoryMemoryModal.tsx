@@ -129,7 +129,7 @@ export function StoryMemoryModal({
   return (
     <EditorModalOverlay onClick={onClose} role="presentation">
       <EditorModalPanel
-        $size="memory"
+        size="memory"
         role="dialog"
         aria-modal="true"
         aria-labelledby="memory-modal-title"
@@ -147,7 +147,7 @@ export function StoryMemoryModal({
           </EditorButton>
         </EditorModalHeader>
 
-        <MemoryBody>
+        <EditorModalBody className="grid min-h-0 grid-cols-1 max-[720px]:grid-rows-[auto_1fr] min-[721px]:grid-cols-[168px_1fr]">
           <TabRail>
             <MotionSegmentRail
               items={TABS.map((tab) => ({
@@ -206,7 +206,7 @@ export function StoryMemoryModal({
               </PaneScroll>
             </MotionPane>
           </ContentPane>
-        </MemoryBody>
+        </EditorModalBody>
       </EditorModalPanel>
     </EditorModalOverlay>
   )
@@ -228,17 +228,6 @@ const Subtitle = styled.p`
   margin: 0.25rem 0 0;
   font-size: 0.72rem;
   color: ${palette.textSubtle};
-`
-
-const MemoryBody = styled(EditorModalBody)`
-  display: grid;
-  grid-template-columns: 168px 1fr;
-  min-height: 0;
-
-  @media (max-width: 720px) {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto 1fr;
-  }
 `
 
 const TabRail = styled.div`

@@ -1,36 +1,16 @@
-import { useEffect } from 'react'
-import styled, { css, keyframes } from 'styled-components'
-import { editorModalSurface } from '../../styles/editorModal'
+import { forwardRef, useEffect, type HTMLAttributes } from 'react'
+import {
+  EDITOR_MODAL_BODY,
+  EDITOR_MODAL_HEADER,
+  EDITOR_MODAL_INSET,
+  EDITOR_MODAL_OVERLAY,
+  EDITOR_MODAL_PANEL,
+  EDITOR_MODAL_SIZE,
+  type EditorModalSize,
+} from '@/lib/editorModalClasses'
+import { cn } from '@/lib/utils'
 
-export const editorModalFadeIn = keyframes`
-  from { opacity: 0; }
-  to { opacity: 1; }
-`
-
-export const editorModalSlideUp = keyframes`
-  from { opacity: 0; transform: translateY(12px) scale(0.98); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
-`
-
-export type EditorModalSize = 'confirm' | 'form' | 'settings' | 'todo' | 'detail' | 'memory'
-
-const SIZE_MAP: Record<
-  EditorModalSize,
-  { width: string; maxHeight: string; height?: string; minWidth?: string; minHeight?: string }
-> = {
-  confirm: { width: '420px', maxHeight: '90vh' },
-  form: { width: '480px', maxHeight: '640px' },
-  settings: { width: '440px', maxHeight: '520px' },
-  todo: { width: '520px', maxHeight: '640px' },
-  detail: { width: '720px', maxHeight: '760px' },
-  memory: {
-    width: '920px',
-    maxHeight: '760px',
-    height: 'min(78vh, 700px)',
-    minWidth: 'min(680px, 100%)',
-    minHeight: '520px',
-  },
-}
+export type { EditorModalSize }
 
 export function useEditorModalEscape(open: boolean, onClose: () => void) {
   useEffect(() => {
@@ -43,90 +23,39 @@ export function useEditorModalEscape(open: boolean, onClose: () => void) {
   }, [open, onClose])
 }
 
-export const EditorModalOverlay = styled.div`
-  position: fixed;
-  inset: 0;
-  z-index: 1200;
-  background: ${editorModalSurface.overlay};
-  backdrop-filter: ${editorModalSurface.overlayBlur};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1.25rem;
-  animation: ${editorModalFadeIn} 0.18s ease both;
+export function EditorModalOverlay({
+  className,
+  ...props
+}: HTMLAttributes<HTMLDivElement>) {
+  return <div className={cn(EDITOR_MODAL_OVERLAY, className)} {...props} />
+}
 
-  @media (max-width: 767px) {
-    padding: 0;
-    align-items: stretch;
-  }
-`
+export function EditorModalPanel({
+  size = 'settings',
+  className,
+  ...props
+}: HTMLAttributes<HTMLDivElement> & { size?: EditorModalSize }) {
+  return (
+    <div className={cn(EDITOR_MODAL_PANEL, EDITOR_MODAL_SIZE[size], className)} {...props} />
+  )
+}
 
-export const EditorModalPanel = styled.div<{ $size?: EditorModalSize }>`
-  display: flex;
-  flex-direction: column;
-  border-radius: 18px;
-  background: ${editorModalSurface.dialogBg};
-  box-shadow: ${editorModalSurface.dialogShadow};
-  overflow: hidden;
-  animation: ${editorModalSlideUp} 0.22s ease both;
+export function EditorModalHeader({
+  className,
+  ...props
+}: HTMLAttributes<HTMLDivElement>) {
+  return <div className={cn(EDITOR_MODAL_HEADER, className)} {...props} />
+}
 
-  ${({ $size = 'settings' }) => {
-    const spec = SIZE_MAP[$size]
-    return css`
-      width: min(${spec.width}, 100%);
-      max-height: min(${spec.maxHeight}, 90vh);
-      ${spec.height ? `height: ${spec.height};` : ''}
-      ${spec.minWidth ? `min-width: ${spec.minWidth};` : ''}
-      ${spec.minHeight ? `min-height: ${spec.minHeight};` : ''}
-    `
-  }}
+export const EditorModalBody = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
+  function EditorModalBody({ className, ...props }, ref) {
+    return <div ref={ref} className={cn(EDITOR_MODAL_BODY, className)} {...props} />
+  },
+)
 
-  @media (max-width: 767px) {
-    width: 100%;
-    max-height: none;
-    height: 100%;
-    min-width: 0;
-    min-height: 0;
-    border-radius: 0;
-    animation: ${editorModalFadeIn} 0.18s ease both;
-  }
-`
-
-export const EditorModalHeader = styled.div`
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 1rem 1.15rem 0.85rem;
-  flex-shrink: 0;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-
-  @media (max-width: 767px) {
-    padding: 0.85rem 0.9rem 0.75rem;
-    gap: 0.65rem;
-  }
-`
-
-export const EditorModalBody = styled.div`
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-
-  &::-webkit-scrollbar {
-    width: 6px;
-  }
-  &::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 0.15);
-    border-radius: 4px;
-  }
-`
-
-/** Simple confirm / form modals — padding on panel instead of header/body split */
-export const EditorModalPanelInset = styled.div`
-  padding: 1.5rem 1.75rem;
-  overflow-y: auto;
-
-  @media (max-width: 767px) {
-    padding: 1.25rem 1rem max(1.5rem, env(safe-area-inset-bottom));
-  }
-`
+export function EditorModalPanelInset({
+  className,
+  ...props
+}: HTMLAttributes<HTMLDivElement>) {
+  return <div className={cn(EDITOR_MODAL_INSET, className)} {...props} />
+}

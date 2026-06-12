@@ -58,6 +58,13 @@
 - [x] **ChatComposer** styled-components → Tailwind（`rounded-xl border-border bg-background shadow-sm`）
 - [x] **EditorSettingsModal** 设置项 Tailwind 化（去掉 neumorphic ToggleRow）
 
+## Phase 2E — 本批执行
+
+- [x] **EditorModalShell** styled → Tailwind React 组件 + `editorModalClasses.ts`
+- [x] **EditorModalPanel** prop `$size` → `size`（全编辑器 Modal 对齐）
+- [x] **EditorSendIconLayer** Tailwind 化（去掉 styled `$visible`）
+- [x] **删除** `styles/surfaces/auth.ts` 零引用遗留 neumorphic Auth 壳
+
 ---
 
 ## Phase 2B 验收
