@@ -1,6 +1,11 @@
 /** shadcn DialogContent — mobile full-screen sheet (767px, aligned with editor) */
+import { APP_MOBILE_MAX_PX } from '@/lib/breakpoints'
+
 export const APP_MODAL_MOBILE_FULL =
-  'max-md:inset-0 max-md:top-0 max-md:left-0 max-md:h-[100dvh] max-md:max-h-none max-md:w-full max-md:max-w-none max-md:translate-x-0 max-md:translate-y-0 max-md:rounded-none'
+  `max-md:inset-0 max-md:top-0 max-md:left-0 max-md:h-[100dvh] max-md:max-h-none max-md:w-full max-md:max-w-none max-md:translate-x-0 max-md:translate-y-0 max-md:rounded-none`
+
+/** @deprecated use APP_MOBILE_MAX_PX from breakpoints */
+export const APP_MOBILE_BREAKPOINT_PX = APP_MOBILE_MAX_PX
 
 /** Form / admin dialogs: scroll body + stacked footer on mobile */
 export const APP_MODAL_FORM =

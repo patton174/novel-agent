@@ -52,13 +52,6 @@ export interface EditorChatSession {
 
 export type EditorStoryMemoryState = NormalizedStoryMemory
 
-export type SessionDialogState =
-  | { kind: 'rename'; sessionId: string; title: string }
-  | { kind: 'delete'; sessionId: string }
-  | { kind: 'delete-batch'; sessionIds: string[] }
-  | { kind: 'delete-novel'; novelId: string; title: string }
-  | null
-
 export const INITIAL_ASSISTANT_MESSAGE: EditorMessage = {
   id: '1',
   role: 'assistant',

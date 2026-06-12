@@ -10,6 +10,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { APP_MODAL_FORM } from '@/lib/appModalClasses'
+import { APP_BTN_MD } from '@/lib/appButtonTokens'
 import { cn } from '@/lib/utils'
 import { closeAppDialog, useAppDialogStore } from '@/stores/confirmDialogStore'
 
@@ -71,6 +72,7 @@ export function ConfirmDialogHost() {
               onChange={(e) => setInputValue(e.target.value)}
               placeholder={placeholder}
               aria-label={title}
+              className="rounded-xl"
             />
           </form>
         ) : null}
@@ -80,6 +82,7 @@ export function ConfirmDialogHost() {
             <Button
               type="button"
               variant="outline"
+              className={APP_BTN_MD}
               onClick={() => closeAppDialog(kind === 'prompt' ? null : false)}
             >
               {cancelLabel}
@@ -88,6 +91,7 @@ export function ConfirmDialogHost() {
           <Button
             type="button"
             variant={danger ? 'destructive' : 'default'}
+            className={APP_BTN_MD}
             disabled={kind === 'prompt' && !inputValue.trim()}
             onClick={handleConfirm}
           >

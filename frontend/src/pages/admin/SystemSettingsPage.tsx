@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
+import { APP_BTN_MD } from '@/lib/appButtonTokens'
 import { useMarkRouteSeen } from '@/hooks/useMarkRouteSeen'
 import { appToast } from '@/stores/appToastStore'
 
@@ -149,7 +150,7 @@ export default function SystemSettingsPage() {
 
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border/80 bg-background/95 px-4 py-3 backdrop-blur-md md:static md:border-0 md:bg-transparent md:p-0 md:backdrop-blur-none">
         <div className="mx-auto flex max-w-2xl justify-end">
-          <Button type="button" disabled={saving || loading || !settings} onClick={() => void handleSave()}>
+          <Button type="button" className={APP_BTN_MD} disabled={saving || loading || !settings} onClick={() => void handleSave()}>
             <Save className="mr-1.5 size-4" />
             {saving ? '保存中…' : '保存参数'}
           </Button>

@@ -12,6 +12,7 @@ import {
 } from '@/components/layout/AppPageStack'
 import { Button } from '@/components/ui/button'
 import { APP_BTN_FULL_MD } from '@/lib/appButtonTokens'
+import { InlineTitleSkeleton } from '@/components/loading/PageSkeletons'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useMarkRouteSeen } from '@/hooks/useMarkRouteSeen'
 import { useUserStore } from '@/stores/userStore'
@@ -47,7 +48,7 @@ export default function SettingsPage() {
     <AppPageStack narrow>
       <AppPageIntro
         eyebrow="账户"
-        title={loading ? '加载中…' : profile?.username ?? '账户设置'}
+        title={loading ? <InlineTitleSkeleton /> : profile?.username ?? '账户设置'}
         icon={Settings}
       />
 

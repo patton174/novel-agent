@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { APP_MOBILE_MEDIA } from '@/lib/breakpoints'
 
 /** 订阅 matchMedia，SSR 时返回 defaultValue */
 export function useMediaQuery(query: string, defaultValue = false): boolean {
@@ -18,7 +19,7 @@ export function useMediaQuery(query: string, defaultValue = false): boolean {
   return matches
 }
 
-/** 与 Editor 断点对齐 */
+/** 与 Editor 断点对齐（767px） */
 export function useEditorMobile(): boolean {
-  return useMediaQuery('(max-width: 767px)')
+  return useMediaQuery(APP_MOBILE_MEDIA)
 }

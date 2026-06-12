@@ -9,7 +9,6 @@ import { EditorMobileNav } from '../components/editor/EditorMobileNav'
 import { EditorCenterTabs } from '../components/editor/EditorCenterTabs'
 import { EditorChatPanel } from '../components/editor/EditorChatPanel'
 import { EditorStoryPanel } from '../components/editor/EditorStoryPanel'
-import { EditorSessionDialogs } from '../components/editor/EditorSessionDialogs'
 import { EditorSettingsModal } from '../components/editor/EditorSettingsModal'
 import { MotionPane } from '../components/motion/MotionPane'
 import { useEditorPage } from '../hooks/editor/useEditorPage'
@@ -161,15 +160,6 @@ const EditorPage: React.FC = () => {
         activeTab={editor.memory.memoryTab}
         onTabChange={editor.memory.setMemoryTab}
         updatedAt={editor.memory.memoryUpdatedAt}
-      />
-
-      <EditorSessionDialogs
-        dialog={editor.sessions.sessionDialog}
-        onClose={() => editor.sessions.setSessionDialog(null)}
-        onConfirmRename={editor.sessions.confirmRenameSession}
-        onConfirmDelete={editor.sessions.confirmDeleteSession}
-        onConfirmBatchDelete={editor.sessions.confirmBatchDeleteSessions}
-        onConfirmDeleteNovel={() => void editor.sessions.confirmDeleteNovel()}
       />
 
       <EditorSettingsModal

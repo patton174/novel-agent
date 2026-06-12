@@ -159,7 +159,7 @@ export const SliderCaptchaModal: React.FC<Props> = ({ open, onClose, onVerified 
                   <h3 id="captcha-title" className="text-sm font-semibold text-foreground">
                     安全验证
                   </h3>
-                  <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">{statusLabel()}</p>
+                  <p className="mt-0.5 line-clamp-2 text-[11px] leading-snug text-muted-foreground">{statusLabel()}</p>
                 </div>
                 <button
                   type="button"

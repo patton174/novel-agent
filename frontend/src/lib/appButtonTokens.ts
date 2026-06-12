@@ -1,4 +1,4 @@
-/** 创作台 / Admin 区按钮圆角 — 与营销站 rounded-full 区分，统一 rounded-xl */
+/** 创作台 / Admin 区按钮尺寸 token；圆角已由 ui/button 默认 rounded-xl 统一 */
 export const APP_BTN = 'rounded-xl'
 
 export const APP_BTN_SM = `${APP_BTN} h-9 px-3 text-sm`

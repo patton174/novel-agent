@@ -1,12 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
-import {
-  createWelcomeMessages,
-  INITIAL_ASSISTANT_MESSAGE,
-  type EditorChatSession,
-  type EditorMessage,
-  type EditorStoryMemoryState,
-  type SessionDialogState,
-} from '../../types/editor'
+import { confirmAction, promptDialog } from '../../stores/confirmDialogStore'
 import {
   deleteSession,
   deleteSessions,
@@ -18,6 +11,13 @@ import {
   saveSessionMessages,
   upsertSession,
 } from '../../utils/chatSessionStore'
+import {
+  createWelcomeMessages,
+  INITIAL_ASSISTANT_MESSAGE,
+  type EditorChatSession,
+  type EditorMessage,
+  type EditorStoryMemoryState,
+} from '../../types/editor'
 import { fromStoredChatMessage } from '../../utils/agentMessagePersist'
 import { mergeRemoteWithLocalTrace } from '../../utils/agentMessageReplay'
 import { contentMessageToEditorMessage } from '../../utils/contentMessageMap'
@@ -71,7 +71,6 @@ export function useEditorSessions({
   const [sessions, setSessions] = useState<EditorChatSession[]>([])
   const [activeSession, setActiveSession] = useState(agentSessionIdRef.current)
   const [sessionSearch, setSessionSearch] = useState('')
-  const [sessionDialog, setSessionDialog] = useState<SessionDialogState>(null)
   const [expandedNovelIds, setExpandedNovelIds] = useState<Set<string>>(() => new Set())
   const [batchMode, setBatchMode] = useState(false)
   const [batchNovelId, setBatchNovelId] = useState<string | null>(null)
@@ -180,50 +179,58 @@ export function useEditorSessions({
   switchSessionRef.current = switchSession
 
   const handleRenameSession = (sessionId: string, currentTitle: string) => {
-    setSessionDialog({ kind: 'rename', sessionId, title: currentTitle })
+    void (async () => {
+      const value = await promptDialog({
+        title: '重命名对话',
+        defaultValue: currentTitle,
+        placeholder: '输入对话名称',
+        confirmLabel: '保存',
+      })
+      if (value == null || !value.trim()) return
+      const updated = renameSession(sessionId, value.trim())
+      if (!updated) {
+        appToast.error('重命名失败')
+        return
+      }
+      refreshSessions(activeNovelId)
+      void api
+        .upsertContentSession(sessionId, updated.title, activeNovelId ?? undefined)
+        .catch(() => appToast.info('本地已更新，同步到云端失败'))
+      appToast.success('对话已重命名')
+    })()
   }
 
   const handleDeleteSession = (sessionId: string) => {
-    setSessionDialog({ kind: 'delete', sessionId })
-  }
-
-  const confirmRenameSession = (nextTitle: string) => {
-    if (!sessionDialog || sessionDialog.kind !== 'rename') return
-    const updated = renameSession(sessionDialog.sessionId, nextTitle.trim())
-    if (!updated) {
-      appToast.error('重命名失败')
-      return
-    }
-    refreshSessions(activeNovelId)
-    void api
-      .upsertContentSession(sessionDialog.sessionId, updated.title, activeNovelId ?? undefined)
-      .catch(() => appToast.info('本地已更新，同步到云端失败'))
-    setSessionDialog(null)
-    appToast.success('对话已重命名')
-  }
-
-  const confirmDeleteSession = async () => {
-    if (!sessionDialog || sessionDialog.kind !== 'delete') return
-    const sessionId = sessionDialog.sessionId
-    try {
-      await api.deleteContentSession(sessionId)
-      deleteSession(sessionId)
-      refreshSessions(activeNovelId)
-      setSessionDialog(null)
-      setSelectedSessionIds((prev) => {
-        const next = new Set(prev)
-        next.delete(sessionId)
-        return next
-      })
-      appToast.success('对话已删除')
-      if (sessionId === activeSession) {
-        handleNewChat()
+    void (async () => {
+      if (
+        !(await confirmAction({
+          title: '删除对话',
+          description: '本地消息将一并清除，此操作不可撤销。',
+          confirmLabel: '删除',
+          danger: true,
+        }))
+      ) {
         return
       }
-      setSessions((prev) => prev.filter((s) => s.id !== sessionId))
-    } catch {
-      appToast.error('删除对话失败')
-    }
+      try {
+        await api.deleteContentSession(sessionId)
+        deleteSession(sessionId)
+        refreshSessions(activeNovelId)
+        setSelectedSessionIds((prev) => {
+          const next = new Set(prev)
+          next.delete(sessionId)
+          return next
+        })
+        appToast.success('对话已删除')
+        if (sessionId === activeSession) {
+          handleNewChat()
+          return
+        }
+        setSessions((prev) => prev.filter((s) => s.id !== sessionId))
+      } catch {
+        appToast.error('删除对话失败')
+      }
+    })()
   }
 
   const toggleNovelExpanded = useCallback((novelId: string) => {
@@ -252,58 +259,66 @@ export function useEditorSessions({
 
   const requestBatchDelete = () => {
     if (selectedSessionIds.size === 0) return
-    setSessionDialog({
-      kind: 'delete-batch',
-      sessionIds: [...selectedSessionIds],
-    })
+    const ids = [...selectedSessionIds]
+    void (async () => {
+      if (
+        !(await confirmAction({
+          title: '批量删除对话',
+          description: `将删除 ${ids.length} 条对话及其本地消息，不可撤销。`,
+          confirmLabel: '删除',
+          danger: true,
+        }))
+      ) {
+        return
+      }
+      try {
+        const result = await api.batchDeleteContentSessions(ids)
+        if (result.deleted <= 0) {
+          appToast.error('云端未删除任何对话，请稍后重试')
+          return
+        }
+        deleteSessions(ids)
+        refreshSessions(activeNovelId)
+        setSelectedSessionIds(new Set())
+        exitBatchMode()
+        appToast.success(`已删除 ${result.deleted} 条对话`)
+        if (ids.includes(activeSession)) {
+          handleNewChat()
+          return
+        }
+        setSessions((prev) => prev.filter((s) => !ids.includes(s.id)))
+      } catch {
+        appToast.error('批量删除失败')
+      }
+    })()
   }
 
   const handleDeleteNovelRequest = (novelId: string, title: string) => {
-    setSessionDialog({ kind: 'delete-novel', novelId, title })
-  }
-
-  const confirmDeleteNovel = useCallback(async () => {
-    if (!sessionDialog || sessionDialog.kind !== 'delete-novel') return
-    const { novelId, title } = sessionDialog
-    try {
-      await onDeleteNovel(novelId)
-      setSessionDialog(null)
-      refreshSessions(null)
-      exitBatchMode()
-      setExpandedNovelIds((prev) => {
-        const next = new Set(prev)
-        next.delete(novelId)
-        return next
-      })
-      appToast.success(`已删除小说「${title}」`)
-    } catch {
-      appToast.error('删除小说失败')
-    }
-  }, [sessionDialog, onDeleteNovel, refreshSessions, exitBatchMode])
-
-  const confirmBatchDeleteSessions = async () => {
-    if (!sessionDialog || sessionDialog.kind !== 'delete-batch') return
-    const ids = sessionDialog.sessionIds
-    try {
-      const result = await api.batchDeleteContentSessions(ids)
-      if (result.deleted <= 0) {
-        appToast.error('云端未删除任何对话，请稍后重试')
+    void (async () => {
+      if (
+        !(await confirmAction({
+          title: '删除小说',
+          description: `确定删除「${title}」？关联对话与本地消息将清除，章节数据将从服务端删除，不可撤销。`,
+          confirmLabel: '删除',
+          danger: true,
+        }))
+      ) {
         return
       }
-      deleteSessions(ids)
-      refreshSessions(activeNovelId)
-      setSessionDialog(null)
-      setSelectedSessionIds(new Set())
-      exitBatchMode()
-      appToast.success(`已删除 ${result.deleted} 条对话`)
-      if (ids.includes(activeSession)) {
-        handleNewChat()
-        return
+      try {
+        await onDeleteNovel(novelId)
+        refreshSessions(null)
+        exitBatchMode()
+        setExpandedNovelIds((prev) => {
+          const next = new Set(prev)
+          next.delete(novelId)
+          return next
+        })
+        appToast.success(`已删除小说「${title}」`)
+      } catch {
+        appToast.error('删除小说失败')
       }
-      setSessions((prev) => prev.filter((s) => !ids.includes(s.id)))
-    } catch {
-      appToast.error('批量删除失败')
-    }
+    })()
   }
 
   const selectAllSessionsInBatch = useCallback(() => {
@@ -416,8 +431,6 @@ export function useEditorSessions({
     activeSession,
     sessionSearch,
     setSessionSearch,
-    sessionDialog,
-    setSessionDialog,
     expandedNovelIds,
     toggleNovelExpanded,
     expandNovel,
@@ -433,9 +446,6 @@ export function useEditorSessions({
     switchSessionRef,
     handleRenameSession,
     handleDeleteSession,
-    confirmRenameSession,
-    confirmDeleteSession,
-    confirmDeleteNovel,
     novelSessions,
     activeSessionTitle,
     novelSessionGroups,
@@ -446,7 +456,6 @@ export function useEditorSessions({
     toggleSessionSelected,
     requestBatchDelete,
     selectAllSessionsInBatch,
-    confirmBatchDeleteSessions,
     titlePendingSessionIds,
     markSessionTitlePending,
     clearSessionTitlePending,
