@@ -1,44 +1,22 @@
 import React, { useState } from 'react'
-import styled from 'styled-components'
 import type { CreateNovelPayload } from '../../types/novel'
 import { EditorButton } from '../ui/EditorButton'
 import {
+  EditorModalBody,
+  EditorModalHeader,
   EditorModalOverlay,
   EditorModalPanel,
-  EditorModalPanelInset,
   useEditorModalEscape,
 } from '../editor/EditorModalShell'
-import { palette, shadow, transition } from '../../styles/theme'
+import { Button } from '../ui/button'
+import { editorFieldClass, editorTextareaClass } from '@/lib/editorFieldClasses'
+import { cn } from '@/lib/utils'
 
 interface CreateNovelModalProps {
   open: boolean
   onClose: () => void
   onSubmit: (payload: CreateNovelPayload) => Promise<void>
 }
-
-const fieldCss = `
-  width: 100%;
-  box-sizing: border-box;
-  border: 1px solid transparent;
-  border-radius: 10px;
-  padding: 0.65rem 0.85rem;
-  background: ${palette.bgPage};
-  box-shadow: ${shadow.inInput};
-  font-size: 0.95rem;
-  color: ${palette.text};
-  font-family: inherit;
-  outline: none;
-  transition: box-shadow ${transition.fast}, border-color ${transition.fast};
-
-  &::placeholder {
-    color: ${palette.textFaint};
-  }
-
-  &:focus {
-    border-color: rgba(79, 70, 229, 0.45);
-    box-shadow: ${shadow.inInput}, 0 0 0 3px rgba(79, 70, 229, 0.12);
-  }
-`
 
 export const CreateNovelModal: React.FC<CreateNovelModalProps> = ({
   open,
@@ -86,135 +64,103 @@ export const CreateNovelModal: React.FC<CreateNovelModalProps> = ({
 
   return (
     <EditorModalOverlay onClick={onClose} role="presentation">
-      <EditorModalPanel size="form"
+      <EditorModalPanel
+        size="form"
         role="dialog"
         aria-modal="true"
         aria-labelledby="create-novel-title"
         onClick={(e) => e.stopPropagation()}
       >
-        <EditorModalPanelInset>
-          <ModalTitle id="create-novel-title">创建小说</ModalTitle>
-          <Form onSubmit={(e) => void handleSubmit(e)}>
-          <Field>
-            <span className="label">小说名称 *</span>
-            <input
-              value={title}
-              aria-invalid={titleError ? true : undefined}
-              onChange={(e) => {
-                setTitle(e.target.value)
-                if (titleError) setTitleError(undefined)
-              }}
-              placeholder="例：星辰之途"
-            />
-            {titleError ? <span className="error">{titleError}</span> : null}
-          </Field>
-          <Field>
-            <span className="label">简介 / 设定</span>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="世界观、主角、核心冲突… 将作为 AI 上下文"
-              rows={4}
-            />
-          </Field>
-          <PairRow>
-            <Field>
-              <span className="label">类型</span>
-              <input value={genre} onChange={(e) => setGenre(e.target.value)} placeholder="玄幻" />
-            </Field>
-            <Field>
-              <span className="label">风格</span>
-              <input value={style} onChange={(e) => setStyle(e.target.value)} placeholder="爽文" />
-            </Field>
-          </PairRow>
-          <Field>
-            <span className="label">章节字数</span>
-            <input
-              type="number"
-              min={500}
-              value={targetWords}
-              onChange={(e) => setTargetWords(e.target.value)}
-            />
-          </Field>
-          <Actions>
-            <EditorButton type="button" variant="ghost" onClick={onClose}>
-              取消
-            </EditorButton>
-            <EditorButton type="submit" variant="primary" disabled={submitting || !title.trim()}>
-              {submitting ? '创建中…' : '创建'}
-            </EditorButton>
-          </Actions>
-        </Form>
-        </EditorModalPanelInset>
+        <EditorModalHeader className="items-center">
+          <h2 id="create-novel-title" className="m-0 text-lg font-bold text-foreground">
+            创建小说
+          </h2>
+          <EditorButton variant="close" type="button" onClick={onClose} aria-label="关闭">
+            ×
+          </EditorButton>
+        </EditorModalHeader>
+
+        <EditorModalBody className="px-6 pb-6 pt-2 max-md:px-4 max-md:pb-5">
+          <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
+            <label className="flex flex-col gap-1.5">
+              <span className="text-xs font-semibold text-muted-foreground">小说名称 *</span>
+              <input
+                value={title}
+                aria-invalid={titleError ? true : undefined}
+                onChange={(e) => {
+                  setTitle(e.target.value)
+                  if (titleError) setTitleError(undefined)
+                }}
+                placeholder="例：星辰之途"
+                className={cn(
+                  editorFieldClass,
+                  titleError &&
+                    'border-destructive/60 focus:border-destructive/60 focus:ring-destructive/20',
+                )}
+              />
+              {titleError ? (
+                <span className="text-[11px] leading-snug text-destructive">{titleError}</span>
+              ) : null}
+            </label>
+
+            <label className="flex flex-col gap-1.5">
+              <span className="text-xs font-semibold text-muted-foreground">简介 / 设定</span>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="世界观、主角、核心冲突… 将作为 AI 上下文"
+                rows={4}
+                className={editorTextareaClass}
+              />
+            </label>
+
+            <div className="grid grid-cols-1 gap-4 min-[480px]:grid-cols-2">
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-semibold text-muted-foreground">类型</span>
+                <input
+                  value={genre}
+                  onChange={(e) => setGenre(e.target.value)}
+                  placeholder="玄幻"
+                  className={editorFieldClass}
+                />
+              </label>
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-semibold text-muted-foreground">风格</span>
+                <input
+                  value={style}
+                  onChange={(e) => setStyle(e.target.value)}
+                  placeholder="爽文"
+                  className={editorFieldClass}
+                />
+              </label>
+            </div>
+
+            <label className="flex flex-col gap-1.5">
+              <span className="text-xs font-semibold text-muted-foreground">章节字数</span>
+              <input
+                type="number"
+                min={500}
+                value={targetWords}
+                onChange={(e) => setTargetWords(e.target.value)}
+                className={editorFieldClass}
+              />
+            </label>
+
+            <div className="flex justify-end gap-2 pt-1 max-md:flex-col-reverse">
+              <Button type="button" variant="ghost" className="max-md:w-full" onClick={onClose}>
+                取消
+              </Button>
+              <Button
+                type="submit"
+                className="max-md:w-full"
+                disabled={submitting || !title.trim()}
+              >
+                {submitting ? '创建中…' : '创建'}
+              </Button>
+            </div>
+          </form>
+        </EditorModalBody>
       </EditorModalPanel>
     </EditorModalOverlay>
   )
 }
-
-const ModalTitle = styled.h2`
-  margin: 0 0 1.25rem;
-  font-size: 1.2rem;
-  color: ${palette.text};
-`
-
-const Form = styled.form`
-  display: flex;
-  flex-direction: column;
-  gap: 0.95rem;
-`
-
-const Field = styled.label`
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-  min-width: 0;
-
-  .label {
-    font-size: 0.82rem;
-    color: ${palette.textSecondary};
-    font-weight: 600;
-  }
-
-  input,
-  textarea {
-    ${fieldCss}
-  }
-
-  textarea {
-    resize: vertical;
-    min-height: 5rem;
-  }
-
-  .error {
-    font-size: 0.72rem;
-    color: ${palette.errorBright};
-    line-height: 1.35;
-  }
-`
-
-const PairRow = styled.div`
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.75rem;
-  min-width: 0;
-
-  @media (max-width: 767px) {
-    grid-template-columns: 1fr;
-  }
-`
-
-const Actions = styled.div`
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.75rem;
-  margin-top: 0.35rem;
-
-  @media (max-width: 767px) {
-    flex-direction: column-reverse;
-
-    button {
-      width: 100%;
-      justify-content: center;
-    }
-  }
-`

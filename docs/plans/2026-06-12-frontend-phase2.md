@@ -65,6 +65,12 @@
 - [x] **EditorSendIconLayer** Tailwind 化（去掉 styled `$visible`）
 - [x] **删除** `styles/surfaces/auth.ts` 零引用遗留 neumorphic Auth 壳
 
+## Phase 2F — 本批执行
+
+- [x] **CreateNovelModal** neumorphic 表单 → Tailwind + `editorFieldClasses`（对齐 Auth 输入）
+- [x] **CreateNovelModal** 结构对齐 `EditorModalHeader` / `EditorModalBody` + 关闭按钮
+- [x] **EditorButton** `primary` / `secondary` / `ghost` / `close` / `danger` → shadcn `Button`（其余 variant 仍走 styled）
+
 ---
 
 ## Phase 2B 验收
