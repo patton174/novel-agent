@@ -13,8 +13,8 @@ import cn.novelstudio.platform.web.BaseController;
 import cn.novelstudio.module.billing.dto.*;
 import cn.novelstudio.platform.security.JwtCodec;
 import cn.novelstudio.platform.security.JwtPrincipal;
-import cn.novelstudio.platform.web.clientsecurity.ClientAuthSupport;
 import cn.novelstudio.platform.web.utils.IpUtils;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -35,7 +35,6 @@ public class BillingAuthController extends BaseController {
     private final SiteSettingsBiz siteSettingsBiz;
     private final FeatureGateBiz featureGateBiz;
     private final SiteDanmakuBiz siteDanmakuBiz;
-    private final ClientAuthSupport clientAuthSupport;
     private final JwtCodec jwtCodec;
 
     @GetMapping("/settings/public")
@@ -104,7 +103,7 @@ public class BillingAuthController extends BaseController {
 
     private Optional<JwtPrincipal> resolveOptionalPrincipal(HttpServletRequest request) {
         try {
-            String token = clientAuthSupport.resolveToken(request);
+            String token = resolveBearerToken(request);
             if (token == null || token.isBlank()) {
                 return Optional.empty();
             }
@@ -112,5 +111,28 @@ public class BillingAuthController extends BaseController {
         } catch (Exception ignored) {
             return Optional.empty();
         }
+    }
+
+    private static String resolveBearerToken(HttpServletRequest request) {
+        for (String header : List.of("Authorization", "satoken")) {
+            String token = request.getHeader(header);
+            if (token != null && !token.isBlank()) {
+                return token.trim();
+            }
+            if (request.getCookies() != null) {
+                for (Cookie cookie : request.getCookies()) {
+                    if (header.equals(cookie.getName()) && cookie.getValue() != null && !cookie.getValue().isBlank()) {
+                        return cookie.getValue().trim();
+                    }
+                }
+            }
+        }
+        for (String key : List.of("Authorization", "satoken", "token")) {
+            String token = request.getParameter(key);
+            if (token != null && !token.isBlank()) {
+                return token.trim();
+            }
+        }
+        return null;
     }
 }
