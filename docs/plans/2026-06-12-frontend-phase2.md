@@ -50,6 +50,14 @@
 - [x] **MarketingSubpageHero**：小屏 action 全宽
 - [x] **编辑器 Switch**：`NeumorphicSwitch` → shadcn `Switch`（Composer + Settings）
 
+## Phase 2D — 本批执行
+
+- [x] **AuthShell** 侧栏版权 → Novel AI
+- [x] **AuthCodeField** 注册验证码字段统一（复用 `authFieldClass` + 错误/提示）
+- [x] **VerifyEmailPage** 底部隐私/协议/首页链接
+- [x] **ChatComposer** styled-components → Tailwind（`rounded-xl border-border bg-background shadow-sm`）
+- [x] **EditorSettingsModal** 设置项 Tailwind 化（去掉 neumorphic ToggleRow）
+
 ---
 
 ## Phase 2B 验收

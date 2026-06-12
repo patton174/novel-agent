@@ -102,29 +102,42 @@ export default function VerifyEmailPage() {
       ) : null}
 
       {state !== 'loading' ? (
-        <div className="mt-6 flex flex-col gap-2">
-          {state === 'success' ? (
-            <Link to="/dashboard" className={MKT_CTA_AUTH}>
-              进入创作台
-            </Link>
-          ) : (
-            <>
-              <Link to="/login" className={MKT_CTA_AUTH}>
-                <LogIn className="size-4" />
-                返回登录
+        <>
+          <div className="mt-6 flex flex-col gap-2">
+            {state === 'success' ? (
+              <Link to="/dashboard" className={MKT_CTA_AUTH}>
+                进入创作台
               </Link>
-              {isLoggedIn ? (
-                <Link to="/dashboard/settings" className={MKT_CTA_AUTH_OUTLINE}>
-                  账户设置 · 重发验证邮件
+            ) : (
+              <>
+                <Link to="/login" className={MKT_CTA_AUTH}>
+                  <LogIn className="size-4" />
+                  返回登录
                 </Link>
-              ) : (
-                <Link to="/register" className={MKT_CTA_AUTH_OUTLINE}>
-                  重新注册
-                </Link>
-              )}
-            </>
-          )}
-        </div>
+                {isLoggedIn ? (
+                  <Link to="/dashboard/settings" className={MKT_CTA_AUTH_OUTLINE}>
+                    账户设置 · 重发验证邮件
+                  </Link>
+                ) : (
+                  <Link to="/register" className={MKT_CTA_AUTH_OUTLINE}>
+                    重新注册
+                  </Link>
+                )}
+              </>
+            )}
+          </div>
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 border-t border-border/60 pt-4 text-xs text-muted-foreground">
+            <Link to="/privacy" className="hover:text-foreground hover:underline">
+              隐私政策
+            </Link>
+            <Link to="/terms" className="hover:text-foreground hover:underline">
+              服务协议
+            </Link>
+            <Link to="/" className="hover:text-foreground hover:underline">
+              返回首页
+            </Link>
+          </div>
+        </>
       ) : null}
     </AuthResultCard>
   )

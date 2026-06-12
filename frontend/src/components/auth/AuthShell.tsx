@@ -57,7 +57,7 @@ export function AuthShell({ title, subtitle, marketing, children, legal, footer,
         </motion.div>
 
         <div className="relative z-10 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-white/50">
-          <span>© {new Date().getFullYear()} Novel Agent</span>
+          <span>© {new Date().getFullYear()} Novel AI</span>
           <Link to="/privacy" className="hover:text-white/80 hover:underline">
             隐私
           </Link>

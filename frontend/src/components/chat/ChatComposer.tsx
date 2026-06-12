@@ -1,12 +1,9 @@
 import { useEffect, useRef } from 'react'
-import styled from 'styled-components'
 import { ContextUsageMeter } from '../agent/ContextUsageMeter'
 import type { AgentContextUsage } from '../../types/agent'
 import { Switch } from '../ui/switch'
 import { EditorButton, EditorSendIconLayer } from '../ui/EditorButton'
-import { editorTheme } from '../../styles/editorTheme'
-import { editorModalSurface } from '../../styles/editorModal'
-import { palette } from '../../styles/theme'
+import { cn } from '@/lib/utils'
 
 /** 约 4 行正文高度，避免悬浮区过高 */
 const COMPOSER_TEXT_MIN_PX = 40
@@ -79,9 +76,15 @@ export function ChatComposer({
   }
 
   return (
-    <ComposerRoot data-testid="chat-composer">
-      <ComposerCard>
-        <TextArea
+    <footer data-testid="chat-composer" className="w-full min-w-0">
+      <div
+        className={cn(
+          'flex w-full min-w-0 flex-col gap-1.5 rounded-xl border border-border/80 bg-background',
+          'px-2.5 py-2 shadow-sm',
+          'max-md:gap-1 max-md:px-2 max-md:py-1.5',
+        )}
+      >
+        <textarea
           ref={textareaRef}
           value={value}
           onChange={(e) => onChange(e.target.value)}
@@ -90,28 +93,32 @@ export function ChatComposer({
           rows={1}
           disabled={isLoading && !streamActive}
           aria-label="聊天输入"
+          style={{ minHeight: COMPOSER_TEXT_MIN_PX, maxHeight: COMPOSER_TEXT_MAX_PX }}
+          className={cn(
+            'w-full resize-none border-none bg-transparent px-0.5 py-0.5',
+            'text-sm leading-snug text-foreground outline-none',
+            'placeholder:text-muted-foreground',
+            'disabled:cursor-not-allowed disabled:opacity-65',
+          )}
         />
 
-        <ActionRow>
-          <LeftTools>
-            <HostModeControl
+        <div className="flex w-full min-w-0 items-center justify-between gap-2.5 max-md:gap-1.5">
+          <div className="flex min-h-8 min-w-0 items-center gap-1.5 overflow-visible max-md:flex-nowrap max-md:gap-1">
+            <div
               data-testid="host-mode-control"
               title={hostModeEnabled ? 'AI 持续盯防，可后台长时运行' : '关闭时为单次对话'}
+              className="inline-flex h-8 shrink-0 items-center gap-1.5"
             >
-              <HostModeTitle>托管</HostModeTitle>
+              <span className="hidden text-xs font-semibold text-muted-foreground md:inline">托管</span>
               <Switch
                 checked={hostModeEnabled}
                 onCheckedChange={onHostModeChange}
                 aria-label="托管模式"
               />
-            </HostModeControl>
+            </div>
+          </div>
 
-          </LeftTools>
-
-          <ContextUsageMeter
-            usage={contextUsage}
-            pending={streamActive && !contextUsage}
-          />
+          <ContextUsageMeter usage={contextUsage} pending={streamActive && !contextUsage} />
 
           <EditorButton
             variant="send"
@@ -128,124 +135,11 @@ export function ChatComposer({
               <Icons.Stop />
             </EditorSendIconLayer>
           </EditorButton>
-        </ActionRow>
-      </ComposerCard>
-      <ComposerDisclaimer>内容由 AI 生成，请谨慎参考</ComposerDisclaimer>
-    </ComposerRoot>
+        </div>
+      </div>
+      <p className="mt-1.5 hidden text-center text-[11px] text-muted-foreground md:block">
+        内容由 AI 生成，请谨慎参考
+      </p>
+    </footer>
   )
 }
-
-const composerScrollbar = `
-  scrollbar-width: thin;
-  scrollbar-color: ${palette.scrollbarThumb} transparent;
-  &::-webkit-scrollbar { width: 6px; height: 6px; }
-  &::-webkit-scrollbar-track { background: transparent; }
-  &::-webkit-scrollbar-thumb { background: ${palette.scrollbarThumb}; border-radius: 4px; }
-  &::-webkit-scrollbar-thumb:hover { background: ${palette.scrollbarThumbHover}; }
-`
-
-const ComposerRoot = styled.footer`
-  width: 100%;
-  min-width: 0;
-  box-sizing: border-box;
-  ${composerScrollbar}
-`
-
-const ComposerCard = styled.div`
-  width: 100%;
-  min-width: 0;
-  background: ${editorModalSurface.floatBg};
-  border: 1px solid rgba(0, 0, 0, 0.07);
-  border-radius: ${editorTheme.radiusMd};
-  box-shadow: ${editorModalSurface.floatShadow};
-  box-sizing: border-box;
-  padding: 0.45rem 0.65rem 0.4rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-
-  @media (max-width: 767px) {
-    padding: 0.38rem 0.5rem 0.32rem;
-    gap: 0.28rem;
-  }
-`
-
-const ComposerDisclaimer = styled.p`
-  margin: 0.32rem 0 0;
-  font-size: 0.68rem;
-  color: ${editorTheme.textMuted};
-  text-align: center;
-
-  @media (max-width: 767px) {
-    display: none;
-  }
-`
-
-const HostModeControl = styled.div`
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
-  height: ${editorTheme.composerControlHeight}px;
-  padding: 0;
-  box-sizing: border-box;
-`
-
-const HostModeTitle = styled.span`
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: ${editorTheme.textSecondary};
-  white-space: nowrap;
-  line-height: 1;
-
-  @media (max-width: 767px) {
-    display: none;
-  }
-`
-
-const TextArea = styled.textarea`
-  width: 100%;
-  min-height: ${COMPOSER_TEXT_MIN_PX}px;
-  max-height: ${COMPOSER_TEXT_MAX_PX}px;
-  border: none;
-  background: transparent;
-  padding: 0.12rem 0.1rem;
-  font-size: 0.88rem;
-  line-height: 1.45;
-  color: ${editorTheme.text};
-  resize: none;
-  outline: none;
-  font-family: inherit;
-
-  &::placeholder { color: ${editorTheme.textMuted}; }
-  &:disabled { opacity: 0.65; cursor: not-allowed; }
-`
-
-const ActionRow = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-  min-width: 0;
-  gap: 10px;
-
-  @media (max-width: 767px) {
-    gap: 6px;
-  }
-`
-
-const LeftTools = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-  min-width: 0;
-  min-height: ${editorTheme.composerControlHeight}px;
-  overflow: visible;
-
-  @media (max-width: 767px) {
-    flex-wrap: nowrap;
-    gap: 4px;
-  }
-`
-

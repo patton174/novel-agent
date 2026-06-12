@@ -5,11 +5,11 @@ import { register, sendEmailCode } from '../utils/authApi'
 import { getFingerprint } from '../security/fingerprint'
 import SliderCaptchaModal from '../components/auth/SliderCaptchaModal'
 import { AuthShell } from '../components/auth/AuthShell'
+import { AuthCodeField } from '../components/auth/AuthCodeField'
 import { AuthField } from '../components/auth/AuthField'
 import { AuthLegalNotice } from '../components/auth/AuthLegalNotice'
 import { AuthSubmitButton } from '../components/auth/AuthSubmitButton'
 import { AuthSpinner } from '../components/auth/AuthSpinner'
-import { authFieldClass } from '../components/auth/authFieldClass'
 import { appToast } from '@/stores/appToastStore'
 import { MKT_CTA_AUTH_OUTLINE } from '@/lib/marketingCta'
 import { useFormDraft } from '../hooks/useJourneyTracker'
@@ -231,28 +231,18 @@ const RegisterPage: React.FC = () => {
             />
           </div>
 
-          <div className="space-y-1">
-            <label htmlFor="reg-email-code" className="text-xs font-medium text-foreground">
-              邮箱验证码
-            </label>
-            <div className="flex gap-2">
-              <input
-                id="reg-email-code"
-                name="emailCode"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                placeholder="6 位数字"
-                value={formData.emailCode}
-                aria-invalid={fieldErrors.emailCode ? true : undefined}
-                aria-describedby={fieldErrors.emailCode ? 'reg-email-code-error' : undefined}
-                onChange={(e) => handleChange('emailCode', e.target.value.replace(/\D/g, '').slice(0, 6))}
-                className={cn(
-                  authFieldClass,
-                  'h-10 min-w-0 flex-1',
-                  fieldErrors.emailCode &&
-                    'border-destructive/60 focus:border-destructive/60 focus:ring-destructive/20',
-                )}
-              />
+          <AuthCodeField
+            id="reg-email-code"
+            name="emailCode"
+            label="邮箱验证码"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            placeholder="6 位数字"
+            value={formData.emailCode}
+            error={fieldErrors.emailCode}
+            hint={codeSent && !fieldErrors.emailCode ? '验证码已发送，请查收邮件（含垃圾箱）' : undefined}
+            onChange={(e) => handleChange('emailCode', e.target.value.replace(/\D/g, '').slice(0, 6))}
+            action={
               <button
                 type="button"
                 disabled={sendingCode || cooldown > 0 || captchaOpen}
@@ -272,17 +262,8 @@ const RegisterPage: React.FC = () => {
                   sendCodeLabel()
                 )}
               </button>
-            </div>
-            {fieldErrors.emailCode ? (
-              <p id="reg-email-code-error" className="text-[11px] leading-snug text-destructive">
-                {fieldErrors.emailCode}
-              </p>
-            ) : codeSent ? (
-              <p className="text-[11px] text-emerald-600 dark:text-emerald-400">
-                验证码已发送，请查收邮件（含垃圾箱）
-              </p>
-            ) : null}
-          </div>
+            }
+          />
 
           <div className="grid gap-3 min-[480px]:grid-cols-2">
             <AuthField
