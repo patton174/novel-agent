@@ -18,6 +18,25 @@ import { cn } from '@/lib/utils'
 type RegisterField = 'username' | 'email' | 'password' | 'confirmPassword' | 'emailCode'
 type RegisterErrors = Partial<Record<RegisterField, string>>
 
+function mapRegisterServerError(message: string): RegisterErrors {
+  const text = message.trim()
+  if (!text) return {}
+  const lower = text.toLowerCase()
+  if (text.includes('验证码') || lower.includes('code') || lower.includes('captcha')) {
+    return { emailCode: text }
+  }
+  if (text.includes('邮箱') || lower.includes('email')) {
+    return { email: text }
+  }
+  if (text.includes('用户名') || lower.includes('username')) {
+    return { username: text }
+  }
+  if (text.includes('密码') || lower.includes('password')) {
+    return { password: text }
+  }
+  return {}
+}
+
 const RegisterPage: React.FC = () => {
   const navigate = useNavigate()
   const [formData, setFormData, clearDraft] = useFormDraft('register_form', {
@@ -128,7 +147,13 @@ const RegisterPage: React.FC = () => {
       appToast.success('注册成功，请登录')
       navigate('/login')
     } catch (err) {
-      appToast.error(err instanceof Error ? err.message : '注册失败')
+      const message = err instanceof Error ? err.message : '注册失败'
+      const mapped = mapRegisterServerError(message)
+      if (Object.keys(mapped).length > 0) {
+        setFieldErrors(mapped)
+      } else {
+        appToast.error(message)
+      }
     } finally {
       setSubmitting(false)
     }

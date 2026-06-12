@@ -7,7 +7,6 @@ import {
   type PlatformUsageOverview,
   type PlatformUsageTrendPoint,
 } from '@/api/billingAdminApi'
-import { ContentPending } from '@/components/loading/ContentPending'
 import { AppPageStack, AppShellCard, AppShellCardBody } from '@/components/layout/AppPageStack'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useMarkRouteSeen } from '@/hooks/useMarkRouteSeen'
@@ -82,7 +81,11 @@ export default function RevenuePage() {
   }
 
   if (!overview || trends === null) {
-    return <ContentPending label="加载收入与成本…" />
+    return (
+      <AppPageStack>
+        <p className="py-12 text-center text-sm text-muted-foreground">暂无收入数据</p>
+      </AppPageStack>
+    )
   }
 
   const mrrYuan = overview.mrrCents / 100

@@ -97,6 +97,11 @@ const Overlay = styled.div`
     from { opacity: 0; }
     to { opacity: 1; }
   }
+
+  @media (max-width: 767px) {
+    padding: 0;
+    align-items: stretch;
+  }
 `
 
 const Dialog = styled.div`
@@ -120,6 +125,14 @@ const Dialog = styled.div`
       transform: translateY(0) scale(1);
     }
   }
+
+  @media (max-width: 767px) {
+    width: 100%;
+    max-height: none;
+    height: 100%;
+    border-radius: 0;
+    animation: fadeIn 0.18s ease;
+  }
 `
 
 const DialogHeader = styled.div`
@@ -129,6 +142,10 @@ const DialogHeader = styled.div`
   padding: 1.1rem 1.25rem 0.85rem;
   flex-shrink: 0;
   border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+
+  @media (max-width: 767px) {
+    padding: 0.9rem 1rem 0.75rem;
+  }
 `
 
 const Title = styled.h2`
@@ -144,6 +161,10 @@ const DialogBody = styled.div`
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
+
+  @media (max-width: 767px) {
+    padding: 0.5rem 1rem 1.25rem;
+  }
 `
 
 const Section = styled.section`
@@ -172,6 +193,12 @@ const ToggleRow = styled.div`
   background: ${editorTheme.bgElevated};
   border: 1px solid ${editorTheme.border};
   box-shadow: none;
+
+  @media (max-width: 767px) {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.65rem;
+  }
 `
 
 const ToggleText = styled.div`

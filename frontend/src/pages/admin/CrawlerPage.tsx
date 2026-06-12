@@ -366,7 +366,7 @@ export default function CrawlerPage() {
               setGoalDirty(true)
             }}
             rows={4}
-            className="min-h-[5.5rem] w-full rounded-md border border-input bg-background px-3 py-2 text-sm disabled:opacity-50"
+            className="min-h-[5.5rem] w-full rounded-xl border border-input bg-background px-3 py-2 text-sm disabled:opacity-50"
             placeholder={DEFAULT_GOAL}
           />
         </div>

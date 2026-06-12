@@ -84,6 +84,11 @@ const Panel = styled.div`
   box-shadow: ${palette.traceShadow};
   overflow: hidden;
   flex-shrink: 0;
+
+  @media (max-width: 767px) {
+    margin: 0 0.75rem 0.4rem;
+    border-radius: 10px;
+  }
 `
 
 const TitleRow = styled.div`
@@ -134,6 +139,11 @@ const StepList = styled.ol`
   padding: 0 0.85rem 0.65rem;
   max-height: 160px;
   overflow-y: auto;
+
+  @media (max-width: 767px) {
+    max-height: 120px;
+    padding: 0 0.65rem 0.5rem;
+  }
 `
 
 const StepRow = styled.li`
@@ -163,6 +173,13 @@ const StepTitle = styled.div`
   font-size: 0.76rem;
   font-weight: 600;
   color: ${palette.inkHover};
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  @media (max-width: 767px) {
+    font-size: 0.72rem;
+  }
 `
 
 const StepMeta = styled.div`

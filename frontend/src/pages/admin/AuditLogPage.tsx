@@ -7,6 +7,7 @@ import {
   AppShellCardBody,
   AppShellCardHeader,
 } from '@/components/layout/AppPageStack'
+import { AdminNativeSelect } from '@/components/layout/AdminNativeSelect'
 import { AdminPagination } from '@/components/layout/AdminPagination'
 import { Button } from '@/components/ui/button'
 import {
@@ -83,22 +84,21 @@ export default function AuditLogPage() {
         <AppShellCardHeader title="筛选" description="按操作类型或操作者 ID 过滤审计记录" />
         <AppShellCardBody className="py-4">
           <div className="flex flex-wrap gap-2">
-            <select
+            <AdminNativeSelect
               value={action}
               onChange={(e) => {
                 setPageCurrent(1)
                 setAction(e.target.value)
               }}
-              className="h-9 rounded-md border border-border bg-background px-3 text-sm"
             >
               {ACTION_OPTIONS.map((opt) => (
                 <option key={opt.value || 'all'} value={opt.value}>
                   {opt.label}
                 </option>
               ))}
-            </select>
+            </AdminNativeSelect>
             <Input
-              className="w-40"
+              className="h-9 w-full min-w-0 rounded-xl sm:w-40"
               placeholder="操作者 ID"
               value={actorIdInput}
               onChange={(e) => {

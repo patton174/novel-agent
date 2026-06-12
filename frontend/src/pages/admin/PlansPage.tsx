@@ -28,7 +28,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { ContentPending } from '@/components/loading/ContentPending'
+import { Skeleton } from '@/components/ui/skeleton'
 import { useMarkRouteSeen } from '@/hooks/useMarkRouteSeen'
 import { appToast } from '@/stores/appToastStore'
 import { confirmAction } from '@/stores/confirmDialogStore'
@@ -152,7 +152,18 @@ export default function PlansPage() {
   }
 
   if (loading) {
-    return <ContentPending label="加载套餐…" />
+    return (
+      <AppPageStack>
+        <AppShellCard>
+          <AppShellCardHeader title="套餐列表" description="加载中…" />
+          <div className="space-y-3 px-4 pb-4">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} className="h-36 w-full rounded-xl" />
+            ))}
+          </div>
+        </AppShellCard>
+      </AppPageStack>
+    )
   }
 
   return (
