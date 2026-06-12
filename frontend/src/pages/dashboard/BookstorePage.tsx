@@ -8,7 +8,7 @@ import {
   type CatalogNovel,
 } from '@/api/catalogApi'
 import { Button } from '@/components/ui/button'
-import { APP_BTN_FULL_MD, APP_BTN_MD, APP_BTN_OUTLINE_FULL } from '@/lib/appButtonTokens'
+import { APP_BTN_FULL_MD, APP_BTN_MD } from '@/lib/appButtonTokens'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useMarkRouteSeen } from '@/hooks/useMarkRouteSeen'
 import { appToast } from '@/stores/appToastStore'
@@ -69,7 +69,7 @@ export default function BookstorePage() {
   const loading = novels === null
 
   return (
-    <AppPageStack wide>
+    <AppPageStack>
       <AppPageIntro
         eyebrow="公共书库"
         title="浏览 AI 爬取的作品，一键加入我的小说"
@@ -150,9 +150,6 @@ export default function BookstorePage() {
                     <Plus className="mr-2 size-4" />
                   )}
                   加入我的作品
-                </Button>
-                <Button asChild variant="outline" className={APP_BTN_OUTLINE_FULL}>
-                  <Link to="/dashboard/novels">查看我的作品</Link>
                 </Button>
               </div>
             </article>

@@ -175,8 +175,7 @@ export default function DashboardHomePage() {
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
         <AppShellCard>
-          <AppShellCardHeader title="创作活跃度" />
-          <AppShellCardBody className="pt-2">
+          <AppShellCardBody className="p-0">
             <ActivityHeatmap activity={activity} loading={activityLoading} />
           </AppShellCardBody>
         </AppShellCard>

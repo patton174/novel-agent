@@ -75,7 +75,7 @@ export default function NovelsPage() {
   const loading = novels === null
 
   return (
-    <AppPageStack wide>
+    <AppPageStack>
       <CoverGenerateDialog
         open={dialogNovel != null}
         novelId={dialogNovel?.id ?? null}

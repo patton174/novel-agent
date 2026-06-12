@@ -128,6 +128,14 @@
 - [x] **移除 styled-components**：`pnpm remove styled-components`、删除 `types/styled.d.ts`、vite `manualChunks` 去掉 `styled`
 - [x] **HomeFeasibilitySection** 对比表标题下增加移动端横向滑动提示文案
 
+## Phase 6 — Dashboard 宽度 + 创作台收口
+
+- [x] **AppShellMain** `max-w-[1440px]` → `max-w-6xl`，与宽页网格同宽，消除路由间宽度跳跃
+- [x] **AppPageStack** 宽页为默认；`narrow`/`compact` 保留表单窄页（3xl）；移除 `wide` 语义
+- [x] **DashboardHomePage** 热力图去掉外层「创作活跃度」重复标题（组件内已有 metric header）
+- [x] **AppStatCard** 移动端 KPI 字号收紧（label `text-xs`、value `text-xl sm:text-2xl`）
+- [x] **BookstorePage** 卡片去掉与 intro「我的作品库」重复的「查看我的作品」按钮
+
 ---
 
 ## Phase 2B 验收

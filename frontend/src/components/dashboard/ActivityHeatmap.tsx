@@ -316,7 +316,7 @@ export function ActivityHeatmap({ activity, loading }: ActivityHeatmapProps) {
 
   return (
     <div className="py-0">
-      <div className="border-b border-border/60 px-1 py-4">
+      <div className="border-b border-border/60 px-6 py-4">
         <div className="flex items-center justify-between gap-4">
           <div className="min-w-0">
             <p className="text-xs font-medium text-muted-foreground">{activeMode.metricLabel}</p>
@@ -348,7 +348,7 @@ export function ActivityHeatmap({ activity, loading }: ActivityHeatmapProps) {
         </div>
       </div>
 
-      <div className="px-1 py-4">
+      <div className="px-6 py-4">
         {loading ? (
           <Skeleton className="mx-auto h-[95px] w-full max-w-md rounded-lg" />
         ) : weekCount === 0 ? (

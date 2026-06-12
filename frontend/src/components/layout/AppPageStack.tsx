@@ -2,26 +2,28 @@ import type { ReactNode } from 'react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 
-/** 应用内页标准垂直间距 */
+/** 应用内页标准垂直间距；外层宽度由 AppShellMain max-w-6xl 统一 */
 export function AppPageStack({
   children,
   className,
+  /** 账单、设置等表单窄页（在 6xl 壳内居中 3xl） */
+  compact,
+  /** @deprecated 同 compact */
   narrow,
-  wide,
 }: {
   children: ReactNode
   className?: string
-  /** 账单、设置等窄页 */
+  compact?: boolean
   narrow?: boolean
-  /** 作品网格等宽页 */
+  /** @deprecated 宽页为默认，无需指定 */
   wide?: boolean
 }) {
+  const isCompact = compact ?? narrow
   return (
     <div
       className={cn(
         'flex w-full flex-col gap-6',
-        narrow && 'mx-auto max-w-3xl',
-        wide && 'mx-auto max-w-6xl',
+        isCompact && 'mx-auto max-w-3xl',
         className,
       )}
     >
@@ -190,19 +192,19 @@ export function AppStatCard({
 }) {
   return (
     <AppShellCard>
-      <AppShellCardBody className="flex items-center gap-3 py-4">
+      <AppShellCardBody className="flex items-center gap-2.5 py-3 sm:gap-3 sm:py-4">
         <div
           className={cn(
-            'flex size-10 shrink-0 items-center justify-center rounded-xl',
+            'flex size-9 shrink-0 items-center justify-center rounded-xl sm:size-10',
             iconBgClassName,
           )}
         >
-          <Icon className={cn('size-4.5', iconClassName ?? 'text-primary')} />
+          <Icon className={cn('size-4 sm:size-4.5', iconClassName ?? 'text-primary')} />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-[11px] font-medium text-muted-foreground">{label}</p>
-          <p className="mt-1 text-2xl font-bold tabular-nums leading-none text-foreground">
-            {loading ? <Skeleton className="h-7 w-14" /> : value}
+          <p className="text-xs font-medium text-muted-foreground">{label}</p>
+          <p className="mt-0.5 text-xl font-bold tabular-nums leading-none text-foreground sm:mt-1 sm:text-2xl">
+            {loading ? <Skeleton className="h-6 w-14 sm:h-7" /> : value}
           </p>
         </div>
       </AppShellCardBody>
