@@ -1,22 +1,22 @@
 import type { ReactNode } from 'react'
 import { ShimmerScanText } from '../../loaders/ShimmerScanText'
 import {
-  CcBranchContent,
-  CcBranchGlyph,
-  CcToolArgs,
-  CcToolBranch,
-  CcToolHeadline,
-  CcToolHeadlineButton,
-  CcToolHeadlineRow,
-  CcToolHeadlineStatic,
-  CcToolMain,
-  CcToolMerge,
-  CcToolName,
-  CcToolRowWrap,
-  HeadlineCluster,
-  ToolDetailTree,
-  ToolLeadCell,
-} from './timelineStyles'
+  CC_BRANCH_CONTENT,
+  CC_BRANCH_GLYPH,
+  CC_TOOL_ARGS,
+  CC_TOOL_HEADLINE,
+  CC_TOOL_HEADLINE_BUTTON,
+  CC_TOOL_HEADLINE_ROW,
+  CC_TOOL_HEADLINE_STATIC,
+  CC_TOOL_MAIN,
+  CC_TOOL_MERGE,
+  CC_TOOL_NAME,
+  CC_TOOL_ROW_WRAP,
+  HEADLINE_CLUSTER,
+  TOOL_DETAIL_TREE,
+  ccToolBranchClass,
+  toolLeadCellClass,
+} from '@/lib/timelineClasses'
 import { resolveToolVisualStatus, TimelineLeadIcon, type ToolVisualStatus } from './TimelineLeadIcon'
 
 export function CcToolRow({
@@ -56,11 +56,11 @@ export function CcToolRow({
   const showBody = expanded && (Boolean(branch) || Boolean(children))
 
   const headline = (
-    <CcToolHeadline>
-      <HeadlineCluster>
-        <CcToolName>{name}</CcToolName>
+    <div className={CC_TOOL_HEADLINE}>
+      <span className={HEADLINE_CLUSTER}>
+        <span className={CC_TOOL_NAME}>{name}</span>
         {phase || args || resultHint ? (
-          <CcToolArgs>
+          <span className={CC_TOOL_ARGS}>
             {phase ? (
               <>
                 {phaseActive ? (
@@ -78,21 +78,21 @@ export function CcToolRow({
               </>
             ) : null}
             {resultHint ? <span>{resultHint}</span> : null}
-          </CcToolArgs>
+          </span>
         ) : null}
-      </HeadlineCluster>
+      </span>
       {mergeCount && mergeCount > 1 ? (
-        <CcToolMerge> ×{mergeCount}</CcToolMerge>
+        <span className={CC_TOOL_MERGE}> ×{mergeCount}</span>
       ) : null}
       {trailing}
-    </CcToolHeadline>
+    </div>
   )
 
   return (
-    <CcToolRowWrap data-testid={testId}>
-      <CcToolHeadlineRow>
+    <div className={CC_TOOL_ROW_WRAP} data-testid={testId}>
+      <div className={CC_TOOL_HEADLINE_ROW}>
         {iconName ? (
-          <ToolLeadCell>
+          <div className={toolLeadCellClass()}>
             <TimelineLeadIcon
               iconName={iconName}
               status={
@@ -104,45 +104,46 @@ export function CcToolRow({
                 })
               }
             />
-          </ToolLeadCell>
+          </div>
         ) : null}
-        <CcToolMain>
+        <div className={CC_TOOL_MAIN}>
           {interactive ? (
-            <CcToolHeadlineButton
+            <button
               type="button"
+              className={CC_TOOL_HEADLINE_BUTTON}
               aria-expanded={expanded}
               onClick={onToggle}
               data-testid={testId ? `${testId}-toggle` : undefined}
             >
               {headline}
-            </CcToolHeadlineButton>
+            </button>
           ) : (
-            <CcToolHeadlineStatic>{headline}</CcToolHeadlineStatic>
+            <div className={CC_TOOL_HEADLINE_STATIC}>{headline}</div>
           )}
-        </CcToolMain>
-      </CcToolHeadlineRow>
+        </div>
+      </div>
       {showBody ? (
-        <CcToolBranch
+        <div
+          className={ccToolBranchClass({ hasLeadIcon: Boolean(iconName) })}
           data-testid={testId ? `${testId}-branch` : undefined}
-          $hasLeadIcon={Boolean(iconName)}
         >
-          <CcBranchGlyph aria-hidden />
-          <CcBranchContent>
+          <span className={CC_BRANCH_GLYPH} aria-hidden />
+          <div className={CC_BRANCH_CONTENT}>
             {branch}
             {children}
-          </CcBranchContent>
-        </CcToolBranch>
+          </div>
+        </div>
       ) : null}
-    </CcToolRowWrap>
+    </div>
   )
 }
 
 export function CcToolBranchLine({ children }: { children: ReactNode }) {
   return (
-    <CcToolBranch $nested>
-      <CcBranchGlyph aria-hidden />
-      <CcBranchContent>{children}</CcBranchContent>
-    </CcToolBranch>
+    <div className={ccToolBranchClass({ nested: true })}>
+      <span className={CC_BRANCH_GLYPH} aria-hidden />
+      <div className={CC_BRANCH_CONTENT}>{children}</div>
+    </div>
   )
 }
 
@@ -152,9 +153,9 @@ export function CcToolNestedBranch({ children }: { children: ReactNode }) {
     return null
   }
   return (
-    <ToolDetailTree>
-      <CcBranchGlyph aria-hidden />
-      <CcBranchContent>{children}</CcBranchContent>
-    </ToolDetailTree>
+    <div className={TOOL_DETAIL_TREE}>
+      <span className={CC_BRANCH_GLYPH} aria-hidden />
+      <div className={CC_BRANCH_CONTENT}>{children}</div>
+    </div>
   )
 }

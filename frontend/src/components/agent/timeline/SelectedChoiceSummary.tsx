@@ -1,10 +1,10 @@
 import type { AgentTimelineBlock } from '../../../types/agent'
 import {
-  SelectedBadge,
-  SelectedChoiceRow,
-  SelectedDesc,
-  SelectedTitle,
-} from './timelineStyles'
+  SELECTED_BADGE,
+  SELECTED_CHOICE_ROW,
+  SELECTED_DESC,
+  SELECTED_TITLE,
+} from '@/lib/timelineClasses'
 
 function stripAnswerPrefix(title: string): string {
   return title.replace(/^我的回答[：:]\s*/i, '').trim()
@@ -21,14 +21,20 @@ export function SelectedChoiceSummary({
   const body = stripAnswerPrefix(selection.title)
   const lines = body.split('\n').filter(Boolean)
   return (
-    <SelectedChoiceRow data-testid="timeline-choice-selected">
-      <SelectedBadge>{badge}</SelectedBadge>
+    <div className={SELECTED_CHOICE_ROW} data-testid="timeline-choice-selected">
+      <span className={SELECTED_BADGE}>{badge}</span>
       {lines.length > 1 ? (
-        lines.map((line) => <SelectedTitle key={line}>{line}</SelectedTitle>)
+        lines.map((line) => (
+          <span key={line} className={SELECTED_TITLE}>
+            {line}
+          </span>
+        ))
       ) : (
-        <SelectedTitle>{body || selection.title}</SelectedTitle>
+        <span className={SELECTED_TITLE}>{body || selection.title}</span>
       )}
-      {selection.description ? <SelectedDesc>{selection.description}</SelectedDesc> : null}
-    </SelectedChoiceRow>
+      {selection.description ? (
+        <span className={SELECTED_DESC}>{selection.description}</span>
+      ) : null}
+    </div>
   )
 }

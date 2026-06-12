@@ -29,11 +29,11 @@ import { TimelineTodoList } from './TimelineTodoList'
 import { ToolDetailPeek } from './ToolDetailPeek'
 import { ShimmerScanText } from '../../loaders/ShimmerScanText'
 import {
-  CcProgressHint,
-  FailTag,
-  PlanningNestedHint,
-  ToolDetail,
-} from './timelineStyles'
+  CC_PROGRESS_HINT,
+  FAIL_TAG,
+  PLANNING_NESTED_HINT,
+  toolDetailClass,
+} from '@/lib/timelineClasses'
 
 export function TimelineToolBlock({
   step,
@@ -181,7 +181,7 @@ export function TimelineToolBlock({
     return (
       <>
         {compactHint ? (
-          <PlanningNestedHint>{compactHint}</PlanningNestedHint>
+          <div className={PLANNING_NESTED_HINT}>{compactHint}</div>
         ) : null}
         {children}
       </>
@@ -197,19 +197,19 @@ export function TimelineToolBlock({
 
   const trailing = (
     <>
-      {error ? <FailTag>失败</FailTag> : null}
+      {error ? <span className={FAIL_TAG}>失败</span> : null}
       {showChooseLoading ? (
-        <CcProgressHint>{rightHint('正在生成选项…')}</CcProgressHint>
+        <span className={CC_PROGRESS_HINT}>{rightHint('正在生成选项…')}</span>
       ) : null}
       {!suppress && readProgressHint && !chapterProgressHint ? (
-        <CcProgressHint>{rightHint(readProgressHint)}</CcProgressHint>
+        <span className={CC_PROGRESS_HINT}>{rightHint(readProgressHint)}</span>
       ) : null}
       {!suppress &&
       toolLoading &&
       step.detail &&
       !chapterProgressHint &&
       !readProgressHint ? (
-        <CcProgressHint>{rightHint(step.detail)}</CcProgressHint>
+        <span className={CC_PROGRESS_HINT}>{rightHint(step.detail)}</span>
       ) : null}
     </>
   )
@@ -494,17 +494,17 @@ function ExpandableTimelineToolRow({
     >
       {showVerboseSummary ? (
         <CcToolNestedBranch>
-          <ToolDetail $error>{toolErrorText}</ToolDetail>
+          <p className={toolDetailClass(true)}>{toolErrorText}</p>
         </CcToolNestedBranch>
       ) : null}
       {showFailedDetail ? (
         <CcToolNestedBranch>
-          <ToolDetail $error>{summary}</ToolDetail>
+          <p className={toolDetailClass(true)}>{summary}</p>
         </CcToolNestedBranch>
       ) : null}
       {showBodySummary ? (
         <CcToolNestedBranch>
-          <ToolDetail>{summary}</ToolDetail>
+          <p className={toolDetailClass()}>{summary}</p>
         </CcToolNestedBranch>
       ) : null}
       {hasTodoList && todos ? (

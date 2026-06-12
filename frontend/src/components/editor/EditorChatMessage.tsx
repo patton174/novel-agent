@@ -16,7 +16,7 @@ import { AgentThinkPanel } from '../agent/AgentThinkPanel'
 import { ChatMessageSurfaceBody } from '../agent/ChatMessageSurface'
 import { MessageTodoPanel } from '../agent/timeline/MessageTodoPanel'
 import { TimelineDeliveryBlock } from '../agent/timeline/TimelineDeliveryBlock'
-import { TimelineBodyDivider } from '../agent/timeline/timelineStyles'
+import { TIMELINE_BODY_DIVIDER } from '@/lib/timelineClasses'
 import { dedupeTodosById, sortTodosForDisplay } from '../../utils/todoDisplay'
 import { ensureReplayTimeline, hasAgentTrace } from '../../utils/agentMessageReplay'
 import { sanitizeAgentStreamError } from '../../utils/sanitizeAgentStreamError'
@@ -157,7 +157,10 @@ export function EditorChatMessage({
               pinOrchestrationOpen={marketingPinOrchestration}
             />
             {showDeliveryDivider ? (
-              <TimelineBodyDivider data-testid="orchestration-body-divider" />
+              <div
+                className={TIMELINE_BODY_DIVIDER}
+                data-testid="orchestration-body-divider"
+              />
             ) : null}
             {showDeliveryBody ? (
               <TimelineDeliveryBlock

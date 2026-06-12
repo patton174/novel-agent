@@ -1,10 +1,14 @@
-import styled from 'styled-components'
 import type { AgentTodoItem } from '../../../types/agent'
-import { editorTheme } from '../../../styles/editorTheme'
-import { textStyle } from '../../../styles/typography'
 import { ShimmerScanText } from '../../loaders/ShimmerScanText'
 import { CcToolBranchLine } from './CcToolRow'
 import { TodoRowIcon } from './TodoRowIcon'
+import {
+  TIMELINE_TODO_LIST,
+  TIMELINE_TODO_META,
+  TIMELINE_TODO_WRAP,
+  timelineTodoRowClass,
+  timelineTodoTextClass,
+} from '@/lib/timelineClasses'
 
 export function TimelineTodoList({
   todos,
@@ -21,37 +25,41 @@ export function TimelineTodoList({
   const done = todos.filter((t) => t.status === 'completed').length
 
   const list = (
-    <Wrap data-testid="timeline-todo-list" $embedded={embedded}>
+    <div data-testid="timeline-todo-list" className={TIMELINE_TODO_WRAP}>
       {!embedded ? (
-        <Meta>
+        <div className={TIMELINE_TODO_META}>
           {done}/{todos.length} 已完成
-        </Meta>
+        </div>
       ) : null}
-      <List>
+      <ul className={TIMELINE_TODO_LIST}>
         {todos.map((item, index) => {
           const executing = item.status === 'in_progress'
           const shimmer = executing
           return (
-            <Row
+            <li
               key={item.id}
-              $status={item.status}
+              className={timelineTodoRowClass(item.status)}
               style={{ animationDelay: `${index * 60}ms` }}
             >
               <TodoRowIcon status={item.status} />
               {executing ? (
-                <Text $executing as="span">
+                <span className={timelineTodoTextClass({ executing: true })}>
                   <ShimmerScanText active={shimmer}>{item.content}</ShimmerScanText>
-                </Text>
+                </span>
               ) : (
-                <Text $done={item.status === 'completed' || item.status === 'cancelled'}>
+                <span
+                  className={timelineTodoTextClass({
+                    done: item.status === 'completed' || item.status === 'cancelled',
+                  })}
+                >
                   {item.content}
-                </Text>
+                </span>
               )}
-            </Row>
+            </li>
           )
         })}
-      </List>
-    </Wrap>
+      </ul>
+    </div>
   )
 
   if (embedded) {
@@ -59,54 +67,3 @@ export function TimelineTodoList({
   }
   return <CcToolBranchLine>{list}</CcToolBranchLine>
 }
-
-const Wrap = styled.div<{ $embedded?: boolean }>`
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  width: 100%;
-`
-
-const Meta = styled.div`
-  ${textStyle('micro')}
-  color: ${editorTheme.textMuted};
-`
-
-const List = styled.ul`
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.22rem;
-`
-
-const Row = styled.li<{ $status: AgentTodoItem['status'] }>`
-  display: flex;
-  align-items: flex-start;
-  gap: 0.4rem;
-  padding: 0.12rem 0;
-  opacity: ${({ $status }) => ($status === 'cancelled' ? 0.55 : 1)};
-  animation: todoRowIn 0.22s ease-out both;
-
-  @keyframes todoRowIn {
-    from {
-      opacity: 0;
-      transform: translateY(4px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-`
-
-const Text = styled.span<{ $done?: boolean; $executing?: boolean }>`
-  flex: 1;
-  min-width: 0;
-  ${textStyle('uiSm')}
-  line-height: 1.45;
-  color: ${editorTheme.textSecondary};
-  text-decoration: ${({ $done }) => ($done ? 'line-through' : 'none')};
-  opacity: ${({ $done, $executing }) => ($done ? 0.72 : $executing ? 1 : 1)};
-`

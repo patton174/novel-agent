@@ -1,5 +1,4 @@
-import styled, { keyframes } from 'styled-components'
-import { palette } from '../../styles/theme'
+import { shimmerBarBeamClass, shimmerBarTrackClass } from '@/lib/shimmerClasses'
 
 export interface ShimmerScanBarProps {
   className?: string
@@ -11,11 +10,6 @@ export interface ShimmerScanBarProps {
   compact?: boolean
 }
 
-const sweep = keyframes`
-  0% { transform: translateX(-120%); }
-  100% { transform: translateX(120%); }
-`
-
 /** Agent 经典 Shimmer / 扫描线 loading */
 export function ShimmerScanBar({
   className,
@@ -25,40 +19,13 @@ export function ShimmerScanBar({
 }: ShimmerScanBarProps) {
   const trackHeight = height ?? (compact ? 2 : 3)
   return (
-    <Track
-      className={className}
+    <div
+      className={shimmerBarTrackClass(compact, className)}
       data-testid="shimmer-scan-bar"
-      $height={trackHeight}
-      $width={width}
-      $compact={compact}
+      style={{ height: trackHeight, width }}
       aria-hidden
     >
-      <Beam $compact={compact} />
-    </Track>
+      <div className={shimmerBarBeamClass(compact)} />
+    </div>
   )
 }
-
-const Track = styled.div<{ $height: number; $width: string; $compact: boolean }>`
-  position: relative;
-  width: ${({ $width }) => $width};
-  height: ${({ $height }) => $height}px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: ${({ $compact }) => ($compact ? palette.accentSoft : palette.accentMuted)};
-  flex-shrink: 0;
-`
-
-const Beam = styled.div<{ $compact: boolean }>`
-  position: absolute;
-  inset: 0;
-  width: 60%;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(79, 70, 229, ${({ $compact }) => ($compact ? 0.08 : 0.12)}) 25%,
-    rgba(79, 70, 229, ${({ $compact }) => ($compact ? 0.45 : 0.65)}) 50%,
-    rgba(79, 70, 229, ${({ $compact }) => ($compact ? 0.08 : 0.12)}) 75%,
-    transparent 100%
-  );
-  animation: ${sweep} ${({ $compact }) => ($compact ? 1.2 : 1.5)}s ease-in-out infinite;
-`

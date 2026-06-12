@@ -1,5 +1,4 @@
 import { useMemo } from 'react'
-import styled from 'styled-components'
 import type { AgentSubagentState } from '../../../types/agent'
 import { buildSubagentOrchestration } from '../../../utils/subagentOrchestration'
 import { deriveSubagentDisplayMeta } from '../../../utils/subagentDisplayMeta'
@@ -7,9 +6,12 @@ import { findStepState } from '../../../utils/agentStreamTimeline'
 import { OrchestrationLayer } from './OrchestrationLayer'
 import { TimelineDeliveryBlock } from './TimelineDeliveryBlock'
 import { TimelineToolBlock } from './TimelineToolBlock'
-import { TimelineBodyDivider } from './timelineStyles'
-import { editorTheme } from '../../../styles/editorTheme'
-import { palette } from '../../../styles/theme'
+import {
+  SUBAGENT_ERROR_BOX,
+  SUBAGENT_TIMELINE_WRAP,
+  SUBAGENT_TURN_META,
+  TIMELINE_BODY_DIVIDER,
+} from '@/lib/timelineClasses'
 
 /** 子 Agent 完整运行时间线：编排层 + 流式正文，与主 Agent 一致 */
 export function SubagentTimelineContent({
@@ -62,7 +64,7 @@ export function SubagentTimelineContent({
       : null
 
   return (
-    <ContentWrap data-testid="subagent-timeline-content">
+    <div data-testid="subagent-timeline-content" className={SUBAGENT_TIMELINE_WRAP}>
       {rounds.length > 0 ? (
         <OrchestrationLayer
           rounds={rounds}
@@ -93,12 +95,19 @@ export function SubagentTimelineContent({
         />
       ) : null}
 
-      {turnHint && active ? <TurnMeta aria-hidden>{turnHint}</TurnMeta> : null}
+      {turnHint && active ? (
+        <div className={SUBAGENT_TURN_META} aria-hidden>
+          {turnHint}
+        </div>
+      ) : null}
 
       {showOutput ? (
         <>
           {rounds.length > 0 ? (
-            <TimelineBodyDivider data-testid="subagent-modal-output-divider" />
+            <div
+              className={TIMELINE_BODY_DIVIDER}
+              data-testid="subagent-modal-output-divider"
+            />
           ) : null}
           <TimelineDeliveryBlock
             text={outputText}
@@ -108,28 +117,9 @@ export function SubagentTimelineContent({
         </>
       ) : null}
 
-      {error && status === 'failed' ? <ErrorBox>{error}</ErrorBox> : null}
-    </ContentWrap>
+      {error && status === 'failed' ? (
+        <div className={SUBAGENT_ERROR_BOX}>{error}</div>
+      ) : null}
+    </div>
   )
 }
-
-const ContentWrap = styled.div`
-  width: 100%;
-  padding: 0.05rem 0.1rem 0.15rem;
-`
-
-const TurnMeta = styled.div`
-  margin-top: 0.2rem;
-  font-size: 0.72rem;
-  color: ${editorTheme.textMuted};
-`
-
-const ErrorBox = styled.div`
-  margin-top: 0.4rem;
-  padding: 0.4rem 0.5rem;
-  border-radius: 6px;
-  background: ${palette.errorBg};
-  color: ${palette.errorUser};
-  font-size: 0.78rem;
-  line-height: 1.45;
-`

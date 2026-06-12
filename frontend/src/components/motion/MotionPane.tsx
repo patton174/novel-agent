@@ -1,6 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import styled from 'styled-components'
-import { motionPaneCss } from './motionStyles'
+import { motionPaneClass } from '@/lib/motionClasses'
 import type { MotionPhase } from './useMotionPhase'
 
 export interface MotionPaneProps {
@@ -21,17 +20,8 @@ export function MotionPane({ paneKey, children, className }: MotionPaneProps) {
   }, [paneKey])
 
   return (
-    <PaneRoot className={className} $phase={phase}>
+    <div className={motionPaneClass(phase, className)}>
       {children}
-    </PaneRoot>
+    </div>
   )
 }
-
-const PaneRoot = styled.div<{ $phase: MotionPhase }>`
-  flex: 1;
-  min-height: 0;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  ${({ $phase }) => motionPaneCss($phase)}
-`

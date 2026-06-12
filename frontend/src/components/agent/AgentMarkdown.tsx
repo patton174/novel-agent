@@ -1,23 +1,21 @@
 import ReactMarkdown, { type Components } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import styled from 'styled-components'
 import { normalizeAgentMarkdown } from '../../utils/normalizeAgentMarkdown'
 import {
-  chatProseCss,
-  memoryProseCss,
-  novelProseCss,
-  thinkProseCss,
-} from '../../styles/prose'
+  AGENT_PROSE_TABLE_SCROLL,
+  agentProseClass,
+  type AgentMarkdownVariant,
+} from '@/lib/agentProseClasses'
 
 const markdownComponents: Components = {
   table: ({ children }) => (
-    <TableScroll>
+    <div className={AGENT_PROSE_TABLE_SCROLL}>
       <table>{children}</table>
-    </TableScroll>
+    </div>
   ),
 }
 
-export type AgentMarkdownVariant = 'chat' | 'memory' | 'think' | 'novel'
+export type { AgentMarkdownVariant } from '@/lib/agentProseClasses'
 
 export interface AgentMarkdownProps {
   text: string
@@ -32,27 +30,10 @@ export function AgentMarkdown({ text, className, variant = 'chat' }: AgentMarkdo
   }
 
   return (
-    <Root $variant={variant} className={className} data-variant={variant}>
+    <div className={agentProseClass(variant, className)} data-variant={variant}>
       <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
         {normalized}
       </ReactMarkdown>
-    </Root>
+    </div>
   )
 }
-
-const TableScroll = styled.div`
-  width: 100%;
-  max-width: 100%;
-  overflow-x: auto;
-  margin: 0.35rem 0 0.55rem;
-  -webkit-overflow-scrolling: touch;
-`
-
-const Root = styled.div<{ $variant: AgentMarkdownVariant }>`
-  ${({ $variant }) => {
-    if ($variant === 'memory') return memoryProseCss
-    if ($variant === 'think') return thinkProseCss
-    if ($variant === 'novel') return novelProseCss
-    return chatProseCss
-  }}
-`

@@ -1,22 +1,21 @@
 import { useEffect, useId, useRef, useState } from 'react'
-import styled from 'styled-components'
-import { editorTheme } from '../../styles/editorTheme'
+import { cn } from '@/lib/utils'
 import { AgentMarkdown } from './AgentMarkdown'
 import {
-  CcBranchContent,
-  CcBranchGlyph,
-  CcToolArgs,
-  CcToolBranch,
-  CcToolHeadline,
-  CcToolHeadlineButton,
-  CcToolMain,
-  CcToolName,
-  CcToolHeadlineRow,
-  CcToolRowWrap,
-  HeadlineCluster,
-  ToolLeadCell,
-  ThinkBodyInRound,
-} from './timeline/timelineStyles'
+  CC_BRANCH_CONTENT,
+  CC_BRANCH_GLYPH,
+  CC_TOOL_ARGS,
+  CC_TOOL_HEADLINE,
+  CC_TOOL_HEADLINE_BUTTON,
+  CC_TOOL_HEADLINE_ROW,
+  CC_TOOL_MAIN,
+  CC_TOOL_NAME,
+  CC_TOOL_ROW_WRAP,
+  HEADLINE_CLUSTER,
+  THINK_BODY_IN_ROUND,
+  ccToolBranchClass,
+  toolLeadCellClass,
+} from '@/lib/timelineClasses'
 import { TimelineLeadIcon } from './timeline/TimelineLeadIcon'
 
 export interface AgentThinkPanelProps {
@@ -96,6 +95,13 @@ function useThinkDuration(isThinking: boolean, enabled: boolean): number | undef
   }, [isThinking, enabled])
 
   return seconds
+}
+
+function thinkBodyClass(nested?: boolean) {
+  return cn(
+    nested ? 'text-[0.78rem]' : 'text-[0.82rem]',
+    'leading-[1.55] text-[#475569] [&_p:last-child]:mb-0 [&_p]:mb-[0.35rem]',
+  )
 }
 
 export function AgentThinkPanel({
@@ -183,96 +189,71 @@ export function AgentThinkPanel({
   const showBody =
     hasBody && (hideHeader || isThinking || expanded || holdExpandedInRound)
 
+  const bodyContent = (
+    <div
+      id={bodyId}
+      data-testid="agent-think-content"
+      className={thinkBodyClass(nested)}
+    >
+      {markdown ? (
+        <AgentMarkdown text={text} variant="think" />
+      ) : (
+        text.split('\n').filter(Boolean).map((line, i) => <p key={i}>{line}</p>)
+      )}
+    </div>
+  )
+
   return (
-    <Root className={className} data-testid={testId} $nested={nested}>
-      <CcToolRowWrap>
-        <CcToolHeadlineRow>
+    <div
+      className={cn('w-full', nested ? 'opacity-[0.92]' : 'opacity-100', className)}
+      data-testid={testId}
+    >
+      <div className={CC_TOOL_ROW_WRAP}>
+        <div className={CC_TOOL_HEADLINE_ROW}>
           {!hideHeader ? (
-            <ToolLeadCell>
+            <div className={toolLeadCellClass()}>
               <TimelineLeadIcon
                 iconName="think"
                 status={isThinking ? 'loading' : 'success'}
               />
-            </ToolLeadCell>
+            </div>
           ) : null}
-          <CcToolMain>
+          <div className={CC_TOOL_MAIN}>
             {!hideHeader ? (
-              <CcToolHeadlineButton
+              <button
                 type="button"
+                className={CC_TOOL_HEADLINE_BUTTON}
                 disabled={!canToggle}
                 aria-expanded={canToggle ? expanded : undefined}
                 aria-controls={canToggle ? bodyId : undefined}
                 onClick={handleToggleClick}
                 data-testid="agent-think-toggle"
               >
-                <CcToolHeadline>
-                  <HeadlineCluster>
-                    <CcToolName>{label}</CcToolName>
-                    <CcToolArgs>
+                <div className={CC_TOOL_HEADLINE}>
+                  <span className={HEADLINE_CLUSTER}>
+                    <span className={CC_TOOL_NAME}>{label}</span>
+                    <span className={CC_TOOL_ARGS}>
                       {phase}
                       {duration ? ` · ${duration}` : ''}
-                    </CcToolArgs>
-                  </HeadlineCluster>
-                </CcToolHeadline>
-              </CcToolHeadlineButton>
+                    </span>
+                  </span>
+                </div>
+              </button>
             ) : null}
-          </CcToolMain>
-        </CcToolHeadlineRow>
+          </div>
+        </div>
 
         {showBody ? (
           inThinkRound ? (
-            <ThinkBodyInRound>
-              <Body
-                id={bodyId}
-                data-testid="agent-think-content"
-                $nested={nested}
-              >
-                {markdown ? (
-                  <AgentMarkdown text={text} variant="think" />
-                ) : (
-                  text.split('\n').filter(Boolean).map((line, i) => <p key={i}>{line}</p>)
-                )}
-              </Body>
-            </ThinkBodyInRound>
+            <div className={THINK_BODY_IN_ROUND}>{bodyContent}</div>
           ) : (
-            <CcToolBranch>
-              <CcBranchGlyph aria-hidden />
-              <CcBranchContent>
-                <Body
-                  id={bodyId}
-                  data-testid="agent-think-content"
-                  $nested={nested}
-                >
-                  {markdown ? (
-                    <AgentMarkdown text={text} variant="think" />
-                  ) : (
-                    text.split('\n').filter(Boolean).map((line, i) => <p key={i}>{line}</p>)
-                  )}
-                </Body>
-              </CcBranchContent>
-            </CcToolBranch>
+            <div className={ccToolBranchClass()}>
+              <span className={CC_BRANCH_GLYPH} aria-hidden />
+              <div className={CC_BRANCH_CONTENT}>{bodyContent}</div>
+            </div>
           )
         ) : null}
-      </CcToolRowWrap>
-    </Root>
+      </div>
+    </div>
   )
 }
-
-const Root = styled.div<{ $nested?: boolean }>`
-  width: 100%;
-  opacity: ${({ $nested }) => ($nested ? 0.92 : 1)};
-`
-
-const Body = styled.div<{ $nested?: boolean }>`
-  font-size: ${({ $nested }) => ($nested ? '0.78rem' : '0.82rem')};
-  line-height: 1.55;
-  color: ${editorTheme.textSecondary};
-
-  p {
-    margin: 0 0 0.35rem;
-  }
-
-  p:last-child {
-    margin-bottom: 0;
-  }
-`

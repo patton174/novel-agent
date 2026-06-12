@@ -10,7 +10,7 @@ import { EditorButton } from '../ui/EditorButton'
 import { OutlineVolumeBlock } from './outline/OutlineVolumeBlock'
 import { readDragPayload, writeDragPayload } from './outline/outlineDrag'
 import { PlusIcon } from './outline/outlineIcons'
-import { DragHint, Hint, OutlineList } from './outline/outlineStyles'
+import { OUTLINE_DRAG_HINT, OUTLINE_HINT, OUTLINE_LIST } from '@/lib/outlineClasses'
 import type { DragPayload, DropTarget } from './outline/outlineTypes'
 
 export interface NovelOutlinePanelProps {
@@ -146,10 +146,10 @@ export function NovelOutlinePanel({
 
   return (
     <>
-      <DragHint>拖拽卷标题栏排序；拖拽章节可跨卷移动或调整顺序</DragHint>
-      <OutlineList>
+      <div className={OUTLINE_DRAG_HINT}>拖拽卷标题栏排序；拖拽章节可跨卷移动或调整顺序</div>
+      <div className={OUTLINE_LIST}>
         {volumeGroups.length === 0 ? (
-          <Hint>暂无卷与章节</Hint>
+          <div className={OUTLINE_HINT}>暂无卷与章节</div>
         ) : (
           volumeGroups.map(({ volume, chapters: volumeChapters }) => (
             <OutlineVolumeBlock
@@ -179,7 +179,7 @@ export function NovelOutlinePanel({
             />
           ))
         )}
-      </OutlineList>
+      </div>
       <EditorButton
         variant="dashed"
         fullWidth

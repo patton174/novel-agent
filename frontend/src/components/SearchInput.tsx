@@ -1,6 +1,4 @@
 import React from 'react'
-import styled from 'styled-components'
-import { font, palette, radius, shadow, transition } from '../styles/theme'
 
 interface InputProps {
   placeholder?: string
@@ -16,9 +14,9 @@ const SearchInput: React.FC<InputProps> = ({
   onKeyDown,
 }) => {
   return (
-    <Wrapper>
+    <div className="relative w-full max-w-[500px]">
       <input
-        className="input"
+        className="box-border h-14 w-full rounded-xl border border-border bg-background px-5 text-[1.05rem] text-foreground shadow-[inset_0_1px_2px_0_rgba(0,0,0,0.05)] outline-none transition-[box-shadow,border-color,transform] duration-[250ms] ease-out placeholder:text-slate-500 hover:-translate-y-px hover:shadow-[0_4px_20px_-2px_rgba(0,0,0,0.05)] focus:border-primary focus:shadow-[0_4px_20px_-2px_rgba(0,0,0,0.05),0_0_0_3px_rgba(79,70,229,0.1)]"
         name="story-prompt"
         type="text"
         placeholder={placeholder}
@@ -26,45 +24,8 @@ const SearchInput: React.FC<InputProps> = ({
         onChange={onChange}
         onKeyDown={onKeyDown}
       />
-    </Wrapper>
+    </div>
   )
 }
-
-const Wrapper = styled.div`
-  position: relative;
-  width: 100%;
-  max-width: 500px;
-
-  .input {
-    width: 100%;
-    height: 56px;
-    padding: 0 1.25rem;
-    font-size: 1.05rem;
-    font-family: ${font.body};
-    color: ${palette.text};
-    background: ${palette.bg};
-    border: 1px solid ${palette.border};
-    border-radius: ${radius.lg};
-    outline: none;
-    box-sizing: border-box;
-    box-shadow: ${shadow.inSoft};
-    transition: box-shadow ${transition.base}, border-color ${transition.base},
-      transform ${transition.base};
-  }
-
-  .input::placeholder {
-    color: ${palette.textMuted};
-  }
-
-  .input:hover {
-    box-shadow: ${shadow.outSoft};
-    transform: translateY(-1px);
-  }
-
-  .input:focus {
-    border-color: ${palette.accent};
-    box-shadow: ${shadow.outSoft}, 0 0 0 3px ${palette.accentMuted};
-  }
-`
 
 export default SearchInput

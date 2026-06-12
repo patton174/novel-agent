@@ -1,7 +1,11 @@
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
-import styled from 'styled-components'
-import { editorTheme } from '../../styles/editorTheme'
-import { motionIndicatorCss, motionInteractiveCss } from './motionStyles'
+import { motionIndicatorClass, motionInteractiveClass } from '@/lib/motionClasses'
+import {
+  MOTION_TAB_INDICATOR,
+  MOTION_TAB_TRACK,
+  motionTabButtonClass,
+  motionTabIconClass,
+} from '@/lib/uiMenuClasses'
 
 export interface MotionTabItem<T extends string = string> {
   id: T
@@ -55,9 +59,10 @@ export function MotionTabBar<T extends string = string>({
   }, [activeId, items])
 
   return (
-    <Track ref={trackRef} role="tablist" aria-label={ariaLabel}>
-      <Indicator
+    <div ref={trackRef} className={MOTION_TAB_TRACK} role="tablist" aria-label={ariaLabel}>
+      <div
         aria-hidden
+        className={`${MOTION_TAB_INDICATOR} ${motionIndicatorClass()}`}
         style={{
           left: indicator.left,
           top: indicator.top,
@@ -68,7 +73,7 @@ export function MotionTabBar<T extends string = string>({
       {items.map((item) => {
         const active = item.id === activeId
         return (
-          <TabButton
+          <button
             key={item.id}
             ref={(el) => {
               tabRefs.current[item.id] = el
@@ -77,78 +82,18 @@ export function MotionTabBar<T extends string = string>({
             role="tab"
             aria-selected={active}
             disabled={item.disabled}
-            $active={active}
+            className={`${motionTabButtonClass(active)} ${motionInteractiveClass()}`}
             onClick={() => onChange(item.id)}
           >
-            {item.icon ? <TabIcon $active={active}>{item.icon}</TabIcon> : null}
-            <TabLabel $active={active}>{item.label}</TabLabel>
-          </TabButton>
+            {item.icon ? (
+              <span className={`${motionTabIconClass(active)} ${motionInteractiveClass()}`}>
+                {item.icon}
+              </span>
+            ) : null}
+            <span className={motionInteractiveClass()}>{item.label}</span>
+          </button>
         )
       })}
-    </Track>
+    </div>
   )
 }
-
-const Track = styled.div`
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px;
-  border-radius: 12px;
-  background: rgba(0, 0, 0, 0.03);
-`
-
-const Indicator = styled.div`
-  position: absolute;
-  border-radius: 10px;
-  background: ${editorTheme.activeBg};
-  border: 1px solid rgba(79, 70, 229, 0.35);
-  box-shadow: ${editorTheme.shadowInSoft};
-  ${motionIndicatorCss}
-  pointer-events: none;
-  z-index: 0;
-`
-
-const TabButton = styled.button<{ $active: boolean }>`
-  position: relative;
-  z-index: 1;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0.45rem 0.85rem;
-  border: none;
-  border-radius: 10px;
-  background: transparent;
-  font-family: inherit;
-  font-size: 0.82rem;
-  font-weight: ${({ $active }) => ($active ? 600 : 500)};
-  color: ${({ $active }) => ($active ? editorTheme.text : editorTheme.textSecondary)};
-  cursor: pointer;
-  ${motionInteractiveCss}
-
-  &:hover:not(:disabled) {
-    color: ${editorTheme.text};
-  }
-
-  &:disabled {
-    opacity: 0.45;
-    cursor: not-allowed;
-  }
-`
-
-const TabIcon = styled.span<{ $active: boolean }>`
-  display: inline-flex;
-  align-items: center;
-  ${motionInteractiveCss}
-  color: ${({ $active }) => ($active ? editorTheme.accent : editorTheme.textMuted)};
-
-  svg {
-    width: 16px;
-    height: 16px;
-  }
-`
-
-const TabLabel = styled.span<{ $active: boolean }>`
-  ${motionInteractiveCss}
-`

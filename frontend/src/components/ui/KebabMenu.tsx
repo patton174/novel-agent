@@ -6,13 +6,15 @@ import {
   useState,
   type CSSProperties,
 } from 'react'
-import styled from 'styled-components'
 import { createPortal } from 'react-dom'
 import { MotionPop } from '../motion/MotionPop'
-import { editorModalSurface } from '../../styles/editorModal'
-import { editorTheme } from '../../styles/editorTheme'
-import { palette } from '../../styles/theme'
-import { motionInteractiveCss } from '../motion/motionStyles'
+import { motionInteractiveClass } from '@/lib/motionClasses'
+import {
+  KEBAB_MENU_PANEL,
+  KEBAB_ROOT,
+  kebabMenuItemClass,
+  kebabTriggerClass,
+} from '@/lib/uiMenuClasses'
 
 export interface KebabMenuItem {
   id: string
@@ -79,35 +81,35 @@ export function KebabMenu({ items, 'aria-label': ariaLabel = '更多操作' }: K
 
   const menu = (
     <MotionPop ref={menuRef} open={open} placement="bottom" style={menuStyle}>
-      <MenuPanel id={listId} role="menu">
+      <div id={listId} role="menu" className={KEBAB_MENU_PANEL}>
         {items.map((item) => (
-          <MenuItem
+          <button
             key={item.id}
             type="button"
             role="menuitem"
-            $danger={item.danger}
+            className={`${kebabMenuItemClass(item.danger)} ${motionInteractiveClass()}`}
             onClick={() => {
               item.onClick()
               setOpen(false)
             }}
           >
             {item.label}
-          </MenuItem>
+          </button>
         ))}
-      </MenuPanel>
+      </div>
     </MotionPop>
   )
 
   return (
-    <Root ref={rootRef}>
-      <Trigger
+    <div ref={rootRef} className={KEBAB_ROOT}>
+      <button
         ref={triggerRef}
         type="button"
+        className={`${kebabTriggerClass(open)} ${motionInteractiveClass()}`}
         aria-label={ariaLabel}
         aria-expanded={open}
         aria-haspopup="menu"
         aria-controls={listId}
-        $open={open}
         onClick={(e) => {
           e.stopPropagation()
           setOpen((v) => {
@@ -118,73 +120,8 @@ export function KebabMenu({ items, 'aria-label': ariaLabel = '更多操作' }: K
         }}
       >
         <DotsIcon />
-      </Trigger>
+      </button>
       {typeof document !== 'undefined' ? createPortal(menu, document.body) : null}
-    </Root>
+    </div>
   )
 }
-
-const Root = styled.div`
-  display: inline-flex;
-  flex-shrink: 0;
-`
-
-const Trigger = styled.button<{ $open: boolean }>`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  border: none;
-  border-radius: 8px;
-  background: ${({ $open }) => ($open ? editorTheme.accentMuted : 'transparent')};
-  color: ${editorTheme.textMuted};
-  cursor: pointer;
-  ${motionInteractiveCss}
-
-  svg {
-    width: 16px;
-    height: 16px;
-  }
-
-  &:hover {
-    background: ${editorTheme.accentMuted};
-    color: ${editorTheme.text};
-  }
-
-  &:focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.45);
-    color: ${editorTheme.text};
-  }
-`
-
-const MenuPanel = styled.div`
-  padding: 0.3rem;
-  background: ${palette.planningActiveBg};
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 10px;
-  box-shadow: ${editorModalSurface.menuShadow};
-`
-
-const MenuItem = styled.button<{ $danger?: boolean }>`
-  width: 100%;
-  display: block;
-  padding: 0.5rem 0.7rem;
-  border: none;
-  border-radius: 7px;
-  background: transparent;
-  font-family: inherit;
-  font-size: 0.8rem;
-  font-weight: 500;
-  text-align: left;
-  color: ${({ $danger }) => ($danger ? editorTheme.error : editorTheme.text)};
-  cursor: pointer;
-  ${motionInteractiveCss}
-
-  &:hover {
-    background: ${({ $danger }) =>
-      $danger ? editorTheme.errorBg : editorTheme.accentMuted};
-  }
-`

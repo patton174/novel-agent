@@ -1,7 +1,9 @@
 import React from 'react'
-import styled from 'styled-components'
-import { palette } from '../../styles/theme'
 import { useTypewriterStream } from '../../hooks/useTypewriterStream'
+import {
+  STREAMING_REVEAL_PARAGRAPH,
+  STREAMING_REVEAL_WRAP,
+} from '@/lib/agentChatClasses'
 
 export interface StreamingRevealContentProps {
   paragraphs: string[]
@@ -17,21 +19,21 @@ function renderParagraphNodes(paragraphs: string[]): React.ReactNode {
 
     if (isSingleEmpty) {
       return (
-        <TypewriterParagraph key={pIdx}>
+        <p key={pIdx} className={STREAMING_REVEAL_PARAGRAPH}>
           <br />
-        </TypewriterParagraph>
+        </p>
       )
     }
 
     return (
-      <TypewriterParagraph key={pIdx}>
+      <p key={pIdx} className={STREAMING_REVEAL_PARAGRAPH}>
         {paraLines.map((line, lIdx) => (
           <React.Fragment key={lIdx}>
             {line}
             {lIdx < paraLines.length - 1 ? <br /> : null}
           </React.Fragment>
         ))}
-      </TypewriterParagraph>
+      </p>
     )
   })
 }
@@ -51,29 +53,14 @@ export function StreamingRevealContent({
   })
 
   if (!animate) {
-    return <TypewriterWrap>{renderParagraphNodes(paragraphs)}</TypewriterWrap>
+    return <div className={STREAMING_REVEAL_WRAP}>{renderParagraphNodes(paragraphs)}</div>
   }
 
   const visibleParagraphs = visible ? visible.split(/\n{2,}/) : ['']
 
   return (
-    <TypewriterWrap data-testid="typewriter-stream">
+    <div className={STREAMING_REVEAL_WRAP} data-testid="typewriter-stream">
       {renderParagraphNodes(visibleParagraphs)}
-    </TypewriterWrap>
+    </div>
   )
 }
-
-const TypewriterWrap = styled.div`
-  font-family: 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC', Georgia, serif;
-  letter-spacing: 0.02em;
-`
-
-const TypewriterParagraph = styled.p`
-  margin: 0 0 0.55rem;
-  line-height: 1.85;
-  color: ${palette.text};
-
-  &:last-child {
-    margin-bottom: 0;
-  }
-`

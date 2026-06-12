@@ -1,0 +1,314 @@
+@keyframes agent-trace-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(0.85);
+  }
+}
+
+@keyframes agent-tool-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes agent-toast-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes tool-icon-stroke-pulse {
+  0% {
+    stroke-dashoffset: 36;
+    opacity: 0.55;
+  }
+  50% {
+    stroke-dashoffset: 6;
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: 36;
+    opacity: 0.55;
+  }
+}
+
+@utility animate-agent-trace-pulse {
+  animation: agent-trace-pulse 1.2s ease-in-out infinite;
+}
+
+@utility animate-agent-tool-fade-in {
+  animation: agent-tool-fade-in 0.2s ease;
+}
+
+@utility animate-agent-toast-in {
+  animation: agent-toast-slide-in 0.2s ease both;
+}
+
+.tool-icon-animate path,
+.tool-icon-animate circle,
+.tool-icon-animate rect,
+.tool-icon-animate line {
+  stroke-dasharray: 36;
+  animation: tool-icon-stroke-pulse 1.35s ease-in-out infinite;
+}
+
+/* Agent markdown prose variants (from styles/prose.ts) */
+.agent-prose > *:first-child {
+  margin-top: 0;
+}
+
+.agent-prose > *:last-child {
+  margin-bottom: 0;
+}
+
+.agent-prose p {
+  margin: 0 0 0.55rem;
+  line-height: 1.65;
+}
+
+.agent-prose h1,
+.agent-prose h2,
+.agent-prose h3,
+.agent-prose h4,
+.agent-prose h5,
+.agent-prose h6 {
+  font-weight: 700;
+  line-height: 1.35;
+  color: #1e293b;
+}
+
+.agent-prose h1 {
+  margin: 0.85rem 0 0.55rem;
+  font-size: 1.05rem;
+}
+
+.agent-prose h2 {
+  margin: 0.75rem 0 0.45rem;
+  font-size: 0.96rem;
+  padding-left: 0.55rem;
+  border-left: 3px solid rgba(79, 70, 229, 0.4);
+}
+
+.agent-prose h3 {
+  margin: 0.65rem 0 0.4rem;
+  font-size: 0.88rem;
+  color: #334155;
+}
+
+.agent-prose h4 {
+  margin: 0.55rem 0 0.35rem;
+  font-size: 0.82rem;
+  color: #475569;
+}
+
+.agent-prose hr {
+  border: none;
+  border-top: 1px solid #e2e8f0;
+  margin: 0.75rem 0;
+}
+
+.agent-prose ul,
+.agent-prose ol {
+  margin: 0.25rem 0 0.55rem;
+  padding-left: 1.35rem;
+}
+
+.agent-prose li {
+  margin: 0.22rem 0;
+  line-height: 1.6;
+}
+
+.agent-prose li > p {
+  margin: 0;
+}
+
+.agent-prose strong {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.agent-prose em {
+  font-style: italic;
+  color: #475569;
+}
+
+.agent-prose blockquote {
+  margin: 0.45rem 0;
+  padding: 0.35rem 0.65rem;
+  border-left: 3px solid rgba(79, 70, 229, 0.1);
+  background: #f1f5f9;
+  color: #475569;
+  border-radius: 0 6px 6px 0;
+}
+
+.agent-prose code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.88em;
+  padding: 0.08rem 0.32rem;
+  border-radius: 4px;
+  background: #f1f5f9;
+}
+
+.agent-prose pre {
+  margin: 0.45rem 0;
+  padding: 0.55rem 0.65rem;
+  border-radius: 8px;
+  background: #f8fafc;
+  overflow-x: auto;
+}
+
+.agent-prose pre code {
+  padding: 0;
+  background: none;
+  font-size: 0.78rem;
+}
+
+.agent-prose a {
+  color: #3730a3;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.agent-prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.5rem 0 0.65rem;
+  font-size: 0.84em;
+  line-height: 1.5;
+}
+
+.agent-prose thead th {
+  background: #f8fafc;
+  font-weight: 600;
+  color: #334155;
+}
+
+.agent-prose th,
+.agent-prose td {
+  border: 1px solid #e2e8f0;
+  padding: 0.4rem 0.55rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.agent-prose tr:nth-child(even) td {
+  background: #f8fafc;
+}
+
+.agent-prose-chat {
+  font-family: 'Geist Variable', ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.875rem;
+  line-height: 1.72;
+  letter-spacing: 0.01em;
+  color: #334155;
+}
+
+.agent-prose-chat h2 {
+  border-left: none;
+  padding-left: 0;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.agent-prose-chat h3,
+.agent-prose-chat h4 {
+  font-weight: 600;
+}
+
+.agent-prose-chat p {
+  margin: 0 0 0.65rem;
+}
+
+.agent-prose-memory {
+  font-family: 'Geist Variable', ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.8rem;
+  color: #334155;
+}
+
+.agent-prose-memory h2 {
+  font-size: 0.9rem;
+  border-left-color: rgba(79, 70, 229, 0.2);
+}
+
+.agent-prose-memory h3 {
+  font-size: 0.84rem;
+}
+
+.agent-prose-think {
+  font-family: 'Geist Variable', ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.78rem;
+  line-height: 1.68;
+  color: #64748b;
+}
+
+.agent-prose-think h1,
+.agent-prose-think h2,
+.agent-prose-think h3,
+.agent-prose-think h4,
+.agent-prose-think h5,
+.agent-prose-think h6 {
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-left: none;
+  padding-left: 0;
+  color: #475569;
+  margin: 0.5rem 0 0.35rem;
+}
+
+.agent-prose-think p {
+  margin: 0 0 0.5rem;
+}
+
+.agent-prose-think strong {
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+.agent-prose-think blockquote {
+  border-left-color: #e2e8f0;
+  background: #f8fafc;
+  color: #64748b;
+}
+
+.agent-prose-novel {
+  font-family: 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC', Georgia, serif;
+  font-size: 1.05rem;
+  line-height: 2;
+  letter-spacing: 0.04em;
+  color: #0f172a;
+}
+
+.agent-prose-novel p {
+  margin: 0 0 0.85rem;
+  text-indent: 2em;
+}
+
+.agent-prose-novel h1,
+.agent-prose-novel h2,
+.agent-prose-novel h3 {
+  text-indent: 0;
+  font-weight: 700;
+  border-left: none;
+  padding-left: 0;
+}
+
+.agent-prose-novel h2 {
+  font-size: 1.15rem;
+  margin: 1.2rem 0 0.75rem;
+}

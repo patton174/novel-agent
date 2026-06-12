@@ -1,6 +1,12 @@
 import { useEffect, useState } from 'react'
 import type { AgentChoiceOption, AgentInteractionPayload } from '../../../types/agent'
-import { CcChoiceButton, ChoiceDesc, ChoiceReveal, ChoiceTitle } from './timelineStyles'
+import {
+  ccChoiceButtonClass,
+  CHOICE_DESC,
+  CHOICE_REVEAL,
+  CHOICE_TITLE,
+  choiceRevealStyle,
+} from '@/lib/timelineClasses'
 
 export function StaggeredChoices({
   choices,
@@ -42,13 +48,19 @@ export function StaggeredChoices({
   return (
     <>
       {choices.slice(0, visibleCount).map((choice, index) => (
-        <ChoiceReveal key={choice.id} $delayMs={index * 40}>
-          <CcChoiceButton
+        <div
+          key={choice.id}
+          className={CHOICE_REVEAL}
+          style={choiceRevealStyle(index * 40)}
+        >
+          <button
             type="button"
-            $active={Boolean(
-              isMulti
-                ? multiSelected.some((item) => item.id === choice.id)
-                : singleSelectedId === choice.id,
+            className={ccChoiceButtonClass(
+              Boolean(
+                isMulti
+                  ? multiSelected.some((item) => item.id === choice.id)
+                  : singleSelectedId === choice.id,
+              ),
             )}
             onClick={() => {
               if (isMulti) {
@@ -58,10 +70,12 @@ export function StaggeredChoices({
               onSelectSingle(choice)
             }}
           >
-            <ChoiceTitle>{choice.title}</ChoiceTitle>
-            {choice.description ? <ChoiceDesc>{choice.description}</ChoiceDesc> : null}
-          </CcChoiceButton>
-        </ChoiceReveal>
+            <div className={CHOICE_TITLE}>{choice.title}</div>
+            {choice.description ? (
+              <div className={CHOICE_DESC}>{choice.description}</div>
+            ) : null}
+          </button>
+        </div>
       ))}
     </>
   )

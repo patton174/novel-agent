@@ -5,16 +5,16 @@ import { allowOutlineDrop } from './outlineDrag'
 import { ChevronIcon, PlusIcon } from './outlineIcons'
 import type { DragPayload, DropTarget } from './outlineTypes'
 import {
-  ChapterDropZone,
-  ChapterListCollapsible,
-  ChapterListInner,
-  ChapterRow,
-  ChevronWrap,
-  DragHandle,
-  OutlineItem,
-  VolumeBlock,
-  VolumeHeaderRow,
-} from './outlineStyles'
+  OUTLINE_CHAPTER_LIST_INNER,
+  OUTLINE_CHAPTER_ROW,
+  OUTLINE_DRAG_HANDLE,
+  OUTLINE_VOLUME_HEADER,
+  outlineChapterDropZoneClass,
+  outlineChapterListCollapsibleClass,
+  outlineChevronWrapClass,
+  outlineItemClass,
+  outlineVolumeBlockClass,
+} from '@/lib/outlineClasses'
 
 export interface OutlineVolumeBlockProps {
   volume: Volume
@@ -58,8 +58,8 @@ export function OutlineVolumeBlock({
   const volumeDropActive = dropTarget?.kind === 'volume' && dropTarget.volumeId === volume.id
 
   return (
-    <VolumeBlock
-      $dragOver={volumeDropActive}
+    <div
+      className={outlineVolumeBlockClass(volumeDropActive)}
       onDragOver={(event) => {
         if (dragging?.kind !== 'volume') return
         allowOutlineDrop(event)
@@ -72,28 +72,31 @@ export function OutlineVolumeBlock({
       }}
       onDrop={(event) => void onVolumeDrop(event, volume.id)}
     >
-      <VolumeHeaderRow>
-        <DragHandle
+      <div className={OUTLINE_VOLUME_HEADER}>
+        <span
+          className={OUTLINE_DRAG_HANDLE}
           draggable
           title="拖拽排序卷"
           onDragStart={(event) => onVolumeDragStart(event, volume.id)}
           onDragEnd={onDragEnd}
         >
           ⋮⋮
-        </DragHandle>
+        </span>
         <EditorButton variant="volume" type="button" onClick={onToggleExpand}>
           <span className="title">{volume.title}</span>
           <span className="meta">{volumeChapters.length} 章</span>
-          <ChevronWrap $open={expanded}>
+          <span className={outlineChevronWrapClass(expanded)}>
             <ChevronIcon />
-          </ChevronWrap>
+          </span>
         </EditorButton>
-      </VolumeHeaderRow>
-      <ChapterListCollapsible $open={expanded}>
-        <ChapterListInner>
+      </div>
+      <div className={outlineChapterListCollapsibleClass(expanded)}>
+        <div className={OUTLINE_CHAPTER_LIST_INNER}>
           {volumeChapters.length === 0 ? (
-            <ChapterDropZone
-              $dragOver={dropTarget?.volumeId === volume.id && dropTarget.kind === 'chapter'}
+            <div
+              className={outlineChapterDropZoneClass(
+                dropTarget?.volumeId === volume.id && dropTarget.kind === 'chapter',
+              )}
               onDragOver={(event) => {
                 if (dragging?.kind !== 'chapter') return
                 allowOutlineDrop(event)
@@ -102,7 +105,7 @@ export function OutlineVolumeBlock({
               onDrop={(event) => void onChapterDrop(event, volume.id, null)}
             >
               拖拽章节到此处
-            </ChapterDropZone>
+            </div>
           ) : (
             volumeChapters.map((chapter, index) => {
               const chapterDropActive =
@@ -110,11 +113,13 @@ export function OutlineVolumeBlock({
                 dropTarget.volumeId === volume.id &&
                 dropTarget.chapterId === chapter.id
               return (
-                <OutlineItem
+                <div
                   key={chapter.id}
-                  $active={chapter.id === activeChapterId}
-                  $inProgress={chapter.wordCount > 0 && chapter.id !== activeChapterId}
-                  $dragOver={chapterDropActive}
+                  className={outlineItemClass({
+                    active: chapter.id === activeChapterId,
+                    inProgress: chapter.wordCount > 0 && chapter.id !== activeChapterId,
+                    dragOver: chapterDropActive,
+                  })}
                   onDragOver={(event) => {
                     if (dragging?.kind !== 'chapter') return
                     allowOutlineDrop(event)
@@ -131,15 +136,16 @@ export function OutlineVolumeBlock({
                   }}
                   onDrop={(event) => void onChapterDrop(event, volume.id, chapter.id)}
                 >
-                  <ChapterRow>
-                    <DragHandle
+                  <div className={OUTLINE_CHAPTER_ROW}>
+                    <span
+                      className={OUTLINE_DRAG_HANDLE}
                       draggable
                       title="拖拽移动章节"
                       onDragStart={(event) => onChapterDragStart(event, chapter.id)}
                       onDragEnd={onDragEnd}
                     >
                       ⋮⋮
-                    </DragHandle>
+                    </span>
                     <EditorButton
                       variant="chapter"
                       type="button"
@@ -156,8 +162,8 @@ export function OutlineVolumeBlock({
                             : '待写'}
                       </span>
                     </EditorButton>
-                  </ChapterRow>
-                </OutlineItem>
+                  </div>
+                </div>
               )
             })
           )}
@@ -173,8 +179,8 @@ export function OutlineVolumeBlock({
             <PlusIcon />
             <span>本卷新增章节</span>
           </EditorButton>
-        </ChapterListInner>
-      </ChapterListCollapsible>
-    </VolumeBlock>
+        </div>
+      </div>
+    </div>
   )
 }

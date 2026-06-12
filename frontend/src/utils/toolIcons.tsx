@@ -1,6 +1,6 @@
 import React from 'react'
-import styled, { css, keyframes } from 'styled-components'
 import { normalizeToolName } from './agentToolNames'
+import { toolIconSvgClass } from '@/lib/toolIconClasses'
 
 export interface ToolIconProps {
   name: string
@@ -11,38 +11,6 @@ export interface ToolIconProps {
 }
 
 type IconPath = React.ReactNode
-
-const strokePulse = keyframes`
-  0% {
-    stroke-dashoffset: 36;
-    opacity: 0.55;
-  }
-  50% {
-    stroke-dashoffset: 6;
-    opacity: 1;
-  }
-  100% {
-    stroke-dashoffset: 36;
-    opacity: 0.55;
-  }
-`
-
-const IconSvg = styled.svg<{ $animate?: boolean }>`
-  display: block;
-  flex-shrink: 0;
-
-  ${({ $animate }) =>
-    $animate &&
-    css`
-      path,
-      circle,
-      rect,
-      line {
-        stroke-dasharray: 36;
-        animation: ${strokePulse} 1.35s ease-in-out infinite;
-      }
-    `}
-`
 
 const ICONS: Record<string, IconPath> = {
   Read: (
@@ -218,9 +186,8 @@ export function ToolIcon({ name, size = 16, className, animate = false }: ToolIc
   const key = normalizeToolName(name) || name
   const paths = ICONS[key] ?? DEFAULT_ICON
   return (
-    <IconSvg
-      className={className}
-      $animate={animate}
+    <svg
+      className={toolIconSvgClass(animate, className)}
       width={size}
       height={size}
       viewBox="0 0 24 24"
@@ -229,6 +196,6 @@ export function ToolIcon({ name, size = 16, className, animate = false }: ToolIc
       data-tool-icon={key}
     >
       {paths}
-    </IconSvg>
+    </svg>
   )
 }

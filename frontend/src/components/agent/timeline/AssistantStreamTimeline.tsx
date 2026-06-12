@@ -1,5 +1,4 @@
 import { Fragment, useMemo, useState, type ReactNode } from 'react'
-import styled from 'styled-components'
 import type {
   AgentChoiceOption,
   AgentStepState,
@@ -35,16 +34,17 @@ import { PlanReasoningBlock, ThinkBlock } from './ThinkBlocks'
 import { ThinkRoundGroup } from './ThinkRoundGroup'
 import type { AssistantStreamTimelineProps } from './types'
 import {
-  ChoiceList,
-  Column,
-  CustomHint,
-  CustomInput,
-  CustomInputRow,
-  MultiSelectActions,
-  MultiSelectHint,
-  StepPrompt,
-  ThinkTimelineWrap,
-} from './timelineStyles'
+  CHOICE_LIST,
+  CUSTOM_HINT,
+  CUSTOM_INPUT,
+  CUSTOM_INPUT_ROW,
+  MULTI_SELECT_ACTIONS,
+  MULTI_SELECT_HINT,
+  STEP_PROMPT,
+  TIMELINE_COLUMN,
+  TIMELINE_SLOT,
+  TIMELINE_THINK_WRAP,
+} from '@/lib/timelineClasses'
 import { runeLength, visiblePrefixForBlock } from './timelineUtils'
 
 export function AssistantStreamTimeline({
@@ -334,7 +334,9 @@ export function AssistantStreamTimeline({
       )
       if (tier === 'primary') {
         return (
-          <ThinkTimelineWrap key={blockKey}>{thinkPanel}</ThinkTimelineWrap>
+          <div key={blockKey} className={TIMELINE_THINK_WRAP}>
+            {thinkPanel}
+          </div>
         )
       }
       return <Fragment key={blockKey}>{thinkPanel}</Fragment>
@@ -428,7 +430,7 @@ export function AssistantStreamTimeline({
           mergedCallCount={mergedMemoryReadCount.get(block.id)}
         >
           {showInteraction ? (
-            <ChoiceList>
+            <div className={CHOICE_LIST}>
               {showAskUser && step.interaction ? (
                 <AskUserForm
                   interaction={step.interaction}
@@ -438,7 +440,7 @@ export function AssistantStreamTimeline({
                 />
               ) : null}
               {!showAskUser && step.interaction?.prompt ? (
-                <StepPrompt>{step.interaction.prompt}</StepPrompt>
+                <div className={STEP_PROMPT}>{step.interaction.prompt}</div>
               ) : null}
               {!showAskUser && showChoices && (
                 <StaggeredChoices
@@ -457,10 +459,10 @@ export function AssistantStreamTimeline({
                 />
               )}
               {!showAskUser && step.interaction?.type === 'multi_select' && showChoices && (
-                <MultiSelectActions>
-                  <MultiSelectHint>
+                <div className={MULTI_SELECT_ACTIONS}>
+                  <span className={MULTI_SELECT_HINT}>
                     已选 {(multiSelectDrafts[step.stepId] ?? []).length} 项
-                  </MultiSelectHint>
+                  </span>
                   <EditorButton
                     variant="tool"
                     size="sm"
@@ -474,20 +476,21 @@ export function AssistantStreamTimeline({
                   >
                     提交选择
                   </EditorButton>
-                </MultiSelectActions>
+                </div>
               )}
               {!showAskUser && step.interaction?.type === 'single_select' && showChoices && (
-                <MultiSelectActions>
-                  <MultiSelectHint>点选一项即可继续</MultiSelectHint>
-                </MultiSelectActions>
+                <div className={MULTI_SELECT_ACTIONS}>
+                  <span className={MULTI_SELECT_HINT}>点选一项即可继续</span>
+                </div>
               )}
               {!showAskUser && (showUserInputOnly || step.interaction?.allow_custom) && (
-                <CustomInputRow>
+                <div className={CUSTOM_INPUT_ROW}>
                   {step.interaction?.free_text_hint ? (
-                    <CustomHint>{step.interaction.free_text_hint}</CustomHint>
+                    <span className={CUSTOM_HINT}>{step.interaction.free_text_hint}</span>
                   ) : null}
-                  <CustomInput
+                  <input
                     type="text"
+                    className={CUSTOM_INPUT}
                     value={customDrafts[step.stepId] ?? ''}
                     placeholder="输入你的创作方向或补充说明…"
                     onChange={(e) =>
@@ -510,9 +513,9 @@ export function AssistantStreamTimeline({
                   >
                     提交自定义方向
                   </EditorButton>
-                </CustomInputRow>
+                </div>
               )}
-            </ChoiceList>
+            </div>
           ) : null}
           {resolvedSelection && !showAskUser ? (
             <SelectedChoiceSummary
@@ -625,8 +628,8 @@ export function AssistantStreamTimeline({
   }
 
   return (
-    <Column data-testid="agent-stream-timeline">
-      <TimelineSlot>
+    <div className={TIMELINE_COLUMN} data-testid="agent-stream-timeline">
+      <div className={TIMELINE_SLOT}>
         {showOrchestrationPending ? <OrchestrationPendingRow /> : null}
         {timelineUnits.map((unit, unitIndex) => (
           <Fragment key={`unit:${unitIndex}`}>
@@ -648,15 +651,7 @@ export function AssistantStreamTimeline({
             renderTool={() => null}
           />
         ) : null}
-      </TimelineSlot>
-    </Column>
+      </div>
+    </div>
   )
 }
-
-/** 占位与首条工具行同槽位，避免切换时高度跳动 */
-const TimelineSlot = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  min-height: 1.5rem;
-`

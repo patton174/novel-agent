@@ -1,11 +1,19 @@
 import React, { useCallback, useEffect, useState } from 'react'
-import styled from 'styled-components'
-import { palette } from '../../styles/theme'
 import { EditorButton } from '../ui/EditorButton'
 import { api } from '../../utils/api'
 import type { ChapterVersion } from '../../types/novel'
 import { confirmAction } from '../../stores/confirmDialogStore'
 import { PanelLoadingSkeleton } from '@/components/loading/PageSkeletons'
+import {
+  CHAPTER_VERSION_ACTIONS,
+  CHAPTER_VERSION_HINT,
+  CHAPTER_VERSION_ITEM,
+  CHAPTER_VERSION_LIST,
+  CHAPTER_VERSION_META,
+  CHAPTER_VERSION_PANEL,
+  CHAPTER_VERSION_TITLE,
+  chapterVersionChevronClass,
+} from '@/lib/chapterVersionClasses'
 
 interface ChapterVersionPanelProps {
   chapterId: string | null
@@ -76,32 +84,32 @@ export const ChapterVersionPanel: React.FC<ChapterVersionPanelProps> = ({
   }
 
   return (
-    <Panel>
+    <div className={CHAPTER_VERSION_PANEL}>
       <EditorButton variant="panel" type="button" onClick={onToggle}>
         <span>版本历史</span>
-        <ChevronWrap $open={expanded}>▾</ChevronWrap>
+        <span className={chapterVersionChevronClass(expanded)}>▾</span>
       </EditorButton>
       {expanded && (
         <>
           {!chapterId ? (
-            <Hint>选择章节后可查看版本</Hint>
+            <div className={CHAPTER_VERSION_HINT}>选择章节后可查看版本</div>
           ) : loading ? (
             <PanelLoadingSkeleton rows={3} />
           ) : versions.length === 0 ? (
-            <Hint>暂无历史版本</Hint>
+            <div className={CHAPTER_VERSION_HINT}>暂无历史版本</div>
           ) : (
-            <VersionList>
+            <div className={CHAPTER_VERSION_LIST}>
               {versions.map((v) => (
-                <VersionItem key={v.id}>
-                  <VersionMeta>
+                <div key={v.id} className={CHAPTER_VERSION_ITEM}>
+                  <div className={CHAPTER_VERSION_META}>
                     <span className="time">
                       {new Date(v.createdAt).toLocaleString()}
                     </span>
                     <span className="badge">{SOURCE_LABEL[v.source] ?? v.source}</span>
                     <span className="words">{v.wordCount} 字</span>
-                  </VersionMeta>
-                  <VersionTitle>{v.title}</VersionTitle>
-                  <ActionRow>
+                  </div>
+                  <div className={CHAPTER_VERSION_TITLE}>{v.title}</div>
+                  <div className={CHAPTER_VERSION_ACTIONS}>
                     <EditorButton
                       type="button"
                       variant="secondary"
@@ -122,114 +130,13 @@ export const ChapterVersionPanel: React.FC<ChapterVersionPanelProps> = ({
                     >
                       {restoringId === v.id ? '恢复中…' : '恢复'}
                     </EditorButton>
-                  </ActionRow>
-                </VersionItem>
+                  </div>
+                </div>
               ))}
-            </VersionList>
+            </div>
           )}
         </>
       )}
-    </Panel>
+    </div>
   )
 }
-
-const Panel = styled.div`
-  margin-top: 0.85rem;
-  padding: 0.65rem;
-  border-radius: 10px;
-  background: ${palette.surfaceGlassPanel};
-  border: 1px solid ${palette.border};
-`
-
-const ChevronWrap = styled.span<{ $open: boolean }>`
-  display: inline-block;
-  transform: rotate(${({ $open }) => ($open ? '180deg' : '0')});
-  transition: transform 0.2s ease;
-  color: ${palette.textFaint};
-`
-
-const Hint = styled.div`
-  font-size: 0.78rem;
-  color: ${palette.textFaint};
-  padding: 0.5rem 0.15rem;
-  line-height: 1.5;
-`
-
-const VersionList = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  max-height: 360px;
-  overflow-y: auto;
-  margin-top: 0.35rem;
-
-  @media (max-width: 767px) {
-    max-height: 240px;
-    gap: 0.4rem;
-  }
-`
-
-const VersionItem = styled.div`
-  padding: 0.55rem 0.65rem;
-  border-radius: 8px;
-  background: ${palette.bg};
-  border: 1px solid ${palette.border};
-
-  @media (max-width: 767px) {
-    padding: 0.45rem 0.5rem;
-  }
-`
-
-const VersionMeta = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem 0.5rem;
-  align-items: center;
-  font-size: 0.68rem;
-  color: ${palette.textMuted};
-
-  .badge {
-    background: ${palette.accent};
-    color: ${palette.text};
-    padding: 0.1rem 0.35rem;
-    border-radius: 4px;
-    font-weight: 600;
-  }
-`
-
-const VersionTitle = styled.div`
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: ${palette.inkHover};
-  margin: 0.25rem 0 0.4rem;
-  line-height: 1.35;
-
-  @media (max-width: 767px) {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    white-space: normal;
-  }
-
-  @media (min-width: 768px) {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-`
-
-const ActionRow = styled.div`
-  display: flex;
-  gap: 0.4rem;
-
-  @media (max-width: 767px) {
-    flex-direction: column;
-    gap: 0.3rem;
-
-    button {
-      width: 100%;
-      justify-content: center;
-    }
-  }
-`

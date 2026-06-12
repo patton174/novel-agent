@@ -10,7 +10,7 @@ import {
   useEditorModalEscape,
 } from '../../editor/EditorModalShell'
 import { SubagentTimelineContent } from './SubagentTimelineContent'
-import { SubagentStatusChip } from './timelineStyles'
+import { subagentStatusChipClass } from '@/lib/timelineClasses'
 
 export function SubagentDetailModal({
   open,
@@ -73,7 +73,9 @@ export function SubagentDetailModal({
               <h2 id="subagent-modal-title" className="m-0 text-[15px] font-bold text-foreground">
                 {meta.name}
               </h2>
-              <SubagentStatusChip $kind={meta.statusKind}>{meta.statusLabel}</SubagentStatusChip>
+              <span className={subagentStatusChipClass(meta.statusKind)}>
+                {meta.statusLabel}
+              </span>
             </div>
             {meta.description ? (
               <p className="mt-1.5 whitespace-pre-wrap text-sm leading-snug text-muted-foreground">

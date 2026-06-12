@@ -1,8 +1,6 @@
-import styled from 'styled-components'
 import type { AgentTimelineBlock } from '../../../types/agent'
-import { editorTheme } from '../../../styles/editorTheme'
 import { AgentMarkdown } from '../AgentMarkdown'
-import { OrchestrationNarration } from './timelineStyles'
+import { ORCHESTRATION_NARRATION, TIMELINE_STREAM_CURSOR } from '@/lib/timelineClasses'
 
 type StreamBodyBlock =
   | Extract<AgentTimelineBlock, { kind: 'narration' }>
@@ -26,25 +24,9 @@ export function OrchestrationStreamBody({
   }
 
   return (
-    <OrchestrationNarration>
+    <div className={ORCHESTRATION_NARRATION}>
       {text.trim() ? <AgentMarkdown text={text} variant="chat" /> : null}
-      {isLive ? <StreamCursor aria-hidden /> : null}
-    </OrchestrationNarration>
+      {isLive ? <span className={TIMELINE_STREAM_CURSOR} aria-hidden /> : null}
+    </div>
   )
 }
-
-const StreamCursor = styled.span`
-  display: inline-block;
-  width: 2px;
-  height: 0.95em;
-  margin-left: 2px;
-  vertical-align: text-bottom;
-  background: ${editorTheme.accent};
-  animation: blink 1s step-end infinite;
-
-  @keyframes blink {
-    50% {
-      opacity: 0;
-    }
-  }
-`

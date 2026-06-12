@@ -1,6 +1,6 @@
 import type { ElementType, HTMLAttributes, ReactNode } from 'react'
-import styled from 'styled-components'
-import { motionInteractiveCss, motionMorphCss } from './motionStyles'
+import { cn } from '@/lib/utils'
+import { motionInteractiveClass, motionMorphClass } from '@/lib/motionClasses'
 
 export type MotionMorphPreset = 'interactive' | 'morph'
 
@@ -16,17 +16,14 @@ export interface MotionMorphProps extends HTMLAttributes<HTMLElement> {
 export function MotionMorph({
   as: Component = 'div',
   preset = 'interactive',
+  className,
   children,
   ...rest
 }: MotionMorphProps) {
-  const Root = preset === 'morph' ? MorphRoot : InteractiveRoot
-  return <Root as={Component} {...rest}>{children}</Root>
+  const motionClass = preset === 'morph' ? motionMorphClass() : motionInteractiveClass()
+  return (
+    <Component className={cn(motionClass, className)} {...rest}>
+      {children}
+    </Component>
+  )
 }
-
-const InteractiveRoot = styled.div`
-  ${motionInteractiveCss}
-`
-
-const MorphRoot = styled.div`
-  ${motionMorphCss}
-`

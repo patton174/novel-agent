@@ -1,4 +1,4 @@
-import { css } from 'styled-components'
+import type { CSSProperties } from 'react'
 import { font } from './fonts'
 
 /** 排版阶梯 — 与 globals.css 中 --text-* 对应 */
@@ -27,26 +27,25 @@ export const typography = {
 
 export type TypographyVariant = keyof typeof typography
 
-export function textStyle(variant: TypographyVariant, family: 'body' | 'display' | 'mono' = 'body') {
+export function textStyle(
+  variant: TypographyVariant,
+  family: 'body' | 'display' | 'mono' = 'body',
+): CSSProperties {
   const t = typography[variant]
   const fontFamily =
     family === 'display' ? font.display : family === 'mono' ? font.mono : font.body
-  return css`
-    font-family: ${fontFamily};
-    font-size: ${t.size};
-    font-weight: ${t.weight};
-    line-height: ${t.lineHeight};
-    ${'letterSpacing' in t && t.letterSpacing ? `letter-spacing: ${t.letterSpacing};` : ''}
-  `
+  return {
+    fontFamily,
+    fontSize: t.size,
+    fontWeight: t.weight,
+    lineHeight: t.lineHeight,
+    ...('letterSpacing' in t && t.letterSpacing
+      ? { letterSpacing: t.letterSpacing }
+      : {}),
+  }
 }
 
-/** 区块标题（营销 steps / CTA 内 h2） */
-export const sectionHeadingCss = css`
-  ${textStyle('h1')}
-  margin: 0 0 0.5rem;
-`
-
-export const sectionSubheadingCss = css`
-  ${textStyle('bodySm')}
-  margin: 0;
-`
+/** @deprecated legacy styled export — use Tailwind text-* classes */
+export const sectionHeadingCss = null
+/** @deprecated legacy styled export — use Tailwind text-* classes */
+export const sectionSubheadingCss = null

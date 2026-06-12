@@ -1,0 +1,157 @@
+/* Agent timeline — pseudo-elements, nested markdown, animations */
+
+@keyframes agent-timeline-choice-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.agent-timeline-choice-reveal {
+  animation: agent-timeline-choice-reveal 0.28s ease both;
+}
+
+@keyframes agent-timeline-pending-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.agent-timeline-pending-in {
+  animation: agent-timeline-pending-in 0.22s ease-out;
+}
+
+@keyframes agent-timeline-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+.agent-timeline-stream-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 0.95em;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  background: #4f46e5;
+  animation: agent-timeline-blink 1s step-end infinite;
+}
+
+.agent-timeline-branch-glyph {
+  flex: 0 0 0.55rem;
+  width: 0.55rem;
+  height: 0.62em;
+  margin-top: 0.2em;
+  position: relative;
+  align-self: flex-start;
+  user-select: none;
+}
+
+.agent-timeline-branch-glyph::before {
+  content: '';
+  position: absolute;
+  left: 0.1em;
+  bottom: 0.04em;
+  width: 0.36em;
+  height: 0.36em;
+  border-left: 1.5px solid #64748b;
+  border-bottom: 1.5px solid #64748b;
+  border-bottom-left-radius: 1px;
+}
+
+.agent-timeline-think-rail {
+  position: relative;
+}
+
+.agent-timeline-think-rail::before {
+  content: '';
+  position: absolute;
+  left: calc(1.35rem / 2 - 1px);
+  top: calc(1.35rem + 0.08rem);
+  bottom: 0.06rem;
+  width: 2px;
+  background: #e2e8f0;
+  pointer-events: none;
+  border-radius: 1px;
+}
+
+.agent-timeline-text-block [data-variant='chat'],
+.agent-timeline-delivery-body [data-variant='chat'] {
+  font-size: 0.9rem;
+  line-height: 1.78;
+  color: #334155;
+}
+
+.agent-timeline-text-block [data-variant='chat'] p,
+.agent-timeline-delivery-body [data-variant='chat'] p {
+  color: #1e293b;
+}
+
+.agent-timeline-delivery-body [data-variant='chat'] p:first-child {
+  margin-top: 0;
+}
+
+.agent-timeline-text-block [data-variant='chat'] strong,
+.agent-timeline-delivery-body [data-variant='chat'] strong {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+@keyframes agent-tool-status-dot-blink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0.2;
+  }
+}
+
+.agent-tool-status-dot-blink {
+  animation: agent-tool-status-dot-blink 0.9s ease-in-out infinite;
+}
+
+@keyframes agent-timeline-todo-row-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.agent-timeline-todo-row-in {
+  animation: agent-timeline-todo-row-in 0.22s ease-out both;
+}
+
+@keyframes agent-todo-stroke-pulse {
+  0% {
+    stroke-dashoffset: 40;
+    opacity: 0.55;
+  }
+  50% {
+    stroke-dashoffset: 8;
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: 40;
+    opacity: 0.55;
+  }
+}
+
+.agent-todo-stroke-pulse path,
+.agent-todo-stroke-pulse rect,
+.agent-todo-stroke-pulse circle {
+  animation: agent-todo-stroke-pulse 1.35s ease-in-out infinite;
+}
+

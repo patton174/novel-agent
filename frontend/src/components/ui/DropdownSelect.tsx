@@ -9,12 +9,16 @@ import {
   type ReactNode,
 } from 'react'
 import { createPortal } from 'react-dom'
-import styled from 'styled-components'
 import { MotionPop } from '../motion'
 import { editorTheme } from '../../styles/editorTheme'
-import { editorModalSurface } from '../../styles/editorModal'
-import { palette } from '../../styles/theme'
-import { motionInteractiveCss, motionMorphCss } from '../motion/motionStyles'
+import { motionInteractiveClass, motionMorphClass } from '@/lib/motionClasses'
+import {
+  DROPDOWN_MENU_PANEL,
+  dropdownChevronClass,
+  dropdownMenuOptionClass,
+  dropdownRootClass,
+  dropdownTriggerClass,
+} from '@/lib/uiMenuClasses'
 
 export interface DropdownOption<T extends string = string> {
   value: T
@@ -118,17 +122,17 @@ export function DropdownSelect<T extends string = string>({
 
   const menu = (
     <MotionPop ref={menuRef} open={open} placement={placement} style={menuStyle}>
-      <MenuPanel id={listId} role="listbox">
+      <div id={listId} role="listbox" className={DROPDOWN_MENU_PANEL}>
         {options.map((opt) => {
           const Icon = opt.icon
           const selected = opt.value === value
           return (
-            <MenuOption
+            <button
               key={opt.value}
               type="button"
               role="option"
               aria-selected={selected}
-              $active={selected}
+              className={`${dropdownMenuOptionClass(selected)} ${motionInteractiveClass()}`}
               onClick={() => {
                 onChange(opt.value)
                 setOpen(false)
@@ -136,23 +140,21 @@ export function DropdownSelect<T extends string = string>({
             >
               {Icon ? <Icon /> : null}
               {opt.label}
-            </MenuOption>
+            </button>
           )
         })}
-      </MenuPanel>
+      </div>
     </MotionPop>
   )
 
   return (
-    <Root ref={rootRef} $fullWidth={fullWidth}>
-      <TriggerButton
+    <div ref={rootRef} className={dropdownRootClass(fullWidth)}>
+      <button
         ref={triggerRef}
         type="button"
         disabled={disabled}
-        $pill={isPill}
-        $size={size}
-        $fullWidth={fullWidth}
-        $open={open}
+        className={`${dropdownTriggerClass({ pill: isPill, size, fullWidth, open })} ${motionInteractiveClass()}`}
+        style={size === 'sm' ? { height: editorTheme.composerControlHeight } : undefined}
         aria-expanded={open}
         aria-haspopup="listbox"
         aria-controls={listId}
@@ -168,116 +170,11 @@ export function DropdownSelect<T extends string = string>({
         }}
       >
         <span>{triggerLabel ?? active?.label}</span>
-        <ChevronWrap $open={open}>
+        <span className={`${dropdownChevronClass(open)} ${motionMorphClass()}`}>
           <ChevronDown />
-        </ChevronWrap>
-      </TriggerButton>
+        </span>
+      </button>
       {typeof document !== 'undefined' ? createPortal(menu, document.body) : null}
-    </Root>
+    </div>
   )
 }
-
-const Root = styled.div<{ $fullWidth?: boolean }>`
-  position: relative;
-  display: ${({ $fullWidth }) => ($fullWidth ? 'flex' : 'inline-flex')};
-  width: ${({ $fullWidth }) => ($fullWidth ? '100%' : 'auto')};
-`
-
-const TriggerButton = styled.button<{
-  $pill: boolean
-  $size: 'sm' | 'md'
-  $fullWidth: boolean
-  $open: boolean
-}>`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  border: 1px solid
-    ${({ $open }) => ($open ? 'rgba(79, 70, 229, 0.45)' : editorTheme.border)};
-  background: ${editorTheme.bgElevated};
-  color: ${editorTheme.textSecondary};
-  font-family: inherit;
-  font-size: ${({ $size }) => ($size === 'sm' ? '0.72rem' : '0.74rem')};
-  font-weight: 600;
-  line-height: 1;
-  cursor: pointer;
-  box-sizing: border-box;
-  width: ${({ $fullWidth }) => ($fullWidth ? '100%' : 'auto')};
-  height: ${({ $size }) =>
-    $size === 'sm' ? `${editorTheme.composerControlHeight}px` : 'auto'};
-  padding: ${({ $pill, $size }) => {
-    if ($size === 'sm') return '0 0.65rem'
-    return $pill ? '0.35rem 0.7rem' : '0.45rem 0.75rem'
-  }};
-  border-radius: ${({ $pill }) => ($pill ? '999px' : '10px')};
-  box-shadow: ${({ $open }) =>
-    $open ? editorTheme.shadowInSoft : editorTheme.shadowOutSoft};
-  ${motionInteractiveCss}
-
-  svg {
-    width: 12px;
-    height: 12px;
-    color: ${editorTheme.textMuted};
-    flex-shrink: 0;
-  }
-
-  &:hover:not(:disabled) {
-    background: ${editorTheme.accentMuted};
-    border-color: rgba(79, 70, 229, 0.35);
-    color: ${editorTheme.text};
-  }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-`
-
-const ChevronWrap = styled.span<{ $open: boolean }>`
-  display: inline-flex;
-  ${motionMorphCss}
-  transform: rotate(${({ $open }) => ($open ? '180deg' : '0deg')});
-`
-
-const MenuPanel = styled.div`
-  padding: 0.35rem;
-  background: ${palette.planningActiveBg};
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 12px;
-  box-shadow: ${editorModalSurface.menuShadow};
-`
-
-const MenuOption = styled.button<{ $active?: boolean }>`
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 0.55rem 0.7rem;
-  border: 1px solid ${({ $active }) => ($active ? 'rgba(79, 70, 229, 0.45)' : 'transparent')};
-  border-radius: 8px;
-  background: ${({ $active }) => ($active ? editorTheme.activeBg : 'transparent')};
-  font-family: inherit;
-  font-size: 0.82rem;
-  font-weight: ${({ $active }) => ($active ? 600 : 500)};
-  color: ${({ $active }) => ($active ? editorTheme.text : editorTheme.textSecondary)};
-  cursor: pointer;
-  text-align: left;
-  ${motionInteractiveCss}
-
-  svg {
-    width: 14px;
-    height: 14px;
-    flex-shrink: 0;
-    color: ${({ $active }) => ($active ? editorTheme.accent : editorTheme.textMuted)};
-  }
-
-  &:hover {
-    background: ${({ $active }) => ($active ? editorTheme.activeBg : editorTheme.accentMuted)};
-    color: ${editorTheme.text};
-  }
-
-  & + & {
-    margin-top: 2px;
-  }
-`

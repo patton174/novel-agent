@@ -1,7 +1,7 @@
 import { forwardRef, type CSSProperties, type ReactNode } from 'react'
-import styled from 'styled-components'
-import { motionPopCss, motionPopSurfaceCss } from './motionStyles'
-import { useMotionPhase, type MotionPhase } from './useMotionPhase'
+import { cn } from '@/lib/utils'
+import { motionPopClass } from '@/lib/motionClasses'
+import { useMotionPhase } from './useMotionPhase'
 
 export type MotionPopPlacement = 'top' | 'bottom'
 
@@ -22,20 +22,13 @@ export const MotionPop = forwardRef<HTMLDivElement, MotionPopProps>(function Mot
   if (!mounted) return null
 
   return (
-    <PopSurface
+    <div
       ref={ref}
-      className={className}
+      className={cn(motionPopClass(phase, placement), className)}
       style={style}
-      $phase={phase}
-      $placement={placement}
       data-motion-phase={phase}
     >
       {children}
-    </PopSurface>
+    </div>
   )
 })
-
-const PopSurface = styled.div<{ $phase: MotionPhase; $placement: MotionPopPlacement }>`
-  ${({ $placement }) => motionPopSurfaceCss($placement)}
-  ${({ $phase, $placement }) => motionPopCss($phase, $placement)}
-`

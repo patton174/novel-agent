@@ -7,15 +7,15 @@ import {
 } from '../../../utils/agentStreamTimeline'
 import { ThinkRoundGroup } from './ThinkRoundGroup'
 import {
-  CcToolMain,
-  PlanningHeadlineRow,
-  PlanningHeader,
-  PlanningHeaderMain,
-  PlanningStackBody,
-  PlanningStackWrap,
-  PlanningTitle,
-  ToolLeadCell,
-} from './timelineStyles'
+  CC_TOOL_MAIN,
+  PLANNING_HEADER,
+  PLANNING_HEADER_MAIN,
+  PLANNING_HEADLINE_ROW,
+  PLANNING_TITLE,
+  planningStackBodyClass,
+  planningStackWrapClass,
+  toolLeadCellClass,
+} from '@/lib/timelineClasses'
 import { resolveToolVisualStatus, TimelineLeadIcon } from './TimelineLeadIcon'
 
 /** 外层编排：思考 + 编排正文 + 工具；问答与其同级，编排结束后整层收起 */
@@ -85,22 +85,25 @@ export function OrchestrationLayer({
   )
 
   return (
-    <PlanningStackWrap
+    <div
       data-testid="timeline-orchestration-layer"
-      $expanded={expanded}
-      $active={isActive}
-      $flat
+      className={planningStackWrapClass({
+        expanded,
+        active: isActive,
+        flat: true,
+      })}
     >
-      <PlanningHeader
+      <button
         type="button"
+        className={PLANNING_HEADER}
         aria-expanded={expanded}
         onClick={() => {
           userToggledRef.current = true
           setExpanded((open) => !open)
         }}
       >
-        <PlanningHeadlineRow>
-          <ToolLeadCell>
+        <div className={PLANNING_HEADLINE_ROW}>
+          <div className={toolLeadCellClass()}>
             <TimelineLeadIcon
               iconName="reasoning"
               status={resolveToolVisualStatus({
@@ -108,16 +111,16 @@ export function OrchestrationLayer({
                 success: !isActive && status === 'done',
               })}
             />
-          </ToolLeadCell>
-          <CcToolMain>
-            <PlanningHeaderMain>
-              <PlanningTitle>{headline}</PlanningTitle>
-            </PlanningHeaderMain>
-          </CcToolMain>
-        </PlanningHeadlineRow>
-      </PlanningHeader>
+          </div>
+          <div className={CC_TOOL_MAIN}>
+            <div className={PLANNING_HEADER_MAIN}>
+              <span className={PLANNING_TITLE}>{headline}</span>
+            </div>
+          </div>
+        </div>
+      </button>
       {expanded ? (
-        <PlanningStackBody $branchIndent>
+        <div className={planningStackBodyClass({ branchIndent: true })}>
           {rounds.length === 0 ? null : (
             rounds.map((round, index) => (
               <ThinkRoundGroup
@@ -135,8 +138,8 @@ export function OrchestrationLayer({
               />
             ))
           )}
-        </PlanningStackBody>
+        </div>
       ) : null}
-    </PlanningStackWrap>
+    </div>
   )
 }

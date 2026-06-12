@@ -109,6 +109,17 @@
 - [x] **NovelAiWordmark** → CSS 变量动画（`marketing-effects.css`）
 - [x] `components/marketing/**` 零 styled-components
 
+## Phase 4 — Agent timeline / loaders / motion / UI 收尾
+
+- [x] **timelineStyles.ts** 删除 → `timelineClasses.ts` + `agent-timeline-effects.css`
+- [x] **loaders/** shimmer + cube/hand/pencil → `shimmerClasses.ts` + `agent-effects.css`
+- [x] **motionStyles.ts** 删除 → `motionClasses.ts`
+- [x] **agent/** trace/context/chat/markdown/toolIcons → `agent*Classes.ts` + `agent-ui.css`
+- [x] **outlineStyles.ts** / **prose.ts** 删除 → `outlineClasses.ts`
+- [x] **KebabMenu** / **DropdownSelect** / **MotionTabBar** → `uiMenuClasses.ts`
+- [x] 剩余 timeline todo/excerpt/subagent → Tailwind
+- [x] **App.tsx** 移除 `ThemeProvider`（styled-components 运行时包已从 bundle 剔除）
+
 ---
 
 ## Phase 2B 验收

@@ -3,16 +3,16 @@ import type { AgentStepState, AgentTimelineBlock } from '../../../types/agent'
 import { deriveActivePlanningHeadline } from '../../../utils/agentStreamTimeline'
 import { ShimmerScanText } from '../../loaders/ShimmerScanText'
 import {
-  CcToolMain,
-  PlanningHeadlineRow,
-  PlanningChevron,
-  PlanningHeader,
-  PlanningHeaderMain,
-  PlanningStackBody,
-  PlanningStackWrap,
-  PlanningTitle,
-  ToolLeadCell,
-} from './timelineStyles'
+  CC_TOOL_MAIN,
+  PLANNING_HEADER,
+  PLANNING_HEADER_MAIN,
+  PLANNING_HEADLINE_ROW,
+  PLANNING_TITLE,
+  planningChevronClass,
+  planningStackBodyClass,
+  planningStackWrapClass,
+  toolLeadCellClass,
+} from '@/lib/timelineClasses'
 import { resolveToolVisualStatus, TimelineLeadIcon } from './TimelineLeadIcon'
 
 /** 编排子步骤：可折叠，一轮 planning.completed 后默认收起 */
@@ -72,21 +72,24 @@ export function PlanningStack({
     !awaitingInteraction
 
   return (
-    <PlanningStackWrap
+    <div
       data-testid="timeline-planning-group"
-      $expanded={expanded}
-      $active={headlineActive}
+      className={planningStackWrapClass({
+        expanded,
+        active: headlineActive,
+      })}
     >
-      <PlanningHeader
+      <button
         type="button"
+        className={PLANNING_HEADER}
         aria-expanded={expanded}
         onClick={() => {
           userToggledRef.current = true
           setExpanded((open) => !open)
         }}
       >
-        <PlanningHeadlineRow>
-          <ToolLeadCell>
+        <div className={PLANNING_HEADLINE_ROW}>
+          <div className={toolLeadCellClass()}>
             <TimelineLeadIcon
               iconName="reasoning"
               status={resolveToolVisualStatus({
@@ -94,20 +97,22 @@ export function PlanningStack({
                 success: !headlineActive && transition.status === 'done',
               })}
             />
-          </ToolLeadCell>
-          <CcToolMain>
-            <PlanningHeaderMain>
+          </div>
+          <div className={CC_TOOL_MAIN}>
+            <div className={PLANNING_HEADER_MAIN}>
               {headlineActive ? (
                 <ShimmerScanText active>{headline}</ShimmerScanText>
               ) : (
-                <PlanningTitle>{headline}</PlanningTitle>
+                <span className={PLANNING_TITLE}>{headline}</span>
               )}
-            </PlanningHeaderMain>
-          </CcToolMain>
-          <PlanningChevron $open={expanded} aria-hidden />
-        </PlanningHeadlineRow>
-      </PlanningHeader>
-      {expanded ? <PlanningStackBody $branchIndent>{children}</PlanningStackBody> : null}
-    </PlanningStackWrap>
+            </div>
+          </div>
+          <span className={planningChevronClass(expanded)} aria-hidden />
+        </div>
+      </button>
+      {expanded ? (
+        <div className={planningStackBodyClass({ branchIndent: true })}>{children}</div>
+      ) : null}
+    </div>
   )
 }

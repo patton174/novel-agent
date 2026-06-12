@@ -5,7 +5,7 @@ import { findStepState } from '../../../utils/agentStreamTimeline'
 import { AgentThinkPanel } from '../AgentThinkPanel'
 import { ThinkBlock, PlanReasoningBlock } from './ThinkBlocks'
 import { OrchestrationStreamBody } from './OrchestrationStreamBody'
-import { OrchestrationFlatRow, ThinkRoundWrap } from './timelineStyles'
+import { ORCHESTRATION_FLAT_ROW, thinkRoundWrapClass } from '@/lib/timelineClasses'
 
 type OrchestrationBodyBlock =
   | Extract<AgentTimelineBlock, { kind: 'narration' }>
@@ -114,7 +114,7 @@ export function ThinkRoundGroup({
     insightBlocks.length > 1 || (insightBlocks.length > 0 && hasBody)
 
   const renderBodyText = (block: OrchestrationBodyBlock, key: string) => (
-    <OrchestrationFlatRow key={key} data-testid="timeline-orchestration-text">
+    <div key={key} className={ORCHESTRATION_FLAT_ROW} data-testid="timeline-orchestration-text">
       {renderText?.(block, key) ?? (
         <OrchestrationStreamBody
           block={block}
@@ -122,20 +122,23 @@ export function ThinkRoundGroup({
           streamFinished={streamFinished}
         />
       )}
-    </OrchestrationFlatRow>
+    </div>
   )
 
   const renderFlatTool = (
     block: Extract<AgentTimelineBlock, { kind: 'tool' }>,
     key: string,
   ) => (
-    <OrchestrationFlatRow key={key} data-testid="timeline-orchestration-tool">
+    <div key={key} className={ORCHESTRATION_FLAT_ROW} data-testid="timeline-orchestration-tool">
       {renderTool(block, key)}
-    </OrchestrationFlatRow>
+    </div>
   )
 
   return (
-    <ThinkRoundWrap data-testid="timeline-think-round" $hasRail={showThinkRail}>
+    <div
+      data-testid="timeline-think-round"
+      className={thinkRoundWrapClass(showThinkRail)}
+    >
       {items.map((item, itemIndex) => {
         const itemKey = `${messageKey}:item:${itemIndex}:${item.kind}`
         if (item.kind === 'insight') {
@@ -162,6 +165,6 @@ export function ThinkRoundGroup({
           orchestrationActive={orchestrationActive}
         />
       ) : null}
-    </ThinkRoundWrap>
+    </div>
   )
 }

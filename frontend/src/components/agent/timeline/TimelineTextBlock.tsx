@@ -1,13 +1,13 @@
 import { AgentMarkdown } from '../AgentMarkdown'
-import { TextBlockWrap } from './timelineStyles'
+import { TIMELINE_TEXT_BLOCK } from '@/lib/timelineClasses'
 
 export function TimelineTextBlock({ content }: { content: string }) {
   if (!content.trim()) {
     return null
   }
   return (
-    <TextBlockWrap>
+    <div className={TIMELINE_TEXT_BLOCK}>
       <AgentMarkdown text={content} variant="chat" />
-    </TextBlockWrap>
+    </div>
   )
 }

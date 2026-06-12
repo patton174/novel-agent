@@ -1,6 +1,4 @@
-import styled from 'styled-components'
-import { palette } from '../../styles/theme'
-import { shimmerSweep, shimmerTextGradient } from './shimmerSweep'
+import { shimmerTextClass } from '@/lib/shimmerClasses'
 
 export interface ShimmerScanTextProps {
   children: string
@@ -16,21 +14,8 @@ export function ShimmerScanText({
   active = true,
 }: ShimmerScanTextProps) {
   return (
-    <Label className={className} $active={active} data-testid="shimmer-scan-text">
+    <span className={shimmerTextClass(active, className)} data-testid="shimmer-scan-text">
       {children}
-    </Label>
+    </span>
   )
 }
-
-const Label = styled.span<{ $active: boolean }>`
-  display: inline-block;
-  font-size: inherit;
-  font-weight: inherit;
-  letter-spacing: inherit;
-  color: ${({ $active }) => ($active ? 'transparent' : palette.textMuted)};
-  background: ${({ $active }) => ($active ? shimmerTextGradient : 'none')};
-  background-size: 200% auto;
-  background-clip: ${({ $active }) => ($active ? 'text' : 'border-box')};
-  -webkit-background-clip: ${({ $active }) => ($active ? 'text' : 'border-box')};
-  animation: ${({ $active }) => ($active ? shimmerSweep : 'none')} 1.8s linear infinite;
-`

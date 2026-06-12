@@ -1,8 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import styled from 'styled-components'
 import type { AgentTodoItem } from '../../../types/agent'
-import { editorTheme } from '../../../styles/editorTheme'
-import { palette, textStyle } from '../../../styles/theme'
 import {
   formatTodoProgress,
   MESSAGE_TODO_MAX_VISIBLE,
@@ -11,6 +8,13 @@ import {
 } from '../../../utils/todoDisplay'
 import { TodoDetailModal } from './TodoDetailModal'
 import { TimelineTodoList } from './TimelineTodoList'
+import {
+  MESSAGE_TODO_HEADER,
+  MESSAGE_TODO_META,
+  MESSAGE_TODO_MORE,
+  MESSAGE_TODO_TITLE,
+  MESSAGE_TODO_WRAP,
+} from '@/lib/timelineClasses'
 
 const REVEAL_STEP_MS = 140
 
@@ -65,30 +69,32 @@ export function MessageTodoPanel({
 
   return (
     <>
-      <Wrap data-testid="message-todo-panel">
-        <HeaderButton
+      <div data-testid="message-todo-panel" className={MESSAGE_TODO_WRAP}>
+        <button
           type="button"
+          className={MESSAGE_TODO_HEADER}
           onClick={() => setModalOpen(true)}
           disabled={!canOpenModal}
           aria-expanded={modalOpen}
           aria-haspopup="dialog"
           data-testid="message-todo-header"
         >
-          <Title>待办</Title>
-          <Meta>{progress}</Meta>
-        </HeaderButton>
+          <span className={MESSAGE_TODO_TITLE}>待办</span>
+          <span className={`${MESSAGE_TODO_META} msg-todo-meta`}>{progress}</span>
+        </button>
         <TimelineTodoList todos={visible} embedded />
         {omitted > 0 ? (
-          <OmittedButton
+          <button
             type="button"
+            className={MESSAGE_TODO_MORE}
             onClick={() => setModalOpen(true)}
             aria-label={`还有 ${omitted} 项待办，点击查看全部`}
             data-testid="message-todo-more"
           >
             还有 {omitted} 项…
-          </OmittedButton>
+          </button>
         ) : null}
-      </Wrap>
+      </div>
 
       <TodoDetailModal
         open={modalOpen}
@@ -98,76 +104,3 @@ export function MessageTodoPanel({
     </>
   )
 }
-
-const Wrap = styled.div`
-  width: 100%;
-  margin: 0.35rem 0 0;
-  padding: 0;
-`
-
-const Title = styled.span`
-  ${textStyle('uiSm')}
-  font-weight: 600;
-  color: ${editorTheme.text};
-`
-
-const Meta = styled.span`
-  ${textStyle('micro')}
-  font-weight: 400;
-  color: ${editorTheme.textMuted};
-  white-space: nowrap;
-`
-
-const HeaderButton = styled.button`
-  display: inline-flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 0.35rem 0.5rem;
-  width: 100%;
-  margin: 0 0 0.2rem;
-  padding: 0;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  text-align: left;
-
-  &:hover:not(:disabled) ${Title} {
-    color: ${editorTheme.text};
-  }
-
-  &:hover:not(:disabled) ${Meta} {
-    color: ${editorTheme.textSecondary};
-  }
-
-  &:focus-visible {
-    outline: 2px solid ${palette.accentBorder};
-    outline-offset: 2px;
-    border-radius: 4px;
-  }
-
-  &:disabled {
-    cursor: default;
-  }
-`
-
-const OmittedButton = styled.button`
-  ${textStyle('micro')}
-  margin-top: 0.15rem;
-  padding: 0;
-  border: none;
-  background: transparent;
-  color: ${editorTheme.textMuted};
-  cursor: pointer;
-  text-align: left;
-
-  &:hover {
-    color: ${editorTheme.textSecondary};
-    text-decoration: underline;
-  }
-
-  &:focus-visible {
-    outline: 2px solid ${palette.accentBorder};
-    outline-offset: 2px;
-    border-radius: 4px;
-  }
-`

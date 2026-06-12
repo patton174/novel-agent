@@ -1,8 +1,8 @@
 import { ToolIcon } from '../../../utils/toolIcons'
 import { normalizeToolName } from '../../../utils/agentToolNames'
-import { ToolIconSlot, type ToolVisualStatus } from './timelineStyles'
+import { toolIconSlotClass, type ToolVisualStatus } from '@/lib/timelineClasses'
 
-export type { ToolVisualStatus } from './timelineStyles'
+export type { ToolVisualStatus } from '@/lib/timelineClasses'
 
 export function resolveToolVisualStatus(opts: {
   loading?: boolean
@@ -37,8 +37,12 @@ export function TimelineLeadIcon({
   const animate = status === 'loading'
 
   return (
-    <ToolIconSlot $status={status} data-testid="timeline-lead-icon" data-status={status}>
+    <span
+      className={toolIconSlotClass(status)}
+      data-testid="timeline-lead-icon"
+      data-status={status}
+    >
       <ToolIcon name={key} size={px} animate={animate} />
-    </ToolIconSlot>
+    </span>
   )
 }
