@@ -211,7 +211,7 @@ EXPIRES="$(python_read_json "$RUNTIME_TMP" expiresAtEpochMs)"
 API_PREFIX="$(python_read_json "$RUNTIME_TMP" apiPathPrefix)"
 
 echo "[crypto-register] 2/2 更新 Worker env + crypto-runtime.json ..."
-deploy_scp "$RUNTIME_TMP" "$REMOTE:/tmp/crypto-runtime.json"
+RUNTIME_B64="$(base64 -w0 "$RUNTIME_TMP" 2>/dev/null || base64 < "$RUNTIME_TMP" | tr -d '\n')"
 deploy_ssh "$REMOTE" bash -s <<EOF
 set -euo pipefail
 ENV_FILE='$ENV_FILE'
@@ -232,11 +232,17 @@ upsert_env FRONTEND_CRYPTO_VERSION '$VERSION'
 upsert_env FRONTEND_CRYPTO_EXPIRES_AT '$EXPIRES'
 upsert_env FRONTEND_API_PATH_PREFIX '$API_PREFIX'
 
+echo '$RUNTIME_B64' | base64 -d > /tmp/crypto-runtime.json
+chmod 644 /tmp/crypto-runtime.json
+if [[ ! -s /tmp/crypto-runtime.json ]]; then
+  echo "[crypto-register] ERROR: crypto-runtime.json 写入失败" >&2
+  exit 1
+fi
+
 COMPOSE="docker compose"
 if ! docker compose version >/dev/null 2>&1; then COMPOSE="docker-compose"; fi
 CID=\$(\$COMPOSE -f "\$COMPOSE_FILE" --env-file "\$ENV_FILE" ps -q frontend 2>/dev/null || true)
 if [[ -n "\$CID" ]]; then
-  chmod 644 /tmp/crypto-runtime.json
   docker cp /tmp/crypto-runtime.json "\$CID:/usr/share/nginx/html/crypto-runtime.json"
   docker exec "\$CID" chmod 644 /usr/share/nginx/html/crypto-runtime.json
   docker exec "\$CID" rm -f /usr/share/nginx/html/crypto-manifest.json 2>/dev/null || true
