@@ -34,6 +34,7 @@ public class ClientAuthSupport {
         "/api/billing/auth/plans",
         "/api/billing/auth/site-content/",
         "/api/billing/auth/settings/public",
+        "/api/billing/auth/danmaku",
         "/actuator/health"
     );
 

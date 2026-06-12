@@ -6,6 +6,7 @@ import {
   Bot,
   FileText,
   PenLine,
+  Sparkles,
 } from 'lucide-react'
 import {
   fetchActivity,
@@ -126,19 +127,45 @@ export default function DashboardHomePage() {
   const activityLoading = activity === null
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-5">
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+    <div className="flex w-full flex-col gap-6">
+      <section className="relative overflow-hidden rounded-2xl border border-border/70 bg-gradient-to-r from-white via-white to-indigo-50/60 p-6 shadow-sm dark:from-surface dark:via-surface dark:to-indigo-950/20 md:p-8">
+        <div className="pointer-events-none absolute -right-16 -top-16 size-48 rounded-full bg-primary/10 blur-3xl" />
+        <div className="relative flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <p className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-primary/15 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
+              <Sparkles className="size-3.5" />
+              创作工作台
+            </p>
+            <h2 className="text-2xl font-bold tracking-tight text-foreground md:text-3xl">
+              继续你的故事
+            </h2>
+            <p className="mt-2 max-w-xl text-sm text-muted-foreground md:text-base">
+              概览创作数据、打开最近章节，或直接进入编辑器开始新段落。
+            </p>
+          </div>
+          <div className="flex shrink-0 flex-wrap gap-3">
+            <Button asChild variant="outline" className="rounded-xl">
+              <Link to="/dashboard/novels">管理作品</Link>
+            </Button>
+            <Button asChild className="rounded-xl bg-foreground px-6 text-background hover:bg-foreground/90">
+              <Link to="/editor">进入编辑器</Link>
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         {STAT_CARDS.map((stat) => (
-          <Card key={stat.key} size="sm" className="py-0 shadow-none">
-            <CardContent className="flex items-center gap-3 px-4 py-3.5">
+          <Card key={stat.key} size="sm" className="border-border/70 bg-white/90 py-0 shadow-sm dark:bg-surface">
+            <CardContent className="flex items-center gap-3 px-4 py-4">
               <div
-                className={`flex size-9 shrink-0 items-center justify-center rounded-lg ${stat.bg}`}
+                className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${stat.bg}`}
               >
-                <stat.icon className={`size-4 ${stat.color}`} />
+                <stat.icon className={`size-4.5 ${stat.color}`} />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-[11px] font-medium text-muted-foreground">{stat.label}</p>
-                <p className="mt-0.5 text-xl font-bold tabular-nums leading-none text-foreground">
+                <p className="mt-1 text-2xl font-bold tabular-nums leading-none text-foreground">
                   {loading ? (
                     <Skeleton className="mt-1 h-7 w-14" />
                   ) : stat.format ? (
@@ -153,12 +180,19 @@ export default function DashboardHomePage() {
         ))}
       </div>
 
-      <ActivityHeatmap activity={activity} loading={activityLoading} />
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
+        <Card className="border-border/70 bg-white/90 py-0 shadow-sm dark:bg-surface">
+          <CardHeader className="border-b border-border/60 px-6 py-4 [.border-b]:pb-4">
+            <CardTitle className="text-base font-semibold">创作活跃度</CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 md:p-6">
+            <ActivityHeatmap activity={activity} loading={activityLoading} />
+          </CardContent>
+        </Card>
 
-      <div className="grid gap-4">
-        <Card className="flex flex-col py-0 shadow-none">
-          <CardHeader className="border-b px-5 py-4 [.border-b]:pb-4">
-            <CardTitle className="text-sm font-semibold">最近编辑</CardTitle>
+        <Card className="flex flex-col border-border/70 bg-white/90 py-0 shadow-sm dark:bg-surface">
+          <CardHeader className="border-b border-border/60 px-6 py-4 [.border-b]:pb-4">
+            <CardTitle className="text-base font-semibold">最近编辑</CardTitle>
             <CardAction>
               <Button asChild variant="ghost" size="sm" className="h-7 gap-1 px-2 text-xs text-primary">
                 <Link to="/dashboard/novels">
@@ -169,12 +203,12 @@ export default function DashboardHomePage() {
             </CardAction>
           </CardHeader>
 
-          <CardContent className="p-0">
+          <CardContent className="flex flex-1 flex-col p-0">
             {loading ? (
               <div className="divide-y divide-border">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="flex items-center gap-3 px-5 py-3">
-                    <Skeleton className="size-9 rounded-lg" />
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="flex items-center gap-3 px-6 py-3.5">
+                    <Skeleton className="size-10 rounded-lg" />
                     <div className="min-w-0 flex-1 space-y-1.5">
                       <Skeleton className="h-4 w-40" />
                       <Skeleton className="h-3 w-28" />
@@ -184,7 +218,7 @@ export default function DashboardHomePage() {
                 ))}
               </div>
             ) : recentNovels!.length === 0 ? (
-              <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
+              <div className="flex flex-1 flex-col items-center justify-center px-6 py-14 text-center">
                 <div className="mb-4 flex size-14 items-center justify-center rounded-full bg-muted">
                   <BookOpen className="size-7 text-muted-foreground" />
                 </div>
@@ -205,7 +239,7 @@ export default function DashboardHomePage() {
                 {recentNovels!.map((novel) => (
                   <div
                     key={novel.novelId}
-                    className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-surface-hover"
+                    className="flex items-center gap-3 px-6 py-3.5 transition-colors hover:bg-surface-hover"
                   >
                     {novel.coverUrl ? (
                       <img

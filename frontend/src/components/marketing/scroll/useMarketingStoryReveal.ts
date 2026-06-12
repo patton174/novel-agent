@@ -23,10 +23,12 @@ export function useMarketingStoryReveal(rootRef: RefObject<HTMLElement | null>) 
           section.querySelector<HTMLElement>('.demo-agent-console')
 
         if (copy) {
-          gsap.from(copy, {
+          const parts = gsap.utils.toArray<HTMLElement>(copy.children)
+          gsap.from(parts.length > 0 ? parts : [copy], {
             opacity: 0,
-            y: 24,
-            duration: 0.5,
+            y: 20,
+            duration: 0.48,
+            stagger: 0.07,
             ease: 'power2.out',
             scrollTrigger: {
               trigger: section,

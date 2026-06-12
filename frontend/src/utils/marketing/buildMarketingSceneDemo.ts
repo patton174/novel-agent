@@ -7,7 +7,7 @@ import {
 } from '../agentStreamState'
 import { deriveAssistantStreamPhase } from '../agentStreamPhase'
 
-export type MarketingSceneId = 'orchestrate' | 'subagent'
+export type MarketingSceneId = 'think' | 'orchestrate' | 'subagent' | 'stream'
 
 /** 滚动进度 → 已播放事件数（每步占等长区间，避免 ceil 一次跳多步） */
 export function sceneEventCountForProgress(progress: number, total: number): number {
@@ -233,12 +233,76 @@ const SUBAGENT_EVENTS: Array<[string, string]> = [
   ['stream-end', 'done'],
 ]
 
+const THINK_USER = '帮我规划第二章结构，先想清楚节奏和爽点再动笔。'
+
+const THINK_EVENTS: Array<[string, string]> = [
+  [
+    'agent-event',
+    JSON.stringify({
+      type: 'think.delta',
+      step_id: 'think-plan',
+      payload: {
+        text: '第二章建议：银月森林首战验证掉宝机制，再触发全服唯一强化石，章末留悬念。',
+      },
+    }),
+  ],
+  [
+    'agent-event',
+    JSON.stringify({
+      type: 'tool.completed',
+      step_id: 'tool-plan',
+      payload: { name: 'plan', output: '首战 → 掉宝 → 钩子' },
+    }),
+  ],
+  [
+    'agent-event',
+    JSON.stringify({
+      type: 'message.delta',
+      payload: { text: '结构已定：先小战热身，再集中爆发爽点，可以开始写正文。' },
+    }),
+  ],
+  ['stream-end', 'done'],
+]
+
+const STREAM_USER = '按刚才的结构，续写第二章开头。'
+
+const STREAM_EVENTS: Array<[string, string]> = [
+  [
+    'agent-event',
+    JSON.stringify({
+      type: 'think.delta',
+      step_id: 'think-stream',
+      payload: { text: '对齐第一章结尾语气，从银月森林入口切入。' },
+    }),
+  ],
+  [
+    'agent-event',
+    JSON.stringify({
+      type: 'tool.started',
+      step_id: 'tool-write',
+      payload: { name: 'chapter_create', input: { title: '第二章 · 银月森林首战' } },
+    }),
+  ],
+  [
+    'agent-event',
+    JSON.stringify({
+      type: 'message.delta',
+      payload: {
+        text: '雨水顺着他的发梢滑落，每一滴都像是敲打在心上的钟声。他深吸一口气，握紧了拳头——银月森林的首战，从现在开始。',
+      },
+    }),
+  ],
+  ['stream-end', 'done'],
+]
+
 const SCENE_META: Record<
   MarketingSceneId,
   { userPrompt: string; events: Array<[string, string]> }
 > = {
+  think: { userPrompt: THINK_USER, events: THINK_EVENTS },
   orchestrate: { userPrompt: ORCHESTRATE_USER, events: ORCHESTRATE_EVENTS },
   subagent: { userPrompt: SUBAGENT_USER, events: SUBAGENT_EVENTS },
+  stream: { userPrompt: STREAM_USER, events: STREAM_EVENTS },
 }
 
 export function scenePlayableEventCount(scene: MarketingSceneId): number {

@@ -141,6 +141,15 @@ export interface SiteContent {
   updatedAt: string
 }
 
+export interface SiteDanmaku {
+  id: number
+  message: string
+  authorName: string
+  region: string | null
+  userId: number | null
+  createdAt: string
+}
+
 export interface PublicSiteSettings {
   registrationEnabled: boolean
   registrationRequireEmailVerify: boolean
@@ -160,6 +169,27 @@ export async function fetchSiteContent(key: string): Promise<SiteContent | null>
     return null
   }
   return parseResultResponse<SiteContent>(res)
+}
+
+export async function fetchDanmakuList(): Promise<SiteDanmaku[]> {
+  const res = await secureFetch('/api/billing/auth/danmaku')
+  if (!res.ok) {
+    return []
+  }
+  const data = await parseResultResponse<SiteDanmaku[]>(res)
+  return Array.isArray(data) ? data : []
+}
+
+export async function postDanmaku(message: string): Promise<SiteDanmaku> {
+  const res = await secureFetch('/api/billing/auth/danmaku', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message: message.trim() }),
+  })
+  if (!res.ok) {
+    throw new Error('发送弹幕失败')
+  }
+  return parseResultResponse<SiteDanmaku>(res)
 }
 
 export function formatTokenCount(n: number): string {

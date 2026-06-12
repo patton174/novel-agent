@@ -3,7 +3,7 @@ import { MarketingChatScene } from '../demo/MarketingChatScene'
 import { useMarketingStoryReveal } from './useMarketingStoryReveal'
 import { CursorLandingRoot } from '../../../styles/surfaces/cursorLanding'
 
-/** 两幕分镜：编排（记忆+读章）→ 子代理；演示为视口内定时循环 */
+/** 三幕分镜：读懂上下文 → 子助手并行 → 流式成稿 */
 export function HomeScrollStory() {
   const rootRef = useRef<HTMLDivElement>(null)
   useMarketingStoryReveal(rootRef)
@@ -11,21 +11,52 @@ export function HomeScrollStory() {
   return (
     <CursorLandingRoot ref={rootRef} data-scroll-story>
       <MarketingChatScene
-        id="story-orchestrate"
+        id="story-context"
         scene="orchestrate"
         layout="copy-left"
-        tag="第一幕 · 编排"
-        title="先读记忆，再读前一章"
-        body="memory_read 与 chapter_read 依次就位，参数与摘要同屏可见——和真实续写前的准备流程一致。"
+        act="01"
+        label="读懂上下文"
+        title="续写之前，"
+        titleAccent="先对齐你的故事"
+        lead="思考、设定与上一章一次就位——编排过程透明可见，不靠猜。"
+        points={[
+          { highlight: '思考可见', text: '推演节奏与伏笔，不挤占正文区' },
+          { highlight: '上下文对齐', text: '角色设定与上一章结尾同步加载' },
+          { highlight: '步骤可追溯', text: '每步状态清晰，长程创作不跑偏' },
+        ]}
       />
 
       <MarketingChatScene
         id="story-subagent"
         scene="subagent"
         layout="copy-right"
-        tag="第二幕 · 子代理"
-        title="复杂任务拆给子代理"
-        body="主会话只保留一条父工具，子代理在嵌套面板里独立完成 memory_read、output，完成后回写摘要。"
+        wash
+        act="02"
+        label="子助手并行"
+        title="复杂任务，"
+        titleAccent="拆给子助手去做"
+        lead="主对话保持清爽，专项工作放进独立面板，做完再汇总回来。"
+        points={[
+          { highlight: '主会话不刷屏', text: '校对、检索类任务单独跑' },
+          { highlight: '并行更高效', text: '多线处理，不用来回切窗口' },
+          { highlight: '结果自动回写', text: '摘要合并进记忆，续写更稳' },
+        ]}
+      />
+
+      <MarketingChatScene
+        id="story-stream"
+        scene="stream"
+        layout="copy-left"
+        act="03"
+        label="流式成稿"
+        title="正文实时"
+        titleAccent="流入编辑器"
+        lead="字句逐行生长，所见即所得；写到哪改到哪，成稿后自动沉淀。"
+        points={[
+          { highlight: '低延迟输出', text: '边生成边阅读，节奏跟得上' },
+          { highlight: '随时可介入', text: '暂停、追问、改写都在同屏完成' },
+          { highlight: '成稿即入库', text: '章节与记忆同步更新' },
+        ]}
       />
     </CursorLandingRoot>
   )

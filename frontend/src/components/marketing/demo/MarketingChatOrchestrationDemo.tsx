@@ -6,10 +6,50 @@ import { cursorTheme } from '../../../styles/surfaces/cursorLanding'
 import { editorTheme, palette } from '../../../styles/editorTheme'
 import { ToolIcon } from '../../../utils/toolIcons'
 
-const LOOP_MS = 17_200
-const SEND_AT_MS = 2_650
-const PROMPT_AT_MS = 3_250
-const AGENT_AT_MS = 3_850
+const SCENE_TIMING: Record<
+  MarketingSceneId,
+  {
+    loopMs: number
+    sendAt: number
+    promptAt: number
+    agentAt: number
+    runEnd: number
+    outputAt: number
+  }
+> = {
+  think: {
+    loopMs: 14_200,
+    sendAt: 2_200,
+    promptAt: 2_600,
+    agentAt: 3_000,
+    runEnd: 12_000,
+    outputAt: 9_200,
+  },
+  orchestrate: {
+    loopMs: 17_200,
+    sendAt: 2_650,
+    promptAt: 3_250,
+    agentAt: 3_850,
+    runEnd: 15_500,
+    outputAt: 11_500,
+  },
+  subagent: {
+    loopMs: 16_800,
+    sendAt: 2_500,
+    promptAt: 3_100,
+    agentAt: 3_700,
+    runEnd: 15_200,
+    outputAt: 11_800,
+  },
+  stream: {
+    loopMs: 16_500,
+    sendAt: 2_400,
+    promptAt: 2_850,
+    agentAt: 3_450,
+    runEnd: 14_500,
+    outputAt: 6_500,
+  },
+}
 
 const SCENE_COPY: Record<
   MarketingSceneId,
@@ -22,6 +62,14 @@ const SCENE_COPY: Record<
     output: string
   }
 > = {
+  think: {
+    title: '规划 · 第二章结构',
+    prompt: '帮我规划第二章结构，先想清楚节奏和爽点再动笔。',
+    think: '第二章建议：银月森林首战验证掉宝，再触发全服唯一强化石，章末留悬念。',
+    firstTool: '生成写作计划',
+    secondTool: '',
+    output: '结构已定：先小战热身，再集中爆发爽点，可以开始写正文。',
+  },
   orchestrate: {
     title: '续写 · 第二章',
     prompt: '继续写第二章，先对齐记忆和第一章结尾。',
@@ -38,6 +86,15 @@ const SCENE_COPY: Record<
     firstTool: '读取角色卡',
     secondTool: '合并校对摘要',
     output: '角色校对完成，记忆已同步。可以开始续写第二章正文。',
+  },
+  stream: {
+    title: '续写 · 第二章',
+    prompt: '按刚才的结构，续写第二章开头。',
+    think: '对齐第一章结尾语气，从银月森林入口切入，先写环境再进战斗。',
+    firstTool: '写入章节',
+    secondTool: '',
+    output:
+      '雨水顺着他的发梢滑落，每一滴都像是敲打在心上的钟声。他深吸一口气，握紧了拳头——银月森林的首战，从现在开始。',
   },
 }
 
@@ -59,7 +116,11 @@ function revealText(text: string, startedAt: number, elapsed: number, duration: 
   return chars.slice(0, Math.round(chars.length * progress)).join('')
 }
 
-function useVisiblePlayback(ref: RefObject<HTMLElement | null>, autoPlay: boolean) {
+function useVisiblePlayback(
+  ref: RefObject<HTMLElement | null>,
+  autoPlay: boolean,
+  loopMs: number,
+) {
   const [elapsed, setElapsed] = useState(0)
   const [visible, setVisible] = useState(autoPlay)
 
@@ -86,12 +147,12 @@ function useVisiblePlayback(ref: RefObject<HTMLElement | null>, autoPlay: boolea
     let raf = 0
     const start = performance.now()
     const tick = (now: number) => {
-      setElapsed((now - start) % LOOP_MS)
+      setElapsed((now - start) % loopMs)
       raf = requestAnimationFrame(tick)
     }
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
-  }, [visible])
+  }, [visible, loopMs])
 
   return elapsed
 }
@@ -104,42 +165,72 @@ export function MarketingChatOrchestrationDemo({
 }: MarketingChatOrchestrationDemoProps) {
   const fallbackRef = useRef<HTMLDivElement>(null)
   const rootRef = sectionRef ?? fallbackRef
-  const elapsed = useVisiblePlayback(rootRef, variant === 'hero')
+  const timing = SCENE_TIMING[scene]
+  const elapsed = useVisiblePlayback(rootRef, variant === 'hero', timing.loopMs)
   const copy = SCENE_COPY[scene]
   const Frame = variant === 'hero' ? HeroFrame : StoryFrame
 
   const state = useMemo(() => {
     const inputText = revealText(copy.prompt, 250, elapsed, 1_900)
-    const thinkText = revealText(copy.think, 4_950, elapsed, 2_700)
-    const outputText = revealText(copy.output, 11_500, elapsed, 3_200)
-    const composerText = elapsed >= SEND_AT_MS ? '' : inputText
-    return {
+    const runActive = elapsed >= timing.sendAt && elapsed < timing.runEnd
+    const sending = elapsed >= timing.sendAt && elapsed < timing.sendAt + 280
+    const composerText = elapsed >= timing.sendAt ? '' : inputText
+    const thinkText = revealText(copy.think, timing.agentAt + 600, elapsed, 2_700)
+    const outputText = revealText(copy.output, timing.outputAt, elapsed, 3_200)
+
+    const base = {
       composerText,
       showComposerPlaceholder: elapsed < 250,
-      sending: elapsed >= SEND_AT_MS && elapsed < PROMPT_AT_MS,
-      streaming: elapsed >= AGENT_AT_MS && elapsed < 15_500,
-      promptVisible: elapsed >= PROMPT_AT_MS,
-      orchestrationVisible: elapsed >= AGENT_AT_MS,
-      thinkVisible: elapsed >= 4_450,
-      thinkActive: elapsed >= 4_750 && elapsed < 7_900,
-      thinkExpanded: elapsed >= 4_750 && elapsed < 8_200,
+      runActive,
+      sending,
+      promptVisible: elapsed >= timing.promptAt,
+      orchestrationVisible: elapsed >= timing.agentAt,
+      thinkVisible: elapsed >= timing.agentAt + 200,
+      thinkActive: elapsed >= timing.agentAt + 500 && elapsed < timing.agentAt + 3_400,
+      thinkExpanded: elapsed >= timing.agentAt + 500 && elapsed < timing.agentAt + 3_700,
       thinkText,
+      outputVisible: elapsed >= timing.outputAt,
+      outputText,
+    }
+
+    if (scene === 'think') {
+      return {
+        ...base,
+        planVisible: elapsed >= timing.agentAt + 3_900,
+        planActive: elapsed >= timing.agentAt + 3_900 && elapsed < timing.agentAt + 5_200,
+      }
+    }
+
+    if (scene === 'stream') {
+      return {
+        ...base,
+        writeVisible: elapsed >= timing.agentAt + 1_600,
+        writeActive: elapsed >= timing.agentAt + 1_600 && elapsed < timing.outputAt - 400,
+      }
+    }
+
+    if (scene === 'subagent') {
+      return {
+        ...base,
+        subagentVisible: elapsed >= 8_550,
+        subagentActive: elapsed >= 8_550 && elapsed < 11_200,
+        subagentThinkVisible: elapsed >= 8_850,
+        subagentMemoryVisible: elapsed >= 9_450,
+        subagentMemoryActive: elapsed >= 9_450 && elapsed < 10_050,
+        subagentOutputVisible: elapsed >= 10_250,
+        subagentOutputActive: elapsed >= 10_250 && elapsed < 10_900,
+        subagentComplete: elapsed >= 11_050,
+      }
+    }
+
+    return {
+      ...base,
       memoryVisible: elapsed >= 8_550,
       memoryActive: elapsed >= 8_550 && elapsed < 9_550,
       chapterVisible: elapsed >= 9_900,
       chapterActive: elapsed >= 9_900 && elapsed < 10_900,
-      subagentVisible: elapsed >= 8_550,
-      subagentActive: elapsed >= 8_550 && elapsed < 11_200,
-      subagentThinkVisible: elapsed >= 8_850,
-      subagentMemoryVisible: elapsed >= 9_450,
-      subagentMemoryActive: elapsed >= 9_450 && elapsed < 10_050,
-      subagentOutputVisible: elapsed >= 10_250,
-      subagentOutputActive: elapsed >= 10_250 && elapsed < 10_900,
-      subagentComplete: elapsed >= 11_050,
-      outputVisible: elapsed >= 11_500,
-      outputText,
     }
-  }, [copy, elapsed])
+  }, [copy, elapsed, scene, timing])
 
   return (
     <div ref={sectionRef ? undefined : fallbackRef}>
@@ -188,6 +279,54 @@ export function MarketingChatOrchestrationDemo({
                     complete={state.subagentComplete}
                   />
                 ) : null
+              ) : scene === 'think' ? (
+                <>
+                  {'planVisible' in state && state.planVisible ? (
+                    <ToolRow $active={'planActive' in state && Boolean(state.planActive)}>
+                      <TimelineIcon
+                        $status={
+                          'planActive' in state && state.planActive ? 'loading' : 'success'
+                        }
+                      >
+                        <ToolIcon
+                          name="TodoWrite"
+                          size={14}
+                          animate={'planActive' in state && Boolean(state.planActive)}
+                        />
+                      </TimelineIcon>
+                      <span>{copy.firstTool}</span>
+                      <StepMeta>
+                        {'planActive' in state && state.planActive
+                          ? '进行中'
+                          : '已完成 · 首战 → 掉宝 → 钩子'}
+                      </StepMeta>
+                    </ToolRow>
+                  ) : null}
+                </>
+              ) : scene === 'stream' ? (
+                <>
+                  {'writeVisible' in state && state.writeVisible ? (
+                    <ToolRow $active={'writeActive' in state && Boolean(state.writeActive)}>
+                      <TimelineIcon
+                        $status={
+                          'writeActive' in state && state.writeActive ? 'loading' : 'success'
+                        }
+                      >
+                        <ToolIcon
+                          name="Write"
+                          size={14}
+                          animate={'writeActive' in state && Boolean(state.writeActive)}
+                        />
+                      </TimelineIcon>
+                      <span>{copy.firstTool}</span>
+                      <StepMeta>
+                        {'writeActive' in state && state.writeActive
+                          ? '进行中 · 流式写入'
+                          : '已完成 · 第二章开头'}
+                      </StepMeta>
+                    </ToolRow>
+                  ) : null}
+                </>
               ) : (
                 <>
                   {state.memoryVisible ? (
@@ -225,7 +364,7 @@ export function MarketingChatOrchestrationDemo({
             )}
           </DemoBody>
 
-          <DemoComposer $sending={state.sending} $streaming={state.streaming}>
+          <DemoComposer $sending={state.sending} $streaming={state.runActive}>
             <ComposerCard>
               <ComposerText>
                 {state.composerText ||
@@ -238,8 +377,8 @@ export function MarketingChatOrchestrationDemo({
                   <span>托管</span>
                   <SwitchMock />
                 </HostModeMock>
-                <SendButton $sending={state.sending} $streaming={state.streaming}>
-                  {state.streaming ? <StopIcon /> : <ArrowUpIcon />}
+                <SendButton $sending={state.sending} $streaming={state.runActive}>
+                  {state.runActive ? <StopIcon /> : <ArrowUpIcon />}
                 </SendButton>
               </ComposerActionRow>
             </ComposerCard>
@@ -276,7 +415,7 @@ function SubagentDemoPanel({
         </TimelineIcon>
         <SubagentTitle>子代理 · 角色校对</SubagentTitle>
         <StepMeta>
-          {active ? '运行中 · 12 turns' : '已完成 · memory_read / output'}
+          {active ? '运行中 · 12 turns' : '已完成 · 角色校对'}
         </StepMeta>
       </SubagentHeader>
 
@@ -630,15 +769,16 @@ const SendButton = styled.span<{ $sending: boolean; $streaming: boolean }>`
   justify-content: center;
   width: 34px;
   height: 34px;
-  border-radius: 11px;
+  border-radius: ${({ $streaming }) => ($streaming ? '10px' : '11px')};
   color: #fff;
   background: ${({ $streaming }) => ($streaming ? '#ef4444' : editorTheme.accent)};
-  opacity: ${({ $sending }) => ($sending ? 0.78 : 1)};
+  opacity: ${({ $sending }) => ($sending ? 0.88 : 1)};
   transform: scale(${({ $sending }) => ($sending ? 0.94 : 1)});
   transition:
-    background 0.25s ease,
-    opacity 0.2s ease,
-    transform 0.2s ease;
+    background 0.12s ease,
+    border-radius 0.12s ease,
+    opacity 0.12s ease,
+    transform 0.12s ease;
 
   svg {
     width: 17px;

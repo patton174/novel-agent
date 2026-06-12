@@ -5,13 +5,10 @@ import {
   BookOpen,
   CreditCard,
   LayoutDashboard,
-  PenLine,
-  Shield,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { fetchUserInfo, needsEmailVerification } from '@/api/userApi'
 import { useUserStore } from '@/stores/userStore'
-import { Separator } from '@/components/ui/separator'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { AccountSettingsModal } from '@/components/dashboard/AccountSettingsModal'
 import { NovelAiWordmark } from '@/components/marketing/NovelAiWordmark'
@@ -30,10 +27,6 @@ const mainNav: NavItem[] = [
   { label: '用量与账单', to: '/dashboard/billing', icon: CreditCard },
 ]
 
-const actionNav: NavItem[] = [
-  { label: '进入编辑器', to: '/editor', icon: PenLine },
-]
-
 interface AppSidebarProps {
   embedded?: boolean
   onNavigate?: () => void
@@ -43,10 +36,6 @@ export function AppSidebar({ embedded = false, onNavigate }: AppSidebarProps) {
   const profile = useUserStore((s) => s.profile)
   const setProfile = useUserStore((s) => s.setProfile)
   const [settingsOpen, setSettingsOpen] = useState(false)
-
-  const role = profile?.role
-  const adminNav: NavItem[] =
-    role === 'admin' ? [{ label: '管理后台', to: '/admin', icon: Shield }] : []
 
   const initials = profile?.username?.slice(0, 2).toUpperCase() || '?'
   const unverified = needsEmailVerification(profile)
@@ -69,7 +58,7 @@ export function AppSidebar({ embedded = false, onNavigate }: AppSidebarProps) {
 
   const shellClass = embedded
     ? 'flex h-full w-full flex-col bg-surface text-foreground'
-    : 'flex h-full w-64 shrink-0 flex-col border-r border-border bg-surface text-foreground'
+    : 'flex h-full w-56 shrink-0 flex-col border-r border-border/80 bg-surface text-foreground lg:w-60'
 
   return (
     <>
@@ -89,23 +78,6 @@ export function AppSidebar({ embedded = false, onNavigate }: AppSidebarProps) {
               className={navLinkClass}
               onClick={onNavigate}
             >
-              <item.icon className="size-4.5 shrink-0" />
-              {item.label}
-            </NavLink>
-          ))}
-
-          <Separator className="my-3" />
-
-          {actionNav.map((item) => (
-            <NavLink key={item.to} to={item.to} className={navLinkClass} onClick={onNavigate}>
-              <item.icon className="size-4.5 shrink-0" />
-              {item.label}
-            </NavLink>
-          ))}
-
-          {adminNav.length > 0 && <Separator className="my-3" />}
-          {adminNav.map((item) => (
-            <NavLink key={item.to} to={item.to} className={navLinkClass} onClick={onNavigate}>
               <item.icon className="size-4.5 shrink-0" />
               {item.label}
             </NavLink>
