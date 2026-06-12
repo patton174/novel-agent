@@ -493,10 +493,12 @@ export default function CrawlerPage() {
       <CrawlJobDetailModal
         job={detailJob}
         open={detailOpen}
+        actingKey={actingKey}
         onOpenChange={(open) => {
           setDetailOpen(open)
           if (!open) setDetailJob(null)
         }}
+        onAction={runAction}
       />
     </AppPageStack>
   )

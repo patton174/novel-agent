@@ -34,18 +34,16 @@
 
 ## Phase 2B — 后续（未在本批）
 
-- [ ] CatalogReaderModal 移动目录/正文同屏优化
-- [ ] CrawlJobDetailModal 增加 footer 操作
-- [ ] StatsPage 日期范围选择
+- [x] CatalogReaderModal 移动目录/正文同屏优化（全高抽屉 + 目录头关闭 + 搜索）
+- [x] CrawlJobDetailModal 增加 footer 操作
+- [x] StatsPage 日期范围选择（7/30/90 日）
 - [ ] 营销 GSAP / styled-components 与 Tailwind rhythm 统一（ redesign 级）
 - [ ] 编辑器 neumorphic 与 shadcn 视觉融合（ redesign 级）
 
 ---
 
-## 验收
+## Phase 2B 验收
 
-1. `/admin/users` 输入即搜，无多余按钮
-2. `/admin/plans` 编辑套餐 Dialog 手机单列不挤
-3. `/admin/crawler` 失败任务错误可读两行
-4. `/admin/revenue` 饼图有图例
-5. `/admin/site-content` 预览/保存按钮小屏不溢出
+1. `/admin/catalog` 阅读器：手机点「目录」→ 全高抽屉 + 搜索 + 选章后正文占满
+2. `/admin/crawler` 任务详情：footer 可启动/暂停/取消/删除
+3. `/admin/stats`：切换 7/30/90 日，图表描述同步

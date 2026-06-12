@@ -4,6 +4,7 @@ import type { CrawlJob } from '@/api/crawlAdminApi'
 import { parseCrawlJobGoal } from '@/api/crawlAdminApi'
 import { Button } from '@/components/ui/button'
 import {
+  CRAWL_JOB_ACTION_META,
   type CrawlJobAction,
   crawlJobActions,
   crawlJobDisplayTitle,
@@ -16,14 +17,11 @@ import {
 } from '@/pages/admin/crawlJobUi'
 import { cn } from '@/lib/utils'
 
-const ACTION_META: Record<
-  CrawlJobAction,
-  { label: string; icon: typeof Play; variant?: 'outline' | 'destructive' }
-> = {
-  start: { label: '启动', icon: Play },
-  pause: { label: '暂停', icon: Pause },
-  cancel: { label: '取消', icon: Square },
-  delete: { label: '删除', icon: Trash2, variant: 'destructive' },
+const ACTION_ICONS: Record<CrawlJobAction, typeof Play> = {
+  start: Play,
+  pause: Pause,
+  cancel: Square,
+  delete: Trash2,
 }
 
 export interface CrawlJobRowProps {
@@ -101,8 +99,8 @@ export const CrawlJobRow = memo(function CrawlJobRow({
       {actions.length > 0 ? (
         <div className="flex w-full shrink-0 items-center justify-end gap-1 sm:w-auto">
           {actions.map((action) => {
-            const meta = ACTION_META[action]
-            const Icon = meta.icon
+            const meta = CRAWL_JOB_ACTION_META[action]
+            const Icon = ACTION_ICONS[action]
             const busy = actingKey === `${job.id}:${action}`
             return (
               <Button

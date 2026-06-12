@@ -55,12 +55,17 @@ function TrendChart({ data, valueLabel }: { data: TrendPoint[]; valueLabel: stri
 interface StatsTrendChartsProps {
   agentRunTrend: TrendPoint[]
   registrationTrend: TrendPoint[]
+  rangeLabel: string
 }
 
-export default function StatsTrendCharts({ agentRunTrend, registrationTrend }: StatsTrendChartsProps) {
+export default function StatsTrendCharts({
+  agentRunTrend,
+  registrationTrend,
+  rangeLabel,
+}: StatsTrendChartsProps) {
   return (
     <>
-      <AppChartCard title="Agent 调用趋势" description="近 30 日 Agent 运行次数">
+      <AppChartCard title="Agent 调用趋势" description={`${rangeLabel} Agent 运行次数`}>
         {agentRunTrend.length === 0 ? (
           <div className={APP_CHART_EMPTY}>暂无趋势数据</div>
         ) : (
@@ -68,7 +73,7 @@ export default function StatsTrendCharts({ agentRunTrend, registrationTrend }: S
         )}
       </AppChartCard>
 
-      <AppChartCard title="注册趋势" description="近 30 日新用户注册">
+      <AppChartCard title="注册趋势" description={`${rangeLabel} 新用户注册`}>
         {registrationTrend.length === 0 ? (
           <div className={APP_CHART_EMPTY}>暂无注册数据</div>
         ) : (

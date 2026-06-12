@@ -1,6 +1,7 @@
-import { Loader2 } from 'lucide-react'
+import { Loader2, Pause, Play, Square, Trash2 } from 'lucide-react'
 import type { CrawlJob } from '@/api/crawlAdminApi'
 import { CrawlLogTerminal } from '@/components/admin/CrawlLogTerminal'
+import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
@@ -9,6 +10,9 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import {
+  CRAWL_JOB_ACTION_META,
+  type CrawlJobAction,
+  crawlJobActions,
   crawlJobProgressPercent,
   crawlJobStatusClass,
   crawlJobStatusLabel,
@@ -18,13 +22,28 @@ import { parseCrawlJobGoal } from '@/api/crawlAdminApi'
 import { APP_MODAL_READER } from '@/lib/appModalClasses'
 import { cn } from '@/lib/utils'
 
+const ACTION_ICONS: Record<CrawlJobAction, typeof Play> = {
+  start: Play,
+  pause: Pause,
+  cancel: Square,
+  delete: Trash2,
+}
+
 interface CrawlJobDetailModalProps {
   job: CrawlJob | null
   open: boolean
+  actingKey: string | null
   onOpenChange: (open: boolean) => void
+  onAction: (job: CrawlJob, action: CrawlJobAction) => void
 }
 
-export function CrawlJobDetailModal({ job, open, onOpenChange }: CrawlJobDetailModalProps) {
+export function CrawlJobDetailModal({
+  job,
+  open,
+  actingKey,
+  onOpenChange,
+  onAction,
+}: CrawlJobDetailModalProps) {
   if (!job) {
     return null
   }
@@ -32,6 +51,7 @@ export function CrawlJobDetailModal({ job, open, onOpenChange }: CrawlJobDetailM
   const goal = parseCrawlJobGoal(job.configJson)
   const percent = crawlJobProgressPercent(job)
   const errorPreview = truncateError(job.errorMessage, 2000)
+  const actions = crawlJobActions(job.status)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -84,6 +104,34 @@ export function CrawlJobDetailModal({ job, open, onOpenChange }: CrawlJobDetailM
             active={open}
           />
         </div>
+
+        {actions.length > 0 ? (
+          <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 border-t border-border px-6 py-3">
+            {actions.map((action) => {
+              const meta = CRAWL_JOB_ACTION_META[action]
+              const Icon = ACTION_ICONS[action]
+              const busy = actingKey === `${job.id}:${action}`
+              const isDestructive = meta.variant === 'destructive'
+              return (
+                <Button
+                  key={action}
+                  type="button"
+                  size="sm"
+                  variant={isDestructive ? 'destructive' : action === 'cancel' ? 'outline' : 'default'}
+                  disabled={actingKey != null && !busy}
+                  onClick={() => onAction(job, action)}
+                >
+                  {busy ? (
+                    <Loader2 className="mr-1.5 size-3.5 animate-spin" />
+                  ) : (
+                    <Icon className="mr-1.5 size-3.5" />
+                  )}
+                  {meta.label}
+                </Button>
+              )
+            })}
+          </div>
+        ) : null}
       </DialogContent>
     </Dialog>
   )

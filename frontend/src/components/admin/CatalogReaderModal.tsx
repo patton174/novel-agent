@@ -202,6 +202,18 @@ export function CatalogReaderModal({
               !mobileChapterOpen && 'max-md:hidden',
             )}
           >
+            <div className="flex items-center justify-between border-b border-border px-3 py-2 md:hidden">
+              <span className="text-sm font-medium">章节目录</span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                aria-label="关闭目录"
+                onClick={() => setMobileChapterOpen(false)}
+              >
+                <X className="size-4" />
+              </Button>
+            </div>
             <div className="border-b border-border px-3 py-2">
               <div className="relative">
                 <Search className="absolute left-2 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -213,7 +225,7 @@ export function CatalogReaderModal({
                 />
               </div>
             </div>
-            <div className="min-h-0 max-h-[40vh] flex-1 overflow-y-auto md:max-h-none">
+            <div className="min-h-0 flex-1 overflow-y-auto">
               {loadingList ? (
                 <p className="flex items-center gap-2 p-4 text-sm text-muted-foreground">
                   <Loader2 className="size-4 animate-spin" />

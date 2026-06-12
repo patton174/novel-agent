@@ -2,6 +2,16 @@ import type { CrawlJob, CrawlJobStatus } from '@/api/crawlAdminApi'
 
 export type CrawlJobAction = 'start' | 'pause' | 'cancel' | 'delete'
 
+export const CRAWL_JOB_ACTION_META: Record<
+  CrawlJobAction,
+  { label: string; variant?: 'outline' | 'destructive' }
+> = {
+  start: { label: '启动' },
+  pause: { label: '暂停' },
+  cancel: { label: '取消' },
+  delete: { label: '删除', variant: 'destructive' },
+}
+
 const STATUS_LABEL: Record<CrawlJobStatus, string> = {
   PENDING: '待启动',
   RUNNING: '运行中',
