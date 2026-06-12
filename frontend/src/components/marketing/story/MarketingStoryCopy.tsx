@@ -7,6 +7,13 @@ export interface StoryPoint {
   text: string
 }
 
+/** 文案块：右对齐分镜内仍保持左对齐排版，避免 text-align:right 导致断行错位 */
+export const StoryCopyBlock = styled.div`
+  width: 100%;
+  max-width: 21rem;
+  text-align: left;
+`
+
 export const StoryPointList = styled.ul`
   margin: 0;
   padding: 0;
@@ -14,32 +21,29 @@ export const StoryPointList = styled.ul`
   display: flex;
   flex-direction: column;
   gap: 0.55rem;
-  max-width: 21rem;
 `
 
 export const StoryCopyRoot = styled.div<{ $alignEnd?: boolean }>`
   padding-top: 1.25rem;
+  width: 100%;
 
   ${({ $alignEnd }) =>
     $alignEnd &&
     css`
       @media (min-width: 901px) {
-        text-align: right;
-
-        ${StoryPointList} {
-          margin-left: auto;
-        }
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
       }
     `}
 
   @media (max-width: 900px) {
     padding-top: 0;
-    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 
-    ${StoryPointList} {
-      margin-left: auto;
-      margin-right: auto;
-      text-align: left;
+    ${StoryCopyBlock} {
       max-width: 20rem;
     }
   }
@@ -98,29 +102,23 @@ export const StoryTitleAccent = styled.span`
 
 export const StoryLead = styled.p`
   margin: 0 0 1.35rem;
-  max-width: 21rem;
   font-size: 1.02rem;
   line-height: 1.68;
   color: ${cursorTheme.textMuted};
-
-  @media (max-width: 900px) {
-    margin-left: auto;
-    margin-right: auto;
-  }
 `
 
 export const StoryPointItem = styled.li`
   position: relative;
-  padding-left: 1.15rem;
+  padding-left: 1rem;
   font-size: 0.88rem;
-  line-height: 1.5;
+  line-height: 1.55;
   color: ${cursorTheme.text};
 
   &::before {
     content: '';
     position: absolute;
     left: 0;
-    top: 0.55em;
+    top: 0.58em;
     width: 5px;
     height: 5px;
     border-radius: 999px;
@@ -157,22 +155,24 @@ export function MarketingStoryCopy({
 }: MarketingStoryCopyProps) {
   return (
     <StoryCopyRoot className={className} $alignEnd={alignEnd}>
-      <StoryActRow>
-        <StoryActIndex>{act}</StoryActIndex>
-        <StoryActLabel>{label}</StoryActLabel>
-      </StoryActRow>
-      <StoryTitle>
-        {title}
-        <StoryTitleAccent>{titleAccent}</StoryTitleAccent>
-      </StoryTitle>
-      <StoryLead>{lead}</StoryLead>
-      <StoryPointList>
-        {points.map((point) => (
-          <StoryPointItem key={point.highlight}>
-            <strong>{point.highlight}</strong> · {point.text}
-          </StoryPointItem>
-        ))}
-      </StoryPointList>
+      <StoryCopyBlock>
+        <StoryActRow>
+          <StoryActIndex>{act}</StoryActIndex>
+          <StoryActLabel>{label}</StoryActLabel>
+        </StoryActRow>
+        <StoryTitle>
+          {title}
+          <StoryTitleAccent>{titleAccent}</StoryTitleAccent>
+        </StoryTitle>
+        <StoryLead>{lead}</StoryLead>
+        <StoryPointList>
+          {points.map((point) => (
+            <StoryPointItem key={point.highlight}>
+              <strong>{point.highlight}</strong> · {point.text}
+            </StoryPointItem>
+          ))}
+        </StoryPointList>
+      </StoryCopyBlock>
     </StoryCopyRoot>
   )
 }

@@ -71,7 +71,7 @@ export function HomeTimelineSection() {
         </p>
       </div>
 
-      <div className="relative mx-auto max-w-4xl pb-8">
+      <div className="relative mx-auto max-w-4xl pb-8" data-timeline-track>
         {/* 背景主线轨道 */}
         <div
           aria-hidden
@@ -101,6 +101,7 @@ export function HomeTimelineSection() {
                 {/* 中心节点 */}
                 <div
                   aria-hidden
+                  data-timeline-dot
                   className="absolute left-1/2 top-1/2 z-10 size-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-primary bg-background shadow-[0_0_0_4px_rgba(79,70,229,0.12)]"
                 />
 

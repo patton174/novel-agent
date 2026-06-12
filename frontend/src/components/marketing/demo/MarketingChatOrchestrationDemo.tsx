@@ -42,12 +42,12 @@ const SCENE_TIMING: Record<
     outputAt: 11_800,
   },
   stream: {
-    loopMs: 16_500,
+    loopMs: 19_000,
     sendAt: 2_400,
     promptAt: 2_850,
     agentAt: 3_450,
-    runEnd: 14_500,
-    outputAt: 6_500,
+    runEnd: 17_500,
+    outputAt: 11_000,
   },
 }
 
@@ -202,10 +202,22 @@ export function MarketingChatOrchestrationDemo({
     }
 
     if (scene === 'stream') {
+      const thinkStart = timing.agentAt + 600
+      const thinkEnd = timing.agentAt + 4_200
+      const writeStart = timing.agentAt + 4_700
+      const writeEnd = timing.agentAt + 7_300
+      const outputStart = timing.agentAt + 7_900
+
       return {
         ...base,
-        writeVisible: elapsed >= timing.agentAt + 1_600,
-        writeActive: elapsed >= timing.agentAt + 1_600 && elapsed < timing.outputAt - 400,
+        thinkText: revealText(copy.think, thinkStart, elapsed, 3_200),
+        thinkVisible: elapsed >= timing.agentAt + 350,
+        thinkActive: elapsed >= thinkStart && elapsed < thinkEnd,
+        thinkExpanded: elapsed >= thinkStart && elapsed < thinkEnd + 450,
+        writeVisible: elapsed >= writeStart,
+        writeActive: elapsed >= writeStart && elapsed < writeEnd,
+        outputVisible: elapsed >= outputStart,
+        outputText: revealText(copy.output, outputStart, elapsed, 3_400),
       }
     }
 

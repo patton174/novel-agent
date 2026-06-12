@@ -32,6 +32,7 @@ export function HomeDanmakuSection() {
   const [items, setItems] = useState<SiteDanmaku[]>([])
   const [message, setMessage] = useState('')
   const [submitting, setSubmitting] = useState(false)
+
   const load = useCallback(async () => {
     try {
       const list = await fetchDanmakuList()
@@ -87,24 +88,34 @@ export function HomeDanmakuSection() {
   }
 
   return (
-    <section id="voices" className="relative w-full scroll-mt-16 border-t border-border/60 bg-slate-950 px-6 py-20 text-white">
+    <section
+      id="voices"
+      className="relative w-full scroll-mt-16 overflow-hidden border-t border-border/60 bg-slate-950 py-20 text-white"
+    >
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(79,70,229,0.18),transparent_55%)]" />
 
-      <div className="relative mx-auto max-w-5xl">
-        <div className="mb-10 text-center">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-indigo-300/90">
-            创作者说
-          </p>
-          <h2 className="text-2xl font-bold tracking-tight md:text-3xl">真实使用感受，像弹幕一样飘过</h2>
-          <p className="mt-3 text-sm text-slate-400">
-            登录后显示你的账号；未登录则根据 IP 显示大致地区
-          </p>
-        </div>
+      <div className="relative mx-auto mb-10 max-w-3xl px-6 text-center">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-indigo-300/90">
+          创作者说
+        </p>
+        <h2 className="text-2xl font-bold tracking-tight md:text-3xl">真实使用感受，像弹幕一样飘过</h2>
+        <p className="mt-3 text-sm text-slate-400">
+          登录后显示你的账号；未登录则根据 IP 显示大致地区
+        </p>
+      </div>
 
+      {/* 全宽弹幕带 + 两侧渐隐 */}
+      <div className="relative mb-8 w-full" style={{ height: '220px' }}>
         <div
-          className="relative mb-8 overflow-hidden rounded-2xl border border-white/10 bg-black/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
-          style={{ height: '220px' }}
-        >
+          aria-hidden
+          className="pointer-events-none absolute inset-y-0 left-0 z-10 w-[min(18vw,140px)] bg-gradient-to-r from-slate-950 via-slate-950/85 to-transparent"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-y-0 right-0 z-10 w-[min(18vw,140px)] bg-gradient-to-l from-slate-950 via-slate-950/85 to-transparent"
+        />
+
+        <div className="relative h-full w-full overflow-hidden">
           {trackItems.length === 0 ? (
             <div className="flex h-full items-center justify-center text-sm text-slate-500">
               加载创作者弹幕中…
@@ -137,11 +148,13 @@ export function HomeDanmakuSection() {
             ))
           )}
         </div>
+      </div>
 
-        <form
-          onSubmit={(e) => void handleSubmit(e)}
-          className="relative mx-auto flex max-w-2xl gap-3 rounded-2xl border border-white/10 bg-white/5 p-2 backdrop-blur-md"
-        >
+      <form
+        onSubmit={(e) => void handleSubmit(e)}
+        className="relative mx-auto flex max-w-2xl gap-3 px-6"
+      >
+        <div className="flex w-full gap-3 rounded-2xl border border-white/10 bg-white/5 p-2 backdrop-blur-md">
           <input
             value={message}
             onChange={(e) => setMessage(e.target.value)}
@@ -157,28 +170,31 @@ export function HomeDanmakuSection() {
             <Send className="size-4" />
             发送
           </button>
-        </form>
-      </div>
+        </div>
+      </form>
 
       <style>{`
         @keyframes danmaku-fly {
           0% {
-            transform: translateX(110%);
+            transform: translateX(calc(100vw + 20%));
             opacity: 0;
           }
-          8% {
+          6% {
             opacity: 1;
           }
+          88% {
+            opacity: 0.92;
+          }
           100% {
-            transform: translateX(calc(-110vw - 100%));
-            opacity: 0.85;
+            transform: translateX(calc(-100vw - 120%));
+            opacity: 0;
           }
         }
         .danmaku-item {
           animation-name: danmaku-fly;
-          animation-timing-function: cubic-bezier(0.15, 0.85, 0.25, 1);
+          animation-timing-function: cubic-bezier(0.12, 0.82, 0.22, 1);
           animation-iteration-count: infinite;
-          will-change: transform;
+          will-change: transform, opacity;
         }
         @media (prefers-reduced-motion: reduce) {
           .danmaku-item {
