@@ -1,6 +1,14 @@
 import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from 'react'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import {
+  editorDashedButtonClass,
+  editorIconButtonClass,
+  editorNavButtonClass,
+  editorPanelButtonClass,
+  editorTabButtonClass,
+  editorToggleButtonClass,
+} from '@/lib/editorButtonClasses'
 import { EditorButtonRoot, sendMorph } from './EditorButton.styles'
 
 export type EditorButtonVariant =
@@ -42,6 +50,12 @@ const SHADCN_EDITOR_VARIANTS = new Set<EditorButtonVariant>([
   'danger',
   'accent',
   'tool',
+  'icon',
+  'nav',
+  'tab',
+  'dashed',
+  'panel',
+  'toggle',
 ])
 
 function shadcnVariant(variant: EditorButtonVariant) {
@@ -53,10 +67,16 @@ function shadcnVariant(variant: EditorButtonVariant) {
       return 'secondary' as const
     case 'ghost':
     case 'close':
+    case 'nav':
+    case 'tab':
+    case 'panel':
+    case 'toggle':
       return 'ghost' as const
     case 'danger':
       return 'destructive' as const
     case 'tool':
+    case 'icon':
+    case 'dashed':
       return 'outline' as const
     default:
       return 'default' as const
@@ -65,8 +85,31 @@ function shadcnVariant(variant: EditorButtonVariant) {
 
 function shadcnSize(variant: EditorButtonVariant, size: EditorButtonSize) {
   if (variant === 'close') return 'icon-sm' as const
+  if (variant === 'icon') return 'icon-sm' as const
+  if (variant === 'toggle') return 'icon-xs' as const
   if (variant === 'tool') return size === 'sm' ? ('sm' as const) : ('default' as const)
+  if (variant === 'nav' || variant === 'panel' || variant === 'dashed') return 'default' as const
   return size === 'sm' ? ('sm' as const) : ('default' as const)
+}
+
+function shadcnEditorClass(
+  variant: EditorButtonVariant,
+  size: EditorButtonSize,
+  active: boolean,
+  fullWidth: boolean,
+  className?: string,
+) {
+  return cn(
+    fullWidth && variant !== 'nav' && variant !== 'panel' && variant !== 'dashed' && 'w-full',
+    variant === 'close' && 'size-8 shrink-0 text-lg font-normal leading-none',
+    variant === 'icon' && editorIconButtonClass(),
+    variant === 'nav' && editorNavButtonClass(active),
+    variant === 'tab' && editorTabButtonClass(active),
+    variant === 'dashed' && editorDashedButtonClass(size),
+    variant === 'panel' && editorPanelButtonClass(),
+    variant === 'toggle' && editorToggleButtonClass(),
+    className,
+  )
 }
 
 export function EditorSendIconLayer({
@@ -104,11 +147,7 @@ export function EditorButton({
         type={type}
         variant={shadcnVariant(variant)}
         size={shadcnSize(variant, size)}
-        className={cn(
-          fullWidth && 'w-full',
-          variant === 'close' && 'size-8 shrink-0 text-lg font-normal leading-none',
-          className,
-        )}
+        className={shadcnEditorClass(variant, size, active, fullWidth, className)}
         data-active={active || undefined}
         {...rest}
       >

@@ -78,6 +78,12 @@
 - [x] **AskUserForm** 输入/进度/选项 Tailwind + `agentFormClasses` + `editorFieldClass`
 - [x] **EditorButton** `accent` / `tool` → shadcn `Button`
 
+## Phase 2H — 本批执行
+
+- [x] **EditorButton** `icon` / `nav` / `tab` / `dashed` / `panel` / `toggle` → shadcn + `editorButtonClasses.ts`
+- [x] **EditorSidebar** 全量 styled → Tailwind（284px 侧栏、小说卡片、搜索框）
+- [x] **EditorMobileNav** 移动菜单栏 → shadcn `Button` + Tailwind
+
 ---
 
 ## Phase 2B 验收

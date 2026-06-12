@@ -1,11 +1,9 @@
-import styled from 'styled-components'
 import type { NovelSessionGroup } from '../../hooks/editor/useEditorSessions'
-import { editorLayout, editorTheme } from '../../styles/editorTheme'
-import { hideScrollbarCss, palette } from '../../styles/theme'
 import { EditorButton } from '../ui/EditorButton'
 import { KebabMenu } from '../ui/KebabMenu'
 import { EditorIcons } from './icons'
 import { NovelSessionBatchBar, NovelSessionList } from './NovelSessionList'
+import { cn } from '@/lib/utils'
 
 export interface EditorSidebarProps {
   sessionSearch: string
@@ -68,26 +66,33 @@ export function EditorSidebar({
   embedded = false,
 }: EditorSidebarProps) {
   return (
-    <LeftSidebar $embedded={embedded}>
-      <SidebarHeader>
-        <HeaderTitle>我的小说</HeaderTitle>
+    <aside
+      className={cn(
+        'flex min-h-0 w-[284px] flex-col border-r border-border bg-background',
+        embedded ? 'relative z-[2] h-full' : 'fixed left-0 top-0 z-[100] h-screen',
+        embedded ? 'max-md:flex max-md:w-full max-md:max-w-[284px]' : 'max-md:hidden',
+      )}
+    >
+      <div className="flex min-h-[52px] shrink-0 items-center justify-between border-b border-border px-3.5">
+        <span className="text-sm font-bold tracking-tight text-foreground">我的小说</span>
         <EditorButton variant="icon" onClick={onNewNovel} title="新建小说" aria-label="新建小说">
           <EditorIcons.Plus />
         </EditorButton>
-      </SidebarHeader>
+      </div>
 
-      <SessionList>
-        <SessionSection>
+      <div className="min-h-0 flex-1 overflow-y-auto p-1.5 pb-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+        <div className="mb-1">
           {novelSessionGroups.length === 0 ? (
-            <EmptyHint>暂无小说，点击右上角 + 创建</EmptyHint>
+            <div className="px-0.5 py-1.5 text-xs leading-snug text-muted-foreground/80">
+              暂无小说，点击右上角 + 创建
+            </div>
           ) : (
             novelSessionGroups.map(({ novel, sessions }) => {
               const isActiveNovel = novel.id === activeNovelId
               const isExpanded = expandedNovelIds.has(novel.id)
               const inBatch = batchMode && batchNovelId === novel.id
               const allSelected =
-                sessions.length > 0 &&
-                sessions.every((s) => selectedSessionIds.has(s.id))
+                sessions.length > 0 && sessions.every((s) => selectedSessionIds.has(s.id))
 
               const handleNovelCardClick = () => {
                 onToggleNovelExpanded(novel.id)
@@ -97,12 +102,18 @@ export function EditorSidebar({
               }
 
               return (
-                <NovelBlock key={novel.id}>
-                  <NovelCard
+                <div key={novel.id} className="mb-1">
+                  <div
                     role="button"
                     tabIndex={0}
-                    $active={isActiveNovel}
                     aria-expanded={isExpanded}
+                    className={cn(
+                      'flex w-full cursor-pointer items-center gap-1.5 rounded-[10px] border border-transparent py-2 pl-1 pr-1.5 text-left font-[inherit] text-inherit',
+                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/45',
+                      isActiveNovel
+                        ? 'border-l-[3px] border-l-primary bg-muted/50 hover:bg-muted/60'
+                        : 'border-l-[3px] border-l-transparent hover:bg-muted/40',
+                    )}
                     onClick={handleNovelCardClick}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
@@ -111,17 +122,28 @@ export function EditorSidebar({
                       }
                     }}
                   >
-                    <Chevron $expanded={isExpanded} aria-hidden>
+                    <span
+                      aria-hidden
+                      className={cn(
+                        'w-3.5 shrink-0 text-[11px] leading-none text-muted-foreground transition-transform duration-200',
+                        isExpanded && 'rotate-90',
+                      )}
+                    >
                       ▸
-                    </Chevron>
-                    <SessionIcon>
+                    </span>
+                    <div className="flex size-[26px] shrink-0 items-center justify-center [&_svg]:size-3.5 [&_svg]:text-muted-foreground">
                       <EditorIcons.BookOpen />
-                    </SessionIcon>
-                    <SessionInfo>
-                      <SessionTitle>{novel.title}</SessionTitle>
-                      <SessionTime>{sessions.length} 个对话</SessionTime>
-                    </SessionInfo>
-                    <NovelActions
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-[13px] font-semibold text-foreground">
+                        {novel.title}
+                      </div>
+                      <div className="mt-0.5 text-[10px] text-muted-foreground">
+                        {sessions.length} 个对话
+                      </div>
+                    </div>
+                    <div
+                      className="ml-auto shrink-0"
                       data-novel-menu
                       onClick={(e) => e.stopPropagation()}
                       onMouseDown={(e) => e.stopPropagation()}
@@ -148,24 +170,27 @@ export function EditorSidebar({
                           },
                         ]}
                       />
-                    </NovelActions>
-                  </NovelCard>
+                    </div>
+                  </div>
 
                   {isExpanded ? (
-                    <SessionNest>
+                    <div className="box-border w-full py-1 pl-1.5 pr-0">
                       {isActiveNovel ? (
-                        <NestSearch>
-                          <SearchBar>
-                            <EditorIcons.Search />
+                        <div className="box-border w-full pb-1.5">
+                          <div className="flex w-full items-center gap-2 rounded-lg border border-border bg-muted/30 px-2 py-1.5">
+                            <span className="flex shrink-0 [&_svg]:size-3.5 [&_svg]:text-muted-foreground">
+                              <EditorIcons.Search />
+                            </span>
                             <input
                               type="search"
                               placeholder="搜索当前小说对话…"
                               aria-label="搜索当前小说对话"
                               value={sessionSearch}
                               onChange={(e) => onSessionSearchChange(e.target.value)}
+                              className="min-w-0 flex-1 border-0 bg-transparent text-xs text-foreground outline-none placeholder:text-muted-foreground"
                             />
-                          </SearchBar>
-                        </NestSearch>
+                          </div>
+                        </div>
                       ) : null}
 
                       {inBatch ? (
@@ -180,7 +205,9 @@ export function EditorSidebar({
                       ) : null}
 
                       {isActiveNovel && sessionSearch.trim() && sessions.length === 0 ? (
-                        <EmptyHint>无匹配对话</EmptyHint>
+                        <div className="px-0.5 py-1.5 text-xs leading-snug text-muted-foreground/80">
+                          无匹配对话
+                        </div>
                       ) : (
                         <NovelSessionList
                           sessions={sessions}
@@ -199,16 +226,16 @@ export function EditorSidebar({
                           onDeleteSession={onDeleteSession}
                         />
                       )}
-                    </SessionNest>
+                    </div>
                   ) : null}
-                </NovelBlock>
+                </div>
               )
             })
           )}
-        </SessionSection>
-      </SessionList>
+        </div>
+      </div>
 
-      <SidebarFooter>
+      <div className="flex shrink-0 flex-col gap-0.5 border-t border-border p-2.5">
         <EditorButton variant="nav" active={memoryModalOpen} onClick={onOpenMemory}>
           <EditorIcons.Brain />
           <span>记忆管理</span>
@@ -217,195 +244,7 @@ export function EditorSidebar({
           <EditorIcons.Settings />
           <span>设置</span>
         </EditorButton>
-      </SidebarFooter>
-    </LeftSidebar>
+      </div>
+    </aside>
   )
 }
-
-const LeftSidebar = styled.aside<{ $embedded?: boolean }>`
-  width: ${editorLayout.sidebarWidthPx}px;
-  height: ${({ $embedded }) => ($embedded ? '100%' : '100vh')};
-  background: ${editorTheme.bgSidebar};
-  display: flex;
-  flex-direction: column;
-  position: ${({ $embedded }) => ($embedded ? 'relative' : 'fixed')};
-  left: 0;
-  top: 0;
-  z-index: ${({ $embedded }) => ($embedded ? 2 : 100)};
-  border-right: 1px solid ${editorTheme.border};
-  min-height: 0;
-
-  @media (max-width: 767px) {
-    display: ${({ $embedded }) => ($embedded ? 'flex' : 'none')};
-    width: 100%;
-    max-width: ${editorLayout.sidebarWidthPx}px;
-  }
-`
-
-const SidebarHeader = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  min-height: 52px;
-  box-sizing: border-box;
-  padding: 0 0.85rem;
-  border-bottom: 1px solid ${editorTheme.border};
-  flex-shrink: 0;
-`
-
-const HeaderTitle = styled.span`
-  font-size: 0.88rem;
-  font-weight: 700;
-  color: ${editorTheme.text};
-  letter-spacing: -0.2px;
-`
-
-const SessionList = styled.div`
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  padding: 0.35rem 0.4rem 0.5rem;
-  ${hideScrollbarCss}
-`
-
-const SessionSection = styled.div`
-  margin-bottom: 0.25rem;
-`
-
-const NovelBlock = styled.div`
-  margin-bottom: 0.25rem;
-`
-
-const NovelCard = styled.div<{ $active?: boolean }>`
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  width: 100%;
-  box-sizing: border-box;
-  padding: 0.5rem 0.45rem 0.5rem 0.35rem;
-  margin: 0;
-  border-radius: 10px;
-  border: 1px solid transparent;
-  border-left: 3px solid ${(p) => (p.$active ? editorTheme.accent : 'transparent')};
-  background: ${(p) => (p.$active ? 'rgba(0, 0, 0, 0.04)' : 'transparent')};
-  cursor: pointer;
-  text-align: left;
-  font: inherit;
-  color: inherit;
-  &:hover {
-    background: ${(p) => (p.$active ? 'rgba(0, 0, 0, 0.05)' : editorTheme.accentMuted)};
-  }
-  &:focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.45);
-  }
-`
-
-const Chevron = styled.span<{ $expanded: boolean }>`
-  flex-shrink: 0;
-  width: 14px;
-  font-size: 0.72rem;
-  color: ${palette.textMuted};
-  transform: rotate(${({ $expanded }) => ($expanded ? '90deg' : '0')});
-  transition: transform 0.18s ease;
-  border: none;
-  background: none;
-  line-height: 1;
-`
-
-const NovelActions = styled.div`
-  flex-shrink: 0;
-  margin-left: auto;
-`
-
-const SessionNest = styled.div`
-  width: 100%;
-  box-sizing: border-box;
-  padding: 0.25rem 0 0.2rem 0.35rem;
-`
-
-const NestSearch = styled.div`
-  width: 100%;
-  box-sizing: border-box;
-  padding-bottom: 0.4rem;
-`
-
-const SearchBar = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  box-sizing: border-box;
-  padding: 0.4rem 0.55rem;
-  background: ${editorTheme.bgElevated};
-  border: 1px solid ${editorTheme.border};
-  border-radius: 8px;
-  svg {
-    width: 13px;
-    height: 13px;
-    color: ${editorTheme.textMuted};
-    flex-shrink: 0;
-  }
-  input {
-    flex: 1;
-    min-width: 0;
-    border: none;
-    background: transparent;
-    font-size: 0.78rem;
-    color: ${editorTheme.text};
-    outline: none;
-    &::placeholder {
-      color: ${editorTheme.textMuted};
-    }
-  }
-`
-
-const EmptyHint = styled.div`
-  font-size: 0.76rem;
-  color: ${palette.textFaint};
-  padding: 0.35rem 0.1rem;
-  line-height: 1.45;
-`
-
-const SessionIcon = styled.div`
-  width: 26px;
-  height: 26px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  svg {
-    width: 14px;
-    height: 14px;
-    color: ${palette.textMuted};
-  }
-`
-
-const SessionInfo = styled.div`
-  flex: 1;
-  min-width: 0;
-`
-
-const SessionTitle = styled.div`
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: ${editorTheme.text};
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-`
-
-const SessionTime = styled.div`
-  font-size: 0.65rem;
-  color: ${palette.textMuted};
-  margin-top: 2px;
-`
-
-const SidebarFooter = styled.div`
-  padding: 0.65rem;
-  border-top: 1px solid ${editorTheme.border};
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  flex-shrink: 0;
-`
