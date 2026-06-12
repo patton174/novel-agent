@@ -2,6 +2,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { PenLine, Shield } from 'lucide-react'
 import { useUserStore } from '@/stores/userStore'
 import { Button } from '@/components/ui/button'
+import { APP_BTN_SM } from '@/lib/appButtonTokens'
 
 export function DashboardQuickActions() {
   const location = useLocation()
@@ -16,7 +17,7 @@ export function DashboardQuickActions() {
           asChild
           variant="outline"
           size="sm"
-          className="hidden h-9 gap-1.5 rounded-xl border-border/80 bg-background/80 px-3 text-xs font-medium sm:inline-flex"
+          className={`hidden h-9 gap-1.5 border-border/80 bg-background/80 px-3 text-xs font-medium sm:inline-flex ${APP_BTN_SM}`}
         >
           <Link to="/admin">
             <Shield className="size-3.5" />
@@ -25,7 +26,7 @@ export function DashboardQuickActions() {
         </Button>
       ) : null}
       {!hideEditorCta ? (
-        <Button asChild size="sm" className="h-9 gap-1.5 rounded-xl px-4 text-xs font-semibold">
+        <Button asChild size="sm" className={`h-9 gap-1.5 px-4 text-xs font-semibold ${APP_BTN_SM}`}>
           <Link to="/editor">
             <PenLine className="size-3.5" />
             进入编辑器

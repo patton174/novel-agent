@@ -17,6 +17,7 @@ import {
 } from '@/components/layout/AppPageStack'
 import { DataTableFrame } from '@/components/layout/DataTableFrame'
 import { Button } from '@/components/ui/button'
+import { APP_BTN_MD } from '@/lib/appButtonTokens'
 import { Skeleton } from '@/components/ui/skeleton'
 import { appToast } from '@/stores/appToastStore'
 
@@ -156,13 +157,13 @@ export default function BillingPage() {
           </p>
 
           <div className="flex flex-col gap-2 sm:flex-row">
-            <Button className="h-10 flex-1 rounded-xl" asChild>
+            <Button className={`flex-1 ${APP_BTN_MD}`} asChild>
               <Link to="/pricing">
                 <Receipt className="mr-2 size-4" />
                 查看套餐
               </Link>
             </Button>
-            <Button className="h-10 flex-1 rounded-xl" variant="outline" asChild>
+            <Button className={`flex-1 ${APP_BTN_MD}`} variant="outline" asChild>
               <Link to="/contact">联系升级</Link>
             </Button>
           </div>
@@ -198,28 +199,93 @@ export default function BillingPage() {
               {runFilter ? '该 run 暂无用量记录' : '暂无用量明细，使用 Agent 后将在此展示最近调用'}
             </p>
           ) : (
-            <DataTableFrame embedded>
-              <table className="w-full min-w-[640px] text-sm">
-                <thead className="bg-muted/40 text-left text-xs text-muted-foreground">
-                  <tr>
-                    <th className="px-4 py-3 font-medium">类型</th>
-                    <th className="px-4 py-3 font-medium">Tokens</th>
-                    <th className="px-4 py-3 font-medium">模型</th>
-                    <th className="px-4 py-3 font-medium">时间</th>
-                    <th className="px-4 py-3 font-medium">关联</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {events.map((ev) => (
-                    <UsageEventRow key={ev.id} ev={ev} runFilter={runFilter} />
-                  ))}
-                </tbody>
-              </table>
-            </DataTableFrame>
+            <>
+              <div className="space-y-3 px-4 py-4 md:hidden">
+                {events.map((ev) => (
+                  <UsageEventCard key={ev.id} ev={ev} runFilter={runFilter} />
+                ))}
+              </div>
+              <div className="hidden md:block">
+                <DataTableFrame embedded>
+                  <table className="w-full min-w-[640px] text-sm">
+                    <thead className="bg-muted/40 text-left text-xs text-muted-foreground">
+                      <tr>
+                        <th className="px-4 py-3 font-medium">类型</th>
+                        <th className="px-4 py-3 font-medium">Tokens</th>
+                        <th className="px-4 py-3 font-medium">模型</th>
+                        <th className="px-4 py-3 font-medium">时间</th>
+                        <th className="px-4 py-3 font-medium">关联</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {events.map((ev) => (
+                        <UsageEventRow key={ev.id} ev={ev} runFilter={runFilter} />
+                      ))}
+                    </tbody>
+                  </table>
+                </DataTableFrame>
+              </div>
+            </>
           )}
         </AppShellCardBody>
       </AppShellCard>
     </AppPageStack>
+  )
+}
+
+function UsageEventCard({
+  ev,
+  runFilter,
+}: {
+  ev: UsageEventItem
+  runFilter: string
+}) {
+  const [, setSearchParams] = useSearchParams()
+
+  return (
+    <article className="rounded-xl border border-border bg-surface p-3.5 text-sm shadow-soft">
+      <div className="flex items-start justify-between gap-2">
+        <span className="font-medium text-foreground">{ev.eventType}</span>
+        <span className="shrink-0 tabular-nums text-xs text-muted-foreground">
+          {ev.totalTokens.toLocaleString('zh-CN')} tok
+        </span>
+      </div>
+      <dl className="mt-2 space-y-1 text-xs text-muted-foreground">
+        <div className="flex justify-between gap-2">
+          <dt>模型</dt>
+          <dd className="truncate text-right text-foreground">{ev.model ?? '—'}</dd>
+        </div>
+        <div className="flex justify-between gap-2">
+          <dt>时间</dt>
+          <dd className="text-right">{new Date(ev.createdAt).toLocaleString('zh-CN')}</dd>
+        </div>
+      </dl>
+      {(ev.runId || ev.sessionId) ? (
+        <div className="mt-2.5 flex flex-wrap items-center gap-2 border-t border-border/60 pt-2.5 text-xs">
+          {ev.runId ? (
+            runFilter ? (
+              <span className="max-w-full truncate font-mono text-muted-foreground" title={ev.runId}>
+                {ev.runId}
+              </span>
+            ) : (
+              <button
+                type="button"
+                className="font-mono text-primary hover:underline"
+                title={ev.runId}
+                onClick={() => setSearchParams({ runId: ev.runId! })}
+              >
+                {ev.runId.slice(0, 10)}…
+              </button>
+            )
+          ) : null}
+          {ev.sessionId ? (
+            <Link to={`/editor/${ev.sessionId}`} className="text-primary hover:underline">
+              打开会话
+            </Link>
+          ) : null}
+        </div>
+      ) : null}
+    </article>
   )
 }
 

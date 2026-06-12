@@ -6,6 +6,7 @@ import { BookOpen, Clock, ImagePlus, Plus, Sparkles } from 'lucide-react'
 import { CoverGenerateDialog } from '@/components/dashboard/CoverGenerateDialog'
 import { CoverImageGeneratingOverlay } from '@/components/dashboard/CoverImageGeneratingOverlay'
 import { Button } from '@/components/ui/button'
+import { APP_BTN_FULL_MD, APP_BTN_MD, APP_BTN_OUTLINE_FULL } from '@/lib/appButtonTokens'
 import { Skeleton } from '@/components/ui/skeleton'
 import { InlineBrandLoader } from '@/components/loading/BrandLoader'
 import { useMarkRouteSeen } from '@/hooks/useMarkRouteSeen'
@@ -103,7 +104,7 @@ export default function NovelsPage() {
         }
         icon={BookOpen}
         action={
-          <Button asChild className="rounded-xl px-5">
+          <Button asChild className={`px-5 ${APP_BTN_MD}`}>
             <Link to="/editor">
               <Plus className="mr-2 size-4" />
               新建小说
@@ -131,7 +132,7 @@ export default function NovelsPage() {
             !error ? (
               <Button
                 asChild
-                className="rounded-xl bg-primary px-8 text-primary-foreground shadow-md hover:bg-primary/90"
+                className={`${APP_BTN_MD} bg-primary px-8 text-primary-foreground shadow-md hover:bg-primary/90`}
               >
                 <Link to="/editor">
                   <Plus className="mr-2 size-5" />
@@ -201,7 +202,7 @@ export default function NovelsPage() {
                     variant="outline"
                     size="sm"
                     disabled={isGenerating}
-                    className="w-full rounded-xl border-border/90 text-foreground hover:border-primary/40 hover:bg-primary/5 hover:text-primary"
+                    className={`${APP_BTN_OUTLINE_FULL} text-foreground hover:border-primary/40 hover:bg-primary/5 hover:text-primary`}
                     onClick={() => setDialogNovel(novel)}
                   >
                     <ImagePlus className="mr-2 size-4" />
@@ -209,7 +210,7 @@ export default function NovelsPage() {
                   </Button>
                   <Button
                     asChild
-                    className="w-full rounded-xl"
+                    className={APP_BTN_FULL_MD}
                   >
                     <Link to={`/editor?novelId=${encodeURIComponent(novel.id)}`}>继续写作</Link>
                   </Button>

@@ -164,6 +164,11 @@ const VersionList = styled.div`
   max-height: 360px;
   overflow-y: auto;
   margin-top: 0.35rem;
+
+  @media (max-width: 767px) {
+    max-height: 240px;
+    gap: 0.4rem;
+  }
 `
 
 const VersionItem = styled.div`
@@ -171,6 +176,10 @@ const VersionItem = styled.div`
   border-radius: 8px;
   background: ${palette.bg};
   border: 1px solid ${palette.border};
+
+  @media (max-width: 767px) {
+    padding: 0.45rem 0.5rem;
+  }
 `
 
 const VersionMeta = styled.div`
@@ -195,12 +204,34 @@ const VersionTitle = styled.div`
   font-weight: 600;
   color: ${palette.inkHover};
   margin: 0.25rem 0 0.4rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.35;
+
+  @media (max-width: 767px) {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    white-space: normal;
+  }
+
+  @media (min-width: 768px) {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 `
 
 const ActionRow = styled.div`
   display: flex;
   gap: 0.4rem;
+
+  @media (max-width: 767px) {
+    flex-direction: column;
+    gap: 0.3rem;
+
+    button {
+      width: 100%;
+      justify-content: center;
+    }
+  }
 `

@@ -56,7 +56,7 @@ export function CursorDesktopMock({
     <CursorWin className={className} data-cursor-mock="desktop">
       <CursorWinBar>
         <WinDots />
-        <span className="title">Novel AI · 编辑器</span>
+        <span className="title">Novel Agent · 编辑器</span>
       </CursorWinBar>
       <CursorWinBody>
         <CursorTaskCol>

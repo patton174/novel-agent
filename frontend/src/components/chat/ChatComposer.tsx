@@ -164,6 +164,11 @@ const ComposerCard = styled.div`
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
+
+  @media (max-width: 767px) {
+    padding: 0.38rem 0.5rem 0.32rem;
+    gap: 0.28rem;
+  }
 `
 
 const ComposerDisclaimer = styled.p`
@@ -171,6 +176,10 @@ const ComposerDisclaimer = styled.p`
   font-size: 0.68rem;
   color: ${editorTheme.textMuted};
   text-align: center;
+
+  @media (max-width: 767px) {
+    display: none;
+  }
 `
 
 const HostModeControl = styled.div`
@@ -189,6 +198,10 @@ const HostModeTitle = styled.span`
   color: ${editorTheme.textSecondary};
   white-space: nowrap;
   line-height: 1;
+
+  @media (max-width: 767px) {
+    display: none;
+  }
 `
 
 const TextArea = styled.textarea`
@@ -216,6 +229,10 @@ const ActionRow = styled.div`
   width: 100%;
   min-width: 0;
   gap: 10px;
+
+  @media (max-width: 767px) {
+    gap: 6px;
+  }
 `
 
 const LeftTools = styled.div`
@@ -226,5 +243,10 @@ const LeftTools = styled.div`
   min-width: 0;
   min-height: ${editorTheme.composerControlHeight}px;
   overflow: visible;
+
+  @media (max-width: 767px) {
+    flex-wrap: nowrap;
+    gap: 4px;
+  }
 `
 

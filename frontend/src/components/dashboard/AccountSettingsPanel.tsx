@@ -3,6 +3,7 @@ import { AlertTriangle, Loader2, Mail } from 'lucide-react'
 import { sendEmailVerifyLink, needsEmailVerification } from '@/api/userApi'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { APP_BTN_SM } from '@/lib/appButtonTokens'
 import { Skeleton } from '@/components/ui/skeleton'
 import { appToast } from '@/stores/appToastStore'
 import type { UserProfile } from '@/stores/userStore'
@@ -64,14 +65,14 @@ export function AccountSettingsPanel({ profile, onVerified }: AccountSettingsPan
   return (
     <div className="space-y-4">
       {unverified ? (
-        <div className="rounded-xl border border-amber-300/80 bg-amber-50 px-4 py-3.5 dark:border-amber-700/60 dark:bg-amber-950/40">
+        <div className="rounded-xl border border-sky-300/80 bg-sky-50 px-4 py-3.5 dark:border-sky-700/60 dark:bg-sky-950/40">
           <div className="flex gap-3">
-            <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400" />
+            <AlertTriangle className="mt-0.5 size-4 shrink-0 text-sky-600 dark:text-sky-400" />
             <div className="min-w-0 flex-1 space-y-2">
-              <p className="text-sm font-semibold text-amber-900 dark:text-amber-100">
+              <p className="text-sm font-semibold text-sky-900 dark:text-sky-100">
                 邮箱尚未验证
               </p>
-              <p className="text-xs leading-relaxed text-amber-800/90 dark:text-amber-200/90">
+              <p className="text-xs leading-relaxed text-sky-800/90 dark:text-sky-200/90">
                 验证邮箱后可使用完整功能。点击下方按钮，我们将向{' '}
                 <span className="font-medium">{profile.email || '您的邮箱'}</span>{' '}
                 发送验证邮件，点击邮件中的链接即可完成验证。
@@ -79,7 +80,7 @@ export function AccountSettingsPanel({ profile, onVerified }: AccountSettingsPan
               <Button
                 type="button"
                 size="sm"
-                className="h-8 rounded-lg bg-amber-600 text-white hover:bg-amber-700"
+                className={`bg-sky-600 text-white hover:bg-sky-700 ${APP_BTN_SM}`}
                 disabled={sending || cooldown > 0}
                 onClick={() => void handleSendVerify()}
               >
@@ -112,7 +113,7 @@ export function AccountSettingsPanel({ profile, onVerified }: AccountSettingsPan
               className={
                 profile.emailVerified === true
                   ? 'border-emerald-600/30 bg-emerald-600 text-white hover:bg-emerald-600'
-                  : 'border-amber-500/50 bg-amber-50 text-amber-900 dark:bg-amber-950/50 dark:text-amber-100'
+                  : 'border-sky-500/50 bg-sky-50 text-sky-900 dark:bg-sky-950/50 dark:text-sky-100'
               }
             >
               {profile.emailVerified === true ? '已验证' : '未验证'}

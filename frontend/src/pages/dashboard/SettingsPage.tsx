@@ -11,6 +11,7 @@ import {
   AppShellCardHeader,
 } from '@/components/layout/AppPageStack'
 import { Button } from '@/components/ui/button'
+import { APP_BTN_FULL_MD } from '@/lib/appButtonTokens'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useMarkRouteSeen } from '@/hooks/useMarkRouteSeen'
 import { useUserStore } from '@/stores/userStore'
@@ -79,7 +80,7 @@ export default function SettingsPage() {
           description="用量明细、套餐与预估费用请前往账单页查看"
         />
         <AppShellCardBody>
-          <Button asChild className="h-10 w-full rounded-xl">
+          <Button asChild className={APP_BTN_FULL_MD}>
             <Link to="/dashboard/billing">
               <CreditCard className="mr-2 size-4" />
               打开账单页

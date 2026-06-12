@@ -8,6 +8,7 @@ import {
   type CatalogNovel,
 } from '@/api/catalogApi'
 import { Button } from '@/components/ui/button'
+import { APP_BTN_FULL_MD, APP_BTN_MD, APP_BTN_OUTLINE_FULL } from '@/lib/appButtonTokens'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useMarkRouteSeen } from '@/hooks/useMarkRouteSeen'
 import { appToast } from '@/stores/appToastStore'
@@ -74,7 +75,7 @@ export default function BookstorePage() {
         title="浏览 AI 爬取的作品，一键加入我的小说"
         icon={BookMarked}
         action={
-          <Button asChild variant="outline" className="rounded-xl">
+          <Button asChild variant="outline" className={APP_BTN_MD}>
             <Link to="/dashboard/novels">我的作品库</Link>
           </Button>
         }
@@ -92,7 +93,7 @@ export default function BookstorePage() {
           title="书库加载失败"
           description="暂时无法获取公共书库列表，请检查网络后重试。"
           action={
-            <Button className="rounded-xl" onClick={() => void load()}>
+            <Button className={APP_BTN_MD} onClick={() => void load()}>
               <RefreshCw className="mr-2 size-4" />
               重新加载
             </Button>
@@ -139,7 +140,7 @@ export default function BookstorePage() {
 
               <div className="flex flex-col gap-2 border-t border-border/80 p-4">
                 <Button
-                  className="w-full rounded-xl"
+                  className={APP_BTN_FULL_MD}
                   disabled={addingId === novel.id}
                   onClick={() => void handleAdd(novel.id)}
                 >
@@ -150,7 +151,7 @@ export default function BookstorePage() {
                   )}
                   加入我的作品
                 </Button>
-                <Button asChild variant="outline" className="w-full rounded-xl border-border/90">
+                <Button asChild variant="outline" className={APP_BTN_OUTLINE_FULL}>
                   <Link to="/dashboard/novels">查看我的作品</Link>
                 </Button>
               </div>

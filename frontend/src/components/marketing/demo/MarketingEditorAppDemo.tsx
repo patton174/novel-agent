@@ -220,7 +220,7 @@ export function MarketingEditorAppDemo({ variant }: MarketingEditorAppDemoProps)
     <AppMockRoot
       className="demo-app-mock demo-agent-console"
       data-variant={variant}
-      aria-label="Novel AI 编辑器 Agent 演示"
+      aria-label="Novel Agent 编辑器 Agent 演示"
     >
       <AppBrowserBar>
         <div className="traffic" aria-hidden>
@@ -228,7 +228,7 @@ export function MarketingEditorAppDemo({ variant }: MarketingEditorAppDemoProps)
           <span className="dot yellow" />
           <span className="dot green" />
         </div>
-        <span className="title">Novel AI</span>
+        <span className="title">Novel Agent</span>
         <span className="url">localhost:3000/editor?novel=诸天神祇有价</span>
         <span className="live">Agent 运行中</span>
       </AppBrowserBar>
