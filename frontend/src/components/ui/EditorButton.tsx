@@ -2,12 +2,16 @@ import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from 'react'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import {
+  editorChapterButtonClass,
+  editorChoiceButtonClass,
   editorDashedButtonClass,
   editorIconButtonClass,
   editorNavButtonClass,
   editorPanelButtonClass,
+  editorSegmentButtonClass,
   editorTabButtonClass,
   editorToggleButtonClass,
+  editorVolumeButtonClass,
 } from '@/lib/editorButtonClasses'
 import { EditorButtonRoot, sendMorph } from './EditorButton.styles'
 
@@ -56,6 +60,10 @@ const SHADCN_EDITOR_VARIANTS = new Set<EditorButtonVariant>([
   'dashed',
   'panel',
   'toggle',
+  'choice',
+  'chapter',
+  'volume',
+  'segment',
 ])
 
 function shadcnVariant(variant: EditorButtonVariant) {
@@ -71,12 +79,16 @@ function shadcnVariant(variant: EditorButtonVariant) {
     case 'tab':
     case 'panel':
     case 'toggle':
+    case 'chapter':
+    case 'volume':
       return 'ghost' as const
     case 'danger':
       return 'destructive' as const
     case 'tool':
     case 'icon':
     case 'dashed':
+    case 'choice':
+    case 'segment':
       return 'outline' as const
     default:
       return 'default' as const
@@ -88,7 +100,17 @@ function shadcnSize(variant: EditorButtonVariant, size: EditorButtonSize) {
   if (variant === 'icon') return 'icon-sm' as const
   if (variant === 'toggle') return 'icon-xs' as const
   if (variant === 'tool') return size === 'sm' ? ('sm' as const) : ('default' as const)
-  if (variant === 'nav' || variant === 'panel' || variant === 'dashed') return 'default' as const
+  if (
+    variant === 'nav' ||
+    variant === 'panel' ||
+    variant === 'dashed' ||
+    variant === 'choice' ||
+    variant === 'chapter' ||
+    variant === 'volume' ||
+    variant === 'segment'
+  ) {
+    return 'default' as const
+  }
   return size === 'sm' ? ('sm' as const) : ('default' as const)
 }
 
@@ -108,6 +130,10 @@ function shadcnEditorClass(
     variant === 'dashed' && editorDashedButtonClass(size),
     variant === 'panel' && editorPanelButtonClass(),
     variant === 'toggle' && editorToggleButtonClass(),
+    variant === 'choice' && editorChoiceButtonClass(active),
+    variant === 'chapter' && editorChapterButtonClass(active),
+    variant === 'volume' && editorVolumeButtonClass(),
+    variant === 'segment' && editorSegmentButtonClass(active),
     className,
   )
 }

@@ -1,8 +1,5 @@
 import { useMemo, useState } from 'react'
-import styled, { css } from 'styled-components'
 import type { EditorChatSession } from '../../types/editor'
-import { editorTheme } from '../../styles/editorTheme'
-import { palette } from '../../styles/theme'
 import { EditorButton } from '../ui/EditorButton'
 import { KebabMenu } from '../ui/KebabMenu'
 import { formatSessionRelativeTime } from '../../utils/formatSessionRelativeTime'
@@ -11,6 +8,8 @@ import {
   groupSessionsByDate,
   type SessionDateGroup,
 } from '../../utils/groupSessionsByDate'
+import { EDITOR_SESSION_LOAD_MORE } from '@/lib/editorButtonClasses'
+import { cn } from '@/lib/utils'
 
 const PAGE_SIZE = 20
 const PAGE_STEP = 15
@@ -34,10 +33,7 @@ function sessionTitleLabel(session: EditorChatSession, titlePending: boolean): s
   return title || '新对话'
 }
 
-function sessionSubtitle(
-  session: EditorChatSession,
-  titlePending: boolean,
-): string {
+function sessionSubtitle(session: EditorChatSession, titlePending: boolean): string {
   if (titlePending) return ''
   return formatSessionRelativeTime(session.updatedAt)
 }
@@ -101,14 +97,18 @@ export function NovelSessionList({
   }, [displayGroups, visibleLimit])
 
   if (sessions.length === 0) {
-    return <EmptyHint>暂无对话</EmptyHint>
+    return (
+      <div className="px-0.5 py-1.5 text-xs leading-snug text-muted-foreground/80">暂无对话</div>
+    )
   }
 
   return (
-    <ListWrap>
+    <div className="flex w-full flex-col gap-0.5">
       {slices.map(({ group, label, items }) => (
-        <GroupBlock key={group}>
-          <GroupLabel>{label}</GroupLabel>
+        <div key={group} className="mb-1 flex w-full flex-col gap-0.5">
+          <div className="px-0.5 pb-0.5 pt-1.5 text-[11px] font-semibold tracking-wide text-muted-foreground">
+            {label}
+          </div>
           {items.map((session) => {
             const selected = selectedSessionIds.has(session.id)
             const pending = titlePendingSessionIds.has(session.id)
@@ -117,11 +117,15 @@ export function NovelSessionList({
             const subtitle = sessionSubtitle(session, pending)
             const systemLike = isBoilerplateSessionTitle(session.title)
             return (
-              <SessionItem
+              <div
                 key={session.id}
-                $active={isActive}
-                $batch={batchMode}
                 title={title}
+                className={cn(
+                  'group/session flex w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1.5 pl-1',
+                  isActive
+                    ? 'border border-primary/20 bg-primary/10 hover:bg-primary/10'
+                    : 'border border-transparent hover:bg-muted/50',
+                )}
                 onClick={() => {
                   if (batchMode) {
                     onToggleSessionSelected(session.id)
@@ -131,25 +135,49 @@ export function NovelSessionList({
                 }}
               >
                 {batchMode ? (
-                  <SessionCheckbox
+                  <input
                     type="checkbox"
+                    className="m-0 shrink-0 cursor-pointer"
                     checked={selected}
                     onChange={() => onToggleSessionSelected(session.id)}
                     onClick={(e) => e.stopPropagation()}
                   />
                 ) : (
-                  <ActiveDot $visible={isActive} aria-hidden />
+                  <span
+                    aria-hidden
+                    className={cn(
+                      'ml-0.5 size-1.5 shrink-0 rounded-full bg-primary transition-opacity',
+                      isActive ? 'opacity-100' : 'opacity-0',
+                    )}
+                  />
                 )}
-                <SessionInfo>
-                  <SessionTitleRow>
-                    <SessionTitle $dim={pending} $muted={systemLike}>
+                <div className="min-w-0 flex-1">
+                  <div className="flex min-w-0 items-baseline gap-1.5">
+                    <span
+                      className={cn(
+                        'min-w-0 flex-1 truncate text-[13px] font-medium',
+                        pending
+                          ? 'text-muted-foreground'
+                          : systemLike
+                            ? 'text-muted-foreground'
+                            : 'text-foreground',
+                      )}
+                    >
                       {title}
-                    </SessionTitle>
-                    {subtitle ? <SessionMeta>{subtitle}</SessionMeta> : null}
-                  </SessionTitleRow>
-                </SessionInfo>
+                    </span>
+                    {subtitle ? (
+                      <span className="shrink-0 whitespace-nowrap text-[10px] text-muted-foreground/70">
+                        {subtitle}
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
                 {!batchMode ? (
-                  <SessionActions
+                  <div
+                    className={cn(
+                      'inline-flex opacity-0 transition-opacity group-hover/session:opacity-100',
+                      isActive && 'opacity-100',
+                    )}
                     data-session-actions
                     onClick={(e) => e.stopPropagation()}
                   >
@@ -169,29 +197,30 @@ export function NovelSessionList({
                         },
                       ]}
                     />
-                  </SessionActions>
+                  </div>
                 ) : null}
-              </SessionItem>
+              </div>
             )
           })}
-        </GroupBlock>
+        </div>
       ))}
 
       {!showOlder && olderCount > 0 ? (
-        <LoadMoreButton type="button" onClick={() => setShowOlder(true)}>
+        <button type="button" className={EDITOR_SESSION_LOAD_MORE} onClick={() => setShowOlder(true)}>
           查看更早（{olderCount}）
-        </LoadMoreButton>
+        </button>
       ) : null}
 
       {hasMoreInList ? (
-        <LoadMoreButton
+        <button
           type="button"
+          className={EDITOR_SESSION_LOAD_MORE}
           onClick={() => setVisibleLimit((n) => n + PAGE_STEP)}
         >
           加载更多（{totalShown}/{totalAvailable}）
-        </LoadMoreButton>
+        </button>
       ) : null}
-    </ListWrap>
+    </div>
   )
 }
 
@@ -211,7 +240,7 @@ export function NovelSessionBatchBar({
   onBatchDelete: () => void
 }) {
   return (
-    <BatchBar>
+    <div className="flex w-full flex-wrap gap-1.5 pb-1.5">
       <EditorButton variant="ghost" size="sm" type="button" onClick={onExitBatchMode}>
         完成
       </EditorButton>
@@ -227,143 +256,6 @@ export function NovelSessionBatchBar({
       >
         删除 ({selectedCount})
       </EditorButton>
-    </BatchBar>
+    </div>
   )
 }
-
-const ListWrap = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-  width: 100%;
-`
-
-const GroupBlock = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 0.08rem;
-  width: 100%;
-  margin-bottom: 0.2rem;
-`
-
-const GroupLabel = styled.div`
-  font-size: 0.68rem;
-  font-weight: 600;
-  color: ${editorTheme.textMuted};
-  padding: 0.4rem 0.1rem 0.2rem;
-  letter-spacing: 0.02em;
-`
-
-const SessionItem = styled.div<{ $active?: boolean; $batch?: boolean }>`
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  width: 100%;
-  box-sizing: border-box;
-  padding: 0.45rem 0.45rem 0.45rem 0.35rem;
-  border-radius: 8px;
-  cursor: pointer;
-  background: ${(p) => (p.$active ? editorTheme.activeBg : 'transparent')};
-  border: 1px solid ${(p) => (p.$active ? palette.accentBorderLight : 'transparent')};
-  &:hover {
-    background: ${(p) => (p.$active ? editorTheme.activeBg : editorTheme.accentMuted)};
-  }
-  &:hover [data-session-actions] {
-    opacity: 1;
-  }
-  ${(p) =>
-    p.$active &&
-    !p.$batch &&
-    css`
-      [data-session-actions] {
-        opacity: 1;
-      }
-    `}
-`
-
-const ActiveDot = styled.span<{ $visible: boolean }>`
-  flex-shrink: 0;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: ${editorTheme.accent};
-  opacity: ${({ $visible }) => ($visible ? 1 : 0)};
-  margin-left: 2px;
-`
-
-const SessionCheckbox = styled.input`
-  flex-shrink: 0;
-  margin: 0;
-  cursor: pointer;
-`
-
-const SessionActions = styled.div`
-  display: inline-flex;
-  opacity: 0;
-  transition: opacity 0.15s ease;
-`
-
-const SessionInfo = styled.div`
-  flex: 1;
-  min-width: 0;
-`
-
-const SessionTitleRow = styled.div`
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
-  min-width: 0;
-`
-
-const SessionTitle = styled.span<{ $dim?: boolean; $muted?: boolean }>`
-  flex: 1;
-  min-width: 0;
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: ${({ $dim, $muted }) =>
-    $dim ? palette.textMuted : $muted ? palette.textSecondary : editorTheme.text};
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-`
-
-const SessionMeta = styled.span`
-  flex-shrink: 0;
-  font-size: 0.62rem;
-  color: ${palette.textFaint};
-  white-space: nowrap;
-`
-
-const EmptyHint = styled.div`
-  font-size: 0.76rem;
-  color: ${palette.textFaint};
-  padding: 0.35rem 0.1rem;
-  line-height: 1.45;
-`
-
-const LoadMoreButton = styled.button`
-  width: 100%;
-  box-sizing: border-box;
-  margin: 0.2rem 0 0.1rem;
-  padding: 0.4rem 0.5rem;
-  border: 1px dashed ${editorTheme.border};
-  border-radius: 8px;
-  background: transparent;
-  font: inherit;
-  font-size: 0.72rem;
-  color: ${palette.textMuted};
-  cursor: pointer;
-  &:hover {
-    background: ${editorTheme.accentMuted};
-    color: ${editorTheme.text};
-  }
-`
-
-const BatchBar = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-  width: 100%;
-  box-sizing: border-box;
-  padding: 0 0 0.4rem;
-`

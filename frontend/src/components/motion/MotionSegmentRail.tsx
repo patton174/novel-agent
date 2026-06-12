@@ -1,8 +1,6 @@
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
-import styled from 'styled-components'
-import { editorTheme } from '../../styles/editorTheme'
-import { palette } from '../../styles/theme'
-import { motionIndicatorCss, motionInteractiveCss } from './motionStyles'
+import { cn } from '@/lib/utils'
+import { motionTransition } from '@/styles/motion'
 
 export interface MotionSegmentItem<T extends string = string> {
   id: T
@@ -56,20 +54,22 @@ export function MotionSegmentRail<T extends string = string>({
   }, [activeId, items])
 
   return (
-    <Rail ref={railRef} role="tablist" aria-label={ariaLabel}>
-      <Indicator
+    <div ref={railRef} role="tablist" aria-label={ariaLabel} className="relative flex flex-col gap-1.5">
+      <div
         aria-hidden
+        className="pointer-events-none absolute z-0 rounded-[10px] border border-primary/45 bg-primary/10 shadow-inner"
         style={{
           left: indicator.left,
           top: indicator.top,
           width: indicator.width,
           height: indicator.height,
+          transition: motionTransition.indicator,
         }}
       />
       {items.map((item) => {
         const active = item.id === activeId
         return (
-          <SegmentButton
+          <button
             key={item.id}
             ref={(el) => {
               itemRefs.current[item.id] = el
@@ -78,75 +78,33 @@ export function MotionSegmentRail<T extends string = string>({
             role="tab"
             aria-selected={active}
             disabled={item.disabled}
-            $active={active}
+            className={cn(
+              'relative z-[1] flex w-full cursor-pointer items-center justify-between gap-2 rounded-[10px] border-0 bg-transparent px-2.5 py-2 text-left font-[inherit] transition-colors',
+              'hover:text-foreground disabled:cursor-not-allowed disabled:opacity-45',
+            )}
             onClick={() => onChange(item.id)}
           >
-            <SegmentLabel $active={active}>{item.label}</SegmentLabel>
+            <span
+              className={cn(
+                'text-[12px] transition-colors',
+                active ? 'font-semibold text-foreground' : 'font-medium text-muted-foreground',
+              )}
+            >
+              {item.label}
+            </span>
             {item.trailing ? (
-              <SegmentTrailing $active={active}>{item.trailing}</SegmentTrailing>
+              <span
+                className={cn(
+                  'text-[11px] font-semibold transition-colors',
+                  active ? 'text-muted-foreground' : 'text-muted-foreground/60',
+                )}
+              >
+                {item.trailing}
+              </span>
             ) : null}
-          </SegmentButton>
+          </button>
         )
       })}
-    </Rail>
+    </div>
   )
 }
-
-const Rail = styled.div`
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-`
-
-const Indicator = styled.div`
-  position: absolute;
-  border-radius: 10px;
-  background: ${editorTheme.activeBg};
-  border: 1px solid rgba(79, 70, 229, 0.45);
-  box-shadow: ${editorTheme.shadowInSoft};
-  ${motionIndicatorCss}
-  pointer-events: none;
-  z-index: 0;
-`
-
-const SegmentButton = styled.button<{ $active: boolean }>`
-  position: relative;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  width: 100%;
-  padding: 0.55rem 0.65rem;
-  border: none;
-  border-radius: 10px;
-  background: transparent;
-  text-align: left;
-  font-family: inherit;
-  cursor: pointer;
-  ${motionInteractiveCss}
-
-  &:hover:not(:disabled) {
-    color: ${editorTheme.text};
-  }
-
-  &:disabled {
-    opacity: 0.45;
-    cursor: not-allowed;
-  }
-`
-
-const SegmentLabel = styled.span<{ $active: boolean }>`
-  font-size: 0.78rem;
-  font-weight: ${({ $active }) => ($active ? 600 : 500)};
-  color: ${({ $active }) => ($active ? editorTheme.text : editorTheme.textSecondary)};
-  ${motionInteractiveCss}
-`
-
-const SegmentTrailing = styled.span<{ $active: boolean }>`
-  font-size: 0.68rem;
-  font-weight: 600;
-  color: ${({ $active }) => ($active ? editorTheme.textMuted : palette.textFaint)};
-  ${motionInteractiveCss}
-`

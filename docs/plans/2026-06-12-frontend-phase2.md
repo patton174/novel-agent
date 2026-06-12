@@ -84,6 +84,12 @@
 - [x] **EditorSidebar** 全量 styled → Tailwind（284px 侧栏、小说卡片、搜索框）
 - [x] **EditorMobileNav** 移动菜单栏 → shadcn `Button` + Tailwind
 
+## Phase 2I — 本批执行
+
+- [x] **NovelSessionList** 会话列表 / 批量栏 / 加载更多 → Tailwind
+- [x] **MotionSegmentRail** 记忆 Modal Tab 指示器 → Tailwind（保留 morph 过渡）
+- [x] **EditorButton** `choice` / `chapter` / `volume` / `segment` → shadcn（仅 `send` 仍 styled）
+
 ---
 
 ## Phase 2B 验收
