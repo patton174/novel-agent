@@ -211,7 +211,7 @@ EXPIRES="$(python_read_json "$RUNTIME_TMP" expiresAtEpochMs)"
 API_PREFIX="$(python_read_json "$RUNTIME_TMP" apiPathPrefix)"
 
 echo "[crypto-register] 2/2 更新 Worker env + crypto-runtime.json ..."
-RUNTIME_B64="$(base64 -w0 "$RUNTIME_TMP" 2>/dev/null || base64 < "$RUNTIME_TMP" | tr -d '\n')"
+deploy_scp "$RUNTIME_TMP" "$REMOTE:/tmp/crypto-runtime.json"
 deploy_ssh "$REMOTE" bash -s <<EOF
 set -euo pipefail
 ENV_FILE='$ENV_FILE'
@@ -232,7 +232,6 @@ upsert_env FRONTEND_CRYPTO_VERSION '$VERSION'
 upsert_env FRONTEND_CRYPTO_EXPIRES_AT '$EXPIRES'
 upsert_env FRONTEND_API_PATH_PREFIX '$API_PREFIX'
 
-echo '$RUNTIME_B64' | base64 -d > /tmp/crypto-runtime.json
 chmod 644 /tmp/crypto-runtime.json
 if [[ ! -s /tmp/crypto-runtime.json ]]; then
   echo "[crypto-register] ERROR: crypto-runtime.json 写入失败" >&2
