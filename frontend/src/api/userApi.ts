@@ -1,5 +1,5 @@
 import { secureFetch } from '../security/secureFetch'
-import { parseResultResponse, resolveErrorMessage } from '../utils/resultApi'
+import { parseResultResponse, readApiErrorMessage, resolveErrorMessage } from '../utils/resultApi'
 import type { UserProfile, UserRole } from '../stores/userStore'
 
 interface UserInfoWire {
@@ -23,17 +23,7 @@ function normalizeUserProfile(raw: UserInfoWire): UserProfile {
 export async function fetchUserInfo(): Promise<UserProfile> {
   const res = await secureFetch('/api/auth/auth/info')
   if (!res.ok) {
-    let message = `加载用户信息失败 (${res.status})`
-    try {
-      const json = await res.json()
-      if (json != null && typeof json === 'object') {
-        const body = json as { msg?: string; message?: string }
-        message = body.msg || body.message || message
-      }
-    } catch {
-      // ignore
-    }
-    throw new Error(message)
+    throw new Error(await readApiErrorMessage(res))
   }
   const raw = await parseResultResponse<UserInfoWire>(res)
   return normalizeUserProfile(raw)

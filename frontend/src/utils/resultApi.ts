@@ -25,18 +25,50 @@ function isResultFailed(result: ApiResult<unknown>): boolean {
   return result.code !== 200
 }
 
+function mapGatewayMessage(raw: string): string {
+  const trimmed = raw.trim()
+  if (!trimmed) {
+    return raw
+  }
+  if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+    try {
+      const parsed = JSON.parse(trimmed) as { msg?: string; message?: string }
+      const inner = parsed.msg || parsed.message
+      if (inner) {
+        return GATEWAY_SECURITY_MESSAGES[inner] ?? inner
+      }
+    } catch {
+      // fall through
+    }
+  }
+  return GATEWAY_SECURITY_MESSAGES[trimmed] ?? trimmed
+}
+
 export function resolveErrorMessage(json: unknown, httpStatus: number): string {
   if (json != null && typeof json === 'object') {
     const body = json as { msg?: string; message?: string; code?: number }
     const raw = body.msg || body.message
     if (raw) {
-      return GATEWAY_SECURITY_MESSAGES[raw] ?? raw
+      return mapGatewayMessage(String(raw))
     }
     if ('code' in body && typeof body.code === 'number') {
-      return `API Error: ${body.code}`
+      return `请求失败 (${body.code})`
     }
   }
-  return `API Error: ${httpStatus}`
+  if (typeof json === 'string' && json.trim()) {
+    return mapGatewayMessage(json)
+  }
+  return `请求失败 (${httpStatus})`
+}
+
+export async function readApiErrorMessage(response: Response): Promise<string> {
+  let json: unknown = null
+  try {
+    json = await response.json()
+  } catch {
+    json = null
+  }
+  return resolveErrorMessage(json, response.status)
 }
 
 export function unwrapResult<T>(json: unknown, httpStatus?: number): T {

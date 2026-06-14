@@ -12,7 +12,8 @@ import { startHeartbeatWorker, stopHeartbeatWorker } from '../security/heartbeat
 
 import { primeSessionFromLogin } from '../security/sessionBootstrap'
 
-import { parseResultResponse, unwrapResult } from './resultApi'
+import { parseResultResponse, readApiErrorMessage, unwrapResult } from './resultApi'
+import { ensureCryptoReady } from '../security/sessionBootstrap'
 
 
 
@@ -48,37 +49,8 @@ export interface LoginResult {
 
 
 
-async function readErrorMessage(response: Response): Promise<string> {
-
-  try {
-
-    const body = await response.json()
-
-    if (body?.msg) {
-
-      return String(body.msg)
-
-    }
-
-    if (body?.message) {
-
-      return String(body.message)
-
-    }
-
-  } catch {
-
-    // ignore
-
-  }
-
-  return `请求失败 (${response.status})`
-
-}
-
-
-
 export async function login(username: string, password: string): Promise<LoginResult> {
+  await ensureCryptoReady()
 
   const [fingerprint, envSnapshot] = await Promise.all([
 
@@ -109,12 +81,8 @@ export async function login(username: string, password: string): Promise<LoginRe
 
 
   if (!response.ok) {
-
-    throw new Error(await readErrorMessage(response))
-
+    throw new Error(await readApiErrorMessage(response))
   }
-
-
 
   const data = await parseResultResponse<LoginResult>(response)
 
@@ -167,13 +135,12 @@ export interface SliderCaptchaChallenge {
 
 
 export async function fetchSliderCaptcha(): Promise<SliderCaptchaChallenge> {
+  await ensureCryptoReady()
 
   const response = await secureFetch('/api/auth/api/captcha/slider', { method: 'POST' })
 
   if (!response.ok) {
-
-    throw new Error(await readErrorMessage(response))
-
+    throw new Error(await readApiErrorMessage(response))
   }
 
   return parseResultResponse<SliderCaptchaChallenge>(response)
@@ -183,6 +150,7 @@ export async function fetchSliderCaptcha(): Promise<SliderCaptchaChallenge> {
 
 
 export async function verifySliderCaptcha(captchaId: string, offsetX: number): Promise<string> {
+  await ensureCryptoReady()
 
   const response = await secureFetch('/api/auth/api/captcha/slider/verify', {
 
@@ -195,9 +163,7 @@ export async function verifySliderCaptcha(captchaId: string, offsetX: number): P
   })
 
   if (!response.ok) {
-
-    throw new Error(await readErrorMessage(response))
-
+    throw new Error(await readApiErrorMessage(response))
   }
 
   const data = await parseResultResponse<{ captchaToken: string }>(response)
@@ -217,6 +183,7 @@ export async function sendEmailCode(
   fingerprint: string,
 
 ): Promise<void> {
+  await ensureCryptoReady()
 
   const response = await secureFetch('/api/auth/api/send-email-code', {
 
@@ -235,18 +202,13 @@ export async function sendEmailCode(
   })
 
   if (!response.ok) {
-
-    throw new Error(await readErrorMessage(response))
-
+    throw new Error(await readApiErrorMessage(response))
   }
 
   const json = await response.json()
 
   unwrapResult<null>(json, response.status)
-
 }
-
-
 
 export async function register(
 
@@ -259,6 +221,7 @@ export async function register(
   emailCode: string,
 
 ): Promise<void> {
+  await ensureCryptoReady()
 
   const response = await secureFetch('/api/auth/api/register', {
 
@@ -275,15 +238,12 @@ export async function register(
 
 
   if (!response.ok) {
-
-    throw new Error(await readErrorMessage(response))
-
+    throw new Error(await readApiErrorMessage(response))
   }
 
   const json = await response.json()
 
   unwrapResult<null>(json, response.status)
-
 }
 
 

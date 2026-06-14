@@ -42,8 +42,11 @@ async function buildRequest(
 
   if (isSecurityCryptoEnabled()) {
     await ensureCryptoRuntime(false)
-    if (mayNeedCrypto) {
+    if (mayNeedCrypto || isBootstrapAuthPath(logicalUrl)) {
       await ensureCryptoReady()
+    }
+    if (isBootstrapAuthPath(logicalUrl)) {
+      await ensureCryptoRuntime(true)
     }
   }
 
@@ -85,6 +88,10 @@ async function buildRequest(
     material = await getActiveCryptoMaterial(logicalUrl)
   }
 
+  if (isSecurityCryptoEnabled() && !material) {
+    throw new Error('签名密钥未就绪，请刷新页面后重试')
+  }
+
   // SSE stream 走扁平 JSON，避免 __sec 字段体在网关未展开时导致 message 校验失败
   if (canEncryptBody && isFieldEncryptionEnabled() && material && !isStreamUrl(logicalUrl)) {
     body = await wrapFieldPayload(body as string, material)
@@ -111,10 +118,13 @@ async function buildRequest(
     headers['Content-Type'] = 'application/json'
   }
 
-  if (isSecurityCryptoEnabled() && !signEmbeddedInBody) {
-    if (!material) {
-      throw new Error('签名密钥未就绪，请刷新页面后重试')
-    }
+  // 空 POST（captcha/refresh）或 envelope 解析失败时，query 签名兜底
+  const needsQuerySign =
+    isSecurityCryptoEnabled() &&
+    material &&
+    (!signEmbeddedInBody || isBootstrapAuthPath(logicalUrl) || bodyBytesOf(body).length === 0)
+
+  if (needsQuerySign) {
     const signParams = await buildSignQueryParams(
       method,
       logicalUrl,
