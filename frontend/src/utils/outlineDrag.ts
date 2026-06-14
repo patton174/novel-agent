@@ -102,3 +102,47 @@ export function buildChapterStepMovePlans(
     afterNext?.id ?? null,
   )
 }
+
+/** 移动 ↑↓ 排序：单步上移/下移卷 */
+export function buildVolumeStepMoveIds(
+  volumes: Volume[],
+  volumeId: string,
+  direction: 'up' | 'down',
+): string[] {
+  const ids = volumes.map((volume) => volume.id)
+  const index = ids.indexOf(volumeId)
+  if (index < 0) {
+    return ids
+  }
+  if (direction === 'up') {
+    if (index === 0) {
+      return ids
+    }
+    return reorderVolumeIds(volumes, volumeId, ids[index - 1])
+  }
+  if (index >= ids.length - 1) {
+    return ids
+  }
+  return reorderVolumeIds(volumes, volumeId, ids[index + 1])
+}
+
+/** 跨卷移动：默认追加到目标卷末尾；position=start 则插到目标卷首 */
+export function buildChapterMoveToVolumePlans(
+  chapters: ChapterSummary[],
+  chapterId: string,
+  targetVolumeId: string,
+  position: 'start' | 'end' = 'end',
+): ChapterReorderPlan[] {
+  const dragged = chapters.find((chapter) => chapter.id === chapterId)
+  if (!dragged || dragged.volumeId === targetVolumeId) {
+    return []
+  }
+  const targetChapters = sortChapters(
+    chapters.filter(
+      (chapter) => chapter.volumeId === targetVolumeId && chapter.id !== chapterId,
+    ),
+  )
+  const beforeChapterId =
+    position === 'start' && targetChapters.length > 0 ? targetChapters[0].id : null
+  return buildChapterReorderPlans(chapters, chapterId, targetVolumeId, beforeChapterId)
+}

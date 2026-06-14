@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { buildChapterReorderPlans, buildChapterStepMovePlans, reorderVolumeIds } from './outlineDrag'
+import {
+  buildChapterMoveToVolumePlans,
+  buildChapterReorderPlans,
+  buildChapterStepMovePlans,
+  buildVolumeStepMoveIds,
+  reorderVolumeIds,
+} from './outlineDrag'
 import type { ChapterSummary, Volume } from '../types/novel'
 
 const volumes: Volume[] = [
@@ -84,5 +90,23 @@ describe('outlineDrag', () => {
   it('returns empty when chapter already at edge', () => {
     expect(buildChapterStepMovePlans(chapters, 'c1', 'up')).toEqual([])
     expect(buildChapterStepMovePlans(chapters, 'c2', 'down')).toEqual([])
+  })
+
+  it('moves volume up', () => {
+    expect(buildVolumeStepMoveIds(volumes, 'v2', 'up')).toEqual(['v2', 'v1'])
+  })
+
+  it('moves chapter to another volume at end', () => {
+    expect(buildChapterMoveToVolumePlans(chapters, 'c3', 'v1', 'end')).toEqual([
+      { volumeId: 'v1', ids: ['c1', 'c2', 'c3'] },
+      { volumeId: 'v2', ids: [] },
+    ])
+  })
+
+  it('moves chapter to another volume at start', () => {
+    expect(buildChapterMoveToVolumePlans(chapters, 'c3', 'v1', 'start')).toEqual([
+      { volumeId: 'v1', ids: ['c3', 'c1', 'c2'] },
+      { volumeId: 'v2', ids: [] },
+    ])
   })
 })

@@ -169,13 +169,19 @@
 - [x] **StoryMobileChapterPicker**：「排序」模式同卷 ↑↓ 调序（复用 `buildChapterStepMovePlans`）
 - [x] **outlineDrag**：`buildChapterStepMovePlans` 单步上移/下移
 
+## Phase 12 — 移动大纲完整排序（跨卷 + 卷序）
+
+- [x] **StoryMobileChapterPicker 跨卷**：排序模式 ⇄ 按钮 → 选择目标卷移动
+- [x] **StoryMobileChapterPicker 卷序**：排序模式卷标题 ↑↓ 调卷顺序
+- [x] **outlineDrag**：`buildVolumeStepMoveIds` / `buildChapterMoveToVolumePlans`
+
 ## 审计清单闭环状态
 
-`docs/frontend-ui-audit.md` 中可交付项均已通过 Phase 1–11 落地；**未纳入范围**（需单独产品/工程规划）：
+`docs/frontend-ui-audit.md` 中可交付项均已通过 Phase 1–12 落地；**未纳入范围**（低优先级 / 产品待定）：
 
-- Editor 移动卷排序 / 跨卷拖拽（仍仅桌面侧栏；移动已支持同卷 ↑↓）
+- 桌面级拖拽 UX 在移动端的完全对等（移动已覆盖 ↑↓ + 跨卷；无 touch DnD）
 - Modal/Loader 进一步合并（已压至 EditorModalShell + shadcn Dialog + Skeleton + BrandLoader）
-- Admin 全表移动卡片（Users/Audit/Plans/Catalog/Billing 已有；Crawler 为卡片行 + 低流量页保留横滑）
+- Admin 低流量页表格卡片化（Users/Audit/Plans/Catalog/Billing/Crawler 均已卡片或行卡片）
 
 ---
 
