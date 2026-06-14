@@ -9,18 +9,11 @@ import {
 } from '@/components/layout/AppPageStack'
 import { AdminNativeSelect } from '@/components/layout/AdminNativeSelect'
 import { AdminPagination } from '@/components/layout/AdminPagination'
+import { AuditLogDetailModal } from '@/components/admin/AuditLogDetailModal'
 import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useMarkRouteSeen } from '@/hooks/useMarkRouteSeen'
-import { APP_MODAL_FORM } from '@/lib/appModalClasses'
-import { cn } from '@/lib/utils'
 import { appToast } from '@/stores/appToastStore'
 
 const PAGE_SIZE = 20
@@ -229,44 +222,7 @@ export default function AuditLogPage() {
         onPageChange={setPageCurrent}
       />
 
-      <Dialog open={detailLog != null} onOpenChange={(open) => !open && setDetailLog(null)}>
-        <DialogContent className={cn('max-h-[85vh] max-w-lg overflow-y-auto sm:max-w-xl', APP_MODAL_FORM)}>
-          <DialogHeader>
-            <DialogTitle className="font-mono text-sm">{detailLog?.action}</DialogTitle>
-          </DialogHeader>
-          {detailLog ? (
-            <div className="space-y-4 text-xs">
-              <p className="text-muted-foreground">
-                {new Date(detailLog.createdAt).toLocaleString('zh-CN')} · 操作者 {detailLog.actorId}
-              </p>
-              {detailLog.beforeJson ? (
-                <div>
-                  <p className="mb-1 font-medium text-destructive">变更前</p>
-                  <pre className="max-h-48 overflow-auto rounded-lg border border-border bg-muted/40 p-3 font-mono text-[11px] leading-relaxed whitespace-pre-wrap break-all">
-                    {formatJson(detailLog.beforeJson)}
-                  </pre>
-                </div>
-              ) : null}
-              {detailLog.afterJson ? (
-                <div>
-                  <p className="mb-1 font-medium text-emerald-700 dark:text-emerald-400">变更后</p>
-                  <pre className="max-h-48 overflow-auto rounded-lg border border-border bg-muted/40 p-3 font-mono text-[11px] leading-relaxed whitespace-pre-wrap break-all">
-                    {formatJson(detailLog.afterJson)}
-                  </pre>
-                </div>
-              ) : null}
-            </div>
-          ) : null}
-        </DialogContent>
-      </Dialog>
+      <AuditLogDetailModal log={detailLog} onClose={() => setDetailLog(null)} />
     </AppPageStack>
   )
-}
-
-function formatJson(raw: string): string {
-  try {
-    return JSON.stringify(JSON.parse(raw), null, 2)
-  } catch {
-    return raw
-  }
 }

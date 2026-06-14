@@ -6,6 +6,7 @@ import {
   sortChapters,
 } from '../../utils/outlineDrag'
 import { alertDialog, promptDialog } from '../../stores/confirmDialogStore'
+import { useOutlineTouchDrag } from '../../hooks/useOutlineTouchDrag'
 import { EditorButton } from '../ui/EditorButton'
 import { OutlineVolumeBlock } from './outline/OutlineVolumeBlock'
 import { readDragPayload, writeDragPayload } from './outline/outlineDrag'
@@ -144,8 +145,54 @@ export function NovelOutlinePanel({
     [applyChapterReorderPlans, busy, chapters, handleDragEnd],
   )
 
+  const handleTouchDropChapter = useCallback(
+    async (draggedChapterId: string, targetVolumeId: string, beforeChapterId: string | null) => {
+      const plans = buildChapterReorderPlans(
+        chapters,
+        draggedChapterId,
+        targetVolumeId,
+        beforeChapterId,
+      )
+      if (plans.length === 0) return
+      setBusy(true)
+      try {
+        await applyChapterReorderPlans(plans)
+      } catch {
+        void alertDialog({ title: '章节移动失败' })
+      } finally {
+        setBusy(false)
+      }
+    },
+    [applyChapterReorderPlans, chapters],
+  )
+
+  const handleTouchDropVolume = useCallback(
+    async (draggedVolumeId: string, targetVolumeId: string) => {
+      setBusy(true)
+      try {
+        await reorderVolumes(reorderVolumeIds(volumes, draggedVolumeId, targetVolumeId))
+      } catch {
+        void alertDialog({ title: '卷排序失败' })
+      } finally {
+        setBusy(false)
+      }
+    },
+    [reorderVolumes, volumes],
+  )
+
+  const { touchDragging, bindTouchHandle, touchDragGhost } = useOutlineTouchDrag({
+    enabled: true,
+    busy,
+    setDropTarget,
+    onDropChapter: handleTouchDropChapter,
+    onDropVolume: handleTouchDropVolume,
+  })
+
+  const activeDragging = dragging ?? touchDragging
+
   return (
     <>
+      {touchDragGhost}
       <div className={OUTLINE_DRAG_HINT}>拖拽卷标题栏排序；拖拽章节可跨卷移动或调整顺序</div>
       <div className={OUTLINE_LIST}>
         {volumeGroups.length === 0 ? (
@@ -160,7 +207,7 @@ export function NovelOutlinePanel({
               activeChapterId={activeChapterId}
               activeNovelId={activeNovelId}
               busy={busy}
-              dragging={dragging}
+              dragging={activeDragging}
               dropTarget={dropTarget}
               onToggleExpand={() =>
                 setExpandedVolumeIds((prev) => ({
@@ -176,6 +223,7 @@ export function NovelOutlinePanel({
               onSetDropTarget={setDropTarget}
               onSelectChapter={selectChapter}
               onAddChapter={addChapter}
+              bindTouchHandle={bindTouchHandle}
             />
           ))
         )}

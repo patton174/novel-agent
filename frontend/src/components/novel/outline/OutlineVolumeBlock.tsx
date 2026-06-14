@@ -2,12 +2,13 @@ import type { DragEvent } from 'react'
 import type { ChapterSummary, Volume } from '../../../types/novel'
 import { EditorButton } from '../../ui/EditorButton'
 import { allowOutlineDrop } from './outlineDrag'
+import { OutlineDragHandle } from './OutlineDragHandle'
+import { outlineChapterDropProps, outlineVolumeDropProps } from './outlineTouchDom'
 import { ChevronIcon, PlusIcon } from './outlineIcons'
 import type { DragPayload, DropTarget } from './outlineTypes'
 import {
   OUTLINE_CHAPTER_LIST_INNER,
   OUTLINE_CHAPTER_ROW,
-  OUTLINE_DRAG_HANDLE,
   OUTLINE_VOLUME_HEADER,
   outlineChapterDropZoneClass,
   outlineChapterListCollapsibleClass,
@@ -34,6 +35,9 @@ export interface OutlineVolumeBlockProps {
   onSetDropTarget: (target: DropTarget | null | ((current: DropTarget | null) => DropTarget | null)) => void
   onSelectChapter: (chapterId: string) => void
   onAddChapter: (title: string, volumeId: string) => void
+  bindTouchHandle?: (payload: DragPayload, label: string) => {
+    onTouchStart: (event: React.TouchEvent) => void
+  }
 }
 
 export function OutlineVolumeBlock({
@@ -54,12 +58,14 @@ export function OutlineVolumeBlock({
   onSetDropTarget,
   onSelectChapter,
   onAddChapter,
+  bindTouchHandle,
 }: OutlineVolumeBlockProps) {
   const volumeDropActive = dropTarget?.kind === 'volume' && dropTarget.volumeId === volume.id
 
   return (
     <div
       className={outlineVolumeBlockClass(volumeDropActive)}
+      {...outlineVolumeDropProps(volume.id)}
       onDragOver={(event) => {
         if (dragging?.kind !== 'volume') return
         allowOutlineDrop(event)
@@ -73,15 +79,13 @@ export function OutlineVolumeBlock({
       onDrop={(event) => void onVolumeDrop(event, volume.id)}
     >
       <div className={OUTLINE_VOLUME_HEADER}>
-        <span
-          className={OUTLINE_DRAG_HANDLE}
-          draggable
+        <OutlineDragHandle
           title="拖拽排序卷"
+          disabled={busy}
           onDragStart={(event) => onVolumeDragStart(event, volume.id)}
           onDragEnd={onDragEnd}
-        >
-          ⋮⋮
-        </span>
+          {...(bindTouchHandle?.({ kind: 'volume', id: volume.id }, volume.title) ?? {})}
+        />
         <EditorButton variant="volume" type="button" onClick={onToggleExpand}>
           <span className="title">{volume.title}</span>
           <span className="meta">{volumeChapters.length} 章</span>
@@ -97,6 +101,7 @@ export function OutlineVolumeBlock({
               className={outlineChapterDropZoneClass(
                 dropTarget?.volumeId === volume.id && dropTarget.kind === 'chapter',
               )}
+              {...outlineChapterDropProps(volume.id, null)}
               onDragOver={(event) => {
                 if (dragging?.kind !== 'chapter') return
                 allowOutlineDrop(event)
@@ -120,6 +125,7 @@ export function OutlineVolumeBlock({
                     inProgress: chapter.wordCount > 0 && chapter.id !== activeChapterId,
                     dragOver: chapterDropActive,
                   })}
+                  {...outlineChapterDropProps(volume.id, chapter.id)}
                   onDragOver={(event) => {
                     if (dragging?.kind !== 'chapter') return
                     allowOutlineDrop(event)
@@ -137,15 +143,13 @@ export function OutlineVolumeBlock({
                   onDrop={(event) => void onChapterDrop(event, volume.id, chapter.id)}
                 >
                   <div className={OUTLINE_CHAPTER_ROW}>
-                    <span
-                      className={OUTLINE_DRAG_HANDLE}
-                      draggable
+                    <OutlineDragHandle
                       title="拖拽移动章节"
+                      disabled={busy}
                       onDragStart={(event) => onChapterDragStart(event, chapter.id)}
                       onDragEnd={onDragEnd}
-                    >
-                      ⋮⋮
-                    </span>
+                      {...(bindTouchHandle?.({ kind: 'chapter', id: chapter.id }, chapter.title) ?? {})}
+                    />
                     <EditorButton
                       variant="chapter"
                       type="button"

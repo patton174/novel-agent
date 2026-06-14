@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { CreditCard, Settings } from 'lucide-react'
+import { Settings } from 'lucide-react'
 import { fetchUserInfo } from '@/api/userApi'
-import { AccountSettingsPanel } from '@/components/dashboard/AccountSettingsPanel'
+import { AccountSettingsSections } from '@/components/dashboard/AccountSettingsSections'
 import {
   AppPageIntro,
   AppPageStack,
@@ -10,8 +9,6 @@ import {
   AppShellCardBody,
   AppShellCardHeader,
 } from '@/components/layout/AppPageStack'
-import { Button } from '@/components/ui/button'
-import { APP_BTN_FULL_MD } from '@/lib/appButtonTokens'
 import { InlineTitleSkeleton } from '@/components/loading/PageSkeletons'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useMarkRouteSeen } from '@/hooks/useMarkRouteSeen'
@@ -53,7 +50,7 @@ export default function SettingsPage() {
       />
 
       <AppShellCard>
-        <AppShellCardHeader title="账户信息" description="邮箱验证与基本资料" />
+        <AppShellCardHeader title="账户与账单" description="邮箱验证、基本资料与用量账单" />
         <AppShellCardBody>
           {loading ? (
             <div className="space-y-3">
@@ -62,7 +59,7 @@ export default function SettingsPage() {
               <Skeleton className="h-10 w-full rounded-lg" />
             </div>
           ) : (
-            <AccountSettingsPanel
+            <AccountSettingsSections
               profile={profile}
               onVerified={() => {
                 void fetchUserInfo().then((user) => {
@@ -70,23 +67,9 @@ export default function SettingsPage() {
                   setProfile(user)
                 })
               }}
+              variant="page"
             />
           )}
-        </AppShellCardBody>
-      </AppShellCard>
-
-      <AppShellCard>
-        <AppShellCardHeader
-          title="账单与升级"
-          description="用量明细、套餐与预估费用请前往账单页查看"
-        />
-        <AppShellCardBody>
-          <Button asChild className={APP_BTN_FULL_MD}>
-            <Link to="/dashboard/billing">
-              <CreditCard className="mr-2 size-4" />
-              打开账单页
-            </Link>
-          </Button>
         </AppShellCardBody>
       </AppShellCard>
     </AppPageStack>

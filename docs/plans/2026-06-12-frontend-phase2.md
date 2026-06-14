@@ -196,12 +196,14 @@
 
 ### 后续 backlog（非阻塞）
 
-| 项 | 说明 |
-|----|------|
-| Touch DnD | 移动大纲与桌面拖拽完全对等 |
-| Modal 单壳 | 进一步合并 EditorSettings / AppDialog 变体 |
-| 账户设置 | Nav Modal / 全页 / 侧栏三入口行为统一 |
-| 审计 JSON | AuditLog 详情 Modal 展开完整 payload |
+✅ Phase 15 已全部完成（2026-06-12）。
+
+## Phase 15 — Backlog 清零
+
+- [x] **Touch DnD**：`useOutlineTouchDrag` + 移动排序模式 ⋮⋮ 拖拽；桌面 `NovelOutlinePanel` 同步支持 touch
+- [x] **Modal 单壳**：`AppModalShell` 统一 Editor / Admin / Dashboard 弹窗；`EditorModalShell` 保留 legacy 导出
+- [x] **账户三入口**：`AccountSettingsSections` 共享；侧栏头像 → `/dashboard/settings`；Editor 设置嵌入同面板 + 链控制台
+- [x] **审计 JSON Modal**：`AuditLogDetailModal` 格式化 + 复制 + reader 壳
 
 ---
 

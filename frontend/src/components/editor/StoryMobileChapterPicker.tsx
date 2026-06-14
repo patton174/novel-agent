@@ -1,14 +1,23 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { ArrowDown, ArrowRightLeft, ArrowUp, Plus } from 'lucide-react'
 import { useNovelStore } from '@/stores/novelStore'
 import {
   buildChapterMoveToVolumePlans,
+  buildChapterReorderPlans,
   buildChapterStepMovePlans,
   buildVolumeStepMoveIds,
+  reorderVolumeIds,
   sortChapters,
 } from '@/utils/outlineDrag'
 import { promptDialog, alertDialog } from '@/stores/confirmDialogStore'
+import { useOutlineTouchDrag } from '@/hooks/useOutlineTouchDrag'
 import { EditorButton } from '@/components/ui/EditorButton'
+import { OutlineDragHandle } from '@/components/novel/outline/OutlineDragHandle'
+import {
+  outlineChapterDropProps,
+  outlineVolumeDropProps,
+} from '@/components/novel/outline/outlineTouchDom'
+import type { DropTarget } from '@/components/novel/outline/outlineTypes'
 import { MoveChapterToVolumeDialog } from '@/components/editor/MoveChapterToVolumeDialog'
 import { cn } from '@/lib/utils'
 
@@ -27,6 +36,7 @@ export function StoryMobileChapterPicker() {
   const [reorderMode, setReorderMode] = useState(false)
   const [busy, setBusy] = useState(false)
   const [moveChapterId, setMoveChapterId] = useState<string | null>(null)
+  const [dropTarget, setDropTarget] = useState<DropTarget | null>(null)
 
   const volumeGroups = useMemo(
     () =>
@@ -113,8 +123,52 @@ export function StoryMobileChapterPicker() {
     }
   }
 
+  const handleTouchDropChapter = useCallback(
+    async (draggedChapterId: string, targetVolumeId: string, beforeChapterId: string | null) => {
+      const plans = buildChapterReorderPlans(
+        chapters,
+        draggedChapterId,
+        targetVolumeId,
+        beforeChapterId,
+      )
+      if (plans.length === 0) return
+      setBusy(true)
+      try {
+        await applyChapterReorderPlans(plans)
+      } catch {
+        void alertDialog({ title: '章节移动失败' })
+      } finally {
+        setBusy(false)
+      }
+    },
+    [applyChapterReorderPlans, chapters],
+  )
+
+  const handleTouchDropVolume = useCallback(
+    async (draggedVolumeId: string, targetVolumeId: string) => {
+      setBusy(true)
+      try {
+        await reorderVolumes(reorderVolumeIds(volumes, draggedVolumeId, targetVolumeId))
+      } catch {
+        void alertDialog({ title: '卷排序失败' })
+      } finally {
+        setBusy(false)
+      }
+    },
+    [reorderVolumes, volumes],
+  )
+
+  const { bindTouchHandle, touchDragGhost } = useOutlineTouchDrag({
+    enabled: reorderMode,
+    busy,
+    setDropTarget,
+    onDropChapter: handleTouchDropChapter,
+    onDropVolume: handleTouchDropVolume,
+  })
+
   return (
     <>
+      {touchDragGhost}
       <div className="flex min-h-[9rem] max-h-[38vh] shrink-0 flex-col border-b border-border/70 bg-muted/20">
         <div className="flex items-center justify-between gap-2 border-b border-border/50 px-3 py-2">
           <div className="min-w-0">
@@ -123,7 +177,7 @@ export function StoryMobileChapterPicker() {
             </p>
             {reorderMode ? (
               <p className="text-[10px] text-muted-foreground/90">
-                ↑↓ 调序 · 卷标题可调卷序 · ⇄ 跨卷移动
+                按住 ⋮⋮ 拖拽 · ↑↓ 调序 · ⇄ 跨卷
               </p>
             ) : null}
           </div>
@@ -174,13 +228,25 @@ export function StoryMobileChapterPicker() {
                 const canMoveVolumeDown = volumeIndex < volumeGroups.length - 1
 
                 return (
-                  <div key={volume.id}>
+                  <div key={volume.id} {...(reorderMode ? outlineVolumeDropProps(volume.id) : {})}>
                     <div
                       className={cn(
                         'sticky top-0 z-[1] flex items-center gap-1 bg-muted/90 px-1 py-1 backdrop-blur-sm',
                         reorderMode && volumes.length > 1 && 'pr-0.5',
+                        reorderMode &&
+                          dropTarget?.kind === 'volume' &&
+                          dropTarget.volumeId === volume.id &&
+                          'ring-2 ring-inset ring-primary/50',
                       )}
                     >
+                      {reorderMode && volumes.length > 1 ? (
+                        <OutlineDragHandle
+                          title="拖拽排序卷"
+                          disabled={busy}
+                          className="scale-90"
+                          {...bindTouchHandle({ kind: 'volume', id: volume.id }, volume.title)}
+                        />
+                      ) : null}
                       <p className="min-w-0 flex-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                         {volume.title}
                         <span className="ml-1.5 font-normal normal-case tabular-nums">
@@ -227,6 +293,11 @@ export function StoryMobileChapterPicker() {
                         const canMoveDown = index < volumeChapters.length - 1
 
                         if (reorderMode) {
+                          const chapterDropActive =
+                            dropTarget?.kind === 'chapter' &&
+                            dropTarget.volumeId === volume.id &&
+                            dropTarget.chapterId === chapter.id
+
                           return (
                             <li
                               key={chapter.id}
@@ -235,8 +306,16 @@ export function StoryMobileChapterPicker() {
                                 active
                                   ? 'border-primary/45 bg-primary/10'
                                   : 'border-border/60 bg-background/90',
+                                chapterDropActive && 'ring-2 ring-inset ring-primary/45',
                               )}
+                              {...outlineChapterDropProps(volume.id, chapter.id)}
                             >
+                              <OutlineDragHandle
+                                title="拖拽移动章节"
+                                disabled={busy}
+                                className="scale-90 shrink-0"
+                                {...bindTouchHandle({ kind: 'chapter', id: chapter.id }, chapter.title)}
+                              />
                               <span className="min-w-0 flex-1 truncate px-1 text-sm font-medium">
                                 {chapter.title}
                               </span>

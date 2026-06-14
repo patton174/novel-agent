@@ -22,7 +22,7 @@
 | 品牌 Novel AI 不统一 | ✅ Wordmark / i18n / Footer / 欢迎语 | 2C, 7 |
 | 遗留 neumorphic login | ✅ 已删除 | 2E–2F |
 
-**未纳入本轮（产品 backlog，不阻塞上线）**：touch 拖拽 DnD、Modal 进一步单壳合并、账户设置三入口完全统一、审计页 JSON 详情 Modal。
+**未纳入本轮（产品 backlog，不阻塞上线）**：无 — Phase 15 已全部落地（Touch DnD、Modal 单壳、账户三入口、审计 JSON Modal）。
 
 ### 线上验收清单
 

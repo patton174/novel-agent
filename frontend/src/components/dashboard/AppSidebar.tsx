@@ -1,4 +1,3 @@
-import { useCallback, useState } from 'react'
 import { Link, NavLink } from 'react-router-dom'
 import {
   BookMarked,
@@ -8,10 +7,9 @@ import {
   Settings,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { fetchUserInfo, needsEmailVerification } from '@/api/userApi'
+import { needsEmailVerification } from '@/api/userApi'
 import { useUserStore } from '@/stores/userStore'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { AccountSettingsModal } from '@/components/dashboard/AccountSettingsModal'
 import { NovelAiWordmark } from '@/components/marketing/NovelAiWordmark'
 
 interface NavItem {
@@ -36,19 +34,8 @@ interface AppSidebarProps {
 
 export function AppSidebar({ embedded = false, onNavigate }: AppSidebarProps) {
   const profile = useUserStore((s) => s.profile)
-  const setProfile = useUserStore((s) => s.setProfile)
-  const [settingsOpen, setSettingsOpen] = useState(false)
-
-  const initials = profile?.username?.slice(0, 2).toUpperCase() || '?'
   const unverified = needsEmailVerification(profile)
-
-  const refreshProfile = useCallback(() => {
-    void fetchUserInfo()
-      .then(setProfile)
-      .catch(() => {
-        /* ignore */
-      })
-  }, [setProfile])
+  const initials = profile?.username?.slice(0, 2).toUpperCase() || '?'
 
   const navLinkClass = ({ isActive }: { isActive: boolean }) =>
     cn(
@@ -87,16 +74,19 @@ export function AppSidebar({ embedded = false, onNavigate }: AppSidebarProps) {
         </nav>
 
         <div className="border-t border-border p-3">
-          <button
-            type="button"
-            onClick={() => setSettingsOpen(true)}
-            className={cn(
-              'flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition-colors hover:bg-surface-hover',
-              unverified
-                ? 'border-sky-300/80 bg-sky-50/80 dark:border-sky-700/50 dark:bg-sky-950/30'
-                : 'border-border bg-background',
-            )}
-            title="快捷打开账户设置"
+          <NavLink
+            to="/dashboard/settings"
+            onClick={onNavigate}
+            className={({ isActive }) =>
+              cn(
+                'flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition-colors hover:bg-surface-hover',
+                unverified
+                  ? 'border-sky-300/80 bg-sky-50/80 dark:border-sky-700/50 dark:bg-sky-950/30'
+                  : 'border-border bg-background',
+                isActive && 'ring-2 ring-primary/25',
+              )
+            }
+            title="账户设置"
           >
             <div className="relative shrink-0">
               <Avatar size="sm" className="size-9 rounded-full">
@@ -121,16 +111,9 @@ export function AppSidebar({ embedded = false, onNavigate }: AppSidebarProps) {
                 {unverified ? '邮箱未验证 · 点击设置' : '账户设置'}
               </p>
             </div>
-          </button>
+          </NavLink>
         </div>
       </aside>
-
-      <AccountSettingsModal
-        open={settingsOpen}
-        onOpenChange={setSettingsOpen}
-        profile={profile}
-        onProfileRefresh={refreshProfile}
-      />
     </>
   )
 }

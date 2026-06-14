@@ -1,14 +1,7 @@
 import { useLayoutEffect, useRef } from 'react'
 import type { AgentSubagentState } from '../../../types/agent'
 import { deriveSubagentDisplayMeta } from '../../../utils/subagentDisplayMeta'
-import { EditorButton } from '../../ui/EditorButton'
-import {
-  EditorModalBody,
-  EditorModalHeader,
-  EditorModalOverlay,
-  EditorModalPanel,
-  useEditorModalEscape,
-} from '../../editor/EditorModalShell'
+import { AppModalShell } from '@/components/ui/AppModalShell'
 import { SubagentTimelineContent } from './SubagentTimelineContent'
 import { subagentStatusChipClass } from '@/lib/timelineClasses'
 
@@ -26,8 +19,6 @@ export function SubagentDetailModal({
   const runActive = subagent.status === 'active' && loading
   const meta = deriveSubagentDisplayMeta(subagent, runActive)
   const bodyRef = useRef<HTMLDivElement>(null)
-
-  useEditorModalEscape(open, onClose)
 
   useLayoutEffect(() => {
     if (!open || !runActive) {
@@ -47,27 +38,14 @@ export function SubagentDetailModal({
     subagent.turn,
   ])
 
-  if (!open) {
-    return null
-  }
-
   return (
-    <EditorModalOverlay
-      role="presentation"
-      data-testid="subagent-detail-modal"
-      onClick={(event) => {
-        if (event.target === event.currentTarget) {
-          onClose()
-        }
-      }}
-    >
-      <EditorModalPanel
-        size="detail"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="subagent-modal-title"
-      >
-        <EditorModalHeader>
+    <AppModalShell
+      open={open}
+      onOpenChange={(next) => !next && onClose()}
+      size="detail"
+      testId="subagent-detail-modal"
+      header={
+        <div className="flex items-start justify-between gap-3 pr-8">
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
               <h2 id="subagent-modal-title" className="m-0 text-[15px] font-bold text-foreground">
@@ -98,17 +76,16 @@ export function SubagentDetailModal({
               </p>
             ) : null}
           </div>
-          <EditorButton variant="close" type="button" onClick={onClose} aria-label="关闭">
-            ×
-          </EditorButton>
-        </EditorModalHeader>
-        <EditorModalBody
-          ref={bodyRef}
-          className="scroll-smooth px-[1.15rem] pb-[1.15rem] pt-3 max-md:px-[0.9rem] max-md:pb-4 max-md:pt-2.5"
-        >
-          <SubagentTimelineContent subagent={subagent} loading={loading} />
-        </EditorModalBody>
-      </EditorModalPanel>
-    </EditorModalOverlay>
+        </div>
+      }
+      bodyClassName="overflow-hidden p-0"
+    >
+      <div
+        ref={bodyRef}
+        className="max-h-[min(58vh,520px)] overflow-y-auto scroll-smooth px-1 pb-2 pt-1 max-md:max-h-none max-md:flex-1"
+      >
+        <SubagentTimelineContent subagent={subagent} loading={loading} />
+      </div>
+    </AppModalShell>
   )
 }
