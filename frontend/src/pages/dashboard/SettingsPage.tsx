@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Settings } from 'lucide-react'
 import { fetchUserInfo } from '@/api/userApi'
 import { AccountSettingsSections } from '@/components/dashboard/AccountSettingsSections'
+import { SettingsFeedbackCard } from '@/components/dashboard/SettingsFeedbackCard'
 import {
   AppPageIntro,
   AppPageStack,
@@ -74,6 +75,16 @@ export default function SettingsPage() {
               variant="page"
             />
           )}
+        </AppShellCardBody>
+      </AppShellCard>
+
+      <AppShellCard>
+        <AppShellCardHeader
+          title={t('dashboard:settings.feedbackTitle')}
+          description={t('dashboard:settings.feedbackDesc')}
+        />
+        <AppShellCardBody>
+          <SettingsFeedbackCard />
         </AppShellCardBody>
       </AppShellCard>
 

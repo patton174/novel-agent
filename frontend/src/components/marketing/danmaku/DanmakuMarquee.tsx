@@ -1,5 +1,4 @@
 import { useEffect, useRef } from 'react'
-import { useReducedMotion } from 'framer-motion'
 import type { SiteDanmaku } from '@/api/billingApi'
 import { useAppMobile } from '@/hooks/useMediaQuery'
 
@@ -9,10 +8,8 @@ const DESKTOP_MIN_GAP = 140
 const MOBILE_MIN_GAP = 220
 const MIN_SPEED = 72
 const MAX_SPEED = 110
-const ITEM_CLASS_DESKTOP =
+const ITEM_CLASS =
   'pointer-events-none absolute top-0 flex items-center whitespace-nowrap rounded-full border border-indigo-300/20 bg-gradient-to-r from-white/[0.12] to-indigo-500/[0.08] px-4 py-1.5 text-sm shadow-[0_8px_32px_rgba(79,70,229,0.25)] backdrop-blur-md'
-const ITEM_CLASS_MOBILE =
-  'pointer-events-none absolute top-0 flex items-center whitespace-nowrap rounded-full border border-indigo-300/20 bg-slate-900/90 px-4 py-1.5 text-sm shadow-[0_8px_32px_rgba(15,23,42,0.2)]'
 
 interface FlyItem {
   uid: string
@@ -32,9 +29,9 @@ function estimateWidth(text: string): number {
   return Math.min(680, 80 + text.length * 14)
 }
 
-function buildItemEl(item: FlyItem, itemClass: string): HTMLDivElement {
+function buildItemEl(item: FlyItem): HTMLDivElement {
   const el = document.createElement('div')
-  el.className = itemClass
+  el.className = ITEM_CLASS
   el.dataset.uid = item.uid
   el.innerHTML = `<span class="mr-2 font-medium text-indigo-200">${escapeHtml(item.label)}</span><span class="text-slate-100">${escapeHtml(item.message)}</span>`
   el.style.willChange = 'transform'
@@ -57,10 +54,8 @@ export function DanmakuMarquee({
   onPoolLow?: () => void
 }) {
   const isMobile = useAppMobile()
-  const reduced = useReducedMotion()
   const trackCount = isMobile ? MOBILE_TRACKS : DESKTOP_TRACKS
   const minGap = isMobile ? MOBILE_MIN_GAP : DESKTOP_MIN_GAP
-  const itemClass = isMobile ? ITEM_CLASS_MOBILE : ITEM_CLASS_DESKTOP
   const rootRef = useRef<HTMLDivElement>(null)
   const poolRef = useRef(pool)
   const poolCursorRef = useRef(0)
@@ -68,8 +63,10 @@ export function DanmakuMarquee({
   const nodesRef = useRef<Map<string, HTMLDivElement>>(new Map())
   const lowTriggeredRef = useRef(false)
   const startedRef = useRef(false)
+  const onPoolLowRef = useRef(onPoolLow)
 
   poolRef.current = pool
+  onPoolLowRef.current = onPoolLow
 
   useEffect(() => {
     lowTriggeredRef.current = false
@@ -83,7 +80,6 @@ export function DanmakuMarquee({
   }, [trackCount])
 
   useEffect(() => {
-    if (reduced) return
     if (pool.length === 0) return
     const root = rootRef.current
     if (!root) return
@@ -97,9 +93,6 @@ export function DanmakuMarquee({
     let raf = 0
     let last = performance.now()
     let alive = true
-    let running = false
-    let pageVisible = !document.hidden
-    let inViewport = true
 
     const takeNext = (): SiteDanmaku => {
       const list = poolRef.current
@@ -112,7 +105,7 @@ export function DanmakuMarquee({
         !lowTriggeredRef.current
       ) {
         lowTriggeredRef.current = true
-        onPoolLow?.()
+        onPoolLowRef.current?.()
       }
       return item
     }
@@ -140,7 +133,7 @@ export function DanmakuMarquee({
           active.add(item.uid)
           let el = nodesRef.current.get(item.uid)
           if (!el) {
-            el = buildItemEl(item, itemClass)
+            el = buildItemEl(item)
             root.appendChild(el)
             nodesRef.current.set(item.uid, el)
           }
@@ -155,14 +148,8 @@ export function DanmakuMarquee({
       })
     }
 
-    const stopLoop = () => {
-      if (!running) return
-      running = false
-      cancelAnimationFrame(raf)
-    }
-
     const tick = (now: number) => {
-      if (!alive || !running) return
+      if (!alive) return
       const dt = Math.min(0.05, (now - last) / 1000)
       last = now
       const w = root.offsetWidth || window.innerWidth
@@ -185,36 +172,6 @@ export function DanmakuMarquee({
       raf = requestAnimationFrame(tick)
     }
 
-    const startLoop = () => {
-      if (running || !alive) return
-      running = true
-      last = performance.now()
-      raf = requestAnimationFrame(tick)
-    }
-
-    const reconcileLoop = () => {
-      if (pageVisible && inViewport) {
-        startLoop()
-      } else {
-        stopLoop()
-      }
-    }
-
-    const onVisibilityChange = () => {
-      pageVisible = !document.hidden
-      reconcileLoop()
-    }
-
-    const io = new IntersectionObserver(
-      ([entry]) => {
-        inViewport = Boolean(entry?.isIntersecting)
-        reconcileLoop()
-      },
-      { threshold: [0, 0.05, 0.15] },
-    )
-    io.observe(root)
-    document.addEventListener('visibilitychange', onVisibilityChange)
-
     if (lanesRef.current.every((l) => l.length === 0)) {
       const w = root.offsetWidth || window.innerWidth
       for (let t = 0; t < trackCount; t += 1) {
@@ -222,14 +179,12 @@ export function DanmakuMarquee({
       }
     }
 
-    reconcileLoop()
+    raf = requestAnimationFrame(tick)
     return () => {
       alive = false
-      stopLoop()
-      io.disconnect()
-      document.removeEventListener('visibilitychange', onVisibilityChange)
+      cancelAnimationFrame(raf)
     }
-  }, [pool.length, onPoolLow, trackCount, minGap, itemClass, reduced])
+  }, [pool.length, trackCount, minGap])
 
   useEffect(() => {
     return () => {
@@ -239,23 +194,6 @@ export function DanmakuMarquee({
       startedRef.current = false
     }
   }, [trackCount])
-
-  if (reduced) {
-    const staticItems = pool.slice(0, Math.min(pool.length, 4))
-    return (
-      <div className="relative flex h-full w-full flex-col justify-center gap-2 overflow-hidden px-6" aria-live="off">
-        {staticItems.map((item) => (
-          <div
-            key={item.id}
-            className="pointer-events-none flex w-fit max-w-full items-center rounded-full border border-indigo-300/20 bg-slate-900/90 px-4 py-1.5 text-sm shadow-[0_8px_32px_rgba(15,23,42,0.2)]"
-          >
-            <span className="mr-2 truncate font-medium text-indigo-200">{formatLabel(item)}</span>
-            <span className="truncate text-slate-100">{item.message}</span>
-          </div>
-        ))}
-      </div>
-    )
-  }
 
   return <div ref={rootRef} className="relative h-full w-full overflow-hidden" aria-live="off" />
 }

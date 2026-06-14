@@ -80,7 +80,14 @@
     "themeTitle": "Appearance Theme",
     "themeDesc": "Choose light, dark, or system appearance",
     "uiTheme": "UI Theme",
-    "themeHint": "Takes effect immediately and remembers preference on this device."
+    "themeHint": "Takes effect immediately and remembers preference on this device.",
+    "feedbackTitle": "Share your experience",
+    "feedbackDesc": "Your comment may appear in the homepage creator feedback section.",
+    "feedbackPlaceholder": "Share how orchestration, continuation, memory, and other features work for you…",
+    "feedbackSubmit": "Submit feedback",
+    "feedbackMinLength": "Feedback must be at least 2 characters",
+    "feedbackSent": "Feedback submitted — thank you",
+    "feedbackError": "Failed to submit, please try again later"
   },
   "bookstore": {
     "loadFail": "Failed to load bookstore",

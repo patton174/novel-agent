@@ -1,7 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type RefObject } from 'react'
-import { useReducedMotion } from 'framer-motion'
 import type { MarketingSceneId } from '../../../utils/marketing/buildMarketingSceneDemo'
-import { useAppMobile } from '@/hooks/useMediaQuery'
 import {
   MARKETING_CHAT_DEMO_FRAME_HERO,
   MARKETING_CHAT_DEMO_FRAME_STORY,
@@ -185,29 +183,41 @@ function useVisiblePlayback(
   ref: RefObject<HTMLElement | null>,
   autoPlay: boolean,
   loopMs: number,
-  enabled: boolean,
 ) {
   const [elapsed, setElapsed] = useState(0)
   const [visible, setVisible] = useState(autoPlay)
 
   useEffect(() => {
-    if (!enabled) {
-      setVisible(false)
-      return
-    }
     if (autoPlay) {
       setVisible(true)
       return
     }
-    const el = ref.current
-    if (!el) return
-    const io = new IntersectionObserver(
-      ([entry]) => setVisible(Boolean(entry?.isIntersecting)),
-      { threshold: [0, 0.15] },
-    )
-    io.observe(el)
-    return () => io.disconnect()
-  }, [autoPlay, enabled, ref])
+    let io: IntersectionObserver | null = null
+    let cancelled = false
+    let retryRaf = 0
+
+    const attach = () => {
+      if (cancelled) return
+      const el = ref.current
+      if (!el) {
+        retryRaf = requestAnimationFrame(attach)
+        return
+      }
+      io?.disconnect()
+      io = new IntersectionObserver(
+        ([entry]) => setVisible(Boolean(entry?.isIntersecting)),
+        { threshold: [0, 0.15] },
+      )
+      io.observe(el)
+    }
+
+    attach()
+    return () => {
+      cancelled = true
+      cancelAnimationFrame(retryRaf)
+      io?.disconnect()
+    }
+  }, [autoPlay, ref])
 
   useEffect(() => {
     if (!visible) {
@@ -233,48 +243,42 @@ export function MarketingChatOrchestrationDemo({
   variant = 'story',
   sectionRef,
 }: MarketingChatOrchestrationDemoProps) {
-  const isMobile = useAppMobile()
-  const reduced = useReducedMotion()
   const fallbackRef = useRef<HTMLDivElement>(null)
   const rootRef = sectionRef ?? fallbackRef
   const timing = SCENE_TIMING[scene]
-  const shouldAnimate = !isMobile && !reduced
-  // Hero 首屏：挂载即播，避免依赖 IntersectionObserver 时序导致桌面首屏静止；
-  // story 幕：进视口再播。播放开关统一由 shouldAnimate（桌面且非 reduced-motion）决定。
-  const elapsed = useVisiblePlayback(rootRef, variant === 'hero', timing.loopMs, shouldAnimate)
-  const renderElapsed = shouldAnimate ? elapsed : timing.loopMs
+  const elapsed = useVisiblePlayback(rootRef, variant === 'hero', timing.loopMs)
   const copy = SCENE_COPY[scene]
   const frameClass =
     variant === 'hero' ? MARKETING_CHAT_DEMO_FRAME_HERO : MARKETING_CHAT_DEMO_FRAME_STORY
 
   const state = useMemo((): DemoPlaybackState => {
-    const inputText = revealText(copy.prompt, 250, renderElapsed, 1_900)
-    const runActive = renderElapsed >= timing.sendAt && renderElapsed < timing.runEnd
-    const sending = renderElapsed >= timing.sendAt && renderElapsed < timing.sendAt + 280
-    const composerText = renderElapsed >= timing.sendAt ? '' : inputText
-    const thinkText = revealText(copy.think, timing.agentAt + 600, renderElapsed, 2_700)
-    const outputText = revealText(copy.output, timing.outputAt, renderElapsed, 3_200)
+    const inputText = revealText(copy.prompt, 250, elapsed, 1_900)
+    const runActive = elapsed >= timing.sendAt && elapsed < timing.runEnd
+    const sending = elapsed >= timing.sendAt && elapsed < timing.sendAt + 280
+    const composerText = elapsed >= timing.sendAt ? '' : inputText
+    const thinkText = revealText(copy.think, timing.agentAt + 600, elapsed, 2_700)
+    const outputText = revealText(copy.output, timing.outputAt, elapsed, 3_200)
 
     const base = {
       composerText,
-      showComposerPlaceholder: renderElapsed < 250,
+      showComposerPlaceholder: elapsed < 250,
       runActive,
       sending,
-      promptVisible: renderElapsed >= timing.promptAt,
-      orchestrationVisible: renderElapsed >= timing.agentAt,
-      thinkVisible: renderElapsed >= timing.agentAt + 200,
-      thinkActive: renderElapsed >= timing.agentAt + 500 && renderElapsed < timing.agentAt + 3_400,
-      thinkExpanded: renderElapsed >= timing.agentAt + 500 && renderElapsed < timing.agentAt + 3_700,
+      promptVisible: elapsed >= timing.promptAt,
+      orchestrationVisible: elapsed >= timing.agentAt,
+      thinkVisible: elapsed >= timing.agentAt + 200,
+      thinkActive: elapsed >= timing.agentAt + 500 && elapsed < timing.agentAt + 3_400,
+      thinkExpanded: elapsed >= timing.agentAt + 500 && elapsed < timing.agentAt + 3_700,
       thinkText,
-      outputVisible: renderElapsed >= timing.outputAt,
+      outputVisible: elapsed >= timing.outputAt,
       outputText,
     }
 
     if (scene === 'think') {
       return {
         ...base,
-        planVisible: renderElapsed >= timing.agentAt + 3_900,
-        planActive: renderElapsed >= timing.agentAt + 3_900 && renderElapsed < timing.agentAt + 5_200,
+        planVisible: elapsed >= timing.agentAt + 3_900,
+        planActive: elapsed >= timing.agentAt + 3_900 && elapsed < timing.agentAt + 5_200,
       }
     }
 
@@ -287,39 +291,39 @@ export function MarketingChatOrchestrationDemo({
 
       return {
         ...base,
-        thinkText: revealText(copy.think, thinkStart, renderElapsed, 3_200),
-        thinkVisible: renderElapsed >= timing.agentAt + 350,
-        thinkActive: renderElapsed >= thinkStart && renderElapsed < thinkEnd,
-        thinkExpanded: renderElapsed >= thinkStart && renderElapsed < thinkEnd + 450,
-        writeVisible: renderElapsed >= writeStart,
-        writeActive: renderElapsed >= writeStart && renderElapsed < writeEnd,
-        outputVisible: renderElapsed >= outputStart,
-        outputText: revealText(copy.output, outputStart, renderElapsed, 3_400),
+        thinkText: revealText(copy.think, thinkStart, elapsed, 3_200),
+        thinkVisible: elapsed >= timing.agentAt + 350,
+        thinkActive: elapsed >= thinkStart && elapsed < thinkEnd,
+        thinkExpanded: elapsed >= thinkStart && elapsed < thinkEnd + 450,
+        writeVisible: elapsed >= writeStart,
+        writeActive: elapsed >= writeStart && elapsed < writeEnd,
+        outputVisible: elapsed >= outputStart,
+        outputText: revealText(copy.output, outputStart, elapsed, 3_400),
       }
     }
 
     if (scene === 'subagent') {
       return {
         ...base,
-        subagentVisible: renderElapsed >= 8_550,
-        subagentActive: renderElapsed >= 8_550 && renderElapsed < 11_200,
-        subagentThinkVisible: renderElapsed >= 8_850,
-        subagentMemoryVisible: renderElapsed >= 9_450,
-        subagentMemoryActive: renderElapsed >= 9_450 && renderElapsed < 10_050,
-        subagentOutputVisible: renderElapsed >= 10_250,
-        subagentOutputActive: renderElapsed >= 10_250 && renderElapsed < 10_900,
-        subagentComplete: renderElapsed >= 11_050,
+        subagentVisible: elapsed >= 8_550,
+        subagentActive: elapsed >= 8_550 && elapsed < 11_200,
+        subagentThinkVisible: elapsed >= 8_850,
+        subagentMemoryVisible: elapsed >= 9_450,
+        subagentMemoryActive: elapsed >= 9_450 && elapsed < 10_050,
+        subagentOutputVisible: elapsed >= 10_250,
+        subagentOutputActive: elapsed >= 10_250 && elapsed < 10_900,
+        subagentComplete: elapsed >= 11_050,
       }
     }
 
     return {
       ...base,
-      memoryVisible: renderElapsed >= 8_550,
-      memoryActive: renderElapsed >= 8_550 && renderElapsed < 9_550,
-      chapterVisible: renderElapsed >= 9_900,
-      chapterActive: renderElapsed >= 9_900 && renderElapsed < 10_900,
+      memoryVisible: elapsed >= 8_550,
+      memoryActive: elapsed >= 8_550 && elapsed < 9_550,
+      chapterVisible: elapsed >= 9_900,
+      chapterActive: elapsed >= 9_900 && elapsed < 10_900,
     }
-  }, [copy, renderElapsed, scene, timing])
+  }, [copy, elapsed, scene, timing])
 
   return (
     <div ref={sectionRef ? undefined : fallbackRef}>

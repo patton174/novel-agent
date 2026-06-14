@@ -81,15 +81,8 @@ export function HomeHeroSection() {
         ))}
       </motion.div>
 
-      <motion.div {...fade(0.4)} className="relative mx-auto hidden max-w-4xl sm:block">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -inset-6 hidden rounded-[2rem] bg-gradient-to-r from-indigo-500/25 via-violet-500/20 to-indigo-500/25 blur-3xl motion-reduce:opacity-70 sm:block"
-          style={reduced ? undefined : { animation: 'mkt-glow-breathe 5s ease-in-out infinite' }}
-        />
-        <div className="mkt-hero-demo-glow relative overflow-hidden rounded-2xl border border-border/70 bg-surface/50 p-1 ring-1 ring-primary/10 backdrop-blur-md max-sm:origin-top max-sm:scale-[0.94]">
-          <MarketingHeroDemo />
-        </div>
+      <motion.div {...fade(0.4)} className="relative mx-auto hidden w-full sm:block">
+        <MarketingHeroDemo />
       </motion.div>
 
       <motion.button

@@ -96,6 +96,12 @@
       "trustMemory": "Persistent Memory",
       "scrollHint": "Scroll down to see if it's right for you"
     },
+    "demo": {
+      "badge": "Product demo",
+      "note": "Interface preview — not your signed-in workspace",
+      "mockData": "Mock data",
+      "caption": "Orchestration and tool calls are animated previews. Register to use the real editor."
+    },
     "feasibility": {
       "eyebrow": "Core Capabilities & Fit",
       "title": "Four Capabilities Supporting Serialization and Use Cases",
@@ -174,13 +180,15 @@
     },
     "danmaku": {
       "eyebrow": "Creator Voices",
-      "title": "Real user feedback, floating by like bullet comments",
-      "subtitle": "Displays your account when logged in; otherwise shows approximate region based on IP",
-      "synced": "Loaded {{count}} comments · Syncing continuously",
-      "loading": "Loading creator comments...",
-      "loadError": "Failed to load comments, please refresh the page and try again",
+      "title": "Real feedback from authors",
+      "subtitle": "Comments from people using the workspace — scroll to read, no login required.",
+      "count": "{{count}} shown",
+      "feedbackHint": "Want to share after using the product? Go to",
+      "feedbackLink": "Workspace · Settings",
+      "loading": "Loading creator feedback…",
+      "loadError": "Failed to load feedback, please refresh and try again",
       "retry": "Reload",
-      "empty": "No comments yet, be the first to share your thoughts",
+      "empty": "No feedback yet — be the first to share in Settings",
       "placeholder": "Write down your experience...",
       "send": "Send",
       "minLength": "Comment must be at least 2 characters",
