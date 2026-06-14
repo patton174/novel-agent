@@ -19,6 +19,7 @@ import {
 import { fetchIncompleteCatalog } from '@/api/catalogAdminApi'
 import { CrawlJobDetailModal } from '@/components/admin/CrawlJobDetailModal'
 import { CrawlJobRow } from '@/components/admin/CrawlJobRow'
+import { AdminCollapsibleCard } from '@/components/admin/AdminCollapsibleCard'
 import { OrchestratorLogTerminal } from '@/components/admin/OrchestratorLogTerminal'
 import { Button } from '@/components/ui/button'
 import { AdminPagination } from '@/components/layout/AdminPagination'
@@ -315,101 +316,7 @@ export default function CrawlerPage() {
 
   return (
     <AppPageStack className="gap-5">
-      <div className="grid gap-5 xl:grid-cols-2">
-        <AppShellCard>
-          <AppShellCardHeader
-            title="主编排控制"
-            description={`并行 ${orchState?.runningJobCount ?? 0}/${orchState?.maxConcurrentJobs ?? 3}`}
-            action={
-              <span
-                className={cn(
-                  'rounded-full px-2.5 py-0.5 text-xs font-medium',
-                  isOrchRunning
-                    ? 'bg-primary/15 text-primary'
-                    : 'bg-muted text-muted-foreground',
-                )}
-              >
-                {isOrchRunning ? '运行中' : '睡眠'}
-              </span>
-            }
-          />
-          <AppShellCardBody className="space-y-4">
-          {incompleteCount > 0 ? (
-            <Link
-              to="/admin/catalog"
-              className="inline-block text-sm text-primary underline-offset-4 hover:underline"
-            >
-              书库未完成 {incompleteCount} 本 →
-            </Link>
-          ) : null}
-
-        {orchBanner === 'orchestrator-disabled' ? (
-          <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-800 dark:text-amber-300">
-            Worker 上主编排未启用，请设置{' '}
-            <code className="rounded bg-background/80 px-1 py-0.5 text-xs">CRAWL_ORCHESTRATOR_ENABLED=true</code>{' '}
-            并重启 python-ai。
-          </div>
-        ) : orchBanner === 'llm-missing' ? (
-          <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-800 dark:text-amber-300">
-            主编排 LLM 未配置，请检查 python-ai/.env 中的 OPENAI_API_KEY。
-          </div>
-        ) : null}
-
-        <div>
-          <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
-            总目标
-          </label>
-          <textarea
-            value={orchGoal}
-            onChange={(e) => {
-              setOrchGoal(e.target.value)
-              setGoalDirty(true)
-            }}
-            rows={4}
-            className="min-h-[5.5rem] w-full rounded-xl border border-input bg-background px-3 py-2 text-sm disabled:opacity-50"
-            placeholder={DEFAULT_GOAL}
-          />
-        </div>
-
-        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-          <Button
-            disabled={!canSetGoal || orchBusy}
-            onClick={() => void handleSetOrchestratorGoal()}
-          >
-            {!hasServerGoal || isOrchSleeping ? '设定并唤醒' : '更新目标'}
-          </Button>
-          <Button
-            variant="secondary"
-            disabled={!canWake || orchBusy}
-            onClick={() => void handleWakeOrchestrator()}
-          >
-            唤醒
-          </Button>
-          <Button
-            variant="outline"
-            disabled={!canClear || orchBusy}
-            onClick={() => void handleClearOrchestrator()}
-          >
-            清空 / 睡眠
-          </Button>
-        </div>
-          </AppShellCardBody>
-        </AppShellCard>
-
-        <AppShellCard className="flex min-h-0 flex-col max-md:min-h-[200px] md:min-h-[280px]">
-          <AppShellCardHeader title="主编排决策日志" />
-          <AppShellCardBody className="flex min-h-0 flex-1 flex-col pt-2">
-            <OrchestratorLogTerminal
-              status={orchState?.status}
-              refreshKey={logRefreshKey}
-              clearKey={logClearKey}
-              paused={!pageVisible}
-            />
-          </AppShellCardBody>
-        </AppShellCard>
-      </div>
-
-      <AppShellCard>
+      <AppShellCard className="order-1 md:order-2">
         <AppShellCardHeader
           title="子任务列表"
           description="点击行查看详情与日志"
@@ -489,6 +396,101 @@ export default function CrawlerPage() {
         )}
         </AppShellCardBody>
       </AppShellCard>
+
+      <div className="order-2 grid gap-5 md:order-1 xl:grid-cols-2">
+        <AdminCollapsibleCard
+          title="主编排控制"
+          description={`并行 ${orchState?.runningJobCount ?? 0}/${orchState?.maxConcurrentJobs ?? 3}`}
+          defaultMobileOpen={false}
+          action={
+            <span
+              className={cn(
+                'rounded-full px-2.5 py-0.5 text-xs font-medium',
+                isOrchRunning
+                  ? 'bg-primary/15 text-primary'
+                  : 'bg-muted text-muted-foreground',
+              )}
+            >
+              {isOrchRunning ? '运行中' : '睡眠'}
+            </span>
+          }
+          bodyClassName="space-y-4"
+        >
+          {incompleteCount > 0 ? (
+            <Link
+              to="/admin/catalog"
+              className="inline-block text-sm text-primary underline-offset-4 hover:underline"
+            >
+              书库未完成 {incompleteCount} 本 →
+            </Link>
+          ) : null}
+
+        {orchBanner === 'orchestrator-disabled' ? (
+          <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-800 dark:text-amber-300">
+            Worker 上主编排未启用，请设置{' '}
+            <code className="rounded bg-background/80 px-1 py-0.5 text-xs">CRAWL_ORCHESTRATOR_ENABLED=true</code>{' '}
+            并重启 python-ai。
+          </div>
+        ) : orchBanner === 'llm-missing' ? (
+          <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-800 dark:text-amber-300">
+            主编排 LLM 未配置，请检查 python-ai/.env 中的 OPENAI_API_KEY。
+          </div>
+        ) : null}
+
+        <div>
+          <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+            总目标
+          </label>
+          <textarea
+            value={orchGoal}
+            onChange={(e) => {
+              setOrchGoal(e.target.value)
+              setGoalDirty(true)
+            }}
+            rows={4}
+            className="min-h-[5.5rem] w-full rounded-xl border border-input bg-background px-3 py-2 text-sm disabled:opacity-50"
+            placeholder={DEFAULT_GOAL}
+          />
+        </div>
+
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+          <Button
+            disabled={!canSetGoal || orchBusy}
+            onClick={() => void handleSetOrchestratorGoal()}
+          >
+            {!hasServerGoal || isOrchSleeping ? '设定并唤醒' : '更新目标'}
+          </Button>
+          <Button
+            variant="secondary"
+            disabled={!canWake || orchBusy}
+            onClick={() => void handleWakeOrchestrator()}
+          >
+            唤醒
+          </Button>
+          <Button
+            variant="outline"
+            disabled={!canClear || orchBusy}
+            onClick={() => void handleClearOrchestrator()}
+          >
+            清空 / 睡眠
+          </Button>
+        </div>
+        </AdminCollapsibleCard>
+
+        <AdminCollapsibleCard
+          title="主编排决策日志"
+          defaultMobileOpen={false}
+          className="flex min-h-0 flex-col max-md:min-h-[200px] md:min-h-[280px]"
+          bodyClassName="flex min-h-0 flex-1 flex-col pt-2"
+        >
+            <OrchestratorLogTerminal
+              status={orchState?.status}
+              refreshKey={logRefreshKey}
+              clearKey={logClearKey}
+              paused={!pageVisible}
+            />
+        </AdminCollapsibleCard>
+      </div>
 
       <CrawlJobDetailModal
         job={detailJob}

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import type { ChapterVersion } from '../../types/novel'
 import { sortChapters } from '../../utils/outlineDrag'
+import { APP_MOBILE_MEDIA, matchesAppMobile } from '@/lib/breakpoints'
 import { readHostModePreference, writeHostModePreference } from '../../utils/agentHostMode'
 import { toStoredChatMessage } from '../../utils/agentMessagePersist'
 import { saveSessionMessages } from '../../utils/chatSessionStore'
@@ -22,9 +23,7 @@ import { useEditorBootstrap } from './useEditorBootstrap'
 export function useEditorPage() {
   const [activeCenterTab, setActiveCenterTab] = useState<EditorCenterTab>('chat')
   const [showCreateNovel, setShowCreateNovel] = useState(false)
-  const [storyOutlineCollapsed, setStoryOutlineCollapsed] = useState(() =>
-    typeof window !== 'undefined' ? window.matchMedia('(max-width: 767px)').matches : false,
-  )
+  const [storyOutlineCollapsed, setStoryOutlineCollapsed] = useState(() => matchesAppMobile())
   const [versionsExpanded, setVersionsExpanded] = useState(false)
   const [versionPreview, setVersionPreview] = useState<ChapterVersion | null>(null)
   const [messages, setMessages] = useState<EditorMessage[]>([INITIAL_ASSISTANT_MESSAGE])
@@ -35,7 +34,7 @@ export function useEditorPage() {
   const landingPromptSeeded = useRef(false)
   const novelParamHandled = useRef(false)
   useEffect(() => {
-    const mq = window.matchMedia('(max-width: 767px)')
+    const mq = window.matchMedia(APP_MOBILE_MEDIA)
     const onChange = () => {
       if (mq.matches) setStoryOutlineCollapsed(true)
     }
@@ -205,7 +204,7 @@ export function useEditorPage() {
   /** 移动分屏：进入章节编辑且已有章节时，默认选中第一章（一步开写） */
   useEffect(() => {
     if (typeof window === 'undefined') return
-    if (!window.matchMedia('(max-width: 767px)').matches) return
+    if (!matchesAppMobile()) return
     if (activeCenterTab !== 'story') return
     if (!activeNovelId || activeChapterId) return
     const first = sortChapters(chapters)[0]

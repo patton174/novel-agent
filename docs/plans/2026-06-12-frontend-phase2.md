@@ -175,13 +175,20 @@
 - [x] **StoryMobileChapterPicker 卷序**：排序模式卷标题 ↑↓ 调卷顺序
 - [x] **outlineDrag**：`buildVolumeStepMoveIds` / `buildChapterMoveToVolumePlans`
 
+## Phase 13 — 断点统一 + Admin 爬虫移动收口
+
+- [x] **breakpoints.ts**：`matchesAppMobile()`、`useAppMobile()`（`useEditorMobile` 别名保留）
+- [x] **useEditorPage**：去除硬编码 `767px`，统一 `APP_MOBILE_MEDIA`
+- [x] **globals.css**：显式 `--breakpoint-md: 48rem` 与文档注释
+- [x] **AdminCollapsibleCard**：移动可折叠 Admin 卡片
+- [x] **CrawlerPage 移动**：子任务列表置顶；主编排控制/决策日志默认折叠
+
 ## 审计清单闭环状态
 
-`docs/frontend-ui-audit.md` 中可交付项均已通过 Phase 1–12 落地；**未纳入范围**（低优先级 / 产品待定）：
+`docs/frontend-ui-audit.md` 中可交付项均已通过 Phase 1–13 落地；**未纳入范围**（低优先级 / 产品待定）：
 
-- 桌面级拖拽 UX 在移动端的完全对等（移动已覆盖 ↑↓ + 跨卷；无 touch DnD）
+- 桌面级 touch DnD 与拖拽 UX 完全对等
 - Modal/Loader 进一步合并（已压至 EditorModalShell + shadcn Dialog + Skeleton + BrandLoader）
-- Admin 低流量页表格卡片化（Users/Audit/Plans/Catalog/Billing/Crawler 均已卡片或行卡片）
 
 ---
 

@@ -19,7 +19,12 @@ export function useMediaQuery(query: string, defaultValue = false): boolean {
   return matches
 }
 
-/** 与 Editor 断点对齐（767px） */
-export function useEditorMobile(): boolean {
+/** 全站移动断点（767px），与 Tailwind `max-md:` 一致 */
+export function useAppMobile(): boolean {
   return useMediaQuery(APP_MOBILE_MEDIA)
+}
+
+/** @deprecated 使用 useAppMobile */
+export function useEditorMobile(): boolean {
+  return useAppMobile()
 }
