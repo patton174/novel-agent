@@ -60,13 +60,9 @@ public class AuthNovelBiz extends BaseBiz {
     }
 
     public Result<NovelDescriptionPromptResponse> suggestDescriptionPrompt(
-        String title,
-        String genre,
-        String style,
-        String draft
+        NovelDescriptionPromptRequest request
     ) {
-        String description = novelDescriptionClient.suggestDescription(title, genre, style, draft);
-        return ok(new NovelDescriptionPromptResponse(description));
+        return ok(novelDescriptionClient.suggestDescription(request));
     }
 
     public NovelExportService.ExportPayload exportTxt(Long userId, String novelId) {

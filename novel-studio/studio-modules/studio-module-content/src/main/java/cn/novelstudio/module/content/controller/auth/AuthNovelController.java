@@ -61,11 +61,7 @@ public class AuthNovelController extends BaseController {
         @RequestHeader("X-User-Id") String userId,
         @RequestBody(required = false) NovelDescriptionPromptRequest request
     ) {
-        String title = request == null ? null : request.title();
-        String genre = request == null ? null : request.genre();
-        String style = request == null ? null : request.style();
-        String draft = request == null ? null : request.draft();
-        return biz.suggestDescriptionPrompt(title, genre, style, draft);
+        return biz.suggestDescriptionPrompt(request);
     }
 
     @GetMapping("/{novelId}")

@@ -82,12 +82,22 @@ export async function fetchNovels(): Promise<DashboardNovel[]> {
   }
 }
 
+import type { NovelDraftSuggestion } from '@/lib/novelDraft'
+
 export async function suggestNovelDescriptionPrompt(payload: {
   title?: string
   genre?: string
   style?: string
+  tags?: string
+  hook?: string
+  protagonist?: string
+  worldview?: string
+  synopsis?: string
+  sellingPoints?: string
+  targetChapterWords?: number
   draft?: string
-}): Promise<string | null> {
+  mode?: 'generate' | 'optimize'
+}): Promise<NovelDraftSuggestion | null> {
   try {
     const res = await secureFetch('/api/content/auth/novels/description/prompt', {
       method: 'POST',
@@ -96,14 +106,47 @@ export async function suggestNovelDescriptionPrompt(payload: {
         title: payload.title ?? '',
         genre: payload.genre ?? '',
         style: payload.style ?? '',
+        tags: payload.tags ?? '',
+        hook: payload.hook ?? '',
+        protagonist: payload.protagonist ?? '',
+        worldview: payload.worldview ?? '',
+        synopsis: payload.synopsis ?? '',
+        sellingPoints: payload.sellingPoints ?? '',
+        targetChapterWords: payload.targetChapterWords ?? null,
         draft: payload.draft ?? '',
+        mode: payload.mode ?? 'generate',
       }),
     })
     if (!res.ok) {
       return null
     }
-    const data = await parseResultResponse<{ description?: string }>(res)
-    return data?.description?.trim() || null
+    const data = await parseResultResponse<{
+      title?: string
+      genre?: string
+      tags?: string
+      style?: string
+      hook?: string
+      protagonist?: string
+      worldview?: string
+      synopsis?: string
+      sellingPoints?: string
+      targetChapterWords?: number
+      description?: string
+    }>(res)
+    if (!data) return null
+    return {
+      title: data.title?.trim() ?? '',
+      genre: data.genre?.trim() ?? '',
+      tags: data.tags?.trim() ?? '',
+      style: data.style?.trim() ?? '',
+      hook: data.hook?.trim() ?? '',
+      protagonist: data.protagonist?.trim() ?? '',
+      worldview: data.worldview?.trim() ?? '',
+      synopsis: data.synopsis?.trim() ?? '',
+      sellingPoints: data.sellingPoints?.trim() ?? '',
+      targetChapterWords: data.targetChapterWords ?? 3000,
+      description: data.description?.trim() ?? '',
+    }
   } catch {
     return null
   }
