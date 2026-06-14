@@ -26,7 +26,7 @@ import { AdminPagination } from '@/components/layout/AdminPagination'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
-import { confirmAction } from '@/stores/confirmDialogStore'
+import { confirmAction } from '@/stores/appDialog'
 import { appToast } from '@/stores/appToastStore'
 
 const PAGE_SIZE = 20

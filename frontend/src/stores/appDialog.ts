@@ -7,4 +7,4 @@ export {
   useAppDialogStore,
 } from './confirmDialogStore'
 
-export type { AppDialogKind, AppDialogOptions, ConfirmDialogOptions } from './confirmDialogStore'
+export type { AppDialogKind, AppDialogOptions } from './confirmDialogStore'

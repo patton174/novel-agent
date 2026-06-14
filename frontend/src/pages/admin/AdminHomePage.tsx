@@ -116,6 +116,12 @@ export default function AdminHomePage() {
       </AppShellCard>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+        <AppShellCard className="col-span-2 lg:col-span-3">
+          <AppShellCardHeader
+            title="平台快照"
+            description="当前累计指标；趋势见「平台统计」，Token 成本见「收入与成本」"
+          />
+        </AppShellCard>
         {STAT_CARDS.map((stat) => (
           <AppStatCard
             key={stat.key}

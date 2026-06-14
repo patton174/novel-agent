@@ -8,7 +8,8 @@ export function DashboardQuickActions() {
   const location = useLocation()
   const profile = useUserStore((s) => s.profile)
   const isAdmin = profile?.role === 'admin'
-  const hideEditorCta = location.pathname === '/dashboard'
+  /** 各 Dashboard 子页已有 primary CTA，顶栏不再重复裸链 /editor */
+  const hideEditorCta = location.pathname.startsWith('/dashboard')
 
   return (
     <div className="flex shrink-0 items-center gap-2">

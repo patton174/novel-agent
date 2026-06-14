@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { api } from '../../utils/api'
-import { alertDialog } from '../../stores/confirmDialogStore'
+import { alertDialog } from '../../stores/appDialog'
 
 export function useEditorReindex(activeNovelId: string | null) {
   const [reindexing, setReindexing] = useState(false)

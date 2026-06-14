@@ -7,6 +7,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
+import { Link } from 'react-router-dom'
 import type { TrendPoint } from '@/api/adminApi'
 import {
   APP_CHART_EMPTY,
@@ -67,7 +68,12 @@ export default function StatsTrendCharts({
     <>
       <AppChartCard title="Agent 调用趋势" description={`${rangeLabel} Agent 运行次数`}>
         {agentRunTrend.length === 0 ? (
-          <div className={APP_CHART_EMPTY}>暂无趋势数据</div>
+          <div className={APP_CHART_EMPTY}>
+            <p>暂无 Agent 调用趋势</p>
+            <Link to="/admin/users" className="mt-2 inline-block text-sm text-primary hover:underline">
+              查看用户管理 →
+            </Link>
+          </div>
         ) : (
           <TrendChart data={agentRunTrend} valueLabel="调用次数" />
         )}
@@ -75,7 +81,12 @@ export default function StatsTrendCharts({
 
       <AppChartCard title="注册趋势" description={`${rangeLabel} 新用户注册`}>
         {registrationTrend.length === 0 ? (
-          <div className={APP_CHART_EMPTY}>暂无注册数据</div>
+          <div className={APP_CHART_EMPTY}>
+            <p>暂无注册趋势</p>
+            <Link to="/admin/users" className="mt-2 inline-block text-sm text-primary hover:underline">
+              查看用户管理 →
+            </Link>
+          </div>
         ) : (
           <TrendChart data={registrationTrend} valueLabel="注册数" />
         )}

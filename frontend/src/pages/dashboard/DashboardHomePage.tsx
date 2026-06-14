@@ -29,6 +29,7 @@ import {
 } from '@/components/layout/AppPageStack'
 import { useMarkRouteSeen } from '@/hooks/useMarkRouteSeen'
 import { dashboardCache } from '@/stores/dashboardCacheStore'
+import { EDITOR_CREATE_HREF, editorNovelHref } from '@/lib/editorRoutes'
 
 function formatUpdatedAt(value: string | number): string {
   const date = new Date(value)
@@ -128,17 +129,15 @@ export default function DashboardHomePage() {
   const activityLoading = activity === null
   const primaryNovelId = recentNovels?.[0]?.novelId
   const editorEntryHref = primaryNovelId
-    ? `/editor?novelId=${encodeURIComponent(primaryNovelId)}`
-    : '/editor'
+    ? editorNovelHref(primaryNovelId)
+    : EDITOR_CREATE_HREF
 
   return (
     <AppPageStack>
-      <section className="relative overflow-hidden rounded-2xl border border-border/70 bg-gradient-to-br from-surface via-surface to-indigo-50/60 p-6 shadow-[0_20px_60px_-24px_rgba(79,70,229,0.25)] md:p-8">
-        <div className="pointer-events-none absolute -right-20 -top-20 size-56 rounded-full bg-primary/15 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-16 -left-16 size-48 rounded-full bg-violet-400/10 blur-3xl" />
-        <div className="relative flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+      <section className="relative overflow-hidden rounded-2xl border border-border/70 bg-surface p-6 shadow-soft md:p-8">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <p className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/8 px-3 py-1 text-xs font-semibold text-primary shadow-sm">
+            <p className="mb-2 inline-flex items-center gap-1.5 rounded-xl border border-primary/20 bg-primary/8 px-3 py-1 text-xs font-semibold text-primary">
               <Sparkles className="size-3.5" />
               创作工作台
             </p>
@@ -230,7 +229,7 @@ export default function DashboardHomePage() {
                     : '创建一个新的小说项目，让 AI 助手帮你构建世界观和章节。'}
                 </p>
                 <Button asChild className={`mt-5 px-6 ${APP_BTN_MD}`}>
-                  <Link to="/editor">新建小说</Link>
+                  <Link to={EDITOR_CREATE_HREF}>新建小说</Link>
                 </Button>
               </div>
             ) : (
@@ -261,9 +260,7 @@ export default function DashboardHomePage() {
                       </p>
                     </div>
                     <Button asChild size="sm" className={`shrink-0 px-3 ${APP_BTN}`}>
-                      <Link
-                        to={`/editor?novelId=${encodeURIComponent(novel.novelId)}`}
-                      >
+                      <Link to={editorNovelHref(novel.novelId)}>
                         继续写作
                       </Link>
                     </Button>

@@ -6,9 +6,9 @@ import { MarketingAmbient } from '../MarketingAmbient'
 import { MKT_CTA_PRIMARY, MKT_CTA_SECONDARY } from '@/lib/marketingCta'
 
 const PERSONAS = [
-  { key: 'serial', icon: PenTool, accent: 'from-violet-500/20 via-indigo-500/10 to-transparent' },
-  { key: 'world', icon: BookMarked, accent: 'from-emerald-500/20 via-teal-500/10 to-transparent' },
-  { key: 'edit', icon: Users, accent: 'from-amber-500/20 via-orange-500/10 to-transparent' },
+  { key: 'serial', icon: PenTool },
+  { key: 'world', icon: BookMarked },
+  { key: 'edit', icon: Users },
 ] as const
 
 const COMPARE_KEYS = ['context', 'orchestrate', 'stream', 'resume'] as const
@@ -47,21 +47,17 @@ export function HomeFeasibilitySection() {
         </motion.div>
 
         <div className="mb-14 grid gap-5 md:grid-cols-3 md:gap-6">
-          {PERSONAS.map(({ key, icon: Icon, accent }, i) => (
+          {PERSONAS.map(({ key, icon: Icon }, i) => (
             <motion.article
               key={key}
               {...fade(i * 0.07)}
-              className={`group mkt-card-lift relative overflow-hidden rounded-2xl border border-border/70 bg-gradient-to-br ${accent} p-6 shadow-[0_8px_32px_-12px_rgba(79,70,229,0.12)]`}
+              className="group mkt-card-lift relative overflow-hidden rounded-2xl border border-border/70 bg-surface p-6 shadow-soft"
             >
-              <div
-                aria-hidden
-                className="pointer-events-none absolute -right-8 -top-8 size-32 rounded-full bg-white/40 blur-2xl transition-opacity group-hover:opacity-100 opacity-60"
-              />
               <div className="relative mb-4 flex items-center justify-between">
-                <div className="flex size-12 items-center justify-center rounded-xl bg-white/90 shadow-sm ring-1 ring-border/50">
+                <div className="flex size-12 items-center justify-center rounded-xl bg-primary/8 ring-1 ring-border/50">
                   <Icon className="size-5 text-primary" strokeWidth={1.75} />
                 </div>
-                <span className="rounded-full bg-primary/12 px-2.5 py-0.5 text-[11px] font-bold text-primary">
+                <span className="rounded-lg bg-muted px-2.5 py-0.5 text-[11px] font-bold text-primary">
                   {t(`home.feasibility.personas.${key}.fit`)}
                 </span>
               </div>

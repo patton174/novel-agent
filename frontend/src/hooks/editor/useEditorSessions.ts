@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
-import { confirmAction, promptDialog } from '../../stores/confirmDialogStore'
+import { confirmAction, promptDialog } from '../../stores/appDialog'
 import {
   deleteSession,
   deleteSessions,

@@ -12,8 +12,7 @@ export interface AppDialogOptions {
   placeholder?: string
 }
 
-/** @deprecated 使用 AppDialogOptions */
-export type ConfirmDialogOptions = Omit<AppDialogOptions, 'defaultValue' | 'placeholder'>
+type ConfirmOptions = Omit<AppDialogOptions, 'defaultValue' | 'placeholder'>
 
 interface AppDialogState extends AppDialogOptions {
   open: boolean
@@ -37,9 +36,6 @@ export const useAppDialogStore = create<AppDialogState>(() => ({
   ...defaults,
 }))
 
-/** @deprecated 使用 useAppDialogStore */
-export const useConfirmDialogStore = useAppDialogStore
-
 function openDialog<T extends boolean | string | null>(
   kind: AppDialogKind,
   options: AppDialogOptions,
@@ -56,7 +52,7 @@ function openDialog<T extends boolean | string | null>(
 }
 
 /** 确认操作，返回是否点击确定 */
-export function confirmAction(options: ConfirmDialogOptions): Promise<boolean> {
+export function confirmAction(options: ConfirmOptions): Promise<boolean> {
   return openDialog<boolean>('confirm', options)
 }
 
@@ -86,9 +82,4 @@ export function closeAppDialog(result: boolean | string | null) {
     kind: 'confirm',
     ...defaults,
   })
-}
-
-/** @deprecated 使用 closeAppDialog */
-export function closeConfirmDialog(confirmed: boolean) {
-  closeAppDialog(confirmed)
 }

@@ -33,6 +33,7 @@ export function useEditorPage() {
 
   const landingPromptSeeded = useRef(false)
   const novelParamHandled = useRef(false)
+  const createParamHandled = useRef(false)
   useEffect(() => {
     const mq = window.matchMedia(APP_MOBILE_MEDIA)
     const onChange = () => {
@@ -189,6 +190,13 @@ export function useEditorPage() {
     landingPromptSeeded.current = true
     setInputValue(prompt)
     setActiveCenterTab('chat')
+  }, [searchParams])
+
+  useEffect(() => {
+    if (createParamHandled.current) return
+    if (searchParams.get('action') !== 'create') return
+    createParamHandled.current = true
+    setShowCreateNovel(true)
   }, [searchParams])
 
   useEffect(() => {

@@ -91,7 +91,7 @@ export default function SystemSettingsPage() {
   }
 
   return (
-    <AppPageStack narrow className="pb-20">
+    <AppPageStack compact className="pb-20">
       <p className="text-sm text-muted-foreground">
         参数保存后约 60 秒内对各服务生效。关闭注册会立即拦截新用户注册请求。
       </p>

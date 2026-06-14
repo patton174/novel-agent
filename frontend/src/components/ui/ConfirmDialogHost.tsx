@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input'
 import { APP_MODAL_FORM } from '@/lib/appModalClasses'
 import { APP_BTN_MD } from '@/lib/appButtonTokens'
 import { cn } from '@/lib/utils'
-import { closeAppDialog, useAppDialogStore } from '@/stores/confirmDialogStore'
+import { closeAppDialog, useAppDialogStore } from '@/stores/appDialog'
 
 export function ConfirmDialogHost() {
   const {

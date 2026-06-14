@@ -18,7 +18,7 @@ export function AdminQuickLinks() {
         <Link
           key={to}
           to={to}
-          className="inline-flex items-center gap-1 rounded-full border border-border/80 bg-surface px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:border-primary/30 hover:bg-primary/5 hover:text-primary"
+          className="inline-flex items-center gap-1 rounded-xl border border-border/80 bg-surface px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:border-primary/30 hover:bg-primary/5 hover:text-primary"
         >
           {label}
           <ArrowRight className="size-3 opacity-60" />

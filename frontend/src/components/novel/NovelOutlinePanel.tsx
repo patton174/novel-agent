@@ -5,7 +5,7 @@ import {
   reorderVolumeIds,
   sortChapters,
 } from '../../utils/outlineDrag'
-import { alertDialog, promptDialog } from '../../stores/confirmDialogStore'
+import { alertDialog, promptDialog } from '../../stores/appDialog'
 import { useOutlineTouchDrag } from '../../hooks/useOutlineTouchDrag'
 import { EditorButton } from '../ui/EditorButton'
 import { OutlineVolumeBlock } from './outline/OutlineVolumeBlock'

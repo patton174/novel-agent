@@ -37,13 +37,14 @@ import {
 } from '@/pages/admin/crawlJobUi'
 import { cn } from '@/lib/utils'
 import { usePageVisible } from '@/hooks/usePageVisible'
-import { confirmAction } from '@/stores/confirmDialogStore'
+import { confirmAction } from '@/stores/appDialog'
 import { appToast } from '@/stores/appToastStore'
 
 const DEFAULT_GOAL =
   '把链接中的小说全部章节抓取并清洗正文，入库公共书库（书籍页、目录页、章节页均可）'
 
 const JOBS_PAGE_SIZE = 20
+const JOBS_FETCH_SIZE = 50
 
 type JobFilter = 'all' | 'active' | 'failed'
 
@@ -64,6 +65,9 @@ export default function CrawlerPage() {
   const [logClearKey, setLogClearKey] = useState(0)
   const [jobFilter, setJobFilter] = useState<JobFilter>('all')
   const [jobPage, setJobPage] = useState(1)
+  const [jobsTotalCount, setJobsTotalCount] = useState(0)
+  const [jobsFetchPage, setJobsFetchPage] = useState(1)
+  const [loadingMoreJobs, setLoadingMoreJobs] = useState(false)
   const orchGoalSyncedRef = useRef(false)
 
   const serverGoal = orchState?.goal?.trim() ?? ''
@@ -89,21 +93,27 @@ export default function CrawlerPage() {
     [jobs],
   )
 
-  const loadJobs = useCallback(async () => {
+  const loadJobs = useCallback(async (append = false) => {
     try {
-      const jobPage = await fetchCrawlJobs(1, 50)
-      setJobs(jobPage.list)
-      setDetailJob((current) => {
-        if (!current) return current
-        return jobPage.list.find((j) => j.id === current.id) ?? current
+      const page = append ? jobsFetchPage + 1 : 1
+      const jobPage = await fetchCrawlJobs(page, JOBS_FETCH_SIZE)
+      setJobs((prev) => {
+        const next = append && prev ? [...prev, ...jobPage.list] : jobPage.list
+        setDetailJob((current) => {
+          if (!current) return current
+          return next.find((j) => j.id === current.id) ?? current
+        })
+        return next
       })
+      setJobsTotalCount(jobPage.totalCount)
+      setJobsFetchPage(page)
     } catch (err) {
-      setJobs([])
+      if (!append) setJobs([])
       appToast.error(err instanceof Error ? err.message : '子任务加载失败')
     } finally {
       setJobsLoading(false)
     }
-  }, [])
+  }, [jobsFetchPage])
 
   const loadOrchMeta = useCallback(async () => {
     try {
@@ -126,9 +136,20 @@ export default function CrawlerPage() {
 
   const refreshAll = useCallback(async () => {
     setJobsLoading(true)
-    await Promise.all([loadJobs(), loadOrchMeta()])
+    setJobsFetchPage(0)
+    await Promise.all([loadJobs(false), loadOrchMeta()])
     setLogRefreshKey((k) => k + 1)
   }, [loadJobs, loadOrchMeta])
+
+  const handleLoadMoreJobs = async () => {
+    if (loadingMoreJobs || (jobs?.length ?? 0) >= jobsTotalCount) return
+    setLoadingMoreJobs(true)
+    try {
+      await loadJobs(true)
+    } finally {
+      setLoadingMoreJobs(false)
+    }
+  }
 
   const handleSetOrchestratorGoal = async () => {
     if (!localGoal) {
@@ -392,6 +413,20 @@ export default function CrawlerPage() {
               loading={jobsLoading}
               onPageChange={setJobPage}
             />
+            {(jobs?.length ?? 0) < jobsTotalCount ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-full"
+                disabled={loadingMoreJobs}
+                onClick={() => void handleLoadMoreJobs()}
+              >
+                {loadingMoreJobs
+                  ? '加载中…'
+                  : `加载更多子任务（${jobs?.length ?? 0}/${jobsTotalCount}）`}
+              </Button>
+            ) : null}
           </>
         )}
         </AppShellCardBody>

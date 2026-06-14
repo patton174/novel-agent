@@ -8,22 +8,16 @@ export function AppPageStack({
   className,
   /** 账单、设置等表单窄页（在 6xl 壳内居中 3xl） */
   compact,
-  /** @deprecated 同 compact */
-  narrow,
 }: {
   children: ReactNode
   className?: string
   compact?: boolean
-  narrow?: boolean
-  /** @deprecated 宽页为默认，无需指定 */
-  wide?: boolean
 }) {
-  const isCompact = compact ?? narrow
   return (
     <div
       className={cn(
         'flex w-full flex-col gap-6',
-        isCompact && 'mx-auto max-w-3xl',
+        compact && 'mx-auto max-w-3xl',
         className,
       )}
     >

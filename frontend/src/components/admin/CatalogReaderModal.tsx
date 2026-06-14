@@ -10,17 +10,15 @@ import {
   type CatalogNovel,
 } from '@/api/catalogAdminApi'
 import { Button } from '@/components/ui/button'
+import { AppModalShell } from '@/components/ui/AppModalShell'
 import {
-  Dialog,
   DialogClose,
-  DialogContent,
   DialogDescription,
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { APP_MODAL_READER } from '@/lib/appModalClasses'
 import { cn } from '@/lib/utils'
-import { confirmAction } from '@/stores/confirmDialogStore'
+import { confirmAction } from '@/stores/appDialog'
 import { appToast } from '@/stores/appToastStore'
 
 interface CatalogReaderModalProps {
@@ -159,8 +157,14 @@ export function CatalogReaderModal({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={cn('flex max-h-[90vh] max-w-5xl flex-col gap-0 overflow-hidden p-0 sm:max-w-5xl', APP_MODAL_READER)} showCloseButton={false}>
+    <AppModalShell
+      open={open}
+      onOpenChange={onOpenChange}
+      size="memory"
+      showCloseButton={false}
+      className="gap-0 overflow-hidden p-0 sm:max-w-5xl"
+      bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
+      header={
         <div className="flex shrink-0 items-center justify-between gap-4 border-b border-border px-5 py-3">
           <div className="min-w-0 pr-2">
             <DialogTitle className="truncate text-base font-semibold">{novel.title}</DialogTitle>
@@ -185,8 +189,9 @@ export function CatalogReaderModal({
             </DialogClose>
           </div>
         </div>
-
-        <div className="relative grid min-h-0 flex-1 grid-cols-1 md:grid-cols-[240px_minmax(0,1fr)]">
+      }
+    >
+      <div className="relative grid min-h-0 flex-1 grid-cols-1 md:grid-cols-[240px_minmax(0,1fr)]">
           {mobileChapterOpen ? (
             <button
               type="button"
@@ -379,7 +384,6 @@ export function CatalogReaderModal({
             ) : null}
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+    </AppModalShell>
   )
 }

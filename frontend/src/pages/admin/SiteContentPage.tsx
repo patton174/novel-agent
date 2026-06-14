@@ -13,6 +13,7 @@ import {
   AppShellCardBody,
   AppShellCardHeader,
 } from '@/components/layout/AppPageStack'
+import { AdminNativeSelect } from '@/components/layout/AdminNativeSelect'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -105,29 +106,6 @@ export default function SiteContentPage() {
   const selectedLabel =
     SITE_CONTENT_KEYS.find((k) => k.key === selectedKey)?.label ?? selectedKey
 
-  const keyPicker = (className?: string) => (
-    <div className={cn('flex gap-2', className)}>
-      {SITE_CONTENT_KEYS.map((item) => (
-        <button
-          key={item.key}
-          type="button"
-          onClick={() => selectKey(item.key)}
-          className={cn(
-            'shrink-0 rounded-full border px-3 py-1.5 text-sm transition-colors lg:w-full lg:rounded-lg lg:px-3 lg:py-2 lg:text-left',
-            selectedKey === item.key
-              ? 'border-primary/30 bg-primary/10 font-medium text-primary'
-              : 'border-border text-muted-foreground hover:bg-muted',
-          )}
-        >
-          <span className="inline-flex items-center gap-2">
-            <FileText className="hidden size-4 shrink-0 lg:inline" />
-            {item.label}
-          </span>
-        </button>
-      ))}
-    </div>
-  )
-
   if (loading) {
     return (
       <AppPageStack>
@@ -140,12 +118,11 @@ export default function SiteContentPage() {
   return (
     <AppPageStack>
       <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
-        <aside className="w-full shrink-0 lg:sticky lg:top-6 lg:w-52">
+        <aside className="hidden w-full shrink-0 lg:sticky lg:top-6 lg:block lg:w-52">
           <AppShellCard>
             <AppShellCardHeader title="页面" description="隐私 · 条款 · 公告" />
             <AppShellCardBody className="py-2">
-              <div className="-mx-1 overflow-x-auto px-1 pb-1 lg:hidden">{keyPicker('min-w-max')}</div>
-              <ul className="hidden space-y-0.5 lg:block">
+              <ul className="space-y-0.5">
                 {SITE_CONTENT_KEYS.map((item) => (
                   <li key={item.key}>
                     <button
@@ -169,6 +146,23 @@ export default function SiteContentPage() {
         </aside>
 
         <div className="min-w-0 flex-1">
+          <div className="mb-4 lg:hidden">
+            <label htmlFor="site-content-key" className="mb-1.5 block text-xs font-medium text-muted-foreground">
+              编辑页面
+            </label>
+            <AdminNativeSelect
+              id="site-content-key"
+              value={selectedKey}
+              className="w-full"
+              onChange={(e) => selectKey(e.target.value)}
+            >
+              {SITE_CONTENT_KEYS.map((item) => (
+                <option key={item.key} value={item.key}>
+                  {item.label}
+                </option>
+              ))}
+            </AdminNativeSelect>
+          </div>
           <AppShellCard>
             <AppShellCardHeader
               title={selectedLabel}

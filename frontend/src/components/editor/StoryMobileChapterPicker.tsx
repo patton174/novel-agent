@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
-import { ArrowDown, ArrowRightLeft, ArrowUp, Plus } from 'lucide-react'
+import { ArrowDown, ArrowRightLeft, ArrowUp, ChevronDown, ChevronUp, Plus } from 'lucide-react'
 import { useNovelStore } from '@/stores/novelStore'
 import {
   buildChapterMoveToVolumePlans,
@@ -9,7 +9,7 @@ import {
   reorderVolumeIds,
   sortChapters,
 } from '@/utils/outlineDrag'
-import { promptDialog, alertDialog } from '@/stores/confirmDialogStore'
+import { promptDialog, alertDialog } from '@/stores/appDialog'
 import { useOutlineTouchDrag } from '@/hooks/useOutlineTouchDrag'
 import { EditorButton } from '@/components/ui/EditorButton'
 import { OutlineDragHandle } from '@/components/novel/outline/OutlineDragHandle'
@@ -34,6 +34,7 @@ export function StoryMobileChapterPicker() {
   const reorderVolumes = useNovelStore((s) => s.reorderVolumes)
 
   const [reorderMode, setReorderMode] = useState(false)
+  const [pickerCollapsed, setPickerCollapsed] = useState(false)
   const [busy, setBusy] = useState(false)
   const [moveChapterId, setMoveChapterId] = useState<string | null>(null)
   const [dropTarget, setDropTarget] = useState<DropTarget | null>(null)
@@ -166,10 +167,32 @@ export function StoryMobileChapterPicker() {
     onDropVolume: handleTouchDropVolume,
   })
 
+  const activeChapter = chapters.find((c) => c.id === activeChapterId) ?? null
+
   return (
     <>
       {touchDragGhost}
-      <div className="flex min-h-[8rem] max-h-[32vh] shrink-0 flex-col border-b border-border/70 bg-muted/20">
+      {pickerCollapsed ? (
+        <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border/70 bg-muted/25 px-3 py-2">
+          <div className="min-w-0">
+            <p className="truncate text-xs font-medium text-foreground">
+              {activeChapter?.title ?? '未选章节'}
+            </p>
+            <p className="text-[10px] text-muted-foreground">全屏编辑中 · 点击展开选章</p>
+          </div>
+          <EditorButton
+            variant="secondary"
+            size="sm"
+            type="button"
+            className="h-8 shrink-0 gap-1 px-2.5 text-xs"
+            onClick={() => setPickerCollapsed(false)}
+          >
+            <ChevronDown className="size-3.5" />
+            选章
+          </EditorButton>
+        </div>
+      ) : (
+      <div className="flex min-h-[7rem] max-h-[min(28dvh,36svh)] shrink-0 flex-col border-b border-border/70 bg-muted/20">
         <div className="flex items-center justify-between gap-2 border-b border-border/50 px-3 py-2">
           <div className="min-w-0">
             <p className="text-xs font-semibold text-muted-foreground">
@@ -182,6 +205,18 @@ export function StoryMobileChapterPicker() {
             ) : null}
           </div>
           <div className="flex shrink-0 items-center gap-1.5">
+            {!reorderMode ? (
+              <EditorButton
+                variant="ghost"
+                size="sm"
+                type="button"
+                className="h-8 px-2 text-xs text-muted-foreground"
+                onClick={() => setPickerCollapsed(true)}
+              >
+                <ChevronUp className="size-3.5" />
+                全屏
+              </EditorButton>
+            ) : null}
             {canReorder ? (
               <EditorButton
                 variant={reorderMode ? 'primary' : 'secondary'}
@@ -414,6 +449,7 @@ export function StoryMobileChapterPicker() {
           )}
         </div>
       </div>
+      )}
 
       <MoveChapterToVolumeDialog
         open={Boolean(moveChapter)}

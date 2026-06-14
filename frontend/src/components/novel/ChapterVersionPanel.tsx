@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react'
 import { EditorButton } from '../ui/EditorButton'
 import { api } from '../../utils/api'
 import type { ChapterVersion } from '../../types/novel'
-import { confirmAction } from '../../stores/confirmDialogStore'
+import { confirmAction } from '../../stores/appDialog'
 import { PanelLoadingSkeleton } from '@/components/loading/PageSkeletons'
 import {
   CHAPTER_VERSION_ACTIONS,

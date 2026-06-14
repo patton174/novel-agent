@@ -1,8 +1,14 @@
 import { memo } from 'react'
-import { Loader2, Pause, Play, Square, Trash2 } from 'lucide-react'
+import { Loader2, MoreHorizontal, Pause, Play, Square, Trash2 } from 'lucide-react'
 import type { CrawlJob } from '@/api/crawlAdminApi'
 import { parseCrawlJobGoal } from '@/api/crawlAdminApi'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import {
   CRAWL_JOB_ACTION_META,
   type CrawlJobAction,
@@ -22,6 +28,10 @@ const ACTION_ICONS: Record<CrawlJobAction, typeof Play> = {
   pause: Pause,
   cancel: Square,
   delete: Trash2,
+}
+
+function pickPrimaryAction(actions: CrawlJobAction[]): CrawlJobAction | undefined {
+  return actions.find((a) => a === 'start' || a === 'pause') ?? actions[0]
 }
 
 export interface CrawlJobRowProps {
@@ -44,6 +54,36 @@ export const CrawlJobRow = memo(function CrawlJobRow({
   const errorPreview = truncateError(job.errorMessage, 160)
   const actions = crawlJobActions(job.status)
   const isActive = job.status === 'RUNNING' || job.status === 'PENDING'
+  const primaryAction = pickPrimaryAction(actions)
+  const menuActions = primaryAction ? actions.filter((a) => a !== primaryAction) : actions
+
+  const renderActionButton = (action: CrawlJobAction, size: 'icon' | 'sm' = 'icon') => {
+    const meta = CRAWL_JOB_ACTION_META[action]
+    const Icon = ACTION_ICONS[action]
+    const busy = actingKey === `${job.id}:${action}`
+    const isDestructive = meta.variant === 'destructive'
+    return (
+      <Button
+        key={action}
+        size={size === 'sm' ? 'sm' : 'icon'}
+        variant={isDestructive ? 'destructive' : size === 'sm' ? 'default' : 'ghost'}
+        className={size === 'icon' ? 'size-8' : 'h-8 gap-1 px-2.5 text-xs'}
+        title={meta.label}
+        disabled={actingKey != null && !busy}
+        onClick={(e) => {
+          e.stopPropagation()
+          onAction(job, action)
+        }}
+      >
+        {busy ? (
+          <Loader2 className="size-3.5 animate-spin" />
+        ) : (
+          <Icon className="size-3.5" />
+        )}
+        {size === 'sm' ? meta.label : null}
+      </Button>
+    )
+  }
 
   return (
     <div
@@ -61,24 +101,24 @@ export const CrawlJobRow = memo(function CrawlJobRow({
         isActive ? 'border-primary/25 bg-primary/[0.03]' : 'border-border/70',
       )}
     >
-      <div className="min-w-0 flex-1 space-y-1">
-        <div className="flex min-w-0 items-center gap-2">
-          <span className="min-w-0 truncate text-sm font-medium">{title}</span>
+      <div className="min-w-0 flex-1 space-y-1.5">
+        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+          <span className="min-w-0 flex-1 text-sm font-medium leading-snug sm:truncate">{title}</span>
           <span
             className={cn(
-              'shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium',
+              'shrink-0 rounded-lg px-2 py-0.5 text-[11px] font-medium',
               crawlJobStatusClass(job.status),
             )}
           >
             {crawlJobStatusLabel(job.status)}
           </span>
         </div>
-        <p className="truncate text-xs text-muted-foreground">
+        <p className="break-all text-xs leading-relaxed text-muted-foreground sm:truncate">
           {shortenSourceUrl(job.sourceUrl)}
           {progressLabel ? ` · ${progressLabel}` : ''}
         </p>
         {percent != null ? (
-          <div className="h-1 max-w-[200px] overflow-hidden rounded-full bg-muted">
+          <div className="h-1 max-w-full overflow-hidden rounded-full bg-muted sm:max-w-[200px]">
             <div
               className="h-full rounded-full bg-primary transition-[width] duration-500"
               style={{ width: `${percent}%` }}
@@ -91,39 +131,56 @@ export const CrawlJobRow = memo(function CrawlJobRow({
           </div>
         ) : null}
         {errorPreview ? (
-          <p className="line-clamp-2 text-[11px] leading-snug text-destructive" title={job.errorMessage ?? undefined}>
+          <p
+            className="text-[11px] leading-relaxed text-destructive sm:line-clamp-2"
+            title={job.errorMessage ?? undefined}
+          >
             {errorPreview}
           </p>
         ) : null}
       </div>
       {actions.length > 0 ? (
-        <div className="flex w-full shrink-0 items-center justify-end gap-1 sm:w-auto">
-          {actions.map((action) => {
-            const meta = CRAWL_JOB_ACTION_META[action]
-            const Icon = ACTION_ICONS[action]
-            const busy = actingKey === `${job.id}:${action}`
-            return (
-              <Button
-                key={action}
-                size="icon"
-                variant={meta.variant === 'destructive' ? 'destructive' : 'ghost'}
-                className="size-8"
-                title={meta.label}
-                disabled={actingKey != null && !busy}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onAction(job, action)
-                }}
-              >
-                {busy ? (
-                  <Loader2 className="size-3.5 animate-spin" />
-                ) : (
-                  <Icon className="size-3.5" />
-                )}
-              </Button>
-            )
-          })}
-        </div>
+        <>
+          <div className="flex w-full shrink-0 items-center justify-end gap-1 border-t border-border/50 pt-2 sm:hidden">
+            {primaryAction ? renderActionButton(primaryAction, 'sm') : null}
+            {menuActions.length > 0 ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="outline"
+                    className="size-8"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <MoreHorizontal className="size-4" />
+                    <span className="sr-only">更多操作</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                  {menuActions.map((action) => {
+                    const meta = CRAWL_JOB_ACTION_META[action]
+                    const Icon = ACTION_ICONS[action]
+                    return (
+                      <DropdownMenuItem
+                        key={action}
+                        variant={meta.variant === 'destructive' ? 'destructive' : 'default'}
+                        disabled={actingKey != null}
+                        onClick={() => onAction(job, action)}
+                      >
+                        <Icon className="size-3.5" />
+                        {meta.label}
+                      </DropdownMenuItem>
+                    )
+                  })}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : null}
+          </div>
+          <div className="hidden shrink-0 items-center justify-end gap-1 sm:flex">
+            {actions.map((action) => renderActionButton(action))}
+          </div>
+        </>
       ) : null}
     </div>
   )

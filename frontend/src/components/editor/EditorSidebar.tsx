@@ -1,9 +1,13 @@
 import type { NovelSessionGroup } from '../../hooks/editor/useEditorSessions'
+import { useState } from 'react'
+import { X } from 'lucide-react'
 import { EditorButton } from '../ui/EditorButton'
 import { KebabMenu } from '../ui/KebabMenu'
 import { EditorIcons } from './icons'
 import { NovelSessionBatchBar, NovelSessionList } from './NovelSessionList'
 import { cn } from '@/lib/utils'
+
+const EDITOR_SIDEBAR_HINT_KEY = 'na:editor-sidebar-hint-dismissed'
 
 export interface EditorSidebarProps {
   sessionSearch: string
@@ -65,6 +69,15 @@ export function EditorSidebar({
   memoryModalOpen,
   embedded = false,
 }: EditorSidebarProps) {
+  const [hintDismissed, setHintDismissed] = useState(
+    () => localStorage.getItem(EDITOR_SIDEBAR_HINT_KEY) === '1',
+  )
+
+  const dismissHint = () => {
+    localStorage.setItem(EDITOR_SIDEBAR_HINT_KEY, '1')
+    setHintDismissed(true)
+  }
+
   return (
     <aside
       className={cn(
@@ -81,6 +94,20 @@ export function EditorSidebar({
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto p-1.5 pb-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+        {!hintDismissed && novelSessionGroups.length > 0 ? (
+          <div className="relative mb-2 rounded-lg border border-primary/20 bg-primary/[0.04] px-2.5 py-2 pr-8 text-[11px] leading-snug text-muted-foreground">
+            <p className="font-medium text-foreground">快速开始</p>
+            <p className="mt-0.5">选小说 → 点「新对话」→ 右侧写章或问 AI</p>
+            <button
+              type="button"
+              className="absolute right-1.5 top-1.5 rounded-md p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+              aria-label="关闭提示"
+              onClick={dismissHint}
+            >
+              <X className="size-3.5" />
+            </button>
+          </div>
+        ) : null}
         <div className="mb-1">
           {novelSessionGroups.length === 0 ? (
             <div className="px-0.5 py-1.5 text-xs leading-snug text-muted-foreground/80">
@@ -235,15 +262,34 @@ export function EditorSidebar({
         </div>
       </div>
 
-      <div className="flex shrink-0 flex-col gap-0.5 border-t border-border p-2.5">
-        <EditorButton variant="nav" active={memoryModalOpen} onClick={onOpenMemory}>
-          <EditorIcons.Brain />
-          <span>记忆管理</span>
-        </EditorButton>
-        <EditorButton variant="nav" onClick={onOpenSettings}>
-          <EditorIcons.Settings />
-          <span>设置</span>
-        </EditorButton>
+      <div className="flex shrink-0 flex-col gap-1 border-t border-border p-2.5">
+        {activeNovelId ? (
+          <EditorButton variant="primary" fullWidth onClick={() => onNewChatForNovel(activeNovelId)}>
+            <EditorIcons.Plus />
+            <span>新对话</span>
+          </EditorButton>
+        ) : null}
+        <div className="flex items-center gap-1">
+          <EditorButton
+            variant="nav"
+            active={memoryModalOpen}
+            onClick={onOpenMemory}
+            className="min-w-0 flex-1"
+          >
+            <EditorIcons.Brain />
+            <span>记忆</span>
+          </EditorButton>
+          <KebabMenu
+            aria-label="更多工具"
+            items={[
+              {
+                id: 'settings',
+                label: '设置',
+                onClick: onOpenSettings,
+              },
+            ]}
+          />
+        </div>
       </div>
     </aside>
   )

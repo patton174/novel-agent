@@ -28,7 +28,11 @@ function StatCard({
       <AppShellCardBody className="py-4">
         <p className="text-sm text-muted-foreground">{title}</p>
         <p className="mt-1 text-2xl font-bold tabular-nums text-foreground">{value}</p>
-        {hint ? <p className="mt-2 line-clamp-2 text-xs text-muted-foreground" title={hint}>{hint}</p> : null}
+        {hint ? (
+          <p className="mt-2 truncate text-xs text-muted-foreground" title={hint}>
+            {hint}
+          </p>
+        ) : null}
       </AppShellCardBody>
     </AppShellCard>
   )

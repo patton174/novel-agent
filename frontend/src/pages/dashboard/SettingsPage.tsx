@@ -42,7 +42,7 @@ export default function SettingsPage() {
   }, [setProfile])
 
   return (
-    <AppPageStack narrow>
+    <AppPageStack compact>
       <AppPageIntro
         eyebrow="账户"
         title={loading ? <InlineTitleSkeleton /> : profile?.username ?? '账户设置'}

@@ -115,12 +115,12 @@ export function EditorChatMessage({
   )
   const canCollapseProcess =
     isMobile &&
-    streamFinished &&
-    !isActiveStream &&
     !message.agentAwaitingInteraction &&
     hasOrchestrationTrace &&
     orchestrationStepCount > 0
+
   const processCollapsed = canCollapseProcess && !processExpanded
+  const showProcessToggle = canCollapseProcess && (streamFinished || streamActive)
 
   useEffect(() => {
     setProcessExpanded(false)
@@ -174,6 +174,11 @@ export function EditorChatMessage({
         )}
         {showAgentTimeline ? (
           <div className="flex w-full max-w-full flex-col" data-testid="assistant-stream-shell">
+            {processCollapsed && streamActive && !deliveryText ? (
+              <ChatMessageSurfaceBody className="flex min-h-7 items-center py-1" aria-live="polite">
+                <ShimmerScanText active>AI 正在创作…</ShimmerScanText>
+              </ChatMessageSurfaceBody>
+            ) : null}
             {processCollapsed && deliveryText ? (
               <TimelineDeliveryBlock
                 text={deliveryText}
@@ -181,7 +186,7 @@ export function EditorChatMessage({
                 testId="assistant-delivery-collapsed"
               />
             ) : null}
-            {canCollapseProcess ? (
+            {showProcessToggle ? (
               <button
                 type="button"
                 className={MOBILE_PROCESS_TOGGLE}
@@ -197,9 +202,11 @@ export function EditorChatMessage({
                 <span>
                   {processExpanded
                     ? '收起创作过程'
-                    : processCollapsed && !deliveryText
-                      ? `展开查看 AI 创作过程 · ${orchestrationStepCount} 步`
-                      : `查看创作过程 · ${orchestrationStepCount} 步`}
+                    : streamActive
+                      ? `创作进行中 · ${orchestrationStepCount} 步（点击展开）`
+                      : processCollapsed && !deliveryText
+                        ? `展开查看 AI 创作过程 · ${orchestrationStepCount} 步`
+                        : `查看创作过程 · ${orchestrationStepCount} 步`}
                 </span>
                 <ChevronDown
                   className={`size-4 shrink-0 transition-transform ${processExpanded ? 'rotate-180' : ''}`}

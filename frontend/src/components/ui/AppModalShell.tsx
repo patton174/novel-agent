@@ -40,6 +40,8 @@ export interface AppModalShellProps {
   bodyClassName?: string
   /** @default true — mobile full-screen sheet below md */
   mobileFullscreen?: boolean
+  /** @default true — top-right X; set false when header provides its own close */
+  showCloseButton?: boolean
   testId?: string
 }
 
@@ -54,6 +56,7 @@ export function AppModalShell({
   className,
   bodyClassName,
   mobileFullscreen = true,
+  showCloseButton = true,
   testId,
 }: AppModalShellProps) {
   const isInsetBody = size === 'memory'
@@ -63,6 +66,7 @@ export function AppModalShell({
       <DialogContent
         data-testid={testId}
         mobileFullscreen={mobileFullscreen}
+        showCloseButton={showCloseButton}
         className={cn(
           APP_MODAL_FORM,
           APP_MODAL_SIZE_CLASS[size],

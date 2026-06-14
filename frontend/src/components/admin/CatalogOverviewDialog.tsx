@@ -8,18 +8,12 @@ import {
   type CatalogNovel,
   type CatalogNovelProgress,
 } from '@/api/catalogAdminApi'
+import { AppModalShell } from '@/components/ui/AppModalShell'
 import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+import { DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
-import { APP_MODAL_READER } from '@/lib/appModalClasses'
-import { confirmAction } from '@/stores/confirmDialogStore'
+import { confirmAction } from '@/stores/appDialog'
 import { appToast } from '@/stores/appToastStore'
 
 interface CatalogOverviewDialogProps {
@@ -115,8 +109,13 @@ export function CatalogOverviewDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={cn('max-w-lg gap-0 overflow-hidden p-0', APP_MODAL_READER)}>
+    <AppModalShell
+      open={open}
+      onOpenChange={onOpenChange}
+      size="reader"
+      className="gap-0 overflow-hidden p-0"
+      bodyClassName="overflow-y-auto p-0"
+      header={
         <div className="flex gap-4 border-b border-border bg-muted/30 p-5">
           {coverUrl || novel.coverUrl ? (
             <img
@@ -129,151 +128,151 @@ export function CatalogOverviewDialog({
               <BookOpen className="size-8 text-muted-foreground" />
             </div>
           )}
-          <DialogHeader className="min-w-0 flex-1 space-y-1 text-left">
+          <div className="min-w-0 flex-1 space-y-1 text-left">
             <DialogTitle className="text-lg leading-snug">{title || novel.title}</DialogTitle>
             <DialogDescription className="text-sm">
               {author || novel.author || '未知作者'} · {novel.chapterCount} 章
             </DialogDescription>
-          </DialogHeader>
+          </div>
         </div>
+      }
+    >
+      <div className="space-y-4 px-5 py-4">
+        {loading ? (
+          <PanelLoadingSkeleton rows={3} />
+        ) : progress ? (
+          <div
+            className={cn(
+              'rounded-lg border px-3 py-2.5 text-sm',
+              progress.complete
+                ? 'border-emerald-500/30 bg-emerald-500/5'
+                : 'border-amber-500/30 bg-amber-500/5',
+            )}
+          >
+            <p className="font-medium">{progress.complete ? '爬取已完成' : '爬取进行中'}</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              已入库 {progress.chapterCount} 章
+              {progress.chaptersExpected != null
+                ? ` · 进度 ${progress.chaptersDone ?? 0}/${progress.chaptersExpected}`
+                : ''}
+              {progress.latestJobStatus ? ` · 任务 ${progress.latestJobStatus}` : ''}
+            </p>
+            {progress.latestJobId && onOpenJob ? (
+              <button
+                type="button"
+                className="mt-1 text-xs text-primary underline-offset-2 hover:underline"
+                onClick={() => onOpenJob(progress.latestJobId!)}
+              >
+                查看关联爬虫任务
+              </button>
+            ) : null}
+          </div>
+        ) : null}
 
-        <div className="space-y-4 px-5 py-4">
-          {loading ? (
-            <PanelLoadingSkeleton rows={3} />
-          ) : progress ? (
-            <div
-              className={cn(
-                'rounded-lg border px-3 py-2.5 text-sm',
-                progress.complete
-                  ? 'border-emerald-500/30 bg-emerald-500/5'
-                  : 'border-amber-500/30 bg-amber-500/5',
-              )}
-            >
-              <p className="font-medium">{progress.complete ? '爬取已完成' : '爬取进行中'}</p>
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                已入库 {progress.chapterCount} 章
-                {progress.chaptersExpected != null
-                  ? ` · 进度 ${progress.chaptersDone ?? 0}/${progress.chaptersExpected}`
-                  : ''}
-                {progress.latestJobStatus ? ` · 任务 ${progress.latestJobStatus}` : ''}
+        {!editing ? (
+          <>
+            {description || novel.description ? (
+              <p className="line-clamp-4 text-sm leading-relaxed text-muted-foreground">
+                {description || novel.description}
               </p>
-              {progress.latestJobId && onOpenJob ? (
-                <button
-                  type="button"
-                  className="mt-1 text-xs text-primary underline-offset-2 hover:underline"
-                  onClick={() => onOpenJob(progress.latestJobId!)}
-                >
-                  查看关联爬虫任务
-                </button>
-              ) : null}
+            ) : null}
+            {sourceUrl || novel.sourceUrl ? (
+              <a
+                href={(sourceUrl || novel.sourceUrl) ?? undefined}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex max-w-full items-center gap-1 text-xs text-muted-foreground hover:text-primary"
+              >
+                <ExternalLink className="size-3 shrink-0" />
+                <span className="truncate">{sourceUrl || novel.sourceUrl}</span>
+              </a>
+            ) : null}
+          </>
+        ) : (
+          <div className="space-y-3">
+            <div>
+              <label className="mb-1 block text-xs text-muted-foreground">书名</label>
+              <Input value={title} onChange={(e) => setTitle(e.target.value)} />
             </div>
-          ) : null}
-
-          {!editing ? (
-            <>
-              {description || novel.description ? (
-                <p className="line-clamp-4 text-sm leading-relaxed text-muted-foreground">
-                  {description || novel.description}
-                </p>
-              ) : null}
-              {sourceUrl || novel.sourceUrl ? (
-                <a
-                  href={(sourceUrl || novel.sourceUrl) ?? undefined}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex max-w-full items-center gap-1 text-xs text-muted-foreground hover:text-primary"
-                >
-                  <ExternalLink className="size-3 shrink-0" />
-                  <span className="truncate">{sourceUrl || novel.sourceUrl}</span>
-                </a>
-              ) : null}
-            </>
-          ) : (
-            <div className="space-y-3">
-              <div>
-                <label className="mb-1 block text-xs text-muted-foreground">书名</label>
-                <Input value={title} onChange={(e) => setTitle(e.target.value)} />
-              </div>
-              <div>
-                <label className="mb-1 block text-xs text-muted-foreground">作者</label>
-                <Input value={author} onChange={(e) => setAuthor(e.target.value)} />
-              </div>
-              <div>
-                <label className="mb-1 block text-xs text-muted-foreground">封面 URL</label>
-                <Input value={coverUrl} onChange={(e) => setCoverUrl(e.target.value)} />
-              </div>
-              <div>
-                <label className="mb-1 block text-xs text-muted-foreground">来源 URL</label>
-                <Input value={sourceUrl} onChange={(e) => setSourceUrl(e.target.value)} />
-              </div>
-              <div>
-                <label className="mb-1 block text-xs text-muted-foreground">简介</label>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  rows={3}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                />
-              </div>
+            <div>
+              <label className="mb-1 block text-xs text-muted-foreground">作者</label>
+              <Input value={author} onChange={(e) => setAuthor(e.target.value)} />
             </div>
-          )}
-        </div>
+            <div>
+              <label className="mb-1 block text-xs text-muted-foreground">封面 URL</label>
+              <Input value={coverUrl} onChange={(e) => setCoverUrl(e.target.value)} />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs text-muted-foreground">来源 URL</label>
+              <Input value={sourceUrl} onChange={(e) => setSourceUrl(e.target.value)} />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs text-muted-foreground">简介</label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={3}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              />
+            </div>
+          </div>
+        )}
+      </div>
 
-        <div className="flex items-center justify-between gap-3 border-t border-border bg-muted/20 px-5 py-3">
-          {!editing ? (
-            <>
-              <div className="flex items-center gap-2">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="text-muted-foreground"
-                  onClick={() => setEditing(true)}
-                >
-                  <Pencil className="mr-1.5 size-3.5" />
-                  编辑
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="text-destructive hover:text-destructive"
-                  disabled={deleting}
-                  onClick={() => void handleDelete()}
-                >
-                  {deleting ? (
-                    <Loader2 className="size-3.5 animate-spin" />
-                  ) : (
-                    <Trash2 className="size-3.5" />
-                  )}
-                </Button>
-              </div>
-              <Button type="button" onClick={() => onRead?.(novel)}>
-                <BookOpen className="mr-2 size-4" />
-                阅读目录
-              </Button>
-            </>
-          ) : (
-            <>
+      <div className="flex items-center justify-between gap-3 border-t border-border bg-muted/20 px-5 py-3">
+        {!editing ? (
+          <>
+            <div className="flex items-center gap-2">
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
-                onClick={() => {
-                  resetForms(novel)
-                  setEditing(false)
-                }}
+                className="text-muted-foreground"
+                onClick={() => setEditing(true)}
               >
-                取消
+                <Pencil className="mr-1.5 size-3.5" />
+                编辑
               </Button>
-              <Button type="button" size="sm" disabled={saving} onClick={() => void handleSave()}>
-                {saving ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
-                保存
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="text-destructive hover:text-destructive"
+                disabled={deleting}
+                onClick={() => void handleDelete()}
+              >
+                {deleting ? (
+                  <Loader2 className="size-3.5 animate-spin" />
+                ) : (
+                  <Trash2 className="size-3.5" />
+                )}
               </Button>
-            </>
-          )}
-        </div>
-      </DialogContent>
-    </Dialog>
+            </div>
+            <Button type="button" onClick={() => onRead?.(novel)}>
+              <BookOpen className="mr-2 size-4" />
+              阅读目录
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                resetForms(novel)
+                setEditing(false)
+              }}
+            >
+              取消
+            </Button>
+            <Button type="button" size="sm" disabled={saving} onClick={() => void handleSave()}>
+              {saving ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
+              保存
+            </Button>
+          </>
+        )}
+      </div>
+    </AppModalShell>
   )
 }

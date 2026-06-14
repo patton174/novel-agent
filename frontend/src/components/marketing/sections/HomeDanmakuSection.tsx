@@ -106,6 +106,11 @@ export function HomeDanmakuSection() {
           </button>
         </div>
       </form>
+
+      <div
+        aria-hidden
+        className="pointer-events-none h-8 bg-gradient-to-b from-transparent to-indigo-950/80"
+      />
     </section>
   )
 }

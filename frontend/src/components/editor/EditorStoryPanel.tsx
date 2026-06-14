@@ -3,7 +3,7 @@ import { ChapterVersionPanel } from '../novel/ChapterVersionPanel'
 import { NovelOutlinePanel } from '../novel/NovelOutlinePanel'
 import { StoryMobileChapterPicker } from './StoryMobileChapterPicker'
 import { EditorButton } from '../ui/EditorButton'
-import { confirmAction } from '../../stores/confirmDialogStore'
+import { confirmAction } from '../../stores/appDialog'
 import { EditorIcons } from './icons'
 import { useEditorMobile } from '@/hooks/useMediaQuery'
 import {

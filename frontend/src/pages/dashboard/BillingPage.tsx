@@ -57,7 +57,7 @@ export default function BillingPage() {
       : 0
 
   return (
-    <AppPageStack narrow>
+    <AppPageStack compact>
       <AppShellCard>
         <AppShellCardHeader
           title="本月用量"
@@ -194,16 +194,16 @@ export default function BillingPage() {
               <Skeleton className="h-10 w-full" />
               <Skeleton className="h-10 w-full" />
             </div>
-          ) : events.length === 0 ? (
-            <p className="px-6 py-8 text-center text-sm text-muted-foreground">
-              {runFilter ? '该 run 暂无用量记录' : '暂无用量明细，使用 Agent 后将在此展示最近调用'}
-            </p>
           ) : (
             <>
               <div className="space-y-3 px-4 py-4 md:hidden">
-                {events.map((ev) => (
-                  <UsageEventCard key={ev.id} ev={ev} runFilter={runFilter} />
-                ))}
+                {events.length === 0 ? (
+                  <p className="rounded-xl border border-dashed border-border bg-muted/20 px-4 py-8 text-center text-sm text-muted-foreground">
+                    {runFilter ? '该 run 暂无用量记录' : '暂无用量明细，使用 Agent 后将在此展示最近调用'}
+                  </p>
+                ) : (
+                  events.map((ev) => <UsageEventCard key={ev.id} ev={ev} runFilter={runFilter} />)
+                )}
               </div>
               <div className="hidden md:block">
                 <DataTableFrame embedded>
@@ -218,9 +218,19 @@ export default function BillingPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
-                      {events.map((ev) => (
-                        <UsageEventRow key={ev.id} ev={ev} runFilter={runFilter} />
-                      ))}
+                      {events.length === 0 ? (
+                        <tr>
+                          <td colSpan={5} className="px-4 py-10 text-center text-sm text-muted-foreground">
+                            {runFilter
+                              ? '该 run 暂无用量记录'
+                              : '暂无用量明细，使用 Agent 后将在此展示最近调用'}
+                          </td>
+                        </tr>
+                      ) : (
+                        events.map((ev) => (
+                          <UsageEventRow key={ev.id} ev={ev} runFilter={runFilter} />
+                        ))
+                      )}
                     </tbody>
                   </table>
                 </DataTableFrame>

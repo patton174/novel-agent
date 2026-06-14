@@ -33,7 +33,7 @@ export function HomeHeroSection() {
     <div className="relative mx-auto max-w-6xl px-6 text-center">
       <motion.p
         {...fade(0)}
-        className="mb-5 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-white/70 px-4 py-1.5 text-xs font-semibold tracking-wide text-primary shadow-sm backdrop-blur-md"
+        className="mb-5 inline-flex items-center gap-2 rounded-xl border border-primary/20 bg-white/70 px-4 py-1.5 text-xs font-semibold tracking-wide text-primary shadow-sm backdrop-blur-md"
       >
         <Sparkles className="size-3.5" />
         {t('home.hero.eyebrow')}
@@ -108,7 +108,7 @@ export function HomeHeroSection() {
   return (
     <section
       id="hero"
-      className="relative flex min-h-[min(100svh,720px)] flex-col items-center justify-center overflow-hidden bg-background pb-6 pt-20 sm:min-h-[min(100vh,880px)] md:min-h-[92vh] md:pb-12 md:pt-24"
+      className="relative flex min-h-[min(100svh,720px)] flex-col items-center justify-center overflow-hidden bg-background pb-6 pt-20 sm:min-h-[min(100vh,880px)] md:min-h-[78vh] md:pb-12 md:pt-24"
     >
       <MarketingAmbient variant="hero" />
       <div className="mkt-grid-bg pointer-events-none absolute inset-0" />

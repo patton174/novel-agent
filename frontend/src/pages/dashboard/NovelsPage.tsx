@@ -13,6 +13,7 @@ import { useMarkRouteSeen } from '@/hooks/useMarkRouteSeen'
 import { fetchNovels, generateNovelCover, type DashboardNovel } from '@/api/dashboardApi'
 import { dashboardCache } from '@/stores/dashboardCacheStore'
 import { appToast } from '@/stores/appToastStore'
+import { EDITOR_CREATE_HREF, editorNovelHref } from '@/lib/editorRoutes'
 
 function formatDate(ts: number): string {
   const date = new Date(ts)
@@ -105,7 +106,7 @@ export default function NovelsPage() {
         icon={BookOpen}
         action={
           <Button asChild className={`px-5 ${APP_BTN_MD}`}>
-            <Link to="/editor">
+            <Link to={EDITOR_CREATE_HREF}>
               <Plus className="mr-2 size-4" />
               新建小说
             </Link>
@@ -134,7 +135,7 @@ export default function NovelsPage() {
                 asChild
                 className={`${APP_BTN_MD} bg-primary px-8 text-primary-foreground shadow-md hover:bg-primary/90`}
               >
-                <Link to="/editor">
+                <Link to={EDITOR_CREATE_HREF}>
                   <Plus className="mr-2 size-5" />
                   创建第一部作品
                 </Link>
@@ -212,7 +213,7 @@ export default function NovelsPage() {
                     asChild
                     className={APP_BTN_FULL_MD}
                   >
-                    <Link to={`/editor?novelId=${encodeURIComponent(novel.id)}`}>继续写作</Link>
+                    <Link to={editorNovelHref(novel.id)}>继续写作</Link>
                   </Button>
                 </div>
               </article>

@@ -12,6 +12,7 @@ import {
   type AdminPlanUpsertPayload,
 } from '@/api/billingAdminApi'
 import { Badge } from '@/components/ui/badge'
+import { AppModalShell } from '@/components/ui/AppModalShell'
 import { Button } from '@/components/ui/button'
 import { DataTableFrame } from '@/components/layout/DataTableFrame'
 import {
@@ -19,21 +20,13 @@ import {
   AppShellCard,
   AppShellCardHeader,
 } from '@/components/layout/AppPageStack'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+import { DialogFooter } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useMarkRouteSeen } from '@/hooks/useMarkRouteSeen'
 import { appToast } from '@/stores/appToastStore'
-import { confirmAction } from '@/stores/confirmDialogStore'
+import { confirmAction } from '@/stores/appDialog'
 import { cn } from '@/lib/utils'
-import { APP_MODAL_FORM } from '@/lib/appModalClasses'
 
 const emptyForm = (): AdminPlanUpsertPayload => ({
   code: '',
@@ -314,13 +307,14 @@ export default function PlansPage() {
       </DataTableFrame>
       </AppShellCard>
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className={cn('max-h-[90vh] overflow-y-auto sm:max-w-lg', APP_MODAL_FORM)}>
-          <DialogHeader>
-            <DialogTitle>{editing ? '编辑套餐' : '新建套餐'}</DialogTitle>
-            <DialogDescription>调整价格、配额与功能项，保存后立即对用户可见。</DialogDescription>
-          </DialogHeader>
-
+      <AppModalShell
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        size="form"
+        className="max-h-[90vh]"
+        title={editing ? '编辑套餐' : '新建套餐'}
+        description="调整价格、配额与功能项，保存后立即对用户可见。"
+      >
           <div className="grid gap-4 py-2">
             <div className="grid gap-2">
               <label htmlFor="plan-code" className="text-sm font-medium">
@@ -461,8 +455,7 @@ export default function PlansPage() {
               {saving ? '保存中…' : '保存'}
             </Button>
           </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      </AppModalShell>
     </AppPageStack>
   )
 }
