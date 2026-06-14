@@ -9,7 +9,8 @@ import { AuthShell } from '../components/auth/AuthShell'
 import { AuthField } from '../components/auth/AuthField'
 import { AuthLegalNotice } from '../components/auth/AuthLegalNotice'
 import { AuthSubmitButton } from '../components/auth/AuthSubmitButton'
-import { buildLoginHref, buildPostLoginHref } from '@/lib/authRedirect'
+import { buildPostLoginHref } from '@/lib/authRedirect'
+import { useFormDraft } from '@/hooks/useFormDraft'
 import { useTranslation } from 'react-i18next'
 
 const LoginPage: React.FC = () => {
@@ -22,7 +23,7 @@ const LoginPage: React.FC = () => {
     }
     return ''
   }, [searchParams, t])
-  const [username, setUsername] = useFormDraft('login_username', '')
+  const [username, setUsername, clearUsernameDraft] = useFormDraft('login_username', '')
   const [password, setPassword] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [fieldErrors, setFieldErrors] = useState<{ username?: string; password?: string }>({})
@@ -62,7 +63,7 @@ const LoginPage: React.FC = () => {
           return
         }
       }
-      localStorage.removeItem('draft_login_username')
+      clearUsernameDraft()
       appToast.success(t('auth:login.success'))
       const returnTo = searchParams.get('returnTo')
       navigate(
