@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { buildLoginHref, buildReturnPath } from '@/lib/authRedirect'
 import { isLoggedIn } from '../../utils/auth'
 import { useAuthReady } from '../../security/useAuthReady'
