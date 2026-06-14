@@ -9,6 +9,8 @@ import cn.novelstudio.module.content.dto.CoverPromptResponse;
 import cn.novelstudio.module.content.dto.GenerateCoverRequest;
 import cn.novelstudio.module.content.dto.CreateChapterRequest;
 import cn.novelstudio.module.content.dto.CreateNovelRequest;
+import cn.novelstudio.module.content.dto.NovelDescriptionPromptRequest;
+import cn.novelstudio.module.content.dto.NovelDescriptionPromptResponse;
 import cn.novelstudio.module.content.dto.NovelDTO;
 import cn.novelstudio.module.content.dto.ReindexStatusDTO;
 import cn.novelstudio.module.content.dto.ReorderIdsRequest;
@@ -52,6 +54,18 @@ public class AuthNovelController extends BaseController {
         @Valid @RequestBody CreateNovelRequest request
     ) {
         return biz.create(parseUserId(userId), request);
+    }
+
+    @PostMapping("/description/prompt")
+    public Result<NovelDescriptionPromptResponse> suggestDescriptionPrompt(
+        @RequestHeader("X-User-Id") String userId,
+        @RequestBody(required = false) NovelDescriptionPromptRequest request
+    ) {
+        String title = request == null ? null : request.title();
+        String genre = request == null ? null : request.genre();
+        String style = request == null ? null : request.style();
+        String draft = request == null ? null : request.draft();
+        return biz.suggestDescriptionPrompt(title, genre, style, draft);
     }
 
     @GetMapping("/{novelId}")

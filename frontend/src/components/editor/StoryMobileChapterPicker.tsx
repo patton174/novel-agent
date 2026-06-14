@@ -96,9 +96,11 @@ export function StoryMobileChapterPicker() {
   )
 
   const [listScrollEl, setListScrollEl] = useState<HTMLDivElement | null>(null)
+  const browseRowCount = reorderMode ? 0 : browseRows.length
+  const virtualEnabled = listScrollEl != null && browseRowCount > 0
 
   const browseVirtualizer = useVirtualizer({
-    count: reorderMode ? 0 : browseRows.length,
+    count: virtualEnabled ? browseRowCount : 0,
     getScrollElement: () => listScrollEl,
     estimateSize: (index) => {
       const row = browseRows[index]
@@ -108,7 +110,10 @@ export function StoryMobileChapterPicker() {
       return 52
     },
     overscan: 10,
-    measureElement: (el) => el?.getBoundingClientRect().height ?? 0,
+    measureElement: (el) => {
+      const height = el?.getBoundingClientRect().height ?? 0
+      return height > 0 ? height : 52
+    },
   })
 
   const moveChapter = moveChapterId

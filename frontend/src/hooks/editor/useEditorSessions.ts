@@ -21,7 +21,7 @@ import {
 import { fromStoredChatMessage } from '../../utils/agentMessagePersist'
 import { mergeRemoteWithLocalTrace } from '../../utils/agentMessageReplay'
 import { contentMessageToEditorMessage } from '../../utils/contentMessageMap'
-import { resetAgentSessionId } from '../../utils/agentSession'
+import { adoptAgentSessionId, resetAgentSessionId } from '../../utils/agentSession'
 import { api } from '../../utils/api'
 import { appToast } from '../../stores/appToastStore'
 import type { Novel } from '../../types/novel'
@@ -151,8 +151,9 @@ export function useEditorSessions({
   const switchSession = useCallback((sessionId: string) => {
     if (isLoading) return
     closeStreamSockets()
-    agentSessionIdRef.current = sessionId
-    setActiveSession(sessionId)
+    const adopted = adoptAgentSessionId(sessionId)
+    agentSessionIdRef.current = adopted
+    setActiveSession(adopted)
     const restoredLocal = loadSessionMessages(sessionId).map(fromStoredChatMessage)
     setMessages(restoredLocal.length > 0 ? restoredLocal : createWelcomeMessages(activeNovel))
     void api.listContentMessages(sessionId, 50)

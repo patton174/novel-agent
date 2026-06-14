@@ -1,12 +1,19 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import {
+  buildEditorLocation,
+  readEditorSessionId,
+  readEditorTab,
+  readEditorUrlSnapshot,
+} from '@/lib/editorUrlState'
+import { adoptAgentSessionId, getOrCreateAgentSessionId } from '../../utils/agentSession'
 import type { ChapterVersion } from '../../types/novel'
 import { sortChapters } from '../../utils/outlineDrag'
 import { APP_MOBILE_MEDIA, matchesAppMobile } from '@/lib/breakpoints'
 import { readHostModePreference, writeHostModePreference } from '../../utils/agentHostMode'
 import { toStoredChatMessage } from '../../utils/agentMessagePersist'
 import { saveSessionMessages } from '../../utils/chatSessionStore'
-import { getOrCreateAgentSessionId } from '../../utils/agentSession'
+import { useThemeStore } from '@/stores/themeStore'
 import { useNovelStore } from '../../stores/novelStore'
 import {
   INITIAL_ASSISTANT_MESSAGE,
@@ -21,19 +28,38 @@ import { useEditorReindex } from './useEditorReindex'
 import { useEditorBootstrap } from './useEditorBootstrap'
 
 export function useEditorPage() {
-  const [activeCenterTab, setActiveCenterTab] = useState<EditorCenterTab>('chat')
-  const [showCreateNovel, setShowCreateNovel] = useState(false)
+  const location = useLocation()
+  const navigate = useNavigate()
+  const { chapterId: chapterIdParam } = useParams<{ chapterId?: string }>()
+  const [searchParams] = useSearchParams()
+  const initialUrl = useMemo(
+    () => readEditorUrlSnapshot(location.pathname, location.search),
+    [location.pathname, location.search],
+  )
+  const initialSessionId = useMemo(
+    () => readEditorSessionId(location.search),
+    [location.search],
+  )
+
+  const [activeCenterTab, setActiveCenterTab] = useState<EditorCenterTab>(
+    () => initialUrl.tab,
+  )
+  const [showCreateNovel, setShowCreateNovel] = useState(
+    () => initialUrl.action === 'create',
+  )
   const [storyOutlineCollapsed, setStoryOutlineCollapsed] = useState(() => matchesAppMobile())
   const [versionsExpanded, setVersionsExpanded] = useState(false)
   const [versionPreview, setVersionPreview] = useState<ChapterVersion | null>(null)
   const [messages, setMessages] = useState<EditorMessage[]>([INITIAL_ASSISTANT_MESSAGE])
-  const [searchParams] = useSearchParams()
+  const preferredSessionIdRef = useRef<string | null>(initialSessionId)
+  const urlSyncReadyRef = useRef(false)
   const [inputValue, setInputValue] = useState('')
   const [hostModeEnabled, setHostModeEnabled] = useState(readHostModePreference)
 
   const landingPromptSeeded = useRef(false)
   const novelParamHandled = useRef(false)
-  const createParamHandled = useRef(false)
+  const chapterParamHandled = useRef(false)
+  const memoryParamHandled = useRef(false)
   useEffect(() => {
     const mq = window.matchMedia(APP_MOBILE_MEDIA)
     const onChange = () => {
@@ -46,7 +72,9 @@ export function useEditorPage() {
 
   const [hostRunningInBackground, setHostRunningInBackground] = useState(false)
 
-  const agentSessionIdRef = useRef(getOrCreateAgentSessionId())
+  const agentSessionIdRef = useRef(
+    initialSessionId ? adoptAgentSessionId(initialSessionId) : getOrCreateAgentSessionId(),
+  )
   const hostModeRef = useRef(hostModeEnabled)
   const isLoadingRef = useRef(false)
   const refreshSessionsRef = useRef<(novelId?: string | null) => void>(() => {})
@@ -160,6 +188,7 @@ export function useEditorPage() {
     expandNovel: sessions.expandNovel,
     refreshStoryMemory: memory.refreshStoryMemory,
     loadNovels,
+    preferredSessionIdRef,
     hostModeEnabled,
     isLoading: stream.isLoading,
     setHostRunningInBackground,
@@ -185,29 +214,77 @@ export function useEditorPage() {
 
   useEffect(() => {
     if (landingPromptSeeded.current) return
-    const prompt = searchParams.get('prompt')?.trim()
+    const prompt = initialUrl.prompt
     if (!prompt) return
     landingPromptSeeded.current = true
     setInputValue(prompt)
     setActiveCenterTab('chat')
-  }, [searchParams])
-
-  useEffect(() => {
-    if (createParamHandled.current) return
-    if (searchParams.get('action') !== 'create') return
-    createParamHandled.current = true
-    setShowCreateNovel(true)
-  }, [searchParams])
+  }, [initialUrl.prompt])
 
   useEffect(() => {
     if (novelParamHandled.current) return
-    const novelId = searchParams.get('novelId')?.trim()
+    const novelId = initialUrl.novelId
     if (!novelId) return
     if (!novels.some((n) => n.id === novelId)) return
     novelParamHandled.current = true
     void selectNovel(novelId)
+    const tab = readEditorTab(location.search)
+    if (!tab) {
+      setActiveCenterTab('story')
+    }
+  }, [initialUrl.novelId, location.search, novels, selectNovel])
+
+  useEffect(() => {
+    if (chapterParamHandled.current) return
+    const chapterId = chapterIdParam?.trim()
+    if (!chapterId || !activeNovelId) return
+    if (!chapters.some((c) => c.id === chapterId)) return
+    chapterParamHandled.current = true
+    if (activeChapterId !== chapterId) {
+      void selectChapter(chapterId)
+    }
     setActiveCenterTab('story')
-  }, [novels, searchParams, selectNovel])
+  }, [chapterIdParam, activeNovelId, activeChapterId, chapters, selectChapter])
+
+  useEffect(() => {
+    if (memoryParamHandled.current) return
+    if (!initialUrl.memoryOpen) return
+    memoryParamHandled.current = true
+    memory.setMemoryModalOpen(true)
+  }, [initialUrl.memoryOpen, memory])
+
+  useEffect(() => {
+    urlSyncReadyRef.current = true
+  }, [])
+
+  useEffect(() => {
+    if (!urlSyncReadyRef.current) return
+
+    const theme = useThemeStore.getState().theme
+    const next = buildEditorLocation({
+      chapterId: activeChapterId,
+      novelId: activeNovelId,
+      sessionId: sessions.activeSession,
+      tab: activeCenterTab,
+      memoryOpen: memory.memoryModalOpen,
+      baseSearch: location.search,
+      theme,
+    })
+
+    if (next.pathname !== location.pathname || next.search !== searchParams.toString()) {
+      navigate(next, { replace: true })
+    }
+  }, [
+    activeCenterTab,
+    activeChapterId,
+    activeNovelId,
+    location.pathname,
+    location.search,
+    memory.memoryModalOpen,
+    navigate,
+    searchParams,
+    sessions.activeSession,
+  ])
 
   /** 移动分屏：进入章节编辑且已有章节时，默认选中第一章（一步开写） */
   useEffect(() => {

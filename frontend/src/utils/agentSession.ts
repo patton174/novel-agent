@@ -15,6 +15,18 @@ export function getOrCreateAgentSessionId(): string {
   return id
 }
 
+/** URL / 登录恢复：把指定 sessionId 写入 sessionStorage 与内存 ref */
+export function adoptAgentSessionId(sessionId: string): string {
+  const trimmed = sessionId.trim()
+  if (!trimmed) {
+    return getOrCreateAgentSessionId()
+  }
+  if (typeof sessionStorage !== 'undefined') {
+    sessionStorage.setItem(SESSION_STORAGE_KEY, trimmed)
+  }
+  return trimmed
+}
+
 export function resetAgentSessionId(): string {
   const id = `session_${randomUUID()}`
   if (typeof sessionStorage !== 'undefined') {

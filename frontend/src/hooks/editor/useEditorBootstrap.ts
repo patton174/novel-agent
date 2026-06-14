@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { buildLoginHref, buildReturnPath } from '@/lib/authRedirect'
 import { isLoggedIn } from '../../utils/auth'
 import { useAuthReady } from '../../security/useAuthReady'
 import { api } from '../../utils/api'
@@ -27,6 +27,7 @@ export interface UseEditorBootstrapOptions {
   expandNovel: (novelId: string) => void
   refreshStoryMemory: (novelId?: string | null) => void
   loadNovels: () => void | Promise<void>
+  preferredSessionIdRef: React.MutableRefObject<string | null>
   hostModeEnabled: boolean
   isLoading: boolean
   setHostRunningInBackground: (v: boolean) => void
@@ -52,6 +53,7 @@ export function useEditorBootstrap({
   expandNovel,
   refreshStoryMemory,
   loadNovels,
+  preferredSessionIdRef,
   hostModeEnabled,
   isLoading,
   setHostRunningInBackground,
@@ -70,7 +72,7 @@ export function useEditorBootstrap({
       return
     }
     if (!isLoggedIn()) {
-      navigate('/login', { replace: true })
+      navigate(buildLoginHref({ returnPath: buildReturnPath() }), { replace: true })
     }
   }, [authReady, navigate])
 
@@ -137,6 +139,18 @@ export function useEditorBootstrap({
         }
         return
       }
+
+      const preferred = preferredSessionIdRef.current?.trim()
+      if (preferred) {
+        const preferredInList = novelSessionList.find((s) => s.id === preferred)
+        if (preferredInList) {
+          if (agentSessionIdRef.current !== preferred) {
+            switchSessionRef.current(preferred)
+          }
+          return
+        }
+      }
+
       const currentInNovel = novelSessionList.find((s) => s.id === agentSessionIdRef.current)
       if (!currentInNovel) {
         switchSessionRef.current(novelSessionList[0].id)

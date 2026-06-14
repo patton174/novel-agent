@@ -9,11 +9,11 @@ import { AuthShell } from '../components/auth/AuthShell'
 import { AuthField } from '../components/auth/AuthField'
 import { AuthLegalNotice } from '../components/auth/AuthLegalNotice'
 import { AuthSubmitButton } from '../components/auth/AuthSubmitButton'
-import { useFormDraft } from '../hooks/useJourneyTracker'
+import { buildLoginHref, buildPostLoginHref } from '@/lib/authRedirect'
 import { useTranslation } from 'react-i18next'
 
 const LoginPage: React.FC = () => {
-  const { t } = useTranslation(['common', 'auth'])
+  const { t, i18n } = useTranslation(['common', 'auth'])
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const sessionHint = useMemo(() => {
@@ -64,7 +64,11 @@ const LoginPage: React.FC = () => {
       }
       localStorage.removeItem('draft_login_username')
       appToast.success(t('auth:login.success'))
-      navigate('/dashboard')
+      const returnTo = searchParams.get('returnTo')
+      navigate(
+        buildPostLoginHref(returnTo, i18n.language, searchParams.get('theme') ?? undefined),
+        { replace: true },
+      )
     } catch (err) {
       appToast.error(err instanceof Error ? err.message : t('auth:login.fail'))
     } finally {

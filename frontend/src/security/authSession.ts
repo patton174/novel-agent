@@ -1,4 +1,5 @@
 import { DIRECT_PYTHON } from '../config/runtime'
+import { buildLoginHref } from '@/lib/authRedirect'
 import { useUserStore } from '../stores/userStore'
 import { clearToken } from '../utils/auth'
 import { stopHeartbeatWorker } from './heartbeat'
@@ -33,6 +34,5 @@ export function forceLogoutRedirect(reason?: string): void {
   stopHeartbeatWorker()
   clearToken()
   useUserStore.getState().clear()
-  const query = reason ? `?reason=${encodeURIComponent(reason)}` : ''
-  window.location.replace(`/login${query}`)
+  window.location.replace(buildLoginHref({ reason: reason ?? 'session_expired' }))
 }

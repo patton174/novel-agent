@@ -5,6 +5,16 @@ import type { EditorMessage } from '../../types/editor'
 import { editorLayout } from '../../styles/theme'
 import { EditorChatMessage } from './EditorChatMessage'
 
+const MAX_VIRTUAL_ROWS = 5000
+const FALLBACK_ROW_HEIGHT = 220
+
+function safeRowCount(count: number): number {
+  if (!Number.isFinite(count) || count <= 0) {
+    return 0
+  }
+  return Math.min(Math.floor(count), MAX_VIRTUAL_ROWS)
+}
+
 export interface EditorChatMessageListProps {
   messages: EditorMessage[]
   isLoading: boolean
@@ -49,6 +59,9 @@ export function EditorChatMessageList({
   const scrubPlaying = marketingScrubPlaying
   const [scrollElement, setScrollElement] = useState<HTMLDivElement | null>(null)
 
+  const rowCount = safeRowCount(messages.length)
+  const virtualEnabled = scrollElement != null && rowCount > 0
+
   const thinkExpandedByMessage = useMemo(() => {
     const map = new Map<string, boolean | undefined>()
     for (const message of messages) {
@@ -73,28 +86,60 @@ export function EditorChatMessageList({
   )
 
   const rowVirtualizer = useVirtualizer({
-    count: messages.length,
+    count: virtualEnabled ? rowCount : 0,
     getScrollElement: () => scrollElement,
-    estimateSize: () => 220,
+    estimateSize: () => FALLBACK_ROW_HEIGHT,
     overscan: 8,
-    measureElement: (el) => el?.getBoundingClientRect().height ?? 0,
+    measureElement: (el) => {
+      const height = el?.getBoundingClientRect().height ?? 0
+      return height > 0 ? height : FALLBACK_ROW_HEIGHT
+    },
   })
 
-  const virtualItems = rowVirtualizer.getVirtualItems()
-  const totalHeight = rowVirtualizer.getTotalSize()
+  const virtualItems = virtualEnabled ? rowVirtualizer.getVirtualItems() : []
+  const totalHeight = virtualEnabled ? rowVirtualizer.getTotalSize() : 0
 
   useEffect(() => {
-    if (!scrollElement || messages.length === 0) {
+    if (!scrollElement || rowCount === 0) {
       return
     }
     if (!(scrubPlaying || (loadingState && activeId))) {
       return
     }
     const raf = requestAnimationFrame(() => {
-      rowVirtualizer.scrollToIndex(messages.length - 1, { align: 'end' })
+      rowVirtualizer.scrollToIndex(rowCount - 1, { align: 'end' })
     })
     return () => cancelAnimationFrame(raf)
-  }, [scrollElement, messages, messages.length, scrubPlaying, loadingState, activeId, rowVirtualizer])
+  }, [scrollElement, rowCount, scrubPlaying, loadingState, activeId, rowVirtualizer])
+
+  const renderMessage = (message: EditorMessage, index: number, style?: React.CSSProperties) => (
+    <div
+      key={message.id}
+      ref={style ? rowVirtualizer.measureElement : undefined}
+      data-index={style ? index : undefined}
+      className={index < messages.length - 1 ? 'pb-5 max-md:pb-3.5' : undefined}
+      style={style}
+    >
+      <EditorChatMessage
+        message={message}
+        isActiveStream={
+          scrubPlaying ? message.id === activeId : loadingState && message.id === activeId
+        }
+        isLoading={scrubPlaying || loadingState}
+        marketingScrubPlaying={scrubPlaying}
+        marketingPinOrchestration={marketingPinOrchestration}
+        thinkExpanded={thinkExpandedByMessage.get(message.id)}
+        onThinkExpandedChange={(open) => {
+          if (typeof onThinkPanelChange === 'function') {
+            onThinkPanelChange(message.id, open)
+          }
+        }}
+        onSelectChoice={onSelectChoice}
+        onSubmitInteraction={onSubmitInteraction}
+        onEditUserMessage={onEditUserMessage}
+      />
+    </div>
+  )
 
   return (
     <div
@@ -108,56 +153,34 @@ export function EditorChatMessageList({
         className="relative mx-auto w-full"
         style={{ maxWidth: editorLayout.contentMaxWidth }}
       >
-        <div className="relative w-full" style={{ height: `${totalHeight}px` }}>
-          {virtualItems.map((virtualItem) => {
-            const message = messages[virtualItem.index]
-            if (!message) {
-              return null
-            }
-            return (
-              <div
-                key={message.id}
-                ref={rowVirtualizer.measureElement}
-                data-index={virtualItem.index}
-                className={virtualItem.index < messages.length - 1 ? 'pb-5 max-md:pb-3.5' : undefined}
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  width: '100%',
-                  transform: `translateY(${virtualItem.start}px)`,
-                }}
-              >
-                <EditorChatMessage
-                  message={message}
-                  isActiveStream={
-                    scrubPlaying
-                      ? message.id === activeId
-                      : loadingState && message.id === activeId
-                  }
-                  isLoading={scrubPlaying || loadingState}
-                  marketingScrubPlaying={scrubPlaying}
-                  marketingPinOrchestration={marketingPinOrchestration}
-                  thinkExpanded={thinkExpandedByMessage.get(message.id)}
-                  onThinkExpandedChange={(open) => {
-                    if (typeof onThinkPanelChange === 'function') {
-                      onThinkPanelChange(message.id, open)
-                    }
-                  }}
-                  onSelectChoice={onSelectChoice}
-                  onSubmitInteraction={onSubmitInteraction}
-                  onEditUserMessage={onEditUserMessage}
-                />
-              </div>
-            )
-          })}
-          <div
-            ref={messagesEndRef}
-            className="absolute left-0 h-px w-full shrink-0 scroll-mb-2"
-            style={{ top: `${Math.max(totalHeight - 1, 0)}px` }}
-            aria-hidden
-          />
-        </div>
+        {virtualEnabled ? (
+          <div className="relative w-full" style={{ height: `${totalHeight}px` }}>
+            {virtualItems.map((virtualItem) => {
+              const message = messages[virtualItem.index]
+              if (!message) {
+                return null
+              }
+              return renderMessage(message, virtualItem.index, {
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                transform: `translateY(${virtualItem.start}px)`,
+              })
+            })}
+            <div
+              ref={messagesEndRef}
+              className="absolute left-0 h-px w-full shrink-0 scroll-mb-2"
+              style={{ top: `${Math.max(totalHeight - 1, 0)}px` }}
+              aria-hidden
+            />
+          </div>
+        ) : (
+          <div className="relative w-full">
+            {messages.map((message, index) => renderMessage(message, index))}
+            <div ref={messagesEndRef} className="h-px w-full shrink-0 scroll-mb-2" aria-hidden />
+          </div>
+        )}
       </div>
     </div>
   )

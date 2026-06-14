@@ -7,6 +7,7 @@ import cn.novelstudio.module.content.dto.ChapterSummaryDTO;
 import cn.novelstudio.module.content.dto.CoverPromptResponse;
 import cn.novelstudio.module.content.dto.CreateChapterRequest;
 import cn.novelstudio.module.content.dto.CreateNovelRequest;
+import cn.novelstudio.module.content.dto.NovelDescriptionPromptResponse;
 import cn.novelstudio.module.content.dto.NovelDTO;
 import cn.novelstudio.module.content.dto.ReindexStatusDTO;
 import cn.novelstudio.module.content.dto.SessionDTO;
@@ -14,6 +15,7 @@ import cn.novelstudio.module.content.dto.UpdateNovelRequest;
 import cn.novelstudio.module.content.service.ChapterService;
 import cn.novelstudio.module.content.service.ContentSessionService;
 import cn.novelstudio.module.content.service.NovelCoverService;
+import cn.novelstudio.module.content.service.NovelDescriptionClient;
 import cn.novelstudio.module.content.service.NovelExportService;
 import cn.novelstudio.module.content.service.NovelService;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +30,7 @@ public class AuthNovelBiz extends BaseBiz {
 
     private final NovelService novelService;
     private final NovelCoverService novelCoverService;
+    private final NovelDescriptionClient novelDescriptionClient;
     private final NovelExportService novelExportService;
     private final ChapterService chapterService;
     private final ContentSessionService sessionService;
@@ -54,6 +57,16 @@ public class AuthNovelBiz extends BaseBiz {
 
     public Result<CoverPromptResponse> suggestCoverPrompt(Long userId, String novelId, String draft) {
         return ok(novelCoverService.suggestCoverPrompt(userId, novelId, draft));
+    }
+
+    public Result<NovelDescriptionPromptResponse> suggestDescriptionPrompt(
+        String title,
+        String genre,
+        String style,
+        String draft
+    ) {
+        String description = novelDescriptionClient.suggestDescription(title, genre, style, draft);
+        return ok(new NovelDescriptionPromptResponse(description));
     }
 
     public NovelExportService.ExportPayload exportTxt(Long userId, String novelId) {
