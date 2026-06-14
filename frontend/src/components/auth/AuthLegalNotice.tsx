@@ -44,12 +44,6 @@ export function AuthLegalNotice({
         </Link>
         {t('auth:legal.period')}
       </p>
-      {variant === 'register' ? (
-        <p>{t('auth:legal.registerDesc')}</p>
-      ) : null}
-      {variant === 'login' ? (
-        <p>{t('auth:legal.loginDesc')}</p>
-      ) : null}
       {showAi ? (
         <p className="rounded-lg border border-border/60 bg-muted/30 px-2.5 py-2 text-xs leading-snug">
           <span className="font-medium text-foreground/70">{t('auth:legal.captchaTitle')}</span>

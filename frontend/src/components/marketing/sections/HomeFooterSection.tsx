@@ -30,7 +30,7 @@ export function HomeFooterSection({ variant = 'full' }: { variant?: FooterVarian
   return (
     <footer className="relative z-10 w-full">
       {variant === 'full' ? (
-        <div className="mkt-footer-cta-band relative overflow-hidden px-6 pb-14 pt-16 text-white">
+        <div className="mkt-footer-cta-band relative overflow-hidden px-6 pb-14 pt-10 text-white">
           <div
             aria-hidden
             className="pointer-events-none absolute inset-0 opacity-30"

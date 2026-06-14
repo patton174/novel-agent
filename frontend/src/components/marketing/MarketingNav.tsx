@@ -6,25 +6,15 @@ import { useAppMobile } from '@/hooks/useMediaQuery'
 import { cn } from '@/lib/utils'
 import { NovelAiWordmark } from './NovelAiWordmark'
 import { MKT_CTA_PRIMARY } from '@/lib/marketingCta'
-import { ThemeToggle } from '@/components/theme/ThemeToggle'
-
-function useIsHome() {
-  const { pathname } = useLocation()
-  return pathname === '/'
-}
-
-const HOME_ANCHORS = [
-  { id: 'feasibility', labelKey: 'nav.feasibility' as const },
-  { id: 'demo-story', labelKey: 'nav.demo' as const },
-] as const
+import { LocaleToggle } from '@/components/i18n/LocaleToggle'
 
 export function MarketingNav() {
-  const { t } = useTranslation('marketing')
+  const { t } = useTranslation(['marketing', 'common'])
   const location = useLocation()
-  const isHome = useIsHome()
   const [open, setOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const isMobile = useAppMobile()
+  const isHome = location.pathname === '/'
 
   useEffect(() => {
     setOpen(false)
@@ -42,29 +32,17 @@ export function MarketingNav() {
       location.pathname === path ? 'text-foreground font-semibold' : 'text-muted-foreground'
     }`
 
-  const scrollTo = (id: string) => {
-    setOpen(false)
-    if (isHome) {
-      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }
-  }
-
   const navGlass = scrolled || !isHome
 
-  const anchorLinks = (
-    <div className="flex items-center gap-5 text-sm font-medium">
-      {HOME_ANCHORS.map(({ id, labelKey }) =>
-        isHome ? (
-          <button key={id} type="button" onClick={() => scrollTo(id)} className="text-muted-foreground transition-colors hover:text-foreground">
-            {t(labelKey)}
-          </button>
-        ) : (
-          <Link key={id} to={`/#${id}`} className="text-muted-foreground transition-colors hover:text-foreground">
-            {t(labelKey)}
-          </Link>
-        ),
-      )}
-    </div>
+  const pageLinks = (
+    <>
+      <Link to="/pricing" className={linkClass('/pricing')}>
+        {t('marketing:nav.pricing')}
+      </Link>
+      <Link to="/about" className={linkClass('/about')}>
+        {t('marketing:nav.about')}
+      </Link>
+    </>
   )
 
   return (
@@ -82,34 +60,23 @@ export function MarketingNav() {
         <Link
           to="/"
           className="flex items-center gap-2 transition-opacity hover:opacity-80"
-          aria-label={`${t('brand')} 首页`}
+          aria-label={`${t('marketing:brand')} 首页`}
         >
           <NovelAiWordmark size="sm" animate={false} />
         </Link>
 
         <div className="hidden items-center gap-6 md:flex">
-          {anchorLinks}
-          <div className="flex items-center gap-7 text-sm font-medium">
-            <Link to="/guide" className={linkClass('/guide')}>
-              {t('nav.guide')}
-            </Link>
-            <Link to="/pricing" className={linkClass('/pricing')}>
-              {t('nav.pricing')}
-            </Link>
-            <Link to="/about" className={linkClass('/about')}>
-              {t('nav.about')}
-            </Link>
-          </div>
+          <div className="flex items-center gap-7 text-sm font-medium">{pageLinks}</div>
           <div className="flex items-center gap-3">
-            <ThemeToggle compact />
+            <LocaleToggle compact />
             <Link
               to="/login"
               className="px-3 py-2 text-sm font-medium text-foreground transition-colors hover:text-primary"
             >
-              {t('nav.login')}
+              {t('marketing:nav.login')}
             </Link>
             <Link to="/register" className={cn(MKT_CTA_PRIMARY, 'px-4 py-2 text-sm')}>
-              {t('cta.registerFree', { ns: 'common' })}
+              {t('common:cta.registerFree')}
             </Link>
           </div>
         </div>
@@ -118,7 +85,7 @@ export function MarketingNav() {
           type="button"
           className="inline-flex size-10 items-center justify-center rounded-lg border border-border/80 bg-surface/80 text-foreground backdrop-blur-sm md:hidden"
           aria-expanded={open}
-          aria-label={open ? t('nav.close') : t('nav.menu')}
+          aria-label={open ? t('marketing:nav.close') : t('marketing:nav.menu')}
           onClick={() => setOpen((v) => !v)}
         >
           {open ? <X className="size-5" /> : <Menu className="size-5" />}
@@ -129,43 +96,20 @@ export function MarketingNav() {
         <div className="border-t border-border/60 bg-background/95 px-6 py-4 backdrop-blur-xl md:hidden">
           <div className="flex flex-col gap-1 text-sm font-medium">
             <div className="mb-2 flex items-center justify-end">
-              <ThemeToggle />
+              <LocaleToggle />
             </div>
-            {HOME_ANCHORS.map(({ id, labelKey }) =>
-              isHome ? (
-                <button
-                  key={id}
-                  type="button"
-                  className="rounded-lg px-3 py-2.5 text-left hover:bg-surface-hover"
-                  onClick={() => scrollTo(id)}
-                >
-                  {t(labelKey)}
-                </button>
-              ) : (
-                <Link
-                  key={id}
-                  to={`/#${id}`}
-                  className="rounded-lg px-3 py-2.5 hover:bg-surface-hover"
-                >
-                  {t(labelKey)}
-                </Link>
-              ),
-            )}
-            <Link to="/guide" className={`rounded-lg px-3 py-2.5 hover:bg-surface-hover ${linkClass('/guide')}`}>
-              {t('nav.guide')}
-            </Link>
             <Link to="/pricing" className={`rounded-lg px-3 py-2.5 hover:bg-surface-hover ${linkClass('/pricing')}`}>
-              {t('nav.pricing')}
+              {t('marketing:nav.pricing')}
             </Link>
             <Link to="/about" className={`rounded-lg px-3 py-2.5 hover:bg-surface-hover ${linkClass('/about')}`}>
-              {t('nav.about')}
+              {t('marketing:nav.about')}
             </Link>
             <hr className="my-2 border-border/60" />
             <Link to="/login" className="rounded-lg px-3 py-2.5 hover:bg-surface-hover">
-              {t('nav.login')}
+              {t('marketing:nav.login')}
             </Link>
             <Link to="/register" className={cn(MKT_CTA_PRIMARY, 'mt-1 px-4 py-2.5 text-center text-sm')}>
-              {t('cta.registerFree', { ns: 'common' })}
+              {t('common:cta.registerFree')}
             </Link>
           </div>
         </div>

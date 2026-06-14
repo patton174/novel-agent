@@ -103,6 +103,11 @@
       "defaultTitle": "Dashboard"
     }
   },
+  "locale": {
+    "label": "Language",
+    "zh": "中文",
+    "en": "English"
+  },
   "feedback": {
     "toastSuccess": "Success",
     "toastError": "Error",

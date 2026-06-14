@@ -13,6 +13,14 @@ import dashboardEn from './locales/en/dashboard.json'
 import editorEn from './locales/en/editor.json'
 import adminEn from './locales/en/admin.json'
 
+function readInitialLocale(): 'zh' | 'en' {
+  try {
+    return localStorage.getItem('novel-agent-locale') === 'en' ? 'en' : 'zh'
+  } catch {
+    return 'zh'
+  }
+}
+
 const loadedBundles = new Set<string>([
   'zh:common', 'zh:marketing', 'zh:auth', 'zh:dashboard', 'zh:editor', 'zh:admin',
   'en:common', 'en:marketing', 'en:auth', 'en:dashboard', 'en:editor', 'en:admin',
@@ -23,7 +31,7 @@ function bundleKey(ns: string, lng: string): string {
 }
 
 void i18n.use(initReactI18next).init({
-  lng: 'zh',
+  lng: readInitialLocale(),
   fallbackLng: 'zh',
   defaultNS: 'common',
   ns: ['common', 'marketing', 'auth', 'dashboard', 'editor', 'admin'],

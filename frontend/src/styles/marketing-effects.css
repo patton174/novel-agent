@@ -176,15 +176,12 @@
 
 .mkt-footer-cta-band {
   background: linear-gradient(
-    125deg,
-    #312e81 0%,
-    #4338ca 28%,
-    #4f46e5 52%,
-    #6366f1 78%,
-    #4338ca 100%
+    180deg,
+    #4338ca 0%,
+    #4f46e5 38%,
+    #6366f1 62%,
+    #4f46e5 100%
   );
-  background-size: 200% 200%;
-  animation: mkt-footer-gradient 12s ease infinite;
 }
 
 .mkt-starfield {

@@ -12,5 +12,5 @@ export const MARKETING_BACKGROUND_PATTERN = cn(
 
 /** 营销页主内容区（原 MarketingMain） */
 export const MARKETING_MAIN = cn(
-  'relative z-[1] flex flex-1 flex-col gap-0 pb-8 pt-0',
+  'relative z-[1] flex flex-1 flex-col gap-0 pb-0 pt-0',
 )
