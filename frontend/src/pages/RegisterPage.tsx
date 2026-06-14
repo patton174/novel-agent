@@ -9,7 +9,7 @@ import { AuthCodeField } from '../components/auth/AuthCodeField'
 import { AuthField } from '../components/auth/AuthField'
 import { AuthLegalNotice } from '../components/auth/AuthLegalNotice'
 import { AuthSubmitButton } from '../components/auth/AuthSubmitButton'
-import { AuthSpinner } from '../components/auth/AuthSpinner'
+import { AppSpinner } from '@/components/loading/AppSpinner'
 import { appToast } from '@/stores/appToastStore'
 import { MKT_CTA_AUTH_OUTLINE } from '@/lib/marketingCta'
 import { useFormDraft } from '../hooks/useJourneyTracker'
@@ -177,7 +177,7 @@ const RegisterPage: React.FC = () => {
             {['Agent 可试用', '云端保存', '用量透明'].map((text) => (
               <span
                 key={text}
-                className="rounded-full border border-white/20 bg-white/10 px-2.5 py-0.5 text-[11px] font-medium text-white/90"
+                className="rounded-xl border border-white/20 bg-white/10 px-2.5 py-0.5 text-[11px] font-medium text-white/90"
               >
                 {text}
               </span>
@@ -264,7 +264,7 @@ const RegisterPage: React.FC = () => {
               >
                 {sendingCode ? (
                   <span className="flex items-center gap-1">
-                    <AuthSpinner size="sm" />
+                    <AppSpinner size="sm" />
                     发送中
                   </span>
                 ) : (

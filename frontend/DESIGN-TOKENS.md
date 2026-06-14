@@ -35,7 +35,7 @@ Admin 快捷链、Guide 移动 TOC 等与 Dashboard 按钮对齐时用 `rounded-
 | 场景 | 组件 |
 |------|------|
 | 路由 / 全屏 | `BrandLoader`（内部 `AppSpinner variant="brand"`） |
-| 按钮 / 行内 | `AppSpinner` 或 `AuthSpinner`（re-export） |
+| 按钮 / 行内 | `AppSpinner` |
 
 勿新增第三套 spinner 组件。
 
@@ -51,5 +51,5 @@ Admin 快捷链、Guide 移动 TOC 等与 Dashboard 按钮对齐时用 `rounded-
 
 ## 参考
 
-- 待办清单：`docs/frontend-ui-optimization-backlog.md`
+- 待办清单：`docs/frontend-ui/README.md`（索引）· `docs/frontend-ui-optimization-backlog.md`
 - Phase 执行记录：`docs/plans/2026-06-12-frontend-phase2.md`

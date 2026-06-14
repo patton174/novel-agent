@@ -26,7 +26,7 @@ import {
   extractAssistantDeliveryText,
 } from '../../utils/agentMessageMobileSummary'
 import { sanitizeAgentStreamError } from '../../utils/sanitizeAgentStreamError'
-import { useEditorMobile } from '@/hooks/useMediaQuery'
+import { useAppMobile } from '@/hooks/useMediaQuery'
 import { EditorIcons } from './icons'
 
 export interface EditorChatMessageProps {
@@ -102,7 +102,7 @@ export function EditorChatMessage({
   )
   const showDeliveryDivider = showDeliveryBody && hasOrchestrationTrace
   const thinkText = message.agentThinkText ?? message.thinking
-  const isMobile = useEditorMobile()
+  const isMobile = useAppMobile()
   const [processExpanded, setProcessExpanded] = useState(false)
 
   const deliveryText = useMemo(

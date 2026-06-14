@@ -210,11 +210,30 @@
 - [x] **Plans 月价**：表头「月价（元）」+ `formatPlanPrice` 带 `/月`
 - [x] **Register 关闭态**：legal/footer 始终显示
 - [x] **Crawler**：总目标 textarea 移动加高
-- [ ] **待产品决策**：忘记密码自助流程；营销 pill vs 应用 rounded-xl 是否全站统一
+- [x] **忘记密码**：Forgot/Reset 页 + API 已落地（Phase 17–18）
+- [x] **营销 pill**：Phase 21 统一 `rounded-xl`
+
+## Phase 17–20 — Backlog 体验项
+
+> 详见 [`frontend-ui-optimization-backlog.md`](../frontend-ui-optimization-backlog.md) 与 [`frontend-ui-audit-round4-2026-06-12.md`](../frontend-ui-audit-round4-2026-06-12.md)
+
+- [x] VerifyEmail → AuthShell、Captcha safe-area、Dashboard CTA 去重、editorRoutes
+- [x] Editor 移动分屏 + 流式折叠、营销 Footer/Hero/Feasibility、Admin Crawler/SiteContent/Modal
+- [x] Billing 空明细、AppModalShell 全站、Editor 侧栏 onboarding
+
+## Phase 21 — 工程收敛
+
+- [x] 删除零引用：`AuthResultCard`、`NovelAiCubeLoader`、`ThinkingHandLoader` + CSS
+- [x] `AuthSpinner` → `AppSpinner`；删 deprecated re-export
+- [x] `useEditorMobile` → `useAppMobile`（5 处 call site）
+- [x] Guide / Feasibility / Login-Register pill → `rounded-xl`
+- [x] 删 `editorTheme.ts`、`surfaces.tsx`；`DropdownSelect` 改 `@/styles/theme`
+- [x] vitest smoke：`frontend/src/lib/uiSmoke.test.ts`
+- [x] 文档索引：[`docs/frontend-ui/README.md`](../frontend-ui/README.md)
 
 ---
 
-## 总体验收（Phase 1–16）
+## 总体验收（Phase 1–21）
 
 | 区域 | 路径 | 要点 |
 |------|------|------|

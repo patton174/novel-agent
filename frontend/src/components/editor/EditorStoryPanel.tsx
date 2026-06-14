@@ -5,7 +5,7 @@ import { StoryMobileChapterPicker } from './StoryMobileChapterPicker'
 import { EditorButton } from '../ui/EditorButton'
 import { confirmAction } from '../../stores/appDialog'
 import { EditorIcons } from './icons'
-import { useEditorMobile } from '@/hooks/useMediaQuery'
+import { useAppMobile } from '@/hooks/useMediaQuery'
 import {
   Sheet,
   SheetContent,
@@ -47,7 +47,7 @@ export interface EditorStoryPanelProps {
 }
 
 export function EditorStoryPanel(props: EditorStoryPanelProps) {
-  const isMobile = useEditorMobile()
+  const isMobile = useAppMobile()
   if (isMobile) {
     return <EditorStoryPanelMobile {...props} />
   }

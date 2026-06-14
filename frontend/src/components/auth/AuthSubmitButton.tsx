@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils'
-import { AuthSpinner } from './AuthSpinner'
+import { AppSpinner } from '@/components/loading/AppSpinner'
 
 type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   loading?: boolean
@@ -36,7 +36,7 @@ export function AuthSubmitButton({
       >
         {loading ? (
           <>
-            <AuthSpinner size="sm" className="border-primary-foreground/30 border-t-primary-foreground" />
+            <AppSpinner size="sm" className="border-primary-foreground/30 border-t-primary-foreground" />
             {loadingText}
           </>
         ) : (

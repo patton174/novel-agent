@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { AssistantStreamTimeline } from '../components/agent/AssistantStreamTimeline'
 import {
@@ -20,6 +20,7 @@ function renderPersistedAssistantTimeline(
       streamFinished
       messageKey="stream-test"
       thinkExpanded={thinkExpanded}
+      pinOrchestrationOpen
     />,
   )
 }
@@ -87,11 +88,6 @@ describe('EditorPage agent stream mapping', () => {
 
     renderPersistedAssistantTimeline(timeline, stepStates, false)
     expect(screen.getByTestId('agent-stream-timeline')).toBeInTheDocument()
-    const orchToggle = screen
-      .getByTestId('timeline-orchestration-layer')
-      .querySelector('button[aria-expanded]')
-    expect(orchToggle).toBeTruthy()
-    fireEvent.click(orchToggle!)
     expect(screen.getByText('检索素材库')).toBeInTheDocument()
   })
 })

@@ -4,7 +4,7 @@
 
 > **用途**：交给下一轮开发继续抛光；基于 [`frontend-ui-audit-round3-2026-06-12.md`](frontend-ui-audit-round3-2026-06-12.md) 三轮验收中**仍未关闭**的项整理。  
 
-> **当前基线**：Phase 1–16 已落地；**Phase 18–20** 关闭 backlog 绝大部分项；仅剩零散 deprecated re-export 与 E2E。  
+> **当前基线**：Phase 1–16 已落地；**Phase 18–21** 关闭 backlog 全部项；工程收敛完成。  
 
 > **约定**：完成一项后在 `[ ]` 打 `[x]`，并注明 PR 或 commit。
 
@@ -460,7 +460,16 @@
 
 批次 E ✅：7.2(appDialog/compact) · 8.1 · 8.2 · PlansPage Modal
 
-下一批：AuthSpinner 等待 deprecated 清理 · 全站 E2E（可选）
+下一批 ✅ 见 [`frontend-ui-audit-round4-2026-06-12.md`](frontend-ui-audit-round4-2026-06-12.md) Phase 21：
+
+- [x] 删除 `AuthResultCard`（零引用）
+- [x] 删除 `NovelAiCubeLoader` / `ThinkingHandLoader` + CSS
+- [x] `AuthSpinner` → `AppSpinner` 全站替换
+- [x] Guide TOC / STEP badge → `rounded-xl`
+- [x] Feasibility eyebrow、Login/Register 营销 pill → `rounded-xl`
+- [x] `useEditorMobile` → `useAppMobile`
+- [x] 清理 `styles` deprecated 文件（`editorTheme.ts`、`surfaces.tsx`）
+- [x] vitest smoke（`frontend/src/lib/uiSmoke.test.ts`）
 
 ```
 
@@ -506,7 +515,11 @@
 
 | [`frontend-ui-audit-round3-2026-06-12.md`](frontend-ui-audit-round3-2026-06-12.md) | 三轮验收与通过判定 |
 
-| [`plans/2026-06-12-frontend-phase2.md`](plans/2026-06-12-frontend-phase2.md) | Phase 1–16 执行记录 |
+| [`frontend-ui-audit-round4-2026-06-12.md`](frontend-ui-audit-round4-2026-06-12.md) | 四轮验收（v2 通过）+ Phase 21 |
+
+| [`frontend-ui/README.md`](frontend-ui/README.md) | **文档索引 + Phase 21 摘要** |
+
+| [`plans/2026-06-12-frontend-phase2.md`](plans/2026-06-12-frontend-phase2.md) | Phase 1–21 执行记录 |
 
 | [`frontend/DESIGN-TOKENS.md`](../frontend/DESIGN-TOKENS.md) | CTA / Modal / Loader 规范 |
 

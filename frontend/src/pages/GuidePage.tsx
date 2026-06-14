@@ -39,7 +39,7 @@ export default function GuidePage() {
               <a
                 key={n}
                 href={`#step-${n}`}
-                className="shrink-0 rounded-full border border-border/70 bg-white/90 px-3.5 py-1.5 text-xs font-medium text-muted-foreground shadow-sm transition-colors hover:border-primary/30 hover:text-primary"
+                className="shrink-0 rounded-xl border border-border/70 bg-white/90 px-3.5 py-1.5 text-xs font-medium text-muted-foreground shadow-sm transition-colors hover:border-primary/30 hover:text-primary"
               >
                 {String(n).padStart(2, '0')} · {t(`guide.steps.${n}.title`)}
               </a>
@@ -119,7 +119,7 @@ export default function GuidePage() {
                     <div className="flex size-11 items-center justify-center rounded-xl bg-gradient-to-br from-primary/15 to-indigo-500/5 ring-1 ring-primary/15">
                       <Icon className="size-5 text-primary" strokeWidth={1.75} />
                     </div>
-                    <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-semibold tabular-nums tracking-widest text-muted-foreground">
+                    <span className="rounded-xl bg-muted px-2.5 py-0.5 text-xs font-semibold tabular-nums tracking-widest text-muted-foreground">
                       STEP {String(n).padStart(2, '0')}
                     </span>
                   </div>

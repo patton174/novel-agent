@@ -82,7 +82,7 @@ const LoginPage: React.FC = () => {
             {['流式成稿', '记忆持久化', '用量透明'].map((text) => (
               <span
                 key={text}
-                className="rounded-full border border-white/20 bg-white/10 px-2.5 py-0.5 text-[11px] font-medium text-white/90"
+                className="rounded-xl border border-white/20 bg-white/10 px-2.5 py-0.5 text-[11px] font-medium text-white/90"
               >
                 {text}
               </span>

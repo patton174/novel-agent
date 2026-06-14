@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { AgentMarkdown } from '../AgentMarkdown'
-import { useEditorMobile } from '@/hooks/useMediaQuery'
+import { useAppMobile } from '@/hooks/useMediaQuery'
 import { cn } from '@/lib/utils'
 import {
   DELIVERY_BODY_WRAP,
@@ -19,7 +19,7 @@ export function TimelineDeliveryBlock({
   testId?: string
 }) {
   const trimmed = text.trim()
-  const isMobile = useEditorMobile()
+  const isMobile = useAppMobile()
   const [expanded, setExpanded] = useState(false)
 
   useEffect(() => {

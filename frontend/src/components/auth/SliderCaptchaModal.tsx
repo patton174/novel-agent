@@ -5,7 +5,7 @@ import { fetchSliderCaptcha, verifySliderCaptcha } from '../../utils/authApi'
 import type { SliderCaptchaChallenge } from '../../utils/authApi'
 import { appToast } from '@/stores/appToastStore'
 import { AuthLegalNotice } from './AuthLegalNotice'
-import { AuthSpinner } from './AuthSpinner'
+import { AppSpinner } from '@/components/loading/AppSpinner'
 import { cn } from '@/lib/utils'
 
 const SLIDER_HEIGHT = 140
@@ -182,7 +182,7 @@ export const SliderCaptchaModal: React.FC<Props> = ({ open, onClose, onVerified 
                 {phase === 'loading' ? (
                   <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-muted/40">
                     <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-muted/80 via-muted/40 to-muted/70" />
-                    <AuthSpinner size="sm" />
+                    <AppSpinner size="sm" />
                     <p className="relative z-10 text-[11px] font-medium text-muted-foreground">
                       生成验证图中…
                     </p>
@@ -237,7 +237,7 @@ export const SliderCaptchaModal: React.FC<Props> = ({ open, onClose, onVerified 
                       </motion.span>
                     ) : (
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <AuthSpinner size="sm" />
+                        <AppSpinner size="sm" />
                         {phase === 'sending' ? '发送验证码中…' : '验证中…'}
                       </div>
                     )}

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { AgentTodoItem } from '../../../types/agent'
-import { useEditorMobile } from '@/hooks/useMediaQuery'
+import { useAppMobile } from '@/hooks/useMediaQuery'
 import {
   formatTodoProgress,
   MESSAGE_TODO_MAX_VISIBLE,
@@ -28,7 +28,7 @@ export function MessageTodoPanel({
   streamLive?: boolean
 }) {
   const [modalOpen, setModalOpen] = useState(false)
-  const isMobile = useEditorMobile()
+  const isMobile = useAppMobile()
   const maxVisible = isMobile ? 2 : MESSAGE_TODO_MAX_VISIBLE
   const sorted = useMemo(() => sortTodosForDisplay(todos), [todos])
   const targetReveal = Math.min(maxVisible, sorted.length)

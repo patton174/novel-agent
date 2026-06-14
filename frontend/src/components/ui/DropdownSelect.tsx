@@ -10,7 +10,7 @@ import {
 } from 'react'
 import { createPortal } from 'react-dom'
 import { MotionPop } from '../motion'
-import { editorTheme } from '../../styles/editorTheme'
+import { editorTheme } from '@/styles/theme'
 import { motionInteractiveClass, motionMorphClass } from '@/lib/motionClasses'
 import {
   DROPDOWN_MENU_PANEL,

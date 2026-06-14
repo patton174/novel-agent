@@ -36,7 +36,7 @@ export function HomeFeasibilitySection() {
 
       <div className="relative mx-auto max-w-6xl">
         <motion.div {...fade()} className="mx-auto mb-12 max-w-2xl text-center md:mb-16">
-          <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-primary/15 bg-primary/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-primary/90">
+          <p className="mb-3 inline-flex items-center gap-2 rounded-xl border border-primary/15 bg-primary/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-primary/90">
             <Sparkles className="size-3" />
             {t('home.feasibility.eyebrow')}
           </p>
