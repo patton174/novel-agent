@@ -1,0 +1,55 @@
+name: Deploy gateway
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'novel-agent/agent-service/agent-gateway/**'
+      - 'novel-agent/agent-service/agent-common/**'
+      - 'novel-agent/config/crypto-routes.yaml'
+      - 'novel-agent/agent-document/docs/deploy/ci/build-java.sh'
+      - 'novel-agent/agent-document/docs/deploy/ci/deploy-java.sh'
+      - '.github/workflows/deploy-gateway.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-gateway-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+
+      - name: Validate secrets
+        run: |
+          missing=()
+          [[ -n "${{ secrets.DEPLOY_SSH_KEY }}" ]] || missing+=(DEPLOY_SSH_KEY)
+          [[ -n "${{ secrets.MW_HOST }}" ]] || missing+=(MW_HOST)
+          [[ ${#missing[@]} -eq 0 ]] || { echo "::error::缺少 Secrets: ${missing[*]}"; exit 1; }
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "${{ secrets.MW_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Build gateway JAR
+        run: bash novel-agent/agent-document/docs/deploy/ci/build-java.sh agent-gateway
+
+      - name: Deploy gateway
+        env:
+          WORKER_HOST: ${{ secrets.WORKER_HOST }}
+          MW_HOST: ${{ secrets.MW_HOST }}
+          DEPLOY_SSH_OPTS: -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes -o ConnectTimeout=60 -o BatchMode=yes
+          DEPLOY_SCP_OPTS: -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes -o ConnectTimeout=60 -o BatchMode=yes
+        run: bash novel-agent/agent-document/docs/deploy/ci/deploy-java.sh gateway mw
