@@ -106,10 +106,10 @@ export function NovelSessionList({
 
   return (
     <div className="flex w-full flex-col gap-0.5">
-      {slices.map(({ group, label, items }) => (
+      {slices.map(({ group, label: _label, items }) => (
         <div key={group} className="mb-1 flex w-full flex-col gap-0.5">
-          <div className="px-0.5 pb-0.5 pt-1.5 text-[11px] font-semibold tracking-wide text-muted-foreground">
-            {label}
+          <div className="px-0.5 pb-0.5 pt-1.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70">
+            {t(`editor:sessionGroups.${group}`)}
           </div>
           {items.map((session) => {
             const selected = selectedSessionIds.has(session.id)
@@ -123,10 +123,10 @@ export function NovelSessionList({
                 key={session.id}
                 title={title}
                 className={cn(
-                  'group/session flex w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1.5 pl-1',
+                  'group/session flex w-full cursor-pointer items-center gap-1.5 rounded-md border border-transparent px-2 py-1.5',
                   isActive
-                    ? 'border border-primary/20 bg-primary/10 hover:bg-primary/10'
-                    : 'border border-transparent hover:bg-muted/50',
+                    ? 'border-border/70 bg-muted/60 text-foreground'
+                    : 'text-muted-foreground hover:bg-muted/40 hover:text-foreground',
                 )}
                 onClick={() => {
                   if (batchMode) {
@@ -148,7 +148,7 @@ export function NovelSessionList({
                   <span
                     aria-hidden
                     className={cn(
-                      'ml-0.5 size-1.5 shrink-0 rounded-full bg-primary transition-opacity',
+                      'ml-0.5 size-1 shrink-0 rounded-full bg-foreground/35',
                       isActive ? 'opacity-100' : 'opacity-0',
                     )}
                   />

@@ -1,17 +1,20 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useAppMobile } from '../../../hooks/useMediaQuery'
+import { cn } from '@/lib/utils'
 import type { AgentStepState } from '../../../types/agent'
 import {
   deriveOrchestrationHeadline,
   type ThinkRoundPayload,
 } from '../../../utils/agentStreamTimeline'
 import { ThinkRoundGroup } from './ThinkRoundGroup'
+import { translateOrchestrationHeadline } from '../../../utils/orchestrationI18n'
 import {
   CC_TOOL_MAIN,
   PLANNING_HEADER,
   PLANNING_HEADER_MAIN,
   PLANNING_HEADLINE_ROW,
   PLANNING_TITLE,
+  TIMELINE_PENDING_IN,
   planningStackBodyClass,
   planningStackWrapClass,
   toolLeadCellClass,
@@ -114,13 +117,13 @@ export function OrchestrationLayer({
           </div>
           <div className={CC_TOOL_MAIN}>
             <div className={PLANNING_HEADER_MAIN}>
-              <span className={PLANNING_TITLE}>{headline}</span>
+              <span className={PLANNING_TITLE}>{translateOrchestrationHeadline(headline)}</span>
             </div>
           </div>
         </div>
       </button>
       {expanded ? (
-        <div className={planningStackBodyClass({ branchIndent: true })}>
+        <div className={cn(planningStackBodyClass({ branchIndent: true }), TIMELINE_PENDING_IN)}>
           {rounds.length === 0 ? null : (
             rounds.map((round, index) => (
               <ThinkRoundGroup

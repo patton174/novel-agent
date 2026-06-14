@@ -44,7 +44,7 @@ export function planningStackWrapClass(opts: {
     'm-0 flex max-w-full flex-col border-l-0 p-0',
     !opts.flat && [
       'ml-[0.1rem] border-l-2 pl-[0.35rem]',
-      opts.active ? 'border-l-emerald-500' : 'border-l-border',
+      opts.active ? 'border-l-primary' : 'border-l-border',
     ],
   )
 }
@@ -57,14 +57,14 @@ export const PLANNING_HEADER = cn(
 export const PLANNING_HEADER_MAIN = 'min-w-0 flex-1 pt-[0.02rem]'
 
 export const PLANNING_TITLE = cn(
-  'planning-title text-[0.74rem] font-semibold leading-[1.45] text-[#475569]',
+  'planning-title text-[0.74rem] font-semibold leading-[1.45] text-muted-foreground',
   'max-md:text-[0.7rem] max-md:leading-snug',
   'group-hover:text-foreground',
 )
 
 export function planningChevronClass(open?: boolean) {
   return cn(
-    'size-[0.42rem] shrink-0 border-b-[1.5px] border-r-[1.5px] border-[#64748b] transition-transform duration-[0.25s] ease-in-out',
+    'size-[0.42rem] shrink-0 border-b-[1.5px] border-r-[1.5px] border-muted-foreground/50 transition-transform duration-[0.25s] ease-in-out',
     open ? '-rotate-[135deg]' : 'rotate-45',
   )
 }
@@ -115,10 +115,10 @@ export function toolLeadCellClass(_compact?: boolean) {
 export function toolIconSlotClass(status?: ToolVisualStatus) {
   return cn(
     'inline-flex size-[1.35rem] shrink-0 items-center justify-center',
-    status === 'loading' && 'text-[#64748b]',
-    status === 'success' && 'text-emerald-500',
-    status === 'error' && 'text-red-600',
-    (!status || status === 'idle') && 'text-[#94a3b8]',
+    status === 'loading' && 'text-muted-foreground',
+    status === 'success' && 'text-primary',
+    status === 'error' && 'text-destructive',
+    (!status || status === 'idle') && 'text-muted-foreground/50',
   )
 }
 
@@ -133,7 +133,7 @@ export const THINK_ROUND_TOOLS =
   'mt-[0.02rem] flex flex-col gap-[0.06rem]'
 
 export const TIMELINE_META_RAIL = cn(
-  'mx-0 my-[0.04rem] mb-[0.1rem] box-border flex w-full max-w-full flex-col gap-[0.06rem] border-l-[1.5px] border-[#cbd5e1] pl-[0.72rem]',
+  'mx-0 my-[0.04rem] mb-[0.1rem] box-border flex w-full max-w-full flex-col gap-[0.06rem] border-l-[1.5px] border-border pl-[0.72rem]',
 )
 
 export const CC_TOOL_MAIN =
@@ -159,7 +159,7 @@ export function ccHeadlineChevronClass(open?: boolean) {
 export const CC_BRANCH_GLYPH = 'agent-timeline-branch-glyph'
 
 export const CC_TOOL_NAME = cn(
-  'font-semibold text-[#475569]',
+  'font-semibold text-muted-foreground',
   'group-hover:text-foreground',
 )
 
@@ -172,14 +172,14 @@ export const CC_TOOL_HEADLINE_BUTTON = cn(
 export const CC_TOOL_HEADLINE_STATIC = 'w-full min-w-0'
 
 export const ORCHESTRATION_PENDING_LABEL = cn(
-  'flex min-h-[1.35rem] items-center text-[0.74rem] font-semibold leading-[1.35] text-[#475569]',
+  'flex min-h-[1.35rem] items-center text-[0.74rem] font-semibold leading-[1.35] text-muted-foreground',
 )
 
 export const CC_TOOL_ARGS =
-  'text-[0.78rem] font-normal text-[#64748b]'
+  'text-[0.78rem] font-normal text-muted-foreground/80'
 
 export const CC_TOOL_MERGE =
-  'font-medium text-[#64748b]'
+  'font-medium text-muted-foreground/80'
 
 export function ccToolBranchClass(opts?: {
   nested?: boolean
@@ -193,7 +193,7 @@ export function ccToolBranchClass(opts?: {
 }
 
 export const CC_BRANCH_CONTENT = cn(
-  'min-w-0 flex-1 break-words text-[0.74rem] leading-[1.35] text-[#64748b]',
+  'min-w-0 flex-1 break-words text-[0.74rem] leading-[1.35] text-muted-foreground/80',
 )
 
 export const CC_TOOL_BRANCH_IN_ROUND = cn(
@@ -203,15 +203,15 @@ export const CC_TOOL_BRANCH_IN_ROUND = cn(
 export const THINK_TREE_GLYPH_CELL = CC_BRANCH_GLYPH
 
 export const CC_PROGRESS_HINT =
-  'ml-auto text-[0.68rem] leading-[1.4] text-[#64748b]'
+  'ml-auto text-[0.68rem] leading-[1.4] text-muted-foreground/80'
 
 export const FAIL_TAG =
-  'text-[0.68rem] font-semibold leading-[1.4] text-red-600'
+  'text-[0.68rem] font-semibold leading-[1.4] text-destructive'
 
 export function toolDetailClass(error?: boolean) {
   return cn(
     'm-0 w-full pl-0 text-[0.74rem] leading-[1.45]',
-    error ? 'text-red-500' : 'text-[#64748b]',
+    error ? 'text-destructive' : 'text-muted-foreground/80',
   )
 }
 
@@ -222,8 +222,8 @@ export const TOOL_DETAIL_TREE = cn(
 export const TOOL_DETAIL_PANEL = 'mt-[0.2rem] w-full pl-[0.15rem]'
 
 export const TOOL_DETAIL_TOGGLE = cn(
-  'inline-flex cursor-pointer items-center gap-[0.35rem] rounded-md border-none bg-transparent px-[0.2rem] py-[0.1rem] text-[0.68rem] leading-[1.4] text-[#64748b]',
-  'hover:bg-[#f1f5f9] hover:text-[#475569]',
+    'inline-flex cursor-pointer items-center gap-[0.35rem] rounded-md border-none bg-transparent px-[0.2rem] py-[0.1rem] text-[0.68rem] leading-[1.4] text-muted-foreground/80',
+  'hover:bg-muted hover:text-foreground',
   'focus-visible:outline-none focus-visible:shadow-[inset_0_0_0_2px_rgba(79,70,229,0.15)]',
 )
 
@@ -323,7 +323,7 @@ export function subagentStatusChipClass(kind: ToolVisualStatus) {
       'border border-[rgba(196,92,92,0.35)] bg-[rgba(196,92,92,0.1)] text-red-600',
     kind !== 'loading' &&
       kind !== 'error' &&
-      'border border-[rgba(39,174,96,0.35)] bg-[rgba(39,174,96,0.08)] text-[#059669]',
+      'border border-primary/25 bg-primary/8 text-primary',
   )
 }
 
@@ -424,8 +424,8 @@ export function toolStatusDotGlyphClass(opts: {
 }) {
   return cn(
     'font-semibold',
-    opts.error && 'text-red-500',
-    opts.success && 'text-emerald-600',
+    opts.error && 'text-destructive',
+    opts.success && 'text-primary',
     opts.loading && !opts.error && 'text-muted-foreground',
     !opts.loading && !opts.error && !opts.success && 'text-foreground',
   )

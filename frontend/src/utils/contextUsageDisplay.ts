@@ -18,6 +18,11 @@ export function formatCcTokens(count: number): string {
   return String(n)
 }
 
+/** Composer footer: uppercase K/M suffix (12K, 1.2M) */
+export function formatComposerTokens(count: number): string {
+  return formatCcTokens(count).replace(/k$/, 'K').replace(/m$/, 'M')
+}
+
 /** CC `calculateContextPercentages` — used % from prompt vs window. */
 export function contextUsedPercent(usage: AgentContextUsage): number {
   const limit = usage.contextLimit > 0 ? usage.contextLimit : 200_000

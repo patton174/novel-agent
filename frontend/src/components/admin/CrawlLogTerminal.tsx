@@ -25,12 +25,16 @@ function formatTime(ts: number): string {
   return d.toLocaleTimeString('zh-CN', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })
 }
 
+const LIVE_POLL_MS = 2500
+
 interface CrawlLogTerminalProps {
   jobId: string
   jobStatus: CrawlJobStatus
   /** modal 内嵌：始终展示、更高日志区 */
   variant?: 'inline' | 'modal'
   active?: boolean
+  /** 页面不可见时暂停轮询 */
+  paused?: boolean
 }
 
 export function CrawlLogTerminal({
@@ -38,6 +42,7 @@ export function CrawlLogTerminal({
   jobStatus,
   variant = 'inline',
   active = true,
+  paused = false,
 }: CrawlLogTerminalProps) {
   const { t } = useTranslation(['admin'])
   const [open, setOpen] = useState(variant === 'modal')
@@ -90,12 +95,12 @@ export function CrawlLogTerminal({
   }, [isVisible, jobId, pull])
 
   useEffect(() => {
-    if (!isVisible || !isLive) {
+    if (!isVisible || !isLive || paused) {
       return
     }
-    const timer = window.setInterval(() => void pull(), 600)
+    const timer = window.setInterval(() => void pull(), LIVE_POLL_MS)
     return () => window.clearInterval(timer)
-  }, [isVisible, isLive, pull])
+  }, [isVisible, isLive, paused, pull])
 
   useEffect(() => {
     if (!isVisible || !autoScroll || !scrollRef.current) {

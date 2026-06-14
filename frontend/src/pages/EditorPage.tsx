@@ -110,6 +110,7 @@ const EditorPage: React.FC = () => {
             messagesEndRef={editor.scroll.messagesEndRef}
             onEditUserMessage={editor.setInputValue}
             contextUsage={editor.stream.composerContextUsage}
+            spinnerMode={editor.stream.composerSpinnerMode}
           />
         ) : (
           <EditorStoryPanel

@@ -103,11 +103,11 @@ export const EDITOR_SESSION_LOAD_MORE =
 
 export function editorSendButtonClass(streaming?: boolean, className?: string) {
   return cn(
-    'relative inline-flex shrink-0 items-center justify-center overflow-hidden p-0 text-primary-foreground transition-all duration-500 ease-[cubic-bezier(0.34,1.15,0.64,1)]',
-    'hover:scale-105 active:scale-[0.96] disabled:scale-100 disabled:cursor-not-allowed disabled:opacity-45',
+    'relative inline-flex shrink-0 items-center justify-center overflow-hidden border p-0 transition-colors duration-200',
+    'disabled:cursor-not-allowed disabled:opacity-45',
     streaming
-      ? 'rounded-xl bg-destructive shadow-md shadow-destructive/30'
-      : 'rounded-full bg-primary shadow-md',
+      ? 'rounded-md border-destructive/20 bg-destructive text-destructive-foreground hover:bg-destructive/90'
+      : 'rounded-md border-primary/20 bg-primary text-primary-foreground hover:bg-primary/90',
     className,
   )
 }

@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 import { AgentMarkdown } from './AgentMarkdown'
 import {
@@ -13,6 +14,7 @@ import {
   CC_TOOL_ROW_WRAP,
   HEADLINE_CLUSTER,
   THINK_BODY_IN_ROUND,
+  TIMELINE_PENDING_IN,
   ccToolBranchClass,
   toolLeadCellClass,
 } from '@/lib/timelineClasses'
@@ -52,16 +54,17 @@ export interface AgentThinkPanelProps {
 function formatThinkStatus(
   isThinking: boolean,
   durationSec: number | undefined,
+  t: (key: string, opts?: Record<string, unknown>) => string,
 ): { phase: string; duration?: string } {
   if (isThinking) {
     return {
-      phase: '进行中',
-      duration: durationSec != null && durationSec > 0 ? `${durationSec} 秒` : undefined,
+      phase: t('editor:timeline.phaseRunning'),
+      duration: durationSec != null && durationSec > 0 ? t('editor:timeline.durationSec', { count: durationSec }) : undefined,
     }
   }
   return {
-    phase: '已完成',
-    duration: durationSec != null && durationSec >= 1 ? `${durationSec} 秒` : undefined,
+    phase: t('editor:timeline.phaseDone'),
+    duration: durationSec != null && durationSec >= 1 ? t('editor:timeline.durationSec', { count: durationSec }) : undefined,
   }
 }
 
@@ -100,7 +103,7 @@ function useThinkDuration(isThinking: boolean, enabled: boolean): number | undef
 function thinkBodyClass(nested?: boolean) {
   return cn(
     nested ? 'text-[0.78rem]' : 'text-[0.82rem]',
-    'leading-[1.55] text-[#475569] [&_p:last-child]:mb-0 [&_p]:mb-[0.35rem]',
+    'leading-[1.55] text-muted-foreground [&_p:last-child]:mb-0 [&_p]:mb-[0.35rem]',
   )
 }
 
@@ -110,8 +113,8 @@ export function AgentThinkPanel({
   expanded: expandedProp,
   onExpandedChange,
   durationSec: durationProp,
-  thinkingTitle = '思考',
-  doneTitle = '思考',
+  thinkingTitle,
+  doneTitle,
   autoCollapseWhenDone = true,
   markdown = true,
   showCursor: _showCursor = false,
@@ -123,6 +126,9 @@ export function AgentThinkPanel({
   className,
   'data-testid': testId = 'agent-think-panel',
 }: AgentThinkPanelProps) {
+  const { t } = useTranslation(['editor'])
+  const resolvedThinkingTitle = thinkingTitle ?? t('editor:timeline.thinking')
+  const resolvedDoneTitle = doneTitle ?? t('editor:timeline.thinking')
   const bodyId = useId()
   const trimmed = text.trim()
   const hasBody = Boolean(trimmed)
@@ -182,8 +188,8 @@ export function AgentThinkPanel({
     return null
   }
 
-  const label = isThinking ? thinkingTitle : doneTitle
-  const { phase, duration } = formatThinkStatus(isThinking, durationSec)
+  const label = isThinking ? resolvedThinkingTitle : resolvedDoneTitle
+  const { phase, duration } = formatThinkStatus(isThinking, durationSec, t)
   const holdExpandedInRound = inThinkRound && orchestrationActive && isThinking
   const canToggle = hasBody && !isThinking && !holdExpandedInRound
   const showBody =
@@ -205,7 +211,7 @@ export function AgentThinkPanel({
 
   return (
     <div
-      className={cn('w-full', nested ? 'opacity-[0.92]' : 'opacity-100', className)}
+      className={cn('w-full', nested ? 'opacity-[0.92]' : 'opacity-100', TIMELINE_PENDING_IN, className)}
       data-testid={testId}
     >
       <div className={CC_TOOL_ROW_WRAP}>

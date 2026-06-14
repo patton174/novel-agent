@@ -27,6 +27,7 @@ interface CrawlJobDetailModalProps {
   job: CrawlJob | null
   open: boolean
   actingKey: string | null
+  pollPaused?: boolean
   onOpenChange: (open: boolean) => void
   onAction: (job: CrawlJob, action: CrawlJobAction) => void
 }
@@ -35,6 +36,7 @@ export function CrawlJobDetailModal({
   job,
   open,
   actingKey,
+  pollPaused = false,
   onOpenChange,
   onAction,
 }: CrawlJobDetailModalProps) {
@@ -95,7 +97,13 @@ export function CrawlJobDetailModal({
       }
     >
       <div className="min-h-0 flex-1 overflow-hidden px-6 py-4">
-        <CrawlLogTerminal jobId={job.id} jobStatus={job.status} variant="modal" active={open} />
+        <CrawlLogTerminal
+          jobId={job.id}
+          jobStatus={job.status}
+          variant="modal"
+          active={open}
+          paused={pollPaused}
+        />
       </div>
 
       {actions.length > 0 ? (

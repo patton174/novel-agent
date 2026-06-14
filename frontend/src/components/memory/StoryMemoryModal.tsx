@@ -1,3 +1,5 @@
+import { useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { AgentMarkdown } from '../agent/AgentMarkdown'
 import { MotionSegmentRail } from '../motion/MotionSegmentRail'
 import { MotionPane } from '../motion/MotionPane'
@@ -39,13 +41,44 @@ export interface StoryMemoryModalProps {
   updatedAt: Date | null
 }
 
-const TABS: { id: MemoryTabId; label: string; hint: string }[] = [
-  { id: 'novel', label: '大纲', hint: '小说定位、主线与创作规划' },
-  { id: 'world', label: '世界观', hint: '时代、规则、势力与设定' },
-  { id: 'characters', label: '角色库', hint: '人物弧线、关系与性格' },
-  { id: 'background', label: '背景', hint: '历史、地理与文化背景' },
-  { id: 'chapters', label: '章节记忆', hint: '伏笔、章节约束与剧情节点' },
-]
+function useMemoryTabs() {
+  const { t } = useTranslation(['editor'])
+  return useMemo(
+    (): { id: MemoryTabId; label: string; hint: string; emptyLabel: string }[] => [
+      {
+        id: 'novel',
+        label: t('editor:memory.tabNovel'),
+        hint: t('editor:memory.tabNovelHint'),
+        emptyLabel: t('editor:memory.emptyNovel'),
+      },
+      {
+        id: 'world',
+        label: t('editor:memory.tabWorld'),
+        hint: t('editor:memory.tabWorldHint'),
+        emptyLabel: t('editor:memory.emptyWorld'),
+      },
+      {
+        id: 'characters',
+        label: t('editor:memory.tabCharacters'),
+        hint: t('editor:memory.tabCharactersHint'),
+        emptyLabel: t('editor:memory.emptyCharacters'),
+      },
+      {
+        id: 'background',
+        label: t('editor:memory.tabBackground'),
+        hint: t('editor:memory.tabBackgroundHint'),
+        emptyLabel: t('editor:memory.emptyBackground'),
+      },
+      {
+        id: 'chapters',
+        label: t('editor:memory.tabChapters'),
+        hint: t('editor:memory.tabChaptersHint'),
+        emptyLabel: t('editor:memory.emptyChapters'),
+      },
+    ],
+    [t],
+  )
+}
 
 function MemoryFieldBody({ field }: { field: StoryMemoryField }) {
   if (field.format === 'plain') {
@@ -111,7 +144,9 @@ export function StoryMemoryModal({
   onTabChange,
   updatedAt,
 }: StoryMemoryModalProps) {
-  const activeMeta = TABS.find((t) => t.id === activeTab) ?? TABS[0]
+  const { t } = useTranslation(['editor'])
+  const tabs = useMemoryTabs()
+  const activeMeta = tabs.find((tab) => tab.id === activeTab) ?? tabs[0]
 
   return (
     <AppModalShell
@@ -121,10 +156,12 @@ export function StoryMemoryModal({
       header={
         <div className="border-b border-border/60 px-4 pb-3 pt-1 max-md:px-3">
           <h2 id="memory-modal-title" className="m-0 text-[17px] font-bold text-foreground">
-            记忆管理
+            {t('editor:memory.title')}
           </h2>
           <p className="mt-1 text-[11px] text-muted-foreground">
-            只读展示{updatedAt ? ` · 更新于 ${updatedAt.toLocaleTimeString()}` : ''}
+            {updatedAt
+              ? t('editor:memory.readonlyUpdated', { time: updatedAt.toLocaleTimeString() })
+              : t('editor:memory.readonly')}
           </p>
         </div>
       }
@@ -132,14 +169,14 @@ export function StoryMemoryModal({
     >
       <div className="flex flex-col gap-1.5 border-border/60 bg-muted/20 p-3.5 max-[720px]:flex-row max-[720px]:overflow-x-auto max-[720px]:border-b min-[721px]:border-r">
         <MotionSegmentRail
-          items={TABS.map((tab) => ({
+          items={tabs.map((tab) => ({
             id: tab.id,
             label: tab.label,
             trailing: countTabEntries(memory, tab.id),
           }))}
           activeId={activeTab}
           onChange={onTabChange}
-          aria-label="记忆分类"
+          aria-label={t('editor:memory.tabsAria')}
         />
       </div>
 
@@ -151,19 +188,19 @@ export function StoryMemoryModal({
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded [&::-webkit-scrollbar-thumb]:bg-border">
             {activeTab === 'novel' && (
-              <GroupEntries groups={memory.novel} emptyLabel="暂无大纲或小说级规划" character={false} />
+              <GroupEntries groups={memory.novel} emptyLabel={activeMeta.emptyLabel} character={false} />
             )}
             {activeTab === 'world' && (
-              <GroupEntries groups={memory.world} emptyLabel="暂无世界观设定" character={false} />
+              <GroupEntries groups={memory.world} emptyLabel={activeMeta.emptyLabel} character={false} />
             )}
             {activeTab === 'background' && (
-              <GroupEntries groups={memory.background} emptyLabel="暂无背景设定" character={false} />
+              <GroupEntries groups={memory.background} emptyLabel={activeMeta.emptyLabel} character={false} />
             )}
             {activeTab === 'characters' && (
-              <GroupEntries groups={memory.characters} emptyLabel="暂无角色记录" character />
+              <GroupEntries groups={memory.characters} emptyLabel={activeMeta.emptyLabel} character />
             )}
             {activeTab === 'chapters' && (
-              <GroupEntries groups={memory.chapters} emptyLabel="暂无章节记忆" character={false} />
+              <GroupEntries groups={memory.chapters} emptyLabel={activeMeta.emptyLabel} character={false} />
             )}
           </div>
         </MotionPane>

@@ -1,4 +1,6 @@
+import { useTranslation } from 'react-i18next'
 import { ShimmerScanText } from '../../loaders/ShimmerScanText'
+import { translateOrchestrationHeadline } from '../../../utils/orchestrationI18n'
 import {
   CC_TOOL_MAIN,
   CC_TOOL_ROW_WRAP,
@@ -9,13 +11,14 @@ import {
 
 /** CC-style idle row until the first visible tool row replaces this slot. */
 export function OrchestrationPendingRow() {
+  const { t } = useTranslation(['editor'])
   return (
     <div className={TIMELINE_PENDING_IN}>
       <div className={CC_TOOL_ROW_WRAP} data-testid="timeline-orchestration-pending">
         <div className={PLANNING_HEADLINE_ROW}>
           <div className={CC_TOOL_MAIN}>
             <div className={ORCHESTRATION_PENDING_LABEL}>
-              <ShimmerScanText active>思考中…</ShimmerScanText>
+              <ShimmerScanText active>{translateOrchestrationHeadline(t('editor:timeline.thinkingActive'))}</ShimmerScanText>
             </div>
           </div>
         </div>

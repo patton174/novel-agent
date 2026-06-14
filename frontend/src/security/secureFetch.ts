@@ -126,7 +126,7 @@ async function buildRequest(
   // 有 material 时始终附加 query 签名（body envelope 解析失败时网关会回退验 query）
   const needsQuerySign = isSecurityCryptoEnabled() && material
 
-  if (needsQuerySign) {
+  if (needsQuerySign && material) {
     const signParams = await buildSignQueryParams(
       method,
       logicalUrl,

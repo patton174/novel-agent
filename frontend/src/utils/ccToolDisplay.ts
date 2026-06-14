@@ -1,3 +1,4 @@
+import { translateToolDisplayName } from './orchestrationI18n'
 import type { AgentStepState } from '../types/agent'
 import { toolDisplayName } from './agentLabels'
 import {
@@ -413,30 +414,30 @@ export function ccToolHumanSubtitleFromStep(step: AgentStepState): string {
 /** User-facing tool label (bold segment in CC). */
 export function ccToolNameLabel(step: AgentStepState): string {
   const raw = normalizeToolName(step.toolName) || step.toolName?.trim()
-  const generic = raw ? toolDisplayName(raw) : '工具'
+  const generic = raw ? toolDisplayName(raw) : translateToolDisplayName('工具')
   const title = step.title?.trim() ?? ''
   const path = pathFromStep(step)
 
   if (title && !GENERIC_TOOL_LABELS.has(title) && title !== generic) {
-    return title
+    return translateToolDisplayName(title)
   }
 
   if (raw) {
     const fromPath = path ? ccToolNameFromPath(raw, path) : undefined
     if (fromPath) {
-      return fromPath
+      return translateToolDisplayName(fromPath)
     }
     if (title) {
-      return title
+      return translateToolDisplayName(title)
     }
     return generic
   }
 
   const paren = title.indexOf('(')
   if (paren > 0) {
-    return title.slice(0, paren).trim()
+    return translateToolDisplayName(title.slice(0, paren).trim())
   }
-  return title || '工具'
+  return title ? translateToolDisplayName(title) : translateToolDisplayName('工具')
 }
 
 function isMutationResultInBranch(step: AgentStepState): boolean {

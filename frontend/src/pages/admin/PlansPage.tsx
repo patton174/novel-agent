@@ -114,14 +114,13 @@ export default function PlansPage() {
     setSaving(true)
     try {
       if (editing) {
-        const updated = await updateAdminPlan(editing.id, form)
-        setPlans((prev) => prev?.map((p) => (p.id === updated.id ? updated : p)) ?? null)
+        await updateAdminPlan(editing.id, form)
         appToast.success(t('admin:plans.updated'))
       } else {
-        const created = await createAdminPlan(form)
-        setPlans((prev) => [...(prev ?? []), created])
+        await createAdminPlan(form)
         appToast.success(t('admin:plans.created'))
       }
+      await loadPlans()
       setDialogOpen(false)
     } catch (err) {
       appToast.error(err instanceof Error ? err.message : t('admin:plans.saveFail'))

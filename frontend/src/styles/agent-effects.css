@@ -398,6 +398,53 @@
   transform: translate(100px, 100px) rotate(-113deg);
 }
 
+/* ── Composer token ticker (Codex-style roll) ── */
+
+@keyframes token-roll-out {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+}
+
+@keyframes token-roll-in {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes token-slot-in {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.token-roll-out {
+  animation: token-roll-out 320ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.token-roll-in {
+  animation: token-roll-in 320ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.token-slot-in {
+  animation: token-slot-in 240ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .agent-shimmer-text-active,
   .agent-shimmer-cluster-active,
@@ -415,7 +462,10 @@
   .streaming-pencil-cursor__eraser-skew,
   .streaming-pencil-cursor__point,
   .streaming-pencil-cursor__rotate,
-  .streaming-pencil-cursor__stroke {
+  .streaming-pencil-cursor__stroke,
+  .token-roll-out,
+  .token-roll-in,
+  .token-slot-in {
     animation: none !important;
   }
 }

@@ -7,6 +7,7 @@ import type {
   AgentInteractionPayload,
   AskUserAnswers,
 } from '../../types/agent'
+import type { ComposerSpinnerMode } from '../../utils/deriveComposerSpinnerMode'
 import type { EditorMessage } from '../../types/editor'
 import { filterVisibleChatMessages, isInitialChatView } from '../../types/editor'
 import type { Novel } from '../../types/novel'
@@ -44,6 +45,7 @@ export interface EditorChatPanelProps {
   messagesEndRef: React.Ref<HTMLDivElement>
   onEditUserMessage?: (content: string) => void
   contextUsage?: AgentContextUsage | null
+  spinnerMode?: ComposerSpinnerMode
   marketingScrubPlaying?: boolean
   marketingPinOrchestration?: boolean
   hideComposer?: boolean
@@ -71,6 +73,7 @@ export function EditorChatPanel({
   messagesEndRef,
   onEditUserMessage,
   contextUsage,
+  spinnerMode = 'idle',
   marketingScrubPlaying = false,
   marketingPinOrchestration = false,
   hideComposer = false,
@@ -165,6 +168,7 @@ export function EditorChatPanel({
                 hostModeEnabled={hostModeEnabled}
                 onHostModeChange={onHostModeChange}
                 streamActive={isLoading}
+                spinnerMode={spinnerMode}
                 onStreamAbort={onStreamAbort}
                 contextUsage={contextUsage}
               />

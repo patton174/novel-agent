@@ -66,7 +66,7 @@ export default function CrawlerPage() {
   const [jobFilter, setJobFilter] = useState<JobFilter>('all')
   const [jobPage, setJobPage] = useState(1)
   const [jobsTotalCount, setJobsTotalCount] = useState(0)
-  const [jobsFetchPage, setJobsFetchPage] = useState(1)
+  const jobsFetchPageRef = useRef(1)
   const [loadingMoreJobs, setLoadingMoreJobs] = useState(false)
   const orchGoalSyncedRef = useRef(false)
 
@@ -95,7 +95,7 @@ export default function CrawlerPage() {
 
   const loadJobs = useCallback(async (append = false) => {
     try {
-      const page = append ? jobsFetchPage + 1 : 1
+      const page = append ? jobsFetchPageRef.current + 1 : 1
       const jobPage = await fetchCrawlJobs(page, JOBS_FETCH_SIZE)
       setJobs((prev) => {
         const next = append && prev ? [...prev, ...jobPage.list] : jobPage.list
@@ -106,14 +106,14 @@ export default function CrawlerPage() {
         return next
       })
       setJobsTotalCount(jobPage.totalCount)
-      setJobsFetchPage(page)
+      jobsFetchPageRef.current = page
     } catch (err) {
       if (!append) setJobs([])
       appToast.error(err instanceof Error ? err.message : t('admin:crawler.loadJobsFail'))
     } finally {
       setJobsLoading(false)
     }
-  }, [jobsFetchPage, t])
+  }, [t])
 
   const loadOrchMeta = useCallback(async () => {
     try {
@@ -136,7 +136,7 @@ export default function CrawlerPage() {
 
   const refreshAll = useCallback(async () => {
     setJobsLoading(true)
-    setJobsFetchPage(0)
+    jobsFetchPageRef.current = 0
     await Promise.all([loadJobs(false), loadOrchMeta()])
     setLogRefreshKey((k) => k + 1)
   }, [loadJobs, loadOrchMeta])
@@ -529,6 +529,7 @@ export default function CrawlerPage() {
         job={detailJob}
         open={detailOpen}
         actingKey={actingKey}
+        pollPaused={!pageVisible}
         onOpenChange={(open) => {
           setDetailOpen(open)
           if (!open) setDetailJob(null)

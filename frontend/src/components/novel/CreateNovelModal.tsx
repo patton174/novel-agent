@@ -1,4 +1,5 @@
 import React, { useCallback, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Loader2, Sparkles, Wand2 } from 'lucide-react'
 import type { CreateNovelPayload } from '../../types/novel'
 import { suggestNovelDescriptionPrompt } from '@/api/dashboardApi'
@@ -53,6 +54,7 @@ export const CreateNovelModal: React.FC<CreateNovelModalProps> = ({
   onClose,
   onSubmit,
 }) => {
+  const { t } = useTranslation(['editor'])
   const [form, setForm] = useState<NovelDraftForm>(emptyNovelDraftForm)
   const [submitting, setSubmitting] = useState(false)
   const [titleError, setTitleError] = useState<string | undefined>()
@@ -71,11 +73,11 @@ export const CreateNovelModal: React.FC<CreateNovelModalProps> = ({
   const runAi = async (mode: 'generate' | 'optimize') => {
     if (aiGenerating || aiOptimizing) return
     if (mode === 'generate' && !form.title.trim() && !form.tags.trim()) {
-      appToast.error('请至少填写书名或风格标签')
+      appToast.error(t('editor:createNovel.toastNeedTitleOrTags'))
       return
     }
     if (mode === 'optimize' && !hasDraftContent(form)) {
-      appToast.error('请先填写部分字段，或使用 AI 一键生成')
+      appToast.error(t('editor:createNovel.toastNeedContent'))
       return
     }
     const setBusy = mode === 'generate' ? setAiGenerating : setAiOptimizing
@@ -90,12 +92,12 @@ export const CreateNovelModal: React.FC<CreateNovelModalProps> = ({
           hook: suggested.hook.slice(0, HOOK_MAX),
           protagonist: suggested.protagonist.slice(0, PROTAGONIST_MAX),
         }))
-        appToast.success(mode === 'generate' ? '已生成完整建书信息' : '已优化全部字段')
+        appToast.success(mode === 'generate' ? t('editor:createNovel.toastGenerateOk') : t('editor:createNovel.toastOptimizeOk'))
       } else {
-        appToast.error(mode === 'generate' ? 'AI 生成失败' : 'AI 优化失败')
+        appToast.error(mode === 'generate' ? t('editor:createNovel.toastGenerateFail') : t('editor:createNovel.toastOptimizeFail'))
       }
     } catch (err) {
-      appToast.error(err instanceof Error ? err.message : 'AI 请求失败')
+      appToast.error(err instanceof Error ? err.message : t('editor:createNovel.toastRequestFail'))
     } finally {
       setBusy(false)
     }
@@ -118,7 +120,7 @@ export const CreateNovelModal: React.FC<CreateNovelModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!form.title.trim()) {
-      setTitleError('请输入小说名称')
+      setTitleError(t('editor:createNovel.titleRequired'))
       return
     }
     setTitleError(undefined)
@@ -154,8 +156,8 @@ export const CreateNovelModal: React.FC<CreateNovelModalProps> = ({
         }
       }}
       size="detail"
-      title="创建小说"
-      description="填写番茄式建书信息，AI 可一次性生成或优化全部字段"
+      title={t('editor:createNovel.title')}
+      description={t('editor:createNovel.description')}
       bodyClassName="flex min-h-0 flex-1 flex-col pt-1"
     >
       <form
@@ -165,7 +167,7 @@ export const CreateNovelModal: React.FC<CreateNovelModalProps> = ({
         <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain pr-0.5">
         <div className="flex flex-col gap-2 rounded-xl border border-primary/20 bg-primary/5 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-xs text-muted-foreground">
-            结构化输出，自动填充书名、分类、标签、简介等全部字段
+            {t('editor:createNovel.aiBanner')}
           </p>
           <div className="flex shrink-0 flex-wrap gap-1.5">
             <Button
@@ -181,7 +183,7 @@ export const CreateNovelModal: React.FC<CreateNovelModalProps> = ({
               ) : (
                 <Sparkles className="size-3.5" />
               )}
-              AI 一键生成
+              {t('editor:createNovel.aiGenerate')}
             </Button>
             <Button
               type="button"
@@ -196,15 +198,15 @@ export const CreateNovelModal: React.FC<CreateNovelModalProps> = ({
               ) : (
                 <Wand2 className="size-3.5" />
               )}
-              AI 优化全部
+              {t('editor:createNovel.aiOptimize')}
             </Button>
           </div>
         </div>
 
         <section className={SECTION_CLASS}>
-          <p className="text-sm font-semibold text-foreground">基础信息</p>
+          <p className="text-sm font-semibold text-foreground">{t('editor:createNovel.sectionBasic')}</p>
           <label className="flex flex-col gap-1.5">
-            <FieldLabel hint="番茄书名：吸睛、点明金手指或题材">小说名称 *</FieldLabel>
+            <FieldLabel hint={t('editor:createNovel.titleHint')}>{t('editor:createNovel.titleLabel')}</FieldLabel>
             <input
               value={form.title}
               aria-invalid={titleError ? true : undefined}
@@ -212,7 +214,7 @@ export const CreateNovelModal: React.FC<CreateNovelModalProps> = ({
                 patchForm({ title: e.target.value })
                 if (titleError) setTitleError(undefined)
               }}
-              placeholder="例：我有神级天赋！！！无限资源"
+              placeholder={t('editor:createNovel.titlePlaceholder')}
               disabled={aiBusy}
               className={cn(
                 editorFieldClass,
@@ -227,12 +229,12 @@ export const CreateNovelModal: React.FC<CreateNovelModalProps> = ({
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <label className="flex flex-col gap-1.5">
-              <FieldLabel hint="番茄主分类">类型</FieldLabel>
+              <FieldLabel hint={t('editor:createNovel.genreHint')}>{t('editor:createNovel.genreLabel')}</FieldLabel>
               <input
                 list="novel-genre-options"
                 value={form.genre}
                 onChange={(e) => patchForm({ genre: e.target.value })}
-                placeholder="玄幻"
+                placeholder={t('editor:createNovel.genrePlaceholder')}
                 disabled={aiBusy}
                 className={editorFieldClass}
               />
@@ -243,11 +245,11 @@ export const CreateNovelModal: React.FC<CreateNovelModalProps> = ({
               </datalist>
             </label>
             <label className="flex flex-col gap-1.5">
-              <FieldLabel hint="叙事视角与节奏">叙事风格</FieldLabel>
+              <FieldLabel hint={t('editor:createNovel.styleHint')}>{t('editor:createNovel.styleLabel')}</FieldLabel>
               <input
                 value={form.style}
                 onChange={(e) => patchForm({ style: e.target.value })}
-                placeholder="第三人称 · 快节奏 · 强钩子"
+                placeholder={t('editor:createNovel.stylePlaceholder')}
                 disabled={aiBusy}
                 className={editorFieldClass}
               />
@@ -255,11 +257,11 @@ export const CreateNovelModal: React.FC<CreateNovelModalProps> = ({
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <FieldLabel hint="空格分隔，如：爽文 单女主 全民求生">风格标签</FieldLabel>
+            <FieldLabel hint={t('editor:createNovel.tagsHint')}>{t('editor:createNovel.tagsLabel')}</FieldLabel>
             <input
               value={form.tags}
               onChange={(e) => patchForm({ tags: e.target.value })}
-              placeholder="爽文 单女主 系统"
+              placeholder={t('editor:createNovel.tagsPlaceholder')}
               disabled={aiBusy}
               className={editorFieldClass}
             />
@@ -288,52 +290,52 @@ export const CreateNovelModal: React.FC<CreateNovelModalProps> = ({
         </section>
 
         <section className={SECTION_CLASS}>
-          <p className="text-sm font-semibold text-foreground">卖点与设定</p>
+          <p className="text-sm font-semibold text-foreground">{t('editor:createNovel.sectionSelling')}</p>
           <label className="flex flex-col gap-1.5">
-            <FieldLabel hint="≤30 字，适合开屏展示">一句话卖点</FieldLabel>
+            <FieldLabel hint={t('editor:createNovel.hookHint')}>{t('editor:createNovel.hookLabel')}</FieldLabel>
             <input
               value={form.hook}
               maxLength={HOOK_MAX}
               onChange={(e) => patchForm({ hook: e.target.value.slice(0, HOOK_MAX) })}
-              placeholder="开局觉醒无限资源，别人求生我建城"
+              placeholder={t('editor:createNovel.hookPlaceholder')}
               disabled={aiBusy}
               className={editorFieldClass}
             />
-            <span className={HINT_CLASS}>{form.hook.length}/{HOOK_MAX} 字</span>
+            <span className={HINT_CLASS}>{t('editor:createNovel.charCount', { current: form.hook.length, max: HOOK_MAX })}</span>
           </label>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <label className="flex flex-col gap-1.5 sm:col-span-2">
-              <FieldLabel hint={`≤${PROTAGONIST_MAX} 字`}>主角设定</FieldLabel>
+              <FieldLabel hint={t('editor:createNovel.protagonistHint')}>{t('editor:createNovel.protagonistLabel')}</FieldLabel>
               <textarea
                 value={form.protagonist}
                 maxLength={PROTAGONIST_MAX}
                 onChange={(e) =>
                   patchForm({ protagonist: e.target.value.slice(0, PROTAGONIST_MAX) })
                 }
-                placeholder="林逸，被拉入生存游戏，天赋【无限资源】"
+                placeholder={t('editor:createNovel.protagonistPlaceholder')}
                 rows={2}
                 disabled={aiBusy}
                 className={cn(editorTextareaClass, 'min-h-[3.5rem] resize-none')}
               />
-              <span className={HINT_CLASS}>{form.protagonist.length}/{PROTAGONIST_MAX} 字</span>
+              <span className={HINT_CLASS}>{t('editor:createNovel.charCount', { current: form.protagonist.length, max: PROTAGONIST_MAX })}</span>
             </label>
             <label className="flex flex-col gap-1.5 sm:col-span-2">
-              <FieldLabel>卖点关键词</FieldLabel>
+              <FieldLabel>{t('editor:createNovel.sellingPointsLabel')}</FieldLabel>
               <input
                 value={form.sellingPoints}
                 onChange={(e) => patchForm({ sellingPoints: e.target.value })}
-                placeholder="爽文,系统,生存,建城,单女主"
+                placeholder={t('editor:createNovel.sellingPointsPlaceholder')}
                 disabled={aiBusy}
                 className={editorFieldClass}
               />
             </label>
           </div>
           <label className="flex flex-col gap-1.5">
-            <FieldLabel>世界观要点</FieldLabel>
+            <FieldLabel>{t('editor:createNovel.worldviewLabel')}</FieldLabel>
             <textarea
               value={form.worldview}
               onChange={(e) => patchForm({ worldview: e.target.value })}
-              placeholder="神陨大陆，全球被拉入生存游戏，资源决定生死…"
+              placeholder={t('editor:createNovel.worldviewPlaceholder')}
               rows={3}
               disabled={aiBusy}
               className={cn(editorTextareaClass, 'min-h-[4rem] resize-y')}
@@ -342,29 +344,27 @@ export const CreateNovelModal: React.FC<CreateNovelModalProps> = ({
         </section>
 
         <section className={SECTION_CLASS}>
-          <p className="text-sm font-semibold text-foreground">书籍简介</p>
+          <p className="text-sm font-semibold text-foreground">{t('editor:createNovel.sectionSynopsis')}</p>
           <label className="flex flex-col gap-1.5">
-            <FieldLabel hint="番茄上架简介：2-4 段，120-300 字，含冲突与连载钩子">
-              简介正文
-            </FieldLabel>
+            <FieldLabel hint={t('editor:createNovel.synopsisHint')}>{t('editor:createNovel.synopsisLabel')}</FieldLabel>
             <textarea
               value={form.synopsis}
               onChange={(e) => patchForm({ synopsis: e.target.value })}
-              placeholder="当百亿人被强制拉入生存游戏…"
+              placeholder={t('editor:createNovel.synopsisPlaceholder')}
               rows={4}
               disabled={aiBusy}
               className={cn(editorTextareaClass, 'min-h-[6rem] resize-y')}
             />
             <span className={HINT_CLASS}>
-              当前 {form.synopsis.trim().length} 字 · 保存时将合并卖点/世界观/主角为 Agent 上下文
+              {t('editor:createNovel.synopsisMeta', { count: form.synopsis.trim().length })}
             </span>
           </label>
         </section>
 
         <section className={SECTION_CLASS}>
-          <p className="text-sm font-semibold text-foreground">连载设定</p>
+          <p className="text-sm font-semibold text-foreground">{t('editor:createNovel.sectionSerial')}</p>
           <label className="flex flex-col gap-1.5 sm:max-w-[220px]">
-            <FieldLabel hint="番茄常见 2000–3500">每章目标字数</FieldLabel>
+            <FieldLabel hint={t('editor:createNovel.chapterWordsHint')}>{t('editor:createNovel.chapterWordsLabel')}</FieldLabel>
             <input
               type="number"
               min={1500}
@@ -385,14 +385,14 @@ export const CreateNovelModal: React.FC<CreateNovelModalProps> = ({
 
         <div className="mt-3 flex shrink-0 justify-end gap-2 border-t border-border/60 bg-popover pt-3 max-md:flex-col-reverse">
           <Button type="button" variant="ghost" className="max-md:w-full" onClick={onClose}>
-            取消
+            {t('editor:createNovel.cancel')}
           </Button>
           <Button
             type="submit"
             className="max-md:w-full"
             disabled={submitting || !form.title.trim() || aiBusy}
           >
-            {submitting ? '创建中…' : '创建小说'}
+            {submitting ? t('editor:createNovel.submitting') : t('editor:createNovel.submit')}
           </Button>
         </div>
       </form>

@@ -97,7 +97,7 @@ export function EditorSidebar({
 
       <div className="min-h-0 flex-1 overflow-y-auto p-1.5 pb-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
         {!hintDismissed && novelSessionGroups.length > 0 ? (
-          <div className="relative mb-2 rounded-lg border border-primary/20 bg-primary/[0.04] px-2.5 py-2 pr-8 text-ui-sm leading-snug text-muted-foreground">
+          <div className="relative mb-2 rounded-md border border-border bg-muted/30 px-2.5 py-2 pr-8 text-xs leading-snug text-muted-foreground">
             <p className="font-medium text-foreground">{t('nav.editorQuickStart')}</p>
             <p className="mt-0.5">{t('nav.editorQuickStartDesc')}</p>
             <button
@@ -137,11 +137,11 @@ export function EditorSidebar({
                     tabIndex={0}
                     aria-expanded={isExpanded}
                     className={cn(
-                      'flex w-full cursor-pointer items-center gap-1.5 rounded-[10px] border border-transparent py-2 pl-1 pr-1.5 text-left font-[inherit] text-inherit',
-                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/45',
+                      'flex w-full cursor-pointer items-center gap-1.5 rounded-md border border-transparent py-1.5 pl-1.5 pr-1 text-left font-[inherit] text-inherit',
+                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40',
                       isActiveNovel
-                        ? 'border-l-[3px] border-l-primary bg-muted/50 hover:bg-muted/60'
-                        : 'border-l-[3px] border-l-transparent hover:bg-muted/40',
+                        ? 'border-border/80 bg-muted/50'
+                        : 'hover:bg-muted/35',
                     )}
                     onClick={handleNovelCardClick}
                     onKeyDown={(e) => {
@@ -206,7 +206,7 @@ export function EditorSidebar({
                     <div className="box-border w-full py-1 pl-1.5 pr-0">
                       {isActiveNovel ? (
                         <div className="box-border w-full pb-1.5">
-                          <div className="flex w-full items-center gap-2 rounded-lg border border-border bg-muted/30 px-2 py-1.5">
+                          <div className="flex w-full items-center gap-2 rounded-md border border-border/80 bg-background px-2 py-1.5">
                             <span className="flex shrink-0 [&_svg]:size-3.5 [&_svg]:text-muted-foreground">
                               <EditorIcons.Search />
                             </span>
@@ -266,7 +266,7 @@ export function EditorSidebar({
 
       <div className="flex shrink-0 flex-col gap-1 border-t border-border p-2.5">
         {activeNovelId ? (
-          <EditorButton variant="primary" fullWidth onClick={() => onNewChatForNovel(activeNovelId)}>
+          <EditorButton variant="secondary" fullWidth onClick={() => onNewChatForNovel(activeNovelId)}>
             <EditorIcons.Plus />
             <span>{t('nav.editorNewChat')}</span>
           </EditorButton>

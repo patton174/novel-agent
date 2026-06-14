@@ -10,7 +10,7 @@ export function contextUsageMeterWrapClass(pending?: boolean) {
 export const CONTEXT_USAGE_METER_RING = 'block shrink-0'
 
 export const CONTEXT_USAGE_METER_PERCENT = cn(
-  'min-w-[2.1rem] text-[0.72rem] font-medium tabular-nums tracking-tight text-slate-600',
+  'min-w-[2.1rem] text-[0.72rem] font-medium tabular-nums tracking-tight text-muted-foreground',
 )
 
 export function contextUsageBarWrapClass(compact?: boolean) {

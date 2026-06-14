@@ -1,3 +1,4 @@
+import i18n from '@/i18n'
 import { normalizeToolName } from './agentToolNames'
 
 /** CC tool name -> display label */
@@ -49,16 +50,24 @@ const LEGACY_LABELS: Record<string, string> = {
   context_search: '搜索',
 }
 
+function localizedLabel(zhKey: string): string {
+  return i18n.t(`editor:tools.${zhKey}`, { defaultValue: zhKey })
+}
+
 export function toolDisplayName(name: string): string {
   const raw = (name ?? '').trim()
   if (!raw) {
-    return '工具'
+    return localizedLabel('工具')
   }
   if (LEGACY_LABELS[raw]) {
-    return LEGACY_LABELS[raw]
+    return localizedLabel(LEGACY_LABELS[raw])
   }
   const canonical = normalizeToolName(raw)
-  return TOOL_LABELS[canonical] ?? TOOL_LABELS[raw] ?? raw
+  const zh = TOOL_LABELS[canonical] ?? TOOL_LABELS[raw]
+  if (zh) {
+    return localizedLabel(zh)
+  }
+  return raw
 }
 
 export function chapterWriteProgressLabel(

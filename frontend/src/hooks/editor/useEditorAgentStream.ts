@@ -18,6 +18,7 @@ import {
 } from '../../utils/agentStreamState'
 import { buildAgentRunTraceJson } from '../../utils/agentTracePersist'
 import { deriveAssistantStreamPhase } from '../../utils/agentStreamPhase'
+import { deriveComposerSpinnerMode } from '../../utils/deriveComposerSpinnerMode'
 import {
   isChapterContentSideEffect,
   shouldRefreshStoryMemoryAfterTool,
@@ -902,6 +903,15 @@ export function useEditorAgentStream({
     return lastContextUsageRef.current
   }, [messages, liveStreamMessage, contextUsageVersion])
 
+  const composerSpinnerMode = useMemo(() => {
+    return deriveComposerSpinnerMode({
+      streamActive: isLoading,
+      streamPhase: liveStreamMessage?.agentStreamPhase,
+      isThinking: liveStreamMessage?.agentIsThinking,
+      hasStreamingText: Boolean(liveStreamMessage?.content?.trim()),
+    })
+  }, [isLoading, liveStreamMessage])
+
   const closeStreamSockets = useCallback(() => {
     statusWsRef.current?.close()
     statusWsRef.current = null
@@ -927,6 +937,7 @@ export function useEditorAgentStream({
     handleInteractionSubmit,
     liveStreamMessage,
     composerContextUsage,
+    composerSpinnerMode,
     streamAbortRef,
     runWsRef,
   }

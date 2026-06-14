@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react'
 import { ShimmerScanText } from '../../loaders/ShimmerScanText'
+import { translateToolDisplayName, translateToolPhase } from '../../../utils/orchestrationI18n'
+import { cn } from '@/lib/utils'
 import {
   CC_BRANCH_CONTENT,
   CC_BRANCH_GLYPH,
@@ -14,6 +16,7 @@ import {
   CC_TOOL_ROW_WRAP,
   CHEVRON_SLOT,
   HEADLINE_CLUSTER,
+  TIMELINE_PENDING_IN,
   TOOL_DETAIL_TREE,
   ccHeadlineChevronClass,
   ccToolBranchClass,
@@ -57,18 +60,21 @@ export function CcToolRow({
   const interactive = collapsible && Boolean(onToggle)
   const showBody = expanded && (Boolean(branch) || Boolean(children))
 
+  const displayName = translateToolDisplayName(name)
+  const displayPhase = translateToolPhase(phase)
+
   const headline = (
     <div className={CC_TOOL_HEADLINE}>
       <span className={HEADLINE_CLUSTER}>
-        <span className={CC_TOOL_NAME}>{name}</span>
+        <span className={CC_TOOL_NAME}>{displayName}</span>
         {phase || args || resultHint ? (
           <span className={CC_TOOL_ARGS}>
-            {phase ? (
+            {displayPhase ? (
               <>
                 {phaseActive ? (
-                  <ShimmerScanText active>{phase}</ShimmerScanText>
+                  <ShimmerScanText active>{displayPhase}</ShimmerScanText>
                 ) : (
-                  phase
+                  displayPhase
                 )}
                 {args || resultHint ? ' · ' : ''}
               </>
@@ -96,7 +102,7 @@ export function CcToolRow({
   )
 
   return (
-    <div className={CC_TOOL_ROW_WRAP} data-testid={testId}>
+    <div className={cn(CC_TOOL_ROW_WRAP, TIMELINE_PENDING_IN)} data-testid={testId}>
       <div className={CC_TOOL_HEADLINE_ROW}>
         {iconName ? (
           <div className={toolLeadCellClass()}>

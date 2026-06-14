@@ -18,14 +18,16 @@
 @keyframes agent-timeline-pending-in {
   from {
     opacity: 0;
+    transform: translateY(5px);
   }
   to {
     opacity: 1;
+    transform: translateY(0);
   }
 }
 
 .agent-timeline-pending-in {
-  animation: agent-timeline-pending-in 0.22s ease-out;
+  animation: agent-timeline-pending-in 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 @keyframes agent-timeline-blink {
@@ -40,7 +42,7 @@
   height: 0.95em;
   margin-left: 2px;
   vertical-align: text-bottom;
-  background: #4f46e5;
+  background: hsl(var(--primary));
   animation: agent-timeline-blink 1s step-end infinite;
 }
 
