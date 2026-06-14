@@ -156,14 +156,21 @@
 - [x] **自动选中首章**：进入「章节编辑」且已有章节时默认选中第一章
 - [x] **版本历史**：移动工具栏「版本」→ 底部 Sheet
 
+## Phase 10 — Agent 时间线移动结构性压缩
+
+- [x] **TimelineDeliveryBlock**：移动完成态超长正文默认折叠（6 行 / 280 字）+「展开全文」
+- [x] **ScrollableToolExcerpt**：移动 excerpt 上限 8 行（桌面仍 20 行）
+- [x] **CcToolRow**：可折叠工具行增加 chevron  affordance
+- [x] **MessageTodoPanel**：移动最多展示 2 条待办（桌面 3 条）
+
 ## 审计清单闭环状态
 
-`docs/frontend-ui-audit.md` 中可交付项均已通过 Phase 1–8 落地；**未纳入范围**（需单独产品/工程规划）：
+`docs/frontend-ui-audit.md` 中可交付项均已通过 Phase 1–10 落地；**未纳入范围**（需单独产品/工程规划）：
 
-- Editor 移动写作路径深度重构（Phase 8–9 已做：分屏选章 + 自动首章；拖拽排序仍仅桌面侧栏）
-- Agent timeline 折叠策略与「单条占多屏」的结构性压缩（Phase 8 已收紧移动间距与默认编排收起）
+- Editor 移动卷/章拖拽排序（仍仅桌面侧栏 `NovelOutlinePanel`）
+- Agent timeline 更深层的消息级折叠（Phase 10 已做交付正文折叠 + 工具 excerpt 收紧）
 - Modal/Loader 进一步合并（已压至 EditorModalShell + shadcn Dialog + Skeleton + BrandLoader）
-- Admin 全表移动卡片（Users/Audit/Plans/Catalog 已有；其余低流量页保留横滑）
+- Admin 全表移动卡片（Users/Audit/Plans/Catalog/Billing 已有；Crawler 为卡片行 + 低流量页保留横滑）
 
 ---
 

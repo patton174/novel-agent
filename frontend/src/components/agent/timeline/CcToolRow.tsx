@@ -12,8 +12,10 @@ import {
   CC_TOOL_MERGE,
   CC_TOOL_NAME,
   CC_TOOL_ROW_WRAP,
+  CHEVRON_SLOT,
   HEADLINE_CLUSTER,
   TOOL_DETAIL_TREE,
+  ccHeadlineChevronClass,
   ccToolBranchClass,
   toolLeadCellClass,
 } from '@/lib/timelineClasses'
@@ -85,6 +87,11 @@ export function CcToolRow({
         <span className={CC_TOOL_MERGE}> ×{mergeCount}</span>
       ) : null}
       {trailing}
+      {interactive ? (
+        <span className={CHEVRON_SLOT} aria-hidden>
+          <span className={ccHeadlineChevronClass(expanded)} />
+        </span>
+      ) : null}
     </div>
   )
 

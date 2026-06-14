@@ -336,6 +336,12 @@ export const TIMELINE_BODY_DIVIDER =
 export const DELIVERY_BODY_WRAP =
   'agent-timeline-delivery-body min-w-0 w-full max-w-full flex-1 px-0 py-[0.02rem] pb-[0.15rem] max-md:pb-0 max-md:text-[0.92rem] max-md:leading-normal'
 
+export const DELIVERY_COLLAPSE_TOGGLE = cn(
+  'mt-1.5 inline-flex border-none bg-transparent p-0 text-left text-[0.68rem] font-medium leading-[1.4] text-muted-foreground',
+  'hover:text-foreground hover:underline',
+  'focus-visible:rounded focus-visible:outline-none focus-visible:shadow-[inset_0_0_0_2px_rgba(79,70,229,0.15)]',
+)
+
 export const TIMELINE_PENDING_IN = 'agent-timeline-pending-in'
 
 export const TIMELINE_STREAM_CURSOR = 'agent-timeline-stream-cursor'
@@ -380,11 +386,11 @@ export const MESSAGE_TODO_HEADER =
 export const MESSAGE_TODO_MORE =
   'mt-[0.15rem] cursor-pointer border-none bg-transparent p-0 text-left text-[0.68rem] font-medium leading-[1.4] text-muted-foreground hover:text-muted-foreground hover:underline focus-visible:rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary/45'
 
-export function toolExcerptClass(lineCount: number, mono?: boolean) {
+export function toolExcerptClass(lineCount: number, mono?: boolean, maxLines = 20) {
   return cn(
     'break-words whitespace-pre-wrap pr-[0.15rem] text-[0.74rem] font-medium leading-[1.45] text-muted-foreground',
     mono && 'font-mono',
-    lineCount >= 20 && 'max-h-[calc(20*1.45em)] overflow-y-auto',
+    lineCount >= maxLines && `max-h-[calc(${maxLines}*1.45em)] overflow-y-auto`,
   )
 }
 
