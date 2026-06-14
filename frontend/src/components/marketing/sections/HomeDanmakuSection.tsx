@@ -5,7 +5,7 @@ import { DanmakuMarquee } from '@/components/marketing/danmaku/DanmakuMarquee'
 import { useDanmakuFeed } from '@/components/marketing/danmaku/useDanmakuFeed'
 import { appToast } from '@/stores/appToastStore'
 import { isLoggedIn } from '@/utils/auth'
-import { MKT_CTA_PILL_SM, MKT_CTA_PRIMARY_INLINE } from '@/lib/marketingCta'
+import { MKT_CTA_ON_DARK_SM, MKT_CTA_PRIMARY_INLINE } from '@/lib/marketingCta'
 
 export function HomeDanmakuSection() {
   const { t } = useTranslation('marketing')
@@ -73,7 +73,7 @@ export function HomeDanmakuSection() {
             <button
               type="button"
               onClick={() => void reload()}
-              className={`${MKT_CTA_PILL_SM} text-indigo-200`}
+              className={`${MKT_CTA_ON_DARK_SM} text-indigo-200`}
             >
               {t('home.danmaku.retry')}
             </button>
@@ -106,11 +106,6 @@ export function HomeDanmakuSection() {
           </button>
         </div>
       </form>
-
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-b from-transparent to-indigo-950/95"
-      />
     </section>
   )
 }

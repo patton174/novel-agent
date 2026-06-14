@@ -15,6 +15,7 @@ public final class SecurityRedisKeys {
     public static final String EMAIL_COOLDOWN_PREFIX = "auth:email:cooldown:";
     public static final String EMAIL_DAILY_PREFIX = "auth:email:daily:";
     public static final String EMAIL_VERIFY_LINK_PREFIX = "auth:email:verify-link:";
+    public static final String PASSWORD_RESET_LINK_PREFIX = "auth:password:reset-link:";
     public static final String CAPTCHA_CHALLENGE_PREFIX = "auth:captcha:challenge:";
     public static final String CAPTCHA_TOKEN_PREFIX = "auth:captcha:token:";
     public static final String RATE_LIMIT_PREFIX = "auth:ratelimit:";

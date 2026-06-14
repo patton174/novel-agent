@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { CheckCircle2, LogIn, XCircle } from 'lucide-react'
-import { AuthResultCard } from '@/components/auth/AuthResultCard'
-import { AuthSpinner } from '@/components/auth/AuthSpinner'
+import { AuthShell } from '@/components/auth/AuthShell'
+import { AuthLegalNotice } from '@/components/auth/AuthLegalNotice'
+import { AppSpinner } from '@/components/loading/AppSpinner'
 import { confirmEmailVerify, fetchUserInfo } from '@/api/userApi'
-import { NovelAiWordmark } from '@/components/marketing/NovelAiWordmark'
 import { MKT_CTA_AUTH, MKT_CTA_AUTH_OUTLINE } from '@/lib/marketingCta'
 import { useUserStore } from '@/stores/userStore'
 import { cn } from '@/lib/utils'
@@ -49,7 +49,7 @@ export default function VerifyEmailPage() {
           const profile = await fetchUserInfo()
           if (!cancelled) setProfile(profile)
         } catch {
-          /* profile refresh optional */
+          /* optional */
         }
         setState('success')
         setMessage('邮箱验证成功，您现在可以使用完整功能。')
@@ -68,41 +68,40 @@ export default function VerifyEmailPage() {
   const Icon = state !== 'loading' ? STATE_ICON[state] : null
 
   return (
-    <AuthResultCard>
-      <Link to="/" className="mx-auto mb-4 inline-block transition-opacity hover:opacity-85">
-        <NovelAiWordmark size="sm" animate={false} />
-      </Link>
-
+    <AuthShell
+      title={state === 'loading' ? '验证邮箱' : state === 'success' ? '验证成功' : '验证失败'}
+      subtitle={
+        state === 'loading'
+          ? '正在确认您的邮箱地址…'
+          : state === 'success'
+            ? '账户邮箱已激活'
+            : '请重新申请验证邮件'
+      }
+      marketing={{
+        headline: '完成邮箱验证',
+        description: '验证邮箱后可使用完整创作功能，并接收账户与安全通知。',
+      }}
+      legal={state !== 'loading' ? <AuthLegalNotice variant="login" /> : undefined}
+    >
       {state === 'loading' ? (
-        <div className="flex flex-col items-center gap-2 py-4">
-          <AuthSpinner size="md" />
+        <div className="flex flex-col items-center gap-3 py-6">
+          <AppSpinner size="lg" />
           <p className="text-sm text-muted-foreground">正在验证邮箱…</p>
         </div>
       ) : Icon ? (
-        <motion.div
-          initial={{ scale: 0.85, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ type: 'spring', stiffness: 320, damping: 22 }}
-          className={cn(
-            'mx-auto flex size-14 items-center justify-center rounded-2xl',
-            STATE_RING[state],
-          )}
-        >
-          <Icon className="size-7" strokeWidth={2} />
-        </motion.div>
-      ) : null}
-
-      {state !== 'loading' ? (
         <>
-          <h1 className="mt-5 text-xl font-bold tracking-tight text-foreground">
-            {state === 'success' ? '验证成功' : '验证失败'}
-          </h1>
-          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{message}</p>
-        </>
-      ) : null}
-
-      {state !== 'loading' ? (
-        <>
+          <motion.div
+            initial={{ scale: 0.85, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: 'spring', stiffness: 320, damping: 22 }}
+            className={cn(
+              'mx-auto flex size-14 items-center justify-center rounded-2xl',
+              STATE_RING[state],
+            )}
+          >
+            <Icon className="size-7" strokeWidth={2} />
+          </motion.div>
+          <p className="mt-4 text-center text-sm leading-relaxed text-muted-foreground">{message}</p>
           <div className="mt-6 flex flex-col gap-2">
             {state === 'success' ? (
               <Link to="/dashboard" className={MKT_CTA_AUTH}>
@@ -126,19 +125,8 @@ export default function VerifyEmailPage() {
               </>
             )}
           </div>
-          <div className="mt-5 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 border-t border-border/60 pt-4 text-xs text-muted-foreground">
-            <Link to="/privacy" className="hover:text-foreground hover:underline">
-              隐私政策
-            </Link>
-            <Link to="/terms" className="hover:text-foreground hover:underline">
-              服务协议
-            </Link>
-            <Link to="/" className="hover:text-foreground hover:underline">
-              返回首页
-            </Link>
-          </div>
         </>
       ) : null}
-    </AuthResultCard>
+    </AuthShell>
   )
 }

@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils'
+import { AppSpinner } from '@/components/loading/AppSpinner'
 
 /** 主包内品牌 Loading，供 guards / layout 第一帧使用 */
 export function BrandLoader({
@@ -38,18 +39,12 @@ export function InlineBrandLoader({
   className?: string
   size?: 'sm' | 'md'
 }) {
-  const dot = size === 'md' ? 'size-2.5' : 'size-2'
   return (
-    <div className={cn('flex items-center gap-2 text-sm', className)} role="status">
-      <span className={cn('relative flex shrink-0', dot)}>
-        <span
-          className={cn(
-            'absolute inline-flex size-full animate-ping rounded-full bg-primary/40 opacity-75',
-          )}
-        />
-        <span className={cn('relative inline-flex rounded-full bg-primary', dot)} />
-      </span>
-      {label ? <span>{label}</span> : null}
-    </div>
+    <AppSpinner
+      variant="brand"
+      size={size === 'md' ? 'md' : 'sm'}
+      label={label}
+      className={className}
+    />
   )
 }

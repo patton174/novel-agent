@@ -4,6 +4,7 @@ import { Menu, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 import { NovelAiWordmark } from './NovelAiWordmark'
+import { MKT_CTA_PRIMARY } from '@/lib/marketingCta'
 
 function useIsHome() {
   const { pathname } = useLocation()
@@ -102,10 +103,7 @@ export function MarketingNav() {
             >
               {t('nav.login')}
             </Link>
-            <Link
-              to="/register"
-              className="mkt-cta-glow rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-transform hover:-translate-y-0.5 hover:bg-primary-hover"
-            >
+            <Link to="/register" className={cn(MKT_CTA_PRIMARY, 'px-4 py-2 text-sm')}>
               {t('nav.register')}
             </Link>
           </div>
@@ -158,10 +156,7 @@ export function MarketingNav() {
             <Link to="/login" className="rounded-lg px-3 py-2.5 hover:bg-surface-hover">
               {t('nav.login')}
             </Link>
-            <Link
-              to="/register"
-              className="mt-1 rounded-full bg-primary px-4 py-2.5 text-center text-primary-foreground"
-            >
+            <Link to="/register" className={cn(MKT_CTA_PRIMARY, 'mt-1 px-4 py-2.5 text-center text-sm')}>
               {t('nav.register')}
             </Link>
           </div>

@@ -53,6 +53,47 @@ export async function sendEmailVerifyLink(): Promise<void> {
   await parseResultResponse<null>(res)
 }
 
+export async function requestPasswordReset(email: string): Promise<void> {
+  const res = await secureFetch('/api/auth/api/forgot-password', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: email.trim() }),
+  })
+  if (!res.ok) {
+    let json: unknown = null
+    try {
+      json = await res.json()
+    } catch {
+      json = null
+    }
+    throw new Error(resolveErrorMessage(json, res.status))
+  }
+  await parseResultResponse<null>(res)
+}
+
+export async function confirmPasswordReset(
+  token: string,
+  sig: string,
+  exp: number,
+  newPassword: string,
+): Promise<void> {
+  const res = await secureFetch('/api/auth/api/confirm-password-reset', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token, sig, exp, newPassword }),
+  })
+  if (!res.ok) {
+    let json: unknown = null
+    try {
+      json = await res.json()
+    } catch {
+      json = null
+    }
+    throw new Error(resolveErrorMessage(json, res.status))
+  }
+  await parseResultResponse<null>(res)
+}
+
 export async function confirmEmailVerify(token: string, sig: string, exp: number): Promise<void> {
   const res = await secureFetch('/api/auth/api/confirm-email-verify', {
     method: 'POST',

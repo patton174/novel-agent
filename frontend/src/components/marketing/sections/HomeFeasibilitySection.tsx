@@ -81,15 +81,45 @@ export function HomeFeasibilitySection() {
         >
           <div className="border-b border-border/60 bg-gradient-to-r from-primary/[0.04] to-transparent px-5 py-4 md:px-6">
             <h3 className="text-sm font-semibold text-foreground">{t('home.feasibility.compareTitle')}</h3>
-            <p className="mt-1 text-[11px] text-muted-foreground md:hidden">← 左右滑动查看更多 →</p>
           </div>
-          <div className="relative overflow-x-auto">
-            <table className="w-full min-w-[520px] text-left text-sm">
+
+          {/* 移动端：卡片式对比，避免 520px 横滑 */}
+          <div className="divide-y divide-border/40 md:hidden">
+            {COMPARE_KEYS.map((rowKey) => (
+              <article key={rowKey} className="space-y-3 px-5 py-4">
+                <h4 className="text-sm font-semibold text-foreground">
+                  {t(`home.feasibility.compareRows.${rowKey}.feature`)}
+                </h4>
+                <div className="grid gap-2">
+                  <div className="rounded-xl border border-border/60 bg-muted/30 px-3 py-2.5">
+                    <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      {t('home.feasibility.compareHeaders.generic')}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {t(`home.feasibility.compareRows.${rowKey}.generic`)}
+                    </p>
+                  </div>
+                  <div className="rounded-xl border border-primary/20 bg-primary/[0.06] px-3 py-2.5">
+                    <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-primary">
+                      {t('home.feasibility.compareHeaders.us')}
+                    </p>
+                    <p className="text-sm font-semibold text-foreground">
+                      {t(`home.feasibility.compareRows.${rowKey}.us`)}
+                    </p>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+
+          {/* 桌面端：表格 */}
+          <div className="relative hidden overflow-x-auto md:block">
+            <table className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-border/50 text-xs uppercase tracking-wider text-muted-foreground">
-                  <th className="px-5 py-3 font-semibold md:px-6">{t('home.feasibility.compareHeaders.feature')}</th>
-                  <th className="px-5 py-3 font-semibold md:px-6">{t('home.feasibility.compareHeaders.generic')}</th>
-                  <th className="bg-primary/[0.06] px-5 py-3 font-semibold text-primary md:px-6">
+                  <th className="px-6 py-3 font-semibold">{t('home.feasibility.compareHeaders.feature')}</th>
+                  <th className="px-6 py-3 font-semibold">{t('home.feasibility.compareHeaders.generic')}</th>
+                  <th className="bg-primary/[0.06] px-6 py-3 font-semibold text-primary">
                     {t('home.feasibility.compareHeaders.us')}
                   </th>
                 </tr>
@@ -97,13 +127,13 @@ export function HomeFeasibilitySection() {
               <tbody>
                 {COMPARE_KEYS.map((rowKey) => (
                   <tr key={rowKey} className="border-b border-border/40 last:border-0">
-                    <td className="px-5 py-3.5 font-medium text-foreground md:px-6">
+                    <td className="px-6 py-3.5 font-medium text-foreground">
                       {t(`home.feasibility.compareRows.${rowKey}.feature`)}
                     </td>
-                    <td className="px-5 py-3.5 text-muted-foreground md:px-6">
+                    <td className="px-6 py-3.5 text-muted-foreground">
                       {t(`home.feasibility.compareRows.${rowKey}.generic`)}
                     </td>
-                    <td className="bg-primary/[0.04] px-5 py-3.5 font-semibold text-foreground md:px-6">
+                    <td className="bg-primary/[0.04] px-6 py-3.5 font-semibold text-foreground">
                       {t(`home.feasibility.compareRows.${rowKey}.us`)}
                     </td>
                   </tr>

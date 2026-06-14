@@ -49,6 +49,16 @@ public class EmailTemplateRenderer {
         return render(EmailTemplateIds.VERIFY_CODE, vars, brandProperties.getProductName() + " 邮箱验证码");
     }
 
+    public RenderedEmail renderPasswordResetLink(String resetUrl, long ttlSeconds, String frontendBaseUrl) {
+        Map<String, String> vars = new HashMap<>();
+        vars.put("resetUrl", resetUrl);
+        vars.put("ttlLabel", EmailTtlFormatter.formatLabel(ttlSeconds));
+        if (frontendBaseUrl != null && !frontendBaseUrl.isBlank()) {
+            vars.put("frontendBaseUrl", frontendBaseUrl.replaceAll("/+$", ""));
+        }
+        return render(EmailTemplateIds.PASSWORD_RESET, vars, brandProperties.getProductName() + " 重置密码");
+    }
+
     private static String loadTemplate(String fileName) {
         try {
             ClassPathResource resource = new ClassPathResource("mail/" + fileName);

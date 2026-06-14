@@ -135,10 +135,10 @@ const LoginPage: React.FC = () => {
           }}
           hint={
             <Link
-              to="/contact"
+              to="/forgot-password"
               className="inline-flex min-h-9 items-center py-1 text-xs text-primary hover:underline"
             >
-              忘记密码？联系客服
+              忘记密码？
             </Link>
           }
         />

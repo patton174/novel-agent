@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { ArrowIcon } from '../icons'
+import { MKT_CTA_FOOTER_PRIMARY, MKT_CTA_FOOTER_SECONDARY } from '@/lib/marketingCta'
 
 type FooterVariant = 'full' | 'linksOnly'
 
@@ -27,9 +28,9 @@ export function HomeFooterSection({ variant = 'full' }: { variant?: FooterVarian
   ] as const
 
   return (
-    <footer className={`relative z-10 w-full ${variant === 'full' ? '-mt-16' : ''}`}>
+    <footer className="relative z-10 w-full">
       {variant === 'full' ? (
-        <div className="mkt-footer-cta-band relative overflow-hidden px-6 pb-14 pt-20 text-white">
+        <div className="mkt-footer-cta-band relative overflow-hidden px-6 pb-14 pt-16 text-white">
           <div
             aria-hidden
             className="pointer-events-none absolute inset-0 opacity-30"
@@ -42,17 +43,11 @@ export function HomeFooterSection({ variant = 'full' }: { variant?: FooterVarian
             <h2 className="text-2xl font-bold tracking-tight drop-shadow-sm md:text-4xl">{t('footer.ctaTitle')}</h2>
             <p className="max-w-xl text-sm leading-relaxed text-white/85 md:text-base">{t('footer.ctaDesc')}</p>
             <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Link
-                to="/register"
-                className="inline-flex items-center gap-2 rounded-full bg-white px-7 py-3.5 text-sm font-semibold text-primary shadow-lg shadow-black/20 transition-all hover:-translate-y-0.5 hover:bg-slate-50 hover:shadow-xl"
-              >
+              <Link to="/register" className={MKT_CTA_FOOTER_PRIMARY}>
                 {t('footer.ctaRegister')}
                 <ArrowIcon />
               </Link>
-              <Link
-                to="/login"
-                className="inline-flex items-center gap-2 rounded-full border border-white/35 bg-white/10 px-7 py-3.5 text-sm font-semibold text-white backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:bg-white/20"
-              >
+              <Link to="/login" className={MKT_CTA_FOOTER_SECONDARY}>
                 {t('footer.ctaLogin')}
               </Link>
             </div>

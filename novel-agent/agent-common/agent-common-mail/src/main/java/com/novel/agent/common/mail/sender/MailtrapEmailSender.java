@@ -37,6 +37,11 @@ public class MailtrapEmailSender {
         send(toEmail, rendered, "email-verification");
     }
 
+    public void sendPasswordResetLink(String toEmail, String resetUrl, long ttlSeconds, String frontendBaseUrl) {
+        RenderedEmail rendered = templateRenderer.renderPasswordResetLink(resetUrl, ttlSeconds, frontendBaseUrl);
+        send(toEmail, rendered, "password-reset");
+    }
+
     public void send(String toEmail, RenderedEmail rendered, String category) {
         if (!properties.enabled()) {
             log.error("Mailtrap token 未配置，无法发信 email={} subject={}", maskEmail(toEmail), rendered.subject());
