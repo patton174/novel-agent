@@ -32,6 +32,11 @@ public class MailtrapEmailSender {
         send(toEmail, rendered, "email-verification");
     }
 
+    public void sendPasswordResetLink(String toEmail, String resetUrl, long ttlSeconds, String frontendBaseUrl) {
+        RenderedEmail rendered = templateRenderer.renderPasswordResetLink(resetUrl, ttlSeconds, frontendBaseUrl);
+        send(toEmail, rendered, "password-reset");
+    }
+
     public void sendVerificationCode(String toEmail, String code, long ttlSeconds) {
         RenderedEmail rendered = templateRenderer.renderVerifyCode(code, ttlSeconds);
         send(toEmail, rendered, "email-verification");

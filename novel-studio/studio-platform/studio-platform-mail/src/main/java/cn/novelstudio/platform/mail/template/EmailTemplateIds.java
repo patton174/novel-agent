@@ -7,6 +7,7 @@ public final class EmailTemplateIds {
 
     public static final String VERIFY_LINK = "verify-link";
     public static final String VERIFY_CODE = "verify-code";
+    public static final String PASSWORD_RESET = "password-reset";
 
     private EmailTemplateIds() {
     }
