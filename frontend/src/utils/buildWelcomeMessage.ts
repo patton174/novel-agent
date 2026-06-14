@@ -1,8 +1,9 @@
 import type { Novel } from '../types/novel'
+import { BRAND_NAME } from '@/lib/brand'
 
 export function buildWelcomeMessage(novel: Novel | null | undefined): string {
   if (!novel) {
-    return '你好！我是 Novel AI 的智能创作助手。\n\n描述一个场景、人物或情节，我可以帮你续写故事。'
+    return `你好！我是 ${BRAND_NAME} 的智能创作助手。\n\n描述一个场景、人物或情节，我可以帮你续写故事。`
   }
 
   const lines = [`你好！当前正在创作《${novel.title}》。`]

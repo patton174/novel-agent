@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useCallback, useEffect, useState } from 'react'
 import type { AdminUser } from '@/api/adminApi'
 import { updateUser } from '@/api/adminApi'
@@ -34,6 +35,8 @@ import { cn } from '@/lib/utils'
 import { appToast } from '@/stores/appToastStore'
 import type { UserRole } from '@/stores/userStore'
 
+type TabKey = 'account' | 'billing'
+
 interface UserEditDialogProps {
   user: AdminUser | null
   open: boolean
@@ -41,24 +44,23 @@ interface UserEditDialogProps {
   onSaved: (user: AdminUser) => void
 }
 
-const ROLES: { value: UserRole; label: string }[] = [
-  { value: 'user', label: '普通用户' },
-  { value: 'vip', label: 'VIP' },
-  { value: 'admin', label: '管理员' },
-]
-
-type TabKey = 'account' | 'billing'
-
 export function UserEditDialog({
   user,
   open,
   onOpenChange,
   onSaved,
 }: UserEditDialogProps) {
+  const { t } = useTranslation(['admin'])
   const [tab, setTab] = useState<TabKey>('account')
   const [role, setRole] = useState<UserRole>('user')
   const [isActive, setIsActive] = useState(true)
   const [saving, setSaving] = useState(false)
+
+  const ROLES: { value: UserRole; label: string }[] = [
+    { value: 'user', label: t('admin:users.roleUser') },
+    { value: 'vip', label: t('admin:users.roleVip') },
+    { value: 'admin', label: t('admin:users.roleAdmin') },
+  ]
 
   const [plans, setPlans] = useState<AdminPlan[]>([])
   const [usage, setUsage] = useState<AdminUserUsage | null>(null)
@@ -82,11 +84,11 @@ export function UserEditDialog({
       setPlanCode(usageData.planCode)
     } catch (err) {
       setUsage(null)
-      appToast.error(err instanceof Error ? err.message : '加载订阅与用量失败')
+      appToast.error(err instanceof Error ? err.message : t('admin:userEdit.loadBillingFail'))
     } finally {
       setBillingLoading(false)
     }
-  }, [])
+  }, [t])
 
   useEffect(() => {
     if (user) {
@@ -110,7 +112,7 @@ export function UserEditDialog({
       onSaved(updated)
       onOpenChange(false)
     } catch (err) {
-      appToast.error(err instanceof Error ? err.message : '更新用户失败')
+      appToast.error(err instanceof Error ? err.message : t('admin:userEdit.updateUserFail'))
     } finally {
       setSaving(false)
     }
@@ -122,9 +124,9 @@ export function UserEditDialog({
     try {
       await updateUserSubscription(user.id, planCode, 'admin update')
       await loadBilling(user.id)
-      appToast.success('订阅已更新')
+      appToast.success(t('admin:userEdit.subUpdated'))
     } catch (err) {
-      appToast.error(err instanceof Error ? err.message : '更新订阅失败')
+      appToast.error(err instanceof Error ? err.message : t('admin:userEdit.updateSubFail'))
     } finally {
       setSaving(false)
     }
@@ -143,9 +145,9 @@ export function UserEditDialog({
       setRunBonus('0')
       setOverrideReason('')
       await loadBilling(user.id)
-      appToast.success('临时配额已添加')
+      appToast.success(t('admin:userEdit.quotaAdded'))
     } catch (err) {
-      appToast.error(err instanceof Error ? err.message : '添加配额失败')
+      appToast.error(err instanceof Error ? err.message : t('admin:userEdit.addQuotaFail'))
     } finally {
       setSaving(false)
     }
@@ -163,14 +165,14 @@ export function UserEditDialog({
         onOpenChange={onOpenChange}
         size="form"
         className="max-h-[90vh]"
-        title="编辑用户"
+        title={t('admin:userEdit.title')}
         description={user ? `${user.username}（${user.email}）` : undefined}
       >
         <div className="flex gap-2 border-b border-border pb-2">
           {(
             [
-              { key: 'account', label: '账号' },
-              { key: 'billing', label: '订阅与用量' },
+              { key: 'account', label: t('admin:userEdit.tabAccount') },
+              { key: 'billing', label: t('admin:userEdit.tabBilling') },
             ] as const
           ).map((item) => (
             <button
@@ -192,10 +194,10 @@ export function UserEditDialog({
         {tab === 'account' ? (
           <div className="space-y-4 py-2">
             <div className="space-y-2">
-              <label className="text-sm font-medium">角色</label>
+              <label className="text-sm font-medium">{t('admin:userEdit.roleLabel')}</label>
               <Select value={role} onValueChange={(v) => setRole(v as UserRole)}>
                 <SelectTrigger>
-                  <SelectValue placeholder="选择角色" />
+                  <SelectValue placeholder={t('admin:userEdit.rolePlaceholder')} />
                 </SelectTrigger>
                 <SelectContent>
                   {ROLES.map((item) => (
@@ -209,8 +211,8 @@ export function UserEditDialog({
 
             <div className="flex items-center justify-between gap-4">
               <div>
-                <p className="text-sm font-medium">账号状态</p>
-                <p className="text-xs text-muted-foreground">关闭后用户将无法登录</p>
+                <p className="text-sm font-medium">{t('admin:userEdit.statusLabel')}</p>
+                <p className="text-xs text-muted-foreground">{t('admin:userEdit.statusDesc')}</p>
               </div>
               <Switch checked={isActive} onCheckedChange={setIsActive} />
             </div>
@@ -218,11 +220,11 @@ export function UserEditDialog({
         ) : (
           <div className="space-y-4 py-2">
             {billingLoading ? (
-              <p className="text-sm text-muted-foreground">加载用量…</p>
+              <p className="text-sm text-muted-foreground">{t('admin:userEdit.loadingBilling')}</p>
             ) : usage ? (
               <>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">当前套餐</label>
+                  <label className="text-sm font-medium">{t('admin:userEdit.currentPlan')}</label>
                   <Select value={planCode} onValueChange={setPlanCode}>
                     <SelectTrigger>
                       <SelectValue />
@@ -242,7 +244,7 @@ export function UserEditDialog({
                     disabled={saving}
                     onClick={() => void handleSaveSubscription()}
                   >
-                    保存套餐
+                    {t('admin:userEdit.savePlan')}
                   </Button>
                 </div>
 
@@ -261,9 +263,9 @@ export function UserEditDialog({
                     </div>
                     <p>
                       Runs: {usage.runsUsed}
-                      {usage.runQuota != null ? ` / ${usage.runQuota}` : ' / 不限'}
+                      {usage.runQuota != null ? ` / ${usage.runQuota}` : ` / ${t('admin:userEdit.unlimited')}`}
                     </p>
-                    <p>预估成本: {formatCostMicros(usage.costMicros)}</p>
+                    <p>{t('admin:userEdit.estCost')}: {formatCostMicros(usage.costMicros)}</p>
                   </div>
                   <Button
                     type="button"
@@ -271,13 +273,13 @@ export function UserEditDialog({
                     className="mt-2 h-auto p-0"
                     onClick={() => setEventsOpen(true)}
                   >
-                    查看用量明细（{usage.recentEvents.length} 条）
+                    {t('admin:userEdit.viewDetails', { count: usage.recentEvents.length })}
                   </Button>
                 </div>
 
                 {usage.activeOverrides.length > 0 ? (
                   <div className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground">
-                    <p className="mb-1 font-medium text-foreground">生效中的临时配额</p>
+                    <p className="mb-1 font-medium text-foreground">{t('admin:userEdit.activeOverrides')}</p>
                     {usage.activeOverrides.map((o) => (
                       <p key={o.id}>
                         +{formatTokenQuota(o.tokenBonus)} tokens, +{o.runBonus} runs
@@ -288,23 +290,23 @@ export function UserEditDialog({
                 ) : null}
 
                 <div className="space-y-2 rounded-xl border border-dashed border-border p-3">
-                  <p className="text-sm font-medium">临时加配额</p>
+                  <p className="text-sm font-medium">{t('admin:userEdit.addOverrideTitle')}</p>
                   <div className="grid grid-cols-2 gap-2">
                     <Input
                       type="number"
-                      placeholder="Token 加成"
+                      placeholder={t('admin:userEdit.tokenBonusPlaceholder')}
                       value={tokenBonus}
                       onChange={(e) => setTokenBonus(e.target.value)}
                     />
                     <Input
                       type="number"
-                      placeholder="Run 加成"
+                      placeholder={t('admin:userEdit.runBonusPlaceholder')}
                       value={runBonus}
                       onChange={(e) => setRunBonus(e.target.value)}
                     />
                   </div>
                   <Input
-                    placeholder="原因（可选）"
+                    placeholder={t('admin:userEdit.reasonPlaceholder')}
                     value={overrideReason}
                     onChange={(e) => setOverrideReason(e.target.value)}
                   />
@@ -315,23 +317,23 @@ export function UserEditDialog({
                     disabled={saving}
                     onClick={() => void handleAddOverride()}
                   >
-                    添加临时配额
+                    {t('admin:userEdit.addOverrideBtn')}
                   </Button>
                 </div>
               </>
             ) : (
-              <p className="text-sm text-muted-foreground">暂无用量数据</p>
+              <p className="text-sm text-muted-foreground">{t('admin:userEdit.noBillingData')}</p>
             )}
           </div>
         )}
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
-            关闭
+            {t('admin:userEdit.close')}
           </Button>
           {tab === 'account' ? (
             <Button onClick={() => void handleSaveAccount()} disabled={saving || !user}>
-              {saving ? '保存中…' : '保存账号'}
+              {saving ? t('admin:userEdit.saving') : t('admin:userEdit.saveAccount')}
             </Button>
           ) : null}
         </DialogFooter>
@@ -340,9 +342,9 @@ export function UserEditDialog({
       <Sheet open={eventsOpen} onOpenChange={setEventsOpen}>
         <SheetContent className="w-full overflow-y-auto sm:max-w-md">
           <SheetHeader>
-            <SheetTitle>用量明细</SheetTitle>
+            <SheetTitle>{t('admin:userEdit.detailsTitle')}</SheetTitle>
             <SheetDescription>
-              {user?.username} 最近 {usage?.recentEvents.length ?? 0} 条记录
+              {t('admin:userEdit.detailsDesc', { username: user?.username, count: usage?.recentEvents.length ?? 0 })}
             </SheetDescription>
           </SheetHeader>
           <ul className="mt-4 divide-y divide-border text-sm">

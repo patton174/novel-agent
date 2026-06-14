@@ -1,40 +1,47 @@
-/** 营销 + 应用 CTA — 全站统一 rounded-xl 几何（与 appButtonTokens 对齐） */
-export const MKT_CTA_PRIMARY =
-  'mkt-cta-glow inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition hover:-translate-y-0.5 hover:bg-primary-hover'
+import { cva } from 'class-variance-authority'
 
-export const MKT_CTA_SECONDARY =
-  'inline-flex items-center justify-center gap-2 rounded-xl border border-border/80 bg-white/80 px-6 py-3 text-sm font-semibold text-foreground shadow-sm backdrop-blur-sm transition hover:-translate-y-0.5 hover:border-primary/25 hover:bg-white hover:shadow-md'
+export const marketingCtaVariants = cva(
+  'inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-all',
+  {
+    variants: {
+      variant: {
+        primary: 'mkt-cta-glow bg-primary text-primary-foreground hover:bg-primary-hover',
+        secondary: 'border border-border/80 bg-surface/80 text-foreground shadow-sm backdrop-blur-sm hover:border-primary/25 hover:bg-surface hover:shadow-md',
+        tierHighlight: 'bg-primary text-primary-foreground shadow-lg shadow-primary/25 hover:bg-primary-hover hover:shadow-xl hover:shadow-primary/30',
+        tierOutline: 'border border-border bg-surface text-foreground hover:border-primary/40 hover:bg-surface-hover',
+        auth: 'mkt-cta-glow bg-primary text-primary-foreground hover:bg-primary-hover font-medium',
+        authOutline: 'border border-border text-foreground hover:bg-muted/50 font-medium',
+        inline: 'mkt-cta-glow bg-primary text-primary-foreground hover:bg-primary-hover disabled:opacity-50',
+        onDark: 'border border-white/15 text-white hover:bg-white/10',
+        footerPrimary: 'bg-surface text-primary shadow-lg shadow-black/20 hover:bg-surface-hover hover:shadow-xl',
+        footerSecondary: 'border border-white/35 bg-white/10 text-white backdrop-blur-sm hover:bg-white/20'
+      },
+      size: {
+        default: 'px-6 py-3 text-sm hover:-translate-y-0.5',
+        lg: 'px-8 py-3.5 text-base hover:-translate-y-0.5',
+        tier: 'h-12 w-full text-base duration-300',
+        auth: 'h-11 w-full text-sm',
+        inline: 'px-5 py-3 text-sm',
+        sm: 'px-4 py-1.5 text-xs',
+        footer: 'px-7 py-3.5 text-sm hover:-translate-y-0.5',
+      }
+    },
+    defaultVariants: {
+      variant: 'primary',
+      size: 'default'
+    }
+  }
+)
 
-export const MKT_CTA_PRIMARY_LG =
-  'mkt-cta-glow inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-8 py-3.5 text-base font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5 hover:bg-primary-hover'
-
-export const MKT_CTA_TIER =
-  'flex h-12 w-full items-center justify-center rounded-xl text-base font-semibold transition-all duration-300'
-
-export const MKT_CTA_TIER_HIGHLIGHT =
-  `${MKT_CTA_TIER} bg-primary text-primary-foreground shadow-lg shadow-primary/25 hover:bg-primary-hover hover:shadow-xl hover:shadow-primary/30`
-
-export const MKT_CTA_TIER_OUTLINE =
-  `${MKT_CTA_TIER} border border-border bg-surface text-foreground hover:border-primary/40 hover:bg-surface-hover`
-
-/** 认证页全宽按钮（与 AuthField h-11 对齐） */
-export const MKT_CTA_AUTH =
-  'mkt-cta-glow inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary text-sm font-medium text-primary-foreground transition hover:bg-primary-hover'
-
-export const MKT_CTA_AUTH_OUTLINE =
-  'inline-flex h-11 w-full items-center justify-center rounded-xl border border-border text-sm font-medium text-foreground transition hover:bg-muted/50'
-
-/** 深色区 / 表单内联主按钮 */
-export const MKT_CTA_PRIMARY_INLINE =
-  'mkt-cta-glow inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition hover:bg-primary-hover disabled:opacity-50'
-
-/** 深色背景次要小按钮 */
-export const MKT_CTA_ON_DARK_SM =
-  'inline-flex items-center justify-center rounded-xl border border-white/15 px-4 py-1.5 text-xs transition hover:bg-white/10'
-
-/** Footer CTA 区（深底） */
-export const MKT_CTA_FOOTER_PRIMARY =
-  'inline-flex items-center justify-center gap-2 rounded-xl bg-white px-7 py-3.5 text-sm font-semibold text-primary shadow-lg shadow-black/20 transition-all hover:-translate-y-0.5 hover:bg-slate-50 hover:shadow-xl'
-
-export const MKT_CTA_FOOTER_SECONDARY =
-  'inline-flex items-center justify-center gap-2 rounded-xl border border-white/35 bg-white/10 px-7 py-3.5 text-sm font-semibold text-white backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:bg-white/20'
+export const MKT_CTA_PRIMARY = marketingCtaVariants({ variant: 'primary', size: 'default' })
+export const MKT_CTA_SECONDARY = marketingCtaVariants({ variant: 'secondary', size: 'default' })
+export const MKT_CTA_PRIMARY_LG = marketingCtaVariants({ variant: 'primary', size: 'lg' })
+export const MKT_CTA_TIER = marketingCtaVariants({ variant: 'tierOutline', size: 'tier' })
+export const MKT_CTA_TIER_HIGHLIGHT = marketingCtaVariants({ variant: 'tierHighlight', size: 'tier' })
+export const MKT_CTA_TIER_OUTLINE = marketingCtaVariants({ variant: 'tierOutline', size: 'tier' })
+export const MKT_CTA_AUTH = marketingCtaVariants({ variant: 'auth', size: 'auth' })
+export const MKT_CTA_AUTH_OUTLINE = marketingCtaVariants({ variant: 'authOutline', size: 'auth' })
+export const MKT_CTA_PRIMARY_INLINE = marketingCtaVariants({ variant: 'inline', size: 'inline' })
+export const MKT_CTA_ON_DARK_SM = marketingCtaVariants({ variant: 'onDark', size: 'sm' })
+export const MKT_CTA_FOOTER_PRIMARY = marketingCtaVariants({ variant: 'footerPrimary', size: 'footer' })
+export const MKT_CTA_FOOTER_SECONDARY = marketingCtaVariants({ variant: 'footerSecondary', size: 'footer' })

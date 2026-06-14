@@ -1,17 +1,19 @@
+import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { ArrowRight } from 'lucide-react'
 
-/** 管理概览页快捷入口 */
-const QUICK_LINKS = [
-  { to: '/admin/users', label: '用户管理' },
-  { to: '/admin/crawler', label: 'AI 爬虫' },
-  { to: '/admin/plans', label: '套餐管理' },
-  { to: '/admin/revenue', label: '收入与成本' },
-  { to: '/admin/stats', label: '平台统计' },
-  { to: '/admin/site-content', label: '站点内容' },
-] as const
-
 export function AdminQuickLinks() {
+  const { t } = useTranslation(['common'])
+
+  const QUICK_LINKS = [
+    { to: '/admin/users', label: t('common:nav.adminUsers') },
+    { to: '/admin/crawler', label: t('common:nav.adminCrawler') },
+    { to: '/admin/plans', label: t('common:nav.adminPlans') },
+    { to: '/admin/revenue', label: t('common:nav.adminRevenue') },
+    { to: '/admin/stats', label: t('common:nav.adminStats') },
+    { to: '/admin/site-content', label: t('common:nav.adminSiteContent') },
+  ] as const
+
   return (
     <div className="flex flex-wrap gap-2">
       {QUICK_LINKS.map(({ to, label }) => (

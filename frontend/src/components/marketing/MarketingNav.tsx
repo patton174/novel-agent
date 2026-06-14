@@ -2,9 +2,11 @@ import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Menu, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { useAppMobile } from '@/hooks/useMediaQuery'
 import { cn } from '@/lib/utils'
 import { NovelAiWordmark } from './NovelAiWordmark'
 import { MKT_CTA_PRIMARY } from '@/lib/marketingCta'
+import { ThemeToggle } from '@/components/theme/ThemeToggle'
 
 function useIsHome() {
   const { pathname } = useLocation()
@@ -14,7 +16,6 @@ function useIsHome() {
 const HOME_ANCHORS = [
   { id: 'feasibility', labelKey: 'nav.feasibility' as const },
   { id: 'demo-story', labelKey: 'nav.demo' as const },
-  { id: 'timeline', labelKey: 'nav.timeline' as const },
 ] as const
 
 export function MarketingNav() {
@@ -23,6 +24,7 @@ export function MarketingNav() {
   const isHome = useIsHome()
   const [open, setOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
+  const isMobile = useAppMobile()
 
   useEffect(() => {
     setOpen(false)
@@ -70,11 +72,13 @@ export function MarketingNav() {
       className={cn(
         'fixed top-0 left-0 right-0 z-50 transition-all duration-300',
         navGlass
-          ? 'border-b border-border/70 bg-background/88 shadow-[0_8px_32px_-12px_rgba(15,23,42,0.12)] backdrop-blur-xl'
+          ? isMobile
+            ? 'border-b border-border/70 bg-background shadow-[0_8px_32px_-12px_rgba(15,23,42,0.12)]'
+            : 'border-b border-border/70 bg-background/88 shadow-[0_8px_32px_-12px_rgba(15,23,42,0.12)] backdrop-blur-xl'
           : 'border-b border-transparent bg-transparent',
       )}
     >
-      <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6" aria-label="主导航">
+      <nav className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6" aria-label="主导航">
         <Link
           to="/"
           className="flex items-center gap-2 transition-opacity hover:opacity-80"
@@ -97,6 +101,7 @@ export function MarketingNav() {
             </Link>
           </div>
           <div className="flex items-center gap-3">
+            <ThemeToggle compact />
             <Link
               to="/login"
               className="px-3 py-2 text-sm font-medium text-foreground transition-colors hover:text-primary"
@@ -104,14 +109,14 @@ export function MarketingNav() {
               {t('nav.login')}
             </Link>
             <Link to="/register" className={cn(MKT_CTA_PRIMARY, 'px-4 py-2 text-sm')}>
-              {t('nav.register')}
+              {t('cta.registerFree', { ns: 'common' })}
             </Link>
           </div>
         </div>
 
         <button
           type="button"
-          className="inline-flex size-10 items-center justify-center rounded-lg border border-border/80 bg-white/80 text-foreground backdrop-blur-sm md:hidden"
+          className="inline-flex size-10 items-center justify-center rounded-lg border border-border/80 bg-surface/80 text-foreground backdrop-blur-sm md:hidden"
           aria-expanded={open}
           aria-label={open ? t('nav.close') : t('nav.menu')}
           onClick={() => setOpen((v) => !v)}
@@ -123,6 +128,9 @@ export function MarketingNav() {
       {open ? (
         <div className="border-t border-border/60 bg-background/95 px-6 py-4 backdrop-blur-xl md:hidden">
           <div className="flex flex-col gap-1 text-sm font-medium">
+            <div className="mb-2 flex items-center justify-end">
+              <ThemeToggle />
+            </div>
             {HOME_ANCHORS.map(({ id, labelKey }) =>
               isHome ? (
                 <button
@@ -157,7 +165,7 @@ export function MarketingNav() {
               {t('nav.login')}
             </Link>
             <Link to="/register" className={cn(MKT_CTA_PRIMARY, 'mt-1 px-4 py-2.5 text-center text-sm')}>
-              {t('nav.register')}
+              {t('cta.registerFree', { ns: 'common' })}
             </Link>
           </div>
         </div>

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { memo, useEffect, useMemo, useState } from 'react'
 import { ChevronDown } from 'lucide-react'
 import type {
   AgentAssistantStreamPhase,
@@ -29,6 +29,8 @@ import { sanitizeAgentStreamError } from '../../utils/sanitizeAgentStreamError'
 import { useAppMobile } from '@/hooks/useMediaQuery'
 import { EditorIcons } from './icons'
 
+import { useTranslation } from 'react-i18next'
+
 export interface EditorChatMessageProps {
   message: EditorMessage
   isActiveStream: boolean
@@ -50,7 +52,7 @@ export interface EditorChatMessageProps {
   marketingPinOrchestration?: boolean
 }
 
-export function EditorChatMessage({
+function EditorChatMessageInner({
   message,
   isActiveStream,
   isLoading,
@@ -62,6 +64,7 @@ export function EditorChatMessage({
   marketingScrubPlaying = false,
   marketingPinOrchestration = false,
 }: EditorChatMessageProps) {
+  const { t } = useTranslation(['editor'])
   const phase: AgentAssistantStreamPhase =
     message.agentStreamPhase ?? (isActiveStream ? 'connecting' : 'completed')
   const hasChoiceSteps = Boolean(message.agentSteps?.some((s) => (s.choices?.length ?? 0) > 0))
@@ -169,14 +172,14 @@ export function EditorChatMessage({
         )}
         {showConnectingPlaceholder && (
           <ChatMessageSurfaceBody className="flex min-h-7 items-center" aria-hidden>
-            <ShimmerScanText active>正在准备创作…</ShimmerScanText>
+            <ShimmerScanText active>{t('editor:chat.preparing')}</ShimmerScanText>
           </ChatMessageSurfaceBody>
         )}
         {showAgentTimeline ? (
           <div className="flex w-full max-w-full flex-col" data-testid="assistant-stream-shell">
             {processCollapsed && streamActive && !deliveryText ? (
               <ChatMessageSurfaceBody className="flex min-h-7 items-center py-1" aria-live="polite">
-                <ShimmerScanText active>AI 正在创作…</ShimmerScanText>
+                <ShimmerScanText active>{t('editor:chat.creating')}</ShimmerScanText>
               </ChatMessageSurfaceBody>
             ) : null}
             {processCollapsed && deliveryText ? (
@@ -193,20 +196,20 @@ export function EditorChatMessage({
                 aria-expanded={processExpanded}
                 aria-label={
                   processExpanded
-                    ? '收起创作过程'
-                    : `展开创作过程，共 ${orchestrationStepCount} 步`
+                    ? t('editor:chat.collapseProcess')
+                    : t('editor:chat.expandProcessCount', { count: orchestrationStepCount })
                 }
                 onClick={() => setProcessExpanded((open) => !open)}
                 data-testid="mobile-process-toggle"
               >
                 <span>
                   {processExpanded
-                    ? '收起创作过程'
+                    ? t('editor:chat.collapseProcess')
                     : streamActive
-                      ? `创作进行中 · ${orchestrationStepCount} 步（点击展开）`
+                      ? t('editor:chat.processCreatingCount', { count: orchestrationStepCount })
                       : processCollapsed && !deliveryText
-                        ? `展开查看 AI 创作过程 · ${orchestrationStepCount} 步`
-                        : `查看创作过程 · ${orchestrationStepCount} 步`}
+                        ? t('editor:chat.processExpandCount', { count: orchestrationStepCount })
+                        : t('editor:chat.processViewCount', { count: orchestrationStepCount })}
                 </span>
                 <ChevronDown
                   className={`size-4 shrink-0 transition-transform ${processExpanded ? 'rotate-180' : ''}`}
@@ -278,12 +281,12 @@ export function EditorChatMessage({
         ) : null}
         {message.writing && (
           <div className="border-t border-primary/10 bg-primary/5 px-4 py-2.5">
-            <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold text-primary [&_svg]:size-3">
+            <div className="mb-1.5 flex items-center gap-1.5 text-ui-sm font-semibold text-primary [&_svg]:size-3">
               <EditorIcons.Edit3 />
-              <span>{message.writing.status === 'writing' ? '写作中...' : '写作完成'}</span>
+              <span>{message.writing.status === 'writing' ? t('editor:chat.writing') : t('editor:chat.writingDone')}</span>
             </div>
             {message.writing.content && (
-              <div className="rounded-lg border border-primary/10 bg-background/80 px-3 py-2 text-[13px] leading-relaxed text-foreground">
+              <div className="rounded-lg border border-primary/10 bg-background/80 px-3 py-2 text-ui leading-relaxed text-foreground">
                 {message.writing.content}
               </div>
             )}
@@ -291,9 +294,9 @@ export function EditorChatMessage({
         )}
         {message.toolCalls && message.toolCalls.length > 0 && (
           <div className="border-t border-border px-4 py-2">
-            <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground [&_svg]:size-3">
+            <div className="mb-1.5 flex items-center gap-1.5 text-ui-sm font-semibold uppercase tracking-wide text-muted-foreground [&_svg]:size-3">
               <EditorIcons.Settings />
-              <span>工具调用</span>
+              <span>{t('editor:chat.toolCall')}</span>
             </div>
             {message.toolCalls.map((tool, i) => (
               <div
@@ -311,15 +314,15 @@ export function EditorChatMessage({
         )}
         {message.skillCalls && message.skillCalls.length > 0 && (
           <div className="border-t border-border px-4 py-2">
-            <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground [&_svg]:size-3">
+            <div className="mb-1.5 flex items-center gap-1.5 text-ui-sm font-semibold uppercase tracking-wide text-muted-foreground [&_svg]:size-3">
               <EditorIcons.PenTool />
-              <span>技能调用</span>
+              <span>{t('editor:chat.skillCall')}</span>
             </div>
             <div className="flex flex-wrap">
               {message.skillCalls.map((skill, i) => (
                 <div
                   key={i}
-                  className="mb-1.5 mr-1.5 inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-[11px] text-muted-foreground"
+                  className="mb-1.5 mr-1.5 inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-ui-sm text-muted-foreground"
                 >
                   <span className="size-1.5 shrink-0 rounded-full bg-emerald-500" />
                   <span>{skill.name}</span>
@@ -335,3 +338,48 @@ export function EditorChatMessage({
     </div>
   )
 }
+
+function areMessagesEqual(prev: EditorChatMessageProps, next: EditorChatMessageProps): boolean {
+  if (prev.message.id !== next.message.id) return false
+  if (prev.isActiveStream !== next.isActiveStream) return false
+  if (prev.isLoading !== next.isLoading) return false
+  if (prev.thinkExpanded !== next.thinkExpanded) return false
+  if (prev.marketingScrubPlaying !== next.marketingScrubPlaying) return false
+  if (prev.marketingPinOrchestration !== next.marketingPinOrchestration) return false
+  if (prev.onThinkExpandedChange !== next.onThinkExpandedChange) return false
+  if (prev.onSelectChoice !== next.onSelectChoice) return false
+  if (prev.onSubmitInteraction !== next.onSubmitInteraction) return false
+  if (prev.onEditUserMessage !== next.onEditUserMessage) return false
+
+  const prevMsg = prev.message
+  const nextMsg = next.message
+  if (prevMsg.role !== nextMsg.role) return false
+  if (prevMsg.content.length !== nextMsg.content.length) return false
+  if ((prevMsg.agentThinkText?.length ?? 0) !== (nextMsg.agentThinkText?.length ?? 0)) return false
+  if ((prevMsg.thinking?.length ?? 0) !== (nextMsg.thinking?.length ?? 0)) return false
+  if ((prevMsg.agentSteps?.length ?? 0) !== (nextMsg.agentSteps?.length ?? 0)) return false
+  if ((prevMsg.agentTimeline?.length ?? 0) !== (nextMsg.agentTimeline?.length ?? 0)) return false
+  if ((prevMsg.agentTodos?.length ?? 0) !== (nextMsg.agentTodos?.length ?? 0)) return false
+  if ((prevMsg.toolCalls?.length ?? 0) !== (nextMsg.toolCalls?.length ?? 0)) return false
+  if ((prevMsg.skillCalls?.length ?? 0) !== (nextMsg.skillCalls?.length ?? 0)) return false
+  if (prevMsg.agentStreamPhase !== nextMsg.agentStreamPhase) return false
+  if (prevMsg.agentIsThinking !== nextMsg.agentIsThinking) return false
+  if (prevMsg.agentAwaitingInteraction !== nextMsg.agentAwaitingInteraction) return false
+  if (prevMsg.agentStreamError !== nextMsg.agentStreamError) return false
+  if (prevMsg.agentStreamPaused !== nextMsg.agentStreamPaused) return false
+  if (prevMsg.agentActiveToolCount !== nextMsg.agentActiveToolCount) return false
+  if (prevMsg.agentHostGuardMessage !== nextMsg.agentHostGuardMessage) return false
+  if (prevMsg.agentRunId !== nextMsg.agentRunId) return false
+
+  const prevWriting = prevMsg.writing
+  const nextWriting = nextMsg.writing
+  if (Boolean(prevWriting) !== Boolean(nextWriting)) return false
+  if (prevWriting && nextWriting) {
+    if (prevWriting.status !== nextWriting.status) return false
+    if (prevWriting.content.length !== nextWriting.content.length) return false
+  }
+
+  return true
+}
+
+export const EditorChatMessage = memo(EditorChatMessageInner, areMessagesEqual)

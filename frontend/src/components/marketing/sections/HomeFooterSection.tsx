@@ -6,7 +6,7 @@ import { MKT_CTA_FOOTER_PRIMARY, MKT_CTA_FOOTER_SECONDARY } from '@/lib/marketin
 type FooterVariant = 'full' | 'linksOnly'
 
 export function HomeFooterSection({ variant = 'full' }: { variant?: FooterVariant }) {
-  const { t } = useTranslation('marketing')
+  const { t } = useTranslation(['marketing', 'common'])
   const year = new Date().getFullYear()
 
   const productLinks = [
@@ -17,7 +17,7 @@ export function HomeFooterSection({ variant = 'full' }: { variant?: FooterVarian
 
   const accountLinks = [
     { label: t('nav.login'), to: '/login' },
-    { label: t('nav.register'), to: '/register' },
+    { label: t('common:cta.registerFree'), to: '/register' },
     { label: t('footer.dashboard'), to: '/dashboard' },
   ] as const
 
@@ -44,18 +44,18 @@ export function HomeFooterSection({ variant = 'full' }: { variant?: FooterVarian
             <p className="max-w-xl text-sm leading-relaxed text-white/85 md:text-base">{t('footer.ctaDesc')}</p>
             <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link to="/register" className={MKT_CTA_FOOTER_PRIMARY}>
-                {t('footer.ctaRegister')}
+                {t('common:cta.registerFree')}
                 <ArrowIcon />
               </Link>
               <Link to="/login" className={MKT_CTA_FOOTER_SECONDARY}>
-                {t('footer.ctaLogin')}
+                {t('common:cta.login')}
               </Link>
             </div>
           </div>
         </div>
       ) : null}
 
-      <div className="bg-slate-900 px-6 py-12 text-slate-300">
+      <div className="bg-marketing-dark px-6 py-12 text-slate-300">
         <div className="mx-auto grid max-w-6xl gap-10 md:grid-cols-2 lg:grid-cols-4">
           <div className="space-y-4 lg:col-span-1">
             <Link to="/" className="inline-block text-lg font-bold tracking-tight text-white">

@@ -6,8 +6,10 @@ import { AuthLegalNotice } from '@/components/auth/AuthLegalNotice'
 import { AuthSubmitButton } from '@/components/auth/AuthSubmitButton'
 import { confirmPasswordReset } from '@/api/userApi'
 import { appToast } from '@/stores/appToastStore'
+import { useTranslation } from 'react-i18next'
 
 export default function ResetPasswordPage() {
+  const { t } = useTranslation(['common', 'auth'])
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const linkParams = useMemo(() => {
@@ -28,8 +30,8 @@ export default function ResetPasswordPage() {
     e.preventDefault()
     if (!linkParams) return
     const next: { password?: string; confirm?: string } = {}
-    if (password.length < 6) next.password = '密码至少 6 位'
-    if (password !== confirm) next.confirm = '两次密码不一致'
+    if (password.length < 6) next.password = t('auth:reset.passwordShort')
+    if (password !== confirm) next.confirm = t('auth:reset.passwordMismatch')
     if (Object.keys(next).length > 0) {
       setFieldErrors(next)
       return
@@ -38,10 +40,10 @@ export default function ResetPasswordPage() {
     setSubmitting(true)
     try {
       await confirmPasswordReset(linkParams.token, linkParams.sig, linkParams.exp, password)
-      appToast.success('密码已更新，请使用新密码登录')
+      appToast.success(t('auth:reset.success'))
       navigate('/login')
     } catch (err) {
-      appToast.error(err instanceof Error ? err.message : '重置失败')
+      appToast.error(err instanceof Error ? err.message : t('auth:reset.fail'))
     } finally {
       setSubmitting(false)
     }
@@ -49,28 +51,28 @@ export default function ResetPasswordPage() {
 
   return (
     <AuthShell
-      title="设置新密码"
-      subtitle="请输入新的登录密码"
+      title={t('auth:reset.title')}
+      subtitle={t('auth:reset.subtitle')}
       marketing={{
-        headline: '完成密码重置',
-        description: '设置新密码后，请使用新密码登录创作台。',
+        headline: t('auth:reset.marketingHeadline'),
+        description: t('auth:reset.marketingDesc'),
       }}
-      legal={<AuthLegalNotice variant="login" />}
+      legal={<AuthLegalNotice variant="neutral" />}
       footer={
         <>
           <Link to="/login" className="font-medium text-primary hover:underline">
-            返回登录
+            {t('auth:reset.backToLogin')}
           </Link>
         </>
       }
     >
       {!linkParams ? (
         <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-4 text-sm text-destructive">
-          重置链接无效或已过期，请
+          {t('auth:reset.invalidLink1')}
           <Link to="/forgot-password" className="mx-1 font-medium underline">
-            重新申请
+            {t('auth:reset.invalidLink2')}
           </Link>
-          。
+          {t('auth:reset.invalidLink3')}
         </div>
       ) : (
         <form onSubmit={(e) => void handleSubmit(e)} className="space-y-3">
@@ -78,9 +80,9 @@ export default function ResetPasswordPage() {
             id="reset-password"
             name="password"
             type="password"
-            label="新密码"
+            label={t('auth:reset.passwordLabel')}
             autoComplete="new-password"
-            placeholder="至少 6 位"
+            placeholder={t('auth:reset.passwordPlaceholder')}
             value={password}
             error={fieldErrors.password}
             onChange={(e) => {
@@ -92,9 +94,9 @@ export default function ResetPasswordPage() {
             id="reset-confirm"
             name="confirmPassword"
             type="password"
-            label="确认新密码"
+            label={t('auth:reset.confirmPasswordLabel')}
             autoComplete="new-password"
-            placeholder="再次输入"
+            placeholder={t('auth:reset.confirmPasswordPlaceholder')}
             value={confirm}
             error={fieldErrors.confirm}
             onChange={(e) => {
@@ -102,8 +104,8 @@ export default function ResetPasswordPage() {
               setFieldErrors((prev) => ({ ...prev, confirm: undefined }))
             }}
           />
-          <AuthSubmitButton loading={submitting} loadingText="保存中…">
-            更新密码
+          <AuthSubmitButton loading={submitting} loadingText={t('auth:reset.submitting')}>
+            {t('auth:reset.submit')}
           </AuthSubmitButton>
         </form>
       )}

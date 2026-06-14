@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { MotionTabBar } from '../motion/MotionTabBar'
 import { editorLayout } from '../../styles/theme'
 import { EditorIcons } from './icons'
@@ -10,12 +11,14 @@ export interface EditorCenterTabsProps {
   onTabChange: (tab: EditorCenterTab) => void
 }
 
-const TAB_ITEMS = [
-  { id: 'chat' as const, label: '聊天', icon: <EditorIcons.MessageCircle /> },
-  { id: 'story' as const, label: '章节编辑', icon: <EditorIcons.BookOpen /> },
-]
-
 export function EditorCenterTabs({ activeTab, onTabChange }: EditorCenterTabsProps) {
+  const { t } = useTranslation(['editor'])
+
+  const TAB_ITEMS = [
+    { id: 'chat' as const, label: t('editor:tabs.chat'), icon: <EditorIcons.MessageCircle /> },
+    { id: 'story' as const, label: t('editor:tabs.story'), icon: <EditorIcons.BookOpen /> },
+  ]
+
   return (
     <div
       className="box-border flex items-center border-b border-border bg-background"
@@ -25,7 +28,7 @@ export function EditorCenterTabs({ activeTab, onTabChange }: EditorCenterTabsPro
         items={TAB_ITEMS}
         activeId={activeTab}
         onChange={onTabChange}
-        aria-label="编辑区标签"
+        aria-label={t('editor:tabs.ariaLabel')}
       />
     </div>
   )

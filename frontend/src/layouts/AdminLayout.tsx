@@ -1,6 +1,5 @@
-import '../styles/globals.css'
-
 import { useEffect, Suspense } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link, Outlet, useLocation } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { fetchUserInfo } from '../api/userApi'
@@ -12,25 +11,27 @@ import { LayoutOutletSkeleton } from '../components/loading/LayoutOutletSkeleton
 import { Avatar, AvatarFallback } from '../components/ui/avatar'
 import { Badge } from '../components/ui/badge'
 import { Button } from '../components/ui/button'
+import { ThemeToggle } from '../components/theme/ThemeToggle'
 import { useUserStore } from '../stores/userStore'
 
-const PAGE_META: Record<string, { title: string; description?: string }> = {
-  '/admin': { title: '管理概览', description: '平台与用户数据总览' },
-  '/admin/users': { title: '用户管理', description: '搜索、查看与编辑用户' },
-  '/admin/plans': { title: '套餐管理', description: '价格、配额与功能配置' },
-  '/admin/revenue': { title: '收入与成本', description: 'MRR、Token 消耗与 LLM 成本' },
-  '/admin/site-content': { title: '站点内容', description: '隐私政策、协议与系统公告' },
-  '/admin/audit-log': { title: '审计日志', description: '管理员操作追溯' },
-  '/admin/system-settings': { title: '系统参数', description: '注册开关、默认模型与平台限制' },
-  '/admin/stats': { title: '平台统计', description: '注册与 Agent 调用趋势' },
-  '/admin/crawler': { title: 'AI 爬虫', description: '主编排与子任务调度' },
-  '/admin/catalog': { title: '书库', description: '入库书籍与章节管理' },
-}
-
 export default function AdminLayout() {
+  const { t } = useTranslation(['common'])
   const location = useLocation()
   const profile = useUserStore((s) => s.profile)
   const setProfile = useUserStore((s) => s.setProfile)
+
+  const PAGE_META: Record<string, { title: string; description?: string }> = {
+    '/admin': { title: t('layout.admin.overviewTitle'), description: t('layout.admin.overviewDesc') },
+    '/admin/users': { title: t('layout.admin.usersTitle'), description: t('layout.admin.usersDesc') },
+    '/admin/plans': { title: t('layout.admin.plansTitle'), description: t('layout.admin.plansDesc') },
+    '/admin/revenue': { title: t('layout.admin.revenueTitle'), description: t('layout.admin.revenueDesc') },
+    '/admin/site-content': { title: t('layout.admin.siteContentTitle'), description: t('layout.admin.siteContentDesc') },
+    '/admin/audit-log': { title: t('layout.admin.auditLogTitle'), description: t('layout.admin.auditLogDesc') },
+    '/admin/system-settings': { title: t('layout.admin.systemSettingsTitle'), description: t('layout.admin.systemSettingsDesc') },
+    '/admin/stats': { title: t('layout.admin.statsTitle'), description: t('layout.admin.statsDesc') },
+    '/admin/crawler': { title: t('layout.admin.crawlerTitle'), description: t('layout.admin.crawlerDesc') },
+    '/admin/catalog': { title: t('layout.admin.catalogTitle'), description: t('layout.admin.catalogDesc') },
+  }
 
   useEffect(() => {
     if (profile) {
@@ -51,7 +52,7 @@ export default function AdminLayout() {
     }
   }, [profile, setProfile])
 
-  const meta = PAGE_META[location.pathname] ?? { title: '管理后台' }
+  const meta = PAGE_META[location.pathname] ?? { title: t('layout.admin.defaultTitle') }
   const initials = profile?.username?.slice(0, 2).toUpperCase() || '?'
 
   return (
@@ -66,7 +67,8 @@ export default function AdminLayout() {
           leading={<MobileAdminDrawer />}
           actions={
             <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-              <Button asChild variant="outline" size="icon" className="size-9 sm:hidden" aria-label="返回用户端">
+              <ThemeToggle compact />
+              <Button asChild variant="outline" size="icon" className="size-9 sm:hidden" aria-label={t('nav.backToUser')}>
                 <Link to="/dashboard">
                   <ArrowLeft className="size-4" />
                 </Link>
@@ -74,15 +76,15 @@ export default function AdminLayout() {
               <Button asChild variant="outline" size="sm" className="hidden h-9 sm:inline-flex">
                 <Link to="/dashboard">
                   <ArrowLeft className="size-4" />
-                  返回用户端
+                  {t('nav.backToUser')}
                 </Link>
               </Button>
               <Badge variant="secondary" className="hidden sm:inline-flex">
-                管理员
+                {t('layout.admin.adminBadge')}
               </Badge>
               <div className="flex items-center gap-2">
                 <span className="hidden max-w-[8rem] truncate text-sm text-muted-foreground md:inline">
-                  {profile?.username || '管理员'}
+                  {profile?.username || t('layout.admin.adminBadge')}
                 </span>
                 <Avatar size="sm">
                   <AvatarFallback>{initials}</AvatarFallback>

@@ -1,0 +1,63 @@
+import JavaScriptObfuscator from 'javascript-obfuscator';
+/** shadcn / Radix UI 等共享组件 chunk 名前缀（混淆会破坏 React ref / 事件合成） */
+var UI_CHUNK_PREFIX = /^(dialog|badge|button|avatar|separator|select|dropdown-menu|sheet|switch|popover|tooltip|tabs|checkbox|label|input|card|skeleton)-/;
+/** framer-motion / radix / lucide 等 vendor chunk 不可混淆（会破坏事件合成与 ref 回调） */
+var VENDOR_CHUNK_SKIP = /^(motion|gsap|recharts|markdown|radix|icons|styled|i18n)-/;
+/**
+ * Vite 路由懒加载依赖 __vite__mapDeps / import() 字符串路径；
+ * 对含这些特征的 chunk 跳过 obfuscator，避免 chunk 404 + MIME text/html。
+ */
+function shouldSkipChunkObfuscation(code, chunk) {
+    var _a;
+    if (chunk.isEntry) {
+        return true;
+    }
+    var baseName = (_a = chunk.fileName.split('/').pop()) !== null && _a !== void 0 ? _a : chunk.fileName;
+    if (VENDOR_CHUNK_SKIP.test(baseName)) {
+        return true;
+    }
+    if (code.includes('__vite__mapDeps')) {
+        return true;
+    }
+    // 仍含动态 import("assets/…") 的 chunk 不混淆（stringArray 会破坏 URL）
+    if (/import\s*\(\s*['"]/.test(code)) {
+        return true;
+    }
+    if (UI_CHUNK_PREFIX.test(baseName)) {
+        return true;
+    }
+    // Radix / shadcn 组件库 chunk（含 DialogPrimitive 等）不可混淆
+    if (/data-slot="dialog|DialogPrimitive|@radix-ui|radix-ui|React\.createElement/.test(code) &&
+        /data-slot=/.test(code)) {
+        return true;
+    }
+    return false;
+}
+/** 在 Rollup renderChunk 阶段对产物做 javascript-obfuscator 混淆 */
+export function viteObfuscatorPlugin(options) {
+    var skipped = 0;
+    var obfuscated = 0;
+    return {
+        name: 'vite-javascript-obfuscator',
+        apply: 'build',
+        enforce: 'post',
+        renderChunk: function (code, chunk) {
+            if (!chunk.fileName.endsWith('.js')) {
+                return null;
+            }
+            if (shouldSkipChunkObfuscation(code, chunk)) {
+                skipped += 1;
+                return null;
+            }
+            var result = JavaScriptObfuscator.obfuscate(code, options);
+            obfuscated += 1;
+            return {
+                code: result.getObfuscatedCode(),
+                map: null,
+            };
+        },
+        closeBundle: function () {
+            console.log("[obfuscator] obfuscated=".concat(obfuscated, " skipped=").concat(skipped));
+        },
+    };
+}

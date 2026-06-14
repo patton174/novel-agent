@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Terminal } from 'lucide-react'
 import { fetchCrawlLogs, type CrawlJobStatus, type CrawlLogEntry } from '@/api/crawlAdminApi'
@@ -38,6 +39,7 @@ export function CrawlLogTerminal({
   variant = 'inline',
   active = true,
 }: CrawlLogTerminalProps) {
+  const { t } = useTranslation(['admin'])
   const [open, setOpen] = useState(variant === 'modal')
   const [logs, setLogs] = useState<CrawlLogEntry[]>([])
   const [maxSeq, setMaxSeq] = useState(0)
@@ -103,14 +105,14 @@ export function CrawlLogTerminal({
   }, [logs, isVisible, autoScroll])
 
   const panel = (
-    <div className="overflow-hidden rounded-lg border border-zinc-800 bg-[#0d1117] shadow-inner">
+    <div className="overflow-hidden rounded-lg border border-border bg-card shadow-inner">
       <div className="flex items-center justify-between border-b border-zinc-800/80 px-3 py-1.5">
         <span className="font-mono text-[10px] uppercase tracking-wider text-zinc-500">
           crawl · {jobId.slice(0, 8)}…
           {isLive ? (
             <span className="ml-2 inline-flex items-center gap-1 text-primary">
               <span className="size-1.5 animate-pulse rounded-full bg-primary" />
-              实时
+              {t('admin:crawler.live')}
             </span>
           ) : null}
         </span>
@@ -121,7 +123,7 @@ export function CrawlLogTerminal({
             onChange={(e) => setAutoScroll(e.target.checked)}
             className="size-3 rounded border-zinc-600 bg-zinc-900"
           />
-          自动滚动
+          {t('admin:crawler.autoScroll')}
         </label>
       </div>
       <div
@@ -132,9 +134,9 @@ export function CrawlLogTerminal({
         )}
       >
         {loading && logs.length === 0 ? (
-          <p className="text-zinc-500">加载日志…</p>
+          <p className="text-zinc-500">{t('admin:crawler.loadingJobLog')}</p>
         ) : logs.length === 0 ? (
-          <p className="text-zinc-500">暂无日志</p>
+          <p className="text-zinc-500">{t('admin:crawler.emptyJobLog')}</p>
         ) : (
           logs.map((entry) => {
             const level = (entry.level || 'INFO').toUpperCase()
@@ -172,8 +174,8 @@ export function CrawlLogTerminal({
         className="flex items-center gap-2 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
       >
         <Terminal className="size-3.5" />
-        {open ? '收起运行日志' : '查看运行日志'}
-        {maxSeq > 0 && !open ? <span className="text-muted-foreground/70">({maxSeq} 条)</span> : null}
+        {open ? t('admin:crawler.hideJobLog') : t('admin:crawler.viewJobLog')}
+        {maxSeq > 0 && !open ? <span className="text-muted-foreground/70">{t('admin:crawler.jobLogCount', { count: maxSeq })}</span> : null}
       </button>
       {open ? <div className="mt-2">{panel}</div> : null}
     </div>

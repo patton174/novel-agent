@@ -198,27 +198,56 @@ export function useEditorAgentStream({
         lastContextUsageRef.current = state.contextUsage
       }
       setMessages((prev) => {
-        const next = prev.map((msg) =>
-          msg.id === assistantMessageId
-            ? {
-                ...msg,
-                content: finalizeAgentMessageContent(state),
-                agentThinkText: state.thinkText || undefined,
-                agentSteps: state.stepStates.length > 0 ? [...state.stepStates] : undefined,
-                agentActiveToolCount: state.activeToolCount,
-                agentIsThinking: state.isThinking,
-                agentStreamPaused: state.streamPaused,
-                agentRunId: state.runId,
-                agentHostGuardMessage: state.hostGuardMessage,
-                agentStreamPhase: deriveAssistantStreamPhase(state),
-                agentStreamError: state.streamError,
-                agentAwaitingInteraction: state.awaitingInteraction,
-                agentTimeline: state.timeline.length > 0 ? [...state.timeline] : undefined,
-                agentTodos: state.todos?.length ? [...state.todos] : undefined,
-                agentContextUsage: state.contextUsage,
-              }
-            : msg,
-        )
+        const targetIndex =
+          prev.length > 0 && prev[prev.length - 1]?.id === assistantMessageId
+            ? prev.length - 1
+            : prev.findIndex((msg) => msg.id === assistantMessageId)
+        if (targetIndex < 0) {
+          return prev
+        }
+        const current = prev[targetIndex]
+        const nextContent = finalizeAgentMessageContent(state)
+        const nextThinkText = state.thinkText || undefined
+        const nextSteps = state.stepStates.length > 0 ? state.stepStates : undefined
+        const nextTimeline = state.timeline.length > 0 ? state.timeline : undefined
+        const nextTodos = state.todos?.length ? state.todos : undefined
+        const nextPhase = deriveAssistantStreamPhase(state)
+        const unchanged =
+          current.content === nextContent &&
+          current.agentThinkText === nextThinkText &&
+          current.agentSteps === nextSteps &&
+          current.agentActiveToolCount === state.activeToolCount &&
+          current.agentIsThinking === state.isThinking &&
+          current.agentStreamPaused === state.streamPaused &&
+          current.agentRunId === state.runId &&
+          current.agentHostGuardMessage === state.hostGuardMessage &&
+          current.agentStreamPhase === nextPhase &&
+          current.agentStreamError === state.streamError &&
+          current.agentAwaitingInteraction === state.awaitingInteraction &&
+          current.agentTimeline === nextTimeline &&
+          current.agentTodos === nextTodos &&
+          current.agentContextUsage === state.contextUsage
+        if (unchanged) {
+          return prev
+        }
+        const next = [...prev]
+        next[targetIndex] = {
+          ...current,
+          content: nextContent,
+          agentThinkText: nextThinkText,
+          agentSteps: nextSteps,
+          agentActiveToolCount: state.activeToolCount,
+          agentIsThinking: state.isThinking,
+          agentStreamPaused: state.streamPaused,
+          agentRunId: state.runId,
+          agentHostGuardMessage: state.hostGuardMessage,
+          agentStreamPhase: nextPhase,
+          agentStreamError: state.streamError,
+          agentAwaitingInteraction: state.awaitingInteraction,
+          agentTimeline: nextTimeline,
+          agentTodos: nextTodos,
+          agentContextUsage: state.contextUsage,
+        }
         persistDebouncer.schedule(agentSessionIdRef.current, next)
         return next
       })
@@ -407,9 +436,15 @@ export function useEditorAgentStream({
           type = undefined
         }
       }
-      if (type === 'chapter.stream.delta') {
+      if (type === 'message.delta' || type === 'think.delta' || type === 'chapter.stream.delta') {
         batcher.schedule()
-      } else if (type === 'message.delta' || type === 'think.delta') {
+      } else if (
+        type === 'tool.started' ||
+        type === 'tool.completed' ||
+        type === 'run.completed' ||
+        type === 'run.failed' ||
+        type === 'run.recovering'
+      ) {
         batcher.flushNow()
       } else if (type === 'tool.progress') {
         batcher.schedule()

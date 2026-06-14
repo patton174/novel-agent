@@ -6,8 +6,10 @@ import { AuthLegalNotice } from '@/components/auth/AuthLegalNotice'
 import { AuthSubmitButton } from '@/components/auth/AuthSubmitButton'
 import { requestPasswordReset } from '@/api/userApi'
 import { appToast } from '@/stores/appToastStore'
+import { useTranslation } from 'react-i18next'
 
 export default function ForgotPasswordPage() {
+  const { t } = useTranslation(['common', 'auth'])
   const [email, setEmail] = useState('')
   const [fieldError, setFieldError] = useState<string | undefined>()
   const [submitting, setSubmitting] = useState(false)
@@ -17,7 +19,7 @@ export default function ForgotPasswordPage() {
     e.preventDefault()
     const trimmed = email.trim()
     if (!trimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
-      setFieldError('请输入有效邮箱')
+      setFieldError(t('auth:forgot.emailInvalid'))
       return
     }
     setFieldError(undefined)
@@ -25,9 +27,9 @@ export default function ForgotPasswordPage() {
     try {
       await requestPasswordReset(trimmed)
       setSent(true)
-      appToast.success('若该邮箱已注册，您将收到重置密码邮件')
+      appToast.success(t('auth:forgot.success'))
     } catch (err) {
-      appToast.error(err instanceof Error ? err.message : '发送失败')
+      appToast.error(err instanceof Error ? err.message : t('auth:forgot.fail'))
     } finally {
       setSubmitting(false)
     }
@@ -35,26 +37,26 @@ export default function ForgotPasswordPage() {
 
   return (
     <AuthShell
-      title="找回密码"
-      subtitle="通过注册邮箱接收重置链接"
+      title={t('auth:forgot.title')}
+      subtitle={t('auth:forgot.subtitle')}
       marketing={{
-        headline: '安全重置账户密码',
-        description: '我们将向您的注册邮箱发送一次性重置链接，链接有效期为 1 小时。',
+        headline: t('auth:forgot.marketingHeadline'),
+        description: t('auth:forgot.marketingDesc'),
       }}
-      legal={<AuthLegalNotice variant="login" />}
+      legal={<AuthLegalNotice variant="neutral" />}
       footer={
         <>
-          想起密码了？{' '}
+          {t('auth:forgot.remembered')}{' '}
           <Link to="/login" className="font-medium text-primary hover:underline">
-            返回登录
+            {t('auth:forgot.backToLogin')}
           </Link>
         </>
       }
     >
       {sent ? (
         <div className="rounded-xl border border-emerald-200/80 bg-emerald-50/90 px-4 py-4 text-sm leading-relaxed text-emerald-900 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-100">
-          如果 <span className="font-medium">{email.trim()}</span>{' '}
-          已注册，请查收邮件（含垃圾箱）并点击链接设置新密码。
+          {t('auth:forgot.sentDesc1')}<span className="font-medium">{email.trim()}</span>{' '}
+          {t('auth:forgot.sentDesc2')}
         </div>
       ) : (
         <form onSubmit={(e) => void handleSubmit(e)} className="space-y-3">
@@ -62,9 +64,9 @@ export default function ForgotPasswordPage() {
             id="forgot-email"
             name="email"
             type="email"
-            label="注册邮箱"
+            label={t('auth:forgot.emailLabel')}
             autoComplete="email"
-            placeholder="you@email.com"
+            placeholder={t('auth:forgot.emailPlaceholder')}
             value={email}
             error={fieldError}
             onChange={(e) => {
@@ -72,8 +74,8 @@ export default function ForgotPasswordPage() {
               setFieldError(undefined)
             }}
           />
-          <AuthSubmitButton loading={submitting} loadingText="发送中…">
-            发送重置链接
+          <AuthSubmitButton loading={submitting} loadingText={t('auth:forgot.submitting')}>
+            {t('auth:forgot.submit')}
           </AuthSubmitButton>
         </form>
       )}

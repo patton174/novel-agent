@@ -11,7 +11,7 @@ import { ArrowIcon } from '../icons'
 const TRUST_KEYS = ['trustFree', 'trustZh', 'trustStream', 'trustMemory'] as const
 
 export function HomeHeroSection() {
-  const { t } = useTranslation('marketing')
+  const { t } = useTranslation(['marketing', 'common'])
   const navigate = useNavigate()
   const reduced = useReducedMotion()
 
@@ -33,7 +33,7 @@ export function HomeHeroSection() {
     <div className="relative mx-auto max-w-6xl px-6 text-center">
       <motion.p
         {...fade(0)}
-        className="mb-5 inline-flex items-center gap-2 rounded-xl border border-primary/20 bg-white/70 px-4 py-1.5 text-xs font-semibold tracking-wide text-primary shadow-sm backdrop-blur-md"
+        className="mb-5 inline-flex items-center gap-2 rounded-xl border border-primary/20 bg-surface/70 px-4 py-1.5 text-xs font-semibold tracking-wide text-primary shadow-sm backdrop-blur-md"
       >
         <Sparkles className="size-3.5" />
         {t('home.hero.eyebrow')}
@@ -62,7 +62,7 @@ export function HomeHeroSection() {
         className="mb-8 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4"
       >
         <button type="button" onClick={goStart} className={MKT_CTA_PRIMARY_LG}>
-          {t('home.hero.ctaPrimary')}
+          {t('common:cta.startCreating')}
           <ArrowIcon />
         </button>
         <button type="button" onClick={scrollToFeasibility} className={MKT_CTA_SECONDARY}>
@@ -87,7 +87,7 @@ export function HomeHeroSection() {
           className="pointer-events-none absolute -inset-6 hidden rounded-[2rem] bg-gradient-to-r from-indigo-500/25 via-violet-500/20 to-indigo-500/25 blur-3xl motion-reduce:opacity-70 sm:block"
           style={reduced ? undefined : { animation: 'mkt-glow-breathe 5s ease-in-out infinite' }}
         />
-        <div className="mkt-hero-demo-glow relative overflow-hidden rounded-2xl border border-white/70 bg-white/50 p-1 ring-1 ring-indigo-500/10 backdrop-blur-md max-sm:origin-top max-sm:scale-[0.94]">
+        <div className="mkt-hero-demo-glow relative overflow-hidden rounded-2xl border border-border/70 bg-surface/50 p-1 ring-1 ring-primary/10 backdrop-blur-md max-sm:origin-top max-sm:scale-[0.94]">
           <MarketingHeroDemo />
         </div>
       </motion.div>

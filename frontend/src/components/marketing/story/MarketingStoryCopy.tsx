@@ -1,5 +1,7 @@
 import { motion, useReducedMotion } from 'framer-motion'
+import { useAppMobile } from '@/hooks/useMediaQuery'
 import { cn } from '@/lib/utils'
+import { marketingInViewMotion } from '../motion/marketingInViewMotion'
 import {
   STORY_ACT_INDEX,
   STORY_ACT_LABEL,
@@ -40,6 +42,15 @@ export function MarketingStoryCopy({
   className,
 }: MarketingStoryCopyProps) {
   const reduced = useReducedMotion()
+  const isMobile = useAppMobile()
+  const copyReveal = marketingInViewMotion({
+    isMobile,
+    reduced: Boolean(reduced),
+    desktopInitial: { opacity: 0, y: 24 },
+    desktopWhileInView: { opacity: 1, y: 0 },
+    viewport: { once: true, margin: '-10% 0px', amount: 0.35 },
+    transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] },
+  })
 
   const inner = (
     <div className={cn(STORY_COPY_BLOCK, 'story-copy-block')}>
@@ -64,18 +75,7 @@ export function MarketingStoryCopy({
 
   return (
     <div className={cn(storyCopyRootClass(alignEnd), className)}>
-      {reduced ? (
-        inner
-      ) : (
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: '-10% 0px', amount: 0.35 }}
-          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-        >
-          {inner}
-        </motion.div>
-      )}
+      <motion.div {...copyReveal}>{inner}</motion.div>
     </div>
   )
 }

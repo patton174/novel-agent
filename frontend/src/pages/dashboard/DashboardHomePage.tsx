@@ -31,6 +31,8 @@ import { useMarkRouteSeen } from '@/hooks/useMarkRouteSeen'
 import { dashboardCache } from '@/stores/dashboardCacheStore'
 import { EDITOR_CREATE_HREF, editorNovelHref } from '@/lib/editorRoutes'
 
+import { useTranslation } from 'react-i18next'
+
 function formatUpdatedAt(value: string | number): string {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) {
@@ -51,40 +53,42 @@ function formatWordCount(count: number): string {
   return count.toLocaleString('zh-CN')
 }
 
-const STAT_CARDS = [
-  {
-    key: 'novelCount' as const,
-    label: '小说数量',
-    icon: BookOpen,
-    color: 'text-blue-600',
-    bg: 'bg-blue-500/10',
-  },
-  {
-    key: 'chapterCount' as const,
-    label: '章节总数',
-    icon: FileText,
-    color: 'text-emerald-600',
-    bg: 'bg-emerald-500/10',
-  },
-  {
-    key: 'weeklyWordCount' as const,
-    label: '本周字数',
-    icon: PenLine,
-    format: formatWordCount,
-    color: 'text-violet-600',
-    bg: 'bg-violet-500/10',
-  },
-  {
-    key: 'agentRunCount' as const,
-    label: 'Agent 运行',
-    icon: Bot,
-    color: 'text-amber-600',
-    bg: 'bg-amber-500/10',
-  },
-]
-
 export default function DashboardHomePage() {
+  const { t } = useTranslation(['common', 'dashboard'])
   useMarkRouteSeen()
+
+  const STAT_CARDS = [
+    {
+      key: 'novelCount' as const,
+      label: t('dashboard:home.statNovelCount'),
+      icon: BookOpen,
+      color: 'text-blue-600',
+      bg: 'bg-blue-500/10',
+    },
+    {
+      key: 'chapterCount' as const,
+      label: t('dashboard:home.statChapterCount'),
+      icon: FileText,
+      color: 'text-emerald-600',
+      bg: 'bg-emerald-500/10',
+    },
+    {
+      key: 'weeklyWordCount' as const,
+      label: t('dashboard:home.statWeeklyWords'),
+      icon: PenLine,
+      format: formatWordCount,
+      color: 'text-violet-600',
+      bg: 'bg-violet-500/10',
+    },
+    {
+      key: 'agentRunCount' as const,
+      label: t('dashboard:home.statAgentRuns'),
+      icon: Bot,
+      color: 'text-amber-600',
+      bg: 'bg-amber-500/10',
+    },
+  ]
+
   const [summary, setSummary] = useState<DashboardSummary | null>(() => dashboardCache.getSummary())
   const [recentNovels, setRecentNovels] = useState<RecentNovel[] | null>(() =>
     dashboardCache.getRecentNovels(),
@@ -139,24 +143,24 @@ export default function DashboardHomePage() {
           <div>
             <p className="mb-2 inline-flex items-center gap-1.5 rounded-xl border border-primary/20 bg-primary/8 px-3 py-1 text-xs font-semibold text-primary">
               <Sparkles className="size-3.5" />
-              创作工作台
+              {t('dashboard:home.eyebrow')}
             </p>
             <h2 className="text-2xl font-bold tracking-tight text-foreground md:text-3xl lg:text-4xl">
-              继续你的故事
+              {t('dashboard:home.title')}
             </h2>
             <p className="mt-2 max-w-xl text-sm text-muted-foreground md:text-base">
-              概览创作数据，从最近作品继续，或管理全部小说。
+              {t('dashboard:home.desc')}
             </p>
           </div>
           <div className="flex shrink-0 flex-wrap gap-3">
             <Button asChild className={APP_BTN_MD}>
               <Link to={editorEntryHref}>
                 <PenLine className="mr-2 size-4" />
-                {primaryNovelId ? '继续写作' : '进入编辑器'}
+                {primaryNovelId ? t('dashboard:home.continueWriting') : t('dashboard:home.enterEditor')}
               </Link>
             </Button>
             <Button asChild variant="outline" className={APP_BTN_MD}>
-              <Link to="/dashboard/novels">管理作品</Link>
+              <Link to="/dashboard/novels">{t('dashboard:home.manageNovels')}</Link>
             </Button>
           </div>
         </div>
@@ -191,11 +195,11 @@ export default function DashboardHomePage() {
 
         <AppShellCard className="flex flex-col">
           <AppShellCardHeader
-            title="最近编辑"
+            title={t('dashboard:home.recentEdits')}
             action={
               <Button asChild variant="ghost" size="sm" className="h-7 gap-1 px-2 text-xs text-primary">
                 <Link to="/dashboard/novels">
-                  查看全部
+                  {t('dashboard:home.viewAll')}
                   <ArrowRight className="size-3.5" />
                 </Link>
               </Button>
@@ -221,15 +225,15 @@ export default function DashboardHomePage() {
                   <BookOpen className="size-7 text-muted-foreground" />
                 </div>
                 <h3 className="text-base font-semibold text-foreground">
-                  {loadError ? '加载失败' : '还没有开始创作'}
+                  {loadError ? t('dashboard:home.loadFail') : t('dashboard:home.noNovels')}
                 </h3>
                 <p className="mt-1.5 max-w-sm text-sm text-muted-foreground">
                   {loadError
-                    ? '暂时无法加载数据，请稍后重试'
-                    : '创建一个新的小说项目，让 AI 助手帮你构建世界观和章节。'}
+                    ? t('dashboard:home.loadFailDesc')
+                    : t('dashboard:home.noNovelsDesc')}
                 </p>
                 <Button asChild className={`mt-5 px-6 ${APP_BTN_MD}`}>
-                  <Link to={EDITOR_CREATE_HREF}>新建小说</Link>
+                  <Link to={EDITOR_CREATE_HREF}>{t('dashboard:home.createNovel')}</Link>
                 </Button>
               </div>
             ) : (
@@ -256,12 +260,12 @@ export default function DashboardHomePage() {
                         {novel.title}
                       </p>
                       <p className="mt-0.5 text-xs text-muted-foreground">
-                        最近编辑 {formatUpdatedAt(novel.updatedAt)}
+                        {t('dashboard:home.recentlyEdited', { time: formatUpdatedAt(novel.updatedAt) })}
                       </p>
                     </div>
                     <Button asChild size="sm" className={`shrink-0 px-3 ${APP_BTN}`}>
                       <Link to={editorNovelHref(novel.novelId)}>
-                        继续写作
+                        {t('dashboard:home.continueWriting')}
                       </Link>
                     </Button>
                   </div>

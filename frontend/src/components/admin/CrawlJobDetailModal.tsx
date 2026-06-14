@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { Loader2, Pause, Play, Square, Trash2 } from 'lucide-react'
 import type { CrawlJob } from '@/api/crawlAdminApi'
 import { parseCrawlJobGoal } from '@/api/crawlAdminApi'
@@ -37,6 +38,8 @@ export function CrawlJobDetailModal({
   onOpenChange,
   onAction,
 }: CrawlJobDetailModalProps) {
+  const { t } = useTranslation(['admin'])
+
   if (!job) {
     return null
   }
@@ -56,7 +59,7 @@ export function CrawlJobDetailModal({
       header={
         <div className="space-y-3 border-b border-border px-6 py-4 text-left">
           <div className="flex flex-wrap items-center gap-2 pr-8">
-            <h2 className="text-lg font-semibold">{job.title || '解析中…'}</h2>
+            <h2 className="text-lg font-semibold">{job.title || t('admin:crawler.parsing')}</h2>
             <span
               className={cn(
                 'rounded-lg px-2 py-0.5 text-xs font-medium',
@@ -68,10 +71,10 @@ export function CrawlJobDetailModal({
           </div>
           <div className="space-y-1 text-sm text-muted-foreground">
             <p className="break-all text-foreground/80">{job.sourceUrl}</p>
-            {goal ? <p>目标：{goal}</p> : null}
+            {goal ? <p>{t('admin:crawler.goalLabel')}：{goal}</p> : null}
             <p>
-              进度 {job.chaptersDone ?? 0}/{job.chaptersTotal ?? '?'}
-              {job.catalogNovelId ? ` · 书库 ID ${job.catalogNovelId}` : ''}
+              {t('admin:crawler.progress')} {job.chaptersDone ?? 0}/{job.chaptersTotal ?? '?'}
+              {job.catalogNovelId ? t('admin:crawler.catalogId', { id: job.catalogNovelId }) : ''}
             </p>
             {percent != null ? (
               <div className="h-1.5 w-full max-w-md overflow-hidden rounded-full bg-muted">
@@ -83,7 +86,7 @@ export function CrawlJobDetailModal({
             ) : job.status === 'RUNNING' ? (
               <p className="flex items-center gap-2 text-primary">
                 <Loader2 className="size-3.5 animate-spin" />
-                AI 代理执行中…
+                {t('admin:crawler.aiRunning')}
               </p>
             ) : null}
             {errorPreview ? <p className="break-all text-destructive">{errorPreview}</p> : null}
@@ -116,7 +119,7 @@ export function CrawlJobDetailModal({
                 ) : (
                   <Icon className="mr-1.5 size-3.5" />
                 )}
-                {meta.label}
+                {meta.label()}
               </Button>
             )
           })}

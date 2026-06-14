@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useMemo } from 'react'
 import { EditorButton } from '../ui/EditorButton'
 import { diffLines, isSameText, summarizeDiff } from '../../utils/textDiff'
@@ -26,11 +27,12 @@ function diffLineClass(type: 'equal' | 'insert' | 'delete') {
 export function ChapterInlineDiff({
   baseline,
   current,
-  title = '修改预览',
-  acceptLabel = '保留修改',
+  title,
+  acceptLabel,
   onAccept,
   onDismiss,
 }: ChapterInlineDiffProps) {
+  const { t } = useTranslation(['editor'])
   const same = isSameText(baseline, current)
   const diff = useMemo(() => diffLines(baseline, current), [baseline, current])
   const stats = useMemo(() => summarizeDiff(diff), [diff])
@@ -38,22 +40,22 @@ export function ChapterInlineDiff({
   return (
     <div className="flex min-h-full flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-2">
-        <span className="text-[13px] font-semibold text-muted-foreground">{title}</span>
+        <span className="text-[13px] font-semibold text-muted-foreground">{title || t('editor:diff.title')}</span>
         <div className="flex gap-2">
           <EditorButton variant="secondary" size="sm" type="button" onClick={onDismiss}>
-            关闭预览
+            {t('editor:diff.close')}
           </EditorButton>
           <EditorButton variant="primary" size="sm" type="button" onClick={onAccept}>
-            {acceptLabel}
+            {acceptLabel || t('editor:diff.accept')}
           </EditorButton>
         </div>
       </div>
       {same ? (
-        <div className="py-8 text-center text-[15px] text-muted-foreground">与修改前正文一致</div>
+        <div className="py-8 text-center text-[15px] text-muted-foreground">{t('editor:diff.same')}</div>
       ) : (
         <>
           <div className="text-[13px] text-muted-foreground/80">
-            +{stats.insert} 行 / −{stats.delete} 行 / {stats.equal} 行未变
+            {t('editor:diff.stats', { insert: stats.insert, delete: stats.delete, equal: stats.equal })}
           </div>
           <div className="flex-1 whitespace-pre-wrap break-words font-serif text-[17px] leading-loose tracking-wide">
             {diff.map((line, index) => (

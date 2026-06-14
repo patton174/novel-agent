@@ -15,7 +15,10 @@ import { useEditorPage } from '../hooks/editor/useEditorPage'
 import { copyToClipboard } from '../utils/copyToClipboard'
 import { appToast } from '../stores/appToastStore'
 
+import { useTranslation } from 'react-i18next'
+
 const EditorPage: React.FC = () => {
+  const { t } = useTranslation(['editor'])
   const navigate = useNavigate()
   const editor = useEditorPage()
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -125,15 +128,15 @@ const EditorPage: React.FC = () => {
               editor.agentChapterStreamTitle ||
               editor.activeChapter?.title ||
               editor.activeNovel?.title ||
-              '章节编辑'
+              t('editor:page.defaultChapterTitle')
             }
             chapterDirty={editor.chapterDirty}
-            onCopyChapter={() => void copyToClipboard(editor.chapterContent, '章节正文已复制')}
+            onCopyChapter={() => void copyToClipboard(editor.chapterContent, t('editor:page.chapterCopied'))}
             onSaveChapter={() => {
               void editor
                 .saveActiveChapter()
-                .then(() => appToast.success('章节已保存'))
-                .catch(() => appToast.error('章节保存失败'))
+                .then(() => appToast.success(t('editor:page.chapterSaved')))
+                .catch(() => appToast.error(t('editor:page.chapterSaveFail')))
             }}
             canSave={Boolean(editor.activeChapterId && editor.chapterDirty)}
             hasNovel={Boolean(editor.activeNovel)}

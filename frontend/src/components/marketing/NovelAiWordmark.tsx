@@ -1,6 +1,7 @@
 import { useId, useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
 import { cn } from '@/lib/utils'
 import { font, palette } from '../../styles/theme'
+import { BRAND_NAME } from '@/lib/brand'
 
 export type NovelAiWordmarkSize = 'sm' | 'md' | 'lg' | 'hero'
 
@@ -27,7 +28,7 @@ export function NovelAiWordmark({
   size = 'md',
   animate = true,
   className,
-  label = 'Novel AI',
+  label = BRAND_NAME,
 }: NovelAiWordmarkProps) {
   const uid = useId().replace(/:/g, '')
   const novelStrokeRef = useRef<SVGTextElement>(null)

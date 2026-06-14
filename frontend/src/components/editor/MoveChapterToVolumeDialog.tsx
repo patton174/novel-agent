@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { AppModalShell } from '@/components/ui/AppModalShell'
 import { EditorButton } from '@/components/ui/EditorButton'
 import type { Volume } from '@/types/novel'
@@ -19,6 +20,7 @@ export function MoveChapterToVolumeDialog({
   onClose: () => void
   onSelectVolume: (targetVolumeId: string, position: 'start' | 'end') => void
 }) {
+  const { t } = useTranslation(['editor'])
   const targets = volumes.filter((volume) => volume.id !== currentVolumeId)
 
   return (
@@ -26,11 +28,11 @@ export function MoveChapterToVolumeDialog({
       open={open}
       onOpenChange={(next) => !next && onClose()}
       size="confirm"
-      title="移动到其他卷"
-      description={`「${chapterTitle}」将移动到所选卷的末尾。`}
+      title={t('editor:moveDialog.title')}
+      description={t('editor:moveDialog.desc', { title: chapterTitle })}
     >
       {targets.length === 0 ? (
-        <p className="text-sm text-muted-foreground">没有其他卷可选。</p>
+        <p className="text-sm text-muted-foreground">{t('editor:moveDialog.noOtherVolumes')}</p>
       ) : (
         <ul className="space-y-2">
           {targets.map((volume) => (

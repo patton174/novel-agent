@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ChevronDown, List, Loader2, Pencil, Save, Search, Trash2, X } from 'lucide-react'
 import {
@@ -36,6 +37,7 @@ export function CatalogReaderModal({
   initialChapterId,
   onUpdated,
 }: CatalogReaderModalProps) {
+  const { t } = useTranslation(['admin', 'common'])
   const [chapters, setChapters] = useState<CatalogChapterSummary[]>([])
   const [selectedChapterId, setSelectedChapterId] = useState<string | null>(null)
   const [chapterDetail, setChapterDetail] = useState<CatalogChapterDetail | null>(null)
@@ -72,9 +74,9 @@ export function CatalogReaderModal({
           null
         setSelectedChapterId(pick)
       })
-      .catch((err) => appToast.error(err instanceof Error ? err.message : '加载目录失败'))
+      .catch((err) => appToast.error(err instanceof Error ? err.message : t('admin:catalog.loadTOCFail')))
       .finally(() => setLoadingList(false))
-  }, [open, novel, initialChapterId, loadChapters])
+  }, [open, novel, initialChapterId, loadChapters, t])
 
   useEffect(() => {
     if (!open || !novel || !selectedChapterId) {
@@ -91,7 +93,7 @@ export function CatalogReaderModal({
         setChapterContent(detail.content)
       })
       .catch((err) => {
-        if (!cancelled) appToast.error(err instanceof Error ? err.message : '加载章节失败')
+        if (!cancelled) appToast.error(err instanceof Error ? err.message : t('admin:catalog.loadChapterFail'))
       })
       .finally(() => {
         if (!cancelled) setLoadingChapter(false)
@@ -99,7 +101,7 @@ export function CatalogReaderModal({
     return () => {
       cancelled = true
     }
-  }, [open, novel, selectedChapterId])
+  }, [open, novel, selectedChapterId, t])
 
   const filteredChapters = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -125,10 +127,10 @@ export function CatalogReaderModal({
             : ch,
         ),
       )
-      appToast.success('章节已保存')
+      appToast.success(t('admin:catalog.chapterSaved'))
       onUpdated?.()
     } catch (err) {
-      appToast.error(err instanceof Error ? err.message : '保存失败')
+      appToast.error(err instanceof Error ? err.message : t('common:feedback.saveFail'))
     } finally {
       setSaving(false)
     }
@@ -137,20 +139,20 @@ export function CatalogReaderModal({
   const handleDeleteChapter = async () => {
     if (!selectedChapterId || !chapterDetail) return
     if (!(await confirmAction({
-      title: '删除章节',
-      description: `确定删除章节「${chapterDetail.title}」？`,
-      confirmLabel: '删除',
+      title: t('admin:catalog.deleteChapterTitle'),
+      description: t('admin:catalog.deleteChapterDesc', { title: chapterDetail.title }),
+      confirmLabel: t('admin:catalog.deleteBtn'),
       danger: true,
     }))) return
     setDeleting(true)
     try {
       await deleteCatalogChapter(novel.id, selectedChapterId)
-      appToast.success('章节已删除')
+      appToast.success(t('admin:catalog.chapterDeleted'))
       const list = await loadChapters(novel.id)
       setSelectedChapterId(list[0]?.id ?? null)
       onUpdated?.()
     } catch (err) {
-      appToast.error(err instanceof Error ? err.message : '删除失败')
+      appToast.error(err instanceof Error ? err.message : t('admin:catalog.deleteFail'))
     } finally {
       setDeleting(false)
     }
@@ -169,7 +171,7 @@ export function CatalogReaderModal({
           <div className="min-w-0 pr-2">
             <DialogTitle className="truncate text-base font-semibold">{novel.title}</DialogTitle>
             <DialogDescription className="text-xs">
-              共 {chapters.length} 章 · {novel.author || '未知作者'}
+              {t('admin:catalog.totalChapters', { count: chapters.length })} · {novel.author || t('admin:catalog.unknownAuthor')}
             </DialogDescription>
           </div>
           <div className="flex shrink-0 items-center gap-1">
@@ -180,10 +182,10 @@ export function CatalogReaderModal({
               onClick={() => setEditMode((v) => !v)}
             >
               <Pencil className="mr-1.5 size-3.5" />
-              {editMode ? '阅读' : '编辑'}
+              {editMode ? t('admin:catalog.read') : t('admin:catalog.edit')}
             </Button>
             <DialogClose asChild>
-              <Button type="button" variant="ghost" size="icon-sm" aria-label="关闭">
+              <Button type="button" variant="ghost" size="icon-sm" aria-label={t('common:cta.close')}>
                 <X className="size-4" />
               </Button>
             </DialogClose>
@@ -195,7 +197,7 @@ export function CatalogReaderModal({
           {mobileChapterOpen ? (
             <button
               type="button"
-              aria-label="关闭目录"
+              aria-label={t('admin:catalog.closeTOC')}
               className="absolute inset-0 z-10 bg-black/40 md:hidden"
               onClick={() => setMobileChapterOpen(false)}
             />
@@ -208,12 +210,12 @@ export function CatalogReaderModal({
             )}
           >
             <div className="flex items-center justify-between border-b border-border px-3 py-2 md:hidden">
-              <span className="text-sm font-medium">章节目录</span>
+              <span className="text-sm font-medium">{t('admin:catalog.toc')}</span>
               <Button
                 type="button"
                 variant="ghost"
                 size="icon-sm"
-                aria-label="关闭目录"
+                aria-label={t('admin:catalog.closeTOC')}
                 onClick={() => setMobileChapterOpen(false)}
               >
                 <X className="size-4" />
@@ -225,7 +227,7 @@ export function CatalogReaderModal({
                 <Input
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder="搜索章节"
+                  placeholder={t('admin:catalog.searchChapter')}
                   className="h-8 pl-7 text-xs"
                 />
               </div>
@@ -234,11 +236,11 @@ export function CatalogReaderModal({
               {loadingList ? (
                 <p className="flex items-center gap-2 p-4 text-sm text-muted-foreground">
                   <Loader2 className="size-4 animate-spin" />
-                  加载目录…
+                  {t('admin:catalog.loadingTOC')}
                 </p>
               ) : filteredChapters.length === 0 ? (
                 <p className="p-4 text-sm text-muted-foreground">
-                  {query.trim() ? '无匹配章节' : '暂无章节'}
+                  {query.trim() ? t('admin:catalog.noMatchChapter') : t('admin:catalog.emptyChapter')}
                 </p>
               ) : (
                 <ul className="py-1">
@@ -263,7 +265,7 @@ export function CatalogReaderModal({
                           {ch.title}
                         </span>
                         <span className="pl-5 text-[11px] text-muted-foreground">
-                          {ch.wordCount.toLocaleString()} 字
+                          {t('admin:catalog.wordCount', { count: ch.wordCount })}
                         </span>
                       </button>
                     </li>
@@ -283,21 +285,21 @@ export function CatalogReaderModal({
                 onClick={() => setMobileChapterOpen(true)}
               >
                 <List className="mr-1.5 size-3.5" />
-                目录
+                {t('admin:catalog.tocLabel')}
               </Button>
               <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
-                {chapterDetail?.title ?? (selectedChapterId ? '加载中…' : '选择章节')}
+                {chapterDetail?.title ?? (selectedChapterId ? t('admin:catalog.loadingContent') : t('admin:catalog.selectChapter'))}
               </span>
               <ChevronDown className="size-4 shrink-0 text-muted-foreground" aria-hidden />
             </div>
             {!selectedChapterId ? (
               <div className="flex flex-1 items-center justify-center p-8 text-sm text-muted-foreground">
-                请从目录选择章节
+                {t('admin:catalog.pleaseSelectChapter')}
               </div>
             ) : loadingChapter ? (
               <div className="flex flex-1 items-center justify-center gap-2 p-8 text-sm text-muted-foreground">
                 <Loader2 className="size-4 animate-spin" />
-                加载正文…
+                {t('admin:catalog.loadingContent')}
               </div>
             ) : chapterDetail ? (
               <>
@@ -314,7 +316,7 @@ export function CatalogReaderModal({
                     </h2>
                   )}
                   <p className="mt-1 text-xs text-muted-foreground">
-                    {chapterContent.length.toLocaleString()} 字
+                    {t('admin:catalog.wordCount', { count: chapterContent.length })}
                     {chapterDetail.sourceUrl ? (
                       <>
                         {' · '}
@@ -324,7 +326,7 @@ export function CatalogReaderModal({
                           rel="noreferrer"
                           className="underline hover:text-foreground"
                         >
-                          原文
+                          {t('admin:catalog.originalSource')}
                         </a>
                       </>
                     ) : null}
@@ -342,7 +344,7 @@ export function CatalogReaderModal({
                   ) : (
                     <article className="mx-auto max-w-prose">
                       <div className="whitespace-pre-wrap text-[15px] leading-[1.85] tracking-wide text-foreground/95">
-                        {chapterContent || '（空正文）'}
+                        {chapterContent || t('admin:catalog.emptyContent')}
                       </div>
                     </article>
                   )}
@@ -363,7 +365,7 @@ export function CatalogReaderModal({
                       ) : (
                         <Trash2 className="mr-1.5 size-4" />
                       )}
-                      删除章节
+                      {t('admin:catalog.deleteChapterTitle')}
                     </Button>
                     <Button
                       type="button"
@@ -376,7 +378,7 @@ export function CatalogReaderModal({
                       ) : (
                         <Save className="mr-1.5 size-4" />
                       )}
-                      保存章节
+                      {t('admin:catalog.saveChapter')}
                     </Button>
                   </div>
                 ) : null}

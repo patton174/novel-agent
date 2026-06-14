@@ -15,13 +15,19 @@ import {
   AppShellCardBody,
   AppShellCardHeader,
 } from '@/components/layout/AppPageStack'
-import { DataTableFrame } from '@/components/layout/DataTableFrame'
+import {
+  ResponsiveTable,
+  type ResponsiveTableColumn,
+} from '@/components/layout/ResponsiveTable'
 import { Button } from '@/components/ui/button'
 import { APP_BTN_MD } from '@/lib/appButtonTokens'
 import { Skeleton } from '@/components/ui/skeleton'
 import { appToast } from '@/stores/appToastStore'
 
+import { useTranslation } from 'react-i18next'
+
 export default function BillingPage() {
+  const { t } = useTranslation(['dashboard'])
   const [searchParams, setSearchParams] = useSearchParams()
   const runFilter = searchParams.get('runId')?.trim() || ''
   const [usage, setUsage] = useState<UsageCurrent | null>(null)
@@ -41,7 +47,7 @@ export default function BillingPage() {
       })
       .catch((err: unknown) => {
         if (cancelled) return
-        appToast.error(err instanceof Error ? err.message : '加载账单数据失败')
+        appToast.error(err instanceof Error ? err.message : t('dashboard:billing.loadFail'))
       })
       .finally(() => {
         if (!cancelled) setLoading(false)
@@ -60,9 +66,9 @@ export default function BillingPage() {
     <AppPageStack compact>
       <AppShellCard>
         <AppShellCardHeader
-          title="本月用量"
+          title={t('dashboard:billing.usageTitle')}
           description={
-            usage ? `${usage.planName}（${usage.periodYyyyMm}）` : 'Token 与 API 调用统计'
+            usage ? `${usage.planName}（${usage.periodYyyyMm}）` : t('dashboard:billing.usageDesc')
           }
         />
         <AppShellCardBody className="flex flex-col gap-5">
@@ -76,18 +82,18 @@ export default function BillingPage() {
             <>
               {usage.quotaWarning ? (
                 <p className="rounded-lg border border-amber-300/80 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-700/60 dark:bg-amber-950/40 dark:text-amber-100">
-                  本月 Token 已使用 {usage.percentUsed.toFixed(1)}%，接近配额上限。
+                  {t('dashboard:billing.quotaWarning', { percent: usage.percentUsed.toFixed(1) })}
                 </p>
               ) : null}
               <div className="space-y-2.5">
                 <div className="flex items-center justify-between text-sm">
                   <span className="flex items-center gap-2 text-muted-foreground">
                     <Activity className="size-4 shrink-0" />
-                    本月 Tokens
+                    {t('dashboard:billing.monthTokens')}
                   </span>
                   <span className="font-semibold tabular-nums text-foreground">
                     {formatTokenCount(usage.tokensUsed)}
-                    {usage.tokenQuota != null ? ` / ${formatTokenCount(usage.tokenQuota)}` : ' / 不限'}
+                    {usage.tokenQuota != null ? ` / ${formatTokenCount(usage.tokenQuota)}` : t('dashboard:billing.unlimited')}
                   </span>
                 </div>
                 <div className="h-2 overflow-hidden rounded-full bg-muted">
@@ -97,14 +103,14 @@ export default function BillingPage() {
                   />
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  已使用 {usage.percentUsed.toFixed(1)}%，配额每月 1 日重置
+                  {t('dashboard:billing.percentUsed', { percent: usage.percentUsed.toFixed(1) })}
                 </p>
               </div>
 
               <div className="flex items-center justify-between rounded-xl border border-border bg-surface px-4 py-3.5 text-sm">
                 <span className="flex items-center gap-2 text-muted-foreground">
                   <BarChart3 className="size-4 shrink-0" />
-                  Agent 运行次数
+                  {t('dashboard:billing.agentRuns')}
                 </span>
                 <span className="font-semibold tabular-nums text-foreground">
                   {usage.runsUsed.toLocaleString('zh-CN')}
@@ -113,13 +119,13 @@ export default function BillingPage() {
               </div>
             </>
           ) : (
-            <p className="text-sm text-muted-foreground">暂无用量数据</p>
+            <p className="text-sm text-muted-foreground">{t('dashboard:billing.noData')}</p>
           )}
         </AppShellCardBody>
       </AppShellCard>
 
       <AppShellCard>
-        <AppShellCardHeader title="账单概览" description="当前计费周期预估费用" />
+        <AppShellCardHeader title={t('dashboard:billing.billTitle')} description={t('dashboard:billing.billDesc')} />
         <AppShellCardBody className="flex flex-col gap-5">
           {loading ? (
             <div className="space-y-3">
@@ -132,39 +138,39 @@ export default function BillingPage() {
               <div>
                 <p className="flex items-center gap-2 text-sm text-muted-foreground">
                   <CreditCard className="size-4 shrink-0" />
-                  预估费用
+                  {t('dashboard:billing.estCost')}
                 </p>
                 <p className="mt-2 text-3xl font-bold tabular-nums tracking-tight text-foreground">
                   {formatCostMicros(usage.costMicros)}
                 </p>
               </div>
               <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-                {usage.planCode === 'hobby' ? '免费套餐' : '按量估算'}
+                {usage.planCode === 'hobby' ? t('dashboard:billing.freePlan') : t('dashboard:billing.payAsYouGo')}
               </span>
             </div>
           ) : null}
 
           <p className="rounded-lg border border-border bg-muted/40 px-4 py-3 text-xs text-muted-foreground">
-            升级 Pro / Enterprise 请先在
+            {t('dashboard:billing.upgradeHint1')}
             <Link to="/pricing" className="mx-1 font-medium text-primary hover:underline">
-              定价页
+              {t('dashboard:billing.pricingPage')}
             </Link>
-            了解方案，或通过
+            {t('dashboard:billing.upgradeHint2')}
             <Link to="/contact" className="mx-1 font-medium text-primary hover:underline">
-              联系我们
+              {t('dashboard:billing.contactUs')}
             </Link>
-            开通。在线支付功能即将上线。
+            {t('dashboard:billing.upgradeHint3')}
           </p>
 
           <div className="flex flex-col gap-2 sm:flex-row">
             <Button className={`flex-1 ${APP_BTN_MD}`} asChild>
               <Link to="/pricing">
                 <Receipt className="mr-2 size-4" />
-                查看套餐
+                {t('dashboard:billing.viewPlans')}
               </Link>
             </Button>
             <Button className={`flex-1 ${APP_BTN_MD}`} variant="outline" asChild>
-              <Link to="/contact">联系升级</Link>
+              <Link to="/contact">{t('dashboard:billing.contactUpgrade')}</Link>
             </Button>
           </div>
         </AppShellCardBody>
@@ -172,74 +178,143 @@ export default function BillingPage() {
 
       <AppShellCard>
         <AppShellCardHeader
-          title={runFilter ? 'Run 用量明细' : '最近用量明细'}
+          title={runFilter ? t('dashboard:billing.runUsageTitle') : t('dashboard:billing.recentUsageTitle')}
           description={
             runFilter
-              ? `runId: ${runFilter}`
-              : '点击 runId 可筛选该次对话的全部 LLM 调用'
+              ? t('dashboard:billing.runUsageDesc', { id: runFilter })
+              : t('dashboard:billing.recentUsageDesc')
           }
           action={
             runFilter ? (
               <Button type="button" variant="ghost" size="sm" onClick={() => setSearchParams({})}>
                 <X className="mr-1 size-3.5" />
-                清除筛选
+                {t('dashboard:billing.clearFilter')}
               </Button>
             ) : undefined
           }
         />
         <AppShellCardBody className="px-0 py-0">
-          {loading ? (
-            <div className="space-y-2 px-6 py-4">
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
-            </div>
-          ) : (
-            <>
-              <div className="space-y-3 px-4 py-4 md:hidden">
-                {events.length === 0 ? (
-                  <p className="rounded-xl border border-dashed border-border bg-muted/20 px-4 py-8 text-center text-sm text-muted-foreground">
-                    {runFilter ? '该 run 暂无用量记录' : '暂无用量明细，使用 Agent 后将在此展示最近调用'}
-                  </p>
-                ) : (
-                  events.map((ev) => <UsageEventCard key={ev.id} ev={ev} runFilter={runFilter} />)
-                )}
-              </div>
-              <div className="hidden md:block">
-                <DataTableFrame embedded>
-                  <table className="w-full min-w-[640px] text-sm">
-                    <thead className="bg-muted/40 text-left text-xs text-muted-foreground">
-                      <tr>
-                        <th className="px-4 py-3 font-medium">类型</th>
-                        <th className="px-4 py-3 font-medium">Tokens</th>
-                        <th className="px-4 py-3 font-medium">模型</th>
-                        <th className="px-4 py-3 font-medium">时间</th>
-                        <th className="px-4 py-3 font-medium">关联</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border">
-                      {events.length === 0 ? (
-                        <tr>
-                          <td colSpan={5} className="px-4 py-10 text-center text-sm text-muted-foreground">
-                            {runFilter
-                              ? '该 run 暂无用量记录'
-                              : '暂无用量明细，使用 Agent 后将在此展示最近调用'}
-                          </td>
-                        </tr>
-                      ) : (
-                        events.map((ev) => (
-                          <UsageEventRow key={ev.id} ev={ev} runFilter={runFilter} />
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                </DataTableFrame>
-              </div>
-            </>
-          )}
+          <UsageEventsTable
+            loading={loading}
+            events={events}
+            runFilter={runFilter}
+          />
         </AppShellCardBody>
       </AppShellCard>
     </AppPageStack>
+  )
+}
+
+function UsageEventsTable({
+  loading,
+  events,
+  runFilter,
+}: {
+  loading: boolean
+  events: UsageEventItem[]
+  runFilter: string
+}) {
+  const { t } = useTranslation(['dashboard'])
+  const columns: ResponsiveTableColumn<UsageEventItem>[] = [
+    {
+      key: 'eventType',
+      header: t('dashboard:billing.colType'),
+      headerClassName: 'px-4 py-3 font-medium',
+      cellClassName: 'px-4 py-3 font-medium text-foreground',
+      renderCell: (ev) => ev.eventType,
+    },
+    {
+      key: 'tokens',
+      header: 'Tokens',
+      headerClassName: 'px-4 py-3 font-medium',
+      cellClassName: 'px-4 py-3 tabular-nums text-muted-foreground',
+      renderCell: (ev) => ev.totalTokens.toLocaleString('zh-CN'),
+    },
+    {
+      key: 'model',
+      header: t('dashboard:billing.colModel'),
+      headerClassName: 'px-4 py-3 font-medium',
+      cellClassName: 'px-4 py-3 text-muted-foreground',
+      renderCell: (ev) => ev.model ?? '—',
+    },
+    {
+      key: 'time',
+      header: t('dashboard:billing.colTime'),
+      headerClassName: 'px-4 py-3 font-medium',
+      cellClassName: 'whitespace-nowrap px-4 py-3 text-xs text-muted-foreground',
+      renderCell: (ev) => new Date(ev.createdAt).toLocaleString('zh-CN'),
+    },
+    {
+      key: 'related',
+      header: t('dashboard:billing.colRelated'),
+      headerClassName: 'px-4 py-3 font-medium',
+      cellClassName: 'px-4 py-3 text-xs',
+      renderCell: (ev) => <UsageEventRelatedCell ev={ev} runFilter={runFilter} />,
+    },
+  ]
+
+  return (
+    <ResponsiveTable
+      columns={columns}
+      rows={events}
+      loading={loading}
+      loadingRowCount={3}
+      loadingCardCount={3}
+      getRowKey={(ev) => ev.id}
+      wrapDesktopInCard={false}
+      tableClassName="w-full min-w-[640px] text-sm"
+      tableHeaderClassName="bg-muted/40 text-left text-xs text-muted-foreground"
+      tableBodyClassName="divide-y divide-border"
+      renderMobileCard={(ev) => <UsageEventCard ev={ev} runFilter={runFilter} />}
+      mobileListClassName="px-4 py-4"
+      renderMobileEmpty={
+        <p className="rounded-xl border border-dashed border-border bg-muted/20 px-4 py-8 text-center text-sm text-muted-foreground">
+          {runFilter ? t('dashboard:billing.emptyRun') : t('dashboard:billing.emptyRecent')}
+        </p>
+      }
+      renderDesktopEmpty={
+        <p className="px-4 py-10 text-center text-sm text-muted-foreground">
+          {runFilter ? t('dashboard:billing.emptyRun') : t('dashboard:billing.emptyRecent')}
+        </p>
+      }
+    />
+  )
+}
+
+function UsageEventRelatedCell({
+  ev,
+  runFilter,
+}: {
+  ev: UsageEventItem
+  runFilter: string
+}) {
+  const [, setSearchParams] = useSearchParams()
+  const { t } = useTranslation(['dashboard'])
+
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      {ev.runId ? (
+        runFilter ? (
+          <span className="max-w-[160px] truncate font-mono text-muted-foreground" title={ev.runId}>
+            {ev.runId}
+          </span>
+        ) : (
+          <button
+            type="button"
+            className="font-mono text-primary hover:underline"
+            title={ev.runId}
+            onClick={() => setSearchParams({ runId: ev.runId! })}
+          >
+            {ev.runId.slice(0, 10)}…
+          </button>
+        )
+      ) : null}
+      {ev.sessionId ? (
+        <Link to={`/editor/${ev.sessionId}`} className="text-primary hover:underline">
+          {t('dashboard:billing.openSession')}
+        </Link>
+      ) : null}
+    </div>
   )
 }
 
@@ -251,6 +326,7 @@ function UsageEventCard({
   runFilter: string
 }) {
   const [, setSearchParams] = useSearchParams()
+  const { t } = useTranslation(['dashboard'])
 
   return (
     <article className="rounded-xl border border-border bg-surface p-3.5 text-sm shadow-soft">
@@ -262,11 +338,11 @@ function UsageEventCard({
       </div>
       <dl className="mt-2 space-y-1 text-xs text-muted-foreground">
         <div className="flex justify-between gap-2">
-          <dt>模型</dt>
+          <dt>{t('dashboard:billing.colModel')}</dt>
           <dd className="truncate text-right text-foreground">{ev.model ?? '—'}</dd>
         </div>
         <div className="flex justify-between gap-2">
-          <dt>时间</dt>
+          <dt>{t('dashboard:billing.colTime')}</dt>
           <dd className="text-right">{new Date(ev.createdAt).toLocaleString('zh-CN')}</dd>
         </div>
       </dl>
@@ -290,7 +366,7 @@ function UsageEventCard({
           ) : null}
           {ev.sessionId ? (
             <Link to={`/editor/${ev.sessionId}`} className="text-primary hover:underline">
-              打开会话
+              {t('dashboard:billing.openSession')}
             </Link>
           ) : null}
         </div>
@@ -299,50 +375,3 @@ function UsageEventCard({
   )
 }
 
-function UsageEventRow({
-  ev,
-  runFilter,
-}: {
-  ev: UsageEventItem
-  runFilter: string
-}) {
-  const [, setSearchParams] = useSearchParams()
-
-  return (
-    <tr className="align-top hover:bg-surface-hover/50">
-      <td className="px-4 py-3 font-medium text-foreground">{ev.eventType}</td>
-      <td className="px-4 py-3 tabular-nums text-muted-foreground">
-        {ev.totalTokens.toLocaleString('zh-CN')}
-      </td>
-      <td className="px-4 py-3 text-muted-foreground">{ev.model ?? '—'}</td>
-      <td className="whitespace-nowrap px-4 py-3 text-xs text-muted-foreground">
-        {new Date(ev.createdAt).toLocaleString('zh-CN')}
-      </td>
-      <td className="px-4 py-3 text-xs">
-        <div className="flex flex-wrap items-center gap-2">
-          {ev.runId ? (
-            runFilter ? (
-              <span className="max-w-[160px] truncate font-mono text-muted-foreground" title={ev.runId}>
-                {ev.runId}
-              </span>
-            ) : (
-              <button
-                type="button"
-                className="font-mono text-primary hover:underline"
-                title={ev.runId}
-                onClick={() => setSearchParams({ runId: ev.runId! })}
-              >
-                {ev.runId.slice(0, 10)}…
-              </button>
-            )
-          ) : null}
-          {ev.sessionId ? (
-            <Link to={`/editor/${ev.sessionId}`} className="text-primary hover:underline">
-              打开会话
-            </Link>
-          ) : null}
-        </div>
-      </td>
-    </tr>
-  )
-}

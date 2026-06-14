@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { NavLink } from 'react-router-dom'
 import { ArrowLeft, BarChart3, BookOpen, Bot, CreditCard, DollarSign, FileText, LayoutDashboard, ScrollText, Settings, Shield, Users } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -10,25 +11,26 @@ interface NavItem {
   end?: boolean
 }
 
-const mainNav: NavItem[] = [
-  { label: '概览', to: '/admin', icon: LayoutDashboard, end: true },
-  { label: '用户管理', to: '/admin/users', icon: Users },
-  { label: '套餐管理', to: '/admin/plans', icon: CreditCard },
-  { label: '收入与成本', to: '/admin/revenue', icon: DollarSign },
-  { label: '站点内容', to: '/admin/site-content', icon: FileText },
-  { label: '审计日志', to: '/admin/audit-log', icon: ScrollText },
-  { label: '系统参数', to: '/admin/system-settings', icon: Settings },
-  { label: '平台统计', to: '/admin/stats', icon: BarChart3 },
-  { label: 'AI 爬虫', to: '/admin/crawler', icon: Bot },
-  { label: '书库', to: '/admin/catalog', icon: BookOpen },
-]
-
 interface AdminSidebarProps {
   embedded?: boolean
   onNavigate?: () => void
 }
 
 export function AdminSidebar({ embedded = false, onNavigate }: AdminSidebarProps) {
+  const { t } = useTranslation(['admin', 'common'])
+
+  const mainNav: NavItem[] = [
+    { label: t('common:nav.adminOverview'), to: '/admin', icon: LayoutDashboard, end: true },
+    { label: t('common:nav.adminUsers'), to: '/admin/users', icon: Users },
+    { label: t('common:nav.adminPlans'), to: '/admin/plans', icon: CreditCard },
+    { label: t('common:nav.adminRevenue'), to: '/admin/revenue', icon: DollarSign },
+    { label: t('common:nav.adminSiteContent'), to: '/admin/site-content', icon: FileText },
+    { label: t('common:nav.adminAuditLog'), to: '/admin/audit-log', icon: ScrollText },
+    { label: t('common:nav.adminSystemSettings'), to: '/admin/system-settings', icon: Settings },
+    { label: t('common:nav.adminStats'), to: '/admin/stats', icon: BarChart3 },
+    { label: t('common:nav.adminCrawler'), to: '/admin/crawler', icon: Bot },
+    { label: t('common:nav.adminCatalog'), to: '/admin/catalog', icon: BookOpen },
+  ]
   const linkClass = ({ isActive }: { isActive: boolean }) =>
     cn(
       'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
@@ -47,7 +49,7 @@ export function AdminSidebar({ embedded = false, onNavigate }: AdminSidebarProps
         <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
           <Shield className="size-4" />
         </div>
-        <span className="text-sm font-semibold tracking-tight">管理后台</span>
+        <span className="text-sm font-semibold tracking-tight">{t('common:nav.adminTitle')}</span>
       </div>
 
       <Separator />
@@ -64,7 +66,7 @@ export function AdminSidebar({ embedded = false, onNavigate }: AdminSidebarProps
 
         <NavLink to="/dashboard" className={linkClass} onClick={onNavigate}>
           <ArrowLeft className="size-4 shrink-0" />
-          返回用户端
+          {t('common:nav.backToUser')}
         </NavLink>
       </nav>
     </aside>

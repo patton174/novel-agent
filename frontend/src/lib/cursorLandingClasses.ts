@@ -2,20 +2,20 @@ import { cn } from '@/lib/utils'
 
 /** Cursor 官网近似色板 */
 export const cursorTheme = {
-  bg: '#f8fafc',
-  card: '#ffffff',
-  cardElevated: '#ffffff',
-  text: '#0f172a',
-  textMuted: '#64748b',
+  bg: 'var(--background)',
+  card: 'var(--card)',
+  cardElevated: 'var(--card)',
+  text: 'var(--foreground)',
+  textMuted: 'var(--muted-foreground)',
   textFaint: '#94a3b8',
-  accent: '#4f46e5',
-  accentHover: '#4338ca',
-  accentText: '#ffffff',
-  border: '#e2e8f0',
+  accent: 'var(--primary)',
+  accentHover: 'var(--color-primary-hover)',
+  accentText: 'var(--primary-foreground)',
+  border: 'var(--border)',
   borderStrong: '#cbd5e1',
-  green: '#10b981',
+  green: 'var(--color-success)',
   greenBg: 'rgba(16, 185, 129, 0.12)',
-  red: '#ef4444',
+  red: 'var(--color-danger)',
   redBg: 'rgba(239, 68, 68, 0.1)',
   blue: '#3b82f6',
   blueBg: 'rgba(59, 130, 246, 0.12)',
@@ -24,7 +24,7 @@ export const cursorTheme = {
   shadowSm: '0 4px 20px -2px rgba(0, 0, 0, 0.05)',
 } as const
 
-export const CURSOR_LANDING_ROOT = cn('w-full bg-[#f8fafc]')
+export const CURSOR_LANDING_ROOT = cn('w-full bg-background')
 
 export const CURSOR_FEATURE_SECTION = cn(
   'relative w-full scroll-mt-[72px] px-6 py-20',
@@ -34,7 +34,7 @@ export function cursorFeatureSectionClass(wash?: boolean) {
   return cn(
     CURSOR_FEATURE_SECTION,
     wash &&
-      'bg-gradient-to-b from-indigo-600/[0.04] from-0% to-[#f8fafc]/0 to-[72%]',
+      'bg-gradient-to-b from-primary/4 from-0% to-background/0 to-[72%]',
   )
 }
 
@@ -43,38 +43,38 @@ export const CURSOR_FEATURE_INNER = cn('mx-auto w-full max-w-[1120px]')
 export function cursorFeatureGridClass(flip?: boolean) {
   return cn(
     'grid items-center gap-8',
-    'min-[901px]:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] min-[901px]:gap-x-12 min-[901px]:gap-y-10',
+    'md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] md:gap-x-12 md:gap-y-10',
     flip &&
-      'min-[901px]:[&_.story-copy]:order-2 min-[901px]:[&_.demo-app-mock]:order-1',
-    'max-[900px]:grid-cols-1 max-[900px]:gap-8',
-    'max-[900px]:[&_.story-copy]:order-[unset] max-[900px]:[&_.demo-app-mock]:order-[unset]',
+      'md:[&_.story-copy]:order-2 md:[&_.demo-app-mock]:order-1',
+    'max-md:grid-cols-1 max-md:gap-8',
+    'max-md:[&_.story-copy]:order-[unset] max-md:[&_.demo-app-mock]:order-[unset]',
   )
 }
 
 export const CURSOR_FEATURE_TAG = cn(
-  'mb-[0.65rem] inline-block text-[0.72rem] font-bold uppercase tracking-[0.12em] text-[#64748b]',
+  'mb-[0.65rem] inline-block text-[0.72rem] font-bold uppercase tracking-[0.12em] text-muted-foreground',
 )
 
 export function cursorFeatureCopyClass(alignEnd?: boolean) {
   return cn(
     'pt-6',
     alignEnd &&
-      'min-[901px]:pt-6 min-[901px]:text-right min-[901px]:[&>p]:ml-auto',
-    'max-[900px]:pt-0 max-[900px]:text-center max-[900px]:[&>p]:mx-auto',
+      'md:pt-6 md:text-right md:[&>p]:ml-auto',
+    'max-md:pt-0 max-md:text-center max-md:[&>p]:mx-auto',
   )
 }
 
 export const CURSOR_FEATURE_TITLE = cn(
-  'mkt-font-display m-0 mb-4 text-[clamp(1.65rem,3.2vw,2.35rem)] font-semibold leading-[1.15] tracking-[-0.03em] text-[#0f172a]',
+  'mkt-font-display m-0 mb-4 text-[clamp(1.65rem,3.2vw,2.35rem)] font-semibold leading-[1.15] tracking-[-0.03em] text-foreground',
 )
 
 export const CURSOR_FEATURE_BODY = cn(
-  'm-0 mb-5 max-w-[22rem] text-base leading-[1.65] text-[#64748b]',
-  'max-[900px]:mx-auto',
+  'm-0 mb-5 max-w-[22rem] text-base leading-[1.65] text-muted-foreground',
+  'max-md:mx-auto',
 )
 
 export const CURSOR_FEATURE_LINK = cn(
-  'inline-flex cursor-default items-center gap-[0.35rem] text-[0.92rem] font-medium text-[#0f172a]',
+  'inline-flex cursor-default items-center gap-[0.35rem] text-[0.92rem] font-medium text-foreground',
   "after:transition-transform after:duration-200 after:ease-in-out after:content-['→'] hover:after:translate-x-[3px]",
 )
 
@@ -212,9 +212,9 @@ export function storyCopyRootClass(alignEnd?: boolean) {
   return cn(
     'w-full pt-5',
     alignEnd &&
-      'min-[901px]:flex min-[901px]:flex-col min-[901px]:items-end',
-    'max-[900px]:flex max-[900px]:flex-col max-[900px]:items-center max-[900px]:pt-0',
-    'max-[900px]:[&_.story-copy-block]:max-w-[20rem]',
+      'md:flex md:flex-col md:items-end',
+    'max-md:flex max-md:flex-col max-md:items-center max-md:pt-0',
+    'max-md:[&_.story-copy-block]:max-w-[20rem]',
   )
 }
 

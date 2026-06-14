@@ -7,12 +7,7 @@ import { APP_BTN_SM } from '@/lib/appButtonTokens'
 import { Skeleton } from '@/components/ui/skeleton'
 import { appToast } from '@/stores/appToastStore'
 import type { UserProfile } from '@/stores/userStore'
-
-const ROLE_LABELS: Record<string, string> = {
-  user: '普通用户',
-  vip: 'VIP 用户',
-  admin: '管理员',
-}
+import { useTranslation } from 'react-i18next'
 
 interface AccountSettingsPanelProps {
   profile: UserProfile | null
@@ -20,9 +15,16 @@ interface AccountSettingsPanelProps {
 }
 
 export function AccountSettingsPanel({ profile, onVerified }: AccountSettingsPanelProps) {
+  const { t } = useTranslation(['dashboard'])
   const [sending, setSending] = useState(false)
   const [cooldown, setCooldown] = useState(0)
   const inflightRef = useRef(false)
+
+  const ROLE_LABELS: Record<string, string> = {
+    user: t('dashboard:account.roleUser'),
+    vip: t('dashboard:account.roleVip'),
+    admin: t('dashboard:account.roleAdmin'),
+  }
 
   useEffect(() => {
     if (cooldown <= 0) return
@@ -52,10 +54,10 @@ export function AccountSettingsPanel({ profile, onVerified }: AccountSettingsPan
     try {
       await sendEmailVerifyLink()
       setCooldown(60)
-      appToast.success('验证邮件已发送，请查收并点击链接完成验证')
+      appToast.success(t('dashboard:account.verifySent'))
       onVerified?.()
     } catch (err) {
-      appToast.error(err instanceof Error ? err.message : '发送失败')
+      appToast.error(err instanceof Error ? err.message : t('dashboard:account.sendFail'))
     } finally {
       inflightRef.current = false
       setSending(false)
@@ -70,12 +72,12 @@ export function AccountSettingsPanel({ profile, onVerified }: AccountSettingsPan
             <AlertTriangle className="mt-0.5 size-4 shrink-0 text-sky-600 dark:text-sky-400" />
             <div className="min-w-0 flex-1 space-y-2">
               <p className="text-sm font-semibold text-sky-900 dark:text-sky-100">
-                邮箱尚未验证
+                {t('dashboard:account.unverifiedTitle')}
               </p>
               <p className="text-xs leading-relaxed text-sky-800/90 dark:text-sky-200/90">
-                验证邮箱后可使用完整功能。点击下方按钮，我们将向{' '}
-                <span className="font-medium">{profile.email || '您的邮箱'}</span>{' '}
-                发送验证邮件，点击邮件中的链接即可完成验证。
+                {t('dashboard:account.unverifiedDesc1')}
+                <span className="font-medium">{profile.email || t('dashboard:account.unverifiedDesc2')}</span>{' '}
+                {t('dashboard:account.unverifiedDesc3')}
               </p>
               <Button
                 type="button"
@@ -89,7 +91,7 @@ export function AccountSettingsPanel({ profile, onVerified }: AccountSettingsPan
                 ) : (
                   <Mail className="mr-1.5 size-3.5" />
                 )}
-                {cooldown > 0 ? `${cooldown}s 后可重发` : '发送验证邮件'}
+                {cooldown > 0 ? `${cooldown}${t('dashboard:account.resendCooldown')}` : t('dashboard:account.sendVerify')}
               </Button>
             </div>
           </div>
@@ -97,17 +99,17 @@ export function AccountSettingsPanel({ profile, onVerified }: AccountSettingsPan
       ) : null}
 
       <div className="space-y-2">
-        <InfoRow label="用户名" value={profile.username || '—'} />
-        <InfoRow label="邮箱" value={profile.email || '—'} />
+        <InfoRow label={t('dashboard:account.username')} value={profile.username || '—'} />
+        <InfoRow label={t('dashboard:account.email')} value={profile.email || '—'} />
         <div className="flex items-center justify-between rounded-lg border border-border px-4 py-3">
-          <span className="text-sm text-muted-foreground">角色</span>
+          <span className="text-sm text-muted-foreground">{t('dashboard:account.role')}</span>
           <Badge variant="secondary" className="bg-muted text-foreground ring-1 ring-border/60">
             {ROLE_LABELS[profile.role] ?? profile.role}
           </Badge>
         </div>
         {profile.email ? (
           <div className="flex items-center justify-between rounded-lg border border-border px-4 py-3">
-            <span className="text-sm text-muted-foreground">邮箱验证</span>
+            <span className="text-sm text-muted-foreground">{t('dashboard:account.emailVerify')}</span>
             <Badge
               variant={profile.emailVerified === true ? 'default' : 'outline'}
               className={
@@ -116,7 +118,7 @@ export function AccountSettingsPanel({ profile, onVerified }: AccountSettingsPan
                   : 'border-sky-500/50 bg-sky-50 text-sky-900 dark:bg-sky-950/50 dark:text-sky-100'
               }
             >
-              {profile.emailVerified === true ? '已验证' : '未验证'}
+              {profile.emailVerified === true ? t('dashboard:account.verified') : t('dashboard:account.unverified')}
             </Badge>
           </div>
         ) : null}

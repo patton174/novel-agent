@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { buildWelcomeMessage } from './buildWelcomeMessage'
+import { BRAND_NAME } from '@/lib/brand'
 
 describe('buildWelcomeMessage', () => {
   it('returns generic welcome without novel', () => {
     const msg = buildWelcomeMessage(null)
-    expect(msg).toContain('Novel AI')
+    expect(msg).toContain(BRAND_NAME)
   })
 
   it('includes novel title and description hint', () => {

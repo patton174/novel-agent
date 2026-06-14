@@ -2,7 +2,6 @@ import { MarketingShell } from '../components/marketing/MarketingShell'
 import { MarketingNav } from '../components/marketing/MarketingNav'
 import { HomeFeasibilitySection } from '../components/marketing/sections/HomeFeasibilitySection'
 import { HomeScrollStory } from '../components/marketing/scroll/HomeScrollStory'
-import { HomeTimelineSection } from '../components/marketing/sections/HomeTimelineSection'
 import { HomeDanmakuSection } from '../components/marketing/sections/HomeDanmakuSection'
 import { HomeFooterSection } from '../components/marketing/sections/HomeFooterSection'
 import { HomeHeroSection } from '../components/marketing/sections/HomeHeroSection'
@@ -38,7 +37,6 @@ export default function HomePage() {
         <HomeHeroSection />
         <HomeFeasibilitySection />
         <HomeScrollStory />
-        <HomeTimelineSection />
         <HomeDanmakuSection />
       </main>
       <HomeFooterSection />

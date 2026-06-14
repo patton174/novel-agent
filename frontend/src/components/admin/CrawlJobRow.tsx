@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { memo } from 'react'
 import { Loader2, MoreHorizontal, Pause, Play, Square, Trash2 } from 'lucide-react'
 import type { CrawlJob } from '@/api/crawlAdminApi'
@@ -47,6 +48,7 @@ export const CrawlJobRow = memo(function CrawlJobRow({
   onOpen,
   onAction,
 }: CrawlJobRowProps) {
+  const { t } = useTranslation(['admin'])
   const percent = crawlJobProgressPercent(job)
   const jobGoal = parseCrawlJobGoal(job.configJson)
   const title = crawlJobDisplayTitle(job, jobGoal)
@@ -68,7 +70,7 @@ export const CrawlJobRow = memo(function CrawlJobRow({
         size={size === 'sm' ? 'sm' : 'icon'}
         variant={isDestructive ? 'destructive' : size === 'sm' ? 'default' : 'ghost'}
         className={size === 'icon' ? 'size-8' : 'h-8 gap-1 px-2.5 text-xs'}
-        title={meta.label}
+        title={meta.label()}
         disabled={actingKey != null && !busy}
         onClick={(e) => {
           e.stopPropagation()
@@ -80,7 +82,7 @@ export const CrawlJobRow = memo(function CrawlJobRow({
         ) : (
           <Icon className="size-3.5" />
         )}
-        {size === 'sm' ? meta.label : null}
+        {size === 'sm' ? meta.label() : null}
       </Button>
     )
   }
@@ -127,7 +129,7 @@ export const CrawlJobRow = memo(function CrawlJobRow({
         ) : isActive ? (
           <div className="flex items-center gap-1.5 text-[11px] text-primary">
             <Loader2 className="size-3 animate-spin" />
-            运行中
+            {t('admin:crawler.running')}
           </div>
         ) : null}
         {errorPreview ? (
@@ -154,7 +156,7 @@ export const CrawlJobRow = memo(function CrawlJobRow({
                     onClick={(e) => e.stopPropagation()}
                   >
                     <MoreHorizontal className="size-4" />
-                    <span className="sr-only">更多操作</span>
+                    <span className="sr-only">{t('admin:crawler.moreActions')}</span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
@@ -169,7 +171,7 @@ export const CrawlJobRow = memo(function CrawlJobRow({
                         onClick={() => onAction(job, action)}
                       >
                         <Icon className="size-3.5" />
-                        {meta.label}
+                        {meta.label()}
                       </DropdownMenuItem>
                     )
                   })}

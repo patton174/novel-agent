@@ -4,6 +4,7 @@ import { AccountSettingsPanel } from '@/components/dashboard/AccountSettingsPane
 import { Button } from '@/components/ui/button'
 import { APP_BTN_FULL_MD } from '@/lib/appButtonTokens'
 import type { UserProfile } from '@/stores/userStore'
+import { useTranslation } from 'react-i18next'
 
 interface AccountSettingsSectionsProps {
   profile: UserProfile | null
@@ -18,19 +19,20 @@ export function AccountSettingsSections({
   onVerified,
   variant = 'page',
 }: AccountSettingsSectionsProps) {
+  const { t } = useTranslation(['dashboard'])
   return (
     <div className={variant === 'embedded' ? 'space-y-4' : 'space-y-6'}>
       <AccountSettingsPanel profile={profile} onVerified={onVerified} />
       <div className={variant === 'embedded' ? 'space-y-2 border-t border-border/60 pt-4' : undefined}>
         {variant === 'embedded' ? (
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            账单与升级
+            {t('dashboard:account.billingSection')}
           </p>
         ) : null}
         <Button asChild variant={variant === 'embedded' ? 'outline' : 'default'} className={APP_BTN_FULL_MD}>
           <Link to="/dashboard/billing">
             <CreditCard className="mr-2 size-4" />
-            打开账单页
+            {t('dashboard:account.openBilling')}
           </Link>
         </Button>
       </div>

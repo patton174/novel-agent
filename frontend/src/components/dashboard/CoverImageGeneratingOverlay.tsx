@@ -69,7 +69,7 @@ export function CoverImageGeneratingOverlay({ active, className }: CoverImageGen
             animate={{ scale: [1, 1.35, 1] }}
             transition={{ duration: 1.4, repeat: Infinity, ease: 'easeInOut' }}
           />
-          <span className="text-[11px] font-medium tracking-wide text-white/90 drop-shadow-sm">
+          <span className="text-ui-sm font-medium tracking-wide text-white/90 drop-shadow-sm">
             正在生成封面…
           </span>
         </motion.div>

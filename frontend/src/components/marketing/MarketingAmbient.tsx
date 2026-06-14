@@ -1,4 +1,5 @@
 import { useReducedMotion } from 'framer-motion'
+import { useAppMobile } from '@/hooks/useMediaQuery'
 import { cn } from '@/lib/utils'
 
 type AmbientVariant = 'hero' | 'section' | 'subtle'
@@ -11,7 +12,8 @@ export function MarketingAmbient({
   className?: string
 }) {
   const reduced = useReducedMotion()
-  if (reduced) return null
+  const isMobile = useAppMobile()
+  if (reduced || isMobile) return null
 
   const intensity = variant === 'hero' ? 1 : variant === 'section' ? 0.65 : 0.4
 

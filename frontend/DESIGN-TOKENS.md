@@ -44,6 +44,13 @@ Admin 快捷链、Guide 移动 TOC 等与 Dashboard 按钮对齐时用 `rounded-
 - 应用移动：`APP_MOBILE_MAX_PX` / `useAppMobile()`（`lib/breakpoints.ts`）
 - 营销页可与 Tailwind `md:` 并用，Editor/Dashboard 以 `767px` 为准
 
+## 响应式书写规范
+
+- 优先使用单方向 `md:`（min-width）从移动到桌面的渐进增强。
+- `max-md:` 仅允许用于必须覆盖桌面默认布局的少量场景（如遗留弹窗定位覆盖）。
+- 禁止引入第三断点（如 `900px`）；统一使用 `767/768` 这一组全站断点。
+- JS 端响应式判断只使用 `useAppMobile()` 或 `matchesAppMobile()`，禁止组件内直接写 `window.matchMedia(...)`。
+
 ## 编辑器路由
 
 - 新建作品：`/editor?action=create` → `EDITOR_CREATE_HREF`（`lib/editorRoutes.ts`）

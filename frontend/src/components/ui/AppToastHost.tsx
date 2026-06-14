@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useAppToastStore, type AppToastKind } from '../../stores/appToastStore'
 import {
   APP_TOAST_DISMISS,
@@ -7,15 +8,16 @@ import {
   appToastKindTagClass,
 } from '@/lib/appToastClasses'
 
-const KIND_LABEL: Record<AppToastKind, string> = {
-  success: '成功',
-  error: '失败',
-  info: '提示',
-}
-
 export function AppToastHost() {
+  const { t } = useTranslation(['common'])
   const items = useAppToastStore((s) => s.items)
   const dismiss = useAppToastStore((s) => s.dismiss)
+
+  const KIND_LABEL: Record<AppToastKind, string> = {
+    success: t('feedback.toastSuccess'),
+    error: t('feedback.toastError'),
+    info: t('feedback.toastInfo'),
+  }
 
   if (items.length === 0) return null
 

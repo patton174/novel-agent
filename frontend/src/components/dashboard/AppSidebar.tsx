@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { Link, NavLink } from 'react-router-dom'
 import {
   BookMarked,
@@ -19,23 +20,24 @@ interface NavItem {
   end?: boolean
 }
 
-const mainNav: NavItem[] = [
-  { label: '概览', to: '/dashboard', icon: LayoutDashboard, end: true },
-  { label: '我的小说', to: '/dashboard/novels', icon: BookOpen },
-  { label: '书库', to: '/dashboard/bookstore', icon: BookMarked },
-  { label: '用量与账单', to: '/dashboard/billing', icon: CreditCard },
-  { label: '账户设置', to: '/dashboard/settings', icon: Settings },
-]
-
 interface AppSidebarProps {
   embedded?: boolean
   onNavigate?: () => void
 }
 
 export function AppSidebar({ embedded = false, onNavigate }: AppSidebarProps) {
+  const { t } = useTranslation(['common'])
   const profile = useUserStore((s) => s.profile)
   const unverified = needsEmailVerification(profile)
   const initials = profile?.username?.slice(0, 2).toUpperCase() || '?'
+
+  const mainNav: NavItem[] = [
+    { label: t('common:nav.dashboardOverview'), to: '/dashboard', icon: LayoutDashboard, end: true },
+    { label: t('common:nav.dashboardNovels'), to: '/dashboard/novels', icon: BookOpen },
+    { label: t('common:nav.dashboardBookstore'), to: '/dashboard/bookstore', icon: BookMarked },
+    { label: t('common:nav.dashboardBilling'), to: '/dashboard/billing', icon: CreditCard },
+    { label: t('common:nav.dashboardSettings'), to: '/dashboard/settings', icon: Settings },
+  ]
 
   const navLinkClass = ({ isActive }: { isActive: boolean }) =>
     cn(
@@ -86,7 +88,7 @@ export function AppSidebar({ embedded = false, onNavigate }: AppSidebarProps) {
                 isActive && 'ring-2 ring-primary/25',
               )
             }
-            title="账户设置"
+            title={t('common:nav.dashboardSettings')}
           >
             <div className="relative shrink-0">
               <Avatar size="sm" className="size-9 rounded-full">
@@ -100,7 +102,7 @@ export function AppSidebar({ embedded = false, onNavigate }: AppSidebarProps) {
             </div>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium text-foreground">
-                {profile?.username || '账户设置'}
+                {profile?.username || t('common:nav.dashboardSettings')}
               </p>
               <p
                 className={cn(
@@ -108,7 +110,7 @@ export function AppSidebar({ embedded = false, onNavigate }: AppSidebarProps) {
                   unverified ? 'font-medium text-sky-700 dark:text-sky-300' : 'text-muted-foreground',
                 )}
               >
-                {unverified ? '邮箱未验证 · 点击设置' : '账户设置'}
+                {unverified ? t('common:nav.emailUnverified') : t('common:nav.dashboardSettings')}
               </p>
             </div>
           </NavLink>

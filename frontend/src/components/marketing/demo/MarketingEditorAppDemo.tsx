@@ -48,6 +48,8 @@ import {
   demoThinkHeaderClass,
 } from '@/lib/marketingDemoClasses'
 
+import { BRAND_NAME } from '@/lib/brand'
+
 export type MarketingAgentDemoVariant = 'think' | 'orchestrate' | 'subagent' | 'stream'
 
 const NOVEL = { title: '诸天神祇有价', meta: '玄幻 · 连载中' }
@@ -257,7 +259,7 @@ export function MarketingEditorAppDemo({ variant }: MarketingEditorAppDemoProps)
     <div
       className={cn(DEMO_APP_MOCK_ROOT, 'demo-app-mock demo-agent-console')}
       data-variant={variant}
-      aria-label="Novel AI 编辑器 Agent 演示"
+      aria-label={`${BRAND_NAME} 编辑器 Agent 演示`}
     >
       <div className={DEMO_APP_BROWSER_BAR}>
         <div className={DEMO_BROWSER_TRAFFIC} aria-hidden>
@@ -265,7 +267,7 @@ export function MarketingEditorAppDemo({ variant }: MarketingEditorAppDemoProps)
           <span className={cn(DEMO_BROWSER_DOT, DEMO_BROWSER_DOT_YELLOW)} />
           <span className={cn(DEMO_BROWSER_DOT, DEMO_BROWSER_DOT_GREEN)} />
         </div>
-        <span className={DEMO_BROWSER_TITLE}>Novel AI</span>
+        <span className={DEMO_BROWSER_TITLE}>{BRAND_NAME}</span>
         <span className={DEMO_BROWSER_URL}>localhost:3000/editor?novel=诸天神祇有价</span>
         <span className={DEMO_BROWSER_LIVE}>Agent 运行中</span>
       </div>

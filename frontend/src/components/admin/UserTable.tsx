@@ -1,32 +1,11 @@
+import { useTranslation } from 'react-i18next'
 import { Pencil } from 'lucide-react'
 import type { AdminUser } from '@/api/adminApi'
-import { DataTableFrame } from '@/components/layout/DataTableFrame'
-import { AppShellCard } from '@/components/layout/AppPageStack'
+import { ResponsiveTable, type ResponsiveTableColumn } from '@/components/layout/ResponsiveTable'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { APP_BTN } from '@/lib/appButtonTokens'
 import { Skeleton } from '@/components/ui/skeleton'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-
-const ROLE_LABELS: Record<string, string> = {
-  user: '普通用户',
-  vip: 'VIP',
-  admin: '管理员',
-}
-
-interface UserTableProps {
-  users: AdminUser[]
-  loading?: boolean
-  onEdit: (user: AdminUser) => void
-  onRowClick: (user: AdminUser) => void
-}
 
 function UserMobileCard({
   user,
@@ -37,6 +16,13 @@ function UserMobileCard({
   onEdit: (user: AdminUser) => void
   onRowClick: (user: AdminUser) => void
 }) {
+  const { t } = useTranslation(['admin'])
+  const ROLE_LABELS: Record<string, string> = {
+    user: t('admin:users.roleUser'),
+    vip: t('admin:users.roleVip'),
+    admin: t('admin:users.roleAdmin'),
+  }
+
   return (
     <button
       type="button"
@@ -59,7 +45,7 @@ function UserMobileCard({
           }}
         >
           <Pencil className="mr-1 size-3.5" />
-          编辑
+          {t('admin:users.edit')}
         </Button>
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -68,94 +54,97 @@ function UserMobileCard({
           {ROLE_LABELS[user.role] ?? user.role}
         </Badge>
         <Badge variant={user.isActive ? 'secondary' : 'destructive'} className="text-[11px]">
-          {user.isActive ? '正常' : '已禁用'}
+          {user.isActive ? t('admin:users.statusActive') : t('admin:users.statusDisabled')}
         </Badge>
       </div>
     </button>
   )
 }
 
+interface UserTableProps {
+  users: AdminUser[]
+  loading: boolean
+  onEdit: (user: AdminUser) => void
+  onRowClick: (user: AdminUser) => void
+}
+
 export function UserTable({ users, loading, onEdit, onRowClick }: UserTableProps) {
-  if (!loading && users.length === 0) {
-    return (
-      <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-border py-12 text-center">
-        <p className="text-sm text-muted-foreground">暂无匹配用户</p>
-      </div>
-    )
+  const { t } = useTranslation(['admin'])
+  const ROLE_LABELS: Record<string, string> = {
+    user: t('admin:users.roleUser'),
+    vip: t('admin:users.roleVip'),
+    admin: t('admin:users.roleAdmin'),
   }
 
-  return (
-    <>
-      <div className="space-y-3 md:hidden">
-        {loading
-          ? Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className="h-24 w-full rounded-xl" />
-            ))
-          : users.map((user) => (
-              <UserMobileCard key={user.id} user={user} onEdit={onEdit} onRowClick={onRowClick} />
-            ))}
-      </div>
+  const columns: ResponsiveTableColumn<AdminUser>[] = [
+    {
+      key: 'id',
+      header: t('admin:users.colId'),
+      cellClassName: 'tabular-nums',
+      renderCell: (user) => user.id,
+    },
+    {
+      key: 'username',
+      header: t('admin:users.colUsername'),
+      cellClassName: 'font-medium',
+      renderCell: (user) => user.username,
+    },
+    {
+      key: 'email',
+      header: t('admin:users.colEmail'),
+      cellClassName: 'max-w-[200px] truncate',
+      renderCell: (user) => user.email,
+    },
+    {
+      key: 'role',
+      header: t('admin:users.colRole'),
+      renderCell: (user) => <Badge variant="outline">{ROLE_LABELS[user.role] ?? user.role}</Badge>,
+    },
+    {
+      key: 'status',
+      header: t('admin:users.colStatus'),
+      renderCell: (user) => (
+        <Badge variant={user.isActive ? 'secondary' : 'destructive'}>
+          {user.isActive ? t('admin:users.statusActive') : t('admin:users.statusDisabled')}
+        </Badge>
+      ),
+    },
+    {
+      key: 'actions',
+      header: t('admin:users.colActions'),
+      headerClassName: 'text-right',
+      cellClassName: 'text-right',
+      renderCell: (user) => (
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onClick={(e) => {
+            e.stopPropagation()
+            onEdit(user)
+          }}
+        >
+          <Pencil className="size-4" />
+          <span className="sr-only">{t('admin:users.edit')}</span>
+        </Button>
+      ),
+    },
+  ]
 
-      <AppShellCard className="hidden md:block">
-        <DataTableFrame embedded scrollHint={false}>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>ID</TableHead>
-                <TableHead>用户名</TableHead>
-                <TableHead>邮箱</TableHead>
-                <TableHead>角色</TableHead>
-                <TableHead>状态</TableHead>
-                <TableHead className="text-right">操作</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading
-                ? Array.from({ length: 5 }).map((_, i) => (
-                    <TableRow key={i}>
-                      {Array.from({ length: 6 }).map((__, j) => (
-                        <TableCell key={j}>
-                          <Skeleton className="h-4 w-full max-w-24" />
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))
-                : users.map((user) => (
-                    <TableRow
-                      key={user.id}
-                      className="cursor-pointer"
-                      onClick={() => onRowClick(user)}
-                    >
-                      <TableCell className="tabular-nums">{user.id}</TableCell>
-                      <TableCell className="font-medium">{user.username}</TableCell>
-                      <TableCell className="max-w-[200px] truncate">{user.email}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{ROLE_LABELS[user.role] ?? user.role}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={user.isActive ? 'secondary' : 'destructive'}>
-                          {user.isActive ? '正常' : '已禁用'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            onEdit(user)
-                          }}
-                        >
-                          <Pencil className="size-4" />
-                          <span className="sr-only">编辑</span>
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-            </TableBody>
-          </Table>
-        </DataTableFrame>
-      </AppShellCard>
-    </>
+  return (
+    <ResponsiveTable
+      columns={columns}
+      rows={users}
+      loading={loading}
+      getRowKey={(user) => user.id}
+      renderMobileCard={(user) => <UserMobileCard user={user} onEdit={onEdit} onRowClick={onRowClick} />}
+      renderLoadingMobileCard={(index) => <Skeleton key={index} className="h-24 w-full rounded-xl" />}
+      tableRowClassName="cursor-pointer"
+      onDesktopRowClick={(user) => onRowClick(user)}
+      emptyState={
+        <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-border py-12 text-center">
+          <p className="text-sm text-muted-foreground">{t('admin:users.empty')}</p>
+        </div>
+      }
+    />
   )
 }

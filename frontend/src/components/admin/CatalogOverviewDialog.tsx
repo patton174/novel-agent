@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useCallback, useEffect, useState } from 'react'
 import { BookOpen, ExternalLink, Loader2, Pencil, Trash2 } from 'lucide-react'
 import { PanelLoadingSkeleton } from '@/components/loading/PageSkeletons'
@@ -35,6 +36,7 @@ export function CatalogOverviewDialog({
   onDeleted,
   onOpenJob,
 }: CatalogOverviewDialogProps) {
+  const { t } = useTranslation(['admin', 'common'])
   const [progress, setProgress] = useState<CatalogNovelProgress | null>(null)
   const [loading, setLoading] = useState(false)
   const [editing, setEditing] = useState(false)
@@ -79,11 +81,11 @@ export function CatalogOverviewDialog({
         coverUrl: coverUrl.trim(),
         sourceUrl: sourceUrl.trim(),
       })
-      appToast.success('书籍信息已保存')
+      appToast.success(t('admin:catalog.novelSaved'))
       setEditing(false)
       onUpdated?.()
     } catch (err) {
-      appToast.error(err instanceof Error ? err.message : '保存失败')
+      appToast.error(err instanceof Error ? err.message : t('common:feedback.saveFail'))
     } finally {
       setSaving(false)
     }
@@ -91,18 +93,18 @@ export function CatalogOverviewDialog({
 
   const handleDelete = async () => {
     if (!(await confirmAction({
-      title: '删除书籍',
-      description: `确定删除《${title || novel.title}》及其全部章节？`,
-      confirmLabel: '删除',
+      title: t('admin:catalog.deleteTitle'),
+      description: t('admin:catalog.deleteNovelDesc', { title: title || novel.title }),
+      confirmLabel: t('admin:catalog.deleteBtn'),
       danger: true,
     }))) return
     setDeleting(true)
     try {
       await deleteCatalogNovel(novel.id)
-      appToast.success('已删除')
+      appToast.success(t('admin:catalog.deleted'))
       onDeleted?.()
     } catch (err) {
-      appToast.error(err instanceof Error ? err.message : '删除失败')
+      appToast.error(err instanceof Error ? err.message : t('admin:catalog.deleteFail'))
     } finally {
       setDeleting(false)
     }
@@ -131,7 +133,7 @@ export function CatalogOverviewDialog({
           <div className="min-w-0 flex-1 space-y-1 text-left">
             <DialogTitle className="text-lg leading-snug">{title || novel.title}</DialogTitle>
             <DialogDescription className="text-sm">
-              {author || novel.author || '未知作者'} · {novel.chapterCount} 章
+              {author || novel.author || t('admin:catalog.unknownAuthor')} · {t('admin:catalog.chapterCount', { count: novel.chapterCount })}
             </DialogDescription>
           </div>
         </div>
@@ -149,13 +151,13 @@ export function CatalogOverviewDialog({
                 : 'border-amber-500/30 bg-amber-500/5',
             )}
           >
-            <p className="font-medium">{progress.complete ? '爬取已完成' : '爬取进行中'}</p>
+            <p className="font-medium">{progress.complete ? t('admin:catalog.crawlComplete') : t('admin:catalog.crawling')}</p>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              已入库 {progress.chapterCount} 章
+              {t('admin:catalog.crawledCount', { count: progress.chapterCount })}
               {progress.chaptersExpected != null
-                ? ` · 进度 ${progress.chaptersDone ?? 0}/${progress.chaptersExpected}`
+                ? t('admin:catalog.crawlProgress', { done: progress.chaptersDone ?? 0, total: progress.chaptersExpected })
                 : ''}
-              {progress.latestJobStatus ? ` · 任务 ${progress.latestJobStatus}` : ''}
+              {progress.latestJobStatus ? t('admin:catalog.jobStatus', { status: progress.latestJobStatus }) : ''}
             </p>
             {progress.latestJobId && onOpenJob ? (
               <button
@@ -163,7 +165,7 @@ export function CatalogOverviewDialog({
                 className="mt-1 text-xs text-primary underline-offset-2 hover:underline"
                 onClick={() => onOpenJob(progress.latestJobId!)}
               >
-                查看关联爬虫任务
+                {t('admin:catalog.viewJob')}
               </button>
             ) : null}
           </div>
@@ -191,23 +193,23 @@ export function CatalogOverviewDialog({
         ) : (
           <div className="space-y-3">
             <div>
-              <label className="mb-1 block text-xs text-muted-foreground">书名</label>
+              <label className="mb-1 block text-xs text-muted-foreground">{t('admin:catalog.novelTitle')}</label>
               <Input value={title} onChange={(e) => setTitle(e.target.value)} />
             </div>
             <div>
-              <label className="mb-1 block text-xs text-muted-foreground">作者</label>
+              <label className="mb-1 block text-xs text-muted-foreground">{t('admin:catalog.author')}</label>
               <Input value={author} onChange={(e) => setAuthor(e.target.value)} />
             </div>
             <div>
-              <label className="mb-1 block text-xs text-muted-foreground">封面 URL</label>
+              <label className="mb-1 block text-xs text-muted-foreground">{t('admin:catalog.coverUrl')}</label>
               <Input value={coverUrl} onChange={(e) => setCoverUrl(e.target.value)} />
             </div>
             <div>
-              <label className="mb-1 block text-xs text-muted-foreground">来源 URL</label>
+              <label className="mb-1 block text-xs text-muted-foreground">{t('admin:catalog.sourceUrl')}</label>
               <Input value={sourceUrl} onChange={(e) => setSourceUrl(e.target.value)} />
             </div>
             <div>
-              <label className="mb-1 block text-xs text-muted-foreground">简介</label>
+              <label className="mb-1 block text-xs text-muted-foreground">{t('admin:catalog.description')}</label>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
@@ -231,7 +233,7 @@ export function CatalogOverviewDialog({
                 onClick={() => setEditing(true)}
               >
                 <Pencil className="mr-1.5 size-3.5" />
-                编辑
+                {t('admin:catalog.edit')}
               </Button>
               <Button
                 type="button"
@@ -250,7 +252,7 @@ export function CatalogOverviewDialog({
             </div>
             <Button type="button" onClick={() => onRead?.(novel)}>
               <BookOpen className="mr-2 size-4" />
-              阅读目录
+              {t('admin:catalog.readTOC')}
             </Button>
           </>
         ) : (
@@ -264,11 +266,11 @@ export function CatalogOverviewDialog({
                 setEditing(false)
               }}
             >
-              取消
+              {t('common:cta.cancel')}
             </Button>
             <Button type="button" size="sm" disabled={saving} onClick={() => void handleSave()}>
               {saving ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
-              保存
+              {t('common:cta.save')}
             </Button>
           </>
         )}

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Search } from 'lucide-react'
 import { fetchUserPage, type AdminUser } from '@/api/adminApi'
@@ -12,6 +13,7 @@ import { appToast } from '@/stores/appToastStore'
 const PAGE_SIZE = 20
 
 export default function UsersPage() {
+  const { t } = useTranslation(['admin'])
   useMarkRouteSeen()
   const [users, setUsers] = useState<AdminUser[] | null>(null)
   const [totalCount, setTotalCount] = useState(0)
@@ -37,11 +39,11 @@ export default function UsersPage() {
     } catch (err) {
       setUsers([])
       setTotalCount(0)
-      appToast.error(err instanceof Error ? err.message : '加载用户列表失败')
+      appToast.error(err instanceof Error ? err.message : t('admin:users.loadFail'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [t])
 
   useEffect(() => {
     void loadUsers(pageCurrent, keyword)
@@ -70,25 +72,25 @@ export default function UsersPage() {
     setUsers((prev) =>
       prev ? prev.map((u) => (u.id === updated.id ? updated : u)) : prev,
     )
-    appToast.success('用户已更新')
+    appToast.success(t('admin:users.updated'))
   }
 
   return (
     <AppPageStack className="gap-4">
       <AppShellCard>
-        <AppShellCardHeader title="用户列表" description="按用户名搜索并编辑角色、配额" />
+        <AppShellCardHeader title={t('admin:users.title')} description={t('admin:users.desc')} />
         <AppShellCardBody className="py-4">
           <div className="relative max-w-md">
             <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="按用户名搜索"
+              placeholder={t('admin:users.searchPlaceholder')}
               className="rounded-xl pl-8"
-              aria-label="按用户名搜索"
+              aria-label={t('admin:users.searchPlaceholder')}
             />
           </div>
-          <p className="mt-2 text-[11px] text-muted-foreground">输入后自动搜索，无需点击按钮</p>
+          <p className="mt-2 text-[11px] text-muted-foreground">{t('admin:users.searchHint')}</p>
         </AppShellCardBody>
       </AppShellCard>
 

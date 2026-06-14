@@ -1,5 +1,7 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
+import { BRAND_NAME } from '@/lib/brand'
+import i18n from '@/i18n'
 
 interface Props {
   children: ReactNode
@@ -48,18 +50,18 @@ export class RouteErrorBoundary extends Component<Props, State> {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background px-6 text-center text-foreground">
         <p className="text-xl font-semibold tracking-tight">
-          Novel <span className="text-primary">AI</span>
+          {BRAND_NAME.split(' ')[0]} <span className="text-primary">{BRAND_NAME.split(' ').slice(1).join(' ')}</span>
         </p>
         <h1 className="text-base font-medium">
-          {chunkError ? '页面资源已更新' : '页面加载出错'}
+          {chunkError ? i18n.t('common:feedback.errorPageUpdated') : i18n.t('common:feedback.errorPageFailed')}
         </h1>
         <p className="max-w-md text-sm text-muted-foreground">
           {chunkError
-            ? '站点刚完成部署，浏览器可能仍在使用旧脚本。请点击刷新加载最新版本。'
-            : error.message || '未知错误，请刷新后重试。'}
+            ? i18n.t('common:feedback.errorPageUpdatedDesc')
+            : error.message || i18n.t('common:feedback.errorPageUnknown')}
         </p>
         <Button type="button" onClick={this.handleRetry}>
-          刷新页面
+          {i18n.t('common:feedback.errorPageRefresh')}
         </Button>
       </div>
     )

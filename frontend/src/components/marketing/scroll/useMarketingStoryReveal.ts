@@ -1,6 +1,7 @@
 import { gsap } from 'gsap'
 import type { RefObject } from 'react'
 import { prefersReducedMotion, useMarketingGsapEffect } from './useMarketingGsapEffect'
+import { matchesAppMobile } from '@/lib/breakpoints'
 
 /** 分镜文案 / 演示框入场（与演示进度解耦） */
 export function useMarketingStoryReveal(rootRef: RefObject<HTMLElement | null>) {
@@ -8,10 +9,13 @@ export function useMarketingStoryReveal(rootRef: RefObject<HTMLElement | null>) 
     const root = rootRef.current
     if (!root) return
 
-    if (prefersReducedMotion()) {
+    const isReduced = prefersReducedMotion()
+    const isMobile = matchesAppMobile()
+
+    if (isReduced || isMobile) {
       root
         .querySelectorAll<HTMLElement>('.story-copy, .demo-app-mock, .demo-agent-console')
-        .forEach((el) => gsap.set(el, { opacity: 1, y: 0, clearProps: 'all' }))
+        .forEach((el) => gsap.set(el, { opacity: 1, clearProps: isReduced ? 'all' : 'filter,transform' }))
       return
     }
 

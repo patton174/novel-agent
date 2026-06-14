@@ -1,24 +1,25 @@
 import type { CrawlJob, CrawlJobStatus } from '@/api/crawlAdminApi'
+import i18n from '@/i18n'
 
 export type CrawlJobAction = 'start' | 'pause' | 'cancel' | 'delete'
 
 export const CRAWL_JOB_ACTION_META: Record<
   CrawlJobAction,
-  { label: string; variant?: 'outline' | 'destructive' }
+  { label: () => string; variant?: 'outline' | 'destructive' }
 > = {
-  start: { label: '启动' },
-  pause: { label: '暂停' },
-  cancel: { label: '取消' },
-  delete: { label: '删除', variant: 'destructive' },
+  start: { label: () => i18n.t('admin:crawler.actionStart') },
+  pause: { label: () => i18n.t('admin:crawler.actionPause') },
+  cancel: { label: () => i18n.t('admin:crawler.actionCancel') },
+  delete: { label: () => i18n.t('admin:crawler.actionDelete'), variant: 'destructive' },
 }
 
-const STATUS_LABEL: Record<CrawlJobStatus, string> = {
-  PENDING: '待启动',
-  RUNNING: '运行中',
-  PAUSED: '已暂停',
-  COMPLETED: '已完成',
-  FAILED: '失败',
-  CANCELLED: '已取消',
+const STATUS_LABEL: Record<CrawlJobStatus, () => string> = {
+  PENDING: () => i18n.t('admin:crawler.statusPending'),
+  RUNNING: () => i18n.t('admin:crawler.statusRunning'),
+  PAUSED: () => i18n.t('admin:crawler.statusPaused'),
+  COMPLETED: () => i18n.t('admin:crawler.statusCompleted'),
+  FAILED: () => i18n.t('admin:crawler.statusFailed'),
+  CANCELLED: () => i18n.t('admin:crawler.statusCancelled'),
 }
 
 const STATUS_CLASS: Record<CrawlJobStatus, string> = {
@@ -31,7 +32,7 @@ const STATUS_CLASS: Record<CrawlJobStatus, string> = {
 }
 
 export function crawlJobStatusLabel(status: CrawlJobStatus): string {
-  return STATUS_LABEL[status] ?? status
+  return STATUS_LABEL[status]?.() ?? status
 }
 
 export function crawlJobStatusClass(status: CrawlJobStatus): string {
@@ -83,7 +84,7 @@ export function crawlJobOptimisticPatch(
 
 export function crawlJobDisplayTitle(job: CrawlJob, goal: string | null): string {
   const title = job.title?.trim()
-  if (title && title !== '解析中…' && title.length <= 80) {
+  if (title && title !== i18n.t('admin:crawler.parsing') && title.length <= 80) {
     return title
   }
   if (goal?.trim()) {
@@ -93,20 +94,20 @@ export function crawlJobDisplayTitle(job: CrawlJob, goal: string | null): string
   if (title) {
     return title.length <= 72 ? title : `${title.slice(0, 72)}…`
   }
-  return '未命名任务'
+  return i18n.t('admin:crawler.unnamedJob')
 }
 
 export function crawlJobProgressLabel(job: CrawlJob): string | null {
   const done = job.chaptersDone ?? 0
   const total = job.chaptersTotal
   if (total != null && total > 0) {
-    return `${done}/${total} 章`
+    return i18n.t('admin:crawler.progressCount', { done, total })
   }
   if (job.status === 'COMPLETED') {
-    return '已完成'
+    return i18n.t('admin:crawler.statusCompleted')
   }
   if (job.status === 'RUNNING' || job.status === 'PENDING') {
-    return '执行中'
+    return i18n.t('admin:crawler.executing')
   }
   return null
 }

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
 import { fetchStatsTrends, type TrendPoint } from '@/api/adminApi'
 import { AdminNativeSelect } from '@/components/layout/AdminNativeSelect'
@@ -8,12 +9,6 @@ import { Skeleton } from '@/components/ui/skeleton'
 
 const StatsTrendCharts = lazy(() => import('./StatsTrendCharts'))
 
-const RANGE_OPTIONS = [
-  { days: 7, label: '近 7 日' },
-  { days: 30, label: '近 30 日' },
-  { days: 90, label: '近 90 日' },
-] as const
-
 const chartAreaFallback = (
   <div className="space-y-6" aria-hidden>
     <Skeleton className="h-72 rounded-2xl" />
@@ -22,6 +17,7 @@ const chartAreaFallback = (
 )
 
 export default function StatsPage() {
+  const { t } = useTranslation(['admin'])
   useMarkRouteSeen()
   const [days, setDays] = useState(30)
   const [agentRunTrend, setAgentRunTrend] = useState<TrendPoint[] | null>(null)
@@ -37,28 +33,34 @@ export default function StatsPage() {
     } catch (err: unknown) {
       setAgentRunTrend([])
       setRegistrationTrend([])
-      appToast.error(err instanceof Error ? err.message : '加载趋势数据失败')
+      appToast.error(err instanceof Error ? err.message : t('admin:stats.loadFail'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [t])
 
   useEffect(() => {
     void loadTrends(days)
   }, [days, loadTrends])
 
-  const rangeLabel = RANGE_OPTIONS.find((o) => o.days === days)?.label ?? `近 ${days} 日`
+  const RANGE_OPTIONS = [
+    { days: 7, label: t('admin:stats.last7Days') },
+    { days: 30, label: t('admin:stats.last30Days') },
+    { days: 90, label: t('admin:stats.last90Days') },
+  ] as const
+
+  const rangeLabel = RANGE_OPTIONS.find((o) => o.days === days)?.label ?? t('admin:stats.lastDays', { days })
 
   return (
     <AppPageStack className="gap-4">
       <AppShellCard>
         <AppShellCardHeader
-          title="趋势统计"
-          description="Agent 调用与新用户注册"
+          title={t('admin:stats.title')}
+          description={t('admin:stats.desc')}
           action={
             <AdminNativeSelect
               value={days}
-              aria-label="日期范围"
+              aria-label={t('admin:stats.dateRange')}
               className="w-full sm:w-auto"
               onChange={(e) => setDays(Number(e.target.value))}
             >

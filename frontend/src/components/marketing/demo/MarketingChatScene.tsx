@@ -3,6 +3,8 @@ import { motion, useReducedMotion } from 'framer-motion'
 import { MarketingChatOrchestrationDemo } from './MarketingChatOrchestrationDemo'
 import type { MarketingSceneId } from '../../../utils/marketing/buildMarketingSceneDemo'
 import { MarketingStoryCopy, type StoryPoint } from '../story/MarketingStoryCopy'
+import { useAppMobile } from '@/hooks/useMediaQuery'
+import { marketingInViewMotion } from '../motion/marketingInViewMotion'
 import {
   CURSOR_FEATURE_INNER,
   cursorFeatureGridClass,
@@ -40,6 +42,15 @@ export function MarketingChatScene({
   const sectionRef = useRef<HTMLElement>(null)
   const flip = layout === 'copy-right'
   const reduced = useReducedMotion()
+  const isMobile = useAppMobile()
+  const demoReveal = marketingInViewMotion({
+    isMobile,
+    reduced: Boolean(reduced),
+    desktopInitial: { opacity: 0, y: 20 },
+    desktopWhileInView: { opacity: 1, y: 0 },
+    viewport: { once: true, margin: '-8% 0px', amount: 0.25 },
+    transition: { duration: 0.55, delay: 0.08, ease: [0.22, 1, 0.36, 1] },
+  })
 
   const demo = (
     <MarketingChatOrchestrationDemo scene={scene} variant="story" sectionRef={sectionRef} />
@@ -65,19 +76,9 @@ export function MarketingChatScene({
             points={points}
           />
 
-          {reduced ? (
-            demo
-          ) : (
-            <motion.div
-              className="demo-app-mock"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: '-8% 0px', amount: 0.25 }}
-              transition={{ duration: 0.55, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
-            >
-              {demo}
-            </motion.div>
-          )}
+          <motion.div className="demo-app-mock" {...demoReveal}>
+            {demo}
+          </motion.div>
         </div>
       </div>
     </section>

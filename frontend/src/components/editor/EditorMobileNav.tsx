@@ -4,7 +4,10 @@ import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/s
 import { Button } from '@/components/ui/button'
 import { EditorSidebar, type EditorSidebarProps } from '@/components/editor/EditorSidebar'
 
+import { useTranslation } from 'react-i18next'
+
 export function EditorMobileNav(props: EditorSidebarProps) {
+  const { t } = useTranslation(['editor'])
   const [open, setOpen] = useState(false)
 
   return (
@@ -15,7 +18,7 @@ export function EditorMobileNav(props: EditorSidebarProps) {
             type="button"
             variant="outline"
             size="icon-sm"
-            aria-label="打开编辑器侧栏"
+            aria-label={t('editor:mobileNav.openSidebar')}
             className="size-9"
           >
             <Menu className="size-4" />
@@ -23,7 +26,7 @@ export function EditorMobileNav(props: EditorSidebarProps) {
         </SheetTrigger>
       </div>
       <SheetContent side="left" className="w-[min(100vw-1rem,284px)] gap-0 p-0">
-        <SheetTitle className="sr-only">编辑器导航</SheetTitle>
+        <SheetTitle className="sr-only">{t('editor:mobileNav.title')}</SheetTitle>
         <div className="h-full overflow-hidden" onClick={() => setOpen(false)}>
           <EditorSidebar {...props} embedded />
         </div>

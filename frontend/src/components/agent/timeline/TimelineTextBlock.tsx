@@ -1,13 +1,19 @@
+import { useMemo } from 'react'
 import { AgentMarkdown } from '../AgentMarkdown'
 import { TIMELINE_TEXT_BLOCK } from '@/lib/timelineClasses'
 
 export function TimelineTextBlock({ content }: { content: string }) {
-  if (!content.trim()) {
+  const trimmed = content.trim()
+  const markdownNode = useMemo(
+    () => <AgentMarkdown text={content} variant="chat" />,
+    [content],
+  )
+  if (!trimmed) {
     return null
   }
   return (
     <div className={TIMELINE_TEXT_BLOCK}>
-      <AgentMarkdown text={content} variant="chat" />
+      {markdownNode}
     </div>
   )
 }

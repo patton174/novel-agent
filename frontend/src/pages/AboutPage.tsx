@@ -9,7 +9,7 @@ import { MKT_CTA_PRIMARY, MKT_CTA_SECONDARY } from '@/lib/marketingCta'
 const VALUE_ICONS = [Brain, Eye, Shield] as const
 
 export default function AboutPage() {
-  const { t } = useTranslation('marketing')
+  const { t } = useTranslation(['marketing', 'common'])
   const values = [1, 2, 3] as const
   const metrics = [
     { label: t('about.metrics.capability'), value: t('about.metrics.capabilityValue') },
@@ -26,7 +26,7 @@ export default function AboutPage() {
         subtitle={t('about.subtitle')}
         action={
           <Link to="/register" className={MKT_CTA_PRIMARY}>
-            {t('nav.register')}
+            {t('common:cta.registerFree')}
             <ArrowRight className="size-4" />
           </Link>
         }
@@ -52,7 +52,7 @@ export default function AboutPage() {
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true, margin: '-10% 0px' }}
                 transition={{ duration: 0.4, delay: index * 0.06 }}
-                className="mkt-card-lift grid gap-4 rounded-2xl border border-border/60 bg-white/80 p-6 shadow-sm backdrop-blur-sm md:grid-cols-[3.5rem_1fr] md:p-8"
+                className="mkt-card-lift grid gap-4 rounded-2xl border border-border/60 bg-surface/80 p-6 shadow-sm backdrop-blur-sm md:grid-cols-[3.5rem_1fr] md:p-8"
               >
                 <div className="flex size-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary/15 to-violet-500/5 ring-1 ring-primary/15">
                   <Icon className="size-5 text-primary" strokeWidth={1.75} />
@@ -75,7 +75,7 @@ export default function AboutPage() {
             {t('nav.pricing')}
           </Link>
           <Link to="/register" className={MKT_CTA_PRIMARY}>
-            {t('nav.register')}
+            {t('common:cta.registerFree')}
             <ArrowRight className="size-4" />
           </Link>
         </div>

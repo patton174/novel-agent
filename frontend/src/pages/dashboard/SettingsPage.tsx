@@ -11,11 +11,15 @@ import {
 } from '@/components/layout/AppPageStack'
 import { InlineTitleSkeleton } from '@/components/loading/PageSkeletons'
 import { Skeleton } from '@/components/ui/skeleton'
+import { ThemeToggle } from '@/components/theme/ThemeToggle'
 import { useMarkRouteSeen } from '@/hooks/useMarkRouteSeen'
 import { useUserStore } from '@/stores/userStore'
 import type { UserProfile } from '@/stores/userStore'
 
+import { useTranslation } from 'react-i18next'
+
 export default function SettingsPage() {
+  const { t } = useTranslation(['dashboard'])
   useMarkRouteSeen()
   const setProfile = useUserStore((s) => s.setProfile)
   const [profile, setLocalProfile] = useState<UserProfile | null>(null)
@@ -44,13 +48,13 @@ export default function SettingsPage() {
   return (
     <AppPageStack compact>
       <AppPageIntro
-        eyebrow="账户"
-        title={loading ? <InlineTitleSkeleton /> : profile?.username ?? '账户设置'}
+        eyebrow={t('dashboard:settings.eyebrow')}
+        title={loading ? <InlineTitleSkeleton /> : profile?.username ?? t('dashboard:settings.defaultTitle')}
         icon={Settings}
       />
 
       <AppShellCard>
-        <AppShellCardHeader title="账户与账单" description="邮箱验证、基本资料与用量账单" />
+        <AppShellCardHeader title={t('dashboard:settings.accountTitle')} description={t('dashboard:settings.accountDesc')} />
         <AppShellCardBody>
           {loading ? (
             <div className="space-y-3">
@@ -70,6 +74,19 @@ export default function SettingsPage() {
               variant="page"
             />
           )}
+        </AppShellCardBody>
+      </AppShellCard>
+
+      <AppShellCard>
+        <AppShellCardHeader title={t('dashboard:settings.themeTitle')} description={t('dashboard:settings.themeDesc')} />
+        <AppShellCardBody>
+          <div className="flex items-center justify-between gap-3 rounded-xl border border-border/70 bg-background/60 p-4">
+            <div>
+              <p className="text-sm font-medium text-foreground">{t('dashboard:settings.uiTheme')}</p>
+              <p className="text-xs text-muted-foreground">{t('dashboard:settings.themeHint')}</p>
+            </div>
+            <ThemeToggle />
+          </div>
         </AppShellCardBody>
       </AppShellCard>
     </AppPageStack>

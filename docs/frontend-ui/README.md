@@ -20,6 +20,9 @@
 | [`frontend-ui-audit-round3-2026-06-12.md`](../frontend-ui-audit-round3-2026-06-12.md) | 三轮验收（Phase 16，v1 通过） |
 | [`frontend-ui-audit-round4-2026-06-12.md`](../frontend-ui-audit-round4-2026-06-12.md) | 四轮验收（Phase 17–20，v2 通过） |
 | [`frontend-ui-optimization-backlog.md`](../frontend-ui-optimization-backlog.md) | 可交接待办；**Phase 21 已全部 `[x]`** |
+| [`frontend-ui-critique-2026-06-14.md`](../frontend-ui-critique-2026-06-14.md) | **新轮批判**：桌面/移动未分离、移动卡顿、臃肿、文案重复（C-1…C-13） |
+| [`frontend-ui-mobile-desktop-optimization-2026-06-14.md`](../frontend-ui-mobile-desktop-optimization-2026-06-14.md) | **新轮优化方案**：性能止血 + 分离规范 + 文案单源 + 瘦身（P0…P3） |
+| [`frontend-ui-design-system-audit-2026-06-14.md`](../frontend-ui-design-system-audit-2026-06-14.md) | **设计系统批判 + 统一规范**：主题/token/排版/按钮/IA/动画/i18n（含实现批次 D1…D5） |
 | [`plans/2026-06-12-frontend-phase2.md`](../plans/2026-06-12-frontend-phase2.md) | Phase 1–21 执行记录 |
 | [`frontend/DESIGN-TOKENS.md`](../../frontend/DESIGN-TOKENS.md) | CTA / Modal / Loader / 断点 / 路由规范 |
 

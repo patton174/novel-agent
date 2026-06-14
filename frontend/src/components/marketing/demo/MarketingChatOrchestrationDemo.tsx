@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type RefObject } from 'react'
+import { useReducedMotion } from 'framer-motion'
 import type { MarketingSceneId } from '../../../utils/marketing/buildMarketingSceneDemo'
+import { useAppMobile } from '@/hooks/useMediaQuery'
 import {
   MARKETING_CHAT_DEMO_FRAME_HERO,
   MARKETING_CHAT_DEMO_FRAME_STORY,
@@ -121,12 +123,12 @@ const SCENE_COPY: Record<
   },
   stream: {
     title: '续写 · 第二章',
-    prompt: '按刚才的结构，续写第二章开头。',
-    think: '对齐第一章结尾语气，从银月森林入口切入，先写环境再进战斗。',
+    prompt: '按刚才的结构，续写第二章后半段，重点刻画获得强化石的场景。',
+    think: '承接前面的战斗，详细描写蓝光与系统提示，突出『全服唯一』的爽点。',
     firstTool: '写入章节',
     secondTool: '',
     output:
-      '雨水顺着他的发梢滑落，每一滴都像是敲打在心上的钟声。他深吸一口气，握紧了拳头——银月森林的首战，从现在开始。',
+      '随着强化石爆发出耀眼的蓝光，原本普通的短剑瞬间布满繁复的符文。系统提示音在耳边响起：【恭喜获得全服唯一神话级武器『凛冬之握』】',
   },
 }
 
@@ -183,11 +185,16 @@ function useVisiblePlayback(
   ref: RefObject<HTMLElement | null>,
   autoPlay: boolean,
   loopMs: number,
+  enabled: boolean,
 ) {
   const [elapsed, setElapsed] = useState(0)
   const [visible, setVisible] = useState(autoPlay)
 
   useEffect(() => {
+    if (!enabled) {
+      setVisible(false)
+      return
+    }
     if (autoPlay) {
       setVisible(true)
       return
@@ -200,7 +207,7 @@ function useVisiblePlayback(
     )
     io.observe(el)
     return () => io.disconnect()
-  }, [autoPlay, ref])
+  }, [autoPlay, enabled, ref])
 
   useEffect(() => {
     if (!visible) {
@@ -226,42 +233,48 @@ export function MarketingChatOrchestrationDemo({
   variant = 'story',
   sectionRef,
 }: MarketingChatOrchestrationDemoProps) {
+  const isMobile = useAppMobile()
+  const reduced = useReducedMotion()
   const fallbackRef = useRef<HTMLDivElement>(null)
   const rootRef = sectionRef ?? fallbackRef
   const timing = SCENE_TIMING[scene]
-  const elapsed = useVisiblePlayback(rootRef, variant === 'hero', timing.loopMs)
+  const shouldAnimate = !isMobile && !reduced
+  // Hero 首屏：挂载即播，避免依赖 IntersectionObserver 时序导致桌面首屏静止；
+  // story 幕：进视口再播。播放开关统一由 shouldAnimate（桌面且非 reduced-motion）决定。
+  const elapsed = useVisiblePlayback(rootRef, variant === 'hero', timing.loopMs, shouldAnimate)
+  const renderElapsed = shouldAnimate ? elapsed : timing.loopMs
   const copy = SCENE_COPY[scene]
   const frameClass =
     variant === 'hero' ? MARKETING_CHAT_DEMO_FRAME_HERO : MARKETING_CHAT_DEMO_FRAME_STORY
 
   const state = useMemo((): DemoPlaybackState => {
-    const inputText = revealText(copy.prompt, 250, elapsed, 1_900)
-    const runActive = elapsed >= timing.sendAt && elapsed < timing.runEnd
-    const sending = elapsed >= timing.sendAt && elapsed < timing.sendAt + 280
-    const composerText = elapsed >= timing.sendAt ? '' : inputText
-    const thinkText = revealText(copy.think, timing.agentAt + 600, elapsed, 2_700)
-    const outputText = revealText(copy.output, timing.outputAt, elapsed, 3_200)
+    const inputText = revealText(copy.prompt, 250, renderElapsed, 1_900)
+    const runActive = renderElapsed >= timing.sendAt && renderElapsed < timing.runEnd
+    const sending = renderElapsed >= timing.sendAt && renderElapsed < timing.sendAt + 280
+    const composerText = renderElapsed >= timing.sendAt ? '' : inputText
+    const thinkText = revealText(copy.think, timing.agentAt + 600, renderElapsed, 2_700)
+    const outputText = revealText(copy.output, timing.outputAt, renderElapsed, 3_200)
 
     const base = {
       composerText,
-      showComposerPlaceholder: elapsed < 250,
+      showComposerPlaceholder: renderElapsed < 250,
       runActive,
       sending,
-      promptVisible: elapsed >= timing.promptAt,
-      orchestrationVisible: elapsed >= timing.agentAt,
-      thinkVisible: elapsed >= timing.agentAt + 200,
-      thinkActive: elapsed >= timing.agentAt + 500 && elapsed < timing.agentAt + 3_400,
-      thinkExpanded: elapsed >= timing.agentAt + 500 && elapsed < timing.agentAt + 3_700,
+      promptVisible: renderElapsed >= timing.promptAt,
+      orchestrationVisible: renderElapsed >= timing.agentAt,
+      thinkVisible: renderElapsed >= timing.agentAt + 200,
+      thinkActive: renderElapsed >= timing.agentAt + 500 && renderElapsed < timing.agentAt + 3_400,
+      thinkExpanded: renderElapsed >= timing.agentAt + 500 && renderElapsed < timing.agentAt + 3_700,
       thinkText,
-      outputVisible: elapsed >= timing.outputAt,
+      outputVisible: renderElapsed >= timing.outputAt,
       outputText,
     }
 
     if (scene === 'think') {
       return {
         ...base,
-        planVisible: elapsed >= timing.agentAt + 3_900,
-        planActive: elapsed >= timing.agentAt + 3_900 && elapsed < timing.agentAt + 5_200,
+        planVisible: renderElapsed >= timing.agentAt + 3_900,
+        planActive: renderElapsed >= timing.agentAt + 3_900 && renderElapsed < timing.agentAt + 5_200,
       }
     }
 
@@ -274,39 +287,39 @@ export function MarketingChatOrchestrationDemo({
 
       return {
         ...base,
-        thinkText: revealText(copy.think, thinkStart, elapsed, 3_200),
-        thinkVisible: elapsed >= timing.agentAt + 350,
-        thinkActive: elapsed >= thinkStart && elapsed < thinkEnd,
-        thinkExpanded: elapsed >= thinkStart && elapsed < thinkEnd + 450,
-        writeVisible: elapsed >= writeStart,
-        writeActive: elapsed >= writeStart && elapsed < writeEnd,
-        outputVisible: elapsed >= outputStart,
-        outputText: revealText(copy.output, outputStart, elapsed, 3_400),
+        thinkText: revealText(copy.think, thinkStart, renderElapsed, 3_200),
+        thinkVisible: renderElapsed >= timing.agentAt + 350,
+        thinkActive: renderElapsed >= thinkStart && renderElapsed < thinkEnd,
+        thinkExpanded: renderElapsed >= thinkStart && renderElapsed < thinkEnd + 450,
+        writeVisible: renderElapsed >= writeStart,
+        writeActive: renderElapsed >= writeStart && renderElapsed < writeEnd,
+        outputVisible: renderElapsed >= outputStart,
+        outputText: revealText(copy.output, outputStart, renderElapsed, 3_400),
       }
     }
 
     if (scene === 'subagent') {
       return {
         ...base,
-        subagentVisible: elapsed >= 8_550,
-        subagentActive: elapsed >= 8_550 && elapsed < 11_200,
-        subagentThinkVisible: elapsed >= 8_850,
-        subagentMemoryVisible: elapsed >= 9_450,
-        subagentMemoryActive: elapsed >= 9_450 && elapsed < 10_050,
-        subagentOutputVisible: elapsed >= 10_250,
-        subagentOutputActive: elapsed >= 10_250 && elapsed < 10_900,
-        subagentComplete: elapsed >= 11_050,
+        subagentVisible: renderElapsed >= 8_550,
+        subagentActive: renderElapsed >= 8_550 && renderElapsed < 11_200,
+        subagentThinkVisible: renderElapsed >= 8_850,
+        subagentMemoryVisible: renderElapsed >= 9_450,
+        subagentMemoryActive: renderElapsed >= 9_450 && renderElapsed < 10_050,
+        subagentOutputVisible: renderElapsed >= 10_250,
+        subagentOutputActive: renderElapsed >= 10_250 && renderElapsed < 10_900,
+        subagentComplete: renderElapsed >= 11_050,
       }
     }
 
     return {
       ...base,
-      memoryVisible: elapsed >= 8_550,
-      memoryActive: elapsed >= 8_550 && elapsed < 9_550,
-      chapterVisible: elapsed >= 9_900,
-      chapterActive: elapsed >= 9_900 && elapsed < 10_900,
+      memoryVisible: renderElapsed >= 8_550,
+      memoryActive: renderElapsed >= 8_550 && renderElapsed < 9_550,
+      chapterVisible: renderElapsed >= 9_900,
+      chapterActive: renderElapsed >= 9_900 && renderElapsed < 10_900,
     }
-  }, [copy, elapsed, scene, timing])
+  }, [copy, renderElapsed, scene, timing])
 
   return (
     <div ref={sectionRef ? undefined : fallbackRef}>

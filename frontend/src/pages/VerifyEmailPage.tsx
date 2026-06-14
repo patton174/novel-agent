@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { motion } from 'framer-motion'
 import { CheckCircle2, LogIn, XCircle } from 'lucide-react'
 import { AuthShell } from '@/components/auth/AuthShell'
@@ -23,11 +24,12 @@ const STATE_RING: Record<Exclude<VerifyState, 'loading'>, string> = {
 }
 
 export default function VerifyEmailPage() {
+  const { t } = useTranslation(['common', 'auth'])
   const [searchParams] = useSearchParams()
   const setProfile = useUserStore((s) => s.setProfile)
   const isLoggedIn = useUserStore((s) => s.profile != null)
   const [state, setState] = useState<VerifyState>('loading')
-  const [message, setMessage] = useState('正在验证邮箱…')
+  const [message, setMessage] = useState(t('auth:verify.msgLoading'))
 
   useEffect(() => {
     const token = searchParams.get('token')?.trim()
@@ -37,7 +39,7 @@ export default function VerifyEmailPage() {
 
     if (!token || !sig || !Number.isFinite(exp)) {
       setState('error')
-      setMessage('验证链接无效或已过期，请重新申请验证邮件。')
+      setMessage(t('auth:verify.msgInvalid'))
       return
     }
 
@@ -52,41 +54,41 @@ export default function VerifyEmailPage() {
           /* optional */
         }
         setState('success')
-        setMessage('邮箱验证成功，您现在可以使用完整功能。')
+        setMessage(t('auth:verify.msgSuccess'))
       })
       .catch((err) => {
         if (cancelled) return
         setState('error')
-        setMessage(err instanceof Error ? err.message : '邮箱验证失败，请稍后重试。')
+        setMessage(err instanceof Error ? err.message : t('auth:verify.msgFail'))
       })
 
     return () => {
       cancelled = true
     }
-  }, [searchParams, setProfile])
+  }, [searchParams, setProfile, t])
 
   const Icon = state !== 'loading' ? STATE_ICON[state] : null
 
   return (
     <AuthShell
-      title={state === 'loading' ? '验证邮箱' : state === 'success' ? '验证成功' : '验证失败'}
+      title={state === 'loading' ? t('auth:verify.titleLoading') : state === 'success' ? t('auth:verify.titleSuccess') : t('auth:verify.titleFail')}
       subtitle={
         state === 'loading'
-          ? '正在确认您的邮箱地址…'
+          ? t('auth:verify.subtitleLoading')
           : state === 'success'
-            ? '账户邮箱已激活'
-            : '请重新申请验证邮件'
+            ? t('auth:verify.subtitleSuccess')
+            : t('auth:verify.subtitleFail')
       }
       marketing={{
-        headline: '完成邮箱验证',
-        description: '验证邮箱后可使用完整创作功能，并接收账户与安全通知。',
+        headline: t('auth:verify.marketingHeadline'),
+        description: t('auth:verify.marketingDesc'),
       }}
-      legal={state !== 'loading' ? <AuthLegalNotice variant="login" /> : undefined}
+      legal={state !== 'loading' ? <AuthLegalNotice variant="neutral" /> : undefined}
     >
       {state === 'loading' ? (
         <div className="flex flex-col items-center gap-3 py-6">
           <AppSpinner size="lg" />
-          <p className="text-sm text-muted-foreground">正在验证邮箱…</p>
+          <p className="text-sm text-muted-foreground">{t('auth:verify.msgLoading')}</p>
         </div>
       ) : Icon ? (
         <>
@@ -105,21 +107,21 @@ export default function VerifyEmailPage() {
           <div className="mt-6 flex flex-col gap-2">
             {state === 'success' ? (
               <Link to="/dashboard" className={MKT_CTA_AUTH}>
-                进入创作台
+                {t('common:cta.dashboard')}
               </Link>
             ) : (
               <>
                 <Link to="/login" className={MKT_CTA_AUTH}>
                   <LogIn className="size-4" />
-                  返回登录
+                  {t('auth:verify.backToLogin')}
                 </Link>
                 {isLoggedIn ? (
                   <Link to="/dashboard/settings" className={MKT_CTA_AUTH_OUTLINE}>
-                    账户设置 · 重发验证邮件
+                    {t('auth:verify.resend')}
                   </Link>
                 ) : (
                   <Link to="/register" className={MKT_CTA_AUTH_OUTLINE}>
-                    重新注册
+                    {t('auth:verify.registerAgain')}
                   </Link>
                 )}
               </>

@@ -1,9 +1,11 @@
 import { cn } from '@/lib/utils'
 import { AppSpinner } from '@/components/loading/AppSpinner'
+import { BRAND_NAME } from '@/lib/brand'
+import { useTranslation } from 'react-i18next'
 
 /** 主包内品牌 Loading，供 guards / layout 第一帧使用 */
 export function BrandLoader({
-  label = '正在加载',
+  label,
   className,
   fullScreen = false,
 }: {
@@ -11,6 +13,9 @@ export function BrandLoader({
   className?: string
   fullScreen?: boolean
 }) {
+  const { t } = useTranslation(['common'])
+  const displayLabel = label ?? t('feedback.loadingDefault')
+
   return (
     <div
       className={cn(
@@ -20,12 +25,12 @@ export function BrandLoader({
       )}
       role="status"
       aria-live="polite"
-      aria-label={label}
+      aria-label={displayLabel}
     >
       <p className="text-xl font-semibold tracking-tight text-foreground">
-        Novel <span className="text-primary">AI</span>
+        {BRAND_NAME.split(' ')[0]} <span className="text-primary">{BRAND_NAME.split(' ').slice(1).join(' ')}</span>
       </p>
-      <InlineBrandLoader label={label} />
+      <InlineBrandLoader label={displayLabel} />
     </div>
   )
 }

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { RefreshCw } from 'lucide-react'
@@ -40,15 +41,14 @@ import { usePageVisible } from '@/hooks/usePageVisible'
 import { confirmAction } from '@/stores/appDialog'
 import { appToast } from '@/stores/appToastStore'
 
-const DEFAULT_GOAL =
-  '把链接中的小说全部章节抓取并清洗正文，入库公共书库（书籍页、目录页、章节页均可）'
-
 const JOBS_PAGE_SIZE = 20
 const JOBS_FETCH_SIZE = 50
 
 type JobFilter = 'all' | 'active' | 'failed'
 
 export default function CrawlerPage() {
+  const { t } = useTranslation(['admin'])
+  const DEFAULT_GOAL = t('admin:crawler.defaultGoal')
   useMarkRouteSeen()
   const location = useLocation()
   const pageVisible = usePageVisible()
@@ -109,11 +109,11 @@ export default function CrawlerPage() {
       setJobsFetchPage(page)
     } catch (err) {
       if (!append) setJobs([])
-      appToast.error(err instanceof Error ? err.message : '子任务加载失败')
+      appToast.error(err instanceof Error ? err.message : t('admin:crawler.loadJobsFail'))
     } finally {
       setJobsLoading(false)
     }
-  }, [jobsFetchPage])
+  }, [jobsFetchPage, t])
 
   const loadOrchMeta = useCallback(async () => {
     try {
@@ -153,7 +153,7 @@ export default function CrawlerPage() {
 
   const handleSetOrchestratorGoal = async () => {
     if (!localGoal) {
-      appToast.error('请输入总目标')
+      appToast.error(t('admin:crawler.inputGoal'))
       return
     }
     setActingKey('orch-goal')
@@ -163,10 +163,10 @@ export default function CrawlerPage() {
       setOrchGoal(state.goal || localGoal)
       setGoalDirty(false)
       setLogRefreshKey((k) => k + 1)
-      appToast.success('目标已设定，主编排 Agent 将开始工作')
+      appToast.success(t('admin:crawler.goalSet'))
       void loadJobs()
     } catch (err) {
-      appToast.error(err instanceof Error ? err.message : '设定失败')
+      appToast.error(err instanceof Error ? err.message : t('admin:crawler.setGoalFail'))
     } finally {
       setActingKey(null)
     }
@@ -178,9 +178,9 @@ export default function CrawlerPage() {
       const state = await wakeOrchestrator()
       setOrchState(state)
       setLogRefreshKey((k) => k + 1)
-      appToast.success('已唤醒')
+      appToast.success(t('admin:crawler.woke'))
     } catch (err) {
-      appToast.error(err instanceof Error ? err.message : '唤醒失败')
+      appToast.error(err instanceof Error ? err.message : t('admin:crawler.wakeFail'))
     } finally {
       setActingKey(null)
     }
@@ -188,9 +188,9 @@ export default function CrawlerPage() {
 
   const handleClearOrchestrator = async () => {
     if (!(await confirmAction({
-      title: '清空总目标',
-      description: '将清空主编排目标、进入睡眠，并清除决策日志。',
-      confirmLabel: '清空',
+      title: t('admin:crawler.clearTitle'),
+      description: t('admin:crawler.clearDesc'),
+      confirmLabel: t('admin:crawler.clearBtn'),
       danger: true,
     }))) {
       return
@@ -203,9 +203,9 @@ export default function CrawlerPage() {
       setGoalDirty(false)
       orchGoalSyncedRef.current = true
       setLogClearKey((k) => k + 1)
-      appToast.success('目标与日志已清空，进入睡眠')
+      appToast.success(t('admin:crawler.cleared'))
     } catch (err) {
-      appToast.error(err instanceof Error ? err.message : '操作失败')
+      appToast.error(err instanceof Error ? err.message : t('admin:crawler.actionFail'))
     } finally {
       setActingKey(null)
     }
@@ -252,9 +252,9 @@ export default function CrawlerPage() {
 
       if (action === 'delete') {
         if (!(await confirmAction({
-          title: '删除子任务',
-          description: '确定删除该任务？日志将一并清除。',
-          confirmLabel: '删除',
+          title: t('admin:crawler.deleteTitle'),
+          description: t('admin:crawler.deleteDesc'),
+          confirmLabel: t('admin:crawler.deleteBtn'),
           danger: true,
         }))) {
           setActingKey(null)
@@ -267,9 +267,9 @@ export default function CrawlerPage() {
         }
         try {
           await deleteCrawlJob(job.id)
-          appToast.success('已删除')
+          appToast.success(t('admin:crawler.deleted'))
         } catch (err) {
-          appToast.error(err instanceof Error ? err.message : '删除失败')
+          appToast.error(err instanceof Error ? err.message : t('admin:crawler.deleteFail'))
           void loadJobs()
         } finally {
           setActingKey(null)
@@ -284,16 +284,16 @@ export default function CrawlerPage() {
         if (action === 'start') await startCrawlJob(job.id)
         else if (action === 'pause') await pauseCrawlJob(job.id)
         else await cancelCrawlJob(job.id)
-        appToast.success('操作成功')
+        appToast.success(t('admin:crawler.actionSuccess'))
         void loadJobs()
       } catch (err) {
-        appToast.error(err instanceof Error ? err.message : '操作失败')
+        appToast.error(err instanceof Error ? err.message : t('admin:crawler.actionFail'))
         void loadJobs()
       } finally {
         setActingKey(null)
       }
     },
-    [detailJob?.id, loadJobs, patchJob],
+    [detailJob?.id, loadJobs, patchJob, t],
   )
 
   const filteredJobs = useMemo(() => {
@@ -339,8 +339,8 @@ export default function CrawlerPage() {
     <AppPageStack className="gap-5">
       <AppShellCard className="order-1 md:order-2">
         <AppShellCardHeader
-          title="子任务列表"
-          description="点击行查看详情与日志"
+          title={t('admin:crawler.jobsTitle')}
+          description={t('admin:crawler.jobsDesc')}
           action={
             <Button
               variant="outline"
@@ -349,7 +349,7 @@ export default function CrawlerPage() {
               disabled={jobsLoading && jobs === null}
             >
               <RefreshCw className={`mr-1.5 size-3.5 ${jobsLoading ? 'animate-spin' : ''}`} />
-              刷新
+              {t('admin:crawler.refresh')}
             </Button>
           }
         />
@@ -357,16 +357,16 @@ export default function CrawlerPage() {
         <div className="flex flex-wrap gap-1 rounded-lg border border-border bg-muted/30 p-1">
             {(
               [
-                ['all', '全部', jobCounts.all],
-                ['active', '进行中', jobCounts.active],
-                ['failed', '失败/取消', jobCounts.failed],
+                ['all', t('admin:crawler.filterAll'), jobCounts.all],
+                ['active', t('admin:crawler.filterActive'), jobCounts.active],
+                ['failed', t('admin:crawler.filterFailed'), jobCounts.failed],
               ] as const
             ).map(([key, label, count]) => (
               <button
                 key={key}
                 type="button"
                 onClick={() => {
-                  setJobFilter(key)
+                  setJobFilter(key as JobFilter)
                   setJobPage(1)
                 }}
                 className={cn(
@@ -390,8 +390,8 @@ export default function CrawlerPage() {
         ) : filteredJobs.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             {jobFilter === 'all'
-              ? '暂无子任务。设定主编排目标后，Agent 将自动创建并调度。'
-              : '当前筛选下没有子任务。'}
+              ? t('admin:crawler.emptyAll')
+              : t('admin:crawler.emptyFiltered')}
           </p>
         ) : (
           <>
@@ -423,8 +423,8 @@ export default function CrawlerPage() {
                 onClick={() => void handleLoadMoreJobs()}
               >
                 {loadingMoreJobs
-                  ? '加载中…'
-                  : `加载更多子任务（${jobs?.length ?? 0}/${jobsTotalCount}）`}
+                  ? t('admin:crawler.loadMore')
+                  : t('admin:crawler.loadMoreBtn', { shown: jobs?.length ?? 0, total: jobsTotalCount })}
               </Button>
             ) : null}
           </>
@@ -434,8 +434,8 @@ export default function CrawlerPage() {
 
       <div className="order-2 grid gap-5 md:order-1 xl:grid-cols-2">
         <AdminCollapsibleCard
-          title="主编排控制"
-          description={`并行 ${orchState?.runningJobCount ?? 0}/${orchState?.maxConcurrentJobs ?? 3}`}
+          title={t('admin:crawler.orchTitle')}
+          description={t('admin:crawler.orchDesc', { running: orchState?.runningJobCount ?? 0, max: orchState?.maxConcurrentJobs ?? 3 })}
           defaultMobileOpen={false}
           action={
             <span
@@ -446,7 +446,7 @@ export default function CrawlerPage() {
                   : 'bg-muted text-muted-foreground',
               )}
             >
-              {isOrchRunning ? '运行中' : '睡眠'}
+              {isOrchRunning ? t('admin:crawler.orchRunning') : t('admin:crawler.orchSleeping')}
             </span>
           }
           bodyClassName="space-y-4"
@@ -456,25 +456,23 @@ export default function CrawlerPage() {
               to="/admin/catalog"
               className="inline-block text-sm text-primary underline-offset-4 hover:underline"
             >
-              书库未完成 {incompleteCount} 本 →
+              {t('admin:crawler.incompleteCatalog', { count: incompleteCount })}
             </Link>
           ) : null}
 
         {orchBanner === 'orchestrator-disabled' ? (
           <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-800 dark:text-amber-300">
-            Worker 上主编排未启用，请设置{' '}
-            <code className="rounded bg-background/80 px-1 py-0.5 text-xs">CRAWL_ORCHESTRATOR_ENABLED=true</code>{' '}
-            并重启 python-ai。
+            {t('admin:crawler.orchDisabled')}
           </div>
         ) : orchBanner === 'llm-missing' ? (
           <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-800 dark:text-amber-300">
-            主编排 LLM 未配置，请检查 python-ai/.env 中的 OPENAI_API_KEY。
+            {t('admin:crawler.llmMissing')}
           </div>
         ) : null}
 
         <div>
           <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
-            总目标
+            {t('admin:crawler.goalLabel')}
           </label>
           <textarea
             value={orchGoal}
@@ -493,27 +491,27 @@ export default function CrawlerPage() {
             disabled={!canSetGoal || orchBusy}
             onClick={() => void handleSetOrchestratorGoal()}
           >
-            {!hasServerGoal || isOrchSleeping ? '设定并唤醒' : '更新目标'}
+            {!hasServerGoal || isOrchSleeping ? t('admin:crawler.setAndWake') : t('admin:crawler.updateGoal')}
           </Button>
           <Button
             variant="secondary"
             disabled={!canWake || orchBusy}
             onClick={() => void handleWakeOrchestrator()}
           >
-            唤醒
+            {t('admin:crawler.wake')}
           </Button>
           <Button
             variant="outline"
             disabled={!canClear || orchBusy}
             onClick={() => void handleClearOrchestrator()}
           >
-            清空 / 睡眠
+            {t('admin:crawler.clearAndSleep')}
           </Button>
         </div>
         </AdminCollapsibleCard>
 
         <AdminCollapsibleCard
-          title="主编排决策日志"
+          title={t('admin:crawler.logTitle')}
           defaultMobileOpen={false}
           className="flex min-h-0 flex-col max-md:min-h-[200px] md:min-h-[280px]"
           bodyClassName="flex min-h-0 flex-1 flex-col pt-2"

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { lazy, Suspense, useEffect, useState } from 'react'
 import {
   fetchPlatformUsageOverview,
@@ -39,6 +40,7 @@ function StatCard({
 }
 
 export default function RevenuePage() {
+  const { t } = useTranslation(['admin'])
   useMarkRouteSeen()
   const [overview, setOverview] = useState<PlatformUsageOverview | null>(null)
   const [trends, setTrends] = useState<PlatformUsageTrendPoint[] | null>(null)
@@ -56,7 +58,7 @@ export default function RevenuePage() {
         if (cancelled) return
         setOverview(null)
         setTrends([])
-        appToast.error(err instanceof Error ? err.message : '加载收入数据失败')
+        appToast.error(err instanceof Error ? err.message : t('admin:revenue.loadFail'))
       })
       .finally(() => {
         if (!cancelled) setLoading(false)
@@ -87,7 +89,7 @@ export default function RevenuePage() {
   if (!overview || trends === null) {
     return (
       <AppPageStack>
-        <p className="py-12 text-center text-sm text-muted-foreground">暂无收入数据</p>
+        <p className="py-12 text-center text-sm text-muted-foreground">{t('admin:revenue.empty')}</p>
       </AppPageStack>
     )
   }
@@ -101,20 +103,20 @@ export default function RevenuePage() {
     <AppPageStack>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
-          title="MRR（月经常性收入）"
+          title={t('admin:revenue.mrr')}
           value={`¥${mrrYuan.toFixed(0)}`}
-          hint={subsSummary || '暂无活跃订阅'}
+          hint={subsSummary || t('admin:revenue.noSubs')}
         />
         <StatCard
-          title="本月 Token 消耗"
+          title={t('admin:revenue.monthTokens')}
           value={formatTokenQuota(overview.monthTokensTotal)}
         />
         <StatCard
-          title="本月 LLM 成本（估算）"
+          title={t('admin:revenue.monthCost')}
           value={formatCostMicros(overview.monthCostMicros)}
         />
         <StatCard
-          title="本月订阅收入（估算）"
+          title={t('admin:revenue.monthRevenue')}
           value={formatCostMicros(overview.monthRevenueMicros)}
         />
       </div>

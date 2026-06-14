@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import type { NovelSessionGroup } from '../../hooks/editor/useEditorSessions'
 import { useState } from 'react'
 import { X } from 'lucide-react'
@@ -69,6 +70,7 @@ export function EditorSidebar({
   memoryModalOpen,
   embedded = false,
 }: EditorSidebarProps) {
+  const { t } = useTranslation(['common'])
   const [hintDismissed, setHintDismissed] = useState(
     () => localStorage.getItem(EDITOR_SIDEBAR_HINT_KEY) === '1',
   )
@@ -87,21 +89,21 @@ export function EditorSidebar({
       )}
     >
       <div className="flex min-h-[52px] shrink-0 items-center justify-between border-b border-border px-3.5">
-        <span className="text-sm font-bold tracking-tight text-foreground">我的小说</span>
-        <EditorButton variant="icon" onClick={onNewNovel} title="新建小说" aria-label="新建小说">
+        <span className="text-sm font-bold tracking-tight text-foreground">{t('nav.editorMyNovels')}</span>
+        <EditorButton variant="icon" onClick={onNewNovel} title={t('nav.editorNewNovel')} aria-label={t('nav.editorNewNovel')}>
           <EditorIcons.Plus />
         </EditorButton>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto p-1.5 pb-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
         {!hintDismissed && novelSessionGroups.length > 0 ? (
-          <div className="relative mb-2 rounded-lg border border-primary/20 bg-primary/[0.04] px-2.5 py-2 pr-8 text-[11px] leading-snug text-muted-foreground">
-            <p className="font-medium text-foreground">快速开始</p>
-            <p className="mt-0.5">选小说 → 点「新对话」→ 右侧写章或问 AI</p>
+          <div className="relative mb-2 rounded-lg border border-primary/20 bg-primary/[0.04] px-2.5 py-2 pr-8 text-ui-sm leading-snug text-muted-foreground">
+            <p className="font-medium text-foreground">{t('nav.editorQuickStart')}</p>
+            <p className="mt-0.5">{t('nav.editorQuickStartDesc')}</p>
             <button
               type="button"
               className="absolute right-1.5 top-1.5 rounded-md p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-              aria-label="关闭提示"
+              aria-label={t('nav.editorCloseHint')}
               onClick={dismissHint}
             >
               <X className="size-3.5" />
@@ -111,7 +113,7 @@ export function EditorSidebar({
         <div className="mb-1">
           {novelSessionGroups.length === 0 ? (
             <div className="px-0.5 py-1.5 text-xs leading-snug text-muted-foreground/80">
-              暂无小说，点击右上角 + 创建
+              {t('nav.editorNoNovels')}
             </div>
           ) : (
             novelSessionGroups.map(({ novel, sessions }) => {
@@ -152,7 +154,7 @@ export function EditorSidebar({
                     <span
                       aria-hidden
                       className={cn(
-                        'w-3.5 shrink-0 text-[11px] leading-none text-muted-foreground transition-transform duration-200',
+                        'w-3.5 shrink-0 text-ui-sm leading-none text-muted-foreground transition-transform duration-200',
                         isExpanded && 'rotate-90',
                       )}
                     >
@@ -162,11 +164,11 @@ export function EditorSidebar({
                       <EditorIcons.BookOpen />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="truncate text-[13px] font-semibold text-foreground">
+                      <div className="truncate text-ui font-semibold text-foreground">
                         {novel.title}
                       </div>
                       <div className="mt-0.5 text-[10px] text-muted-foreground">
-                        {sessions.length} 个对话
+                        {sessions.length} {t('nav.editorSessionCount')}
                       </div>
                     </div>
                     <div
@@ -176,22 +178,22 @@ export function EditorSidebar({
                       onMouseDown={(e) => e.stopPropagation()}
                     >
                       <KebabMenu
-                        aria-label="小说操作"
+                        aria-label={t('nav.editorNovelActions')}
                         items={[
                           {
                             id: 'new-chat',
-                            label: '新对话',
+                            label: t('nav.editorNewChat'),
                             onClick: () => onNewChatForNovel(novel.id),
                           },
                           {
                             id: 'batch',
-                            label: inBatch ? '退出批量' : '批量删除对话',
+                            label: inBatch ? t('nav.editorExitBatch') : t('nav.editorBatchDelete'),
                             onClick: () =>
                               inBatch ? onExitBatchMode() : onStartBatchForNovel(novel.id),
                           },
                           {
                             id: 'delete-novel',
-                            label: '删除小说',
+                            label: t('nav.editorDeleteNovel'),
                             danger: true,
                             onClick: () => onDeleteNovelRequest(novel.id, novel.title),
                           },
@@ -210,8 +212,8 @@ export function EditorSidebar({
                             </span>
                             <input
                               type="search"
-                              placeholder="搜索当前小说对话…"
-                              aria-label="搜索当前小说对话"
+                              placeholder={t('nav.editorSearchSessions')}
+                              aria-label={t('nav.editorSearchSessions')}
                               value={sessionSearch}
                               onChange={(e) => onSessionSearchChange(e.target.value)}
                               className="min-w-0 flex-1 border-0 bg-transparent text-xs text-foreground outline-none placeholder:text-muted-foreground"
@@ -233,7 +235,7 @@ export function EditorSidebar({
 
                       {isActiveNovel && sessionSearch.trim() && sessions.length === 0 ? (
                         <div className="px-0.5 py-1.5 text-xs leading-snug text-muted-foreground/80">
-                          无匹配对话
+                          {t('nav.editorNoMatchSessions')}
                         </div>
                       ) : (
                         <NovelSessionList
@@ -266,7 +268,7 @@ export function EditorSidebar({
         {activeNovelId ? (
           <EditorButton variant="primary" fullWidth onClick={() => onNewChatForNovel(activeNovelId)}>
             <EditorIcons.Plus />
-            <span>新对话</span>
+            <span>{t('nav.editorNewChat')}</span>
           </EditorButton>
         ) : null}
         <div className="flex items-center gap-1">
@@ -277,14 +279,14 @@ export function EditorSidebar({
             className="min-w-0 flex-1"
           >
             <EditorIcons.Brain />
-            <span>记忆</span>
+            <span>{t('nav.editorMemory')}</span>
           </EditorButton>
           <KebabMenu
-            aria-label="更多工具"
+            aria-label={t('nav.editorMoreTools')}
             items={[
               {
                 id: 'settings',
-                label: '设置',
+                label: t('nav.editorSettings'),
                 onClick: onOpenSettings,
               },
             ]}

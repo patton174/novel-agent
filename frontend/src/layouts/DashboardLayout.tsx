@@ -1,6 +1,5 @@
-import '../styles/globals.css'
-
 import { useEffect, Suspense } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Outlet, useLocation } from 'react-router-dom'
 import { fetchUserInfo } from '../api/userApi'
 import { AppSidebar } from '../components/dashboard/AppSidebar'
@@ -12,18 +11,19 @@ import { AppShellMain } from '../components/layout/AppShellMain'
 import { LayoutOutletSkeleton } from '../components/loading/LayoutOutletSkeleton'
 import { useUserStore } from '../stores/userStore'
 
-const PAGE_META: Record<string, { title: string; description?: string }> = {
-  '/dashboard': { title: '概览', description: '创作数据与最近编辑' },
-  '/dashboard/novels': { title: '我的小说', description: '管理你的全部作品' },
-  '/dashboard/bookstore': { title: '书库', description: '浏览 AI 爬取作品并加入创作' },
-  '/dashboard/billing': { title: '用量与账单', description: 'Token 用量与费用概览' },
-  '/dashboard/settings': { title: '账户设置', description: '个人信息与邮箱验证' },
-}
-
 export default function DashboardLayout() {
+  const { t } = useTranslation(['common'])
   const location = useLocation()
   const profile = useUserStore((s) => s.profile)
   const setProfile = useUserStore((s) => s.setProfile)
+
+  const PAGE_META: Record<string, { title: string; description?: string }> = {
+    '/dashboard': { title: t('layout.dashboard.overviewTitle'), description: t('layout.dashboard.overviewDesc') },
+    '/dashboard/novels': { title: t('layout.dashboard.novelsTitle'), description: t('layout.dashboard.novelsDesc') },
+    '/dashboard/bookstore': { title: t('layout.dashboard.bookstoreTitle'), description: t('layout.dashboard.bookstoreDesc') },
+    '/dashboard/billing': { title: t('layout.dashboard.billingTitle'), description: t('layout.dashboard.billingDesc') },
+    '/dashboard/settings': { title: t('layout.dashboard.settingsTitle'), description: t('layout.dashboard.settingsDesc') },
+  }
 
   useEffect(() => {
     if (profile) {
@@ -44,7 +44,7 @@ export default function DashboardLayout() {
     }
   }, [profile, setProfile])
 
-  const meta = PAGE_META[location.pathname] ?? { title: '仪表盘' }
+  const meta = PAGE_META[location.pathname] ?? { title: t('layout.dashboard.defaultTitle') }
 
   return (
     <div className="flex h-screen overflow-hidden bg-background text-foreground">

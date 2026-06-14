@@ -20,6 +20,8 @@ import {
   cursorTaskBtnClass,
 } from '@/lib/cursorLandingClasses'
 
+import { BRAND_NAME } from '@/lib/brand'
+
 export type NovelCursorMockVariant = 'hero' | 'prd' | 'parallel' | 'stream'
 
 function WinDots() {
@@ -57,7 +59,7 @@ export function CursorDesktopMock({
     <div className={cn(CURSOR_WIN, className)} data-cursor-mock="desktop">
       <div className={CURSOR_WIN_BAR}>
         <WinDots />
-        <span className="title">Novel AI · 编辑器</span>
+        <span className="title">{BRAND_NAME} · 编辑器</span>
       </div>
       <div className={CURSOR_WIN_BODY}>
         <div className={CURSOR_TASK_COL}>
@@ -198,7 +200,7 @@ export function CursorFloatCardMock({ className }: { className?: string }) {
     <div className={cn(CURSOR_WIN, className)} data-cursor-mock="float">
       <div className={CURSOR_WIN_BAR}>
         <WinDots />
-        <span className="title">Novel AI</span>
+        <span className="title">{BRAND_NAME}</span>
       </div>
       <div className={CURSOR_AGENT_SCROLL} style={{ padding: '0.55rem 0.65rem' }}>
         <div className={cn(CURSOR_USER_PROMPT, 'cursor-user-prompt')} data-step="float-prompt">

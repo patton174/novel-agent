@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import { Brain } from 'lucide-react'
 import {
@@ -59,6 +60,7 @@ export function OrchestratorLogTerminal({
   clearKey = 0,
   paused = false,
 }: OrchestratorLogTerminalProps) {
+  const { t } = useTranslation(['admin'])
   const [logs, setLogs] = useState<OrchestratorDecisionEntry[]>([])
   const [loading, setLoading] = useState(false)
   const [fetchError, setFetchError] = useState<string | null>(null)
@@ -92,9 +94,9 @@ export function OrchestratorLogTerminal({
         maxSeqRef.current = res.maxSeq
       }
     } catch (err) {
-      setFetchError(err instanceof Error ? err.message : '加载日志失败')
+      setFetchError(err instanceof Error ? err.message : t('admin:crawler.loadLogFail'))
     }
-  }, [])
+  }, [t])
 
   useEffect(() => {
     if (!active) return
@@ -118,18 +120,18 @@ export function OrchestratorLogTerminal({
   }, [logs, active, autoScroll])
 
   return (
-    <div className="overflow-hidden rounded-xl border border-zinc-800 bg-[#0d1117] shadow-inner">
+    <div className="overflow-hidden rounded-xl border border-border bg-card shadow-inner">
       <div className="flex items-center justify-between border-b border-zinc-800/80 px-3 py-2">
         <span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-wider text-zinc-500">
           <Brain className="size-3.5" />
-          决策日志
+          {t('admin:crawler.logTitle')}
           {isLive ? (
             <span className="inline-flex items-center gap-1 text-primary">
               <span className="size-1.5 animate-pulse rounded-full bg-primary" />
-              实时
+              {t('admin:crawler.live')}
             </span>
           ) : null}
-          {paused ? <span className="text-zinc-600">· 已暂停</span> : null}
+          {paused ? <span className="text-zinc-600">{t('admin:crawler.paused')}</span> : null}
         </span>
         <label className="flex cursor-pointer items-center gap-1.5 font-mono text-[10px] text-zinc-500">
           <input
@@ -138,7 +140,7 @@ export function OrchestratorLogTerminal({
             onChange={(e) => setAutoScroll(e.target.checked)}
             className="size-3 rounded border-zinc-600 bg-zinc-900"
           />
-          自动滚动
+          {t('admin:crawler.autoScroll')}
         </label>
       </div>
       {fetchError ? (
@@ -151,13 +153,13 @@ export function OrchestratorLogTerminal({
         className="h-[min(36vh,320px)] max-md:h-[min(22vh,180px)] overflow-y-auto px-3 py-2 font-mono text-xs leading-relaxed"
       >
         {loading && logs.length === 0 ? (
-          <div className="space-y-2 py-1" role="status" aria-label="加载日志">
+          <div className="space-y-2 py-1" role="status" aria-label={t('admin:crawler.loadingLog')}>
             {Array.from({ length: 5 }).map((_, i) => (
               <Skeleton key={i} className="h-4 w-full rounded-sm bg-zinc-800/80" />
             ))}
           </div>
         ) : logs.length === 0 ? (
-          <p className="text-zinc-500">暂无决策日志，设定目标或唤醒后将显示主编排决策</p>
+          <p className="text-zinc-500">{t('admin:crawler.emptyLog')}</p>
         ) : (
           logs.map((entry) => <LogLine key={entry.seq} entry={entry} />)
         )}

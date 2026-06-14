@@ -5,7 +5,7 @@ import { MKT_CTA_PRIMARY, MKT_CTA_SECONDARY } from '@/lib/marketingCta'
 
 /** 营销子页底部转化带（轻量版，补全 linksOnly Footer 的漏斗断裂） */
 export function MarketingSubpageCtaBand() {
-  const { t } = useTranslation('marketing')
+  const { t } = useTranslation(['marketing', 'common'])
 
   return (
     <section className="border-t border-border/50 bg-gradient-to-br from-primary/[0.05] via-white to-violet-500/[0.06] px-6 py-12 md:py-14">
@@ -18,11 +18,11 @@ export function MarketingSubpageCtaBand() {
         </p>
         <div className="flex flex-col gap-3 sm:flex-row">
           <Link to="/register" className={MKT_CTA_PRIMARY}>
-            {t('footer.ctaRegister')}
+            {t('common:cta.registerFree')}
             <ArrowRight className="size-4" />
           </Link>
           <Link to="/login" className={MKT_CTA_SECONDARY}>
-            {t('footer.ctaLogin')}
+            {t('common:cta.login')}
           </Link>
         </div>
       </div>

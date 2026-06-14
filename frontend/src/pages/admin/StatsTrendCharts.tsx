@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import {
   CartesianGrid,
   Line,
@@ -64,31 +65,32 @@ export default function StatsTrendCharts({
   registrationTrend,
   rangeLabel,
 }: StatsTrendChartsProps) {
+  const { t } = useTranslation(['admin'])
   return (
     <>
-      <AppChartCard title="Agent 调用趋势" description={`${rangeLabel} Agent 运行次数`}>
+      <AppChartCard title={t('admin:stats.agentRunTrend')} description={t('admin:stats.agentRunDesc', { range: rangeLabel })}>
         {agentRunTrend.length === 0 ? (
           <div className={APP_CHART_EMPTY}>
-            <p>暂无 Agent 调用趋势</p>
+            <p>{t('admin:stats.noAgentRunTrend')}</p>
             <Link to="/admin/users" className="mt-2 inline-block text-sm text-primary hover:underline">
-              查看用户管理 →
+              {t('admin:stats.viewUsers')}
             </Link>
           </div>
         ) : (
-          <TrendChart data={agentRunTrend} valueLabel="调用次数" />
+          <TrendChart data={agentRunTrend} valueLabel={t('admin:stats.runCount')} />
         )}
       </AppChartCard>
 
-      <AppChartCard title="注册趋势" description={`${rangeLabel} 新用户注册`}>
+      <AppChartCard title={t('admin:stats.registrationTrend')} description={t('admin:stats.registrationDesc', { range: rangeLabel })}>
         {registrationTrend.length === 0 ? (
           <div className={APP_CHART_EMPTY}>
-            <p>暂无注册趋势</p>
+            <p>{t('admin:stats.noRegistrationTrend')}</p>
             <Link to="/admin/users" className="mt-2 inline-block text-sm text-primary hover:underline">
-              查看用户管理 →
+              {t('admin:stats.viewUsers')}
             </Link>
           </div>
         ) : (
-          <TrendChart data={registrationTrend} valueLabel="注册数" />
+          <TrendChart data={registrationTrend} valueLabel={t('admin:stats.registrationCount')} />
         )}
       </AppChartCard>
     </>

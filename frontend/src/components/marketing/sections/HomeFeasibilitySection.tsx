@@ -2,8 +2,10 @@ import { Link } from 'react-router-dom'
 import { motion, useReducedMotion } from 'framer-motion'
 import { ArrowRight, BookMarked, PenTool, Sparkles, Users } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { useAppMobile } from '@/hooks/useMediaQuery'
 import { MarketingAmbient } from '../MarketingAmbient'
 import { MKT_CTA_PRIMARY, MKT_CTA_SECONDARY } from '@/lib/marketingCta'
+import { marketingInViewMotion } from '../motion/marketingInViewMotion'
 
 const PERSONAS = [
   { key: 'serial', icon: PenTool },
@@ -16,21 +18,22 @@ const COMPARE_KEYS = ['context', 'orchestrate', 'stream', 'resume'] as const
 export function HomeFeasibilitySection() {
   const { t } = useTranslation('marketing')
   const reduced = useReducedMotion()
+  const isMobile = useAppMobile()
 
   const fade = (delay = 0) =>
-    reduced
-      ? {}
-      : {
-          initial: { opacity: 0, y: 24 },
-          whileInView: { opacity: 1, y: 0 },
-          viewport: { once: true, margin: '-8% 0px' },
-          transition: { duration: 0.5, delay, ease: [0.22, 1, 0.36, 1] as const },
-        }
+    marketingInViewMotion({
+      isMobile,
+      reduced: Boolean(reduced),
+      desktopInitial: { opacity: 0, y: 24 },
+      desktopWhileInView: { opacity: 1, y: 0 },
+      viewport: { once: true, margin: '-8% 0px' },
+      transition: { duration: 0.5, delay, ease: [0.22, 1, 0.36, 1] as const },
+    })
 
   return (
     <section
       id="feasibility"
-      className="relative scroll-mt-16 overflow-hidden border-t border-border/40 bg-gradient-to-b from-white via-slate-50/80 to-white px-6 py-20 md:py-28"
+      className="relative scroll-mt-16 overflow-hidden border-t border-border/40 bg-gradient-to-b from-background via-surface to-background px-6 py-20 md:py-24"
     >
       <MarketingAmbient variant="subtle" />
 
@@ -57,7 +60,7 @@ export function HomeFeasibilitySection() {
                 <div className="flex size-12 items-center justify-center rounded-xl bg-primary/8 ring-1 ring-border/50">
                   <Icon className="size-5 text-primary" strokeWidth={1.75} />
                 </div>
-                <span className="rounded-lg bg-muted px-2.5 py-0.5 text-[11px] font-bold text-primary">
+                <span className="rounded-lg bg-muted px-2.5 py-0.5 text-ui-sm font-bold text-primary">
                   {t(`home.feasibility.personas.${key}.fit`)}
                 </span>
               </div>
@@ -73,7 +76,7 @@ export function HomeFeasibilitySection() {
 
         <motion.div
           {...fade(0.08)}
-          className="mb-10 overflow-hidden rounded-2xl border border-border/70 bg-white/80 shadow-[0_16px_48px_-20px_rgba(79,70,229,0.15)] backdrop-blur-sm"
+          className="mb-10 overflow-hidden rounded-2xl border border-border/70 bg-surface/80 shadow-[0_16px_48px_-20px_rgba(79,70,229,0.15)] backdrop-blur-sm"
         >
           <div className="border-b border-border/60 bg-gradient-to-r from-primary/[0.04] to-transparent px-5 py-4 md:px-6">
             <h3 className="text-sm font-semibold text-foreground">{t('home.feasibility.compareTitle')}</h3>
@@ -88,7 +91,7 @@ export function HomeFeasibilitySection() {
                 </h4>
                 <div className="grid gap-2">
                   <div className="rounded-xl border border-border/60 bg-muted/30 px-3 py-2.5">
-                    <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    <p className="mb-1 text-ui-xs font-semibold uppercase tracking-wider text-muted-foreground">
                       {t('home.feasibility.compareHeaders.generic')}
                     </p>
                     <p className="text-sm text-muted-foreground">
@@ -96,7 +99,7 @@ export function HomeFeasibilitySection() {
                     </p>
                   </div>
                   <div className="rounded-xl border border-primary/20 bg-primary/[0.06] px-3 py-2.5">
-                    <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-primary">
+                    <p className="mb-1 text-ui-xs font-semibold uppercase tracking-wider text-primary">
                       {t('home.feasibility.compareHeaders.us')}
                     </p>
                     <p className="text-sm font-semibold text-foreground">

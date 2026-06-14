@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import {
   CartesianGrid,
   Cell,
@@ -32,6 +33,7 @@ interface RevenueChartsProps {
 }
 
 export default function RevenueCharts({ trends, modelBreakdown }: RevenueChartsProps) {
+  const { t } = useTranslation(['admin'])
   const tokenTrend = trends.map((p) => ({
     date: p.date,
     count: p.tokens,
@@ -50,9 +52,9 @@ export default function RevenueCharts({ trends, modelBreakdown }: RevenueChartsP
 
   return (
     <>
-      <AppChartCard title="全站 Token 消耗" description="近 30 日">
+      <AppChartCard title={t('admin:revenue.tokenTrend')} description={t('admin:revenue.last30Days')}>
         {tokenTrend.length === 0 ? (
-          <div className={APP_CHART_EMPTY}>暂无数据</div>
+          <div className={APP_CHART_EMPTY}>{t('admin:revenue.noData')}</div>
         ) : (
           <div className={APP_CHART_HEIGHT}>
             <ResponsiveContainer width="100%" height="100%">
@@ -84,9 +86,9 @@ export default function RevenueCharts({ trends, modelBreakdown }: RevenueChartsP
       </AppChartCard>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <AppChartCard title="LLM 成本趋势" description="近 30 日（元）">
+        <AppChartCard title={t('admin:revenue.costTrend')} description={t('admin:revenue.last30DaysCny')}>
           {costTrend.length === 0 ? (
-            <div className={APP_CHART_EMPTY}>暂无数据</div>
+            <div className={APP_CHART_EMPTY}>{t('admin:revenue.noData')}</div>
           ) : (
             <div className={APP_CHART_HEIGHT}>
               <ResponsiveContainer width="100%" height="100%">
@@ -102,7 +104,7 @@ export default function RevenueCharts({ trends, modelBreakdown }: RevenueChartsP
                   <YAxis tick={{ fontSize: 12 }} tickLine={false} axisLine={false} width={40} />
                   <Tooltip
                     labelFormatter={(label) => formatChartDate(String(label))}
-                    formatter={(value) => [`¥${Number(value).toFixed(4)}`, '成本']}
+                    formatter={(value) => [`¥${Number(value).toFixed(4)}`, t('admin:revenue.cost')]}
                   />
                   <Line type="monotone" dataKey="count" stroke="#7c3aed" strokeWidth={2} dot={false} />
                 </LineChart>
@@ -111,9 +113,9 @@ export default function RevenueCharts({ trends, modelBreakdown }: RevenueChartsP
           )}
         </AppChartCard>
 
-        <AppChartCard title="模型成本分布" description="本月按模型">
+        <AppChartCard title={t('admin:revenue.modelDistribution')} description={t('admin:revenue.thisMonthByModel')}>
           {pieData.length === 0 ? (
-            <div className={APP_CHART_EMPTY}>暂无数据</div>
+            <div className={APP_CHART_EMPTY}>{t('admin:revenue.noData')}</div>
           ) : (
             <div className="space-y-3">
               <div className={APP_CHART_HEIGHT}>

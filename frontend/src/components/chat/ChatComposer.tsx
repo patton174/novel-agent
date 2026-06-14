@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { ContextUsageMeter } from '../agent/ContextUsageMeter'
 import type { AgentContextUsage } from '../../types/agent'
 import { Switch } from '../ui/switch'
@@ -46,6 +47,7 @@ export function ChatComposer({
   onStreamAbort,
   contextUsage,
 }: ChatComposerProps) {
+  const { t } = useTranslation(['editor', 'common'])
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const streaming = streamActive || isLoading
 
@@ -89,10 +91,10 @@ export function ChatComposer({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="给 AI 发送消息..."
+          placeholder={t('editor:chat.placeholder')}
           rows={1}
           disabled={isLoading && !streamActive}
-          aria-label="聊天输入"
+          aria-label={t('editor:chat.placeholder')}
           style={{ minHeight: COMPOSER_TEXT_MIN_PX, maxHeight: COMPOSER_TEXT_MAX_PX }}
           className={cn(
             'w-full resize-none border-none bg-transparent px-0.5 py-0.5',
@@ -106,14 +108,14 @@ export function ChatComposer({
           <div className="flex min-h-8 min-w-0 items-center gap-1.5 overflow-visible max-md:flex-nowrap max-md:gap-1">
             <div
               data-testid="host-mode-control"
-              title={hostModeEnabled ? 'AI 持续盯防，可后台长时运行' : '关闭时为单次对话'}
+              title={hostModeEnabled ? t('editor:chat.hostModeHint') : t('editor:chat.hostModeOffHint')}
               className="inline-flex h-8 shrink-0 items-center gap-1.5"
             >
-              <span className="hidden text-xs font-semibold text-muted-foreground md:inline">托管</span>
+              <span className="hidden text-xs font-semibold text-muted-foreground md:inline">{t('common:glossary.hostMode')}</span>
               <Switch
                 checked={hostModeEnabled}
                 onCheckedChange={onHostModeChange}
-                aria-label="托管模式"
+                aria-label={t('common:glossary.hostMode')}
               />
             </div>
           </div>
@@ -125,7 +127,7 @@ export function ChatComposer({
             streaming={streaming}
             onClick={handleActionClick}
             disabled={!streaming && (!value.trim() || isLoading)}
-            aria-label={streaming ? '停止' : '发送'}
+            aria-label={streaming ? t('editor:chat.stop') : t('editor:chat.send')}
             data-testid={streaming ? 'stream-stop-btn' : 'send-btn'}
           >
             <EditorSendIconLayer visible={!streaming} aria-hidden={streaming}>
@@ -138,7 +140,7 @@ export function ChatComposer({
         </div>
       </div>
       <p className="mt-1.5 hidden text-center text-[11px] text-muted-foreground md:block">
-        内容由 AI 生成，请谨慎参考
+        {t('editor:chat.aiWarning')}
       </p>
     </footer>
   )

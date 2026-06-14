@@ -13,6 +13,8 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useMarkRouteSeen } from '@/hooks/useMarkRouteSeen'
 import { appToast } from '@/stores/appToastStore'
 
+import { useTranslation } from 'react-i18next'
+
 function CatalogCover({ novel }: { novel: CatalogNovel }) {
   if (novel.coverUrl) {
     return (
@@ -33,6 +35,7 @@ function CatalogCover({ novel }: { novel: CatalogNovel }) {
 }
 
 export default function BookstorePage() {
+  const { t } = useTranslation(['dashboard'])
   useMarkRouteSeen()
   const [novels, setNovels] = useState<CatalogNovel[] | null>(null)
   const [loadError, setLoadError] = useState(false)
@@ -46,9 +49,9 @@ export default function BookstorePage() {
     } catch (err) {
       setNovels([])
       setLoadError(true)
-      appToast.error(err instanceof Error ? err.message : '加载书库失败')
+      appToast.error(err instanceof Error ? err.message : t('dashboard:bookstore.loadFail'))
     }
-  }, [])
+  }, [t])
 
   useEffect(() => {
     void load()
@@ -58,9 +61,9 @@ export default function BookstorePage() {
     setAddingId(catalogNovelId)
     try {
       await addCatalogToLibrary(catalogNovelId)
-      appToast.success('已添加到你的作品库')
+      appToast.success(t('dashboard:bookstore.addSuccess'))
     } catch (err) {
-      appToast.error(err instanceof Error ? err.message : '添加失败')
+      appToast.error(err instanceof Error ? err.message : t('dashboard:bookstore.addFail'))
     } finally {
       setAddingId(null)
     }
@@ -71,12 +74,12 @@ export default function BookstorePage() {
   return (
     <AppPageStack>
       <AppPageIntro
-        eyebrow="公共书库"
-        title="浏览 AI 爬取的作品，一键加入我的小说"
+        eyebrow={t('dashboard:bookstore.eyebrow')}
+        title={t('dashboard:bookstore.title')}
         icon={BookMarked}
         action={
           <Button asChild variant="outline" className={APP_BTN_MD}>
-            <Link to="/dashboard/novels">我的作品库</Link>
+            <Link to="/dashboard/novels">{t('dashboard:bookstore.myNovels')}</Link>
           </Button>
         }
       />
@@ -90,20 +93,20 @@ export default function BookstorePage() {
       ) : loadError ? (
         <AppEmptyState
           icon={BookMarked}
-          title="书库加载失败"
-          description="暂时无法获取公共书库列表，请检查网络后重试。"
+          title={t('dashboard:bookstore.loadFailTitle')}
+          description={t('dashboard:bookstore.loadFailDesc')}
           action={
             <Button className={APP_BTN_MD} onClick={() => void load()}>
               <RefreshCw className="mr-2 size-4" />
-              重新加载
+              {t('dashboard:bookstore.reload')}
             </Button>
           }
         />
       ) : novels.length === 0 ? (
         <AppEmptyState
           icon={BookMarked}
-          title="书库暂无作品"
-          description="管理员启动爬虫任务后，收录的作品会出现在这里，你可以一键加入个人作品库继续创作。"
+          title={t('dashboard:bookstore.emptyTitle')}
+          description={t('dashboard:bookstore.emptyDesc')}
         />
       ) : (
         <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
@@ -135,7 +138,7 @@ export default function BookstorePage() {
                     {novel.description}
                   </p>
                 ) : null}
-                <p className="mt-auto pt-3 text-xs text-muted-foreground">共 {novel.chapterCount} 章</p>
+                <p className="mt-auto pt-3 text-xs text-muted-foreground">{t('dashboard:bookstore.chapterCount', { count: novel.chapterCount })}</p>
               </div>
 
               <div className="flex flex-col gap-2 border-t border-border/80 p-4">
@@ -149,7 +152,7 @@ export default function BookstorePage() {
                   ) : (
                     <Plus className="mr-2 size-4" />
                   )}
-                  加入我的作品
+                  {t('dashboard:bookstore.addToLibrary')}
                 </Button>
               </div>
             </article>

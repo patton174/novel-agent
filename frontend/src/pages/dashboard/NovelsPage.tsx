@@ -15,6 +15,8 @@ import { dashboardCache } from '@/stores/dashboardCacheStore'
 import { appToast } from '@/stores/appToastStore'
 import { EDITOR_CREATE_HREF, editorNovelHref } from '@/lib/editorRoutes'
 
+import { useTranslation } from 'react-i18next'
+
 function formatDate(ts: number): string {
   const date = new Date(ts)
   if (Number.isNaN(date.getTime())) {
@@ -28,6 +30,7 @@ function formatDate(ts: number): string {
 }
 
 export default function NovelsPage() {
+  const { t } = useTranslation(['dashboard'])
   useMarkRouteSeen()
   const [novels, setNovels] = useState<DashboardNovel[] | null>(() => dashboardCache.getNovels())
   const [error, setError] = useState(false)
@@ -63,15 +66,15 @@ export default function NovelsPage() {
         setNovels((prev) =>
           prev ? prev.map((n) => (n.id === novelId ? { ...n, ...updated } : n)) : prev,
         )
-        appToast.success('封面已生成')
+        appToast.success(t('dashboard:novels.coverSuccess'))
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : '封面生成失败'
-      appToast.error(message.includes('套餐') ? `${message}，请前往定价页升级` : message)
+      const message = err instanceof Error ? err.message : t('dashboard:novels.coverFail')
+      appToast.error(message.includes('套餐') ? `${message}${t('dashboard:novels.upgradeHint')}` : message)
     } finally {
       setGeneratingId(null)
     }
-  }, [])
+  }, [t])
 
   const loading = novels === null
 
@@ -95,12 +98,12 @@ export default function NovelsPage() {
       />
 
       <AppPageIntro
-        eyebrow="作品库"
+        eyebrow={t('dashboard:novels.eyebrow')}
         title={
           loading ? (
             <InlineTitleSkeleton className="h-8 w-40" />
           ) : (
-            `共 ${novels!.length} 部作品`
+            t('dashboard:novels.titleCount', { count: novels!.length })
           )
         }
         icon={BookOpen}
@@ -108,7 +111,7 @@ export default function NovelsPage() {
           <Button asChild className={`px-5 ${APP_BTN_MD}`}>
             <Link to={EDITOR_CREATE_HREF}>
               <Plus className="mr-2 size-4" />
-              新建小说
+              {t('dashboard:novels.createNovel')}
             </Link>
           </Button>
         }
@@ -123,11 +126,11 @@ export default function NovelsPage() {
       ) : novels!.length === 0 ? (
         <AppEmptyState
           icon={Sparkles}
-          title={error ? '加载失败' : '开始你的创作之旅'}
+          title={error ? t('dashboard:novels.loadFail') : t('dashboard:novels.emptyTitle')}
           description={
             error
-              ? '暂时无法加载小说列表，请稍后刷新重试。'
-              : '创建一个新的小说项目，让 AI 助手帮你构建世界观、大纲和章节。'
+              ? t('dashboard:novels.loadFailDesc')
+              : t('dashboard:novels.emptyDesc')
           }
           action={
             !error ? (
@@ -137,7 +140,7 @@ export default function NovelsPage() {
               >
                 <Link to={EDITOR_CREATE_HREF}>
                   <Plus className="mr-2 size-5" />
-                  创建第一部作品
+                  {t('dashboard:novels.createFirst')}
                 </Link>
               </Button>
             ) : undefined
@@ -186,14 +189,14 @@ export default function NovelsPage() {
                   </h3>
 
                   {novel.genre ? (
-                    <span className="mb-3 inline-flex w-fit rounded-full bg-muted px-2.5 py-0.5 text-[11px] font-medium text-foreground/70">
+                    <span className="mb-3 inline-flex w-fit rounded-full bg-muted px-2.5 py-0.5 text-ui-sm font-medium text-foreground/70">
                       {novel.genre}
                     </span>
                   ) : null}
 
                   <div className="mt-auto flex items-center text-xs text-muted-foreground">
                     <Clock className="mr-1.5 size-3.5 shrink-0" />
-                    更新于 {formatDate(novel.updatedAt)}
+                    {t('dashboard:novels.updatedAt', { time: formatDate(novel.updatedAt) })}
                   </div>
                 </div>
 
@@ -207,13 +210,13 @@ export default function NovelsPage() {
                     onClick={() => setDialogNovel(novel)}
                   >
                     <ImagePlus className="mr-2 size-4" />
-                    {novel.coverUrl ? '重新生成封面' : 'AI 生成封面'}
+                    {novel.coverUrl ? t('dashboard:novels.regenCover') : t('dashboard:novels.genCover')}
                   </Button>
                   <Button
                     asChild
                     className={APP_BTN_FULL_MD}
                   >
-                    <Link to={editorNovelHref(novel.id)}>继续写作</Link>
+                    <Link to={editorNovelHref(novel.id)}>{t('dashboard:novels.continueWriting')}</Link>
                   </Button>
                 </div>
               </article>

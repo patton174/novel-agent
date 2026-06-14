@@ -40,11 +40,11 @@ export function AuthCodeField({
         {action}
       </div>
       {error ? (
-        <p id={`${id}-error`} className="text-[11px] leading-snug text-destructive">
+        <p id={`${id}-error`} className="text-ui-sm leading-snug text-destructive">
           {error}
         </p>
       ) : hint ? (
-        <p id={`${id}-hint`} className="text-[11px] leading-snug text-emerald-600 dark:text-emerald-400">
+        <p id={`${id}-hint`} className="text-ui-sm leading-snug text-emerald-600 dark:text-emerald-400">
           {hint}
         </p>
       ) : null}

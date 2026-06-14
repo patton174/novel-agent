@@ -10,7 +10,7 @@ const STEP_ICONS = [BookOpen, GitBranch, PenLine, Rocket] as const
 const SUITABILITY_KEYS = ['1', '2', '3'] as const
 
 export default function GuidePage() {
-  const { t } = useTranslation('marketing')
+  const { t } = useTranslation(['marketing', 'common'])
   const steps = [1, 2, 3, 4] as const
 
   return (
@@ -22,7 +22,7 @@ export default function GuidePage() {
         subtitle={t('guide.subtitle')}
         action={
           <Link to="/register" className={MKT_CTA_PRIMARY}>
-            {t('guide.cta')}
+            {t('common:cta.startCreating')}
             <ArrowRight className="size-4" />
           </Link>
         }
@@ -39,7 +39,7 @@ export default function GuidePage() {
               <a
                 key={n}
                 href={`#step-${n}`}
-                className="shrink-0 rounded-xl border border-border/70 bg-white/90 px-3.5 py-1.5 text-xs font-medium text-muted-foreground shadow-sm transition-colors hover:border-primary/30 hover:text-primary"
+                className="shrink-0 rounded-xl border border-border/70 bg-surface/90 px-3.5 py-1.5 text-xs font-medium text-muted-foreground shadow-sm transition-colors hover:border-primary/30 hover:text-primary"
               >
                 {String(n).padStart(2, '0')} · {t(`guide.steps.${n}.title`)}
               </a>
@@ -65,7 +65,7 @@ export default function GuidePage() {
         <div className="grid gap-12 lg:grid-cols-[220px_1fr] lg:gap-16">
           <aside className="order-3 hidden space-y-8 lg:block">
             <nav className="hidden lg:block">
-              <div className="sticky top-28 space-y-1 rounded-2xl border border-border/60 bg-white/80 p-4 shadow-sm backdrop-blur-sm">
+              <div className="sticky top-28 space-y-1 rounded-2xl border border-border/60 bg-surface/80 p-4 shadow-sm backdrop-blur-sm">
                 <p className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
                   {t('guide.toc')}
                 </p>
@@ -113,7 +113,7 @@ export default function GuidePage() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, margin: '-8% 0px' }}
                   transition={{ duration: 0.45, delay: index * 0.05 }}
-                  className="mkt-card-lift scroll-mt-16 rounded-2xl border border-border/70 bg-white/90 p-6 shadow-[0_8px_32px_-12px_rgba(79,70,229,0.1)] backdrop-blur-sm md:p-8"
+                  className="mkt-card-lift scroll-mt-16 rounded-2xl border border-border/70 bg-surface/90 p-6 shadow-[0_8px_32px_-12px_rgba(var(--primary-rgb),0.1)] backdrop-blur-sm md:p-8"
                 >
                   <div className="mb-4 flex items-center gap-3">
                     <div className="flex size-11 items-center justify-center rounded-xl bg-gradient-to-br from-primary/15 to-indigo-500/5 ring-1 ring-primary/15">

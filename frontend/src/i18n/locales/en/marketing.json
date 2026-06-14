@@ -1,0 +1,200 @@
+{
+  "brand": "Novel Agent",
+  "nav": {
+    "guide": "Creation Guide",
+    "pricing": "Pricing",
+    "about": "About Us",
+    "login": "Log In",
+    "register": "Start for Free",
+    "feasibility": "Capabilities & Scenarios",
+    "demo": "Product Demo",
+    "capabilities": "Core Capabilities",
+    "menu": "Open Menu",
+    "close": "Close Menu"
+  },
+  "footer": {
+    "ctaTitle": "Ready to Start Your Next Chapter?",
+    "ctaDesc": "Sign up to experience full capabilities like orchestration, memory, and streaming generation, making AI your most reliable co-writer.",
+    "ctaRegister": "Sign Up for Free",
+    "ctaLogin": "Already have an account? Log in",
+    "tagline": "An intelligent writing assistant built for novel creation, from world-building to chapter continuation, all in one place.",
+    "product": "Product",
+    "account": "Account",
+    "legal": "Legal",
+    "dashboard": "Dashboard",
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service",
+    "contact": "Contact Us",
+    "copyright": "All rights reserved",
+    "slogan": "Infinite Creative Possibilities"
+  },
+  "pricing": {
+    "title": "Clear & Transparent Pricing",
+    "subtitle": "Choose the right plan for your writing volume. No hidden fees, upgrade anytime.",
+    "hotBadge": "Most Popular",
+    "tokensPerMonth": "{{label}} AI Tokens / Month",
+    "unlimitedTokens": "Unlimited AI Tokens",
+    "loadError": "Failed to load plans, please try again later",
+    "faqTitle": "Frequently Asked Questions",
+    "faq": {
+      "1": { "q": "Is the free plan enough?", "a": "The free plan is perfect for experiencing the complete workflow: orchestration, memory, and streaming generation. Billed by monthly AI tokens, you can upgrade when you run out." },
+      "2": { "q": "How is it different from general conversational AI?", "a": "We bind to your novel's context, persisting chapters and settings. We support long-running tasks and transparent orchestration, designed for serialization rather than single-turn Q&A." },
+      "3": { "q": "Can I upgrade or downgrade anytime?", "a": "Yes. Check your quota on the dashboard usage page; upgrades take effect immediately. The Enterprise plan supports custom quotas and private integration." }
+    },
+    "feasibilityNote": "Not sure if it's right for you? Check out",
+    "feasibilityLink": "Use Cases & Comparisons"
+  },
+  "guide": {
+    "eyebrow": "Creation Guide",
+    "title": "The Standard Workflow from Inspiration to Serialization",
+    "subtitle": "Four steps to build a reusable AI-assisted writing process, perfect for long-form and series works.",
+    "toc": "Table of Contents",
+    "suitabilityTitle": "Who is it for?",
+    "suitability": {
+      "1": "Daily/Serial authors needing stable continuation and memory alignment.",
+      "2": "Long-form stories with complex world-building, fearing plot holes later on.",
+      "3": "Writers who want to see the Agent's planning process, not a black-box output."
+    },
+    "steps": {
+      "1": { "title": "Establish Work & Settings", "desc": "Create a novel project, accumulating world-building, characters, and outlines. All subsequent operations by the writing assistant are based on this context." },
+      "2": { "title": "Orchestrate Complex Tasks", "desc": "Continuation, revision, and setting retrieval can be broken down in parallel. The planning process is transparent, and long tasks can run in the background." },
+      "3": { "title": "Streaming Generation & Polishing", "desc": "Text is generated in real-time and flows into the editor, supporting chapter-by-chapter rewriting, pacing, and word count constraints." },
+      "4": { "title": "Continuous Iteration & Publishing", "desc": "Memory updates as you write. Export in multiple formats, with usage and quotas clearly visible on the dashboard." }
+    },
+    "cta": "Experience for Free Now"
+  },
+  "about": {
+    "eyebrow": "About Us",
+    "title": "A Writing Assistant Platform Built for Long-Form Creators",
+    "subtitle": "We focus on novel scenarios—not general chat, but orchestratable, memorable, and hostable writing infrastructure.",
+    "values": {
+      "1": { "title": "Context First", "desc": "Hierarchical management of chapters, settings, and memory, avoiding 'forgetting the beginning when writing the end'." },
+      "2": { "title": "Observable Process", "desc": "Planning, tool calls, and streaming output are visible to the user, keeping the creative process controllable." },
+      "3": { "title": "Production-Grade Stability", "desc": "Long task hosting, resume on disconnect, and enterprise-grade secure transmission, designed for real serialization scenarios." }
+    },
+    "metrics": {
+      "capability": "Core Capability Modules",
+      "capabilityValue": "6+",
+      "stream": "Streaming Generation",
+      "streamValue": "Real-time",
+      "memory": "World-building Memory",
+      "memoryValue": "Persistent"
+    }
+  },
+  "home": {
+    "hero": {
+      "eyebrow": "Novel Writing Assistant",
+      "title": "Built specifically for long-form serialization,",
+      "titleAccent": "An Orchestratable Writing Assistant",
+      "subtitle": "World-building memory, transparent orchestration, streaming generation, and hosted continuation—from feasibility assessment to daily output, all in one place.",
+      "ctaPrimary": "Start Writing for Free",
+      "ctaSecondary": "View Use Cases First",
+      "ctaLogin": "Log in to Account",
+      "trustFree": "Start for Free",
+      "trustZh": "Multilingual Support",
+      "trustStream": "Streaming Generation",
+      "trustMemory": "Persistent Memory",
+      "scrollHint": "Scroll down to see if it's right for you"
+    },
+    "feasibility": {
+      "eyebrow": "Core Capabilities & Fit",
+      "title": "Four Capabilities Supporting Serialization and Use Cases",
+      "subtitle": "Not a general chat box, but a productivity tool bound to your work's context, capable of long-term serialization.",
+      "personas": {
+        "serial": {
+          "title": "Serial / Daily Authors",
+          "desc": "Need stable continuation, controllable pacing, and low risk of writer's block. The assistant reads the previous chapter and outline, streaming text into the editor.",
+          "fit": "Highly Matched"
+        },
+        "world": {
+          "title": "Lore Enthusiasts / Long-Form World-Builders",
+          "desc": "Hierarchical memory of characters, factions, and foreshadowing. Retrieve settings before writing to avoid plot holes three hundred chapters later.",
+          "fit": "Highly Matched"
+        },
+        "edit": {
+          "title": "Revision & Polishing",
+          "desc": "Rewrite, polish, and expand by chapter. The orchestration process is visible, allowing intervention anytime rather than a one-off black-box output.",
+          "fit": "Suitable"
+        }
+      },
+      "compareTitle": "Differences from General Conversational AI",
+      "compareHeaders": {
+        "feature": "Dimension",
+        "generic": "General Conversational AI",
+        "us": "Novel Agent"
+      },
+      "compareRows": {
+        "context": { "feature": "World-building Memory", "generic": "Single-turn conversation, easily forgets", "us": "Hierarchical persistence of characters, factions, and settings, staying aligned even after 300 chapters" },
+        "orchestrate": { "feature": "Transparent Orchestration", "generic": "Mainly single-turn replies", "us": "Planning, breakdown, and execution are visible, making complex tasks controllable" },
+        "stream": { "feature": "Streaming Generation", "generic": "One-time paste", "us": "Text flows into the editor sentence by sentence, pause and rewrite anytime" },
+        "resume": { "feature": "Hosted Continuation", "generic": "Requires manual monitoring", "us": "Long tasks hosted in the background, progress remains upon reconnection" }
+      },
+      "ctaGuide": "View Full Workflow",
+      "ctaPricing": "Explore Pricing Plans"
+    },
+    "story": {
+      "introEyebrow": "Product Demo",
+      "introTitle": "How Creation Happens in the Real Interface",
+      "introSubtitle": "A three-act interactive demo: Context Alignment → Parallel Sub-agents → Streaming Generation",
+      "acts": {
+        "1": {
+          "label": "Orchestration & Planning",
+          "title": "Before writing,",
+          "titleAccent": "think clearly first",
+          "lead": "Break down outlines, deduce pacing, and generate writing plans—let AI act on your intentions, no more blind boxes.",
+          "points": {
+            "1": { "highlight": "Visible Thinking", "text": "Deduce pacing and foreshadowing without taking up the main text area" },
+            "2": { "highlight": "Structure First", "text": "Generate a writing plan first, then execute step by step" },
+            "3": { "highlight": "Traceable Steps", "text": "Clear status for each step, keeping long-term creation on track" }
+          }
+        },
+        "2": {
+          "label": "Parallel Sub-agents",
+          "title": "Complex tasks,",
+          "titleAccent": "delegate to sub-agents",
+          "lead": "Keep the main chat clean, put specialized work into independent panels, and merge back when done.",
+          "points": {
+            "1": { "highlight": "No Chat Clutter", "text": "Proofreading and retrieval tasks run separately" },
+            "2": { "highlight": "Parallel Efficiency", "text": "Multi-thread processing without switching windows constantly" },
+            "3": { "highlight": "Auto-Writeback", "text": "Summaries merge into memory for stabler continuation" }
+          }
+        },
+        "3": {
+          "label": "Streaming Generation",
+          "title": "Real-time text",
+          "titleAccent": "flows into the editor",
+          "lead": "Words grow line by line, what you see is what you get; edit as you go, automatically saved upon completion.",
+          "points": {
+            "1": { "highlight": "Low-Latency Output", "text": "Read as it generates, keeping up with the pace" },
+            "2": { "highlight": "Intervene Anytime", "text": "Pause, follow up, and rewrite all on the same screen" },
+            "3": { "highlight": "Auto-Save", "text": "Chapters and memory sync automatically" }
+          }
+        }
+      }
+    },
+    "danmaku": {
+      "eyebrow": "Creator Voices",
+      "title": "Real user feedback, floating by like bullet comments",
+      "subtitle": "Displays your account when logged in; otherwise shows approximate region based on IP",
+      "synced": "Loaded {{count}} comments · Syncing continuously",
+      "loading": "Loading creator comments...",
+      "loadError": "Failed to load comments, please refresh the page and try again",
+      "retry": "Reload",
+      "empty": "No comments yet, be the first to share your thoughts",
+      "placeholder": "Write down your experience...",
+      "send": "Send",
+      "minLength": "Comment must be at least 2 characters",
+      "sent": "Comment sent",
+      "sentGuest": "Comment sent, thanks for sharing",
+      "sendError": "Failed to send, please try again later"
+    }
+  },
+  "generic": {
+    "eyebrowLegal": "Legal & Compliance",
+    "eyebrowSupport": "Help & Support",
+    "subtitleLegal": "Please read the following terms carefully. By using this service, you understand and agree to the relevant content.",
+    "subtitleContact": "For product inquiries, business cooperation, and technical support, please feel free to contact us.",
+    "emptyTitle": "Content Not Yet Published",
+    "emptyDesc": "Please check back later, or contact the administrator to update the site content."
+  }
+}

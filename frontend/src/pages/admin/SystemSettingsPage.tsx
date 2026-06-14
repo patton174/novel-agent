@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useCallback, useEffect, useState } from 'react'
 import { Save } from 'lucide-react'
 import {
@@ -18,55 +19,56 @@ import { APP_BTN_MD } from '@/lib/appButtonTokens'
 import { useMarkRouteSeen } from '@/hooks/useMarkRouteSeen'
 import { appToast } from '@/stores/appToastStore'
 
-const SETTING_FIELDS = [
-  {
-    key: 'registration.enabled',
-    label: '开放注册',
-    description: '关闭后新用户无法注册（维护模式）',
-    type: 'boolean' as const,
-  },
-  {
-    key: 'registration.require_email_verify',
-    label: '注册需邮箱验证',
-    description: '新用户须验证邮箱后才能登录',
-    type: 'boolean' as const,
-  },
-  {
-    key: 'agent.default_model',
-    label: '默认模型',
-    description: 'Agent 默认 LLM 模型 ID',
-    type: 'string' as const,
-  },
-  {
-    key: 'agent.max_tokens_per_run',
-    label: '单次 Run 最大 Tokens',
-    description: '单次 Agent 运行 token 上限提示值',
-    type: 'number' as const,
-  },
-  {
-    key: 'crawl.max_concurrent_jobs',
-    label: '爬虫最大并发',
-    description: '内容服务爬虫并发任务上限',
-    type: 'number' as const,
-  },
-]
-
 export default function SystemSettingsPage() {
+  const { t } = useTranslation(['admin'])
   useMarkRouteSeen()
   const [settings, setSettings] = useState<SiteSettingsMap | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+
+  const SETTING_FIELDS = [
+    {
+      key: 'registration.enabled',
+      label: t('admin:settings.regEnabled'),
+      description: t('admin:settings.regEnabledDesc'),
+      type: 'boolean' as const,
+    },
+    {
+      key: 'registration.require_email_verify',
+      label: t('admin:settings.regVerify'),
+      description: t('admin:settings.regVerifyDesc'),
+      type: 'boolean' as const,
+    },
+    {
+      key: 'agent.default_model',
+      label: t('admin:settings.agentModel'),
+      description: t('admin:settings.agentModelDesc'),
+      type: 'string' as const,
+    },
+    {
+      key: 'agent.max_tokens_per_run',
+      label: t('admin:settings.agentTokens'),
+      description: t('admin:settings.agentTokensDesc'),
+      type: 'number' as const,
+    },
+    {
+      key: 'crawl.max_concurrent_jobs',
+      label: t('admin:settings.crawlJobs'),
+      description: t('admin:settings.crawlJobsDesc'),
+      type: 'number' as const,
+    },
+  ]
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
       setSettings(await fetchAdminSiteSettings())
     } catch (err) {
-      appToast.error(err instanceof Error ? err.message : '加载系统参数失败')
+      appToast.error(err instanceof Error ? err.message : t('admin:settings.loadFail'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [t])
 
   useEffect(() => {
     void load()
@@ -82,9 +84,9 @@ export default function SystemSettingsPage() {
     try {
       const updated = await updateAdminSiteSettings(settings)
       setSettings(updated)
-      appToast.success('系统参数已保存')
+      appToast.success(t('admin:settings.saved'))
     } catch (err) {
-      appToast.error(err instanceof Error ? err.message : '保存失败')
+      appToast.error(err instanceof Error ? err.message : t('admin:settings.saveFail'))
     } finally {
       setSaving(false)
     }
@@ -93,11 +95,11 @@ export default function SystemSettingsPage() {
   return (
     <AppPageStack compact className="pb-20">
       <p className="text-sm text-muted-foreground">
-        参数保存后约 60 秒内对各服务生效。关闭注册会立即拦截新用户注册请求。
+        {t('admin:settings.pageDesc')}
       </p>
 
       <AppShellCard>
-        <AppShellCardHeader title="运行参数" description="注册、Agent 与爬虫全局配置" />
+        <AppShellCardHeader title={t('admin:settings.cardTitle')} description={t('admin:settings.cardDesc')} />
         {loading || !settings ? (
           <div className="divide-y divide-border/60">
             {SETTING_FIELDS.map((field) => (
@@ -152,7 +154,7 @@ export default function SystemSettingsPage() {
         <div className="mx-auto flex max-w-2xl justify-end">
           <Button type="button" className={APP_BTN_MD} disabled={saving || loading || !settings} onClick={() => void handleSave()}>
             <Save className="mr-1.5 size-4" />
-            {saving ? '保存中…' : '保存参数'}
+            {saving ? t('admin:settings.saving') : t('admin:settings.saveBtn')}
           </Button>
         </div>
       </div>

@@ -10,16 +10,18 @@ import { AuthField } from '../components/auth/AuthField'
 import { AuthLegalNotice } from '../components/auth/AuthLegalNotice'
 import { AuthSubmitButton } from '../components/auth/AuthSubmitButton'
 import { useFormDraft } from '../hooks/useJourneyTracker'
+import { useTranslation } from 'react-i18next'
 
 const LoginPage: React.FC = () => {
+  const { t } = useTranslation(['common', 'auth'])
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const sessionHint = useMemo(() => {
     if (searchParams.get('reason') === 'session_expired') {
-      return '登录已过期，请重新登录'
+      return t('auth:login.sessionExpired')
     }
     return ''
-  }, [searchParams])
+  }, [searchParams, t])
   const [username, setUsername] = useFormDraft('login_username', '')
   const [password, setPassword] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -28,8 +30,8 @@ const LoginPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const next: { username?: string; password?: string } = {}
-    if (!username.trim()) next.username = '请输入用户名'
-    if (!password.trim()) next.password = '请输入密码'
+    if (!username.trim()) next.username = t('auth:login.usernameReq')
+    if (!password.trim()) next.password = t('auth:login.passwordReq')
     if (Object.keys(next).length > 0) {
       setFieldErrors(next)
       return
@@ -50,21 +52,21 @@ const LoginPage: React.FC = () => {
             email: '',
             role: (loginResult.role as UserRole) ?? 'user',
           })
-          appToast.info('已使用登录信息进入，个人资料将稍后同步')
+          appToast.info(t('auth:login.profileSyncLater'))
         } else {
           appToast.error(
             profileErr instanceof Error
-              ? `登录成功，但加载用户信息失败：${profileErr.message}`
-              : '登录成功，但加载用户信息失败',
+              ? t('auth:login.profileLoadFailWithErr', { msg: profileErr.message })
+              : t('auth:login.profileLoadFail')
           )
           return
         }
       }
       localStorage.removeItem('draft_login_username')
-      appToast.success('欢迎回来')
+      appToast.success(t('auth:login.success'))
       navigate('/dashboard')
     } catch (err) {
-      appToast.error(err instanceof Error ? err.message : '登录失败')
+      appToast.error(err instanceof Error ? err.message : t('auth:login.fail'))
     } finally {
       setSubmitting(false)
     }
@@ -72,14 +74,14 @@ const LoginPage: React.FC = () => {
 
   return (
     <AuthShell
-      title="欢迎回来"
-      subtitle="登录以继续创作与同步项目"
+      title={t('auth:login.title')}
+      subtitle={t('auth:login.subtitle')}
       marketing={{
-        headline: '可编排、可记忆的连载助手',
-        description: '登录后恢复章节、会话与世界观记忆，从上次停笔处继续。',
+        headline: t('auth:login.marketingHeadline'),
+        description: t('auth:login.marketingDesc'),
         footer: (
           <div className="flex flex-wrap gap-2 pt-1">
-            {['流式成稿', '记忆持久化', '用量透明'].map((text) => (
+            {[t('auth:login.featureStream'), t('auth:login.featureMemory'), t('auth:login.featureTransparent')].map((text) => (
               <span
                 key={text}
                 className="rounded-xl border border-white/20 bg-white/10 px-2.5 py-0.5 text-[11px] font-medium text-white/90"
@@ -93,9 +95,9 @@ const LoginPage: React.FC = () => {
       legal={<AuthLegalNotice variant="login" />}
       footer={
         <>
-          还没有账号？{' '}
+          {t('auth:login.noAccount')}{' '}
           <Link to="/register" className="font-medium text-primary hover:underline">
-            免费注册
+            {t('common:cta.registerFree')}
           </Link>
         </>
       }
@@ -109,9 +111,9 @@ const LoginPage: React.FC = () => {
         <AuthField
           id="login-username"
           name="username"
-          label="用户名"
+          label={t('auth:login.usernameLabel')}
           autoComplete="username"
-          placeholder="输入用户名"
+          placeholder={t('auth:login.usernamePlaceholder')}
           value={username}
           error={fieldErrors.username}
           onChange={(e) => {
@@ -124,9 +126,9 @@ const LoginPage: React.FC = () => {
           id="login-password"
           name="password"
           type="password"
-          label="密码"
+          label={t('auth:login.passwordLabel')}
           autoComplete="current-password"
-          placeholder="输入密码"
+          placeholder={t('auth:login.passwordPlaceholder')}
           value={password}
           error={fieldErrors.password}
           onChange={(e) => {
@@ -138,13 +140,13 @@ const LoginPage: React.FC = () => {
               to="/forgot-password"
               className="inline-flex min-h-9 items-center py-1 text-xs text-primary hover:underline"
             >
-              忘记密码？
+              {t('auth:login.forgotPassword')}
             </Link>
           }
         />
 
-        <AuthSubmitButton loading={submitting} loadingText="登录中…" className="!mt-1">
-          登录
+        <AuthSubmitButton loading={submitting} loadingText={t('auth:login.submitting')} className="!mt-1">
+          {t('auth:login.submit')}
         </AuthSubmitButton>
       </form>
     </AuthShell>

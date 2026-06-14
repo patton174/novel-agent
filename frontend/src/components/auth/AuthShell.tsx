@@ -3,6 +3,9 @@ import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { NovelAiWordmark } from '../marketing/NovelAiWordmark'
 import { cn } from '@/lib/utils'
+import { useTranslation } from 'react-i18next'
+
+import { BRAND_NAME } from '@/lib/brand'
 
 export type AuthShellMarketing = {
   headline: ReactNode
@@ -29,6 +32,7 @@ const fadeUp = {
 }
 
 export function AuthShell({ title, subtitle, marketing, children, legal, footer, className }: Props) {
+  const { t } = useTranslation(['auth'])
   return (
     <div className="flex min-h-screen bg-background">
       <div className="mkt-auth-panel relative hidden w-[42%] flex-col justify-between overflow-hidden p-10 text-white xl:w-[44%] lg:flex">
@@ -57,12 +61,12 @@ export function AuthShell({ title, subtitle, marketing, children, legal, footer,
         </motion.div>
 
         <div className="relative z-10 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-white/50">
-          <span>© {new Date().getFullYear()} Novel AI</span>
+          <span>© {new Date().getFullYear()} {BRAND_NAME}</span>
           <Link to="/privacy" className="hover:text-white/80 hover:underline">
-            隐私
+            {t('auth:shell.privacy')}
           </Link>
           <Link to="/terms" className="hover:text-white/80 hover:underline">
-            协议
+            {t('auth:shell.terms')}
           </Link>
         </div>
       </div>

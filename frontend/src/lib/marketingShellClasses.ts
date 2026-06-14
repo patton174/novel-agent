@@ -2,7 +2,7 @@ import { cn } from '@/lib/utils'
 
 /** 营销落地页根容器（原 MarketingPageWrapper） */
 export const MARKETING_PAGE_WRAPPER = cn(
-  'relative flex min-h-screen flex-col overflow-x-hidden bg-[#f7f7f4] [overflow-anchor:none]',
+  'relative flex min-h-screen flex-col overflow-x-hidden bg-background [overflow-anchor:none]',
 )
 
 /** 营销页背景渐变层（原 MarketingBackgroundPattern） */

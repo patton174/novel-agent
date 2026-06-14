@@ -7,6 +7,7 @@ import { appToast } from '@/stores/appToastStore'
 import { AuthLegalNotice } from './AuthLegalNotice'
 import { AppSpinner } from '@/components/loading/AppSpinner'
 import { cn } from '@/lib/utils'
+import { useTranslation } from 'react-i18next'
 
 const SLIDER_HEIGHT = 140
 const PUZZLE_SIZE = 44
@@ -20,16 +21,17 @@ interface Props {
   onVerified: (captchaToken: string) => void | Promise<void>
 }
 
-function preloadImage(base64: string): Promise<void> {
+function preloadImage(base64: string, errorMsg: string): Promise<void> {
   return new Promise((resolve, reject) => {
     const img = new Image()
     img.onload = () => resolve()
-    img.onerror = () => reject(new Error('验证图加载失败'))
+    img.onerror = () => reject(new Error(errorMsg))
     img.src = `data:image/png;base64,${base64}`
   })
 }
 
 export const SliderCaptchaModal: React.FC<Props> = ({ open, onClose, onVerified }) => {
+  const { t } = useTranslation(['auth'])
   const [challenge, setChallenge] = useState<SliderCaptchaChallenge | null>(null)
   const [offsetX, setOffsetX] = useState(0)
   const [phase, setPhase] = useState<Phase>('loading')
@@ -56,17 +58,17 @@ export const SliderCaptchaModal: React.FC<Props> = ({ open, onClose, onVerified 
     try {
       const data = await fetchSliderCaptcha()
       if (seq !== loadSeq.current) return
-      await Promise.all([preloadImage(data.backgroundImage), preloadImage(data.puzzleImage)])
+      await Promise.all([preloadImage(data.backgroundImage, t('auth:captcha.imgLoadFail')), preloadImage(data.puzzleImage, t('auth:captcha.imgLoadFail'))])
       if (seq !== loadSeq.current) return
       setChallenge(data)
       setPhase('ready')
     } catch (err) {
       if (seq !== loadSeq.current) return
-      const msg = err instanceof Error ? err.message : '验证码加载失败'
+      const msg = err instanceof Error ? err.message : t('auth:captcha.loadFail')
       setErrorMessage(msg)
       setPhase('error')
     }
-  }, [])
+  }, [t])
 
   useEffect(() => {
     if (open) void loadChallenge()
@@ -98,7 +100,7 @@ export const SliderCaptchaModal: React.FC<Props> = ({ open, onClose, onVerified 
       await onVerified(token)
       onClose()
     } catch (err) {
-      const msg = err instanceof Error ? err.message : '验证失败，请重试'
+      const msg = err instanceof Error ? err.message : t('auth:captcha.verifyFail')
       appToast.error(msg)
       setOffsetX(0)
       void loadChallenge()
@@ -108,17 +110,17 @@ export const SliderCaptchaModal: React.FC<Props> = ({ open, onClose, onVerified 
   const statusLabel = () => {
     switch (phase) {
       case 'loading':
-        return '正在准备验证图…'
+        return t('auth:captcha.statusLoading')
       case 'error':
-        return errorMessage ?? '加载失败'
+        return errorMessage ?? t('auth:captcha.statusError')
       case 'verifying':
-        return '校验拼图位置…'
+        return t('auth:captcha.statusVerifying')
       case 'success':
-        return '验证通过'
+        return t('auth:captcha.statusSuccess')
       case 'sending':
-        return '正在发送验证码…'
+        return t('auth:captcha.statusSending')
       default:
-        return '拖动滑块，将拼图对齐缺口'
+        return t('auth:captcha.statusDefault')
     }
   }
 
@@ -157,7 +159,7 @@ export const SliderCaptchaModal: React.FC<Props> = ({ open, onClose, onVerified 
               <div className="mb-3 flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <h3 id="captcha-title" className="text-sm font-semibold text-foreground">
-                    安全验证
+                    {t('auth:captcha.title')}
                   </h3>
                   <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">{statusLabel()}</p>
                 </div>
@@ -184,7 +186,7 @@ export const SliderCaptchaModal: React.FC<Props> = ({ open, onClose, onVerified 
                     <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-muted/80 via-muted/40 to-muted/70" />
                     <AppSpinner size="sm" />
                     <p className="relative z-10 text-[11px] font-medium text-muted-foreground">
-                      生成验证图中…
+                      {t('auth:captcha.generating')}
                     </p>
                   </div>
                 ) : null}
@@ -198,7 +200,7 @@ export const SliderCaptchaModal: React.FC<Props> = ({ open, onClose, onVerified 
                       className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground"
                     >
                       <RefreshCw className="size-3.5" />
-                      重新加载
+                      {t('auth:captcha.reload')}
                     </button>
                   </div>
                 ) : null}
@@ -238,7 +240,7 @@ export const SliderCaptchaModal: React.FC<Props> = ({ open, onClose, onVerified 
                     ) : (
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <AppSpinner size="sm" />
-                        {phase === 'sending' ? '发送验证码中…' : '验证中…'}
+                        {phase === 'sending' ? t('auth:captcha.overlaySending') : t('auth:captcha.overlayVerifying')}
                       </div>
                     )}
                   </motion.div>
@@ -268,7 +270,7 @@ export const SliderCaptchaModal: React.FC<Props> = ({ open, onClose, onVerified 
                 }}
               >
                 <div className="pointer-events-none absolute inset-y-0 left-10 right-3 flex items-center">
-                  <span className="truncate text-[11px] text-muted-foreground">向右拖动滑块</span>
+                  <span className="truncate text-[11px] text-muted-foreground">{t('auth:captcha.dragHint')}</span>
                 </div>
                 <div
                   className="absolute top-0.5 flex size-9 cursor-grab items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md active:cursor-grabbing"
@@ -284,7 +286,7 @@ export const SliderCaptchaModal: React.FC<Props> = ({ open, onClose, onVerified 
                   onClick={onClose}
                   className="h-8 rounded-lg px-3 text-xs text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
                 >
-                  取消
+                  {t('auth:captcha.cancel')}
                 </button>
                 <button
                   type="button"
@@ -293,7 +295,7 @@ export const SliderCaptchaModal: React.FC<Props> = ({ open, onClose, onVerified 
                   className="inline-flex h-8 items-center gap-1 rounded-lg px-3 text-xs font-medium text-primary transition-colors hover:bg-primary/8 disabled:opacity-50"
                 >
                   <RefreshCw className={cn('size-3.5', phase === 'loading' && 'animate-spin')} />
-                  换一张
+                  {t('auth:captcha.change')}
                 </button>
               </div>
             </div>

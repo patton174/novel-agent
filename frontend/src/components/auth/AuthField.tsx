@@ -37,7 +37,7 @@ export function AuthField({
         {...props}
       />
       {error ? (
-        <p id={`${id}-error`} className="text-[11px] leading-snug text-destructive">
+        <p id={`${id}-error`} className="text-ui-sm leading-snug text-destructive">
           {error}
         </p>
       ) : null}

@@ -3,7 +3,7 @@ import { installRandomUUIDPolyfill } from './utils/randomUUID'
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App'
-import './styles/site-globals.css'
+import './styles/globals.css'
 import './styles/agent-ui.css'
 import { prefetchRouteShells } from './components/loading/prefetchRouteShells'
 

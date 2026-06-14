@@ -1,5 +1,6 @@
 import { cn } from '@/lib/utils'
 import { AppSpinner } from '@/components/loading/AppSpinner'
+import { useTranslation } from 'react-i18next'
 
 type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   loading?: boolean
@@ -8,12 +9,15 @@ type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
 
 export function AuthSubmitButton({
   loading = false,
-  loadingText = '处理中…',
+  loadingText,
   children,
   className,
   disabled,
   ...rest
 }: Props) {
+  const { t } = useTranslation(['auth'])
+  const resolvedLoadingText = loadingText ?? t('auth:submit.processing')
+
   return (
     <button
       type="submit"
@@ -37,7 +41,7 @@ export function AuthSubmitButton({
         {loading ? (
           <>
             <AppSpinner size="sm" className="border-primary-foreground/30 border-t-primary-foreground" />
-            {loadingText}
+            {resolvedLoadingText}
           </>
         ) : (
           children

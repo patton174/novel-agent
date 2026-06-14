@@ -2,14 +2,9 @@ import { Fragment, useMemo, useState } from 'react'
 import { cn } from '@/lib/utils'
 import type { DashboardActivity, DashboardActivityDay } from '@/api/dashboardApi'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useTranslation } from 'react-i18next'
 
 export type ActivityMode = 'all' | 'writing' | 'agent'
-
-const MODE_OPTIONS: { id: ActivityMode; label: string; metricLabel: string }[] = [
-  { id: 'all', label: '全部', metricLabel: '创作活跃' },
-  { id: 'writing', label: '写作', metricLabel: '写作字数' },
-  { id: 'agent', label: 'Agent', metricLabel: 'Agent 运行' },
-]
 
 /** 与网格 gap、标签列宽、格子尺寸保持一致 */
 const WEEKDAY_COL_WIDTH = '1.25rem'
@@ -17,13 +12,6 @@ const CELL_SIZE_PX = 14
 const GRID_GAP_PX = 4
 const ACTIVE_WEEK_PAD = 2
 const MIN_VISIBLE_WEEKS = 26
-
-const WEEKDAY_LABELS = [
-  { row: 0, label: '日' },
-  { row: 1, label: '一' },
-  { row: 3, label: '三' },
-  { row: 5, label: '五' },
-]
 
 const LEVEL_CLASSES = [
   'bg-muted/50 ring-1 ring-border/40',
@@ -220,7 +208,7 @@ function computeStreaks(days: DashboardActivityDay[], mode: ActivityMode) {
   return { longest, current }
 }
 
-function computeHighlights(days: DashboardActivityDay[], mode: ActivityMode) {
+function computeHighlights(days: DashboardActivityDay[], mode: ActivityMode, t: any) {
   const monthTotals = new Map<number, number>()
   let bestDay = days[0]?.date ?? '—'
   let bestValue = -1
@@ -254,7 +242,7 @@ function computeHighlights(days: DashboardActivityDay[], mode: ActivityMode) {
         })
       : '—'
 
-  const bestMonthLabel = bestMonthValue > 0 ? `${bestMonth + 1} 月` : '—'
+  const bestMonthLabel = bestMonthValue > 0 ? `${bestMonth + 1} ${t('dashboard:heatmap.month')}` : '—'
 
   return { bestMonthLabel, bestDayLabel }
 }
@@ -270,17 +258,17 @@ function formatTotal(activity: DashboardActivity, mode: ActivityMode): string {
   }
 }
 
-function formatTooltip(date: string, value: number, mode: ActivityMode): string {
+function formatTooltip(date: string, value: number, mode: ActivityMode, t: any): string {
   const label = parseUtcDate(date).toLocaleDateString('zh-CN', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
     timeZone: 'UTC',
   })
-  if (value <= 0) return `${label}：无活动`
-  if (mode === 'agent') return `${label}：${value} 次 Agent 运行`
-  if (mode === 'writing') return `${label}：${value.toLocaleString('zh-CN')} 字`
-  return `${label}：活跃值 ${value.toLocaleString('zh-CN')}`
+  if (value <= 0) return `${label}：${t('dashboard:heatmap.tooltipNoActivity')}`
+  if (mode === 'agent') return `${label}：${value} ${t('dashboard:heatmap.tooltipAgent')}`
+  if (mode === 'writing') return `${label}：${value.toLocaleString('zh-CN')} ${t('dashboard:heatmap.tooltipWriting')}`
+  return `${label}：${t('dashboard:heatmap.tooltipAll')} ${value.toLocaleString('zh-CN')}`
 }
 
 interface ActivityHeatmapProps {
@@ -289,8 +277,22 @@ interface ActivityHeatmapProps {
 }
 
 export function ActivityHeatmap({ activity, loading }: ActivityHeatmapProps) {
+  const { t } = useTranslation(['dashboard'])
   const [mode, setMode] = useState<ActivityMode>('all')
   const days = activity?.days ?? []
+
+  const MODE_OPTIONS: { id: ActivityMode; label: string; metricLabel: string }[] = useMemo(() => [
+    { id: 'all', label: t('dashboard:heatmap.modeAll'), metricLabel: t('dashboard:heatmap.metricAll') },
+    { id: 'writing', label: t('dashboard:heatmap.modeWriting'), metricLabel: t('dashboard:heatmap.metricWriting') },
+    { id: 'agent', label: t('dashboard:heatmap.modeAgent'), metricLabel: t('dashboard:heatmap.metricAgent') },
+  ], [t])
+
+  const WEEKDAY_LABELS = useMemo(() => [
+    { row: 0, label: t('dashboard:heatmap.sun') },
+    { row: 1, label: t('dashboard:heatmap.mon') },
+    { row: 3, label: t('dashboard:heatmap.wed') },
+    { row: 5, label: t('dashboard:heatmap.fri') },
+  ], [t])
 
   const { weeks, maxValue, monthLabels } = useMemo(() => {
     const built = buildHeatmapGrid(days, mode)
@@ -303,7 +305,7 @@ export function ActivityHeatmap({ activity, loading }: ActivityHeatmapProps) {
   }, [days, mode])
 
   const streaks = useMemo(() => computeStreaks(days, mode), [days, mode])
-  const highlights = useMemo(() => computeHighlights(days, mode), [days, mode])
+  const highlights = useMemo(() => computeHighlights(days, mode, t), [days, mode, t])
   const activeMode = MODE_OPTIONS.find((m) => m.id === mode)!
 
   const monthLabelByWeek = useMemo(
@@ -352,7 +354,7 @@ export function ActivityHeatmap({ activity, loading }: ActivityHeatmapProps) {
         {loading ? (
           <Skeleton className="mx-auto h-[95px] w-full max-w-md rounded-lg" />
         ) : weekCount === 0 ? (
-          <p className="py-8 text-center text-sm text-muted-foreground">暂无活跃数据</p>
+          <p className="py-8 text-center text-sm text-muted-foreground">{t('dashboard:heatmap.noData')}</p>
         ) : (
           <div className="w-full overflow-x-auto pb-1">
             <div className="min-w-fit">
@@ -367,9 +369,9 @@ export function ActivityHeatmap({ activity, loading }: ActivityHeatmapProps) {
                 {weeks.map((_, weekIndex) => (
                   <div
                     key={weekIndex}
-                    className="truncate text-[10px] font-medium leading-none text-muted-foreground"
+                    className="truncate text-ui-xs font-medium leading-none text-muted-foreground"
                   >
-                    {monthLabelByWeek.get(weekIndex) ? `${monthLabelByWeek.get(weekIndex)}月` : ''}
+                    {monthLabelByWeek.get(weekIndex) ? `${monthLabelByWeek.get(weekIndex)}${t('dashboard:heatmap.month')}` : ''}
                   </div>
                 ))}
               </div>
@@ -383,7 +385,7 @@ export function ActivityHeatmap({ activity, loading }: ActivityHeatmapProps) {
               >
                 {Array.from({ length: 7 }).map((_, rowIndex) => (
                   <Fragment key={rowIndex}>
-                    <div className="flex items-center text-[10px] font-medium leading-none text-muted-foreground">
+                    <div className="flex items-center text-ui-xs font-medium leading-none text-muted-foreground">
                       {WEEKDAY_LABELS.find((l) => l.row === rowIndex)?.label ?? ''}
                     </div>
                     {weeks.map((week, weekIndex) => {
@@ -394,7 +396,7 @@ export function ActivityHeatmap({ activity, loading }: ActivityHeatmapProps) {
                           key={`${weekIndex}-${rowIndex}`}
                           title={
                             cell.date
-                              ? formatTooltip(cell.date, cell.value, mode)
+                              ? formatTooltip(cell.date, cell.value, mode, t)
                               : undefined
                           }
                           className={cn(
@@ -414,37 +416,37 @@ export function ActivityHeatmap({ activity, loading }: ActivityHeatmapProps) {
         <div className="mt-4 flex flex-col gap-4 border-t border-border pt-4 sm:flex-row sm:items-end sm:justify-between">
           <div className="grid flex-1 grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-4">
             <div>
-              <p className="text-[11px] text-muted-foreground">最活跃月份</p>
+              <p className="text-ui-sm text-muted-foreground">{t('dashboard:heatmap.bestMonth')}</p>
               <p className="mt-0.5 text-sm font-medium text-foreground">
                 {loading ? '—' : highlights.bestMonthLabel}
               </p>
             </div>
             <div>
-              <p className="text-[11px] text-muted-foreground">最活跃日期</p>
+              <p className="text-ui-sm text-muted-foreground">{t('dashboard:heatmap.bestDay')}</p>
               <p className="mt-0.5 text-sm font-medium text-foreground">
                 {loading ? '—' : highlights.bestDayLabel}
               </p>
             </div>
             <div>
-              <p className="text-[11px] text-muted-foreground">最长连续</p>
+              <p className="text-ui-sm text-muted-foreground">{t('dashboard:heatmap.longestStreak')}</p>
               <p className="mt-0.5 text-sm font-medium text-foreground">
-                {loading ? '—' : `${streaks.longest} 天`}
+                {loading ? '—' : `${streaks.longest} ${t('dashboard:heatmap.days')}`}
               </p>
             </div>
             <div>
-              <p className="text-[11px] text-muted-foreground">当前连续</p>
+              <p className="text-ui-sm text-muted-foreground">{t('dashboard:heatmap.currentStreak')}</p>
               <p className="mt-0.5 text-sm font-medium text-foreground">
-                {loading ? '—' : `${streaks.current} 天`}
+                {loading ? '—' : `${streaks.current} ${t('dashboard:heatmap.days')}`}
               </p>
             </div>
           </div>
 
-          <div className="flex shrink-0 items-center gap-1.5 text-[10px] text-muted-foreground">
-            <span>少</span>
+          <div className="flex shrink-0 items-center gap-1.5 text-ui-xs text-muted-foreground">
+            <span>{t('dashboard:heatmap.less')}</span>
             {LEVEL_CLASSES.map((cls, i) => (
               <div key={i} className={cn('size-3 rounded-[2px]', cls)} />
             ))}
-            <span>多</span>
+            <span>{t('dashboard:heatmap.more')}</span>
           </div>
         </div>
       </div>

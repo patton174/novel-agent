@@ -18,6 +18,7 @@ import { startSessionBootstrap } from './security/sessionBootstrap'
 import { useUserStore } from './stores/userStore'
 import { useJourneyTracker } from './hooks/useJourneyTracker'
 import { PageTransition } from './components/PageTransition'
+import { initializeTheme } from './stores/themeStore'
 
 const HomePage = lazy(() => import('./pages/HomePage'))
 const LoginPage = lazy(() => import('./pages/LoginPage'))
@@ -142,6 +143,7 @@ function AppRoutes() {
 function App() {
   useEffect(() => {
     migrateLegacyAuthStorage()
+    initializeTheme()
     primeFingerprint()
     void ensureSessionAndHeartbeat()
     void startSessionBootstrap().then(() => {

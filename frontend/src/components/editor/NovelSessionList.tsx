@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useMemo, useState } from 'react'
 import type { EditorChatSession } from '../../types/editor'
 import { EditorButton } from '../ui/EditorButton'
@@ -27,17 +28,6 @@ export interface NovelSessionListProps {
   onDeleteSession: (sessionId: string) => void
 }
 
-function sessionTitleLabel(session: EditorChatSession, titlePending: boolean): string {
-  if (titlePending) return '生成标题…'
-  const title = session.title.trim()
-  return title || '新对话'
-}
-
-function sessionSubtitle(session: EditorChatSession, titlePending: boolean): string {
-  if (titlePending) return ''
-  return formatSessionRelativeTime(session.updatedAt)
-}
-
 export function NovelSessionList({
   sessions,
   activeSession,
@@ -49,8 +39,20 @@ export function NovelSessionList({
   onRenameSession,
   onDeleteSession,
 }: NovelSessionListProps) {
+  const { t } = useTranslation(['editor'])
   const [showOlder, setShowOlder] = useState(false)
   const [visibleLimit, setVisibleLimit] = useState(PAGE_SIZE)
+
+  function sessionTitleLabel(session: EditorChatSession, titlePending: boolean): string {
+    if (titlePending) return t('editor:sessionList.generatingTitle')
+    const title = session.title.trim()
+    return title || t('editor:sessionList.newChat')
+  }
+
+  function sessionSubtitle(session: EditorChatSession, titlePending: boolean): string {
+    if (titlePending) return ''
+    return formatSessionRelativeTime(session.updatedAt)
+  }
 
   const sorted = useMemo(
     () => [...sessions].sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime()),
@@ -98,7 +100,7 @@ export function NovelSessionList({
 
   if (sessions.length === 0) {
     return (
-      <div className="px-0.5 py-1.5 text-xs leading-snug text-muted-foreground/80">暂无对话</div>
+      <div className="px-0.5 py-1.5 text-xs leading-snug text-muted-foreground/80">{t('editor:sessionList.noChats')}</div>
     )
   }
 
@@ -182,16 +184,16 @@ export function NovelSessionList({
                     onClick={(e) => e.stopPropagation()}
                   >
                     <KebabMenu
-                      aria-label="会话操作"
+                      aria-label={t('editor:sessionList.sessionActions')}
                       items={[
                         {
                           id: 'rename',
-                          label: '重命名',
+                          label: t('editor:sessionList.rename'),
                           onClick: () => onRenameSession(session.id, session.title),
                         },
                         {
                           id: 'delete',
-                          label: '删除',
+                          label: t('editor:sessionList.delete'),
                           danger: true,
                           onClick: () => onDeleteSession(session.id),
                         },
@@ -207,7 +209,7 @@ export function NovelSessionList({
 
       {!showOlder && olderCount > 0 ? (
         <button type="button" className={EDITOR_SESSION_LOAD_MORE} onClick={() => setShowOlder(true)}>
-          查看更早（{olderCount}）
+          {t('editor:sessionList.viewOlder', { count: olderCount })}
         </button>
       ) : null}
 
@@ -217,7 +219,7 @@ export function NovelSessionList({
           className={EDITOR_SESSION_LOAD_MORE}
           onClick={() => setVisibleLimit((n) => n + PAGE_STEP)}
         >
-          加载更多（{totalShown}/{totalAvailable}）
+          {t('editor:sessionList.loadMore', { shown: totalShown, total: totalAvailable })}
         </button>
       ) : null}
     </div>
@@ -239,13 +241,14 @@ export function NovelSessionBatchBar({
   onSelectAll: () => void
   onBatchDelete: () => void
 }) {
+  const { t } = useTranslation(['editor'])
   return (
     <div className="flex w-full flex-wrap gap-1.5 pb-1.5">
       <EditorButton variant="ghost" size="sm" type="button" onClick={onExitBatchMode}>
-        完成
+        {t('editor:sessionList.done')}
       </EditorButton>
       <EditorButton variant="ghost" size="sm" type="button" onClick={onSelectAll}>
-        {allSelected ? '取消全选' : `全选 (${totalCount})`}
+        {allSelected ? t('editor:sessionList.unselectAll') : t('editor:sessionList.selectAll', { count: totalCount })}
       </EditorButton>
       <EditorButton
         variant="danger"
@@ -254,7 +257,7 @@ export function NovelSessionBatchBar({
         disabled={selectedCount === 0}
         onClick={onBatchDelete}
       >
-        删除 ({selectedCount})
+        {t('editor:sessionList.deleteCount', { count: selectedCount })}
       </EditorButton>
     </div>
   )

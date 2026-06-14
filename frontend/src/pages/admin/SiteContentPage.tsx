@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Eye, FileText, Save } from 'lucide-react'
 import {
@@ -22,6 +23,7 @@ import { useMarkRouteSeen } from '@/hooks/useMarkRouteSeen'
 import { appToast } from '@/stores/appToastStore'
 
 export default function SiteContentPage() {
+  const { t } = useTranslation(['admin', 'common'])
   useMarkRouteSeen()
   const [items, setItems] = useState<SiteContentItem[]>([])
   const [selectedKey, setSelectedKey] = useState<string>('privacy')
@@ -59,11 +61,11 @@ export default function SiteContentPage() {
         applyItem(current, current.contentKey)
       }
     } catch (err) {
-      appToast.error(err instanceof Error ? err.message : '加载失败')
+      appToast.error(err instanceof Error ? err.message : t('common:feedback.loadFail'))
     } finally {
       setLoading(false)
     }
-  }, [applyItem, selectedKey])
+  }, [applyItem, selectedKey, t])
 
   useEffect(() => {
     void load()
@@ -80,7 +82,7 @@ export default function SiteContentPage() {
 
   const selectKey = (key: string) => {
     if (key === selectedKey) return
-    if (isDirty && !window.confirm('有未保存的更改，确定切换页面？')) return
+    if (isDirty && !window.confirm(t('admin:siteContent.unsavedConfirm'))) return
     const item = items.find((i) => i.contentKey === key)
     applyItem(item, key)
   }
@@ -95,9 +97,9 @@ export default function SiteContentPage() {
       })
       setSavedTitle(updated.title)
       setSavedBodyMd(updated.bodyMd)
-      appToast.success('已保存')
+      appToast.success(t('common:feedback.saved'))
     } catch (err) {
-      appToast.error(err instanceof Error ? err.message : '保存失败')
+      appToast.error(err instanceof Error ? err.message : t('common:feedback.saveFail'))
     } finally {
       setSaving(false)
     }
@@ -120,7 +122,7 @@ export default function SiteContentPage() {
       <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
         <aside className="hidden w-full shrink-0 lg:sticky lg:top-6 lg:block lg:w-52">
           <AppShellCard>
-            <AppShellCardHeader title="页面" description="隐私 · 条款 · 公告" />
+            <AppShellCardHeader title={t('admin:siteContent.pageTitle')} description={t('admin:siteContent.pageDesc')} />
             <AppShellCardBody className="py-2">
               <ul className="space-y-0.5">
                 {SITE_CONTENT_KEYS.map((item) => (
@@ -148,7 +150,7 @@ export default function SiteContentPage() {
         <div className="min-w-0 flex-1">
           <div className="mb-4 lg:hidden">
             <label htmlFor="site-content-key" className="mb-1.5 block text-xs font-medium text-muted-foreground">
-              编辑页面
+              {t('admin:siteContent.editLabel')}
             </label>
             <AdminNativeSelect
               id="site-content-key"
@@ -167,7 +169,7 @@ export default function SiteContentPage() {
             <AppShellCardHeader
               title={selectedLabel}
               description={
-                isDirty ? '有未保存的更改' : '编辑 Markdown，保存后公开页与仪表盘公告即时生效。'
+                isDirty ? t('admin:siteContent.unsaved') : t('admin:siteContent.editDesc')
               }
               action={
                 <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:shrink-0">
@@ -179,7 +181,7 @@ export default function SiteContentPage() {
                     onClick={() => setPreview((p) => !p)}
                   >
                     <Eye className="mr-1.5 size-4" />
-                    {preview ? '编辑' : '预览'}
+                    {preview ? t('admin:siteContent.edit') : t('admin:siteContent.preview')}
                   </Button>
                   <Button
                     type="button"
@@ -189,7 +191,7 @@ export default function SiteContentPage() {
                     onClick={() => void handleSave()}
                   >
                     <Save className="mr-1.5 size-4" />
-                    {saving ? '保存中…' : '保存'}
+                    {saving ? t('admin:siteContent.saving') : t('admin:siteContent.save')}
                   </Button>
                 </div>
               }
@@ -197,20 +199,20 @@ export default function SiteContentPage() {
             <AppShellCardBody>
               {preview ? (
                 <div>
-                  <h3 className="mb-4 text-xl font-semibold">{title || '预览'}</h3>
+                  <h3 className="mb-4 text-xl font-semibold">{title || t('admin:siteContent.previewTitle')}</h3>
                   <div className="prose prose-slate max-w-none text-muted-foreground">
-                    <AgentMarkdown text={bodyMd || '*（空）*'} variant="memory" />
+                    <AgentMarkdown text={bodyMd || t('admin:siteContent.empty')} variant="memory" />
                   </div>
                 </div>
               ) : (
                 <div className="space-y-3">
-                  <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="标题" />
+                  <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t('admin:siteContent.titlePlaceholder')} />
                   <textarea
                     value={bodyMd}
                     onChange={(e) => setBodyMd(e.target.value)}
                     rows={18}
                     className="w-full rounded-xl border border-border bg-background px-3 py-2 font-mono text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-primary/30"
-                    placeholder="Markdown 正文"
+                    placeholder={t('admin:siteContent.bodyPlaceholder')}
                   />
                 </div>
               )}
