@@ -9,7 +9,9 @@
     "build:analyze": "cross-env ANALYZE=true tsc && vite build",
     "preview": "vite preview",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 30",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "test:e2e:install": "playwright install chromium"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.2.9",
@@ -37,6 +39,7 @@
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.6.3",
+    "@playwright/test": "^1.52.0",
     "@testing-library/react": "^16.2.0",
     "@types/node": "^25.9.1",
     "@types/react": "^18.2.55",

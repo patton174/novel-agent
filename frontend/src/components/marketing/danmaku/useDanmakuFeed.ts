@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { fetchDanmakuPage, postDanmaku, type SiteDanmaku } from '@/api/billingApi'
+import { ensureCryptoReady } from '@/security/sessionBootstrap'
 
 const PAGE_SIZE = 20
 const REFETCH_MS = 18_000
@@ -36,6 +37,7 @@ export function useDanmakuFeed() {
       hasMoreRef.current = true
     }
     try {
+      await ensureCryptoReady()
       const page = await fetchDanmakuPage({
         pageSize: PAGE_SIZE,
         beforeId: reset ? null : nextBeforeIdRef.current,

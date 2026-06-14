@@ -17,13 +17,13 @@ export const marketingCtaVariants = cva(
         footerSecondary: 'border border-white/35 bg-white/10 text-white backdrop-blur-sm hover:bg-white/20'
       },
       size: {
-        default: 'px-6 py-3 text-sm motion-safe:transition-transform motion-safe:hover:-translate-y-0.5',
-        lg: 'px-8 py-3.5 text-base motion-safe:transition-transform motion-safe:hover:-translate-y-0.5',
+        default: 'px-6 py-3 text-sm transition-transform hover:-translate-y-0.5',
+        lg: 'px-8 py-3.5 text-base transition-transform hover:-translate-y-0.5',
         tier: 'h-12 w-full text-base duration-300',
         auth: 'h-11 w-full text-sm',
         inline: 'px-5 py-3 text-sm',
         sm: 'px-4 py-1.5 text-xs',
-        footer: 'px-7 py-3.5 text-sm motion-safe:transition-transform motion-safe:hover:-translate-y-0.5',
+        footer: 'px-7 py-3.5 text-sm transition-transform hover:-translate-y-0.5',
       }
     },
     defaultVariants: {

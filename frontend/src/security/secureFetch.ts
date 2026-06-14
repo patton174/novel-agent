@@ -75,9 +75,15 @@ async function buildRequest(
     typeof body === 'string' &&
     ['POST', 'PUT', 'PATCH'].includes(method)
 
-  const material = canEncryptBody || isSecurityCryptoEnabled()
-    ? await getActiveCryptoMaterial(logicalUrl)
-    : null
+  let material =
+    canEncryptBody || isSecurityCryptoEnabled()
+      ? await getActiveCryptoMaterial(logicalUrl)
+      : null
+
+  if (isSecurityCryptoEnabled() && !material && !signEmbeddedInBody) {
+    await invalidateCryptoRuntime()
+    material = await getActiveCryptoMaterial(logicalUrl)
+  }
 
   // SSE stream 走扁平 JSON，避免 __sec 字段体在网关未展开时导致 message 校验失败
   if (canEncryptBody && isFieldEncryptionEnabled() && material && !isStreamUrl(logicalUrl)) {
@@ -105,7 +111,10 @@ async function buildRequest(
     headers['Content-Type'] = 'application/json'
   }
 
-  if (isSecurityCryptoEnabled() && material && !signEmbeddedInBody) {
+  if (isSecurityCryptoEnabled() && !signEmbeddedInBody) {
+    if (!material) {
+      throw new Error('签名密钥未就绪，请刷新页面后重试')
+    }
     const signParams = await buildSignQueryParams(
       method,
       logicalUrl,

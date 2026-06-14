@@ -100,16 +100,24 @@
 .mkt-cta-glow {
   position: relative;
   overflow: hidden;
+  isolation: isolate;
   box-shadow:
     0 0 0 1px rgba(79, 70, 229, 0.25),
     0 6px 20px rgba(79, 70, 229, 0.35),
     0 20px 50px -12px rgba(79, 70, 229, 0.28);
 }
 
+.mkt-cta-glow > * {
+  position: relative;
+  z-index: 1;
+}
+
 .mkt-cta-glow::after {
   content: '';
   position: absolute;
   inset: 0;
+  z-index: 0;
+  pointer-events: none;
   background: linear-gradient(
     105deg,
     transparent 35%,
@@ -117,6 +125,19 @@
     transparent 65%
   );
   animation: mkt-shimmer 4s ease-in-out infinite;
+}
+
+/* 桌面端：hover 扫光（不依赖 prefers-reduced-motion 下的无限动画） */
+@media (hover: hover) and (pointer: fine) {
+  .mkt-cta-glow::after {
+    animation: none;
+    transform: translateX(-120%);
+    transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .mkt-cta-glow:hover::after {
+    transform: translateX(120%);
+  }
 }
 
 .mkt-glass-pill {
@@ -484,7 +505,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .mkt-gradient-text,
-  .mkt-cta-glow::after,
   .mkt-orb--slow,
   .mkt-orb--slower,
   .mkt-footer-cta-band,
