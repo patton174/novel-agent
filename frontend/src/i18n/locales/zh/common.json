@@ -112,11 +112,13 @@
     "toastSuccess": "成功",
     "toastError": "失败",
     "toastInfo": "提示",
-    "errorPageUpdated": "页面资源已更新",
+    "errorPageUpdated": "新版本已就绪",
     "errorPageFailed": "页面加载出错",
-    "errorPageUpdatedDesc": "站点刚完成部署，浏览器可能仍在使用旧脚本。请点击刷新加载最新版本。",
+    "errorPageUpdatedDesc": "站点刚完成部署，浏览器可能仍在使用旧脚本。请刷新以加载最新版本。",
     "errorPageUnknown": "未知错误，请刷新后重试。",
     "errorPageRefresh": "刷新页面",
+    "errorPageGoHome": "返回首页",
+    "errorPageUpdatedTip": "刷新后会加载最新资源，登录状态通常会保留。",
     "loadingDefault": "正在加载"
   }
 }

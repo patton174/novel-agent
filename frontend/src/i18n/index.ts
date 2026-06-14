@@ -15,6 +15,10 @@ import adminEn from './locales/en/admin.json'
 
 function readInitialLocale(): 'zh' | 'en' {
   try {
+    const fromUrl = new URLSearchParams(window.location.search).get('lang')
+    if (fromUrl === 'en' || fromUrl === 'zh') {
+      return fromUrl
+    }
     return localStorage.getItem('novel-agent-locale') === 'en' ? 'en' : 'zh'
   } catch {
     return 'zh'

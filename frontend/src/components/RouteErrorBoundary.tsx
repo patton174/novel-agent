@@ -1,7 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
-import { Button } from '@/components/ui/button'
-import { BRAND_NAME } from '@/lib/brand'
-import i18n from '@/i18n'
+import { RouteErrorFallback } from '@/components/RouteErrorFallback'
 
 interface Props {
   children: ReactNode
@@ -45,25 +43,12 @@ export class RouteErrorBoundary extends Component<Props, State> {
       return this.props.children
     }
 
-    const chunkError = isChunkLoadError(error)
-
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background px-6 text-center text-foreground">
-        <p className="text-xl font-semibold tracking-tight">
-          {BRAND_NAME.split(' ')[0]} <span className="text-primary">{BRAND_NAME.split(' ').slice(1).join(' ')}</span>
-        </p>
-        <h1 className="text-base font-medium">
-          {chunkError ? i18n.t('common:feedback.errorPageUpdated') : i18n.t('common:feedback.errorPageFailed')}
-        </h1>
-        <p className="max-w-md text-sm text-muted-foreground">
-          {chunkError
-            ? i18n.t('common:feedback.errorPageUpdatedDesc')
-            : error.message || i18n.t('common:feedback.errorPageUnknown')}
-        </p>
-        <Button type="button" onClick={this.handleRetry}>
-          {i18n.t('common:feedback.errorPageRefresh')}
-        </Button>
-      </div>
+      <RouteErrorFallback
+        chunkError={isChunkLoadError(error)}
+        message={error.message}
+        onRetry={this.handleRetry}
+      />
     )
   }
 }

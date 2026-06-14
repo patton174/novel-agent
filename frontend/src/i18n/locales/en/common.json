@@ -112,11 +112,13 @@
     "toastSuccess": "Success",
     "toastError": "Error",
     "toastInfo": "Info",
-    "errorPageUpdated": "Page Resources Updated",
+    "errorPageUpdated": "New Version Available",
     "errorPageFailed": "Page Load Error",
-    "errorPageUpdatedDesc": "Site just deployed, browser might be using old scripts. Please refresh.",
-    "errorPageUnknown": "Unknown error, please refresh.",
-    "errorPageRefresh": "Refresh Page",
+    "errorPageUpdatedDesc": "We just deployed an update. Your browser may still be using cached scripts—refresh to load the latest version.",
+    "errorPageUnknown": "Unknown error. Please refresh and try again.",
+    "errorPageRefresh": "Refresh Now",
+    "errorPageGoHome": "Back to Home",
+    "errorPageUpdatedTip": "After refreshing, the latest assets load automatically. You usually stay signed in.",
     "loadingDefault": "Loading"
   }
 }
