@@ -124,17 +124,20 @@ export default function AdminHomePage() {
             description={t('admin:home.snapshotDesc')}
           />
         </AppShellCard>
-        {STAT_CARDS.map((stat) => (
-          <AppStatCard
-            key={stat.key}
-            label={stat.label}
-            icon={stat.icon}
-            iconClassName={stat.iconClassName}
-            iconBgClassName={stat.iconBgClassName}
-            loading={loading}
-            value={getStatValue(platform, content, stat.key, stat.source)!.toLocaleString('zh-CN')}
-          />
-        ))}
+        {STAT_CARDS.map((stat) => {
+          const raw = getStatValue(platform, content, stat.key, stat.source)
+          return (
+            <AppStatCard
+              key={stat.key}
+              label={stat.label}
+              icon={stat.icon}
+              iconClassName={stat.iconClassName}
+              iconBgClassName={stat.iconBgClassName}
+              loading={loading}
+              value={raw == null ? '—' : raw.toLocaleString('zh-CN')}
+            />
+          )
+        })}
       </div>
     </AppPageStack>
   )

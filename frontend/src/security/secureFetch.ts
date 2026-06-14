@@ -4,7 +4,7 @@ import { isRouteObfuscationEnabled } from './cryptoManifest'
 import { buildEncryptedRouteUrl } from './routePathCrypto'
 import { wrapFieldPayload, isFieldEncryptionEnabled } from './fieldPayload'
 import { getActiveCryptoMaterial, isBootstrapAuthPath } from './cryptoMaterial'
-import { setSessionCrypto } from './sessionStore'
+import { hydrateSessionFromStorage, setSessionCrypto } from './sessionStore'
 import { ensureCryptoRuntime, invalidateCryptoRuntime, isCryptoStaleError } from './cryptoRuntime'
 import { buildSignQueryParams, appendSignQuery, computeRequestSign } from './requestSign'
 import { forceLogoutRedirect, isAuthSelfPath } from './authSession'
@@ -41,9 +41,14 @@ async function buildRequest(
     (bodyMayEncrypt(method, init?.body) || method === 'GET' || method === 'DELETE' || method === 'HEAD')
 
   if (isSecurityCryptoEnabled()) {
+    hydrateSessionFromStorage()
     await ensureCryptoRuntime(false)
     if (mayNeedCrypto) {
-      await ensureCryptoReady()
+      if (isBootstrapAuthPath(logicalUrl)) {
+        await ensureCryptoReady()
+      } else {
+        await ensureCryptoRuntime(true)
+      }
     }
     if (isBootstrapAuthPath(logicalUrl)) {
       await ensureCryptoRuntime(true)
@@ -118,11 +123,8 @@ async function buildRequest(
     headers['Content-Type'] = 'application/json'
   }
 
-  // 空 POST（captcha/refresh）或 envelope 解析失败时，query 签名兜底
-  const needsQuerySign =
-    isSecurityCryptoEnabled() &&
-    material &&
-    (!signEmbeddedInBody || isBootstrapAuthPath(logicalUrl) || bodyBytesOf(body).length === 0)
+  // 有 material 时始终附加 query 签名（body envelope 解析失败时网关会回退验 query）
+  const needsQuerySign = isSecurityCryptoEnabled() && material
 
   if (needsQuerySign) {
     const signParams = await buildSignQueryParams(
@@ -206,7 +208,7 @@ export async function secureFetch(input: RequestInfo | URL, init?: SecureFetchIn
       if (!cryptoStale) {
         break
       }
-      if (isBootstrapAuthPath(logicalUrl)) {
+      if (isBootstrapAuthPath(logicalUrl) || bodyText.includes('sign required') || bodyText.includes('invalid sign')) {
         setSessionCrypto(null)
       }
       await invalidateCryptoRuntime()

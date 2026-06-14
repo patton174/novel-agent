@@ -1,5 +1,5 @@
 import { secureFetch } from '../security/secureFetch'
-import { parseResultResponse } from '../utils/resultApi'
+import { parseResultResponse, readApiErrorMessage } from '../utils/resultApi'
 import type { UserRole } from '../stores/userStore'
 
 export interface PlatformStats {
@@ -46,30 +46,27 @@ export interface AdminUserUpdatePayload {
 }
 
 async function parseResponse<T>(res: Response): Promise<T> {
+  if (!res.ok) {
+    if (res.status === 403) {
+      throw new Error('无管理权限')
+    }
+    throw new Error(await readApiErrorMessage(res))
+  }
   return parseResultResponse<T>(res)
 }
 
 export async function fetchPlatformStats(): Promise<PlatformStats> {
   const res = await secureFetch('/api/auth/crm/stats/overview')
-  if (!res.ok) {
-    throw new Error(res.status === 403 ? '无管理权限' : '加载平台统计失败')
-  }
   return parseResponse<PlatformStats>(res)
 }
 
 export async function fetchContentStats(): Promise<ContentStats> {
   const res = await secureFetch('/api/content/crm/stats/overview')
-  if (!res.ok) {
-    throw new Error(res.status === 403 ? '无管理权限' : '加载内容统计失败')
-  }
   return parseResponse<ContentStats>(res)
 }
 
 export async function fetchStatsTrends(days = 30): Promise<StatsTrends> {
   const res = await secureFetch(`/api/content/crm/stats/trends?days=${days}`)
-  if (!res.ok) {
-    throw new Error(res.status === 403 ? '无管理权限' : '加载趋势数据失败')
-  }
   const data = await parseResponse<StatsTrends>(res)
   return {
     registrationTrend: Array.isArray(data.registrationTrend) ? data.registrationTrend : [],
@@ -90,17 +87,11 @@ export async function fetchUserPage(params: {
     search.set('usernameKeyword', params.usernameKeyword.trim())
   }
   const res = await secureFetch(`/api/auth/crm/user/page?${search.toString()}`)
-  if (!res.ok) {
-    throw new Error(res.status === 403 ? '无管理权限' : '加载用户列表失败')
-  }
   return parseResponse<AdminUserPage>(res)
 }
 
 export async function fetchUserDetail(id: number): Promise<AdminUser> {
   const res = await secureFetch(`/api/auth/crm/user/${id}`)
-  if (!res.ok) {
-    throw new Error(res.status === 403 ? '无管理权限' : '加载用户详情失败')
-  }
   return parseResponse<AdminUser>(res)
 }
 
@@ -113,8 +104,5 @@ export async function updateUser(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   })
-  if (!res.ok) {
-    throw new Error(res.status === 403 ? '无管理权限' : '更新用户失败')
-  }
   return parseResponse<AdminUser>(res)
 }
