@@ -1,68 +1,45 @@
 import { Globe } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
 
 const LOCALE_KEY = 'novel-agent-locale'
-
-const LOCALES = [
-  { code: 'zh', labelKey: 'common:locale.zh' },
-  { code: 'en', labelKey: 'common:locale.en' },
-] as const
 
 interface LocaleToggleProps {
   compact?: boolean
   className?: string
 }
 
+/** 点击在中/英之间切换，避免 Radix Dropdown 在混淆 chunk 内失效 */
 export function LocaleToggle({ compact = false, className }: LocaleToggleProps) {
   const { i18n, t } = useTranslation(['common'])
-  const current = LOCALES.find((item) => item.code === i18n.language) ?? LOCALES[0]
+  const isEn = i18n.language.startsWith('en')
 
-  const setLocale = (code: string) => {
+  const toggle = () => {
+    const next = isEn ? 'zh' : 'en'
     try {
-      localStorage.setItem(LOCALE_KEY, code)
+      localStorage.setItem(LOCALE_KEY, next)
     } catch {
       /* ignore */
     }
-    void i18n.changeLanguage(code)
+    void i18n.changeLanguage(next)
   }
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          type="button"
-          variant="outline"
-          size={compact ? 'icon-sm' : 'sm'}
-          aria-label={t('common:locale.label')}
-          className={cn(compact ? 'size-8' : 'h-9 gap-2 px-3', className)}
-        >
-          <Globe className="size-4" />
-          {compact ? (
-            <span className="sr-only">{t('common:locale.label')}</span>
-          ) : (
-            <span>{t(current.labelKey)}</span>
-          )}
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-36">
-        {LOCALES.map((item) => (
-          <DropdownMenuItem
-            key={item.code}
-            onClick={() => setLocale(item.code)}
-            className={cn(item.code === i18n.language && 'bg-muted font-medium text-foreground')}
-          >
-            {t(item.labelKey)}
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <button
+      type="button"
+      onClick={toggle}
+      aria-label={t('common:locale.label')}
+      title={t('common:locale.label')}
+      className={cn(
+        'inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg border border-border bg-background text-foreground shadow-xs transition-all hover:bg-muted hover:shadow-sm active:scale-[0.97]',
+        compact ? 'size-8' : 'h-9 px-3 text-sm font-medium',
+        className,
+      )}
+    >
+      <Globe className="size-4 shrink-0" />
+      {compact ? <span className="sr-only">{isEn ? 'EN' : '中文'}</span> : (
+        <span>{isEn ? 'EN' : '中文'}</span>
+      )}
+    </button>
   )
 }

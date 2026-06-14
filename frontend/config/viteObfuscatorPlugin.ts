@@ -6,6 +6,10 @@ import type { Plugin, RenderedChunk } from 'vite'
 const UI_CHUNK_PREFIX =
   /^(dialog|badge|button|avatar|separator|select|dropdown-menu|sheet|switch|popover|tooltip|tabs|checkbox|label|input|card|skeleton)-/
 
+/** 含大量点击/动效的页面 chunk 不混淆（controlFlowFlattening 会破坏 React 事件与 hover） */
+const INTERACTIVE_PAGE_CHUNK =
+  /^(HomePage|HomeFooterSection|PricingPage|AboutPage|GuidePage|LoginPage|RegisterPage|ForgotPasswordPage|ResetPasswordPage|VerifyEmailPage|GenericContentPage)-/
+
 /** framer-motion / radix / lucide 等 vendor chunk 不可混淆（会破坏事件合成与 ref 回调） */
 const VENDOR_CHUNK_SKIP =
   /^(motion|gsap|recharts|markdown|radix|icons|styled|i18n)-/
@@ -19,6 +23,9 @@ function shouldSkipChunkObfuscation(code: string, chunk: RenderedChunk): boolean
     return true
   }
   const baseName = chunk.fileName.split('/').pop() ?? chunk.fileName
+  if (INTERACTIVE_PAGE_CHUNK.test(baseName)) {
+    return true
+  }
   if (VENDOR_CHUNK_SKIP.test(baseName)) {
     return true
   }

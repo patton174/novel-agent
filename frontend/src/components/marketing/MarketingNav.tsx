@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils'
 import { NovelAiWordmark } from './NovelAiWordmark'
 import { MKT_CTA_PRIMARY } from '@/lib/marketingCta'
 import { LocaleToggle } from '@/components/i18n/LocaleToggle'
+import { MarketingThemeToggle } from '@/components/theme/MarketingThemeToggle'
 
 export function MarketingNav() {
   const { t } = useTranslation(['marketing', 'common'])
@@ -67,7 +68,8 @@ export function MarketingNav() {
 
         <div className="hidden items-center gap-6 md:flex">
           <div className="flex items-center gap-7 text-sm font-medium">{pageLinks}</div>
-          <div className="flex items-center gap-3">
+          <div className="relative z-[2] flex items-center gap-2">
+            <MarketingThemeToggle compact />
             <LocaleToggle compact />
             <Link
               to="/login"
@@ -95,7 +97,8 @@ export function MarketingNav() {
       {open ? (
         <div className="border-t border-border/60 bg-background/95 px-6 py-4 backdrop-blur-xl md:hidden">
           <div className="flex flex-col gap-1 text-sm font-medium">
-            <div className="mb-2 flex items-center justify-end">
+            <div className="mb-2 flex items-center justify-end gap-2">
+              <MarketingThemeToggle />
               <LocaleToggle />
             </div>
             <Link to="/pricing" className={`rounded-lg px-3 py-2.5 hover:bg-surface-hover ${linkClass('/pricing')}`}>
