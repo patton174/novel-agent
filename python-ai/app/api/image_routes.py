@@ -7,6 +7,11 @@ from pydantic import BaseModel, Field
 
 from app.services.agnes_image import AgnesImageError, image_to_image, is_configured, text_to_image
 from app.services.cover_prompt import CoverPromptRequest, CoverPromptResponse, suggest_cover_prompt
+from app.services.novel_description import (
+    NovelDescriptionRequest,
+    NovelDescriptionResponse,
+    suggest_novel_description,
+)
 
 router = APIRouter(prefix="/images", tags=["Images"])
 
@@ -55,6 +60,11 @@ async def generate_text_to_image(body: TextToImageRequest):
 @router.post("/cover-prompt", response_model=CoverPromptResponse)
 async def generate_cover_prompt(body: CoverPromptRequest):
     return await suggest_cover_prompt(body)
+
+
+@router.post("/novel-description", response_model=NovelDescriptionResponse)
+async def generate_novel_description(body: NovelDescriptionRequest):
+    return await suggest_novel_description(body)
 
 
 @router.post("/image-to-image", response_model=GeneratedImageResponse)

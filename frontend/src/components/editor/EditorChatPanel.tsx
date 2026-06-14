@@ -94,10 +94,7 @@ export function EditorChatPanel({
       ) : null}
 
       <div
-        className={cn(
-          'relative flex min-h-0 flex-1 flex-col overflow-hidden box-border',
-          isInitial && 'items-center justify-center',
-        )}
+        className="relative flex min-h-0 flex-1 flex-col overflow-hidden box-border"
         style={{ paddingLeft: editorLayout.mainPaddingX, paddingRight: editorLayout.mainPaddingX }}
       >
         {!isInitial && hostBannerText ? (
@@ -137,21 +134,26 @@ export function EditorChatPanel({
             />
           </div>
         ) : (
-          <div ref={messagesAreaRef} className="hidden" aria-hidden />
+          <>
+            <div ref={messagesAreaRef} className="hidden" aria-hidden />
+            <div className="pointer-events-none absolute inset-x-0 top-[18%] flex justify-center px-4">
+              <p className="max-w-md text-center text-sm leading-relaxed text-muted-foreground">
+                向 AI 发送消息，开始规划大纲、续写章节或调整设定
+              </p>
+            </div>
+          </>
         )}
 
         {!hideComposer && (
           <div
             ref={composerRef}
             className={cn(
-              'z-[12] mx-auto box-border w-full pointer-events-none [&>*]:pointer-events-auto',
-              isInitial
-                ? 'relative shrink-0 bg-transparent'
-                : 'absolute inset-x-0 bottom-0 bg-gradient-to-t from-background from-[12%] via-background/95 via-[42%] to-transparent',
+              'absolute inset-x-0 bottom-0 z-[12] mx-auto box-border w-full pointer-events-none [&>*]:pointer-events-auto',
+              'bg-gradient-to-t from-background from-[12%] via-background/95 via-[42%] to-transparent',
             )}
             style={{
               maxWidth: editorLayout.contentMaxWidth,
-              padding: isInitial ? `0 ${editorLayout.mainPaddingX}` : '0 0 0.65rem',
+              padding: `0 ${editorLayout.mainPaddingX} 0.65rem`,
             }}
           >
             <div className="mx-auto w-full" style={{ maxWidth: editorLayout.contentMaxWidth }}>

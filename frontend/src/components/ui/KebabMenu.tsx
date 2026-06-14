@@ -7,7 +7,7 @@ import {
   type CSSProperties,
 } from 'react'
 import { createPortal } from 'react-dom'
-import { MotionPop } from '../motion/MotionPop'
+import { MotionPop, type MotionPopPlacement } from '../motion/MotionPop'
 import { motionInteractiveClass } from '@/lib/motionClasses'
 import {
   KEBAB_MENU_PANEL,
@@ -25,6 +25,8 @@ export interface KebabMenuItem {
 
 export interface KebabMenuProps {
   items: KebabMenuItem[]
+  /** auto：视口空间不足时向上展开（侧栏底部等场景） */
+  preferredPlacement?: 'auto' | MotionPopPlacement
   'aria-label'?: string
 }
 
@@ -36,9 +38,18 @@ const DotsIcon = () => (
   </svg>
 )
 
-export function KebabMenu({ items, 'aria-label': ariaLabel = '更多操作' }: KebabMenuProps) {
+const MENU_GAP_PX = 6
+const MENU_MIN_WIDTH = 128
+const MENU_ESTIMATED_ITEM_HEIGHT = 36
+
+export function KebabMenu({
+  items,
+  preferredPlacement = 'auto',
+  'aria-label': ariaLabel = '更多操作',
+}: KebabMenuProps) {
   const [open, setOpen] = useState(false)
   const [menuStyle, setMenuStyle] = useState<CSSProperties>({})
+  const [menuPlacement, setMenuPlacement] = useState<MotionPopPlacement>('bottom')
   const rootRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -46,13 +57,30 @@ export function KebabMenu({ items, 'aria-label': ariaLabel = '更多操作' }: K
 
   const updateMenuPosition = () => {
     const trigger = triggerRef.current
+    const menuEl = menuRef.current
     if (!trigger) return
+
     const rect = trigger.getBoundingClientRect()
+    const menuHeight =
+      menuEl?.offsetHeight ?? Math.max(72, items.length * MENU_ESTIMATED_ITEM_HEIGHT + 12)
+    const spaceBelow = window.innerHeight - rect.bottom - MENU_GAP_PX
+    const spaceAbove = rect.top - MENU_GAP_PX
+
+    let placement: MotionPopPlacement = 'bottom'
+    if (preferredPlacement === 'top' || preferredPlacement === 'bottom') {
+      placement = preferredPlacement
+    } else if (spaceBelow < menuHeight && spaceAbove >= spaceBelow) {
+      placement = 'top'
+    }
+
+    setMenuPlacement(placement)
     setMenuStyle({
       position: 'fixed',
-      top: rect.bottom + 6,
+      ...(placement === 'top'
+        ? { bottom: window.innerHeight - rect.top + MENU_GAP_PX }
+        : { top: rect.bottom + MENU_GAP_PX }),
       right: window.innerWidth - rect.right,
-      minWidth: 128,
+      minWidth: MENU_MIN_WIDTH,
       zIndex: 1300,
     })
   }
@@ -60,13 +88,15 @@ export function KebabMenu({ items, 'aria-label': ariaLabel = '更多操作' }: K
   useLayoutEffect(() => {
     if (!open) return
     updateMenuPosition()
+    const raf = requestAnimationFrame(updateMenuPosition)
     window.addEventListener('resize', updateMenuPosition)
     window.addEventListener('scroll', updateMenuPosition, true)
     return () => {
+      cancelAnimationFrame(raf)
       window.removeEventListener('resize', updateMenuPosition)
       window.removeEventListener('scroll', updateMenuPosition, true)
     }
-  }, [open])
+  }, [open, items.length, preferredPlacement])
 
   useEffect(() => {
     if (!open) return
@@ -80,7 +110,7 @@ export function KebabMenu({ items, 'aria-label': ariaLabel = '更多操作' }: K
   }, [open])
 
   const menu = (
-    <MotionPop ref={menuRef} open={open} placement="bottom" style={menuStyle}>
+    <MotionPop ref={menuRef} open={open} placement={menuPlacement} style={menuStyle}>
       <div id={listId} role="menu" className={KEBAB_MENU_PANEL}>
         {items.map((item) => (
           <button
@@ -110,6 +140,7 @@ export function KebabMenu({ items, 'aria-label': ariaLabel = '更多操作' }: K
         aria-expanded={open}
         aria-haspopup="menu"
         aria-controls={listId}
+        title={ariaLabel}
         onClick={(e) => {
           e.stopPropagation()
           setOpen((v) => {

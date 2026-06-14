@@ -82,6 +82,33 @@ export async function fetchNovels(): Promise<DashboardNovel[]> {
   }
 }
 
+export async function suggestNovelDescriptionPrompt(payload: {
+  title?: string
+  genre?: string
+  style?: string
+  draft?: string
+}): Promise<string | null> {
+  try {
+    const res = await secureFetch('/api/content/auth/novels/description/prompt', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: payload.title ?? '',
+        genre: payload.genre ?? '',
+        style: payload.style ?? '',
+        draft: payload.draft ?? '',
+      }),
+    })
+    if (!res.ok) {
+      return null
+    }
+    const data = await parseResultResponse<{ description?: string }>(res)
+    return data?.description?.trim() || null
+  } catch {
+    return null
+  }
+}
+
 export async function suggestNovelCoverPrompt(
   novelId: string,
   draft?: string,

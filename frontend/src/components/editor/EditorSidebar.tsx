@@ -283,6 +283,7 @@ export function EditorSidebar({
           </EditorButton>
           <KebabMenu
             aria-label={t('nav.editorMoreTools')}
+            preferredPlacement="top"
             items={[
               {
                 id: 'settings',

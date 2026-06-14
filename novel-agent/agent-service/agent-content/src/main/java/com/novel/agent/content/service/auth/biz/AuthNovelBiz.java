@@ -7,6 +7,7 @@ import com.novel.agent.content.dto.ChapterSummaryDTO;
 import com.novel.agent.content.dto.CoverPromptResponse;
 import com.novel.agent.content.dto.CreateChapterRequest;
 import com.novel.agent.content.dto.CreateNovelRequest;
+import com.novel.agent.content.dto.NovelDescriptionPromptResponse;
 import com.novel.agent.content.dto.NovelDTO;
 import com.novel.agent.content.dto.ReindexStatusDTO;
 import com.novel.agent.content.dto.SessionDTO;
@@ -14,6 +15,7 @@ import com.novel.agent.content.dto.UpdateNovelRequest;
 import com.novel.agent.content.service.ChapterService;
 import com.novel.agent.content.service.ContentSessionService;
 import com.novel.agent.content.service.NovelCoverService;
+import com.novel.agent.content.service.NovelDescriptionClient;
 import com.novel.agent.content.service.NovelExportService;
 import com.novel.agent.content.service.NovelService;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +30,7 @@ public class AuthNovelBiz extends BaseBiz {
 
     private final NovelService novelService;
     private final NovelCoverService novelCoverService;
+    private final NovelDescriptionClient novelDescriptionClient;
     private final NovelExportService novelExportService;
     private final ChapterService chapterService;
     private final ContentSessionService sessionService;
@@ -54,6 +57,16 @@ public class AuthNovelBiz extends BaseBiz {
 
     public Result<CoverPromptResponse> suggestCoverPrompt(Long userId, String novelId, String draft) {
         return ok(novelCoverService.suggestCoverPrompt(userId, novelId, draft));
+    }
+
+    public Result<NovelDescriptionPromptResponse> suggestDescriptionPrompt(
+        String title,
+        String genre,
+        String style,
+        String draft
+    ) {
+        String description = novelDescriptionClient.suggestDescription(title, genre, style, draft);
+        return ok(new NovelDescriptionPromptResponse(description));
     }
 
     public NovelExportService.ExportPayload exportTxt(Long userId, String novelId) {

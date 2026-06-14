@@ -84,7 +84,7 @@ const EditorPage: React.FC = () => {
           onTabChange={editor.setActiveCenterTab}
         />
 
-        <MotionPane paneKey={editor.activeCenterTab}>
+        <MotionPane paneKey={editor.activeCenterTab} className="flex-1">
         {editor.activeCenterTab === 'chat' ? (
           <EditorChatPanel
             sessionTitle={editor.sessions.activeSessionTitle}

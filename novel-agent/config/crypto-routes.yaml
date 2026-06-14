@@ -47,6 +47,8 @@ routes:
     path: /api/content/auth/novels
   - method: POST
     path: /api/content/auth/novels
+  - method: POST
+    path: /api/content/auth/novels/description/prompt
   - method: GET
     path: /api/content/auth/novels/{novelId}
   - method: PUT

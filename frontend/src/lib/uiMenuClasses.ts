@@ -4,17 +4,17 @@ export const KEBAB_ROOT = 'inline-flex shrink-0'
 
 export function kebabTriggerClass(open?: boolean) {
   return cn(
-    'inline-flex size-7 items-center justify-center rounded-lg border-none p-0 cursor-pointer',
-    'text-muted-foreground transition-colors',
+    'inline-flex size-7 items-center justify-center rounded-lg p-0 cursor-pointer',
+    'border border-border/70 bg-muted/45 text-foreground/80 transition-colors',
     '[&_svg]:size-4',
-    open ? 'bg-primary/10 text-foreground' : 'bg-transparent',
-    'hover:bg-primary/10 hover:text-foreground',
+    open ? 'border-primary/45 bg-primary/10 text-foreground' : '',
+    'hover:border-primary/35 hover:bg-primary/10 hover:text-foreground',
     'focus-visible:outline-none focus-visible:shadow-[0_0_0_2px_rgba(79,70,229,0.45)] focus-visible:text-foreground',
   )
 }
 
 export const KEBAB_MENU_PANEL =
-  'rounded-[10px] border border-black/[0.08] bg-[#fafafa] p-[0.3rem] shadow-[0_8px_24px_rgba(15,23,42,0.12)]'
+  'rounded-[10px] border border-border bg-popover p-[0.3rem] text-popover-foreground shadow-md'
 
 export function kebabMenuItemClass(danger?: boolean) {
   return cn(
@@ -56,7 +56,7 @@ export function dropdownChevronClass(open?: boolean) {
 }
 
 export const DROPDOWN_MENU_PANEL =
-  'rounded-xl border border-black/[0.08] bg-[#fafafa] p-[0.35rem] shadow-[0_8px_24px_rgba(15,23,42,0.12)]'
+  'rounded-xl border border-border bg-popover p-[0.35rem] text-popover-foreground shadow-md'
 
 export function dropdownMenuOptionClass(active?: boolean) {
   return cn(
