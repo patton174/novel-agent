@@ -7,6 +7,7 @@ import cn.novelstudio.module.content.dto.ChapterSummaryDTO;
 import cn.novelstudio.module.content.dto.CoverPromptResponse;
 import cn.novelstudio.module.content.dto.CreateChapterRequest;
 import cn.novelstudio.module.content.dto.CreateNovelRequest;
+import cn.novelstudio.module.content.dto.NovelDescriptionPromptRequest;
 import cn.novelstudio.module.content.dto.NovelDescriptionPromptResponse;
 import cn.novelstudio.module.content.dto.NovelDTO;
 import cn.novelstudio.module.content.dto.ReindexStatusDTO;
