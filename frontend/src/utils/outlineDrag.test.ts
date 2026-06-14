@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildChapterReorderPlans, reorderVolumeIds } from './outlineDrag'
+import { buildChapterReorderPlans, buildChapterStepMovePlans, reorderVolumeIds } from './outlineDrag'
 import type { ChapterSummary, Volume } from '../types/novel'
 
 const volumes: Volume[] = [
@@ -69,5 +69,20 @@ describe('outlineDrag', () => {
   it('builds same-volume reorder plans', () => {
     const plans = buildChapterReorderPlans(chapters, 'c2', 'v1', 'c1')
     expect(plans).toEqual([{ volumeId: 'v1', ids: ['c2', 'c1'] }])
+  })
+
+  it('moves chapter down within volume', () => {
+    const plans = buildChapterStepMovePlans(chapters, 'c1', 'down')
+    expect(plans).toEqual([{ volumeId: 'v1', ids: ['c2', 'c1'] }])
+  })
+
+  it('moves chapter up within volume', () => {
+    const plans = buildChapterStepMovePlans(chapters, 'c2', 'up')
+    expect(plans).toEqual([{ volumeId: 'v1', ids: ['c2', 'c1'] }])
+  })
+
+  it('returns empty when chapter already at edge', () => {
+    expect(buildChapterStepMovePlans(chapters, 'c1', 'up')).toEqual([])
+    expect(buildChapterStepMovePlans(chapters, 'c2', 'down')).toEqual([])
   })
 })

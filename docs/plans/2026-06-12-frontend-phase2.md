@@ -163,12 +163,17 @@
 - [x] **CcToolRow**：可折叠工具行增加 chevron  affordance
 - [x] **MessageTodoPanel**：移动最多展示 2 条待办（桌面 3 条）
 
+## Phase 11 — 移动消息折叠 + 章节排序
+
+- [x] **EditorChatMessage 移动**：历史消息默认隐藏创作过程，保留交付正文 +「查看创作过程 · N 步」
+- [x] **StoryMobileChapterPicker**：「排序」模式同卷 ↑↓ 调序（复用 `buildChapterStepMovePlans`）
+- [x] **outlineDrag**：`buildChapterStepMovePlans` 单步上移/下移
+
 ## 审计清单闭环状态
 
-`docs/frontend-ui-audit.md` 中可交付项均已通过 Phase 1–10 落地；**未纳入范围**（需单独产品/工程规划）：
+`docs/frontend-ui-audit.md` 中可交付项均已通过 Phase 1–11 落地；**未纳入范围**（需单独产品/工程规划）：
 
-- Editor 移动卷/章拖拽排序（仍仅桌面侧栏 `NovelOutlinePanel`）
-- Agent timeline 更深层的消息级折叠（Phase 10 已做交付正文折叠 + 工具 excerpt 收紧）
+- Editor 移动卷排序 / 跨卷拖拽（仍仅桌面侧栏；移动已支持同卷 ↑↓）
 - Modal/Loader 进一步合并（已压至 EditorModalShell + shadcn Dialog + Skeleton + BrandLoader）
 - Admin 全表移动卡片（Users/Audit/Plans/Catalog/Billing 已有；Crawler 为卡片行 + 低流量页保留横滑）
 

@@ -342,6 +342,12 @@ export const DELIVERY_COLLAPSE_TOGGLE = cn(
   'focus-visible:rounded focus-visible:outline-none focus-visible:shadow-[inset_0_0_0_2px_rgba(79,70,229,0.15)]',
 )
 
+export const MOBILE_PROCESS_TOGGLE = cn(
+  'mt-2 inline-flex min-h-9 items-center rounded-lg border border-border/70 bg-muted/30 px-2.5 py-1.5 text-left text-[0.72rem] font-medium leading-snug text-muted-foreground',
+  'hover:bg-muted/50 hover:text-foreground',
+  'focus-visible:outline-none focus-visible:shadow-[inset_0_0_0_2px_rgba(79,70,229,0.15)]',
+)
+
 export const TIMELINE_PENDING_IN = 'agent-timeline-pending-in'
 
 export const TIMELINE_STREAM_CURSOR = 'agent-timeline-stream-cursor'

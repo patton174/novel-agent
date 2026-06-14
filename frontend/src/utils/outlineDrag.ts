@@ -59,3 +59,46 @@ export function buildChapterReorderPlans(
 
   return plans
 }
+
+/** 移动 ↑↓ 排序：同卷内单步上移/下移，复用 buildChapterReorderPlans */
+export function buildChapterStepMovePlans(
+  chapters: ChapterSummary[],
+  chapterId: string,
+  direction: 'up' | 'down',
+): ChapterReorderPlan[] {
+  const dragged = chapters.find((chapter) => chapter.id === chapterId)
+  if (!dragged) {
+    return []
+  }
+
+  const volumeChapters = sortChapters(
+    chapters.filter((chapter) => chapter.volumeId === dragged.volumeId),
+  )
+  const index = volumeChapters.findIndex((chapter) => chapter.id === chapterId)
+  if (index < 0) {
+    return []
+  }
+
+  if (direction === 'up') {
+    if (index === 0) {
+      return []
+    }
+    return buildChapterReorderPlans(
+      chapters,
+      chapterId,
+      dragged.volumeId,
+      volumeChapters[index - 1].id,
+    )
+  }
+
+  if (index >= volumeChapters.length - 1) {
+    return []
+  }
+  const afterNext = volumeChapters[index + 2]
+  return buildChapterReorderPlans(
+    chapters,
+    chapterId,
+    dragged.volumeId,
+    afterNext?.id ?? null,
+  )
+}

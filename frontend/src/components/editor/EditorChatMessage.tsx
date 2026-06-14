@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from 'react'
 import type {
   AgentAssistantStreamPhase,
   AgentChoiceOption,
@@ -16,10 +17,15 @@ import { AgentThinkPanel } from '../agent/AgentThinkPanel'
 import { ChatMessageSurfaceBody } from '../agent/ChatMessageSurface'
 import { MessageTodoPanel } from '../agent/timeline/MessageTodoPanel'
 import { TimelineDeliveryBlock } from '../agent/timeline/TimelineDeliveryBlock'
-import { TIMELINE_BODY_DIVIDER } from '@/lib/timelineClasses'
+import { TIMELINE_BODY_DIVIDER, MOBILE_PROCESS_TOGGLE } from '@/lib/timelineClasses'
 import { dedupeTodosById, sortTodosForDisplay } from '../../utils/todoDisplay'
 import { ensureReplayTimeline, hasAgentTrace } from '../../utils/agentMessageReplay'
+import {
+  countOrchestrationSteps,
+  extractAssistantDeliveryText,
+} from '../../utils/agentMessageMobileSummary'
 import { sanitizeAgentStreamError } from '../../utils/sanitizeAgentStreamError'
+import { useEditorMobile } from '@/hooks/useMediaQuery'
 import { EditorIcons } from './icons'
 
 export interface EditorChatMessageProps {
@@ -95,6 +101,31 @@ export function EditorChatMessage({
   )
   const showDeliveryDivider = showDeliveryBody && hasOrchestrationTrace
   const thinkText = message.agentThinkText ?? message.thinking
+  const isMobile = useEditorMobile()
+  const [processExpanded, setProcessExpanded] = useState(false)
+
+  const deliveryText = useMemo(
+    () => extractAssistantDeliveryText(message, replayTimeline),
+    [message, replayTimeline],
+  )
+  const orchestrationStepCount = useMemo(
+    () => countOrchestrationSteps(message.agentSteps, replayTimeline),
+    [message.agentSteps, replayTimeline],
+  )
+  const canCollapseProcess =
+    isMobile &&
+    streamFinished &&
+    !isActiveStream &&
+    !message.agentAwaitingInteraction &&
+    hasOrchestrationTrace &&
+    orchestrationStepCount > 0
+  const processCollapsed = canCollapseProcess && !processExpanded
+
+  useEffect(() => {
+    setProcessExpanded(false)
+  }, [message.id])
+
+  const showFullTimeline = showAgentTimeline && !processCollapsed
 
   if (message.role === 'user') {
     return (
@@ -142,27 +173,49 @@ export function EditorChatMessage({
         )}
         {showAgentTimeline ? (
           <div className="flex w-full max-w-full flex-col" data-testid="assistant-stream-shell">
-            <AssistantStreamTimeline
-              timeline={replayTimeline}
-              stepStates={message.agentSteps ?? []}
-              streamLive={streamActive}
-              streamFinished={streamFinished}
-              messageKey={message.id}
-              thinkExpanded={thinkExpanded}
-              fallbackThinkText={thinkText}
-              awaitingInteraction={Boolean(message.agentAwaitingInteraction)}
-              onThinkExpandedChange={onThinkExpandedChange}
-              onSelectChoice={onSelectChoice}
-              onSubmitInteraction={onSubmitInteraction}
-              pinOrchestrationOpen={marketingPinOrchestration}
-            />
-            {showDeliveryDivider ? (
+            {processCollapsed && deliveryText ? (
+              <TimelineDeliveryBlock
+                text={deliveryText}
+                streamLive={false}
+                testId="assistant-delivery-collapsed"
+              />
+            ) : null}
+            {canCollapseProcess ? (
+              <button
+                type="button"
+                className={MOBILE_PROCESS_TOGGLE}
+                aria-expanded={processExpanded}
+                onClick={() => setProcessExpanded((open) => !open)}
+                data-testid="mobile-process-toggle"
+              >
+                {processExpanded
+                  ? '收起创作过程'
+                  : `查看创作过程 · ${orchestrationStepCount} 步`}
+              </button>
+            ) : null}
+            {showFullTimeline ? (
+              <AssistantStreamTimeline
+                timeline={replayTimeline}
+                stepStates={message.agentSteps ?? []}
+                streamLive={streamActive}
+                streamFinished={streamFinished}
+                messageKey={message.id}
+                thinkExpanded={thinkExpanded}
+                fallbackThinkText={thinkText}
+                awaitingInteraction={Boolean(message.agentAwaitingInteraction)}
+                onThinkExpandedChange={onThinkExpandedChange}
+                onSelectChoice={onSelectChoice}
+                onSubmitInteraction={onSubmitInteraction}
+                pinOrchestrationOpen={marketingPinOrchestration}
+              />
+            ) : null}
+            {showFullTimeline && showDeliveryDivider ? (
               <div
                 className={TIMELINE_BODY_DIVIDER}
                 data-testid="orchestration-body-divider"
               />
             ) : null}
-            {showDeliveryBody ? (
+            {showFullTimeline && showDeliveryBody ? (
               <TimelineDeliveryBlock
                 text={message.content}
                 streamLive={streamActive && !streamFinished}
