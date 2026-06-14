@@ -2,33 +2,28 @@ package cn.novelstudio.module.agent.ws;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import cn.novelstudio.module.agent.config.AgentRuntimeProperties;
 import cn.novelstudio.module.agent.orchestration.AgentRunCoordinator;
 import cn.novelstudio.module.agent.orchestration.AgentRunRegistry;
-import cn.novelstudio.module.agent.config.AgentRuntimeProperties;
 import cn.novelstudio.module.agent.service.PgRunInteractionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.socket.WebSocketHandler;
-import org.springframework.web.reactive.socket.WebSocketMessage;
-import org.springframework.web.reactive.socket.WebSocketSession;
-import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
+import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
 import java.util.Map;
 
-@Component
-public class AgentRunWebSocketHandler implements WebSocketHandler {
+@Service
+public class AgentRunWsInboundService {
 
-    private static final Logger log = LoggerFactory.getLogger(AgentRunWebSocketHandler.class);
+    private static final Logger log = LoggerFactory.getLogger(AgentRunWsInboundService.class);
 
     private final AgentRunRegistry runRegistry;
     private final ObjectMapper objectMapper;
     private final AgentRuntimeProperties runtimeProperties;
     private final PgRunInteractionService pgRunInteractionService;
 
-    public AgentRunWebSocketHandler(
+    public AgentRunWsInboundService(
         AgentRunRegistry runRegistry,
         ObjectMapper objectMapper,
         AgentRuntimeProperties runtimeProperties,
@@ -40,19 +35,7 @@ public class AgentRunWebSocketHandler implements WebSocketHandler {
         this.pgRunInteractionService = pgRunInteractionService;
     }
 
-    @Override
-    public Mono<Void> handle(WebSocketSession session) {
-        String runId = getQuery(session, "runId");
-        if (runId == null || runId.isBlank()) {
-            return session.close();
-        }
-        return session.receive()
-            .map(WebSocketMessage::getPayloadAsText)
-            .doOnNext(text -> Schedulers.boundedElastic().schedule(() -> handleInbound(runId, text)))
-            .then();
-    }
-
-    private void handleInbound(String runId, String text) {
+    public void handleInbound(String runId, String text) {
         if (text == null || text.isBlank()) {
             return;
         }
@@ -94,18 +77,5 @@ public class AgentRunWebSocketHandler implements WebSocketHandler {
         } catch (Exception ex) {
             log.warn("ws inbound parse failed runId={}: {}", runId, ex.getMessage());
         }
-    }
-
-    private String getQuery(WebSocketSession session, String key) {
-        String query = session.getHandshakeInfo().getUri().getQuery();
-        if (query == null || !query.contains(key + "=")) {
-            return null;
-        }
-        for (String part : query.split("&")) {
-            if (part.startsWith(key + "=")) {
-                return part.substring(key.length() + 1);
-            }
-        }
-        return null;
     }
 }

@@ -43,6 +43,8 @@ public class ClientAuthSupport {
     private static final List<String> CRYPTO_EXEMPT = Arrays.asList(
         "/actuator/health",
         "/api/auth/crypto-config",
+        "/api/agent/run/ws",
+        "/api/agent/chat/status/ws",
         "/internal/"
     );
 
@@ -71,7 +73,10 @@ public class ClientAuthSupport {
     }
 
     public boolean isWsPath(String path) {
-        return WS_PATHS.stream().anyMatch(path::endsWith);
+        if (path == null || path.isBlank()) {
+            return false;
+        }
+        return WS_PATHS.stream().anyMatch(ws -> ws.equals(path) || path.startsWith(ws + "/"));
     }
 
     public JwtPrincipal resolvePrincipal(HttpServletRequest request) {
