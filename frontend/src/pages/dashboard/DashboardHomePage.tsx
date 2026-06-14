@@ -32,30 +32,33 @@ import { dashboardCache } from '@/stores/dashboardCacheStore'
 import { EDITOR_CREATE_HREF, editorNovelHref } from '@/lib/editorRoutes'
 
 import { useTranslation } from 'react-i18next'
-
-function formatUpdatedAt(value: string | number): string {
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) {
-    return '—'
-  }
-  return date.toLocaleString('zh-CN', {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
-
-function formatWordCount(count: number): string {
-  if (count >= 10000) {
-    return `${(count / 10000).toFixed(1)} 万`
-  }
-  return count.toLocaleString('zh-CN')
-}
+import i18n from '@/i18n'
 
 export default function DashboardHomePage() {
   const { t } = useTranslation(['common', 'dashboard'])
   useMarkRouteSeen()
+
+  const dateLocale = i18n.language === 'zh' ? 'zh-CN' : 'en-US'
+
+  function formatUpdatedAt(value: string | number): string {
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) {
+      return '—'
+    }
+    return date.toLocaleString(dateLocale, {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  }
+
+  function formatWordCount(count: number): string {
+    if (count >= 10000) {
+      return t('dashboard:home.wordCountWan', { value: (count / 10000).toFixed(1) })
+    }
+    return count.toLocaleString(dateLocale)
+  }
 
   const STAT_CARDS = [
     {
@@ -180,7 +183,7 @@ export default function DashboardHomePage() {
                 ? '—'
                 : stat.format
                   ? stat.format(summary![stat.key])
-                  : summary![stat.key].toLocaleString('zh-CN')
+                  : summary![stat.key].toLocaleString(dateLocale)
             }
           />
         ))}

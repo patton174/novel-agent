@@ -17,7 +17,8 @@
     "loadFailDesc": "暂时无法加载数据，请稍后重试",
     "noNovelsDesc": "创建一个新的小说项目，让 AI 助手帮你构建世界观和章节。",
     "createNovel": "新建小说",
-    "recentlyEdited": "最近编辑 {{time}}"
+    "recentlyEdited": "最近编辑 {{time}}",
+    "wordCountWan": "{{value}} 万"
   },
   "novels": {
     "coverSuccess": "封面已生成",
@@ -112,6 +113,9 @@
     "wed": "三",
     "fri": "五",
     "month": "月",
+    "monthAxis": "{{month}}月",
+    "bestMonthValue": "{{month}} 月",
+    "daysCount": "{{count}} 天",
     "bestMonth": "最活跃月份",
     "bestDay": "最活跃日期",
     "longestStreak": "最长连续",

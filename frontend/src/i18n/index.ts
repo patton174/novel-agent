@@ -6,8 +6,17 @@ import authZh from './locales/zh/auth.json'
 import dashboardZh from './locales/zh/dashboard.json'
 import editorZh from './locales/zh/editor.json'
 import adminZh from './locales/zh/admin.json'
+import commonEn from './locales/en/common.json'
+import marketingEn from './locales/en/marketing.json'
+import authEn from './locales/en/auth.json'
+import dashboardEn from './locales/en/dashboard.json'
+import editorEn from './locales/en/editor.json'
+import adminEn from './locales/en/admin.json'
 
-const loadedBundles = new Set<string>(['zh:common', 'zh:marketing', 'zh:auth', 'zh:dashboard', 'zh:editor', 'zh:admin'])
+const loadedBundles = new Set<string>([
+  'zh:common', 'zh:marketing', 'zh:auth', 'zh:dashboard', 'zh:editor', 'zh:admin',
+  'en:common', 'en:marketing', 'en:auth', 'en:dashboard', 'en:editor', 'en:admin',
+])
 
 function bundleKey(ns: string, lng: string): string {
   return `${lng}:${ns}`
@@ -26,6 +35,14 @@ void i18n.use(initReactI18next).init({
       dashboard: dashboardZh,
       editor: editorZh,
       admin: adminZh
+    },
+    en: {
+      common: commonEn,
+      marketing: marketingEn,
+      auth: authEn,
+      dashboard: dashboardEn,
+      editor: editorEn,
+      admin: adminEn,
     },
   },
   interpolation: { escapeValue: false },

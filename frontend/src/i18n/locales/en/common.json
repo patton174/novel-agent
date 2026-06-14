@@ -52,7 +52,7 @@
     "editorQuickStartDesc": "Select novel → New Chat → Write or ask AI",
     "editorCloseHint": "Close hint",
     "editorNoNovels": "No novels, click + to create",
-    "editorSessionCount": "sessions",
+    "editorSessionCount": "{{count}} sessions",
     "editorNovelActions": "Novel Actions",
     "editorNewChat": "New Chat",
     "editorExitBatch": "Exit Batch",

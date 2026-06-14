@@ -52,7 +52,7 @@
     "editorQuickStartDesc": "选小说 → 点「新对话」→ 右侧写章或问 AI",
     "editorCloseHint": "关闭提示",
     "editorNoNovels": "暂无小说，点击右上角 + 创建",
-    "editorSessionCount": "个对话",
+    "editorSessionCount": "{{count}} 个对话",
     "editorNovelActions": "小说操作",
     "editorNewChat": "新对话",
     "editorExitBatch": "退出批量",

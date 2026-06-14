@@ -168,7 +168,7 @@ export function EditorSidebar({
                         {novel.title}
                       </div>
                       <div className="mt-0.5 text-[10px] text-muted-foreground">
-                        {sessions.length} {t('nav.editorSessionCount')}
+                        {t('nav.editorSessionCount', { count: sessions.length })}
                       </div>
                     </div>
                     <div

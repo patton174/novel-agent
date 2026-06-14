@@ -347,7 +347,7 @@ export function StoryMobileChapterPicker() {
                         <p className="min-w-0 flex-1 text-ui-sm font-semibold uppercase tracking-wide text-muted-foreground">
                           {volume.title}
                           <span className="ml-1.5 font-normal normal-case tabular-nums">
-                            {volumeChapters.length} {t('editor:picker.volumeCount')}
+                            {t('editor:picker.volumeCount', { count: volumeChapters.length })}
                           </span>
                         </p>
                         {volumes.length > 1 ? (
@@ -477,7 +477,7 @@ export function StoryMobileChapterPicker() {
                           <p className="min-w-0 flex-1 text-ui-sm font-semibold uppercase tracking-wide text-muted-foreground">
                             {row.title}
                             <span className="ml-1.5 font-normal normal-case tabular-nums">
-                              {row.chapterCount} {t('editor:picker.volumeCount')}
+                              {t('editor:picker.volumeCount', { count: row.chapterCount })}
                             </span>
                           </p>
                         </div>

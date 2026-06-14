@@ -17,7 +17,8 @@
     "loadFailDesc": "Temporarily unable to load data, please try again later",
     "noNovelsDesc": "Create a new novel project and let the AI assistant help you build the world and chapters.",
     "createNovel": "New Novel",
-    "recentlyEdited": "Edited {{time}}"
+    "recentlyEdited": "Edited {{time}}",
+    "wordCountWan": "{{value}}0k"
   },
   "novels": {
     "coverSuccess": "Cover generated",
@@ -112,6 +113,9 @@
     "wed": "We",
     "fri": "Fr",
     "month": "M",
+    "monthAxis": "{{month}}",
+    "bestMonthValue": "Month {{month}}",
+    "daysCount": "{{count}} days",
     "bestMonth": "Most Active Month",
     "bestDay": "Most Active Day",
     "longestStreak": "Longest Streak",

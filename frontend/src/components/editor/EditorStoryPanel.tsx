@@ -141,7 +141,7 @@ function EditorStoryPanelMobile({
             <span className="font-semibold">{streamStatusLabel}</span>
             {agentChapterStreamCharCount > 0 ? (
               <span className="tabular-nums text-muted-foreground">
-                {agentChapterStreamCharCount} {t('editor:story.wordCount')}
+                {t('editor:story.wordCount', { count: agentChapterStreamCharCount })}
               </span>
             ) : null}
           </div>
@@ -354,7 +354,7 @@ function EditorStoryPanelDesktop({
               <span className="font-semibold">{streamStatusLabel}</span>
               {agentChapterStreamCharCount > 0 ? (
                 <span className="tabular-nums text-muted-foreground">
-                  {agentChapterStreamCharCount} {t('editor:story.wordCount')}
+                  {t('editor:story.wordCount', { count: agentChapterStreamCharCount })}
                 </span>
               ) : null}
             </div>

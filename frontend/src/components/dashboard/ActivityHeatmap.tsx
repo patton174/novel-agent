@@ -3,6 +3,7 @@ import { cn } from '@/lib/utils'
 import type { DashboardActivity, DashboardActivityDay } from '@/api/dashboardApi'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useTranslation } from 'react-i18next'
+import i18n from '@/i18n'
 
 export type ActivityMode = 'all' | 'writing' | 'agent'
 
@@ -208,7 +209,7 @@ function computeStreaks(days: DashboardActivityDay[], mode: ActivityMode) {
   return { longest, current }
 }
 
-function computeHighlights(days: DashboardActivityDay[], mode: ActivityMode, t: any) {
+function computeHighlights(days: DashboardActivityDay[], mode: ActivityMode, t: (key: string, options?: Record<string, unknown>) => string) {
   const monthTotals = new Map<number, number>()
   let bestDay = days[0]?.date ?? '—'
   let bestValue = -1
@@ -232,9 +233,11 @@ function computeHighlights(days: DashboardActivityDay[], mode: ActivityMode, t: 
     }
   })
 
+  const dateLocale = i18n.language === 'zh' ? 'zh-CN' : 'en-US'
+
   const bestDayLabel =
     bestValue > 0
-      ? parseUtcDate(bestDay).toLocaleDateString('zh-CN', {
+      ? parseUtcDate(bestDay).toLocaleDateString(dateLocale, {
           year: 'numeric',
           month: 'long',
           day: 'numeric',
@@ -242,7 +245,8 @@ function computeHighlights(days: DashboardActivityDay[], mode: ActivityMode, t: 
         })
       : '—'
 
-  const bestMonthLabel = bestMonthValue > 0 ? `${bestMonth + 1} ${t('dashboard:heatmap.month')}` : '—'
+  const bestMonthLabel =
+    bestMonthValue > 0 ? t('dashboard:heatmap.bestMonthValue', { month: bestMonth + 1 }) : '—'
 
   return { bestMonthLabel, bestDayLabel }
 }
@@ -371,7 +375,9 @@ export function ActivityHeatmap({ activity, loading }: ActivityHeatmapProps) {
                     key={weekIndex}
                     className="truncate text-ui-xs font-medium leading-none text-muted-foreground"
                   >
-                    {monthLabelByWeek.get(weekIndex) ? `${monthLabelByWeek.get(weekIndex)}${t('dashboard:heatmap.month')}` : ''}
+                    {monthLabelByWeek.get(weekIndex)
+                      ? t('dashboard:heatmap.monthAxis', { month: monthLabelByWeek.get(weekIndex) })
+                      : ''}
                   </div>
                 ))}
               </div>
@@ -430,13 +436,13 @@ export function ActivityHeatmap({ activity, loading }: ActivityHeatmapProps) {
             <div>
               <p className="text-ui-sm text-muted-foreground">{t('dashboard:heatmap.longestStreak')}</p>
               <p className="mt-0.5 text-sm font-medium text-foreground">
-                {loading ? '—' : `${streaks.longest} ${t('dashboard:heatmap.days')}`}
+                {loading ? '—' : t('dashboard:heatmap.daysCount', { count: streaks.longest })}
               </p>
             </div>
             <div>
               <p className="text-ui-sm text-muted-foreground">{t('dashboard:heatmap.currentStreak')}</p>
               <p className="mt-0.5 text-sm font-medium text-foreground">
-                {loading ? '—' : `${streaks.current} ${t('dashboard:heatmap.days')}`}
+                {loading ? '—' : t('dashboard:heatmap.daysCount', { count: streaks.current })}
               </p>
             </div>
           </div>
