@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import type { ChapterVersion } from '../../types/novel'
+import { sortChapters } from '../../utils/outlineDrag'
 import { readHostModePreference, writeHostModePreference } from '../../utils/agentHostMode'
 import { toStoredChatMessage } from '../../utils/agentMessagePersist'
 import { saveSessionMessages } from '../../utils/chatSessionStore'
@@ -76,6 +77,7 @@ export function useEditorPage() {
   const agentChapterStreamPhase = useNovelStore((s) => s.agentChapterStreamPhase)
   const selectChapterAfterAgentWrite = useNovelStore((s) => s.selectChapterAfterAgentWrite)
   const loadChapters = useNovelStore((s) => s.loadChapters)
+  const selectChapter = useNovelStore((s) => s.selectChapter)
   const chapterDiffActive = useNovelStore((s) => s.chapterDiffActive)
   const chapterDiffBaseline = useNovelStore((s) => s.chapterDiffBaseline)
   const acceptChapterDiff = useNovelStore((s) => s.acceptChapterDiff)
@@ -200,29 +202,17 @@ export function useEditorPage() {
     setActiveCenterTab('story')
   }, [novels, searchParams, selectNovel])
 
+  /** 移动分屏：进入章节编辑且已有章节时，默认选中第一章（一步开写） */
   useEffect(() => {
     if (typeof window === 'undefined') return
     if (!window.matchMedia('(max-width: 767px)').matches) return
     if (activeCenterTab !== 'story') return
-    if (!activeNovelId) return
-    if (chapters.length === 0 || !activeChapterId) {
-      setStoryOutlineCollapsed(false)
+    if (!activeNovelId || activeChapterId) return
+    const first = sortChapters(chapters)[0]
+    if (first) {
+      void selectChapter(first.id)
     }
-  }, [activeCenterTab, activeNovelId, activeChapterId, chapters.length])
-
-  const prevMobileChapterId = useRef<string | null>(null)
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    if (!window.matchMedia('(max-width: 767px)').matches) return
-    if (
-      prevMobileChapterId.current != null &&
-      activeChapterId != null &&
-      prevMobileChapterId.current !== activeChapterId
-    ) {
-      setStoryOutlineCollapsed(true)
-    }
-    prevMobileChapterId.current = activeChapterId
-  }, [activeChapterId])
+  }, [activeCenterTab, activeNovelId, activeChapterId, chapters, selectChapter])
 
   const handleHostModeChange = useCallback((enabled: boolean) => {
     setHostModeEnabled(enabled)

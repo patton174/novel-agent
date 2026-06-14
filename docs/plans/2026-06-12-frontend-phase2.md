@@ -149,11 +149,18 @@
 - [x] **空态 CTA**：无章节时「打开章节目录」按钮
 - [x] **Agent timeline 移动紧凑**：`TIMELINE_COLUMN` / 编排标题 / 交付正文 / 分隔线 `max-md` 收紧
 
+## Phase 9 — 移动分屏写作 + 一步选章
+
+- [x] **StoryMobileChapterPicker**：移动顶栏分屏（max 38vh），卷/章列表一点即选
+- [x] **EditorStoryPanel 移动布局**：上选章 + 下编辑，去掉全屏 overlay 路径
+- [x] **自动选中首章**：进入「章节编辑」且已有章节时默认选中第一章
+- [x] **版本历史**：移动工具栏「版本」→ 底部 Sheet
+
 ## 审计清单闭环状态
 
 `docs/frontend-ui-audit.md` 中可交付项均已通过 Phase 1–8 落地；**未纳入范围**（需单独产品/工程规划）：
 
-- Editor 移动写作路径深度重构（Phase 8 已缩短：全屏目录 + 选章自动收起 + 工具栏目录入口；分屏/一步选章仍待产品方案）
+- Editor 移动写作路径深度重构（Phase 8–9 已做：分屏选章 + 自动首章；拖拽排序仍仅桌面侧栏）
 - Agent timeline 折叠策略与「单条占多屏」的结构性压缩（Phase 8 已收紧移动间距与默认编排收起）
 - Modal/Loader 进一步合并（已压至 EditorModalShell + shadcn Dialog + Skeleton + BrandLoader）
 - Admin 全表移动卡片（Users/Audit/Plans/Catalog 已有；其余低流量页保留横滑）
