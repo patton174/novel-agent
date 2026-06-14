@@ -38,6 +38,7 @@ from app.agent.harness.loop_support import (
     _MAX_VALIDATION_RETRIES_PER_TURN,
     RunLoopState,
     planning_title,
+    planned_tool_visibility_events,
     stream_tool_step,
     tool_batch_end_run,
     wait_for_user_interaction,
@@ -685,7 +686,14 @@ async def run_query_loop(
                         after_interaction=state.after_interaction,
                     ),
                     "reason": "tool_use",
-                    "tool_calls": [{"tool": i.tool, "input": i.input} for i in exec_items],
+                    "tool_calls": [
+                        {
+                            "tool": i.tool,
+                            "input": i.input,
+                            "tool_call_id": i.tool_call_id,
+                        }
+                        for i in exec_items
+                    ],
                     "partition": [
                         {
                             "parallel": b.concurrency_safe and len(b.items) > 1,
@@ -697,6 +705,14 @@ async def run_query_loop(
             )
             state.sequence += 1
             state.after_interaction = False
+
+            vis_events, state.sequence = planned_tool_visibility_events(
+                state.ctx,
+                exec_items,
+                sequence=state.sequence,
+            )
+            for vis_ev in vis_events:
+                yield vis_ev
 
             waited = False
             batch_tool_recover = False

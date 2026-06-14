@@ -8,6 +8,7 @@ import {
 } from '../../../utils/agentStreamTimeline'
 import { ThinkRoundGroup } from './ThinkRoundGroup'
 import { translateOrchestrationHeadline } from '../../../utils/orchestrationI18n'
+import { ShimmerScanText } from '../../loaders/ShimmerScanText'
 import {
   CC_TOOL_MAIN,
   PLANNING_HEADER,
@@ -32,6 +33,7 @@ export function OrchestrationLayer({
   thinkExpanded,
   onThinkExpandedChange,
   pinExpanded = false,
+  orchestrationOverview,
   renderTool,
   renderText,
 }: {
@@ -44,6 +46,7 @@ export function OrchestrationLayer({
   thinkExpanded?: boolean
   onThinkExpandedChange?: (open: boolean) => void
   pinExpanded?: boolean
+  orchestrationOverview?: string
   renderTool: (
     block: Extract<import('../../../types/agent').AgentTimelineBlock, { kind: 'tool' }>,
     key: string,
@@ -85,7 +88,9 @@ export function OrchestrationLayer({
     streamLive,
     streamFinished,
     status,
+    orchestrationOverview,
   )
+  const headlineText = translateOrchestrationHeadline(headline)
 
   return (
     <div
@@ -117,7 +122,13 @@ export function OrchestrationLayer({
           </div>
           <div className={CC_TOOL_MAIN}>
             <div className={PLANNING_HEADER_MAIN}>
-              <span className={PLANNING_TITLE}>{translateOrchestrationHeadline(headline)}</span>
+              {isActive ? (
+                <ShimmerScanText active className={PLANNING_TITLE}>
+                  {headlineText}
+                </ShimmerScanText>
+              ) : (
+                <span className={PLANNING_TITLE}>{headlineText}</span>
+              )}
             </div>
           </div>
         </div>

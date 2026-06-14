@@ -1,3 +1,5 @@
+import { parseJsonWithSafeIds } from './jsonSafeIds'
+
 export interface ApiResult<T> {
   code: number
   msg: string
@@ -97,7 +99,8 @@ export async function throwOnErrorResponse(response: Response): Promise<void> {
 }
 
 export async function parseResultResponse<T>(response: Response): Promise<T> {
-  const json = await response.json()
+  const text = await response.text()
+  const json = parseJsonWithSafeIds(text)
   if (!response.ok) {
     throw new Error(resolveErrorMessage(json, response.status))
   }

@@ -158,8 +158,47 @@ export function planningActiveLabel(toolName: string): string | undefined {
   return PLANNING_ACTIVE_LABELS[key] ?? PLANNING_ACTIVE_LABELS[normalizeToolName(key)]
 }
 
-type ToolCallRow = { tool?: string }
+type ToolCallRow = { tool?: string; tool_call_id?: string; input?: Record<string, unknown> }
 type PartitionRow = { parallel?: boolean; tools?: string[] }
+
+export type PlannedToolCall = {
+  tool: string
+  toolCallId: string
+  input?: Record<string, unknown>
+}
+
+/** 从 planning.completed payload 解析本轮计划工具（含 step_id = tool_call_id） */
+export function plannedToolCallsFromPayload(
+  payload: Record<string, unknown>,
+  planStepId: string,
+): PlannedToolCall[] {
+  const raw = payload.tool_calls
+  if (!Array.isArray(raw)) {
+    return []
+  }
+  const out: PlannedToolCall[] = []
+  for (let index = 0; index < raw.length; index += 1) {
+    const row = raw[index]
+    if (!row || typeof row !== 'object') {
+      continue
+    }
+    const cell = row as ToolCallRow
+    const tool = typeof cell.tool === 'string' ? cell.tool.trim() : ''
+    if (!tool) {
+      continue
+    }
+    const toolCallId =
+      typeof cell.tool_call_id === 'string' && cell.tool_call_id.trim()
+        ? cell.tool_call_id.trim()
+        : `${planStepId}:tool:${index}`
+    const input =
+      cell.input && typeof cell.input === 'object' && !Array.isArray(cell.input)
+        ? (cell.input as Record<string, unknown>)
+        : undefined
+    out.push({ tool, toolCallId, input })
+  }
+  return out
+}
 
 function toolNamesFromPayload(payload: Record<string, unknown>): string[] {
   const raw = payload.tool_calls

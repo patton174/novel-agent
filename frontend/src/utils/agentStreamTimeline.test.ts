@@ -3,6 +3,7 @@ import {
   appendTimelineTextDelta,
   applyTimelineEvent,
   appendChoiceSelected,
+  deriveOrchestrationHeadline,
   formatPlanningHeadline,
   deriveActivePlanningHeadline,
   finalizeTimeline,
@@ -10,6 +11,7 @@ import {
   groupTimelineDisplayGroups,
   mergePlanningInsightBlocks,
   normalizeTimelineBlockIds,
+  orchestrationOverviewFromTimeline,
   pruneEmptyThinkBlocks,
   shouldRenderThinkBlock,
   shouldShowOrchestrationResumeGap,
@@ -378,7 +380,10 @@ describe('agentStreamTimeline', () => {
       step_id: 'step-plan',
       payload: {
         title: '编排中…',
-        tool_calls: [{ tool: 'Glob' }, { tool: 'Write' }],
+        tool_calls: [
+          { tool: 'Glob', tool_call_id: 'call_glob' },
+          { tool: 'Write', tool_call_id: 'call_write' },
+        ],
         partition: [
           { parallel: false, tools: ['Glob'] },
           { parallel: false, tools: ['Write'] },
@@ -387,6 +392,30 @@ describe('agentStreamTimeline', () => {
     })
     const transition = timeline.find((b) => b.kind === 'transition')
     expect(transition?.kind === 'transition' && transition.title).toBe('列举 → 写入')
+    expect(timeline.some((b) => b.kind === 'tool' && b.stepId === 'call_glob')).toBe(true)
+    expect(timeline.some((b) => b.kind === 'tool' && b.stepId === 'call_write')).toBe(true)
+  })
+
+  it('shows orchestration overview beside done headline', () => {
+    const headline = deriveOrchestrationHeadline([], [], false, true, 'done', '列举 → 写入')
+    expect(headline).toBe('编排完成 · 列举 → 写入')
+  })
+
+  it('reads orchestration overview from done transition title', () => {
+    let timeline = applyTimelineEvent([], {
+      type: 'planning.next_step',
+      step_id: 'step-plan',
+      payload: { title: '编排中…' },
+    })
+    timeline = applyTimelineEvent(timeline, {
+      type: 'planning.completed',
+      step_id: 'step-plan',
+      payload: {
+        tool_calls: [{ tool: 'Write', tool_call_id: 'call_w' }],
+        partition: [{ parallel: false, tools: ['Write'] }],
+      },
+    })
+    expect(orchestrationOverviewFromTimeline(timeline)).toBe('写入')
   })
 
   it('formatPlanningHeadline avoids duplicate 编排完成 + 规划中', () => {

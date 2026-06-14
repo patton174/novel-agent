@@ -440,3 +440,58 @@ async def yield_visible_assistant_message(
     state.assistant_message_emitted = True
     for ev in events:
         yield ev
+
+
+def planned_tool_visibility_events(
+    ctx: AgentRunContext,
+    items: list[Any],
+    *,
+    sequence: int,
+) -> tuple[list[dict[str, Any]], int]:
+    """Emit step.started + tool.started before long tool runs so the UI can shimmer early."""
+    from app.agent.harness.cc_visibility import (
+        is_hidden_timeline_tool,
+        should_emit_tool_started,
+        tool_display_name,
+    )
+
+    events: list[dict[str, Any]] = []
+    seq = sequence
+    for item in items:
+        tool = str(getattr(item, "tool", "") or "").strip()
+        if not tool or is_hidden_timeline_tool(tool):
+            continue
+        step_id = str(getattr(item, "tool_call_id", "") or "").strip() or f"call_{seq}"
+        inp = dict(getattr(item, "input", None) or {})
+        events.append(
+            build_event(
+                event_type="step.started",
+                run_id=ctx.run_id,
+                session_id=ctx.session_id,
+                message_id=ctx.message_id,
+                step_id=step_id,
+                sequence=seq,
+                payload={"tool": tool, "step_index": ctx.step_index},
+            )
+        )
+        seq += 1
+        if should_emit_tool_started(tool):
+            payload: dict[str, Any] = {
+                "name": tool,
+                "display_name": tool_display_name(tool, inp),
+            }
+            if inp:
+                payload["tool_input"] = inp
+            events.append(
+                build_event(
+                    event_type="tool.started",
+                    run_id=ctx.run_id,
+                    session_id=ctx.session_id,
+                    message_id=ctx.message_id,
+                    step_id=step_id,
+                    sequence=seq,
+                    payload=payload,
+                )
+            )
+            seq += 1
+    return events, seq

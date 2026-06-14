@@ -72,7 +72,7 @@ export function UserEditDialog({
   const [runBonus, setRunBonus] = useState('0')
   const [overrideReason, setOverrideReason] = useState('')
 
-  const loadBilling = useCallback(async (userId: number) => {
+  const loadBilling = useCallback(async (userId: string) => {
     setBillingLoading(true)
     try {
       const [planList, usageData] = await Promise.all([
@@ -166,7 +166,16 @@ export function UserEditDialog({
         size="form"
         className="max-h-[90vh]"
         title={t('admin:userEdit.title')}
-        description={user ? `${user.username}（${user.email}）` : undefined}
+        description={
+          user ? (
+            <>
+              {user.username}（{user.email}）
+              <span className="mt-1 block font-mono text-[11px] text-muted-foreground">
+                userId: {user.id}
+              </span>
+            </>
+          ) : undefined
+        }
       >
         <div className="flex gap-2 border-b border-border pb-2">
           {(

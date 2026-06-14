@@ -25,7 +25,7 @@ export interface StatsTrends {
 }
 
 export interface AdminUser {
-  id: number
+  id: string
   username: string
   email: string
   role: UserRole
@@ -90,13 +90,13 @@ export async function fetchUserPage(params: {
   return parseResponse<AdminUserPage>(res)
 }
 
-export async function fetchUserDetail(id: number): Promise<AdminUser> {
+export async function fetchUserDetail(id: string): Promise<AdminUser> {
   const res = await secureFetch(`/api/auth/crm/user/${id}`)
   return parseResponse<AdminUser>(res)
 }
 
 export async function updateUser(
-  id: number,
+  id: string,
   payload: AdminUserUpdatePayload,
 ): Promise<AdminUser> {
   const res = await secureFetch(`/api/auth/crm/user/${id}`, {

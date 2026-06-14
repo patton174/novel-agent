@@ -42,7 +42,7 @@ export const PLAN_FEATURE_OPTIONS = [
 ] as const
 
 export interface AdminUserUsage {
-  userId: number
+  userId: string
   periodYyyyMm: string
   planCode: string
   planName: string
@@ -138,7 +138,7 @@ export async function deactivateAdminPlan(id: number): Promise<void> {
 }
 
 export async function updateUserSubscription(
-  userId: number,
+  userId: string,
   planCode: string,
   reason?: string,
 ): Promise<void> {
@@ -152,7 +152,7 @@ export async function updateUserSubscription(
   }
 }
 
-export async function fetchAdminUserUsage(userId: number): Promise<AdminUserUsage> {
+export async function fetchAdminUserUsage(userId: string): Promise<AdminUserUsage> {
   const res = await secureFetch(`/api/billing/crm/usage/user/${userId}`)
   if (!res.ok) {
     throw new Error('加载用户用量失败')
@@ -161,7 +161,7 @@ export async function fetchAdminUserUsage(userId: number): Promise<AdminUserUsag
 }
 
 export async function addUserQuotaOverride(
-  userId: number,
+  userId: string,
   payload: {
     tokenBonus: number
     runBonus: number

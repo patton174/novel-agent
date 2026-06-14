@@ -52,6 +52,7 @@ class Settings(BaseSettings):
     content_base_url: str = "http://127.0.0.1:8091"
     internal_service_key: str = "dev-internal-key-change-me"
     billing_report_enabled: bool = True
+    # Split 栈默认 PyAI :8082；Worker 单体栈 compose 注入 BILLING_REPORT_URL=http://novel-studio:8080
     billing_report_url: str = "http://127.0.0.1:8082"
     worker_id: str = ""
     log_level: str = "INFO"

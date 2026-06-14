@@ -39,6 +39,7 @@ services:
     environment:
       LOG_LEVEL: ${PYTHON_LOG_LEVEL:-INFO}
       CONTENT_BASE_URL: http://agent-content:8091
+      BILLING_REPORT_URL: http://agent-pyai:8082
       CRAWL_FETCH_CONCURRENCY: ${CRAWL_FETCH_CONCURRENCY:-2}
       CRAWL_BROWSER_CONCURRENCY: ${CRAWL_BROWSER_CONCURRENCY:-1}
     mem_limit: ${PYTHON_MEM_LIMIT:-304m}

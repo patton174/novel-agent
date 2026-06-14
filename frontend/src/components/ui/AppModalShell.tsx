@@ -77,12 +77,16 @@ export function AppModalShell({
       >
         {header ? (
           header
-        ) : title || description ? (
+        ) : (
           <DialogHeader className="shrink-0">
-            {title ? <DialogTitle>{title}</DialogTitle> : null}
+            {title ? (
+              <DialogTitle>{title}</DialogTitle>
+            ) : (
+              <DialogTitle className="sr-only">对话框</DialogTitle>
+            )}
             {description ? <DialogDescription>{description}</DialogDescription> : null}
           </DialogHeader>
-        ) : null}
+        )}
         <div
           className={cn(
             isInsetBody

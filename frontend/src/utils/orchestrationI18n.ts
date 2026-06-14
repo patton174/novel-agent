@@ -20,6 +20,11 @@ const PHASE_KEYS: Record<string, string> = {
 export function translateOrchestrationHeadline(raw: string): string {
   const trimmed = raw.trim()
   if (!trimmed) return trimmed
+  const donePrefix = '编排完成 · '
+  if (trimmed.startsWith(donePrefix)) {
+    const overview = trimmed.slice(donePrefix.length).trim()
+    return `${i18n.t('editor:timeline.orchestrationDone')} · ${overview}`
+  }
   const key = HEADLINE_KEYS[trimmed]
   if (key) return i18n.t(key)
   return trimmed

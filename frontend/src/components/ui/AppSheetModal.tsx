@@ -85,12 +85,16 @@ export function AppSheetModal({
       >
         {header ? (
           header
-        ) : title || description ? (
+        ) : (
           <SheetHeader className={cn('border-b border-border px-5 py-4', sheetHeaderClassName)}>
-            {title ? <SheetTitle>{title}</SheetTitle> : null}
+            {title ? (
+              <SheetTitle>{title}</SheetTitle>
+            ) : (
+              <SheetTitle className="sr-only">面板</SheetTitle>
+            )}
             {description ? <SheetDescription>{description}</SheetDescription> : null}
           </SheetHeader>
-        ) : null}
+        )}
         <div className={cn('min-h-0 overflow-y-auto px-5 py-4', bodyClassName)}>{children}</div>
       </SheetContent>
     </Sheet>

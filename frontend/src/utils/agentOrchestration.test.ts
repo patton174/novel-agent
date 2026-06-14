@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { orchestrationCompletedTitle } from './agentOrchestration'
+import { orchestrationCompletedTitle, plannedToolCallsFromPayload } from './agentOrchestration'
 
 describe('orchestrationCompletedTitle', () => {
   it('uses backend title when specific', () => {
@@ -46,5 +46,26 @@ describe('orchestrationCompletedTitle', () => {
         partition: [{ parallel: false, tools: ['output'] }],
       }),
     ).toBeUndefined()
+  })
+})
+
+describe('plannedToolCallsFromPayload', () => {
+  it('preserves tool_call_id for early UI rows', () => {
+    expect(
+      plannedToolCallsFromPayload(
+        {
+          tool_calls: [
+            { tool: 'WriteChapter', tool_call_id: 'call_abc', input: { title: '第一章' } },
+          ],
+        },
+        'step-plan',
+      ),
+    ).toEqual([
+      {
+        tool: 'WriteChapter',
+        toolCallId: 'call_abc',
+        input: { title: '第一章' },
+      },
+    ])
   })
 })

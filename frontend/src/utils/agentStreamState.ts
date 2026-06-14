@@ -17,6 +17,7 @@ import {
 } from './toolDetailFormat'
 import { isHiddenUiTool } from './agentHiddenTools'
 import { isAskUserTool, normalizeToolName, vfsPathFromPayload } from './agentToolNames'
+import { plannedToolCallsFromPayload } from './agentOrchestration'
 import { ccToolHumanSubtitle, ccToolHumanSubtitleFromPayload } from './ccToolDisplay'
 import {
   applyTimelineEvent,
@@ -677,6 +678,47 @@ export function applyAgentEvent(
     const runEnding = nextTool === 'end' || reason === 'no tool_use'
     if (!runEnding) {
       next = { ...next, messageContent: '' }
+    }
+    const planStepId =
+      typeof event.step_id === 'string' && event.step_id.trim()
+        ? event.step_id.trim()
+        : 'plan'
+    const plannedCalls = plannedToolCallsFromPayload(payload, planStepId)
+    if (plannedCalls.length > 0) {
+      let stepStates = [...next.stepStates]
+      for (const call of plannedCalls) {
+        if (isHiddenUiTool(call.tool)) {
+          continue
+        }
+        if (stepStates.some((s) => s.stepId === call.toolCallId)) {
+          continue
+        }
+        const toolArgs = call.input
+          ? ccToolHumanSubtitleFromPayload(call.tool, call.input)
+          : undefined
+        const displayTitle =
+          typeof call.input?.title === 'string' && call.input.title.trim()
+            ? call.input.title.trim()
+            : toolDisplayName(call.tool)
+        stepStates = [
+          ...stepStates,
+          {
+            stepId: call.toolCallId,
+            type: 'tool',
+            status: 'started',
+            title: displayTitle,
+            toolName: call.tool,
+            toolInput: call.input,
+            toolArgs: toolArgs || undefined,
+            detail: toolArgs || undefined,
+          },
+        ]
+      }
+      next = {
+        ...next,
+        stepStates,
+        activeToolCount: recomputeActiveToolCount(stepStates),
+      }
     }
   }
 

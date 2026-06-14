@@ -22,8 +22,8 @@ services:
       - ${PYTHON_AI_ENV_FILE:-/opt/novel-agent/python-ai/.env}
     environment:
       LOG_LEVEL: ${PYTHON_LOG_LEVEL:-INFO}
-      CONTENT_BASE_URL: http://novel-studio:8080
-      INTERNAL_SERVICE_KEY: ${AGENT_INTERNAL_SERVICE_KEY}
+      CONTENT_BASE_URL: http://agent-content:8091
+      BILLING_REPORT_URL: http://novel-studio:8080
       CRAWL_FETCH_CONCURRENCY: ${CRAWL_FETCH_CONCURRENCY:-2}
       CRAWL_BROWSER_CONCURRENCY: ${CRAWL_BROWSER_CONCURRENCY:-1}
     mem_limit: ${PYTHON_MEM_LIMIT:-304m}
@@ -31,6 +31,7 @@ services:
       - "8000:8000"
     networks:
       - novel-net
+      - agent-content-net
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health')\""]
       interval: 20s
@@ -98,3 +99,6 @@ services:
 networks:
   novel-net:
     driver: bridge
+  agent-content-net:
+    external: true
+    name: novel-agent-worker_novel-net

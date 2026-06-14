@@ -11,6 +11,7 @@ import {
   groupTimelineUnits,
   isSiblingExposureBlock,
   normalizeTimelineBlockIds,
+  orchestrationOverviewFromTimeline,
   shouldRenderThinkBlock,
   shouldShowOrchestrationResumeGap,
 } from '../../../utils/agentStreamTimeline'
@@ -109,6 +110,11 @@ export function AssistantStreamTimeline({
         shouldRenderThinkBlock(block, { streamLive, streamFinished }),
     )
   }, [timeline, stepStates, fallbackThinkText, messageKey, streamLive, streamFinished])
+
+  const orchestrationOverview = useMemo(
+    () => orchestrationOverviewFromTimeline(effectiveTimeline),
+    [effectiveTimeline],
+  )
 
   const stepByTimelineBlockId = useMemo(() => {
     const assigned = new Set<string>()
@@ -562,6 +568,7 @@ export function AssistantStreamTimeline({
           thinkExpanded={thinkExpanded}
           onThinkExpandedChange={onThinkExpandedChange}
           pinExpanded={pinOrchestrationOpen || awaitingInteraction || hasPendingAskUser}
+          orchestrationOverview={orchestrationOverview}
           renderTool={(block, blockKey) => {
             const exposure = isSiblingExposureBlock(block, stepStates)
             return renderToolBlock(block, blockKey, !exposure)
@@ -648,6 +655,7 @@ export function AssistantStreamTimeline({
             thinkExpanded={thinkExpanded}
             onThinkExpandedChange={onThinkExpandedChange}
             pinExpanded
+            orchestrationOverview={orchestrationOverview}
             renderTool={() => null}
           />
         ) : null}

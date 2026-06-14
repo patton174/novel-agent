@@ -2,6 +2,7 @@ import type { AgentChoiceOption, AgentEventEnvelope, AgentStepState, AgentTimeli
 import {
   isHiddenTimelineToolName,
   orchestrationCompletedTitle,
+  plannedToolCallsFromPayload,
   PLANNING_GENERIC_TITLES,
   planningActiveLabel,
   planningPrepTitle,
@@ -11,6 +12,71 @@ import { isAskUserTool } from './agentToolNames'
 import { sanitizeMessageDeltaChunk, sanitizeThinkText } from './sanitizeAgentText'
 
 export { PLANNING_GENERIC_TITLES } from './agentOrchestration'
+
+function seedPlannedToolBlocks(
+  timeline: AgentTimelineBlock[],
+  payload: Record<string, unknown>,
+  planStepId: string,
+): AgentTimelineBlock[] {
+  const calls = plannedToolCallsFromPayload(payload, planStepId)
+  if (calls.length === 0) {
+    return timeline
+  }
+  let insertIdx = timeline.length
+  if (planStepId) {
+    const transitionId = `transition:${planStepId}`
+    const transitionIdx = timeline.findIndex(
+      (b) => b.kind === 'transition' && b.id === transitionId,
+    )
+    if (transitionIdx >= 0) {
+      insertIdx = transitionIdx + 1
+    } else {
+      const lastTransitionIdx = findLastIndex(timeline, (b) => b.kind === 'transition')
+      if (lastTransitionIdx >= 0) {
+        insertIdx = lastTransitionIdx + 1
+      }
+    }
+  }
+  const newBlocks: AgentTimelineBlock[] = []
+  for (const call of calls) {
+    if (isHiddenTimelineToolName(call.tool)) {
+      continue
+    }
+    if (timeline.some((b) => b.kind === 'tool' && b.stepId === call.toolCallId)) {
+      continue
+    }
+    newBlocks.push({
+      kind: 'tool',
+      id: uniqueBlockId([...timeline, ...newBlocks], 'tool', call.toolCallId),
+      stepId: call.toolCallId,
+    })
+  }
+  if (newBlocks.length === 0) {
+    return timeline
+  }
+  return freezeTrailingStreamBlocks([
+    ...timeline.slice(0, insertIdx),
+    ...newBlocks,
+    ...timeline.slice(insertIdx),
+  ])
+}
+
+/** 从 timeline 中最近的 planning.completed transition 提取编排概览 */
+export function orchestrationOverviewFromTimeline(
+  timeline: AgentTimelineBlock[],
+): string | undefined {
+  for (let i = timeline.length - 1; i >= 0; i -= 1) {
+    const block = timeline[i]
+    if (block.kind !== 'transition' || block.status !== 'done') {
+      continue
+    }
+    const title = block.title?.trim() ?? ''
+    if (title && !PLANNING_GENERIC_TITLES.has(title)) {
+      return title
+    }
+  }
+  return undefined
+}
 
 function freezeTrailingStreamBlocks(timeline: AgentTimelineBlock[]): AgentTimelineBlock[] {
   const lastTextIdx = findLastIndex(timeline, (b) => b.kind === 'text' && !b.frozen)
@@ -466,7 +532,7 @@ export function applyTimelineEvent(
         title: completedTitle ?? block.title,
       }
     }
-    return next
+    return seedPlannedToolBlocks(next, payload, planStepId)
   }
 
   if (type === 'planning.failed') {
@@ -1006,10 +1072,18 @@ export function deriveOrchestrationHeadline(
   streamLive: boolean,
   streamFinished: boolean,
   status: 'active' | 'done',
+  completedOverview?: string,
 ): string {
   const streaming = streamLive && !streamFinished
   if (!streaming) {
-    return status === 'done' ? '编排完成' : '编排'
+    if (status === 'done') {
+      const overview = completedOverview?.trim()
+      if (overview && !PLANNING_GENERIC_TITLES.has(overview)) {
+        return `编排完成 · ${overview}`
+      }
+      return '编排完成'
+    }
+    return '编排'
   }
   if (status === 'done') {
     return '成稿中…'
