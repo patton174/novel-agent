@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { ChevronDown } from 'lucide-react'
 import type {
   AgentAssistantStreamPhase,
   AgentChoiceOption,
@@ -185,12 +186,24 @@ export function EditorChatMessage({
                 type="button"
                 className={MOBILE_PROCESS_TOGGLE}
                 aria-expanded={processExpanded}
+                aria-label={
+                  processExpanded
+                    ? '收起创作过程'
+                    : `展开创作过程，共 ${orchestrationStepCount} 步`
+                }
                 onClick={() => setProcessExpanded((open) => !open)}
                 data-testid="mobile-process-toggle"
               >
-                {processExpanded
-                  ? '收起创作过程'
-                  : `查看创作过程 · ${orchestrationStepCount} 步`}
+                <span>
+                  {processExpanded
+                    ? '收起创作过程'
+                    : processCollapsed && !deliveryText
+                      ? `展开查看 AI 创作过程 · ${orchestrationStepCount} 步`
+                      : `查看创作过程 · ${orchestrationStepCount} 步`}
+                </span>
+                <ChevronDown
+                  className={`size-4 shrink-0 transition-transform ${processExpanded ? 'rotate-180' : ''}`}
+                />
               </button>
             ) : null}
             {showFullTimeline ? (

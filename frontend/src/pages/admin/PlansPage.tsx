@@ -207,7 +207,7 @@ export default function PlansPage() {
                 </div>
                 <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
                   <div>
-                    <dt className="text-muted-foreground">月价</dt>
+                    <dt className="text-muted-foreground">月价（元）</dt>
                     <dd className="tabular-nums font-medium">{formatPlanPrice(plan.priceCents)}</dd>
                   </div>
                   <div>
@@ -252,7 +252,7 @@ export default function PlansPage() {
           <thead className="bg-muted/40 text-left text-xs text-muted-foreground">
             <tr>
               <th className="px-4 py-3 font-medium">套餐</th>
-              <th className="px-4 py-3 font-medium">月价</th>
+              <th className="px-4 py-3 font-medium">月价（元）</th>
               <th className="px-4 py-3 font-medium">Token 配额</th>
               <th className="px-4 py-3 font-medium">Run 配额</th>
               <th className="px-4 py-3 font-medium">RPM</th>

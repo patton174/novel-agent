@@ -3,11 +3,12 @@ import { motion, useReducedMotion } from 'framer-motion'
 import { ArrowRight, BookMarked, PenTool, Sparkles, Users } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { MarketingAmbient } from '../MarketingAmbient'
+import { MKT_CTA_PRIMARY, MKT_CTA_SECONDARY } from '@/lib/marketingCta'
 
 const PERSONAS = [
-  { key: 'serial', icon: PenTool, accent: 'from-violet-500/20 via-indigo-500/10 to-transparent', ring: 'group-hover:ring-violet-400/40' },
-  { key: 'world', icon: BookMarked, accent: 'from-emerald-500/20 via-teal-500/10 to-transparent', ring: 'group-hover:ring-emerald-400/40' },
-  { key: 'edit', icon: Users, accent: 'from-amber-500/20 via-orange-500/10 to-transparent', ring: 'group-hover:ring-amber-400/40' },
+  { key: 'serial', icon: PenTool, accent: 'from-violet-500/20 via-indigo-500/10 to-transparent' },
+  { key: 'world', icon: BookMarked, accent: 'from-emerald-500/20 via-teal-500/10 to-transparent' },
+  { key: 'edit', icon: Users, accent: 'from-amber-500/20 via-orange-500/10 to-transparent' },
 ] as const
 
 const COMPARE_KEYS = ['context', 'orchestrate', 'stream', 'resume'] as const
@@ -46,11 +47,11 @@ export function HomeFeasibilitySection() {
         </motion.div>
 
         <div className="mb-14 grid gap-5 md:grid-cols-3 md:gap-6">
-          {PERSONAS.map(({ key, icon: Icon, accent, ring }, i) => (
+          {PERSONAS.map(({ key, icon: Icon, accent }, i) => (
             <motion.article
               key={key}
               {...fade(i * 0.07)}
-              className={`group mkt-card-lift relative overflow-hidden rounded-2xl border border-border/70 bg-gradient-to-br ${accent} p-6 shadow-[0_8px_32px_-12px_rgba(79,70,229,0.12)] ring-1 ring-transparent ${ring}`}
+              className={`group mkt-card-lift relative overflow-hidden rounded-2xl border border-border/70 bg-gradient-to-br ${accent} p-6 shadow-[0_8px_32px_-12px_rgba(79,70,229,0.12)]`}
             >
               <div
                 aria-hidden
@@ -113,17 +114,11 @@ export function HomeFeasibilitySection() {
         </motion.div>
 
         <motion.div {...fade(0.12)} className="flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <Link
-            to="/guide"
-            className="mkt-cta-glow inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition hover:-translate-y-0.5 hover:bg-primary-hover"
-          >
+          <Link to="/guide" className={MKT_CTA_PRIMARY}>
             {t('home.feasibility.ctaGuide')}
             <ArrowRight className="size-4" />
           </Link>
-          <Link
-            to="/pricing"
-            className="inline-flex items-center gap-2 rounded-full border border-border bg-white/80 px-6 py-3 text-sm font-semibold text-foreground shadow-sm backdrop-blur-sm transition hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md"
-          >
+          <Link to="/pricing" className={MKT_CTA_SECONDARY}>
             {t('home.feasibility.ctaPricing')}
           </Link>
         </motion.div>
@@ -131,4 +126,4 @@ export function HomeFeasibilitySection() {
     </section>
   )
 }
-
+

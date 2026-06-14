@@ -447,8 +447,8 @@ export default function CrawlerPage() {
               setOrchGoal(e.target.value)
               setGoalDirty(true)
             }}
-            rows={4}
-            className="min-h-[5.5rem] w-full rounded-xl border border-input bg-background px-3 py-2 text-sm disabled:opacity-50"
+            rows={5}
+            className="min-h-[5.5rem] w-full rounded-xl border border-input bg-background px-3 py-2 text-sm disabled:opacity-50 max-md:min-h-[7rem]"
             placeholder={DEFAULT_GOAL}
           />
         </div>

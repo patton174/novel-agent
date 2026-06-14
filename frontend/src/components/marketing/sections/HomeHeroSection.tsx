@@ -72,7 +72,7 @@ export function HomeHeroSection() {
 
       <motion.div
         {...fade(0.32)}
-        className="mb-10 flex flex-wrap items-center justify-center gap-2"
+        className="mb-8 hidden flex-wrap items-center justify-center gap-2 sm:mb-10 sm:flex"
       >
         {TRUST_KEYS.map((key) => (
           <span key={key} className="mkt-glass-pill rounded-full px-3 py-1 text-xs font-medium text-muted-foreground">
@@ -81,7 +81,7 @@ export function HomeHeroSection() {
         ))}
       </motion.div>
 
-      <motion.div {...fade(0.4)} className="relative mx-auto max-w-4xl">
+      <motion.div {...fade(0.4)} className="relative mx-auto hidden max-w-4xl sm:block">
         <div
           aria-hidden
           className="pointer-events-none absolute -inset-6 hidden rounded-[2rem] bg-gradient-to-r from-indigo-500/25 via-violet-500/20 to-indigo-500/25 blur-3xl motion-reduce:opacity-70 sm:block"
@@ -96,7 +96,7 @@ export function HomeHeroSection() {
         {...fade(0.48)}
         type="button"
         onClick={scrollToFeasibility}
-        className="group mx-auto mt-10 flex flex-col items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-primary"
+        className="group mx-auto mt-8 hidden flex-col items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-primary sm:mt-10 sm:flex"
         aria-label={t('home.hero.scrollHint')}
       >
         <span>{t('home.hero.scrollHint')}</span>

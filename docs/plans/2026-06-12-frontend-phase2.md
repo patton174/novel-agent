@@ -190,24 +190,31 @@
 - [x] **本计划**：标记 Status 已闭环；Phase 1–13 执行记录完整
 - [x] **代码**：Phase 13 已部署 `36a0eef`；`frontend/src` 无 styled-components
 
-## 审计清单闭环状态
-
-✅ **`docs/frontend-ui-audit.md` 全部可交付项已通过 Phase 1–13 落地并完成文档收口。**
-
-### 后续 backlog（非阻塞）
-
-✅ Phase 15 已全部完成（2026-06-12）。
-
 ## Phase 15 — Backlog 清零
 
 - [x] **Touch DnD**：`useOutlineTouchDrag` + 移动排序模式 ⋮⋮ 拖拽；桌面 `NovelOutlinePanel` 同步支持 touch
-- [x] **Modal 单壳**：`AppModalShell` 统一 Editor / Admin / Dashboard 弹窗；`EditorModalShell` 保留 legacy 导出
-- [x] **账户三入口**：`AccountSettingsSections` 共享；侧栏头像 → `/dashboard/settings`；Editor 设置嵌入同面板 + 链控制台
+- [x] **Modal 单壳**：`AppModalShell` 统一 Editor / Admin / Dashboard 弹窗
+- [x] **账户三入口**：`AccountSettingsSections` 共享；侧栏头像 → `/dashboard/settings`；Editor 设置嵌入同面板
 - [x] **审计 JSON Modal**：`AuditLogDetailModal` 格式化 + 复制 + reader 壳
+
+## Phase 16 — 二次验收修复
+
+> 对照 [`frontend-ui-audit-revalidation-2026-06-12.md`](../frontend-ui-audit-revalidation-2026-06-12.md)
+
+- [x] **CTA token**：Feasibility / Danmaku 走 `marketingCta`；表单内联 `MKT_CTA_PRIMARY_INLINE`
+- [x] **Modal legacy 移除**：删除 `EditorModalShell.legacy`
+- [x] **Hero 移动降密**：小屏隐藏 demo / trust pills / scroll hint
+- [x] **Guide 移动 IA**：suitability 置于步骤正文之前
+- [x] **Dashboard Hero**：单主 CTA + 管理作品；文案去三重冗余
+- [x] **Editor 移动**：分屏 32vh；过程折叠高对比 + chevron
+- [x] **Plans 月价**：表头「月价（元）」+ `formatPlanPrice` 带 `/月`
+- [x] **Register 关闭态**：legal/footer 始终显示
+- [x] **Crawler**：总目标 textarea 移动加高
+- [ ] **待产品决策**：忘记密码自助流程；营销 pill vs 应用 rounded-xl 是否全站统一
 
 ---
 
-## 总体验收（Phase 1–14）
+## 总体验收（Phase 1–16）
 
 | 区域 | 路径 | 要点 |
 |------|------|------|

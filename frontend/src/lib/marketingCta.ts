@@ -1,4 +1,4 @@
-/** 营销站 CTA 样式 token — 全站 primary / secondary 按钮统一 */
+/** 营销站 CTA 样式 token — 全站 primary / secondary 按钮统一（营销区 intentionally 使用 rounded-full pill） */
 export const MKT_CTA_PRIMARY =
   'mkt-cta-glow inline-flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition hover:-translate-y-0.5 hover:bg-primary-hover'
 
@@ -23,3 +23,11 @@ export const MKT_CTA_AUTH =
 
 export const MKT_CTA_AUTH_OUTLINE =
   'inline-flex h-11 w-full items-center justify-center rounded-full border border-border text-sm font-medium text-foreground transition hover:bg-muted/50'
+
+/** 深色区 / 表单内联主按钮（与 rounded-xl 输入框同几何） */
+export const MKT_CTA_PRIMARY_INLINE =
+  'mkt-cta-glow inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition hover:bg-primary-hover disabled:opacity-50'
+
+/** 小尺寸次要 pill（重试、辅助） */
+export const MKT_CTA_PILL_SM =
+  'inline-flex items-center justify-center rounded-full border border-white/15 px-4 py-1.5 text-xs transition hover:bg-white/10'

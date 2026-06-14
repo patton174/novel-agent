@@ -343,9 +343,9 @@ export const DELIVERY_COLLAPSE_TOGGLE = cn(
 )
 
 export const MOBILE_PROCESS_TOGGLE = cn(
-  'mt-2 inline-flex min-h-9 items-center rounded-lg border border-border/70 bg-muted/30 px-2.5 py-1.5 text-left text-[0.72rem] font-medium leading-snug text-muted-foreground',
-  'hover:bg-muted/50 hover:text-foreground',
-  'focus-visible:outline-none focus-visible:shadow-[inset_0_0_0_2px_rgba(79,70,229,0.15)]',
+  'mt-2 inline-flex min-h-9 w-full items-center justify-between gap-2 rounded-lg border border-primary/25 bg-primary/8 px-3 py-2 text-left text-[0.75rem] font-medium leading-snug text-primary',
+  'hover:bg-primary/12 hover:text-primary',
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/25',
 )
 
 export const TIMELINE_PENDING_IN = 'agent-timeline-pending-in'

@@ -126,6 +126,10 @@ export default function DashboardHomePage() {
 
   const loading = summary === null || recentNovels === null
   const activityLoading = activity === null
+  const primaryNovelId = recentNovels?.[0]?.novelId
+  const editorEntryHref = primaryNovelId
+    ? `/editor?novelId=${encodeURIComponent(primaryNovelId)}`
+    : '/editor'
 
   return (
     <AppPageStack>
@@ -142,10 +146,16 @@ export default function DashboardHomePage() {
               继续你的故事
             </h2>
             <p className="mt-2 max-w-xl text-sm text-muted-foreground md:text-base">
-              概览创作数据、打开最近章节，或直接进入编辑器开始新段落。
+              概览创作数据，从最近作品继续，或管理全部小说。
             </p>
           </div>
           <div className="flex shrink-0 flex-wrap gap-3">
+            <Button asChild className={APP_BTN_MD}>
+              <Link to={editorEntryHref}>
+                <PenLine className="mr-2 size-4" />
+                {primaryNovelId ? '继续写作' : '进入编辑器'}
+              </Link>
+            </Button>
             <Button asChild variant="outline" className={APP_BTN_MD}>
               <Link to="/dashboard/novels">管理作品</Link>
             </Button>

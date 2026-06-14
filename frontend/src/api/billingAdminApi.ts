@@ -207,7 +207,8 @@ export function formatCostMicros(micros: number): string {
 export function formatPlanPrice(priceCents: number | null): string {
   if (priceCents == null) return '定制'
   if (priceCents === 0) return '免费'
-  return `¥${(priceCents / 100).toFixed(0)}`
+  const yuan = priceCents / 100
+  return yuan % 1 === 0 ? `¥${yuan.toFixed(0)}/月` : `¥${yuan.toFixed(2)}/月`
 }
 
 export function formatTokenQuota(quota: number | null): string {

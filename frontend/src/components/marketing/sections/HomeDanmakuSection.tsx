@@ -5,6 +5,7 @@ import { DanmakuMarquee } from '@/components/marketing/danmaku/DanmakuMarquee'
 import { useDanmakuFeed } from '@/components/marketing/danmaku/useDanmakuFeed'
 import { appToast } from '@/stores/appToastStore'
 import { isLoggedIn } from '@/utils/auth'
+import { MKT_CTA_PILL_SM, MKT_CTA_PRIMARY_INLINE } from '@/lib/marketingCta'
 
 export function HomeDanmakuSection() {
   const { t } = useTranslation('marketing')
@@ -72,7 +73,7 @@ export function HomeDanmakuSection() {
             <button
               type="button"
               onClick={() => void reload()}
-              className="rounded-full border border-white/15 px-4 py-1.5 text-xs text-indigo-200 transition hover:bg-white/10"
+              className={`${MKT_CTA_PILL_SM} text-indigo-200`}
             >
               {t('home.danmaku.retry')}
             </button>
@@ -98,7 +99,7 @@ export function HomeDanmakuSection() {
           <button
             type="submit"
             disabled={submitting}
-            className="mkt-cta-glow inline-flex shrink-0 items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground disabled:opacity-50"
+            className={MKT_CTA_PRIMARY_INLINE}
           >
             <Send className="size-4" />
             {t('home.danmaku.send')}
@@ -113,4 +114,4 @@ export function HomeDanmakuSection() {
     </section>
   )
 }
-
+

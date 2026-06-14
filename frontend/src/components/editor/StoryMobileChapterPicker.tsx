@@ -169,7 +169,7 @@ export function StoryMobileChapterPicker() {
   return (
     <>
       {touchDragGhost}
-      <div className="flex min-h-[9rem] max-h-[38vh] shrink-0 flex-col border-b border-border/70 bg-muted/20">
+      <div className="flex min-h-[8rem] max-h-[32vh] shrink-0 flex-col border-b border-border/70 bg-muted/20">
         <div className="flex items-center justify-between gap-2 border-b border-border/50 px-3 py-2">
           <div className="min-w-0">
             <p className="text-xs font-semibold text-muted-foreground">

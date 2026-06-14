@@ -47,8 +47,23 @@ export default function GuidePage() {
           </div>
         </nav>
 
+        {/* 移动端：适合谁 — 置于步骤正文之前 */}
+        <div className="mb-8 rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/[0.08] to-violet-500/[0.04] p-5 shadow-[0_12px_40px_-16px_rgba(79,70,229,0.2)] lg:hidden">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-primary">
+            {t('guide.suitabilityTitle')}
+          </p>
+          <ul className="space-y-2.5">
+            {SUITABILITY_KEYS.map((key) => (
+              <li key={key} className="flex gap-2 text-sm leading-relaxed text-muted-foreground">
+                <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-primary/80" />
+                {t(`guide.suitability.${key}`)}
+              </li>
+            ))}
+          </ul>
+        </div>
+
         <div className="grid gap-12 lg:grid-cols-[220px_1fr] lg:gap-16">
-          <aside className="order-3 space-y-8 lg:order-none">
+          <aside className="order-3 hidden space-y-8 lg:block">
             <nav className="hidden lg:block">
               <div className="sticky top-28 space-y-1 rounded-2xl border border-border/60 bg-white/80 p-4 shadow-sm backdrop-blur-sm">
                 <p className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">

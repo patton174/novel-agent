@@ -185,16 +185,23 @@ const RegisterPage: React.FC = () => {
           </div>
         ),
       }}
-      legal={!registrationClosed ? <AuthLegalNotice variant="register" /> : undefined}
+      legal={<AuthLegalNotice variant="register" />}
       footer={
-        !registrationClosed ? (
+        registrationClosed ? (
+          <>
+            注册暂不可用。{' '}
+            <Link to="/login" className="font-medium text-primary hover:underline">
+              已有账号？去登录
+            </Link>
+          </>
+        ) : (
           <>
             已有账号？{' '}
             <Link to="/login" className="font-medium text-primary hover:underline">
               登录
             </Link>
           </>
-        ) : undefined
+        )
       }
     >
       {registrationClosed ? (
