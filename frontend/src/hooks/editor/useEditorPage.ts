@@ -210,6 +210,20 @@ export function useEditorPage() {
     }
   }, [activeCenterTab, activeNovelId, activeChapterId, chapters.length])
 
+  const prevMobileChapterId = useRef<string | null>(null)
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    if (!window.matchMedia('(max-width: 767px)').matches) return
+    if (
+      prevMobileChapterId.current != null &&
+      activeChapterId != null &&
+      prevMobileChapterId.current !== activeChapterId
+    ) {
+      setStoryOutlineCollapsed(true)
+    }
+    prevMobileChapterId.current = activeChapterId
+  }, [activeChapterId])
+
   const handleHostModeChange = useCallback((enabled: boolean) => {
     setHostModeEnabled(enabled)
     writeHostModePreference(enabled)

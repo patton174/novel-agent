@@ -110,9 +110,9 @@ export function EditorStoryPanel({
         <aside
           className={cn(
             'flex shrink-0 flex-col min-h-0 overflow-hidden border-r bg-muted/30 transition-[width] duration-300 ease-out',
-            outlineCollapsed ? 'w-[52px]' : 'w-[280px]',
+            outlineCollapsed ? 'w-[52px] max-md:hidden' : 'w-[280px]',
             !outlineCollapsed &&
-              'max-md:absolute max-md:z-24 max-md:left-0 max-md:top-0 max-md:bottom-0 max-md:w-[min(280px,88vw)] max-md:shadow-lg',
+              'max-md:absolute max-md:inset-0 max-md:z-24 max-md:w-full max-md:max-w-none max-md:border-r-0 max-md:bg-background max-md:shadow-none',
           )}
         >
           {outlineCollapsed ? (
@@ -128,16 +128,26 @@ export function EditorStoryPanel({
             </div>
           ) : (
             <>
-              <div className="flex items-center border-b border-border/60 px-3 py-[0.7rem]">
+              <div className="flex items-center justify-between gap-2 border-b border-border/60 px-3 py-[0.7rem] max-md:px-4 max-md:py-3">
                 <button
                   type="button"
                   title="收起章节目录"
-                  className="inline-flex cursor-pointer items-center gap-[0.45rem] rounded-lg border-none bg-transparent px-[0.35rem] py-1 font-[inherit] text-[0.82rem] font-bold text-muted-foreground hover:bg-muted hover:text-foreground [&_svg]:size-[15px]"
+                  className="inline-flex min-w-0 flex-1 cursor-pointer items-center gap-[0.45rem] rounded-lg border-none bg-transparent px-[0.35rem] py-1 font-[inherit] text-[0.82rem] font-bold text-muted-foreground hover:bg-muted hover:text-foreground [&_svg]:size-[15px]"
                   onClick={() => onOutlineCollapsedChange(true)}
                 >
                   <EditorIcons.List />
-                  <span>章节目录</span>
+                  <span className="truncate">章节目录</span>
                 </button>
+                <EditorButton
+                  variant="ghost"
+                  size="sm"
+                  type="button"
+                  className="shrink-0 md:hidden"
+                  aria-label="关闭章节目录"
+                  onClick={() => onOutlineCollapsedChange(true)}
+                >
+                  完成
+                </EditorButton>
               </div>
               <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-[0.85rem] pt-[0.65rem] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
                 <NovelOutlinePanel
@@ -161,17 +171,33 @@ export function EditorStoryPanel({
         </aside>
 
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-          <div className="flex items-center justify-between gap-3 border-t border-black/5 bg-background px-6 py-3 max-md:flex-nowrap max-md:px-4 max-md:py-[0.55rem]">
-            <span className="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-[0.9rem] font-bold text-foreground">
-              {toolbarTitle}
-              {chapterDirty ? ' · 未保存' : ''}
-            </span>
-            <div className="flex shrink-0 gap-2">
-              <EditorButton variant="secondary" size="sm" onClick={onCopyChapter}>
-                <EditorIcons.Copy /><span>复制</span>
+          <div className="flex items-center justify-between gap-2 border-t border-black/5 bg-background px-6 py-3 max-md:flex-nowrap max-md:gap-1.5 max-md:px-3 max-md:py-2">
+            <div className="flex min-w-0 flex-1 items-center gap-2">
+              {hasNovel ? (
+                <EditorButton
+                  variant="secondary"
+                  size="sm"
+                  type="button"
+                  className="shrink-0 md:hidden"
+                  onClick={() => onOutlineCollapsedChange(false)}
+                >
+                  <EditorIcons.List />
+                  <span>目录</span>
+                </EditorButton>
+              ) : null}
+              <span className="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-[0.9rem] font-bold text-foreground max-md:text-sm">
+                {toolbarTitle}
+                {chapterDirty ? ' · 未保存' : ''}
+              </span>
+            </div>
+            <div className="flex shrink-0 gap-1.5 max-md:gap-1">
+              <EditorButton variant="secondary" size="sm" className="max-md:px-2.5" onClick={onCopyChapter}>
+                <EditorIcons.Copy />
+                <span className="max-md:hidden">复制</span>
               </EditorButton>
-              <EditorButton variant="primary" size="sm" onClick={onSaveChapter} disabled={!canSave}>
-                <EditorIcons.Save /><span>保存</span>
+              <EditorButton variant="primary" size="sm" className="max-md:px-2.5" onClick={onSaveChapter} disabled={!canSave}>
+                <EditorIcons.Save />
+                <span className="max-md:hidden">保存</span>
               </EditorButton>
             </div>
           </div>
@@ -197,8 +223,17 @@ export function EditorStoryPanel({
                 请先创建或选择一本小说
               </div>
             ) : !hasChapter ? (
-              <div className="px-4 py-12 text-center text-[0.95rem] text-muted-foreground">
-                打开章节目录，选择或新建章节后开始写作
+              <div className="flex flex-col items-center gap-4 px-4 py-12 text-center text-[0.95rem] text-muted-foreground max-md:py-10">
+                <p>打开章节目录，选择或新建章节后开始写作</p>
+                <EditorButton
+                  variant="primary"
+                  size="sm"
+                  type="button"
+                  onClick={() => onOutlineCollapsedChange(false)}
+                >
+                  <EditorIcons.List />
+                  打开章节目录
+                </EditorButton>
               </div>
             ) : showVersionDiff ? (
               <ChapterInlineDiff

@@ -22,10 +22,10 @@ export const TIMELINE_TOOL_BRANCH_INDENT = '0.2rem'
 export type ToolVisualStatus = 'loading' | 'success' | 'error' | 'idle'
 
 export const TIMELINE_COLUMN =
-  'flex max-w-full flex-col gap-2 py-[0.05rem] pb-[0.2rem] pt-[0.05rem]'
+  'flex max-w-full flex-col gap-2 py-[0.05rem] pb-[0.2rem] pt-[0.05rem] max-md:gap-1 max-md:pb-0'
 
 export const TIMELINE_SLOT =
-  'flex min-h-6 flex-col gap-[0.35rem]'
+  'flex min-h-6 flex-col gap-[0.35rem] max-md:min-h-5 max-md:gap-0.5'
 
 export const TIMELINE_TEXT_BLOCK =
   'agent-timeline-text-block mx-0 my-[0.18rem] w-full max-w-full px-0 py-[0.32rem] pb-[0.48rem]'
@@ -58,6 +58,7 @@ export const PLANNING_HEADER_MAIN = 'min-w-0 flex-1 pt-[0.02rem]'
 
 export const PLANNING_TITLE = cn(
   'planning-title text-[0.74rem] font-semibold leading-[1.45] text-[#475569]',
+  'max-md:text-[0.7rem] max-md:leading-snug',
   'group-hover:text-foreground',
 )
 
@@ -86,6 +87,7 @@ export const PLANNING_NESTED_HINT =
 
 export const ORCHESTRATION_NARRATION = cn(
   'min-w-0 flex-1 px-0 py-[0.02rem] pb-[0.1rem] text-[0.9rem] leading-[1.55] text-foreground',
+  'max-md:text-[0.85rem] max-md:leading-normal',
 )
 
 export const ORCHESTRATION_BODY_ROW =
@@ -329,10 +331,10 @@ export const SUBAGENT_SUMMARY_BOX =
   'mt-[0.35rem] px-0 py-[0.05rem] pb-[0.1rem] text-[0.74rem] leading-[1.45] text-foreground'
 
 export const TIMELINE_BODY_DIVIDER =
-  'mx-0 my-[0.42rem] mb-[0.36rem] h-0 w-full border-none border-t border-border'
+  'mx-0 my-[0.42rem] mb-[0.36rem] h-0 w-full border-none border-t border-border max-md:my-2 max-md:mb-1.5'
 
 export const DELIVERY_BODY_WRAP =
-  'agent-timeline-delivery-body min-w-0 w-full max-w-full flex-1 px-0 py-[0.02rem] pb-[0.15rem]'
+  'agent-timeline-delivery-body min-w-0 w-full max-w-full flex-1 px-0 py-[0.02rem] pb-[0.15rem] max-md:pb-0 max-md:text-[0.92rem] max-md:leading-normal'
 
 export const TIMELINE_PENDING_IN = 'agent-timeline-pending-in'
 
