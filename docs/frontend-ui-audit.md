@@ -1,10 +1,35 @@
 # Novel Agent 前端 UI 批判性审查报告
 
 > **审查日期**：2026-06-12  
-> **Remediation 状态**：2026-06-12 — Phase 1–13 已落地，详见 `docs/plans/2026-06-12-frontend-phase2.md`（含 Phase 13 断点统一 + 爬虫页移动收口）。  
+> **Remediation 状态**：✅ **已闭环**（2026-06-12，Phase 1–13）— 执行记录见 [`docs/plans/2026-06-12-frontend-phase2.md`](plans/2026-06-12-frontend-phase2.md)  
 > **审查范围**：`frontend/src` 全部路由页面、布局壳层、业务组件与 UI 原语  
-> **审查立场**：纯批判性审阅，不提供修改方案  
+> **审查立场**：下文为**原始批判性审阅**（历史记录）；Remediation 列对照 Phase 落地结果  
 > **审查依据**：源码结构与组件实现（未含运行时截图或真机走查）
+
+---
+
+## 闭环摘要（Remediation）
+
+| 原审计痛点 | 状态 | Phase |
+|-----------|------|-------|
+| styled-components 多套皮肤 | ✅ 已移除，`frontend/src` 零 runtime styled-components | 1–4 |
+| Modal / Loader / Button 分裂 | ✅ EditorModalShell + shadcn Dialog/Sheet + ConfirmDialogHost + BrandLoader/Skeleton | 1–5 |
+| 营销 / Dashboard 宽度跳跃 | ✅ `AppShellMain` max-w-6xl、营销 Tailwind 化 | 3–6 |
+| Admin 表格移动灾难 | ✅ Users/Audit/Plans/Catalog/Billing 卡片；Crawler 行卡片 + 折叠 | 2A–2B, 13 |
+| Editor 移动写作路径过长 | ✅ 分屏选章、自动首章、↑↓/跨卷/卷序排序 | 8–9, 11–12 |
+| Agent 单条占多屏 | ✅ 编排默认收起、交付折叠、工具 excerpt、消息级过程折叠 | 8, 10–11 |
+| 断点 767/768 分裂 | ✅ `APP_MOBILE_MAX_PX` + `useAppMobile` + Tailwind md 对齐 | 13 |
+| 品牌 Novel AI 不统一 | ✅ Wordmark / i18n / Footer / 欢迎语 | 2C, 7 |
+| 遗留 neumorphic login | ✅ 已删除 | 2E–2F |
+
+**未纳入本轮（产品 backlog，不阻塞上线）**：touch 拖拽 DnD、Modal 进一步单壳合并、账户设置三入口完全统一、审计页 JSON 详情 Modal。
+
+### 线上验收清单
+
+1. https://www.novel-agent.cn 无痕强刷  
+2. **移动 ≤767px**：`/editor` 分屏选章 + 排序；Agent 历史消息「查看创作过程」  
+3. **Admin 移动**：`/admin/users` 卡片；`/admin/crawler` 子任务置顶、编排折叠  
+4. **桌面**：Editor 侧栏拖拽大纲不变；Dashboard / Admin 表格正常  
 
 ---
 

@@ -1,6 +1,7 @@
 # Frontend Phase 2 — Admin 移动 + 营销抛光
 
-> **Goal:** 完成 `docs/frontend-ui-audit.md` 中 Phase 1 统一后剩余的可交付项：Admin 移动可用性、营销移动体验、图表可读性。
+> **Goal:** 完成 `docs/frontend-ui-audit.md` 中 Phase 1 统一后剩余的可交付项：Admin 移动可用性、营销移动体验、图表可读性。  
+> **Status:** ✅ **已闭环**（Phase 1–14，2026-06-12）
 
 **Architecture:** 不引入新 UI 框架；沿用「移动卡片 + 桌面表格」双轨、`ConfirmDialogHost`、Skeleton 加载。优先改共享组件（`DataTableFrame`、`CrawlJobRow`、图表），再改单页。
 
@@ -183,17 +184,38 @@
 - [x] **AdminCollapsibleCard**：移动可折叠 Admin 卡片
 - [x] **CrawlerPage 移动**：子任务列表置顶；主编排控制/决策日志默认折叠
 
+## Phase 14 — 文档收口（最终）
+
+- [x] **frontend-ui-audit.md**：闭环摘要表 + 线上验收清单 + 明确 backlog
+- [x] **本计划**：标记 Status 已闭环；Phase 1–13 执行记录完整
+- [x] **代码**：Phase 13 已部署 `36a0eef`；`frontend/src` 无 styled-components
+
 ## 审计清单闭环状态
 
-`docs/frontend-ui-audit.md` 中可交付项均已通过 Phase 1–13 落地；**未纳入范围**（低优先级 / 产品待定）：
+✅ **`docs/frontend-ui-audit.md` 全部可交付项已通过 Phase 1–13 落地并完成文档收口。**
 
-- 桌面级 touch DnD 与拖拽 UX 完全对等
-- Modal/Loader 进一步合并（已压至 EditorModalShell + shadcn Dialog + Skeleton + BrandLoader）
+### 后续 backlog（非阻塞）
+
+| 项 | 说明 |
+|----|------|
+| Touch DnD | 移动大纲与桌面拖拽完全对等 |
+| Modal 单壳 | 进一步合并 EditorSettings / AppDialog 变体 |
+| 账户设置 | Nav Modal / 全页 / 侧栏三入口行为统一 |
+| 审计 JSON | AuditLog 详情 Modal 展开完整 payload |
 
 ---
 
-## Phase 2B 验收
+## 总体验收（Phase 1–14）
 
-1. `/admin/catalog` 阅读器：手机点「目录」→ 全高抽屉 + 搜索 + 选章后正文占满
-2. `/admin/crawler` 任务详情：footer 可启动/暂停/取消/删除
-3. `/admin/stats`：切换 7/30/90 日，图表描述同步
+| 区域 | 路径 | 要点 |
+|------|------|------|
+| 营销 | `/` `/guide` `/pricing` | Hero 移动可见、对比表横滑提示、Novel AI 品牌 |
+| Dashboard | `/dashboard` | max-w-6xl、热力图、KPI 移动字号 |
+| Admin | `/admin/*` | 表格页移动卡片；爬虫子任务置顶 + 折叠 |
+| Editor 桌面 | `/editor` | 侧栏大纲拖拽、Modal 统一 |
+| Editor 移动 | `/editor` | 分屏选章、排序 ⇄ 跨卷、Agent 过程折叠 |
+| Auth | `/login` `/register` | h-11 控件、AuthLegalNotice |
+
+**部署：** 各改动经 `deploy-frontend.yml` 独立发布；最新 frontend commit 见 git log `feat(frontend): Phase *`。
+
+---
