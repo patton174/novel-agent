@@ -22,9 +22,6 @@ export function useMarketingStoryReveal(rootRef: RefObject<HTMLElement | null>) 
     const ctx = gsap.context(() => {
       root.querySelectorAll<HTMLElement>('[data-marketing-scene]').forEach((section) => {
         const copy = section.querySelector<HTMLElement>('.story-copy')
-        const demo =
-          section.querySelector<HTMLElement>('.demo-app-mock') ??
-          section.querySelector<HTMLElement>('.demo-agent-console')
 
         if (copy) {
           const parts = gsap.utils.toArray<HTMLElement>(copy.children)
@@ -37,19 +34,6 @@ export function useMarketingStoryReveal(rootRef: RefObject<HTMLElement | null>) 
             scrollTrigger: {
               trigger: section,
               start: 'top 85%',
-              once: true,
-            },
-          })
-        }
-        if (demo) {
-          gsap.from(demo, {
-            opacity: 0,
-            y: 16,
-            duration: 0.5,
-            ease: 'power2.out',
-            scrollTrigger: {
-              trigger: section,
-              start: 'top 82%',
               once: true,
             },
           })

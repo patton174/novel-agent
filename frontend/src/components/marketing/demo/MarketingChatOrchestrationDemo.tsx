@@ -327,7 +327,7 @@ export function MarketingChatOrchestrationDemo({
 
   return (
     <div ref={sectionRef ? undefined : fallbackRef}>
-      <div className={`${frameClass} demo-app-mock demo-agent-console`}>
+      <div className={`${frameClass} demo-agent-console`}>
         <div className={ORCH_DEMO_SHELL}>
           <div className={ORCH_DEMO_BODY}>
             <div className={ORCH_DEMO_HEADER}>{copy.title}</div>

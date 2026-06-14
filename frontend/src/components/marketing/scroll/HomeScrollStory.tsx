@@ -10,7 +10,7 @@ import { marketingInViewMotion } from '../motion/marketingInViewMotion'
 
 const ACTS = [
   { id: 'story-context', scene: 'think' as const, layout: 'copy-left' as const, act: '01', key: '1' },
-  { id: 'story-subagent', scene: 'subagent' as const, layout: 'copy-right' as const, act: '02', key: '2', wash: true },
+  { id: 'story-subagent', scene: 'subagent' as const, layout: 'copy-right' as const, act: '02', key: '2' },
   { id: 'story-stream', scene: 'stream' as const, layout: 'copy-left' as const, act: '03', key: '3' },
 ]
 
@@ -32,8 +32,7 @@ export function HomeScrollStory() {
 
   return (
     <div id="demo-story" className="scroll-mt-16">
-      <section className="relative overflow-hidden border-t border-border/40 bg-gradient-to-b from-background to-surface px-6 py-20 md:py-24">
-        <div className="pointer-events-none absolute left-1/2 top-0 h-64 w-[600px] -translate-x-1/2 rounded-full bg-primary/8 blur-3xl" />
+      <section className="border-t border-border/40 bg-background px-6 py-16 md:py-20">
         <motion.div
           {...introReveal}
           className="relative mx-auto max-w-6xl"
@@ -54,7 +53,7 @@ export function HomeScrollStory() {
       </section>
 
       <div ref={rootRef} className={CURSOR_LANDING_ROOT} data-scroll-story>
-        {acts.map(({ id, scene, layout, act, key, wash }) => {
+        {acts.map(({ id, scene, layout, act, key }) => {
           const prefix = `home.story.acts.${key}`
           const points = [1, 2, 3].map((n) => ({
             highlight: t(`${prefix}.points.${n}.highlight`),
@@ -72,7 +71,6 @@ export function HomeScrollStory() {
               titleAccent={t(`${prefix}.titleAccent`)}
               lead={t(`${prefix}.lead`)}
               points={points}
-              wash={wash}
             />
           )
         })}

@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils'
 
 export const ORCH_DEMO_SHELL = cn(
-  'flex h-full flex-col overflow-hidden bg-[#f8fafc] px-6 pb-4 pt-[1.15rem] text-foreground',
+  'flex h-full flex-col overflow-hidden bg-background px-5 pb-4 pt-4 text-foreground',
 )
 
 export const ORCH_DEMO_BODY = 'flex min-h-0 flex-1 flex-col overflow-hidden'
@@ -17,11 +17,11 @@ export const ORCH_DEMO_PROMPT_BUBBLE = cn(
 export const ORCH_DEMO_TIMELINE = 'flex shrink-0 flex-col gap-[0.38rem]'
 
 export const ORCH_DEMO_STATUS_LINE = cn(
-  'mkt-demo-fade-up flex items-center gap-[0.4rem] text-[0.84rem] font-semibold text-[#475569]',
+  'flex items-center gap-[0.4rem] text-[0.84rem] font-semibold text-muted-foreground',
 )
 
 export function orchDemoThinkBlockClass(expanded?: boolean) {
-  return cn('mkt-demo-fade-up relative pl-0', expanded && 'mkt-demo-think-block-expanded')
+  return cn('relative pl-0', expanded && 'mkt-demo-think-block-expanded')
 }
 
 export const ORCH_DEMO_STEP_TITLE = cn(
@@ -35,10 +35,10 @@ export const ORCH_DEMO_THINK_BODY = cn(
 )
 
 export const ORCH_DEMO_TOOL_ROW = cn(
-  'mkt-demo-fade-up flex items-center gap-[0.4rem] pl-7 text-[0.84rem] font-semibold text-[#475569]',
+  'flex items-center gap-[0.4rem] pl-7 text-[0.84rem] font-semibold text-muted-foreground',
 )
 
-export const ORCH_DEMO_SUBAGENT_WRAP = cn('mkt-demo-fade-up pl-7')
+export const ORCH_DEMO_SUBAGENT_WRAP = cn('pl-7')
 
 export const ORCH_DEMO_SUBAGENT_HEADER = 'flex min-h-[1.35rem] items-center gap-[0.4rem]'
 
@@ -63,7 +63,7 @@ export const ORCH_DEMO_SUBAGENT_SUMMARY =
   'mt-[0.22rem] text-[0.78rem] leading-[1.5] text-[#64748b]'
 
 export const ORCH_DEMO_OUTPUT_TEXT = cn(
-  'mkt-demo-fade-up m-0 mt-5 max-w-full text-[clamp(0.92rem,1.6vw,1.02rem)] leading-[1.78] tracking-[0.01em] text-foreground',
+  'm-0 mt-5 max-w-full text-[clamp(0.92rem,1.6vw,1.02rem)] leading-[1.78] tracking-[0.01em] text-foreground',
 )
 
 export const ORCH_DEMO_EMPTY_HINT = cn(
@@ -87,9 +87,8 @@ export function orchDemoComposerClass(sending?: boolean) {
 }
 
 export const ORCH_DEMO_COMPOSER_CARD = cn(
-  'mx-auto box-border w-[min(92%,520px)] rounded-lg border border-black/[0.07] bg-[rgba(255,255,255,0.92)]',
+  'mx-auto box-border w-[min(92%,520px)] rounded-lg border border-border bg-background',
   'px-[0.65rem] pb-[0.42rem] pt-[0.45rem]',
-  'shadow-[0_18px_48px_rgba(15,23,42,0.08),0_2px_8px_rgba(15,23,42,0.04)]',
 )
 
 export const ORCH_DEMO_COMPOSER_TEXT = cn(

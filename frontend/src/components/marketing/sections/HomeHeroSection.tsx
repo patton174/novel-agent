@@ -3,8 +3,6 @@ import { ChevronDown, Sparkles } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { isLoggedIn } from '../../../utils/auth'
-import { MarketingHeroDemo } from '../demo/MarketingHeroDemo'
-import { MarketingAmbient } from '../MarketingAmbient'
 import { MKT_CTA_PRIMARY_LG, MKT_CTA_SECONDARY } from '@/lib/marketingCta'
 import { ArrowIcon } from '../icons'
 
@@ -16,8 +14,8 @@ export function HomeHeroSection() {
   const reduced = useReducedMotion()
 
   const goStart = () => navigate(isLoggedIn() ? '/dashboard' : '/register')
-  const scrollToFeasibility = () => {
-    document.getElementById('feasibility')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  const scrollToStory = () => {
+    document.getElementById('demo-story')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
   const fade = (delay: number) =>
@@ -65,14 +63,14 @@ export function HomeHeroSection() {
           {t('common:cta.startCreating')}
           <ArrowIcon />
         </button>
-        <button type="button" onClick={scrollToFeasibility} className={MKT_CTA_SECONDARY}>
+        <button type="button" onClick={scrollToStory} className={MKT_CTA_SECONDARY}>
           {t('home.hero.ctaSecondary')}
         </button>
       </motion.div>
 
       <motion.div
         {...fade(0.32)}
-        className="mb-8 hidden flex-wrap items-center justify-center gap-2 sm:mb-10 sm:flex"
+        className="mb-6 flex flex-wrap items-center justify-center gap-2 sm:mb-8"
       >
         {TRUST_KEYS.map((key) => (
           <span key={key} className="mkt-glass-pill rounded-full px-3 py-1 text-xs font-medium text-muted-foreground">
@@ -81,15 +79,11 @@ export function HomeHeroSection() {
         ))}
       </motion.div>
 
-      <motion.div {...fade(0.4)} className="relative mx-auto hidden w-full sm:block">
-        <MarketingHeroDemo />
-      </motion.div>
-
       <motion.button
-        {...fade(0.48)}
+        {...fade(0.4)}
         type="button"
-        onClick={scrollToFeasibility}
-        className="group mx-auto mt-8 hidden flex-col items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-primary sm:mt-10 sm:flex"
+        onClick={scrollToStory}
+        className="group mx-auto mt-4 flex flex-col items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-primary sm:mt-6"
         aria-label={t('home.hero.scrollHint')}
       >
         <span>{t('home.hero.scrollHint')}</span>
@@ -101,10 +95,8 @@ export function HomeHeroSection() {
   return (
     <section
       id="hero"
-      className="relative flex min-h-[min(100svh,720px)] flex-col items-center justify-center overflow-hidden bg-background pb-6 pt-20 sm:min-h-[min(100vh,880px)] md:min-h-[78vh] md:pb-12 md:pt-24"
+      className="relative flex min-h-svh flex-col items-center justify-center overflow-hidden bg-background px-0 pb-8 pt-20 md:pt-24"
     >
-      <MarketingAmbient variant="hero" />
-      <div className="mkt-grid-bg pointer-events-none absolute inset-0" />
       <div className="w-full">{inner}</div>
     </section>
   )
