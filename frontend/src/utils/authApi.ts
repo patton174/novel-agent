@@ -13,7 +13,7 @@ import { startHeartbeatWorker, stopHeartbeatWorker } from '../security/heartbeat
 import { primeSessionFromLogin } from '../security/sessionBootstrap'
 
 import { parseResultResponse, readApiErrorMessage, unwrapResult } from './resultApi'
-import { ensureCryptoReady } from '../security/sessionBootstrap'
+import { ensureCryptoRuntime } from '../security/cryptoRuntime'
 
 
 
@@ -50,7 +50,7 @@ export interface LoginResult {
 
 
 export async function login(username: string, password: string): Promise<LoginResult> {
-  await ensureCryptoReady()
+  await ensureCryptoRuntime(true)
 
   const [fingerprint, envSnapshot] = await Promise.all([
 
@@ -135,7 +135,7 @@ export interface SliderCaptchaChallenge {
 
 
 export async function fetchSliderCaptcha(): Promise<SliderCaptchaChallenge> {
-  await ensureCryptoReady()
+  await ensureCryptoRuntime(true)
 
   const response = await secureFetch('/api/auth/api/captcha/slider', { method: 'POST' })
 
@@ -150,7 +150,7 @@ export async function fetchSliderCaptcha(): Promise<SliderCaptchaChallenge> {
 
 
 export async function verifySliderCaptcha(captchaId: string, offsetX: number): Promise<string> {
-  await ensureCryptoReady()
+  await ensureCryptoRuntime(true)
 
   const response = await secureFetch('/api/auth/api/captcha/slider/verify', {
 
@@ -183,7 +183,7 @@ export async function sendEmailCode(
   fingerprint: string,
 
 ): Promise<void> {
-  await ensureCryptoReady()
+  await ensureCryptoRuntime(true)
 
   const response = await secureFetch('/api/auth/api/send-email-code', {
 
@@ -221,7 +221,7 @@ export async function register(
   emailCode: string,
 
 ): Promise<void> {
-  await ensureCryptoReady()
+  await ensureCryptoRuntime(true)
 
   const response = await secureFetch('/api/auth/api/register', {
 

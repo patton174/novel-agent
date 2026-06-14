@@ -42,7 +42,7 @@ async function buildRequest(
 
   if (isSecurityCryptoEnabled()) {
     await ensureCryptoRuntime(false)
-    if (mayNeedCrypto || isBootstrapAuthPath(logicalUrl)) {
+    if (mayNeedCrypto) {
       await ensureCryptoReady()
     }
     if (isBootstrapAuthPath(logicalUrl)) {
