@@ -2,7 +2,7 @@ import { Globe } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 
-const LOCALE_KEY = 'novel-agent-locale'
+import { LOCALE_STORAGE_KEY } from '@/lib/appSessionState'
 
 interface LocaleToggleProps {
   compact?: boolean
@@ -17,7 +17,7 @@ export function LocaleToggle({ compact = false, className }: LocaleToggleProps) 
   const toggle = () => {
     const next = isEn ? 'zh' : 'en'
     try {
-      localStorage.setItem(LOCALE_KEY, next)
+      localStorage.setItem(LOCALE_STORAGE_KEY, next)
     } catch {
       /* ignore */
     }

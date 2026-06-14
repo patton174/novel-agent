@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 
-const BASE_URL = process.env.NOVEL_AGENT_E2E_URL ?? 'https://www.novel-agent.cn'
+const PROD_URL = process.env.NOVEL_AGENT_E2E_URL ?? 'https://www.novel-agent.cn'
 
 function isProtectedRequest(url: string): boolean {
   if (url.includes('/crypto-runtime.json') || url.includes('/api/auth/crypto-config')) {
@@ -48,8 +48,8 @@ test.describe('request sign chain', () => {
       }
     })
 
-    await page.goto(BASE_URL, { waitUntil: 'networkidle', timeout: 45_000 }).catch(async () => {
-      await page.goto(BASE_URL, { waitUntil: 'domcontentloaded' })
+    await page.goto(PROD_URL, { waitUntil: 'networkidle', timeout: 45_000 }).catch(async () => {
+      await page.goto(PROD_URL, { waitUntil: 'domcontentloaded' })
       await page.waitForTimeout(8_000)
     })
 

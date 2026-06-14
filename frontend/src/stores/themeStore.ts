@@ -13,6 +13,14 @@ function isThemeMode(value: string | null): value is ThemeMode {
 
 function getStoredTheme(): ThemeMode {
   if (typeof window === 'undefined') return 'system'
+  try {
+    const fromUrl = new URLSearchParams(window.location.search).get('theme')
+    if (isThemeMode(fromUrl)) {
+      return fromUrl
+    }
+  } catch {
+    /* ignore */
+  }
   const raw = window.localStorage.getItem(THEME_STORAGE_KEY)
   return isThemeMode(raw) ? raw : 'system'
 }

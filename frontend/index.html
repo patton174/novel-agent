@@ -8,10 +8,20 @@
       ;(() => {
         const storageKey = 'na-theme'
         const mediaQuery = '(prefers-color-scheme: dark)'
-        const raw = localStorage.getItem(storageKey)
+        const params = new URLSearchParams(window.location.search)
+        const urlTheme = params.get('theme')
+        const fromUrl =
+          urlTheme === 'light' || urlTheme === 'dark' || urlTheme === 'system' ? urlTheme : null
+        const raw = fromUrl || localStorage.getItem(storageKey)
         const theme = raw === 'light' || raw === 'dark' || raw === 'system' ? raw : 'system'
         const dark = theme === 'dark' || (theme === 'system' && window.matchMedia(mediaQuery).matches)
         document.documentElement.classList.toggle('dark', dark)
+        const urlLang = params.get('lang')
+        if (urlLang === 'en' || urlLang === 'zh') {
+          try {
+            localStorage.setItem('novel-agent-locale', urlLang)
+          } catch (_) {}
+        }
       })()
     </script>
     <!-- 字体使用系统栈（fonts.ts），不依赖 Google Fonts，避免国内 ERR_CONNECTION_CLOSED -->

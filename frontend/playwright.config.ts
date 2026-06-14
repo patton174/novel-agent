@@ -1,6 +1,6 @@
 import { defineConfig, devices } from '@playwright/test'
 
-const baseURL = process.env.NOVEL_AGENT_E2E_URL ?? 'https://www.novel-agent.cn'
+const localBase = 'http://127.0.0.1:4173'
 
 export default defineConfig({
   testDir: './e2e',
@@ -9,8 +9,14 @@ export default defineConfig({
   timeout: 60_000,
   reporter: [['list']],
   use: {
-    baseURL,
+    baseURL: localBase,
     trace: 'on-first-retry',
+  },
+  webServer: {
+    command: 'pnpm build && pnpm exec vite preview --port 4173 --host 127.0.0.1',
+    url: localBase,
+    timeout: 240_000,
+    reuseExistingServer: !process.env.CI,
   },
   projects: [
     {

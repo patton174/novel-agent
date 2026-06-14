@@ -16,7 +16,7 @@ import { primeFingerprint } from './security/fingerprint'
 import { ensureSessionAndHeartbeat } from './security/heartbeat'
 import { startSessionBootstrap } from './security/sessionBootstrap'
 import { useUserStore } from './stores/userStore'
-import { useJourneyTracker } from './hooks/useJourneyTracker'
+import { useAppSessionRestore } from './hooks/useAppSessionRestore'
 import { PageTransition } from './components/PageTransition'
 import { initializeTheme } from './stores/themeStore'
 
@@ -120,7 +120,7 @@ function AppRouteTree() {
 
 function AppRoutes() {
   const location = useLocation()
-  useJourneyTracker()
+  useAppSessionRestore()
 
   const routeTree = (
     <Suspense fallback={<RouteSuspenseFallback />}>

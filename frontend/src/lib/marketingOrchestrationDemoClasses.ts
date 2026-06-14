@@ -25,13 +25,13 @@ export function orchDemoThinkBlockClass(expanded?: boolean) {
 }
 
 export const ORCH_DEMO_STEP_TITLE = cn(
-  'flex min-h-[1.3rem] items-center gap-[0.4rem] text-[0.84rem] font-semibold text-[#475569]',
+  'flex min-h-[1.3rem] items-center gap-[0.4rem] text-[0.84rem] font-semibold text-foreground/80',
 )
 
-export const ORCH_DEMO_STEP_META = 'text-[0.76rem] font-normal text-[#64748b]'
+export const ORCH_DEMO_STEP_META = 'text-[0.76rem] font-normal text-muted-foreground'
 
 export const ORCH_DEMO_THINK_BODY = cn(
-  'ml-7 mt-[0.26rem] max-w-[92%] text-[0.82rem] leading-[1.58] text-[#475569]',
+  'ml-7 mt-[0.26rem] max-w-[92%] text-[0.82rem] leading-[1.58] text-muted-foreground',
 )
 
 export const ORCH_DEMO_TOOL_ROW = cn(
@@ -42,40 +42,40 @@ export const ORCH_DEMO_SUBAGENT_WRAP = cn('pl-7')
 
 export const ORCH_DEMO_SUBAGENT_HEADER = 'flex min-h-[1.35rem] items-center gap-[0.4rem]'
 
-export const ORCH_DEMO_SUBAGENT_TITLE = 'text-[0.84rem] font-semibold text-[#475569]'
+export const ORCH_DEMO_SUBAGENT_TITLE = 'text-[0.84rem] font-semibold text-foreground/80'
 
 export const ORCH_DEMO_SUBAGENT_BRANCH = 'mkt-demo-subagent-branch relative ml-[0.68rem] mt-[0.2rem] py-[0.2rem] pl-4 pb-[0.05rem]'
 
 export const ORCH_DEMO_SUBAGENT_LINE = cn(
-  'flex min-h-[1.35rem] items-center gap-[0.45rem] whitespace-nowrap text-[0.8rem] font-medium text-[#475569]',
+  'flex min-h-[1.35rem] items-center gap-[0.45rem] whitespace-nowrap text-[0.8rem] font-medium text-foreground/75',
 )
 
 export function orchDemoSubagentDotClass(active?: boolean) {
   return cn(
     'size-[0.38rem] shrink-0 rounded-full',
     active
-      ? 'bg-[#4f46e5] opacity-90 shadow-[0_0_0_3px_rgba(79,70,229,0.05)]'
-      : 'bg-[#64748b] opacity-[0.55]',
+      ? 'bg-primary opacity-90 shadow-[0_0_0_3px_rgba(79,70,229,0.12)]'
+      : 'bg-muted-foreground opacity-[0.55]',
   )
 }
 
 export const ORCH_DEMO_SUBAGENT_SUMMARY =
-  'mt-[0.22rem] text-[0.78rem] leading-[1.5] text-[#64748b]'
+  'mt-[0.22rem] text-[0.78rem] leading-[1.5] text-muted-foreground'
 
 export const ORCH_DEMO_OUTPUT_TEXT = cn(
   'm-0 mt-5 max-w-full text-[clamp(0.92rem,1.6vw,1.02rem)] leading-[1.78] tracking-[0.01em] text-foreground',
 )
 
 export const ORCH_DEMO_EMPTY_HINT = cn(
-  'mt-auto flex items-center gap-[0.4rem] text-[0.78rem] text-[#64748b]',
+  'mt-auto flex items-center gap-[0.4rem] text-[0.78rem] text-muted-foreground',
 )
 
 export function orchDemoTimelineIconClass(status: 'loading' | 'success' | 'idle') {
   return cn(
     'inline-flex size-[1.35rem] shrink-0 items-center justify-center',
-    status === 'loading' && 'text-[#64748b]',
-    status === 'success' && 'text-[#4f46e5]',
-    status === 'idle' && 'text-[#94a3b8]',
+    status === 'loading' && 'text-muted-foreground',
+    status === 'success' && 'text-primary',
+    status === 'idle' && 'text-muted-foreground/70',
   )
 }
 
@@ -95,16 +95,17 @@ export const ORCH_DEMO_COMPOSER_TEXT = cn(
   'min-h-10 whitespace-pre-wrap px-[0.1rem] py-[0.12rem] text-[0.86rem] leading-[1.45] text-foreground',
 )
 
-export const ORCH_DEMO_COMPOSER_PLACEHOLDER = 'text-[#64748b]'
+export const ORCH_DEMO_COMPOSER_PLACEHOLDER = 'text-muted-foreground'
 
 export const ORCH_DEMO_COMPOSER_ACTION_ROW =
   'flex items-center justify-between gap-2.5'
 
 export const ORCH_DEMO_HOST_MODE = cn(
-  'inline-flex items-center gap-1.5 text-[0.72rem] font-semibold text-[#475569]',
+  'inline-flex items-center gap-1.5 text-[0.72rem] font-semibold text-foreground/75',
 )
 
-export const ORCH_DEMO_SWITCH_MOCK = 'mkt-demo-switch-mock relative h-[18px] w-[34px] rounded-full bg-[#f1f5f9] shadow-[inset_0_1px_3px_rgba(15,23,42,0.16)]'
+export const ORCH_DEMO_SWITCH_MOCK =
+  'mkt-demo-switch-mock relative h-[18px] w-[34px] rounded-full bg-muted shadow-[inset_0_1px_3px_rgba(15,23,42,0.16)] dark:shadow-[inset_0_1px_3px_rgba(0,0,0,0.35)]'
 
 export function orchDemoSendButtonClass(sending?: boolean, streaming?: boolean) {
   return cn(
@@ -116,4 +117,4 @@ export function orchDemoSendButtonClass(sending?: boolean, streaming?: boolean) 
 }
 
 export const ORCH_DEMO_COMPOSER_DISCLAIMER =
-  'm-0 mt-[0.28rem] text-center text-[0.66rem] text-[#64748b]'
+  'm-0 mt-[0.28rem] text-center text-[0.66rem] text-muted-foreground'
