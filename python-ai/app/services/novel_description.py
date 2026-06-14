@@ -20,8 +20,8 @@ _FIELD_MAX = {
     "genre": 40,
     "tags": 120,
     "style": 80,
-    "hook": 40,
-    "protagonist": 120,
+    "hook": 30,
+    "protagonist": 80,
     "worldview": 200,
     "selling_points": 120,
 }

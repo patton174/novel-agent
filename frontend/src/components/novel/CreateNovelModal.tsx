@@ -18,6 +18,9 @@ import {
 import { cn } from '@/lib/utils'
 import { appToast } from '@/stores/appToastStore'
 
+const HOOK_MAX = 30
+const PROTAGONIST_MAX = 80
+
 interface CreateNovelModalProps {
   open: boolean
   onClose: () => void
@@ -25,7 +28,7 @@ interface CreateNovelModalProps {
 }
 
 const SECTION_CLASS =
-  'rounded-xl border border-border/60 bg-muted/20 p-4 space-y-3'
+  'rounded-xl border border-border/60 bg-muted/20 p-3 space-y-2.5'
 
 const LABEL_CLASS = 'text-xs font-semibold text-muted-foreground'
 const HINT_CLASS = 'text-[11px] leading-snug text-muted-foreground/80'
@@ -82,7 +85,11 @@ export const CreateNovelModal: React.FC<CreateNovelModalProps> = ({
         buildDraftPayload(form, mode),
       )
       if (suggested) {
-        setForm((prev) => applyNovelDraftSuggestion(prev, suggested))
+        setForm((prev) => ({
+          ...applyNovelDraftSuggestion(prev, suggested),
+          hook: suggested.hook.slice(0, HOOK_MAX),
+          protagonist: suggested.protagonist.slice(0, PROTAGONIST_MAX),
+        }))
         appToast.success(mode === 'generate' ? '已生成完整建书信息' : '已优化全部字段')
       } else {
         appToast.error(mode === 'generate' ? 'AI 生成失败' : 'AI 优化失败')
@@ -149,14 +156,18 @@ export const CreateNovelModal: React.FC<CreateNovelModalProps> = ({
       size="detail"
       title="创建小说"
       description="填写番茄式建书信息，AI 可一次性生成或优化全部字段"
-      bodyClassName="pt-1"
+      bodyClassName="flex min-h-0 flex-1 flex-col pt-1"
     >
-      <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-primary/20 bg-primary/5 px-3 py-2.5">
+      <form
+        onSubmit={(e) => void handleSubmit(e)}
+        className="flex min-h-0 flex-1 flex-col gap-0"
+      >
+        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain pr-0.5">
+        <div className="flex flex-col gap-2 rounded-xl border border-primary/20 bg-primary/5 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-xs text-muted-foreground">
             结构化输出，自动填充书名、分类、标签、简介等全部字段
           </p>
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex shrink-0 flex-wrap gap-1.5">
             <Button
               type="button"
               variant="outline"
@@ -282,24 +293,31 @@ export const CreateNovelModal: React.FC<CreateNovelModalProps> = ({
             <FieldLabel hint="≤30 字，适合开屏展示">一句话卖点</FieldLabel>
             <input
               value={form.hook}
-              onChange={(e) => patchForm({ hook: e.target.value })}
+              maxLength={HOOK_MAX}
+              onChange={(e) => patchForm({ hook: e.target.value.slice(0, HOOK_MAX) })}
               placeholder="开局觉醒无限资源，别人求生我建城"
               disabled={aiBusy}
               className={editorFieldClass}
             />
+            <span className={HINT_CLASS}>{form.hook.length}/{HOOK_MAX} 字</span>
           </label>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <label className="flex flex-col gap-1.5">
-              <FieldLabel>主角设定</FieldLabel>
-              <input
+            <label className="flex flex-col gap-1.5 sm:col-span-2">
+              <FieldLabel hint={`≤${PROTAGONIST_MAX} 字`}>主角设定</FieldLabel>
+              <textarea
                 value={form.protagonist}
-                onChange={(e) => patchForm({ protagonist: e.target.value })}
+                maxLength={PROTAGONIST_MAX}
+                onChange={(e) =>
+                  patchForm({ protagonist: e.target.value.slice(0, PROTAGONIST_MAX) })
+                }
                 placeholder="林逸，被拉入生存游戏，天赋【无限资源】"
+                rows={2}
                 disabled={aiBusy}
-                className={editorFieldClass}
+                className={cn(editorTextareaClass, 'min-h-[3.5rem] resize-none')}
               />
+              <span className={HINT_CLASS}>{form.protagonist.length}/{PROTAGONIST_MAX} 字</span>
             </label>
-            <label className="flex flex-col gap-1.5">
+            <label className="flex flex-col gap-1.5 sm:col-span-2">
               <FieldLabel>卖点关键词</FieldLabel>
               <input
                 value={form.sellingPoints}
@@ -316,9 +334,9 @@ export const CreateNovelModal: React.FC<CreateNovelModalProps> = ({
               value={form.worldview}
               onChange={(e) => patchForm({ worldview: e.target.value })}
               placeholder="神陨大陆，全球被拉入生存游戏，资源决定生死…"
-              rows={2}
+              rows={3}
               disabled={aiBusy}
-              className={cn(editorTextareaClass, 'min-h-[4.5rem]')}
+              className={cn(editorTextareaClass, 'min-h-[4rem] resize-y')}
             />
           </label>
         </section>
@@ -333,9 +351,9 @@ export const CreateNovelModal: React.FC<CreateNovelModalProps> = ({
               value={form.synopsis}
               onChange={(e) => patchForm({ synopsis: e.target.value })}
               placeholder="当百亿人被强制拉入生存游戏…"
-              rows={5}
+              rows={4}
               disabled={aiBusy}
-              className={cn(editorTextareaClass, 'min-h-[7.5rem]')}
+              className={cn(editorTextareaClass, 'min-h-[6rem] resize-y')}
             />
             <span className={HINT_CLASS}>
               当前 {form.synopsis.trim().length} 字 · 保存时将合并卖点/世界观/主角为 Agent 上下文
@@ -343,7 +361,7 @@ export const CreateNovelModal: React.FC<CreateNovelModalProps> = ({
           </label>
         </section>
 
-        <section className={cn(SECTION_CLASS, 'pb-3')}>
+        <section className={SECTION_CLASS}>
           <p className="text-sm font-semibold text-foreground">连载设定</p>
           <label className="flex flex-col gap-1.5 sm:max-w-[220px]">
             <FieldLabel hint="番茄常见 2000–3500">每章目标字数</FieldLabel>
@@ -363,8 +381,9 @@ export const CreateNovelModal: React.FC<CreateNovelModalProps> = ({
             />
           </label>
         </section>
+        </div>
 
-        <div className="flex justify-end gap-2 border-t border-border/60 pt-3 max-md:flex-col-reverse">
+        <div className="mt-3 flex shrink-0 justify-end gap-2 border-t border-border/60 bg-popover pt-3 max-md:flex-col-reverse">
           <Button type="button" variant="ghost" className="max-md:w-full" onClick={onClose}>
             取消
           </Button>

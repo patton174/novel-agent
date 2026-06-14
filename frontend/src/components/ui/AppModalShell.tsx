@@ -14,10 +14,10 @@ export type AppModalSize = 'confirm' | 'form' | 'settings' | 'todo' | 'detail' |
 
 const APP_MODAL_SIZE_CLASS: Record<AppModalSize, string> = {
   confirm: 'sm:max-w-[420px]',
-  form: 'sm:max-w-[480px]',
-  settings: 'sm:max-w-[440px]',
-  todo: 'sm:max-w-[520px]',
-  detail: 'sm:max-w-3xl max-h-[min(760px,90vh)]',
+  form: 'sm:max-w-[480px] max-h-[min(720px,90vh)] flex flex-col overflow-hidden',
+  settings: 'sm:max-w-[440px] max-h-[min(720px,90vh)] flex flex-col overflow-hidden',
+  todo: 'sm:max-w-[520px] max-h-[min(720px,90vh)] flex flex-col overflow-hidden',
+  detail: 'sm:max-w-3xl max-h-[min(760px,90vh)] flex flex-col overflow-hidden max-md:h-[100dvh] max-md:max-h-none',
   memory: cn(
     'gap-0 overflow-hidden p-0 sm:max-w-[920px]',
     'h-[min(78vh,700px)] max-h-[min(760px,90vh)]',
@@ -71,20 +71,23 @@ export function AppModalShell({
           APP_MODAL_FORM,
           APP_MODAL_SIZE_CLASS[size],
           isInsetBody && 'max-md:overflow-hidden',
+          size !== 'confirm' && size !== 'reader' && 'grid-rows-[auto_minmax(0,1fr)] !flex !flex-col',
           className,
         )}
       >
         {header ? (
           header
         ) : title || description ? (
-          <DialogHeader>
+          <DialogHeader className="shrink-0">
             {title ? <DialogTitle>{title}</DialogTitle> : null}
             {description ? <DialogDescription>{description}</DialogDescription> : null}
           </DialogHeader>
         ) : null}
         <div
           className={cn(
-            isInsetBody ? 'flex min-h-0 flex-1 flex-col overflow-hidden' : 'min-h-0 overflow-y-auto',
+            isInsetBody
+              ? 'flex min-h-0 flex-1 flex-col overflow-hidden'
+              : 'min-h-0 flex-1 overflow-y-auto overscroll-contain',
             bodyClassName,
           )}
         >
