@@ -58,7 +58,8 @@
       "toolCall": "Tool Call",
       "skillCall": "Skill Call",
       "emptyHint": "Send a message to plan outlines, continue chapters, or adjust settings",
-      "hostRunningBanner": "Hosted run in progress — keep this browser tab open"
+      "hostRunningBanner": "Hosted run in progress — keep this browser tab open",
+      "streamRecovery": "Reconnecting…"
     },
     "picker": {
       "unselectedChapter": "No chapter selected",

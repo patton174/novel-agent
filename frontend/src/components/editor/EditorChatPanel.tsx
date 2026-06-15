@@ -14,6 +14,7 @@ import { filterVisibleChatMessages, isInitialChatView } from '../../types/editor
 import type { Novel } from '../../types/novel'
 import { editorLayout } from '../../styles/theme'
 import { EditorChatMessageList } from './EditorChatMessageList'
+import { StreamRecoveryIndicator } from '../chat/StreamRecoveryIndicator'
 import { cn } from '@/lib/utils'
 
 export interface EditorChatPanelProps {
@@ -102,15 +103,10 @@ export function EditorChatPanel({
         className="relative flex min-h-0 flex-1 flex-col overflow-hidden box-border"
         style={{ paddingLeft: editorLayout.mainPaddingX, paddingRight: editorLayout.mainPaddingX }}
       >
-        {!isInitial && hostBannerText ? (
+        {!isInitial && hostBannerText && !hostBannerRecovering ? (
           <div
             data-testid="host-mode-banner"
-            className={cn(
-              'z-[2] mb-1.5 w-full shrink-0 rounded-[10px] px-3.5 py-2 text-center text-xs font-medium',
-              hostBannerRecovering
-                ? 'border border-amber-400/35 bg-amber-400/10 text-amber-800'
-                : 'border border-primary/30 bg-primary/10 text-primary',
-            )}
+            className="z-[2] mb-1.5 w-full shrink-0 rounded-[10px] border border-primary/30 bg-primary/10 px-3.5 py-2 text-center text-xs font-medium text-primary"
             style={{ maxWidth: editorLayout.contentMaxWidth }}
           >
             {hostBannerText}
@@ -119,9 +115,12 @@ export function EditorChatPanel({
 
         {!isInitial ? (
           <div
-            className="mx-auto flex min-h-0 w-full flex-1 flex-col overflow-hidden"
+            className="relative mx-auto flex min-h-0 w-full flex-1 flex-col overflow-hidden"
             style={{ maxWidth: editorLayout.contentMaxWidth }}
           >
+            {hostBannerRecovering && hostBannerText ? (
+              <StreamRecoveryIndicator label={hostBannerText} />
+            ) : null}
             <EditorChatMessageList
               messages={visibleMessages}
               isLoading={isLoading}
