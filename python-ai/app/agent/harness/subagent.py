@@ -75,7 +75,7 @@ Rules:
 - Glob/Grep are paths only → must Read for bodies. Do not call removed tools.
 - **No** AskUser, **no** Agent/subagent, **no** plan mode — work autonomously.
 - End the **final turn** (no further tools) with user-visible delivery: start visible text with `[交付]`, then the **full** markdown report (## headings, tables, bullet lists as needed). Do not shorten to a one-line summary.
-- Intermediate turns may omit visible text or use short `[编排]` notes (≤2 sentences); only the final `[交付]` must be complete."""
+- Intermediate turns may use short visible progress notes (no prefix required; merged into reasoning stream); only the final `[交付]` must be complete."""
 
 
 def build_subagent_run_context_human(

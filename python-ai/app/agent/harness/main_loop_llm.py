@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 
 _REASONING_DELTA_INTERVAL_SEC = 0.022
 
-VisibleRouteMode = Literal["pending", "orchestration", "delivery"]
+VisibleRouteMode = Literal["pending", "delivery"]
 
 
 @dataclass
@@ -47,11 +47,10 @@ class MainLoopLlmStreamState:
 
 @dataclass
 class _VisibleTextRouter:
-    """Route visible LLM text strictly by leading (or inline) channel prefix.
+    """Route visible LLM text by channel prefix.
 
-    - `[编排]` / aliases → orchestration (narration) only when prefix matched.
-    - `[交付]` / aliases → delivery (message.delta) only when prefix matched.
-    - Unprefixed visible text is discarded (not shown in UI).
+    - `[交付]` / aliases → delivery (message.delta).
+    - Unprefixed or `[编排]` aliases → reasoning.delta (UI think + last-line summary).
     """
 
     delivery_step_id: str
@@ -72,17 +71,21 @@ class _VisibleTextRouter:
 
     def _try_lock_piece(self, piece: str) -> tuple[VisibleChannel | None, str]:
         channel, body, matched = self._classify_with_match(piece)
-        if matched and channel is not None:
+        if matched and channel == "delivery":
             self.route_locked_by_prefix = True
-            self.lock_mode(channel)
+            self.lock_mode("delivery")
+            return channel, body
+        if matched and channel == "orchestration":
             return channel, body
 
-        for candidate in ("orchestration", "delivery"):
-            inline = extract_channel_body_from_text(piece, candidate)
-            if inline:
-                self.route_locked_by_prefix = True
-                self.lock_mode(candidate)
-                return candidate, inline
+        inline_delivery = extract_channel_body_from_text(piece, "delivery")
+        if inline_delivery:
+            self.route_locked_by_prefix = True
+            self.lock_mode("delivery")
+            return "delivery", inline_delivery
+        inline_orch = extract_channel_body_from_text(piece, "orchestration")
+        if inline_orch:
+            return "orchestration", inline_orch
         return None, ""
 
     def _discard_unprefixed(self) -> None:
@@ -101,9 +104,11 @@ class _VisibleTextRouter:
             return ""
 
         channel, body, matched = self._classify_with_match(held)
-        if matched and channel is not None:
+        if matched and channel == "delivery":
             self.route_locked_by_prefix = True
-            self.lock_mode(channel)
+            self.lock_mode("delivery")
+            return body
+        if matched and channel == "orchestration":
             return body
 
         scan = prefix_scan_state(held)
@@ -130,11 +135,15 @@ class _VisibleTextRouter:
 
         self.prefix_hold += text
         channel, body, matched = self._classify_with_match(self.prefix_hold)
-        if matched and channel is not None:
+        if matched and channel == "delivery":
             self.prefix_scan_active = False
             self.prefix_hold = ""
             self.route_locked_by_prefix = True
-            self.lock_mode(channel)
+            self.lock_mode("delivery")
+            return [body] if body else []
+        if matched and channel == "orchestration":
+            self.prefix_scan_active = False
+            self.prefix_hold = ""
             return [body] if body else []
 
         if prefix_scan_state(self.prefix_hold) == "partial":
@@ -145,7 +154,7 @@ class _VisibleTextRouter:
         self.prefix_scan_active = False
         return [held] if held else []
 
-    async def _emit_narration(
+    async def _emit_reasoning(
         self,
         stream_state: MainLoopLlmStreamState,
         text: str,
@@ -153,7 +162,7 @@ class _VisibleTextRouter:
         piece = polish_visible_text((text or "").replace("\ufffd", ""))
         if not piece:
             return
-        async for ev in _emit_planning_narration_delta(stream_state, piece):
+        async for ev in _emit_reasoning_delta(stream_state, piece):
             yield ev
 
     async def _emit_delivery(
@@ -173,16 +182,14 @@ class _VisibleTextRouter:
         ):
             yield ev
 
-    async def _flush_pending_as_narration(
-        self,
-        stream_state: MainLoopLlmStreamState,
-    ) -> AsyncIterator[dict[str, Any]]:
-        text = self.pending_text
-        self.pending_parts.clear()
-        if not text:
-            return
-        async for ev in self._emit_narration(stream_state, text):
-            yield ev
+    def _strip_orchestration_prefix(self, piece: str) -> str:
+        channel, body, matched = self._classify_with_match(piece)
+        if matched and channel == "orchestration":
+            return body
+        inline = extract_channel_body_from_text(piece, "orchestration")
+        if inline:
+            return inline
+        return piece
 
     def _awaiting_delivery_prefix(self) -> bool:
         if not self.prefix_scan_active:
@@ -201,20 +208,6 @@ class _VisibleTextRouter:
             return False
         return could_be_delivery_prefix(normalized)
 
-    async def _emit_pending_then(
-        self,
-        stream_state: MainLoopLlmStreamState,
-        piece: str,
-    ) -> AsyncIterator[dict[str, Any]]:
-        self.pending_parts.clear()
-        channel, body = self._try_lock_piece(piece)
-        if channel == "orchestration" and body:
-            async for ev in self._emit_narration(stream_state, body):
-                yield ev
-        elif channel == "delivery" and body:
-            async for ev in self._emit_delivery(stream_state, body):
-                yield ev
-
     async def _route_pieces(
         self,
         stream_state: MainLoopLlmStreamState,
@@ -227,25 +220,28 @@ class _VisibleTextRouter:
             if not piece:
                 continue
 
-            if self.mode == "pending":
-                channel, body = self._try_lock_piece(piece)
-                if channel == "orchestration" and body:
-                    async for ev in self._emit_narration(stream_state, body):
-                        yield ev
-                elif channel == "delivery" and body:
-                    async for ev in self._emit_delivery(stream_state, body):
-                        yield ev
-                continue
-
-            if self.mode == "orchestration" and self.route_locked_by_prefix:
-                async for ev in self._emit_narration(stream_state, piece):
-                    yield ev
-                continue
-
             if self.mode == "delivery" and self.route_locked_by_prefix:
                 async for ev in self._emit_delivery(stream_state, piece):
                     yield ev
                 continue
+
+            channel, body = self._try_lock_piece(piece)
+            if channel == "delivery" and body:
+                async for ev in self._emit_delivery(stream_state, body):
+                    yield ev
+                continue
+
+            inline_delivery = extract_channel_body_from_text(piece, "delivery")
+            if inline_delivery:
+                self.route_locked_by_prefix = True
+                self.lock_mode("delivery")
+                async for ev in self._emit_delivery(stream_state, inline_delivery):
+                    yield ev
+                continue
+
+            reasoning_text = body if channel == "orchestration" and body else self._strip_orchestration_prefix(piece)
+            async for ev in self._emit_reasoning(stream_state, reasoning_text):
+                yield ev
 
     async def feed(
         self,
@@ -290,11 +286,6 @@ class _VisibleTextRouter:
                 if stripped_visible:
                     async for ev in self._emit_delivery(stream_state, stripped_visible):
                         yield ev
-            return
-
-        if self.mode == "orchestration" and self.route_locked_by_prefix:
-            async for ev in self._flush_pending_as_narration(stream_state):
-                yield ev
             return
 
         self.pending_parts.clear()

@@ -22,8 +22,10 @@ import { TimelineLeadIcon } from './timeline/TimelineLeadIcon'
 import { ShimmerScanText } from '../loaders/ShimmerScanText'
 
 export interface AgentThinkPanelProps {
-  /** 思考正文（Markdown） */
+  /** 完整思考正文（用于展开/折叠判断） */
   text?: string
+  /** 面板内实际渲染的正文；默认与 text 相同 */
+  displayText?: string
   /** 是否处于思考中（标题扫光 + 可选仅标题行） */
   isThinking: boolean
   expanded?: boolean
@@ -112,6 +114,7 @@ function thinkBodyClass(nested?: boolean) {
 
 export function AgentThinkPanel({
   text = '',
+  displayText: displayTextProp,
   isThinking,
   expanded: expandedProp,
   onExpandedChange,
@@ -136,6 +139,7 @@ export function AgentThinkPanel({
   const bodyId = useId()
   const bodyScrollRef = useRef<HTMLDivElement>(null)
   const trimmed = text.trim()
+  const bodyText = displayTextProp ?? text
   const hasBody = Boolean(trimmed)
   const autoDuration = useThinkDuration(isThinking, durationProp === undefined)
   const durationSec = durationProp ?? autoDuration
@@ -208,10 +212,8 @@ export function AgentThinkPanel({
   const { phase, duration } = formatThinkStatus(isThinking, durationSec, t)
   const holdExpandedInRound = inThinkRound && orchestrationActive && isThinking
   const canToggle = hasBody && !isThinking && !holdExpandedInRound
-  const showDoneLinePreview = !isThinking && hasBody && !expanded && !holdExpandedInRound
   const showBody =
-    hasBody &&
-    (hideHeader || isThinking || expanded || holdExpandedInRound || showDoneLinePreview)
+    hasBody && (hideHeader || isThinking || expanded || holdExpandedInRound)
 
   const bodyContent = (
     <div
@@ -225,9 +227,9 @@ export function AgentThinkPanel({
       )}
     >
       {markdown ? (
-        <AgentMarkdown text={text} variant="think" />
+        <AgentMarkdown text={bodyText} variant="think" />
       ) : (
-        text.split('\n').filter(Boolean).map((line, i) => <p key={i}>{line}</p>)
+        bodyText.split('\n').filter(Boolean).map((line, i) => <p key={i}>{line}</p>)
       )}
     </div>
   )
