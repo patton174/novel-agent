@@ -59,17 +59,20 @@ export function EditorChatMessageList({
   const scrubPlaying = marketingScrubPlaying
   const [scrollElement, setScrollElement] = useState<HTMLDivElement | null>(null)
 
-  const rowCount = safeRowCount(messages.length)
-  const virtualEnabled = scrollElement != null && rowCount > 0
+  const safeMessages = Array.isArray(messages) ? messages : []
+  const rowCount = safeRowCount(safeMessages.length)
+  const streamActive = Boolean(scrubPlaying || (loadingState && activeId))
+  // 流式期间行高持续变化，虚拟列表易在 getVirtualItems 内崩溃；短列表也无须虚拟化
+  const virtualEnabled = scrollElement != null && rowCount > 24 && !streamActive
 
   const thinkExpandedByMessage = useMemo(() => {
     const map = new Map<string, boolean | undefined>()
-    for (const message of messages) {
+    for (const message of safeMessages) {
       const userThinkPinned = Object.prototype.hasOwnProperty.call(thinkPanelOpen, message.id)
       map.set(message.id, userThinkPinned ? thinkPanelOpen[message.id] : undefined)
     }
     return map
-  }, [messages, thinkPanelOpen])
+  }, [safeMessages, thinkPanelOpen])
 
   const setMessagesAreaNode = useCallback(
     (node: HTMLDivElement | null) => {
@@ -86,7 +89,8 @@ export function EditorChatMessageList({
   )
 
   const rowVirtualizer = useVirtualizer({
-    count: virtualEnabled ? rowCount : 0,
+    count: rowCount,
+    enabled: virtualEnabled,
     getScrollElement: () => scrollElement,
     estimateSize: () => FALLBACK_ROW_HEIGHT,
     overscan: 8,
@@ -96,8 +100,24 @@ export function EditorChatMessageList({
     },
   })
 
-  const virtualItems = virtualEnabled ? rowVirtualizer.getVirtualItems() : []
-  const totalHeight = virtualEnabled ? rowVirtualizer.getTotalSize() : 0
+  let useVirtualLayout = virtualEnabled
+  let virtualItems: ReturnType<typeof rowVirtualizer.getVirtualItems> = []
+  let totalHeight = 0
+  if (virtualEnabled) {
+    try {
+      virtualItems = rowVirtualizer.getVirtualItems()
+      totalHeight = rowVirtualizer.getTotalSize()
+      if (!Array.isArray(virtualItems)) {
+        useVirtualLayout = false
+        virtualItems = []
+        totalHeight = 0
+      }
+    } catch {
+      useVirtualLayout = false
+      virtualItems = []
+      totalHeight = 0
+    }
+  }
 
   useEffect(() => {
     if (!scrollElement || rowCount === 0) {
@@ -117,7 +137,7 @@ export function EditorChatMessageList({
       key={message.id}
       ref={style ? rowVirtualizer.measureElement : undefined}
       data-index={style ? index : undefined}
-      className={index < messages.length - 1 ? 'pb-5 max-md:pb-3.5' : undefined}
+      className={index < safeMessages.length - 1 ? 'pb-5 max-md:pb-3.5' : undefined}
       style={style}
     >
       <EditorChatMessage
@@ -153,10 +173,10 @@ export function EditorChatMessageList({
         className="relative mx-auto w-full"
         style={{ maxWidth: editorLayout.contentMaxWidth }}
       >
-        {virtualEnabled ? (
+        {useVirtualLayout ? (
           <div className="relative w-full" style={{ height: `${totalHeight}px` }}>
             {virtualItems.map((virtualItem) => {
-              const message = messages[virtualItem.index]
+              const message = safeMessages[virtualItem.index]
               if (!message) {
                 return null
               }
@@ -177,7 +197,7 @@ export function EditorChatMessageList({
           </div>
         ) : (
           <div className="relative w-full">
-            {messages.map((message, index) => renderMessage(message, index))}
+            {safeMessages.map((message, index) => renderMessage(message, index))}
             <div ref={messagesEndRef} className="h-px w-full shrink-0 scroll-mb-2" aria-hidden />
           </div>
         )}

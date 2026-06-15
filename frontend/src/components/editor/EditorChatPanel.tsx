@@ -81,7 +81,7 @@ export function EditorChatPanel({
 }: EditorChatPanelProps) {
   const { t } = useTranslation(['editor'])
   const isInitial = isInitialChatView(messages, activeNovel)
-  const visibleMessages = filterVisibleChatMessages(messages, activeNovel)
+  const visibleMessages = filterVisibleChatMessages(messages ?? [], activeNovel)
   const composerRef = useRef<HTMLDivElement>(null)
   const composerBottomInset = useComposerSafeInset(composerRef, !isInitial)
 
