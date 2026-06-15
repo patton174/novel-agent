@@ -4,13 +4,31 @@ import org.springframework.http.CacheControl;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.server.reactive.ServerHttpResponse;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import jakarta.servlet.http.HttpServletResponse;
+import java.time.Duration;
 import java.util.List;
 
 public final class AgentStreamSupport {
 
+    /** SSE comment frame — keeps proxies/clients alive during long tool silence */
+    public static final String KEEPALIVE_FRAME = ": keepalive\n\n";
+    private static final Duration KEEPALIVE_INTERVAL = Duration.ofSeconds(15);
+
     private AgentStreamSupport() {}
+
+    /** Merge periodic SSE comments until the agent stream completes. */
+    public static Flux<String> withKeepalive(Flux<String> frames) {
+        if (frames == null) {
+            return Flux.empty();
+        }
+        Flux<String> keepalive = Flux.interval(KEEPALIVE_INTERVAL)
+            .map(tick -> KEEPALIVE_FRAME)
+            .takeUntilOther(frames.ignoreElements().then(Mono.empty()));
+        return Flux.merge(frames, keepalive);
+    }
 
     public static void applySseHeaders(ServerHttpResponse response) {
         response.getHeaders().setContentType(MediaType.TEXT_EVENT_STREAM);

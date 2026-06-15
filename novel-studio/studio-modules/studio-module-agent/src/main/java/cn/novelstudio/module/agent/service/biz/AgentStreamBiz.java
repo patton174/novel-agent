@@ -26,6 +26,6 @@ public class AgentStreamBiz extends BaseBiz {
         QuotaGateResult gate = quotaGateService.assertCanStartRun(userId);
         Flux<String> frames = agentBridgeService.stream(userId, request)
             .filter(frame -> !contentOnly || AgentStreamSupport.isContentFrame(frame));
-        return new StreamFrames(frames, gate.quotaWarningHeader());
+        return new StreamFrames(AgentStreamSupport.withKeepalive(frames), gate.quotaWarningHeader());
     }
 }

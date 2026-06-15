@@ -1,4 +1,13 @@
 # 生产：客户端安全（与前端 VITE_* / crypto-runtime.json 对齐）
+spring:
+  mvc:
+    async:
+      request-timeout: ${SPRING_MVC_ASYNC_REQUEST_TIMEOUT:3600000}
+
+server:
+  tomcat:
+    connection-timeout: ${SERVER_CONNECTION_TIMEOUT:3600000}
+
 auth:
   cookie:
     secure: true

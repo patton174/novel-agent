@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import com.fasterxml.jackson.databind.node.ArrayNode;
+
 public final class SseEventCodec {
 
     private static final java.util.Set<String> META_TYPES = java.util.Set.of(
@@ -13,6 +15,14 @@ public final class SseEventCodec {
         "run.failed",
         "run.waiting",
         "run.recovering"
+    );
+
+    private static final java.util.Set<String> OMIT_TOOL_INPUT_KEYS = java.util.Set.of(
+        "content", "old_string", "new_string", "payload"
+    );
+
+    private static final java.util.Set<String> MEMORY_CHAPTER_TOOLS = java.util.Set.of(
+        "WriteChapter", "EditChapter", "WriteMemory", "EditMemory", "Write", "Edit"
     );
 
     private SseEventCodec() {}
@@ -69,11 +79,54 @@ public final class SseEventCodec {
         }
         JsonNode payload = event.path("payload");
         if (payload.isObject()) {
-            slim.set("payload", payload.deepCopy());
+            slim.set("payload", slimPayloadForClient(type, (ObjectNode) payload));
         } else {
             slim.set("payload", event.objectNode());
         }
         return slim;
+    }
+
+    private static ObjectNode slimPayloadForClient(String type, ObjectNode payload) {
+        ObjectNode copy = payload.deepCopy();
+        if (type.startsWith("tool.")) {
+            trimToolInput(copy);
+        }
+        if ("planning.completed".equals(type)) {
+            trimPlanningToolCalls(copy);
+        }
+        return copy;
+    }
+
+    private static void trimToolInput(ObjectNode payload) {
+        JsonNode toolInput = payload.path("tool_input");
+        if (!(toolInput instanceof ObjectNode toolInputNode)) {
+            return;
+        }
+        String name = payload.path("name").asText("");
+        if (!MEMORY_CHAPTER_TOOLS.contains(name)) {
+            return;
+        }
+        OMIT_TOOL_INPUT_KEYS.forEach(toolInputNode::remove);
+    }
+
+    private static void trimPlanningToolCalls(ObjectNode payload) {
+        JsonNode calls = payload.path("tool_calls");
+        if (!(calls instanceof ArrayNode array)) {
+            return;
+        }
+        for (JsonNode call : array) {
+            if (!(call instanceof ObjectNode callNode)) {
+                continue;
+            }
+            JsonNode input = callNode.path("input");
+            if (!(input instanceof ObjectNode inputNode)) {
+                continue;
+            }
+            String tool = callNode.path("tool").asText("");
+            if (MEMORY_CHAPTER_TOOLS.contains(tool)) {
+                OMIT_TOOL_INPUT_KEYS.forEach(inputNode::remove);
+            }
+        }
     }
 
     public static String rewriteSequence(String frame, int sequence, ObjectMapper mapper) {

@@ -19,7 +19,7 @@ export function StreamRecoveryIndicator({ label, className }: StreamRecoveryIndi
     <div
       data-testid="stream-recovery-indicator"
       className={cn(
-        'pointer-events-auto absolute inset-0 z-[3] flex items-center justify-center px-4',
+        'pointer-events-auto fixed inset-0 z-[200] flex items-center justify-center px-4',
         className,
       )}
     >

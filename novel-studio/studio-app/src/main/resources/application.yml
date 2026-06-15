@@ -1,6 +1,8 @@
 # Novel Studio 单体默认配置（开发友好：直连 /api，无路由混淆）
 server:
   port: ${SERVER_PORT:8080}
+  tomcat:
+    connection-timeout: ${SERVER_CONNECTION_TIMEOUT:3600000}
 
 spring:
   application:
@@ -9,6 +11,10 @@ spring:
     active: ${SPRING_PROFILES_ACTIVE:local}
   main:
     web-application-type: servlet
+  mvc:
+    async:
+      # Agent SSE 长连接：ReadMemory/WriteMemory 等工具可能静默 >30s，禁止默认 30s 中断
+      request-timeout: ${SPRING_MVC_ASYNC_REQUEST_TIMEOUT:3600000}
   datasource:
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:novel_agent}
     username: ${DB_USER:postgres}
