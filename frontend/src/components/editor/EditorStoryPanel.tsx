@@ -329,7 +329,7 @@ function EditorStoryPanelDesktop({
         </aside>
 
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-          <div className="flex items-center justify-between gap-3 border-t border-black/5 bg-background px-6 py-3">
+          <div className="flex items-center justify-between gap-3 border-t border-border/60 bg-background px-6 py-3">
             <span className="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-[0.9rem] font-bold text-foreground">
               {toolbarTitle}
               {chapterDirty ? t('editor:story.unsaved') : ''}

@@ -6,6 +6,7 @@ import cn.novelstudio.module.content.entity.ChapterEntity;
 import cn.novelstudio.module.content.entity.NovelEntity;
 import cn.novelstudio.module.content.repository.ChapterRepository;
 import cn.novelstudio.module.content.repository.NovelRepository;
+import cn.novelstudio.module.content.repository.UserWritingActivityRepository;
 import cn.novelstudio.module.content.repository.agent.AgentRunRepository;
 import cn.novelstudio.module.content.service.auth.resp.AuthDashboardActivityDayResp;
 import cn.novelstudio.module.content.service.auth.resp.AuthDashboardActivityResp;
@@ -37,6 +38,7 @@ public class AuthDashboardBiz extends BaseBiz {
     private final NovelRepository novelRepository;
     private final ChapterRepository chapterRepository;
     private final AgentRunRepository agentRunRepository;
+    private final UserWritingActivityRepository writingActivityRepository;
 
     public Result<AuthDashboardSummaryResp> summary(Long userId) {
         Instant weekAgo = Instant.now().minus(7, ChronoUnit.DAYS);
@@ -70,7 +72,7 @@ public class AuthDashboardBiz extends BaseBiz {
         Instant since = startDate.atStartOfDay(ZoneOffset.UTC).toInstant();
 
         Map<LocalDate, Long> wordsByDate = toDailyLongMap(
-            chapterRepository.sumDailyWordsByUserIdSince(userId, since)
+            writingActivityRepository.sumDailyByUserIdSince(userId, startDate)
         );
         Map<LocalDate, Long> runsByDate = toDailyLongMap(
             agentRunRepository.countDailyByUserIdSince(userId, since)

@@ -2,6 +2,24 @@ import type { DashboardActivity, DashboardActivityDay, DashboardSummary } from '
 
 export type DashboardTrendRange = 7 | 30
 
+/** 图表 Y 轴：更短标签，避免 36px 宽度下「1.28万」被裁成「.28万」 */
+export function formatChartAxisMetric(value: number, locale: string): string {
+  const n = Math.round(Number(value))
+  if (!Number.isFinite(n) || n <= 0) return '0'
+  if (locale.startsWith('zh')) {
+    if (n >= 10_000) {
+      const wan = n / 10_000
+      return wan >= 10 ? `${wan.toFixed(0)}万` : `${wan.toFixed(1)}万`
+    }
+    if (n >= 1_000) return `${(n / 1_000).toFixed(1)}千`
+    return String(n)
+  }
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
+  if (n >= 10_000) return `${(n / 1_000).toFixed(0)}K`
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`
+  return String(n)
+}
+
 export function formatCompactMetric(value: number, locale: string): string {
   if (value >= 100_000_000) {
     return `${(value / 100_000_000).toFixed(2)}亿`

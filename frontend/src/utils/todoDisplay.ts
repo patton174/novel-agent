@@ -46,9 +46,15 @@ export function countCompletedTodos(todos: AgentTodoItem[]): number {
   return todos.filter((item) => item.status === 'completed').length
 }
 
-export function formatTodoProgress(todos: AgentTodoItem[]): string {
+export function formatTodoProgress(
+  todos: AgentTodoItem[],
+  t?: (key: string, opts?: Record<string, unknown>) => string,
+): string {
   if (todos.length === 0) {
-    return '0/0 已完成'
+    return t ? t('editor:todo.progressEmpty') : '0/0 已完成'
   }
-  return `${countCompletedTodos(todos)}/${todos.length} 已完成`
+  const completed = countCompletedTodos(todos)
+  return t
+    ? t('editor:todo.progress', { completed, total: todos.length })
+    : `${completed}/${todos.length} 已完成`
 }

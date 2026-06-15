@@ -33,6 +33,7 @@ public class ChapterService {
     private final ChapterVersionService versionService;
     private final ChapterIndexClient indexClient;
     private final ReindexJobService reindexJobService;
+    private final UserWritingActivityService writingActivityService;
 
     @Transactional
     public List<ChapterSummaryDTO> listSummaries(Long userId, String novelId) {
@@ -147,6 +148,7 @@ public class ChapterService {
         }
         ChapterEntity saved = chapterRepository.save(entity);
         indexClient.indexChapter(saved.getNovelId(), toDto(saved));
+        recordWritingDeltaForNovel(saved.getNovelId(), 0, saved.getWordCount() == null ? 0 : saved.getWordCount());
         return toDto(saved);
     }
 
@@ -209,8 +211,11 @@ public class ChapterService {
         if (sortOrder != null) {
             entity.setSortOrder(sortOrder);
         }
+        int previousWords = entity.getWordCount() == null ? 0 : entity.getWordCount();
         ChapterEntity saved = chapterRepository.save(entity);
         indexClient.indexChapter(saved.getNovelId(), toDto(saved));
+        int nextWords = saved.getWordCount() == null ? 0 : saved.getWordCount();
+        recordWritingDeltaForNovel(saved.getNovelId(), previousWords, nextWords);
         return toDto(saved);
     }
 
@@ -316,6 +321,16 @@ public class ChapterService {
     private void assertNovelOwned(Long userId, String novelId) {
         novelRepository.findByIdAndUserId(novelId, userId)
             .orElseThrow(ContentExceptions::novelNotFound);
+    }
+
+    private void recordWritingDeltaForNovel(String novelId, int previousWords, int nextWords) {
+        long delta = (long) nextWords - previousWords;
+        if (delta <= 0) {
+            return;
+        }
+        novelRepository.findById(novelId).ifPresent(novel ->
+            writingActivityService.recordWordsAdded(novel.getUserId(), delta)
+        );
     }
 
     private ChapterSummaryDTO toSummary(ChapterEntity entity, String volumeTitle) {

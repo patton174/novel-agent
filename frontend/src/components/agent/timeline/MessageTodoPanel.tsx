@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { AgentTodoItem } from '../../../types/agent'
 import { useAppMobile } from '@/hooks/useMediaQuery'
 import {
@@ -27,6 +28,7 @@ export function MessageTodoPanel({
   todos: AgentTodoItem[]
   streamLive?: boolean
 }) {
+  const { t } = useTranslation(['editor'])
   const [modalOpen, setModalOpen] = useState(false)
   const isMobile = useAppMobile()
   const maxVisible = isMobile ? 2 : MESSAGE_TODO_MAX_VISIBLE
@@ -67,7 +69,7 @@ export function MessageTodoPanel({
     return null
   }
 
-  const progress = formatTodoProgress(todos)
+  const progress = formatTodoProgress(todos, t)
   const canOpenModal = todos.length > 0
 
   return (
@@ -82,7 +84,7 @@ export function MessageTodoPanel({
           aria-haspopup="dialog"
           data-testid="message-todo-header"
         >
-          <span className={MESSAGE_TODO_TITLE}>待办</span>
+          <span className={MESSAGE_TODO_TITLE}>{t('editor:todo.title')}</span>
           <span className={`${MESSAGE_TODO_META} msg-todo-meta`}>{progress}</span>
         </button>
         <TimelineTodoList todos={visible} embedded />
@@ -91,10 +93,10 @@ export function MessageTodoPanel({
             type="button"
             className={MESSAGE_TODO_MORE}
             onClick={() => setModalOpen(true)}
-            aria-label={`还有 ${omitted} 项待办，点击查看全部`}
+            aria-label={t('editor:todo.moreAria', { count: omitted })}
             data-testid="message-todo-more"
           >
-            还有 {omitted} 项…
+            {t('editor:todo.more', { count: omitted })}
           </button>
         ) : null}
       </div>

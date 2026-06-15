@@ -110,6 +110,55 @@
       "story": "Chapter Editor",
       "ariaLabel": "Editor tabs"
     },
+    "chrome": {
+      "backToDashboard": "Back to Dashboard"
+    },
+    "outline": {
+      "catalog": "Work Outline",
+      "dragHint": "Drag volume headers to reorder; drag chapters to move across volumes or reorder",
+      "empty": "No volumes or chapters yet",
+      "newVolume": "Add Volume",
+      "newVolumeTitle": "New volume name",
+      "newVolumePlaceholder": "Volume title",
+      "newVolumeDefault": "Volume {{n}}",
+      "createVolume": "Create",
+      "createVolumeFail": "Failed to create volume",
+      "deleteChapterTitle": "Delete Chapter",
+      "deleteChapterDesc": "Delete \"{{title}}\"? This cannot be undone.",
+      "deleteChapterFail": "Failed to delete chapter",
+      "renameChapterTitle": "Rename Chapter",
+      "renameChapterPlaceholder": "Chapter title",
+      "renameChapterFail": "Failed to rename chapter",
+      "reorderVolumeFail": "Failed to reorder volumes",
+      "moveChapterFail": "Failed to move chapter",
+      "reindex": "Rebuild Vector Index",
+      "reindexing": "Rebuilding index…",
+      "reindexProgress": "Rebuilding {{processed}}/{{chapters}}",
+      "dropChapterHere": "Drop chapters here",
+      "addChapterInVolume": "Add chapter to volume",
+      "chapterIndex": "Ch. {{n}}"
+    },
+    "versions": {
+      "title": "Version History",
+      "selectChapter": "Select a chapter to view versions",
+      "empty": "No version history yet",
+      "sourceUser": "Manual",
+      "sourceAi": "AI",
+      "sourceRestore": "Restore",
+      "preview": "Preview",
+      "closePreview": "Close preview",
+      "restore": "Restore",
+      "restoring": "Restoring…",
+      "wordCount": "{{count}} words"
+    },
+    "todo": {
+      "title": "Todo",
+      "progress": "{{completed}}/{{total}} done",
+      "progressEmpty": "0/0 done",
+      "more": "{{count}} more…",
+      "moreAria": "{{count}} more todos, click to view all",
+      "modalSubtitle": "{{count}} tasks total"
+    },
     "sessionList": {
       "generatingTitle": "Generating title...",
       "newChat": "New Chat",

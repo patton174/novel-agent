@@ -167,24 +167,14 @@ function buildHeatmapGrid(days: DashboardActivityDay[], mode: ActivityMode) {
   return { weeks, maxValue, monthLabels }
 }
 
-function formatTotal(activity: DashboardActivity, mode: ActivityMode, locale: string): string {
-  switch (mode) {
-    case 'writing':
-      return formatCompactMetric(activity.totalWritingWords, locale)
-    case 'agent':
-      return formatCompactMetric(activity.totalAgentRuns, locale)
-    case 'all':
-      return formatCompactMetric(activity.totalWritingWords + activity.totalAgentRuns * 800, locale)
-  }
-}
-
 function formatTooltip(
   date: string,
   value: number,
   mode: ActivityMode,
   t: (key: string) => string,
+  dateLocale: string,
 ): string {
-  const label = parseUtcDate(date).toLocaleDateString('zh-CN', {
+  const label = parseUtcDate(date).toLocaleDateString(dateLocale, {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
@@ -192,8 +182,10 @@ function formatTooltip(
   })
   if (value <= 0) return `${label}：${t('dashboard:heatmap.tooltipNoActivity')}`
   if (mode === 'agent') return `${label}：${value} ${t('dashboard:heatmap.tooltipAgent')}`
-  if (mode === 'writing') return `${label}：${value.toLocaleString('zh-CN')} ${t('dashboard:heatmap.tooltipWriting')}`
-  return `${label}：${t('dashboard:heatmap.tooltipAll')} ${value.toLocaleString('zh-CN')}`
+  if (mode === 'writing') {
+    return `${label}：${value.toLocaleString(dateLocale)} ${t('dashboard:heatmap.tooltipWriting')}`
+  }
+  return `${label}：${t('dashboard:heatmap.tooltipAll')} ${value.toLocaleString(dateLocale)}`
 }
 
 interface ActivityHeatmapProps {
@@ -221,7 +213,7 @@ export function ActivityHeatmap({ activity, loading }: ActivityHeatmapProps) {
       i18n.language === 'zh'
         ? ['日', '一', '二', '三', '四', '五', '六']
         : ['S', 'M', 'T', 'W', 'T', 'F', 'S'],
-    [],
+    [i18n.language],
   )
 
   const { weeks, maxValue, monthLabels } = useMemo(() => {
@@ -324,7 +316,7 @@ export function ActivityHeatmap({ activity, loading }: ActivityHeatmapProps) {
                           key={`${weekIndex}-${rowIndex}`}
                           title={
                             cell.date
-                              ? formatTooltip(cell.date, cell.value, mode, t)
+                              ? formatTooltip(cell.date, cell.value, mode, t, dateLocale)
                               : undefined
                           }
                           className={cn(
@@ -350,11 +342,6 @@ export function ActivityHeatmap({ activity, loading }: ActivityHeatmapProps) {
         </div>
 
         <div className="flex shrink-0 flex-row gap-6 border-t border-border/60 pt-4 lg:w-[9.5rem] lg:flex-col lg:border-l lg:border-t-0 lg:pl-5 lg:pt-0">
-          <SideStat
-            loading={loading}
-            label={t('dashboard:home.sideTotal')}
-            value={activity ? formatTotal(activity, mode, dateLocale) : '0'}
-          />
           <SideStat
             loading={loading}
             label={t('dashboard:home.sidePeak')}

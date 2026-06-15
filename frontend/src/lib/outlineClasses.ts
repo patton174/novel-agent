@@ -12,7 +12,7 @@ export const OUTLINE_SECTION_LABEL =
 export const OUTLINE_SECTION_DIVIDER = 'my-3 border-t border-border/70'
 
 export const OUTLINE_HINT =
-  'px-[0.15rem] py-2 text-[0.74rem] font-medium leading-snug text-slate-400'
+  'px-[0.15rem] py-2 text-[0.74rem] font-medium leading-snug text-muted-foreground'
 
 export const OUTLINE_LIST = 'flex flex-1 flex-col gap-[0.65rem] overflow-y-auto'
 
@@ -42,7 +42,7 @@ export const OUTLINE_DRAG_HANDLE = cn(
 
 export function outlineChevronWrapClass(open: boolean) {
   return cn(
-    'inline-flex text-slate-400 transition-transform duration-200',
+    'inline-flex text-muted-foreground transition-transform duration-200',
     open && 'rotate-180',
     '[&_svg]:size-3.5',
   )
@@ -50,8 +50,8 @@ export function outlineChevronWrapClass(open: boolean) {
 
 export function outlineChapterDropZoneClass(dragOver?: boolean) {
   return cn(
-    'rounded-lg border border-dashed p-[0.65rem] text-center text-[0.74rem] font-medium text-slate-400',
-    dragOver ? 'border-primary bg-primary/5' : 'border-slate-300 bg-transparent',
+    'rounded-lg border border-dashed p-[0.65rem] text-center text-[0.74rem] font-medium text-muted-foreground',
+    dragOver ? 'border-primary bg-primary/5' : 'border-border bg-transparent',
   )
 }
 

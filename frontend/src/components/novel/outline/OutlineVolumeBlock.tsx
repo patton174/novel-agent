@@ -1,4 +1,5 @@
 import type { DragEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Pencil, Trash2 } from 'lucide-react'
 import type { ChapterSummary, Volume } from '../../../types/novel'
 import { EditorButton } from '../../ui/EditorButton'
@@ -67,6 +68,7 @@ export function OutlineVolumeBlock({
   onRenameChapter,
   bindTouchHandle,
 }: OutlineVolumeBlockProps) {
+  const { t } = useTranslation(['editor'])
   const volumeDropActive = dropTarget?.kind === 'volume' && dropTarget.volumeId === volume.id
 
   return (
@@ -87,7 +89,7 @@ export function OutlineVolumeBlock({
     >
       <div className={OUTLINE_VOLUME_HEADER}>
         <OutlineDragHandle
-          title="拖拽排序卷"
+          title={t('editor:picker.dragVolume')}
           disabled={busy}
           onDragStart={(event) => onVolumeDragStart(event, volume.id)}
           onDragEnd={onDragEnd}
@@ -95,7 +97,7 @@ export function OutlineVolumeBlock({
         />
         <EditorButton variant="volume" type="button" onClick={onToggleExpand}>
           <span className="title">{volume.title}</span>
-          <span className="meta">{volumeChapters.length} 章</span>
+          <span className="meta">{t('editor:picker.volumeCount', { count: volumeChapters.length })}</span>
           <span className={outlineChevronWrapClass(expanded)}>
             <ChevronIcon />
           </span>
@@ -116,7 +118,7 @@ export function OutlineVolumeBlock({
               }}
               onDrop={(event) => void onChapterDrop(event, volume.id, null)}
             >
-              拖拽章节到此处
+              {t('editor:outline.dropChapterHere')}
             </div>
           ) : (
             volumeChapters.map((chapter, index) => {
@@ -154,7 +156,7 @@ export function OutlineVolumeBlock({
                 >
                   <div className={OUTLINE_CHAPTER_ROW}>
                     <OutlineDragHandle
-                      title="拖拽移动章节"
+                      title={t('editor:picker.dragChapter')}
                       disabled={busy}
                       onDragStart={(event) => onChapterDragStart(event, chapter.id)}
                       onDragEnd={onDragEnd}
@@ -167,14 +169,16 @@ export function OutlineVolumeBlock({
                       onClick={() => void onSelectChapter(chapter.id)}
                       className="min-w-0 flex-1"
                     >
-                      <span className="chapter-num">第{index + 1}章</span>
+                      <span className="chapter-num">
+                        {t('editor:outline.chapterIndex', { n: index + 1 })}
+                      </span>
                       <span className="chapter-title">{chapter.title}</span>
                       <span className="chapter-status">
                         {chapter.id === activeChapterId
-                          ? '编辑中'
+                          ? t('editor:picker.editing')
                           : chapter.wordCount > 0
-                            ? `${chapter.wordCount}字`
-                            : '待写'}
+                            ? t('editor:picker.wordCount', { count: chapter.wordCount })
+                            : t('editor:picker.toWrite')}
                       </span>
                     </EditorButton>
                     <div className={OUTLINE_CHAPTER_ACTIONS}>
@@ -182,7 +186,7 @@ export function OutlineVolumeBlock({
                         variant="icon"
                         type="button"
                         size="sm"
-                        title="重命名章节"
+                        title={t('editor:sessionList.rename')}
                         disabled={busy}
                         onClick={(event) => {
                           event.stopPropagation()
@@ -195,7 +199,7 @@ export function OutlineVolumeBlock({
                         variant="icon"
                         type="button"
                         size="sm"
-                        title="删除章节"
+                        title={t('editor:outline.deleteChapterTitle')}
                         disabled={busy}
                         onClick={(event) => {
                           event.stopPropagation()
@@ -215,12 +219,12 @@ export function OutlineVolumeBlock({
             size="sm"
             fullWidth
             type="button"
-            onClick={() => void onAddChapter('新章节', volume.id)}
+            onClick={() => void onAddChapter(t('editor:picker.newChapterTitle'), volume.id)}
             disabled={!activeNovelId || busy}
             style={{ marginTop: '0.15rem' }}
           >
             <PlusIcon />
-            <span>本卷新增章节</span>
+            <span>{t('editor:outline.addChapterInVolume')}</span>
           </EditorButton>
         </div>
       </div>

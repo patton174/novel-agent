@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 
 import { LOCALE_STORAGE_KEY } from '@/lib/appSessionState'
+import { runUiTransition } from '@/lib/uiTransition'
 
 interface LocaleToggleProps {
   compact?: boolean
@@ -21,7 +22,9 @@ export function LocaleToggle({ compact = false, className }: LocaleToggleProps) 
     } catch {
       /* ignore */
     }
-    void i18n.changeLanguage(next)
+    runUiTransition(() => {
+      void i18n.changeLanguage(next)
+    })
   }
 
   return (

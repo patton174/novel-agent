@@ -110,6 +110,55 @@
       "story": "章节编辑",
       "ariaLabel": "编辑区标签"
     },
+    "chrome": {
+      "backToDashboard": "返回创作台"
+    },
+    "outline": {
+      "catalog": "作品目录",
+      "dragHint": "拖拽卷标题栏排序；拖拽章节可跨卷移动或调整顺序",
+      "empty": "暂无卷与章节",
+      "newVolume": "新增卷",
+      "newVolumeTitle": "新卷名称",
+      "newVolumePlaceholder": "输入卷名",
+      "newVolumeDefault": "第{{n}}卷",
+      "createVolume": "创建",
+      "createVolumeFail": "创建卷失败",
+      "deleteChapterTitle": "删除章节",
+      "deleteChapterDesc": "确定删除「{{title}}」？此操作不可撤销。",
+      "deleteChapterFail": "删除章节失败",
+      "renameChapterTitle": "重命名章节",
+      "renameChapterPlaceholder": "章节标题",
+      "renameChapterFail": "重命名失败",
+      "reorderVolumeFail": "卷排序失败",
+      "moveChapterFail": "章节移动失败",
+      "reindex": "重建向量索引",
+      "reindexing": "重建索引中…",
+      "reindexProgress": "重建中 {{processed}}/{{chapters}}",
+      "dropChapterHere": "拖拽章节到此处",
+      "addChapterInVolume": "本卷新增章节",
+      "chapterIndex": "第{{n}}章"
+    },
+    "versions": {
+      "title": "版本历史",
+      "selectChapter": "选择章节后可查看版本",
+      "empty": "暂无历史版本",
+      "sourceUser": "手动",
+      "sourceAi": "AI",
+      "sourceRestore": "恢复",
+      "preview": "正文预览",
+      "closePreview": "关闭预览",
+      "restore": "恢复",
+      "restoring": "恢复中…",
+      "wordCount": "{{count}} 字"
+    },
+    "todo": {
+      "title": "待办",
+      "progress": "{{completed}}/{{total}} 已完成",
+      "progressEmpty": "0/0 已完成",
+      "more": "还有 {{count}} 项…",
+      "moreAria": "还有 {{count}} 项待办，点击查看全部",
+      "modalSubtitle": "共 {{count}} 项任务"
+    },
     "sessionList": {
       "generatingTitle": "生成标题…",
       "newChat": "新对话",

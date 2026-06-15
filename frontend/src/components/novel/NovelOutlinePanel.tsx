@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type DragEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNovelStore } from '../../stores/novelStore'
 import {
   buildChapterReorderPlans,
@@ -25,6 +26,7 @@ export function NovelOutlinePanel({
   reindexProgress,
   onReindex,
 }: NovelOutlinePanelProps) {
+  const { t } = useTranslation(['editor'])
   const activeNovelId = useNovelStore((s) => s.activeNovelId)
   const volumes = useNovelStore((s) => s.volumes)
   const chapters = useNovelStore((s) => s.chapters)
@@ -67,26 +69,26 @@ export function NovelOutlinePanel({
   const handleAddVolume = useCallback(async () => {
     if (!activeNovelId) return
     const title = await promptDialog({
-      title: '新卷名称',
-      defaultValue: `第${volumes.length + 1}卷`,
-      placeholder: '输入卷名',
-      confirmLabel: '创建',
+      title: t('editor:outline.newVolumeTitle'),
+      defaultValue: t('editor:outline.newVolumeDefault', { n: volumes.length + 1 }),
+      placeholder: t('editor:outline.newVolumePlaceholder'),
+      confirmLabel: t('editor:outline.createVolume'),
     })
     if (!title) return
     try {
       await addVolume(title)
     } catch {
-      void alertDialog({ title: '创建卷失败' })
+      void alertDialog({ title: t('editor:outline.createVolumeFail') })
     }
-  }, [activeNovelId, volumes.length, addVolume])
+  }, [activeNovelId, addVolume, t, volumes.length])
 
   const handleDeleteChapter = useCallback(
     async (chapterId: string, title: string) => {
       if (
         !(await confirmAction({
-          title: '删除章节',
-          description: `确定删除「${title}」？此操作不可撤销。`,
-          confirmLabel: '删除',
+          title: t('editor:outline.deleteChapterTitle'),
+          description: t('editor:outline.deleteChapterDesc', { title }),
+          confirmLabel: t('common:delete'),
           danger: true,
         }))
       ) {
@@ -96,33 +98,33 @@ export function NovelOutlinePanel({
       try {
         await deleteChapter(chapterId)
       } catch {
-        void alertDialog({ title: '删除章节失败' })
+        void alertDialog({ title: t('editor:outline.deleteChapterFail') })
       } finally {
         setBusy(false)
       }
     },
-    [deleteChapter],
+    [deleteChapter, t],
   )
 
   const handleRenameChapter = useCallback(
     async (chapterId: string, currentTitle: string) => {
       const title = await promptDialog({
-        title: '重命名章节',
+        title: t('editor:outline.renameChapterTitle'),
         defaultValue: currentTitle,
-        placeholder: '章节标题',
-        confirmLabel: '保存',
+        placeholder: t('editor:outline.renameChapterPlaceholder'),
+        confirmLabel: t('common:save'),
       })
       if (!title || title.trim() === currentTitle.trim()) return
       setBusy(true)
       try {
         await renameChapter(chapterId, title.trim())
       } catch {
-        void alertDialog({ title: '重命名失败' })
+        void alertDialog({ title: t('editor:outline.renameChapterFail') })
       } finally {
         setBusy(false)
       }
     },
-    [renameChapter],
+    [renameChapter, t],
   )
 
   const handleDragEnd = useCallback(() => {
@@ -154,7 +156,7 @@ export function NovelOutlinePanel({
       try {
         await reorderVolumes(reorderVolumeIds(volumes, payload.id, targetVolumeId))
       } catch {
-        void alertDialog({ title: '卷排序失败' })
+        void alertDialog({ title: t('editor:outline.reorderVolumeFail') })
       } finally {
         setBusy(false)
       }
@@ -184,7 +186,7 @@ export function NovelOutlinePanel({
       try {
         await applyChapterReorderPlans(plans)
       } catch {
-        void alertDialog({ title: '章节移动失败' })
+        void alertDialog({ title: t('editor:outline.moveChapterFail') })
       } finally {
         setBusy(false)
       }
@@ -205,7 +207,7 @@ export function NovelOutlinePanel({
       try {
         await applyChapterReorderPlans(plans)
       } catch {
-        void alertDialog({ title: '章节移动失败' })
+        void alertDialog({ title: t('editor:outline.moveChapterFail') })
       } finally {
         setBusy(false)
       }
@@ -219,7 +221,7 @@ export function NovelOutlinePanel({
       try {
         await reorderVolumes(reorderVolumeIds(volumes, draggedVolumeId, targetVolumeId))
       } catch {
-        void alertDialog({ title: '卷排序失败' })
+        void alertDialog({ title: t('editor:outline.reorderVolumeFail') })
       } finally {
         setBusy(false)
       }
@@ -240,11 +242,11 @@ export function NovelOutlinePanel({
   return (
     <>
       {touchDragGhost}
-      <div className={OUTLINE_SECTION_LABEL}>作品目录</div>
-      <div className={OUTLINE_DRAG_HINT}>拖拽卷标题栏排序；拖拽章节可跨卷移动或调整顺序</div>
+      <div className={OUTLINE_SECTION_LABEL}>{t('editor:outline.catalog')}</div>
+      <div className={OUTLINE_DRAG_HINT}>{t('editor:outline.dragHint')}</div>
       <div className={OUTLINE_LIST}>
         {volumeGroups.length === 0 ? (
-          <div className={OUTLINE_HINT}>暂无卷与章节</div>
+          <div className={OUTLINE_HINT}>{t('editor:outline.empty')}</div>
         ) : (
           volumeGroups.map(({ volume, chapters: volumeChapters }) => (
             <OutlineVolumeBlock
@@ -287,7 +289,7 @@ export function NovelOutlinePanel({
         style={{ marginTop: '0.75rem' }}
       >
         <PlusIcon />
-        <span>新增卷</span>
+        <span>{t('editor:outline.newVolume')}</span>
       </EditorButton>
       <EditorButton
         variant="accent"
@@ -299,9 +301,12 @@ export function NovelOutlinePanel({
       >
         {reindexing
           ? reindexProgress
-            ? `重建中 ${reindexProgress.processed}/${reindexProgress.chapters}`
-            : '重建索引中…'
-          : '重建向量索引'}
+            ? t('editor:outline.reindexProgress', {
+                processed: reindexProgress.processed,
+                chapters: reindexProgress.chapters,
+              })
+            : t('editor:outline.reindexing')
+          : t('editor:outline.reindex')}
       </EditorButton>
     </>
   )

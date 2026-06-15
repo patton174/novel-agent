@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { runUiTransition } from '@/lib/uiTransition'
 
 export type ThemeMode = 'light' | 'dark' | 'system'
 
@@ -38,7 +39,9 @@ function writeTheme(theme: ThemeMode) {
 
 function toggleDarkClass(enabled: boolean) {
   if (typeof document === 'undefined') return
-  document.documentElement.classList.toggle('dark', enabled)
+  runUiTransition(() => {
+    document.documentElement.classList.toggle('dark', enabled)
+  })
 }
 
 function bindSystemThemeListener() {

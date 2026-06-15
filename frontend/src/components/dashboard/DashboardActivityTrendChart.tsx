@@ -13,6 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 import {
   buildTrendSeries,
+  formatChartAxisMetric,
   formatCompactMetric,
   type DashboardTrendRange,
 } from '@/utils/dashboardMetrics'
@@ -39,10 +40,6 @@ export function DashboardActivityTrendChart({
   const dateLocale = i18n.language === 'zh' ? 'zh-CN' : 'en-US'
 
   const series = useMemo(() => buildTrendSeries(days, range), [days, range])
-  const peak = useMemo(
-    () => (series.length ? Math.max(...series.map((p) => p.value)) : 0),
-    [series],
-  )
 
   return (
     <div className="flex h-full flex-col">
@@ -79,15 +76,9 @@ export function DashboardActivityTrendChart({
             {t('dashboard:heatmap.noData')}
           </div>
         ) : (
-          <>
-            {peak > 0 ? (
-              <p className="pointer-events-none absolute right-6 top-3 text-xs tabular-nums text-muted-foreground">
-                {formatCompactMetric(peak, dateLocale)}
-              </p>
-            ) : null}
-            <div className="h-[220px] w-full md:h-[260px]">
+          <div className="h-[220px] w-full md:h-[260px]">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={series} margin={{ top: 12, right: 8, left: 0, bottom: 0 }}>
+                <AreaChart data={series} margin={{ top: 8, right: 8, left: 4, bottom: 0 }}>
                   <defs>
                     <linearGradient id="dashboardTrendFill" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.22} />
@@ -108,8 +99,8 @@ export function DashboardActivityTrendChart({
                     tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
                     tickLine={false}
                     axisLine={false}
-                    width={36}
-                    tickFormatter={(v) => formatCompactMetric(Number(v), dateLocale)}
+                    width={48}
+                    tickFormatter={(v) => formatChartAxisMetric(Number(v), dateLocale)}
                   />
                   <Tooltip
                     contentStyle={{
@@ -140,7 +131,6 @@ export function DashboardActivityTrendChart({
                 </AreaChart>
               </ResponsiveContainer>
             </div>
-          </>
         )}
       </div>
     </div>

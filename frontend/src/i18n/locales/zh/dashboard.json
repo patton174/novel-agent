@@ -20,7 +20,7 @@
     "heatmapTitle": "创作热图",
     "dataAsOf": "数据截至 {{date}}",
     "sideTotal": "累计活跃",
-    "sidePeak": "日峰值活跃",
+    "sidePeak": "单日峰值",
     "sideActiveDays": "活跃天数",
     "recentEdits": "最近编辑",
     "viewAll": "查看全部",
