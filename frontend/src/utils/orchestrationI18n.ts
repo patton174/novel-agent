@@ -1,4 +1,5 @@
 import i18n from '@/i18n'
+import { toolDisplayName } from './agentLabels'
 
 const HEADLINE_KEYS: Record<string, string> = {
   '编排': 'editor:timeline.orchestration',
@@ -41,6 +42,8 @@ export function translateToolDisplayName(raw: string): string {
   if (!trimmed) return trimmed
   const fromHeadline = HEADLINE_KEYS[trimmed]
   if (fromHeadline) return i18n.t(fromHeadline)
+  const fromLabels = toolDisplayName(trimmed)
+  if (fromLabels !== trimmed) return fromLabels
   const direct = i18n.t(`editor:tools.${trimmed}`, { defaultValue: '' })
   if (direct) return direct
   return trimmed

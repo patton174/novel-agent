@@ -3,6 +3,49 @@ import { normalizeToolName } from './agentToolNames'
 
 /** CC tool name -> display label */
 
+const CC_TOOL_LABELS: Record<string, string> = {
+  ReadMemory: '查阅记忆',
+  WriteMemory: '写入记忆',
+  EditMemory: '编辑记忆',
+  DeleteMemory: '删除记忆',
+  ListMemory: '列举记忆',
+  ReadChapter: '阅读章节',
+  WriteChapter: '写入章节',
+  EditChapter: '编辑章节',
+  DeleteChapter: '删除章节',
+  ListChapters: '列举章节',
+  ReorderChapters: '调整章节顺序',
+  SearchKnowledge: '知识检索',
+  GetCharacterGraph: '角色关系图',
+  Write: '写入',
+  Read: '读取',
+  Edit: '编辑',
+  Delete: '删除',
+  Glob: '列举',
+  Grep: '搜索',
+  AskUser: '询问',
+  TodoWrite: '任务',
+  ToolSearch: '查找工具',
+  WebFetch: '抓取网页',
+  WebSearch: '网页搜索',
+  EnterPlanMode: '计划模式',
+  ExitPlanMode: '退出计划',
+  Brief: '摘要',
+  Skill: '技能',
+  Agent: '子任务',
+  TaskCreate: '创建任务',
+  TaskGet: '查看任务',
+  TaskList: '任务列表',
+  TaskUpdate: '更新任务',
+  TaskStop: '停止任务',
+  NotebookEdit: '编辑笔记本',
+  ListMcpResources: 'MCP 资源',
+  ReadMcpResource: '读取 MCP',
+  single_select: '单选',
+  multi_select: '多选',
+  user_input: '输入',
+}
+
 const TOOL_LABELS: Record<string, string> = {
   Read: '读取',
   Write: '写入',
@@ -59,10 +102,16 @@ export function toolDisplayName(name: string): string {
   if (!raw) {
     return localizedLabel('工具')
   }
+  if (CC_TOOL_LABELS[raw]) {
+    return localizedLabel(CC_TOOL_LABELS[raw])
+  }
   if (LEGACY_LABELS[raw]) {
     return localizedLabel(LEGACY_LABELS[raw])
   }
   const canonical = normalizeToolName(raw)
+  if (canonical !== raw && CC_TOOL_LABELS[canonical]) {
+    return localizedLabel(CC_TOOL_LABELS[canonical])
+  }
   const zh = TOOL_LABELS[canonical] ?? TOOL_LABELS[raw]
   if (zh) {
     return localizedLabel(zh)

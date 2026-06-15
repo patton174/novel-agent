@@ -108,7 +108,7 @@ export const PLANNING_HEADLINE_ROW = CC_TOOL_HEADLINE_ROW
 
 export function toolLeadCellClass(_compact?: boolean) {
   return cn(
-    'flex w-[1.35rem] flex-[0_0_1.35rem] shrink-0 items-center justify-center self-start pt-[0.08rem]',
+    'relative flex h-[1.35rem] w-[1.35rem] flex-[0_0_1.35rem] shrink-0 items-center justify-center self-start',
   )
 }
 

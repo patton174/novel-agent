@@ -413,12 +413,22 @@ export function ccToolHumanSubtitleFromStep(step: AgentStepState): string {
 
 /** User-facing tool label (bold segment in CC). */
 export function ccToolNameLabel(step: AgentStepState): string {
-  const raw = normalizeToolName(step.toolName) || step.toolName?.trim()
-  const generic = raw ? toolDisplayName(raw) : translateToolDisplayName('工具')
+  const rawTool = (step.toolName ?? '').trim()
+  const fromWire = rawTool ? toolDisplayName(rawTool) : translateToolDisplayName('工具')
+  const raw = normalizeToolName(step.toolName) || rawTool
+  const generic = raw ? toolDisplayName(raw) : fromWire
   const title = step.title?.trim() ?? ''
   const path = pathFromStep(step)
 
+  if (title && (title === rawTool || title === raw) && fromWire) {
+    return fromWire
+  }
+
   if (title && !GENERIC_TOOL_LABELS.has(title) && title !== generic) {
+    const viaTitle = toolDisplayName(title)
+    if (viaTitle !== title) {
+      return viaTitle
+    }
     return translateToolDisplayName(title)
   }
 

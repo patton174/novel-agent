@@ -42,7 +42,7 @@
   height: 0.95em;
   margin-left: 2px;
   vertical-align: text-bottom;
-  background: hsl(var(--primary));
+  background: var(--primary);
   animation: agent-timeline-blink 1s step-end infinite;
 }
 
@@ -63,8 +63,8 @@
   bottom: 0.04em;
   width: 0.36em;
   height: 0.36em;
-  border-left: 1.5px solid hsl(var(--muted-foreground) / 0.55);
-  border-bottom: 1.5px solid hsl(var(--muted-foreground) / 0.55);
+  border-left: 1.5px solid color-mix(in srgb, var(--muted-foreground) 55%, transparent);
+  border-bottom: 1.5px solid color-mix(in srgb, var(--muted-foreground) 55%, transparent);
   border-bottom-left-radius: 1px;
 }
 
@@ -72,7 +72,7 @@
   position: relative;
 }
 
-/* 主竖线：连接同一轮内各思考图标 */
+/* 主竖线：连接同一轮内各思考图标（--primary 为 hex，不可用 hsl(var(--primary))） */
 .agent-timeline-think-tree::before {
   content: '';
   position: absolute;
@@ -80,14 +80,14 @@
   top: calc(1.35rem * 0.5);
   bottom: calc(1.35rem * 0.5);
   width: 2px;
-  background: hsl(var(--primary) / 0.34);
+  background: color-mix(in srgb, var(--primary) 38%, transparent);
   pointer-events: none;
   border-radius: 1px;
   z-index: 0;
 }
 
 .dark .agent-timeline-think-tree::before {
-  background: hsl(var(--primary) / 0.5);
+  background: color-mix(in srgb, var(--primary) 52%, transparent);
 }
 
 .agent-timeline-think-tree > * {
@@ -99,12 +99,12 @@
 .agent-timeline-delivery-body [data-variant='chat'] {
   font-size: 0.9rem;
   line-height: 1.78;
-  color: hsl(var(--foreground) / 0.88);
+  color: color-mix(in srgb, var(--foreground) 88%, transparent);
 }
 
 .agent-timeline-text-block [data-variant='chat'] p,
 .agent-timeline-delivery-body [data-variant='chat'] p {
-  color: hsl(var(--foreground));
+  color: var(--foreground);
 }
 
 .agent-timeline-delivery-body [data-variant='chat'] p:first-child {
@@ -114,7 +114,7 @@
 .agent-timeline-text-block [data-variant='chat'] strong,
 .agent-timeline-delivery-body [data-variant='chat'] strong {
   font-weight: 600;
-  color: hsl(var(--foreground));
+  color: var(--foreground);
 }
 
 @keyframes agent-tool-status-dot-blink {
@@ -167,4 +167,3 @@
 .agent-todo-stroke-pulse circle {
   animation: agent-todo-stroke-pulse 1.35s ease-in-out infinite;
 }
-

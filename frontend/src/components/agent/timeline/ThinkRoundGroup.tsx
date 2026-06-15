@@ -21,6 +21,7 @@ function renderInsightBlock(
     onThinkExpandedChange?: (open: boolean) => void
     inThinkRound?: boolean
     orchestrationActive?: boolean
+    showThinkConnector?: boolean
   },
 ): ReactNode {
   if (block.kind === 'reasoning') {
@@ -32,6 +33,7 @@ function renderInsightBlock(
         streamLive={ctx.streamLive}
         streamFinished={ctx.streamFinished}
         inThinkRound={ctx.inThinkRound}
+        showThinkConnector={ctx.showThinkConnector}
         orchestrationActive={ctx.orchestrationActive}
       />
     )
@@ -48,6 +50,7 @@ function renderInsightBlock(
         onThinkExpandedChange={ctx.onThinkExpandedChange}
         isolateExpand
         inThinkRound={ctx.inThinkRound}
+        showThinkConnector={ctx.showThinkConnector}
         orchestrationActive={ctx.orchestrationActive}
       />
     )
@@ -106,10 +109,12 @@ export function ThinkRoundGroup({
     .filter((item): item is Extract<ThinkRoundItem, { kind: 'insight' }> => item.kind === 'insight')
     .flatMap((item) => item.blocks)
 
-  const thinkLeadCount = insightBlocks.filter(
+  const thinkRailBlocks = insightBlocks.filter(
     (b) => b.kind === 'think' || b.kind === 'reasoning',
-  ).length
-  const showThinkRail = thinkLeadCount >= 2
+  )
+  const lastThinkRailId =
+    thinkRailBlocks.length > 0 ? thinkRailBlocks[thinkRailBlocks.length - 1]?.id : undefined
+  const showThinkRail = thinkRailBlocks.length >= 2
 
   const renderBodyText = (block: OrchestrationBodyBlock, key: string) => (
     <div key={key} className={ORCHESTRATION_FLAT_ROW} data-testid="timeline-orchestration-text">
@@ -140,7 +145,15 @@ export function ThinkRoundGroup({
       {items.map((item, itemIndex) => {
         const itemKey = `${messageKey}:item:${itemIndex}:${item.kind}`
         if (item.kind === 'insight') {
-          return item.blocks.map((block) => renderInsightBlock(block, ctx))
+          return item.blocks.map((block) =>
+            renderInsightBlock(block, {
+              ...ctx,
+              showThinkConnector:
+                showThinkRail &&
+                (block.kind === 'think' || block.kind === 'reasoning') &&
+                block.id !== lastThinkRailId,
+            }),
+          )
         }
         if (item.kind === 'narration' || item.kind === 'text') {
           return item.blocks.map((block, textIndex) =>

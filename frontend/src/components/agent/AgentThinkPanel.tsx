@@ -47,6 +47,8 @@ export interface AgentThinkPanelProps {
   hideHeader?: boolean
   /** 处于 think_round 内：正文与工具共用左侧竖线 */
   inThinkRound?: boolean
+  /** 同轮内非最后一个思考块：图标下方延伸竖线 */
+  showThinkConnector?: boolean
   /** 流式窗口：最多三行高度并自动滚到底 */
   streamScrollWindow?: boolean
   /** 外层编排进行中：保持思考展开，由编排层统一收起 */
@@ -127,6 +129,7 @@ export function AgentThinkPanel({
   nested = false,
   hideHeader = false,
   inThinkRound = false,
+  showThinkConnector = false,
   orchestrationActive = false,
   streamScrollWindow = false,
   defaultExpanded: defaultExpandedProp,
@@ -243,7 +246,11 @@ export function AgentThinkPanel({
       <div className={CC_TOOL_ROW_WRAP}>
         <div className={CC_TOOL_HEADLINE_ROW}>
           {!hideHeader ? (
-            <div className={toolLeadCellClass()} data-timeline-lead>
+            <div
+              className={toolLeadCellClass()}
+              data-timeline-lead
+              data-think-connector={showThinkConnector ? 'true' : undefined}
+            >
               <TimelineLeadIcon
                 iconName="think"
                 status={isThinking ? 'loading' : 'success'}
