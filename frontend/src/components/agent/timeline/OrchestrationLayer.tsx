@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, useMemo, type ReactNode } from 'react'
 import { useAppMobile } from '../../../hooks/useMediaQuery'
 import { cn } from '@/lib/utils'
 import type { AgentStepState } from '../../../types/agent'
@@ -18,6 +18,7 @@ import {
   TIMELINE_PENDING_IN,
   planningStackBodyClass,
   planningStackWrapClass,
+  thinkRoundWrapClass,
   toolLeadCellClass,
 } from '@/lib/timelineClasses'
 import { resolveToolVisualStatus, TimelineLeadIcon } from './TimelineLeadIcon'
@@ -94,6 +95,18 @@ export function OrchestrationLayer({
   )
   const headlineText = translateOrchestrationHeadline(headline)
 
+  const mergedItems = useMemo(() => rounds.flatMap((round) => round.items), [rounds])
+  const thinkRailBlocks = useMemo(
+    () =>
+      mergedItems
+        .filter((item): item is Extract<(typeof mergedItems)[number], { kind: 'insight' }> => item.kind === 'insight')
+        .flatMap((item) => item.blocks)
+        .filter((block) => block.kind === 'think' || block.kind === 'reasoning'),
+    [mergedItems],
+  )
+  const showThinkRail = thinkRailBlocks.length >= 2
+  const lastThinkRailId = thinkRailBlocks[thinkRailBlocks.length - 1]?.id
+
   return (
     <div
       data-testid="timeline-orchestration-layer"
@@ -136,24 +149,23 @@ export function OrchestrationLayer({
         </div>
       </button>
       {expanded ? (
-        <div className={cn(planningStackBodyClass({ branchIndent: true }), TIMELINE_PENDING_IN)}>
-          {rounds.length === 0 ? null : (
-            <div className="flex flex-col gap-0">
-              {rounds.map((round, index) => (
-                <ThinkRoundGroup
-                  key={`${messageKey}:orch-round:${index}`}
-                  items={round.items}
-                  stepStates={stepStates}
-                  streamLive={streamLive}
-                  streamFinished={streamFinished}
-                  messageKey={`${messageKey}:${index}`}
-                  thinkExpanded={thinkExpanded}
-                  onThinkExpandedChange={onThinkExpandedChange}
-                  orchestrationActive={isActive}
-                  renderTool={renderTool}
-                  renderText={renderText}
-                />
-              ))}
+        <div className={cn(planningStackBodyClass(), TIMELINE_PENDING_IN)}>
+          {mergedItems.length === 0 ? null : (
+            <div className={thinkRoundWrapClass(showThinkRail)}>
+              <ThinkRoundGroup
+                items={mergedItems}
+                stepStates={stepStates}
+                streamLive={streamLive}
+                streamFinished={streamFinished}
+                messageKey={messageKey}
+                thinkExpanded={thinkExpanded}
+                onThinkExpandedChange={onThinkExpandedChange}
+                orchestrationActive={isActive}
+                renderTool={renderTool}
+                renderText={renderText}
+                railContext={{ showThinkRail, lastThinkRailId }}
+                suppressRailWrap
+              />
             </div>
           )}
         </div>

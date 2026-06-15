@@ -70,6 +70,8 @@ export function ThinkRoundGroup({
   orchestrationActive = false,
   renderTool,
   renderText,
+  railContext,
+  suppressRailWrap = false,
 }: {
   items: ThinkRoundItem[]
   stepStates: AgentStepState[]
@@ -81,6 +83,8 @@ export function ThinkRoundGroup({
   orchestrationActive?: boolean
   renderTool: (block: Extract<AgentTimelineBlock, { kind: 'tool' }>, key: string) => ReactNode
   renderText?: (block: OrchestrationBodyBlock, key: string) => ReactNode
+  railContext?: { showThinkRail: boolean; lastThinkRailId?: string }
+  suppressRailWrap?: boolean
 }) {
   const toolsRunning = items.some(
     (item) =>
@@ -112,9 +116,10 @@ export function ThinkRoundGroup({
   const thinkRailBlocks = insightBlocks.filter(
     (b) => b.kind === 'think' || b.kind === 'reasoning',
   )
+  const showThinkRail = railContext?.showThinkRail ?? thinkRailBlocks.length >= 2
   const lastThinkRailId =
-    thinkRailBlocks.length > 0 ? thinkRailBlocks[thinkRailBlocks.length - 1]?.id : undefined
-  const showThinkRail = thinkRailBlocks.length >= 2
+    railContext?.lastThinkRailId ??
+    (thinkRailBlocks.length > 0 ? thinkRailBlocks[thinkRailBlocks.length - 1]?.id : undefined)
 
   const renderBodyText = (block: OrchestrationBodyBlock, key: string) => (
     <div key={key} className={ORCHESTRATION_FLAT_ROW} data-testid="timeline-orchestration-text">
@@ -132,16 +137,17 @@ export function ThinkRoundGroup({
     block: Extract<AgentTimelineBlock, { kind: 'tool' }>,
     key: string,
   ) => (
-    <div key={key} className={ORCHESTRATION_FLAT_ROW} data-testid="timeline-orchestration-tool">
+    <div
+      key={key}
+      className="box-border w-full max-w-full px-0 py-[0.05rem] pb-[0.1rem]"
+      data-testid="timeline-orchestration-tool"
+    >
       {renderTool(block, key)}
     </div>
   )
 
-  return (
-    <div
-      data-testid="timeline-think-round"
-      className={thinkRoundWrapClass(showThinkRail)}
-    >
+  const inner = (
+    <>
       {items.map((item, itemIndex) => {
         const itemKey = `${messageKey}:item:${itemIndex}:${item.kind}`
         if (item.kind === 'insight') {
@@ -176,6 +182,20 @@ export function ThinkRoundGroup({
           orchestrationActive={orchestrationActive}
         />
       ) : null}
+    </>
+  )
+
+  if (suppressRailWrap) {
+    return (
+      <div data-testid="timeline-think-round" className="contents">
+        {inner}
+      </div>
+    )
+  }
+
+  return (
+    <div data-testid="timeline-think-round" className={thinkRoundWrapClass(showThinkRail)}>
+      {inner}
     </div>
   )
 }
