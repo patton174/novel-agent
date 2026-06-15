@@ -1,16 +1,17 @@
 import { cn } from '@/lib/utils'
 
-export function contextUsageMeterWrapClass(pending?: boolean) {
+export function contextUsageMeterWrapClass(pending?: boolean, className?: string) {
   return cn(
-    'inline-flex shrink-0 cursor-default select-none items-center gap-[5px] px-0.5',
+    'inline-flex shrink-0 cursor-default select-none items-center gap-1',
     pending ? 'opacity-55 hover:opacity-100' : 'opacity-100',
+    className,
   )
 }
 
 export const CONTEXT_USAGE_METER_RING = 'block shrink-0'
 
 export const CONTEXT_USAGE_METER_PERCENT = cn(
-  'min-w-[2.1rem] text-[0.72rem] font-medium tabular-nums tracking-tight text-muted-foreground',
+  'w-[1.85rem] text-right text-[0.72rem] font-medium tabular-nums tracking-tight text-muted-foreground',
 )
 
 export function contextUsageBarWrapClass(compact?: boolean) {

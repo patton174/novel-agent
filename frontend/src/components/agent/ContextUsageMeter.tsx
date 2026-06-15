@@ -18,9 +18,10 @@ export interface ContextUsageMeterProps {
   usage?: AgentContextUsage | null
   /** Show dim placeholder while waiting for first context.usage */
   pending?: boolean
+  className?: string
 }
 
-export function ContextUsageMeter({ usage, pending = false }: ContextUsageMeterProps) {
+export function ContextUsageMeter({ usage, pending = false, className }: ContextUsageMeterProps) {
   if (!usage && !pending) {
     return null
   }
@@ -34,7 +35,7 @@ export function ContextUsageMeter({ usage, pending = false }: ContextUsageMeterP
 
   return (
     <div
-      className={contextUsageMeterWrapClass(pending && !usage)}
+      className={contextUsageMeterWrapClass(pending && !usage, className)}
       data-testid="context-usage-meter"
       title={title}
       aria-label={

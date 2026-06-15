@@ -22,10 +22,10 @@ export function ComposerStatusBar({
 
   return (
     <div
-      className="grid w-full min-w-0 grid-cols-[minmax(4.5rem,1fr)_minmax(0,auto)_minmax(4.5rem,1fr)] items-center gap-2"
+      className="relative flex w-full min-w-0 items-center"
       data-testid="composer-status-bar"
     >
-      <div className="justify-self-start">
+      <div className="shrink-0">
         <ComposerTokenTicker
           usage={contextUsage}
           pending={pending}
@@ -34,13 +34,15 @@ export function ComposerStatusBar({
         />
       </div>
 
-      <span className="max-w-full justify-self-center truncate text-center text-[11px] leading-none text-muted-foreground">
+      <span className="pointer-events-none absolute left-1/2 max-w-[min(56%,15rem)] -translate-x-1/2 truncate text-center text-[11px] leading-none text-muted-foreground">
         {t('editor:chat.aiWarning')}
       </span>
 
-      <div className="justify-self-end">
-        <ContextUsageMeter usage={contextUsage} pending={pending} />
-      </div>
+      <ContextUsageMeter
+        usage={contextUsage}
+        pending={pending}
+        className="ml-auto shrink-0"
+      />
     </div>
   )
 }
