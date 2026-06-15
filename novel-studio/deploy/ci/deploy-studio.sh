@@ -23,6 +23,9 @@ STAGE="$RDIR/$STAGING_DIR/novel-studio"
 
 ci_setup_ssh
 
+echo "[deploy-studio] MW nginx + TLS ..."
+bash "$CI_DIR/deploy-mw-nginx.sh"
+
 echo "[deploy-studio] → worker ($IMAGE) sha=$SHA"
 bash "$CI_DIR/sync-compose.sh" worker
 bash "$CI_DIR/ensure-worker-secrets.sh"

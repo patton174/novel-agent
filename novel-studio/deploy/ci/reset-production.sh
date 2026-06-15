@@ -104,9 +104,9 @@ echo "[reset] database \${DB_NAME} recreated"
 EOF
 
 echo "[reset] === 3/6 同步 compose / nginx ==="
-export DOMAIN="${DOMAIN:-www.novel-agent.cn}"
-export DOMAIN_ALIASES="${DOMAIN_ALIASES:-novel-agent.cn}"
-export CERT_NAME="${CERT_NAME:-www.novel-agent.cn}"
+export DOMAIN="${DOMAIN:-novel-agent.cn}"
+export DOMAIN_ALIASES="${DOMAIN_ALIASES:-www.novel-agent.cn}"
+export CERT_NAME="${CERT_NAME:-novel-agent.cn}"
 bash "$CI_DIR/sync-compose.sh" all
 
 echo "[reset] === 4/6 启动 MW entry-nginx ==="

@@ -11,10 +11,10 @@ import i18n from '@/i18n'
 
 export type ActivityMode = 'all' | 'writing' | 'agent'
 
+const RECENT_WEEKS = 3
 const WEEKDAY_COL_WIDTH = '1.25rem'
 const CELL_SIZE = '0.75rem'
 const GRID_GAP_PX = 4
-const ACTIVE_WEEK_PAD = 2
 
 const LEVEL_CLASSES = [
   'bg-muted/50',
@@ -26,49 +26,6 @@ const LEVEL_CLASSES = [
 
 function heatmapGridColumns(weekCount: number): string {
   return `${WEEKDAY_COL_WIDTH} repeat(${weekCount}, ${CELL_SIZE})`
-}
-
-function trimWeeksToActiveRange(
-  weeks: HeatCell[][],
-  monthLabels: { weekIndex: number; label: string }[],
-  padWeeks = ACTIVE_WEEK_PAD,
-) {
-  if (weeks.length === 0) {
-    return { weeks, monthLabels }
-  }
-
-  let firstActive = -1
-  let lastActive = -1
-  for (let weekIndex = 0; weekIndex < weeks.length; weekIndex++) {
-    for (const cell of weeks[weekIndex]) {
-      if (cell.date && cell.value > 0) {
-        if (firstActive === -1) {
-          firstActive = weekIndex
-        }
-        lastActive = weekIndex
-      }
-    }
-  }
-
-  if (firstActive === -1) {
-    const tail = Math.min(12, weeks.length)
-    const start = weeks.length - tail
-    return {
-      weeks: weeks.slice(start),
-      monthLabels: monthLabels
-        .filter((m) => m.weekIndex >= start)
-        .map((m) => ({ ...m, weekIndex: m.weekIndex - start })),
-    }
-  }
-
-  const start = Math.max(0, firstActive - padWeeks)
-  const end = Math.min(weeks.length - 1, lastActive + padWeeks)
-  return {
-    weeks: weeks.slice(start, end + 1),
-    monthLabels: monthLabels
-      .filter((m) => m.weekIndex >= start && m.weekIndex <= end)
-      .map((m) => ({ ...m, weekIndex: m.weekIndex - start })),
-  }
 }
 
 function cellClass(cell: HeatCell, level: number): string {
@@ -119,19 +76,20 @@ function valueToLevel(value: number, max: number): number {
   return 4
 }
 
-function buildHeatmapGrid(days: DashboardActivityDay[], mode: ActivityMode) {
-  if (days.length === 0) {
-    return { weeks: [] as HeatCell[][], maxValue: 0, monthLabels: [] as { weekIndex: number; label: string }[] }
-  }
-
+function buildRecentWeeksGrid(
+  days: DashboardActivityDay[],
+  mode: ActivityMode,
+  recentWeeks = RECENT_WEEKS,
+) {
   const valueByDate = new Map(days.map((d) => [d.date, getDayValue(d, mode)]))
-  const firstDay = parseUtcDate(days[0].date)
-  const lastDay = parseUtcDate(days[days.length - 1].date)
+  const now = new Date()
+  const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))
 
-  const gridStart = new Date(firstDay)
+  const gridStart = new Date(today)
   gridStart.setUTCDate(gridStart.getUTCDate() - gridStart.getUTCDay())
+  gridStart.setUTCDate(gridStart.getUTCDate() - 7 * (recentWeeks - 1))
 
-  const gridEnd = new Date(lastDay)
+  const gridEnd = new Date(today)
   gridEnd.setUTCDate(gridEnd.getUTCDate() + (6 - gridEnd.getUTCDay()))
 
   const weeks: HeatCell[][] = []
@@ -146,10 +104,10 @@ function buildHeatmapGrid(days: DashboardActivityDay[], mode: ActivityMode) {
 
     for (let dow = 0; dow < 7; dow++) {
       const iso = formatIsoUtc(cursor)
-      const inRange = cursor >= firstDay && cursor <= lastDay
+      const isFuture = cursor > today
       week.push({
-        date: inRange ? iso : null,
-        value: inRange ? (valueByDate.get(iso) ?? 0) : 0,
+        date: isFuture ? null : iso,
+        value: isFuture ? 0 : (valueByDate.get(iso) ?? 0),
       })
       cursor.setUTCDate(cursor.getUTCDate() + 1)
     }
@@ -164,7 +122,15 @@ function buildHeatmapGrid(days: DashboardActivityDay[], mode: ActivityMode) {
     weekIndex++
   }
 
-  const maxValue = Math.max(...days.map((d) => getDayValue(d, mode)), 1)
+  let maxValue = 1
+  for (const week of weeks) {
+    for (const cell of week) {
+      if (cell.date && cell.value > maxValue) {
+        maxValue = cell.value
+      }
+    }
+  }
+
   return { weeks, maxValue, monthLabels }
 }
 
@@ -217,14 +183,10 @@ export function ActivityHeatmap({ activity, loading }: ActivityHeatmapProps) {
     [i18n.language],
   )
 
-  const { weeks, maxValue, monthLabels } = useMemo(() => {
-    const built = buildHeatmapGrid(days, mode)
-    const trimmed = trimWeeksToActiveRange(built.weeks, built.monthLabels)
-    return {
-      ...trimmed,
-      maxValue: built.maxValue,
-    }
-  }, [days, mode])
+  const { weeks, maxValue, monthLabels } = useMemo(
+    () => buildRecentWeeksGrid(days, mode, RECENT_WEEKS),
+    [days, mode],
+  )
 
   const monthLabelByWeek = useMemo(
     () => new Map(monthLabels.map((m) => [m.weekIndex, m.label])),
@@ -234,14 +196,19 @@ export function ActivityHeatmap({ activity, loading }: ActivityHeatmapProps) {
   const weekCount = weeks.length
   const gridColumns = heatmapGridColumns(weekCount)
   const asOf = activityAsOfLabel(days, dateLocale)
-  const peak = useMemo(() => {
-    if (days.length === 0) return 0
-    return Math.max(...days.map((day) => getDayValue(day, mode)), 0)
-  }, [days, mode])
+  const visibleCells = useMemo(
+    () => weeks.flat().filter((cell): cell is HeatCell & { date: string } => Boolean(cell.date)),
+    [weeks],
+  )
+
+  const peak = useMemo(
+    () => (visibleCells.length === 0 ? 0 : Math.max(...visibleCells.map((cell) => cell.value), 0)),
+    [visibleCells],
+  )
 
   const activeDays = useMemo(
-    () => days.filter((day) => getDayValue(day, mode) > 0).length,
-    [days, mode],
+    () => visibleCells.filter((cell) => cell.value > 0).length,
+    [visibleCells],
   )
 
   return (
@@ -292,10 +259,6 @@ export function ActivityHeatmap({ activity, loading }: ActivityHeatmapProps) {
         <div className="min-w-0">
           {loading ? (
             <Skeleton className="h-[120px] w-full rounded-lg" />
-          ) : weekCount === 0 ? (
-            <p className="py-10 text-center text-sm text-muted-foreground">
-              {t('dashboard:heatmap.noData')}
-            </p>
           ) : (
             <div className="w-full overflow-x-auto">
               <div className="inline-block min-w-0">

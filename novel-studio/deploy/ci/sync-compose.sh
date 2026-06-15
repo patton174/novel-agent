@@ -28,6 +28,7 @@ sync_to() {
     Dockerfile.studio.runtime \
     nginx-frontend-worker.conf.template \
     nginx-entry-mw-ssl.conf.template \
+    nginx-entry-mw-acme.conf.template \
     nginx-python-lb-worker.conf \
     nginx-cloudflare-realip.conf; do
     [[ -f "$DEPLOY_DIR/$f" ]] || continue
@@ -55,9 +56,9 @@ case "$TARGET" in
   mw) sync_to mw ;;
   worker) sync_to worker ;;
   all)
-    export DOMAIN="${DOMAIN:-www.novel-agent.cn}"
-    export DOMAIN_ALIASES="${DOMAIN_ALIASES:-novel-agent.cn}"
-    export CERT_NAME="${CERT_NAME:-www.novel-agent.cn}"
+    export DOMAIN="${DOMAIN:-novel-agent.cn}"
+    export DOMAIN_ALIASES="${DOMAIN_ALIASES:-www.novel-agent.cn}"
+    export CERT_NAME="${CERT_NAME:-novel-agent.cn}"
     sync_to mw
     sync_to worker
     ;;

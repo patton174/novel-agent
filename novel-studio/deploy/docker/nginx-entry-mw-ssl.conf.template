@@ -1,4 +1,5 @@
 # MW HTTPS 入口：全站 → Worker 前端（/api 由 Worker nginx 反代 novel-studio:8080）
+# 主域名 ${DOMAIN}；${DOMAIN_ALIASES} 301 到主域名
 include /etc/nginx/cloudflare-realip.conf;
 
 map $http_upgrade $connection_upgrade {
@@ -20,14 +21,29 @@ server {
     }
 
     location / {
-        return 301 https://$host$request_uri;
+        return 301 https://${DOMAIN}$request_uri;
     }
 }
 
 server {
     listen 443 ssl;
     http2 on;
-    server_name ${DOMAIN} ${DOMAIN_ALIASES};
+    server_name ${DOMAIN_ALIASES};
+
+    ssl_certificate     /etc/letsencrypt/live/${CERT_NAME}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/${CERT_NAME}/privkey.pem;
+    ssl_session_timeout 1d;
+    ssl_session_cache shared:SSL:10m;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers off;
+
+    return 301 https://${DOMAIN}$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    http2 on;
+    server_name ${DOMAIN};
 
     ssl_certificate     /etc/letsencrypt/live/${CERT_NAME}/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/${CERT_NAME}/privkey.pem;
