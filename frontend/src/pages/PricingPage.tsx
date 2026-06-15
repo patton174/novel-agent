@@ -35,7 +35,7 @@ export default function PricingPage() {
   }, [t])
 
   return (
-    <MarketingPageLayout subpageCta>
+    <MarketingPageLayout>
       <MarketingSubpageHero
         variant="light"
         eyebrow={t('nav.pricing')}

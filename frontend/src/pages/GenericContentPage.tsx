@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { fetchSiteContent } from '@/api/billingApi'
-import { AgentMarkdown } from '@/components/agent/AgentMarkdown'
+import { SiteMarkdown } from '@/components/content/SiteMarkdown'
 import { MarketingPageLayout } from '@/components/marketing/MarketingPageLayout'
 import { MarketingSubpageHero } from '@/components/marketing/MarketingSubpageHero'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -44,7 +44,7 @@ export default function GenericContentPage({ contentKey, fallbackTitle }: Generi
     contentKey === 'contact' ? t('generic.subtitleContact') : t('generic.subtitleLegal')
 
   return (
-    <MarketingPageLayout subpageCta>
+    <MarketingPageLayout>
       <MarketingSubpageHero
         variant="soft"
         eyebrow={eyebrow}
@@ -71,17 +71,7 @@ export default function GenericContentPage({ contentKey, fallbackTitle }: Generi
                   <Skeleton className="h-4 w-3/4" />
                 </div>
               ) : bodyMd?.trim() ? (
-                <article
-                  className={cn(
-                    'prose prose-slate max-w-none dark:prose-invert',
-                    'prose-headings:font-semibold prose-headings:tracking-tight prose-headings:text-foreground',
-                    'prose-p:leading-relaxed prose-p:text-muted-foreground',
-                    'prose-a:font-medium prose-a:text-primary prose-a:no-underline hover:prose-a:underline',
-                    'prose-li:text-muted-foreground prose-strong:text-foreground',
-                  )}
-                >
-                  <AgentMarkdown text={bodyMd} variant="memory" />
-                </article>
+                <SiteMarkdown text={bodyMd} />
               ) : (
                 <div className="py-8 text-center">
                   <p className="text-base font-medium text-foreground">{t('generic.emptyTitle')}</p>

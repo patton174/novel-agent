@@ -89,7 +89,7 @@
 .agent-prose h6 {
   font-weight: 700;
   line-height: 1.35;
-  color: #1e293b;
+  color: hsl(var(--foreground) / 0.92);
 }
 
 .agent-prose h1 {
@@ -107,18 +107,18 @@
 .agent-prose h3 {
   margin: 0.65rem 0 0.4rem;
   font-size: 0.88rem;
-  color: #334155;
+  color: hsl(var(--foreground) / 0.85);
 }
 
 .agent-prose h4 {
   margin: 0.55rem 0 0.35rem;
   font-size: 0.82rem;
-  color: #475569;
+  color: hsl(var(--foreground) / 0.78);
 }
 
 .agent-prose hr {
   border: none;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid hsl(var(--border));
   margin: 0.75rem 0;
 }
 
@@ -139,20 +139,20 @@
 
 .agent-prose strong {
   font-weight: 700;
-  color: #0f172a;
+  color: hsl(var(--foreground));
 }
 
 .agent-prose em {
   font-style: italic;
-  color: #475569;
+  color: hsl(var(--muted-foreground));
 }
 
 .agent-prose blockquote {
   margin: 0.45rem 0;
   padding: 0.35rem 0.65rem;
-  border-left: 3px solid rgba(79, 70, 229, 0.1);
-  background: #f1f5f9;
-  color: #475569;
+  border-left: 3px solid hsl(var(--primary) / 0.35);
+  background: hsl(var(--muted) / 0.45);
+  color: hsl(var(--foreground) / 0.82);
   border-radius: 0 6px 6px 0;
 }
 
@@ -161,14 +161,16 @@
   font-size: 0.88em;
   padding: 0.08rem 0.32rem;
   border-radius: 4px;
-  background: #f1f5f9;
+  background: hsl(var(--muted) / 0.65);
+  color: hsl(var(--foreground) / 0.9);
 }
 
 .agent-prose pre {
   margin: 0.45rem 0;
   padding: 0.55rem 0.65rem;
   border-radius: 8px;
-  background: #f8fafc;
+  background: hsl(var(--muted) / 0.4);
+  border: 1px solid hsl(var(--border) / 0.7);
   overflow-x: auto;
 }
 
@@ -179,7 +181,7 @@
 }
 
 .agent-prose a {
-  color: #3730a3;
+  color: hsl(var(--primary));
   text-decoration: underline;
   text-underline-offset: 2px;
 }
@@ -256,7 +258,7 @@
 .agent-prose-memory {
   font-family: 'Geist Variable', ui-sans-serif, system-ui, sans-serif;
   font-size: 0.8rem;
-  color: #334155;
+  color: hsl(var(--foreground) / 0.82);
 }
 
 .agent-prose-memory h2 {
@@ -329,4 +331,82 @@
 .agent-prose-novel h2 {
   font-size: 1.15rem;
   margin: 1.2rem 0 0.75rem;
+}
+
+.agent-prose-document {
+  font-family: 'Geist Variable', ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.9375rem;
+  line-height: 1.78;
+  letter-spacing: 0.01em;
+  color: hsl(var(--foreground) / 0.88);
+}
+
+.agent-prose-document h1 {
+  margin: 0 0 0.75rem;
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  border-left: none;
+  padding-left: 0;
+}
+
+.agent-prose-document h2 {
+  margin: 1.35rem 0 0.55rem;
+  padding-left: 0;
+  border-left: none;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+}
+
+.agent-prose-document h3 {
+  margin: 1rem 0 0.45rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: hsl(var(--foreground) / 0.92);
+}
+
+.agent-prose-document p {
+  margin: 0 0 0.85rem;
+}
+
+.agent-prose-document ul,
+.agent-prose-document ol {
+  margin: 0.35rem 0 0.85rem;
+  padding-left: 1.4rem;
+}
+
+.agent-prose-document li {
+  margin: 0.35rem 0;
+}
+
+.agent-prose-document hr {
+  margin: 1.25rem 0;
+  border-top-color: hsl(var(--border) / 0.85);
+}
+
+.agent-prose-document blockquote {
+  margin: 0.85rem 0;
+  padding: 0.65rem 0.85rem;
+  border-radius: 0.5rem;
+  background: hsl(var(--muted) / 0.35);
+  border-left-width: 3px;
+}
+
+.agent-prose-document table {
+  font-size: 0.875rem;
+  margin: 0.85rem 0 1rem;
+}
+
+.agent-prose-document thead th {
+  background: hsl(var(--muted) / 0.55);
+}
+
+.agent-prose-document th,
+.agent-prose-document td {
+  padding: 0.5rem 0.65rem;
+}
+
+.agent-prose-document tr:nth-child(even) td {
+  background: hsl(var(--muted) / 0.22);
 }

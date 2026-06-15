@@ -8,18 +8,28 @@ import { NovelAiWordmark } from './NovelAiWordmark'
 import { MKT_CTA_PRIMARY } from '@/lib/marketingCta'
 import { LocaleToggle } from '@/components/i18n/LocaleToggle'
 import { MarketingThemeToggle } from '@/components/theme/MarketingThemeToggle'
+import { isLoggedIn } from '@/utils/auth'
+import { useAuthReady } from '@/security/useAuthReady'
 
 export function MarketingNav() {
   const { t } = useTranslation(['marketing', 'common'])
   const location = useLocation()
   const [open, setOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
+  const [loggedIn, setLoggedIn] = useState(false)
   const isMobile = useAppMobile()
   const isHome = location.pathname === '/'
+  const authReady = useAuthReady()
 
   useEffect(() => {
     setOpen(false)
   }, [location.pathname])
+
+  useEffect(() => {
+    if (authReady) {
+      setLoggedIn(isLoggedIn())
+    }
+  }, [authReady, location.pathname])
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24)
@@ -42,6 +52,39 @@ export function MarketingNav() {
       </Link>
       <Link to="/about" className={linkClass('/about')}>
         {t('marketing:nav.about')}
+      </Link>
+    </>
+  )
+
+  const authLinksDesktop = loggedIn ? (
+    <Link to="/dashboard" className={cn(MKT_CTA_PRIMARY, 'px-4 py-2 text-sm')}>
+      {t('common:cta.dashboard')}
+    </Link>
+  ) : (
+    <>
+      <Link
+        to="/login"
+        className="px-3 py-2 text-sm font-medium text-foreground transition-colors hover:text-primary"
+      >
+        {t('marketing:nav.login')}
+      </Link>
+      <Link to="/register" className={cn(MKT_CTA_PRIMARY, 'px-4 py-2 text-sm')}>
+        {t('common:cta.registerFree')}
+      </Link>
+    </>
+  )
+
+  const authLinksMobile = loggedIn ? (
+    <Link to="/dashboard" className={cn(MKT_CTA_PRIMARY, 'mt-1 px-4 py-2.5 text-center text-sm')}>
+      {t('common:cta.dashboard')}
+    </Link>
+  ) : (
+    <>
+      <Link to="/login" className="rounded-lg px-3 py-2.5 hover:bg-surface-hover">
+        {t('marketing:nav.login')}
+      </Link>
+      <Link to="/register" className={cn(MKT_CTA_PRIMARY, 'mt-1 px-4 py-2.5 text-center text-sm')}>
+        {t('common:cta.registerFree')}
       </Link>
     </>
   )
@@ -71,15 +114,7 @@ export function MarketingNav() {
           <div className="relative z-[2] flex items-center gap-2">
             <MarketingThemeToggle compact />
             <LocaleToggle compact />
-            <Link
-              to="/login"
-              className="px-3 py-2 text-sm font-medium text-foreground transition-colors hover:text-primary"
-            >
-              {t('marketing:nav.login')}
-            </Link>
-            <Link to="/register" className={cn(MKT_CTA_PRIMARY, 'px-4 py-2 text-sm')}>
-              {t('common:cta.registerFree')}
-            </Link>
+            {authLinksDesktop}
           </div>
         </div>
 
@@ -108,12 +143,7 @@ export function MarketingNav() {
               {t('marketing:nav.about')}
             </Link>
             <hr className="my-2 border-border/60" />
-            <Link to="/login" className="rounded-lg px-3 py-2.5 hover:bg-surface-hover">
-              {t('marketing:nav.login')}
-            </Link>
-            <Link to="/register" className={cn(MKT_CTA_PRIMARY, 'mt-1 px-4 py-2.5 text-center text-sm')}>
-              {t('common:cta.registerFree')}
-            </Link>
+            {authLinksMobile}
           </div>
         </div>
       ) : null}

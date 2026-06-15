@@ -17,8 +17,6 @@ export function HomeFooterSection({ variant = 'full' }: { variant?: FooterVarian
   ] as const
 
   const accountLinks = [
-    { label: t('nav.login'), to: '/login' },
-    { label: t('common:cta.registerFree'), to: '/register' },
     { label: t('footer.dashboard'), to: '/dashboard' },
   ] as const
 

@@ -12,10 +12,8 @@ import i18n from '@/i18n'
 export type ActivityMode = 'all' | 'writing' | 'agent'
 
 const WEEKDAY_COL_WIDTH = '1.25rem'
-const CELL_SIZE_PX = 14
 const GRID_GAP_PX = 4
 const ACTIVE_WEEK_PAD = 2
-const MIN_VISIBLE_WEEKS = 26
 
 const LEVEL_CLASSES = [
   'bg-muted/50 ring-1 ring-border/40',
@@ -26,24 +24,7 @@ const LEVEL_CLASSES = [
 ]
 
 function heatmapGridColumns(weekCount: number): string {
-  return `${WEEKDAY_COL_WIDTH} repeat(${weekCount}, ${CELL_SIZE_PX}px)`
-}
-
-function padWeeksToMinimum(
-  weeks: HeatCell[][],
-  monthLabels: { weekIndex: number; label: string }[],
-  minWeeks: number,
-) {
-  if (weeks.length >= minWeeks) {
-    return { weeks, monthLabels }
-  }
-  const pad = minWeeks - weeks.length
-  const emptyWeek: HeatCell[] = Array.from({ length: 7 }, () => ({ date: null, value: 0 }))
-  const paddedWeeks = [...Array.from({ length: pad }, () => emptyWeek.map((c) => ({ ...c }))), ...weeks]
-  return {
-    weeks: paddedWeeks,
-    monthLabels: monthLabels.map((m) => ({ ...m, weekIndex: m.weekIndex + pad })),
-  }
+  return `${WEEKDAY_COL_WIDTH} repeat(${weekCount}, minmax(0, 1fr))`
 }
 
 function trimWeeksToActiveRange(
@@ -246,9 +227,8 @@ export function ActivityHeatmap({ activity, loading }: ActivityHeatmapProps) {
   const { weeks, maxValue, monthLabels } = useMemo(() => {
     const built = buildHeatmapGrid(days, mode)
     const trimmed = trimWeeksToActiveRange(built.weeks, built.monthLabels)
-    const padded = padWeeksToMinimum(trimmed.weeks, trimmed.monthLabels, MIN_VISIBLE_WEEKS)
     return {
-      ...padded,
+      ...trimmed,
       maxValue: built.maxValue,
     }
   }, [days, mode])
@@ -312,52 +292,50 @@ export function ActivityHeatmap({ activity, loading }: ActivityHeatmapProps) {
               {t('dashboard:heatmap.noData')}
             </p>
           ) : (
-            <div className="w-full overflow-x-auto pb-1">
-              <div className="min-w-fit">
-                <div
-                  className="mb-2 grid"
-                  style={{ gridTemplateColumns: gridColumns, gap: GRID_GAP_PX }}
-                >
-                  <div aria-hidden />
-                  {weeks.map((_, weekIndex) => (
-                    <div
-                      key={weekIndex}
-                      className="truncate text-[10px] font-medium leading-none text-muted-foreground"
-                    >
-                      {monthLabelByWeek.get(weekIndex)
-                        ? t('dashboard:heatmap.monthAxis', { month: monthLabelByWeek.get(weekIndex) })
-                        : ''}
-                    </div>
-                  ))}
-                </div>
+            <div className="w-full">
+              <div
+                className="mb-2 grid"
+                style={{ gridTemplateColumns: gridColumns, gap: GRID_GAP_PX }}
+              >
+                <div aria-hidden />
+                {weeks.map((_, weekIndex) => (
+                  <div
+                    key={weekIndex}
+                    className="truncate text-[10px] font-medium leading-none text-muted-foreground"
+                  >
+                    {monthLabelByWeek.get(weekIndex)
+                      ? t('dashboard:heatmap.monthAxis', { month: monthLabelByWeek.get(weekIndex) })
+                      : ''}
+                  </div>
+                ))}
+              </div>
 
-                <div className="grid" style={{ gridTemplateColumns: gridColumns, gap: GRID_GAP_PX }}>
-                  {Array.from({ length: 7 }).map((_, rowIndex) => (
-                    <Fragment key={rowIndex}>
-                      <div className="flex items-center text-[10px] font-medium leading-none text-muted-foreground">
-                        {WEEKDAY_LABELS[rowIndex]}
-                      </div>
-                      {weeks.map((week, weekIndex) => {
-                        const cell = week[rowIndex]
-                        const level = cell.date ? valueToLevel(cell.value, maxValue) : 0
-                        return (
-                          <div
-                            key={`${weekIndex}-${rowIndex}`}
-                            title={
-                              cell.date
-                                ? formatTooltip(cell.date, cell.value, mode, t)
-                                : undefined
-                            }
-                            className={cn(
-                              'size-[14px] shrink-0 rounded-[3px] transition-colors',
-                              cellClass(cell, level),
-                            )}
-                          />
-                        )
-                      })}
-                    </Fragment>
-                  ))}
-                </div>
+              <div className="grid" style={{ gridTemplateColumns: gridColumns, gap: GRID_GAP_PX }}>
+                {Array.from({ length: 7 }).map((_, rowIndex) => (
+                  <Fragment key={rowIndex}>
+                    <div className="flex items-center text-[10px] font-medium leading-none text-muted-foreground">
+                      {WEEKDAY_LABELS[rowIndex]}
+                    </div>
+                    {weeks.map((week, weekIndex) => {
+                      const cell = week[rowIndex]
+                      const level = cell.date ? valueToLevel(cell.value, maxValue) : 0
+                      return (
+                        <div
+                          key={`${weekIndex}-${rowIndex}`}
+                          title={
+                            cell.date
+                              ? formatTooltip(cell.date, cell.value, mode, t)
+                              : undefined
+                          }
+                          className={cn(
+                            'aspect-square w-full min-w-0 rounded-[3px] transition-colors',
+                            cellClass(cell, level),
+                          )}
+                        />
+                      )
+                    })}
+                  </Fragment>
+                ))}
               </div>
             </div>
           )}

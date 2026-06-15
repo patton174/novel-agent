@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -134,12 +135,34 @@ public class UsageCrmBiz extends BaseBiz {
         Instant since = Instant.now().minus(window, ChronoUnit.DAYS);
         List<PlatformUsageTrendsResp.UsageTrendPoint> points = new ArrayList<>();
         for (Object[] row : usageEventRepository.sumDailyPlatformSince(since)) {
-            LocalDate day = ((java.sql.Date) row[0]).toLocalDate();
+            LocalDate day = toLocalDate(row[0]);
             long tokens = row[1] == null ? 0L : ((Number) row[1]).longValue();
             long cost = row[2] == null ? 0L : ((Number) row[2]).longValue();
             points.add(new PlatformUsageTrendsResp.UsageTrendPoint(day.toString(), tokens, cost));
         }
         return ok(new PlatformUsageTrendsResp(points));
+    }
+
+    private static LocalDate toLocalDate(Object raw) {
+        if (raw == null) {
+            throw new IllegalArgumentException("date column is null");
+        }
+        if (raw instanceof java.sql.Date sqlDate) {
+            return sqlDate.toLocalDate();
+        }
+        if (raw instanceof LocalDate localDate) {
+            return localDate;
+        }
+        if (raw instanceof java.sql.Timestamp timestamp) {
+            return timestamp.toInstant().atZone(ZoneOffset.UTC).toLocalDate();
+        }
+        if (raw instanceof java.util.Date utilDate) {
+            return utilDate.toInstant().atZone(ZoneOffset.UTC).toLocalDate();
+        }
+        if (raw instanceof String text) {
+            return LocalDate.parse(text);
+        }
+        throw new IllegalArgumentException("Unsupported date type: " + raw.getClass().getName());
     }
 
     private UsageEventResp toEventResp(UsageEventEntity e) {

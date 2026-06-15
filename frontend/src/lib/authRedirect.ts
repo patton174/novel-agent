@@ -15,7 +15,7 @@ export function buildReturnPath(location?: Pick<Location, 'pathname' | 'search' 
     return `${location.pathname}${businessSearch}${location.hash}`
   }
   if (typeof window === 'undefined') {
-    return '/dashboard'
+    return '/'
   }
   const businessSearch = stripSessionQuery(window.location.search)
   return `${window.location.pathname}${businessSearch}${window.location.hash}`
@@ -68,7 +68,7 @@ export function buildPostLoginHref(
 ): string {
   const safe = resolveSafeReturnTo(returnTo)
   if (!safe) {
-    return '/dashboard'
+    return '/'
   }
   const hashIndex = safe.indexOf('#')
   const hash = hashIndex >= 0 ? safe.slice(hashIndex) : ''

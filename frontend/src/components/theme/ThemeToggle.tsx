@@ -1,65 +1,54 @@
-import { Monitor, Moon, Sun } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+import { Moon, Sun, Monitor } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 import { useThemeStore, type ThemeMode } from '@/stores/themeStore'
+
+const ORDER: ThemeMode[] = ['light', 'dark', 'system']
+
+const ICONS = {
+  light: Sun,
+  dark: Moon,
+  system: Monitor,
+} as const
 
 interface ThemeToggleProps {
   compact?: boolean
   className?: string
 }
 
-const THEME_OPTIONS: Array<{ value: ThemeMode; label: string; icon: typeof Sun }> = [
-  { value: 'light', label: '浅色', icon: Sun },
-  { value: 'dark', label: '深色', icon: Moon },
-  { value: 'system', label: '跟随系统', icon: Monitor },
-]
-
+/** 点击循环 浅色 → 深色 → 跟随系统（无 Radix 下拉，避免混淆 chunk 内失效） */
 export function ThemeToggle({ compact = false, className }: ThemeToggleProps) {
+  const { t } = useTranslation(['common'])
   const theme = useThemeStore((s) => s.theme)
   const setTheme = useThemeStore((s) => s.setTheme)
-  const current = THEME_OPTIONS.find((item) => item.value === theme) ?? THEME_OPTIONS[2]
-  const CurrentIcon = current.icon
+  const Icon = ICONS[theme] ?? Monitor
+
+  const cycle = () => {
+    const idx = ORDER.indexOf(theme)
+    setTheme(ORDER[(idx + 1) % ORDER.length] ?? 'system')
+  }
+
+  const label =
+    theme === 'light'
+      ? t('common:theme.light')
+      : theme === 'dark'
+        ? t('common:theme.dark')
+        : t('common:theme.system')
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          type="button"
-          variant="outline"
-          size={compact ? 'icon-sm' : 'sm'}
-          aria-label={`主题：${current.label}`}
-          className={cn(compact ? 'size-8' : 'h-9 gap-2 px-3', className)}
-        >
-          <CurrentIcon className="size-4" />
-          {compact ? <span className="sr-only">{`主题：${current.label}`}</span> : <span>{current.label}</span>}
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-36">
-        <DropdownMenuLabel>外观主题</DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        {THEME_OPTIONS.map((option) => {
-          const Icon = option.icon
-          const active = option.value === theme
-          return (
-            <DropdownMenuItem
-              key={option.value}
-              onClick={() => setTheme(option.value)}
-              className={cn(active && 'bg-muted font-medium text-foreground')}
-            >
-              <Icon className="size-4" />
-              <span>{option.label}</span>
-            </DropdownMenuItem>
-          )
-        })}
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <button
+      type="button"
+      onClick={cycle}
+      aria-label={t('common:theme.label', { mode: label })}
+      title={t('common:theme.label', { mode: label })}
+      className={cn(
+        'inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg border border-border bg-background text-foreground shadow-xs transition-all hover:bg-muted hover:shadow-sm active:scale-[0.97]',
+        compact ? 'size-8' : 'h-9 px-3 text-sm font-medium',
+        className,
+      )}
+    >
+      <Icon className="size-4 shrink-0" />
+      {compact ? <span className="sr-only">{label}</span> : <span>{label}</span>}
+    </button>
   )
 }

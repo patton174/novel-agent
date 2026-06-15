@@ -1,8 +1,8 @@
+import { Shield, PenLine } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
-import { PenLine, Shield } from 'lucide-react'
 import { useUserStore } from '@/stores/userStore'
 import { Button } from '@/components/ui/button'
-import { ThemeToggle } from '@/components/theme/ThemeToggle'
+import { AppShellToolbar } from '@/components/layout/AppShellToolbar'
 import { APP_BTN_SM } from '@/lib/appButtonTokens'
 import { useTranslation } from 'react-i18next'
 
@@ -11,12 +11,11 @@ export function DashboardQuickActions() {
   const location = useLocation()
   const profile = useUserStore((s) => s.profile)
   const isAdmin = profile?.role === 'admin'
-  /** 各 Dashboard 子页已有 primary CTA，顶栏不再重复裸链 /editor */
   const hideEditorCta = location.pathname.startsWith('/dashboard')
 
   return (
     <div className="flex shrink-0 items-center gap-2">
-      <ThemeToggle compact />
+      <AppShellToolbar />
       {isAdmin ? (
         <Button
           asChild

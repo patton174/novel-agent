@@ -7,20 +7,8 @@ import { HomeFooterSection } from '../components/marketing/sections/HomeFooterSe
 import { HomeHeroSection } from '../components/marketing/sections/HomeHeroSection'
 import { MARKETING_MAIN } from '@/lib/marketingShellClasses'
 import { useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { isLoggedIn } from '../utils/auth'
-import { useAuthReady } from '../security/useAuthReady'
 
 export default function HomePage() {
-  const navigate = useNavigate()
-  const authReady = useAuthReady()
-
-  useEffect(() => {
-    if (authReady && isLoggedIn()) {
-      navigate('/dashboard', { replace: true })
-    }
-  }, [authReady, navigate])
-
   useEffect(() => {
     const hash = window.location.hash.replace('#', '')
     if (!hash) return

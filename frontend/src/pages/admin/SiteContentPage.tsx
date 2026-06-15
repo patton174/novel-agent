@@ -7,7 +7,7 @@ import {
   updateAdminSiteContent,
   type SiteContentItem,
 } from '@/api/billingAdminApi'
-import { AgentMarkdown } from '@/components/agent/AgentMarkdown'
+import { SiteMarkdown } from '@/components/content/SiteMarkdown'
 import {
   AppPageStack,
   AppShellCard,
@@ -200,8 +200,8 @@ export default function SiteContentPage() {
               {preview ? (
                 <div>
                   <h3 className="mb-4 text-xl font-semibold">{title || t('admin:siteContent.previewTitle')}</h3>
-                  <div className="prose prose-slate max-w-none text-muted-foreground">
-                    <AgentMarkdown text={bodyMd || t('admin:siteContent.empty')} variant="memory" />
+                  <div className="rounded-xl border border-border/60 bg-muted/20 px-4 py-4">
+                    <SiteMarkdown text={bodyMd || t('admin:siteContent.empty')} />
                   </div>
                 </div>
               ) : (

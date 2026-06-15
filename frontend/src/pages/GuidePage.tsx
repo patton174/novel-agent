@@ -13,7 +13,7 @@ export default function GuidePage() {
   const steps = [1, 2, 3, 4] as const
 
   return (
-    <MarketingPageLayout subpageCta>
+    <MarketingPageLayout>
       <MarketingSubpageHero
         variant="soft"
         eyebrow={t('guide.eyebrow')}

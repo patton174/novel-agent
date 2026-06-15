@@ -35,6 +35,11 @@ describe('authRedirect', () => {
     expect(target).toContain('theme=dark')
   })
 
+  it('defaults to home when returnTo is missing', () => {
+    expect(buildPostLoginHref(null)).toBe('/')
+    expect(buildPostLoginHref(undefined)).toBe('/')
+  })
+
   it('strips session query from return path helper input', () => {
     const path = buildReturnPath({
       pathname: '/editor',

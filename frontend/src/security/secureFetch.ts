@@ -43,15 +43,8 @@ async function buildRequest(
   if (isSecurityCryptoEnabled()) {
     hydrateSessionFromStorage()
     await ensureCryptoRuntime(false)
-    if (mayNeedCrypto) {
-      if (isBootstrapAuthPath(logicalUrl)) {
-        await ensureCryptoReady()
-      } else {
-        await ensureCryptoRuntime(true)
-      }
-    }
-    if (isBootstrapAuthPath(logicalUrl)) {
-      await ensureCryptoRuntime(true)
+    if (mayNeedCrypto && isBootstrapAuthPath(logicalUrl)) {
+      await ensureCryptoReady()
     }
   }
 

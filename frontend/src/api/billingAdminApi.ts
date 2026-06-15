@@ -192,7 +192,7 @@ export async function fetchPlatformUsageTrends(
 ): Promise<PlatformUsageTrendPoint[]> {
   const res = await secureFetch(`/api/billing/crm/usage/trends?days=${days}`)
   if (!res.ok) {
-    return []
+    throw new Error(res.status === 403 ? '无管理权限' : '加载用量趋势失败')
   }
   const data = await parseResponse<{ points: PlatformUsageTrendPoint[] }>(res)
   return Array.isArray(data?.points) ? data.points : []

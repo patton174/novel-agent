@@ -120,6 +120,11 @@
     "admin": "Admin Panel",
     "editor": "Enter Editor"
   },
+  "announcement": {
+    "defaultTitle": "Announcement",
+    "viewDetail": "View details",
+    "dismiss": "Dismiss announcement"
+  },
   "heatmap": {
     "modeAll": "All",
     "modeWriting": "Writing",

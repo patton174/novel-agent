@@ -11,7 +11,7 @@ import { LayoutOutletSkeleton } from '../components/loading/LayoutOutletSkeleton
 import { Avatar, AvatarFallback } from '../components/ui/avatar'
 import { Badge } from '../components/ui/badge'
 import { Button } from '../components/ui/button'
-import { ThemeToggle } from '../components/theme/ThemeToggle'
+import { AppShellToolbar } from '../components/layout/AppShellToolbar'
 import { useUserStore } from '../stores/userStore'
 
 export default function AdminLayout() {
@@ -67,7 +67,7 @@ export default function AdminLayout() {
           leading={<MobileAdminDrawer />}
           actions={
             <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-              <ThemeToggle compact />
+              <AppShellToolbar />
               <Button asChild variant="outline" size="icon" className="size-9 sm:hidden" aria-label={t('nav.backToUser')}>
                 <Link to="/dashboard">
                   <ArrowLeft className="size-4" />

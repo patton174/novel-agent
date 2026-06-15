@@ -18,7 +18,7 @@ export default function AboutPage() {
   ]
 
   return (
-    <MarketingPageLayout subpageCta>
+    <MarketingPageLayout>
       <MarketingSubpageHero
         variant="dark"
         eyebrow={t('about.eyebrow')}

@@ -120,6 +120,11 @@
     "admin": "管理后台",
     "editor": "进入编辑器"
   },
+  "announcement": {
+    "defaultTitle": "系统公告",
+    "viewDetail": "查看详情",
+    "dismiss": "关闭公告"
+  },
   "heatmap": {
     "modeAll": "全部",
     "modeWriting": "写作",
