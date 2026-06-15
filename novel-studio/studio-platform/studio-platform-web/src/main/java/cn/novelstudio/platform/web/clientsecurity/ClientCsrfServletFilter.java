@@ -39,7 +39,9 @@ public class ClientCsrfServletFilter extends OncePerRequestFilter {
             return;
         }
         String path = request.getRequestURI();
-        if (clientAuthSupport.isCryptoExemptPath(path) || !MUTATING.contains(request.getMethod())) {
+        if (clientAuthSupport.isCryptoExemptPath(path)
+            || clientAuthSupport.isTrustedServiceContentAuth(request)
+            || !MUTATING.contains(request.getMethod())) {
             filterChain.doFilter(request, response);
             return;
         }

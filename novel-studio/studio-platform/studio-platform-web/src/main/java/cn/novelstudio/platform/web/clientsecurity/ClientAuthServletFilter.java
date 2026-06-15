@@ -31,6 +31,10 @@ public class ClientAuthServletFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
             return;
         }
+        if (clientAuthSupport.isTrustedServiceContentAuth(request)) {
+            filterChain.doFilter(clientAuthSupport.injectServiceUserHeaders(request), response);
+            return;
+        }
         try {
             var principal = clientAuthSupport.resolvePrincipal(request);
             filterChain.doFilter(clientAuthSupport.injectUserHeaders(request, principal), response);

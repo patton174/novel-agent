@@ -49,7 +49,7 @@ class Settings(BaseSettings):
     rag_hybrid_enabled: bool = True
     rag_rerank_enabled: bool = False
 
-    content_base_url: str = "http://127.0.0.1:8091"
+    content_base_url: str = "http://127.0.0.1:8080"
     internal_service_key: str = "dev-internal-key-change-me"
     billing_report_enabled: bool = True
     # Split 栈默认 PyAI :8082；Worker 单体栈 compose 注入 BILLING_REPORT_URL=http://novel-studio:8080

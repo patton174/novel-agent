@@ -49,7 +49,8 @@ public class ClientCryptoServletFilter extends OncePerRequestFilter {
         FilterChain filterChain
     ) throws ServletException, IOException {
         String path = request.getRequestURI();
-        if (clientAuthSupport.isCryptoExemptPath(path)) {
+        if (clientAuthSupport.isCryptoExemptPath(path)
+            || clientAuthSupport.isTrustedServiceContentAuth(request)) {
             filterChain.doFilter(request, response);
             return;
         }

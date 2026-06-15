@@ -33,7 +33,10 @@ def content_internal_url(path: str) -> str:
 
 
 def user_headers(user_id: int, *, edit_source: str | None = None) -> dict[str, str]:
-    headers = {USER_ID_HEADER: str(user_id)}
+    headers = {
+        USER_ID_HEADER: str(user_id),
+        INTERNAL_KEY_HEADER: settings.internal_service_key,
+    }
     if edit_source:
         headers[EDIT_SOURCE_HEADER] = edit_source
     return headers

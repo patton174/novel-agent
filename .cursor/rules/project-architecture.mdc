@@ -5,80 +5,74 @@ alwaysApply: true
 
 # 项目架构（novel-agent monorepo）
 
-权威长文：`docs/ARCHITECTURE.md`；协作规范：`CLAUDE.md`。
+权威长文：`docs/ARCHITECTURE.md`；单体部署：`novel-studio/deploy/README.md`；协作规范：`CLAUDE.md`。
 
-## 生产拓扑
+## 生产拓扑（novel-studio 单体，2026 起）
 
 | 角色 | 主机 | 服务 |
 |------|------|------|
-| **MW** | `107.150.112.140` | Gateway :8080、Auth :8081、Nacos、PostgreSQL、Redis、RabbitMQ |
-| **Worker** | `47.80.80.224` | Frontend、Python AI :8000、PyAI :8082、Content :8091、Consumer :8090 |
-| **域名** | https://www.novel-agent.cn | 浏览器 → Worker Nginx → MW Gateway（/api/auth）/ 直连 Worker Java |
+| **MW** | `107.150.112.140` | entry-nginx、PostgreSQL、Redis、RabbitMQ |
+| **Worker** | `47.80.80.224` | **novel-studio :8080**（单体 JVM）、python-ai :8000、python-lb、frontend |
+| **域名** | https://www.novel-agent.cn | 浏览器 → MW Nginx → Worker frontend → `/api/*` → novel-studio |
 
 ```
-Frontend → Gateway(Auth) / PyAI / Content
-PyAI → Python AI (query_loop SSE) + Content (上下文/副作用)
-Python AI → Content internal API（VFS、记忆、爬虫）
-Consumer ← RabbitMQ ← PyAI/Content（会话、记忆异步落库）
+Frontend → novel-studio:8080（Auth / Content / Agent / Billing 模块）
+novel-studio ──HTTP──→ python-lb:8000 → python-ai（query_loop、工具、爬虫编排）
+python-ai ──HTTP──→ novel-studio:8080 /api/content/auth/*（X-Internal-Service-Key + X-User-Id）
 ```
+
+**已废弃（勿再部署/引用）**：Gateway、Nacos、独立 Auth/Consumer/Billing/Content/PyAI 六个 Java 微服务、`agent-content:8091`。
+
+遗留目录 `agent-content/`、`agent-pyai/` 等仅作历史对照，**生产数据面在 `novel-studio/studio-modules/`**。
 
 ## 模块职责边界
 
 | 目录 | 职责 | 不做 |
 |------|------|------|
 | `frontend/` | 编辑器、Agent SSE UI、CRM 管理台 | 业务规则、Agent 编排 |
+| `novel-studio/` | **生产单体**：鉴权、小说/章节/会话、Agent SSE 网关、计费、爬虫 CRM | LLM 推理 |
 | `python-ai/` | LLM、query_loop、工具、RAG、**爬虫 Agent + 主编排 daemon** | 用户鉴权、业务库主写 |
-| `agent-pyai/` | SSE 网关、Run 协调、章节副作用、MQ 生产 | 直接调 LLM |
-| `agent-content/` | 小说/章节/会话/书库、爬虫任务 CRM、编排状态 Redis | Agent 推理 |
-| `agent-consumer/` | MQ 消费回写 Content | 对外 HTTP |
-| `agent-gateway/` | 鉴权、AES 解密、路由脱敏、Sign | 业务逻辑 |
-| `agent-auth/` | 登录注册、crypto bootstrap、邮箱验证 | 小说数据 |
+| `agent-content/` 等 | **已迁移进 novel-studio**，勿新依赖 | — |
 
 ## 核心请求链路
 
 ### 编辑器 Agent（SSE）
 
-`POST /api/agent/chat/stream` → PyAI `AgentStreamController` → Python `POST /api/agent/run/stream` → `query_loop` → SSE `agent-event` → 前端 `useEditorAgentStream`。
+`POST /api/agent/chat/stream` → novel-studio `AgentStreamController` → Python `POST /api/agent/run/stream` → `query_loop` → SSE `agent-event` → 前端 `useEditorAgentStream`。
 
-- 用户消息：PyAI 收到时同步写 PG（经 Content）
-- Run 结束：MQ `agent.session.queue` → Consumer 异步补全消息
+- 用户消息 / 章节副作用：novel-studio 模块内写 PG（或经 python-ai 工具回调 `/api/content/auth/*`）
+- 异步补全：RabbitMQ `agent.session.queue` 等（Consumer 逻辑已并入单体或 MW，以 `novel-studio` 模块为准）
 
 ### Content CRUD
 
-前端 `/api/content/*` → Content :8091（小说、章节、会话、story-memory）。
+- 浏览器：`/api/content/*` → novel-studio `studio-module-content`（JWT + 客户端 Sign/AES）
+- **python-ai 工具**（WriteChapter、WriteMemory 等）：`CONTENT_BASE_URL=http://novel-studio:8080`，路径 `/api/content/auth/*`，请求头 `X-Internal-Service-Key` + `X-User-Id`（`ClientAuthSupport.isTrustedServiceContentAuth`），**不得再指向 agent-content:8091**
 
-### 本地 dev 代理（`frontend/vite.config.ts`）
+### 本地 dev
 
 | 模式 | 行为 |
 |------|------|
-| 远程 dev（常用） | `/api/auth`→远程 Auth；`/api/agent`→本机 PyAI；`/api/content`→本机 Content |
-| 网关模式 | 全部 `/api`→:8080 |
-| `VITE_DIRECT_PYTHON=true` | 全部 `/api`→Python :8000（仅联调） |
+| 单体（推荐） | `VITE_MONOLITH=true`，`/api` → `novel-studio:8080`；另起 python-ai :8000 |
+| 远程 dev | `/api` → 线上或本机 novel-studio |
 
-**禁止**：本地启 Consumer 连生产 MQ（会抢 `agent.run.dispatch.queue`）。`restart-dev.sh` 已废弃。
+**禁止**：本地启旧 Consumer 连生产 MQ（会抢队列）。`restart-dev.sh` 已废弃。
 
 ## 爬虫与主编排子系统
 
 | 组件 | 路径 | 说明 |
 |------|------|------|
-| 主编排 daemon | `python-ai/app/crawl_orchestrator/` | 全局唯一；拆 goal → CreateCrawlJob；工具：CancelCrawlJob、Sleep… |
-| 子爬虫 Agent | `python-ai/app/crawl_agent/` | 工具驱动；FetchPage 默认 Playwright；书库 CRUD 工具 |
-| Content 任务/书库 | `agent-content/.../crawl/` | CrawlJob、Catalog、internal API、Redis 编排状态 |
+| 主编排 daemon | `python-ai/app/crawl_orchestrator/` | 全局唯一；拆 goal → CreateCrawlJob |
+| 子爬虫 Agent | `python-ai/app/crawl_agent/` | 工具驱动；书库 CRUD |
+| 任务/书库 API | `novel-studio/.../crawl/` | CrawlJob、Catalog、Redis 编排状态 |
 | CRM 页 | `frontend/src/pages/admin/CrawlerPage.tsx` | 总目标、决策日志、子任务列表 |
 
-编排规则要点：
-
-- 槽位 RUNNING+PAUSED ≤ 3；PAUSED 占槽
-- 禁止同 sourceUrl 重复派发；N 本书 = 1 发现 + 每书 1 job
-- Worker env：`python-ai/.env` 中 `CRAWL_ORCHESTRATOR_ENABLED=true`
-
-内部探针（Worker 容器内）：`python-ai/scripts/probe_orchestrator.py`、`cancel_paused_jobs.py`。
+Worker env：`python-ai/.env` 中 `CRAWL_ORCHESTRATOR_ENABLED=true`；`CONTENT_BASE_URL=http://novel-studio:8080`。
 
 ## Agent 编排（Python）
 
 改编排/工具/提示词前读：`python-ai/AGENTS.md`、`app/agent_step/orchestration_contract.py`。
 
-- VFS 章节/记忆 → Content HTTP，不访问本机磁盘
+- 章节/记忆 → novel-studio Content HTTP（`app/agent/backend/content_api.py`），不访问本机磁盘
 - 工具双通道：模型 `ToolMessage` vs UI `display_excerpt`
 - CC 参考源码：`.cursor/rules/claude-code-ref.mdc`
 
@@ -86,10 +80,9 @@ Consumer ← RabbitMQ ← PyAI/Content（会话、记忆异步落库）
 
 | 数据 | 存储 | 写入 |
 |------|------|------|
-| 小说/章节 | PostgreSQL | REST + Agent VFS + PyAI 副作用 |
-| 会话消息 | PostgreSQL | 同步 + MQ 异步 |
+| 小说/章节 | PostgreSQL | novel-studio REST + Agent 工具 |
+| 会话消息 | PostgreSQL | 单体 Agent 模块 + MQ 异步 |
 | Story Memory | PostgreSQL | patch + MQ |
-| 爬虫编排状态/决策日志 | Redis | Content `CrawlOrchestratorStateService` |
-| 权限缓存 | Redis | Consumer |
+| 爬虫编排状态 | Redis | novel-studio crawl 模块 |
 
-MQ 队列：`agent.session.queue`、`agent.story-memory.queue`、`permission.queue`、`crawl.dispatch`（爬虫任务）。
+MQ 队列：`agent.session.queue`、`agent.story-memory.queue`、`crawl.dispatch` 等（以单体配置为准）。

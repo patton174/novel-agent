@@ -59,8 +59,17 @@ async def read_memory(ctx: AgentRunContext, inp: ReadMemoryInput) -> ToolCallRes
 
 async def write_memory(ctx: AgentRunContext, inp: WriteMemoryInput) -> ToolCallResult:
     scope = inp.scope.value
+    from app.agent.backend.memory_document import MemoryDocumentError, validate_memory_document
+
+    try:
+        envelope = validate_memory_document(inp.payload, scope=scope, entry_id=inp.key)
+    except MemoryDocumentError as exc:
+        return ToolCallResult(
+            content=f"<tool_use_error>InputValidationError: {exc}</tool_use_error>",
+            is_error=True,
+        )
     ok, err = memory_client.persist_memory_document(
-        ctx, scope, inp.key, inp.payload, item_id=inp.key if scope in ("character", "chapter") else ""
+        ctx, scope, inp.key, envelope, item_id=inp.key if scope in ("character", "chapter") else ""
     )
     if not ok:
         return ToolCallResult(content=f"<tool_use_error>{err}</tool_use_error>", is_error=True)

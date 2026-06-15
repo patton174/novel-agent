@@ -4,6 +4,7 @@ import cn.novelstudio.platform.security.AuthUnauthorizedException;
 import cn.novelstudio.platform.security.JwtCodec;
 import cn.novelstudio.platform.security.JwtPrincipal;
 import cn.novelstudio.platform.security.WsTicketRecord;
+import cn.novelstudio.platform.web.internal.InternalServiceGuard;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Component;
@@ -16,6 +17,7 @@ import java.util.Map;
 public class ClientAuthSupport {
 
     public static final String USER_ID_HEADER = "X-User-Id";
+    public static final String INTERNAL_KEY_HEADER = "X-Internal-Service-Key";
     public static final String USER_NAME_HEADER = "X-User-Name";
     public static final String SESSION_ID_HEADER = "X-Session-Id";
     public static final String USER_ROLES_HEADER = "X-User-Roles";
@@ -55,10 +57,16 @@ public class ClientAuthSupport {
 
     private final JwtCodec jwtCodec;
     private final WsTicketSupport wsTicketSupport;
+    private final InternalServiceGuard internalServiceGuard;
 
-    public ClientAuthSupport(JwtCodec jwtCodec, WsTicketSupport wsTicketSupport) {
+    public ClientAuthSupport(
+        JwtCodec jwtCodec,
+        WsTicketSupport wsTicketSupport,
+        InternalServiceGuard internalServiceGuard
+    ) {
         this.jwtCodec = jwtCodec;
         this.wsTicketSupport = wsTicketSupport;
+        this.internalServiceGuard = internalServiceGuard;
     }
 
     public boolean isWhitePath(String path) {
@@ -70,6 +78,35 @@ public class ClientAuthSupport {
 
     public boolean isCryptoExemptPath(String path) {
         return CRYPTO_EXEMPT.stream().anyMatch(path::startsWith);
+    }
+
+    /**
+     * python-ai 等服务端工具经 {@code /api/content/auth/*} 写章节/记忆：
+     * 携带有效 {@link #INTERNAL_KEY_HEADER} + {@link #USER_ID_HEADER}，等同旧 agent-content 信任模型。
+     */
+    public boolean isTrustedServiceContentAuth(HttpServletRequest request) {
+        String path = request.getRequestURI();
+        if (!path.startsWith("/api/content/auth/")) {
+            return false;
+        }
+        try {
+            internalServiceGuard.requireValidKey(request.getHeader(INTERNAL_KEY_HEADER));
+        } catch (RuntimeException ex) {
+            return false;
+        }
+        String userId = request.getHeader(USER_ID_HEADER);
+        return userId != null && !userId.isBlank();
+    }
+
+    public HttpServletRequest injectServiceUserHeaders(HttpServletRequest request) {
+        String userId = request.getHeader(USER_ID_HEADER).trim();
+        Map<String, String> headers = Map.of(
+            USER_ID_HEADER, userId,
+            USER_NAME_HEADER, userId,
+            USER_ROLES_HEADER, "user",
+            SESSION_ID_HEADER, ""
+        );
+        return new UserHeadersHttpServletRequest(request, headers);
     }
 
     public boolean isWsPath(String path) {

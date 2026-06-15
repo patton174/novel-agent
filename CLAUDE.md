@@ -7,32 +7,26 @@
 - 架构与链路：`.cursor/rules/project-architecture.mdc`
 - 部署与运维：`.cursor/rules/deploy-ops.mdc`
 - 长文架构：`docs/ARCHITECTURE.md`
-- 部署指南：`novel-agent/agent-document/docs/deploy/README.md`
+- 部署指南：`novel-studio/deploy/README.md`（单体栈；旧 `novel-agent/agent-document/docs/deploy/` 已废弃）
 
-## 项目架构
+## 项目架构（生产：novel-studio 单体）
 
 ```
-[ Frontend :3000 ]  →  [ PyAI :8082 ]  →  [ Python AI :8000 ]
-        ↓                      ↓
-  Vite + React           Spring Boot              FastAPI
-        ↓                      ↓
-  远程 Auth :8081        Content :8091
-  远程 Gateway :8080     Consumer :8090
-        ↓                      ↓
-                    PostgreSQL / Redis / RabbitMQ（infra Docker 或远程）
-                    Milvus / Chroma（向量，可选）
+[ Frontend :3000 ]  →  [ novel-studio :8080 ]  →  [ python-ai :8000 ]
+        ↓                        ↓
+  Vite + React            单体 JVM（Auth/Content/Agent/Billing）
+        ↓                        ↓
+  MW entry-nginx          PostgreSQL / Redis / RabbitMQ（MW）
 ```
 
 | 目录 | 服务 | 端口 | 职责 |
 |------|------|------|------|
 | `frontend/` | Vite 前端 | 3000 | 编辑器、AI 助手面板、SSE 流 |
-| `python-ai/` | Python AI | 8000 | LLM、Agent 编排、RAG、工具策略 |
-| `novel-agent/agent-pyai/` | PyAI | 8082 | Agent 运行协调、SSE 网关、章节副作用 |
-| `novel-agent/agent-content/` | Content | 8091 | 小说/章节/会话 CRUD、记忆 API |
-| `novel-agent/agent-consumer/` | Consumer | 8090 | 消息消费、权限同步 |
-| 远程服务器 | Auth | 8081 | 登录鉴权（本地一般不启） |
-| 远程服务器 | Gateway | 8080 | API 网关（本地一般不启） |
-| `infra/` | Docker | 5432/6379/5672 | PostgreSQL、Redis、RabbitMQ |
+| `novel-studio/` | 单体 | 8080 | 鉴权、小说/章节/会话、Agent SSE、计费 |
+| `python-ai/` | Python AI | 8000 | LLM、Agent 编排、RAG、工具；`CONTENT_BASE_URL` → novel-studio:8080 |
+| `infra/` | Docker | 5432/6379/5672 | 本地可选 PostgreSQL、Redis、RabbitMQ |
+
+**已废弃**：独立 Gateway/Auth/Content/PyAI/Consumer 微服务及 `agent-content:8091`。
 
 **边界原则**
 

@@ -12,7 +12,7 @@
 
 novel-studio (Worker) ──→ PostgreSQL / Redis / RabbitMQ (MW)
          └─ HTTP ──→ python-lb:8000 → python-ai
-python-ai ──→ agent-content:8091 /api/content/auth/*（服务端 X-User-Id，不经网关 Sign）
+python-ai ──→ novel-studio:8080 /api/content/auth/*（X-Internal-Service-Key + X-User-Id，不经浏览器 Sign/AES）
 ```
 
 | 主机 | 服务 |
@@ -57,7 +57,7 @@ ln -sfn /opt/novel-agent/novel-agent/agent-document/docs/deploy/docker/letsencry
    - 停旧容器、DROP/CREATE `novel_agent` 库、启动新 compose 骨架
 
 2. **Deploy novel-studio** → 上传单体 JAR  
-3. **Deploy python-ai** → `CONTENT_BASE_URL=http://agent-content:8091`（直连 Content，勿走 novel-studio:8080 网关签名校验）  
+3. **Deploy python-ai** → `CONTENT_BASE_URL=http://novel-studio:8080`（经单体服务间鉴权，勿再连遗留 agent-content）  
 4. **Deploy frontend** → 关闭 AES/路由混淆构建
 
 或 push 到 `main` 后各 workflow 按 path 自动触发。
@@ -104,9 +104,11 @@ VITE_LOCAL_MONOLITH=http://127.0.0.1:8080
 
 Worker compose 注入：
 
-- `CONTENT_BASE_URL=http://agent-content:8091`（python-ai 容器需加入 `novel-agent-worker_novel-net`）
-- `BILLING_REPORT_URL=http://novel-studio:8080`（LLM 用量上报 `/internal/billing/usage/report`，勿用 127.0.0.1:8082）
+- `CONTENT_BASE_URL=http://novel-studio:8080`（与单体同 Docker 网络 `novel-net`；请求头带 `INTERNAL_SERVICE_KEY` + `X-User-Id`）
+- `BILLING_REPORT_URL=http://novel-studio:8080`（LLM 用量上报 `/internal/billing/usage/report`）
 - `INTERNAL_SERVICE_KEY` 与 `AGENT_INTERNAL_SERVICE_KEY` 一致
+
+**勿再**部署或保留 `agent-content:8091` 容器；若 Worker 上仍有 `novel-agent-worker-agent-content-1`，应停止并改 python-ai 环境变量后重启。
 
 ## 验收
 
