@@ -2,6 +2,8 @@ package cn.novelstudio.module.agent.service;
 
 import cn.novelstudio.module.agent.config.AgentRuntimeProperties;
 import cn.novelstudio.module.agent.orchestration.AgentRunEventJournal;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.data.redis.connection.Message;
 import org.springframework.data.redis.connection.MessageListener;
 import org.springframework.data.redis.listener.PatternTopic;
@@ -25,6 +27,7 @@ public class RunLiveRedisSubscriber implements MessageListener {
     private final AgentStatusHub statusHub;
     private final RunLiveSseFanout runLiveSseFanout;
     private final AgentRunEventJournal eventJournal;
+    private final ObjectMapper objectMapper;
     private final Map<String, LiveSubscription> subscriptions = new ConcurrentHashMap<>();
 
     public RunLiveRedisSubscriber(
@@ -32,13 +35,15 @@ public class RunLiveRedisSubscriber implements MessageListener {
         AgentRuntimeProperties runtimeProperties,
         AgentStatusHub statusHub,
         RunLiveSseFanout runLiveSseFanout,
-        AgentRunEventJournal eventJournal
+        AgentRunEventJournal eventJournal,
+        ObjectMapper objectMapper
     ) {
         this.listenerContainer = listenerContainer;
         this.runtimeProperties = runtimeProperties;
         this.statusHub = statusHub;
         this.runLiveSseFanout = runLiveSseFanout;
         this.eventJournal = eventJournal;
+        this.objectMapper = objectMapper;
     }
 
     @PostConstruct
@@ -67,13 +72,27 @@ public class RunLiveRedisSubscriber implements MessageListener {
         }
         String channel = new String(message.getChannel());
         String runId = channel.substring(channel.lastIndexOf(':') + 1);
+        String payload = new String(message.getBody());
+
+        Long userId = null;
+        String sessionId = null;
         LiveSubscription sub = subscriptions.get(runId);
-        if (sub == null) {
+        if (sub != null) {
+            userId = sub.userId();
+            sessionId = sub.sessionId();
+        } else {
+            AgentRunEventJournal.RunMeta meta = eventJournal.readMeta(runId);
+            if (meta != null) {
+                userId = meta.userId();
+                sessionId = meta.sessionId();
+            }
+        }
+        if (userId == null || sessionId == null || sessionId.isBlank()) {
             return;
         }
-        String payload = new String(message.getBody());
+
         eventJournal.append(runId, payload);
-        statusHub.publish(sub.userId(), sub.sessionId(), payload);
+        statusHub.publish(userId, sessionId, payload);
         runLiveSseFanout.onLivePayload(runId, payload);
     }
 

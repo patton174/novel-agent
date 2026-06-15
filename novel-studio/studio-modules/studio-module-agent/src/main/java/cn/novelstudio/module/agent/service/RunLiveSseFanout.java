@@ -16,6 +16,7 @@ public class RunLiveSseFanout {
 
     private final ObjectMapper objectMapper;
     private final Map<String, Consumer<String>> sinks = new ConcurrentHashMap<>();
+    private final Map<String, Consumer<String>> terminalHandlers = new ConcurrentHashMap<>();
 
     public RunLiveSseFanout(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
@@ -28,9 +29,23 @@ public class RunLiveSseFanout {
         sinks.put(runId, sink);
     }
 
+    public void registerTerminalHandler(String runId, Consumer<String> handler) {
+        if (runId == null || runId.isBlank() || handler == null) {
+            return;
+        }
+        terminalHandlers.put(runId, handler);
+    }
+
+    public void unregisterSink(String runId) {
+        if (runId != null) {
+            sinks.remove(runId);
+        }
+    }
+
     public void unregister(String runId) {
         if (runId != null) {
             sinks.remove(runId);
+            terminalHandlers.remove(runId);
         }
     }
 
@@ -38,15 +53,21 @@ public class RunLiveSseFanout {
         if (runId == null || payloadJson == null || payloadJson.isBlank()) {
             return;
         }
+        String frame = "event: agent-event\ndata: " + payloadJson + "\n\n";
         Consumer<String> sink = sinks.get(runId);
-        if (sink == null) {
+        if (sink != null) {
+            sink.accept(frame);
+        }
+        if (!isTerminalEvent(payloadJson)) {
             return;
         }
-        String frame = "event: agent-event\ndata: " + payloadJson + "\n\n";
-        sink.accept(frame);
-        if (isTerminalEvent(payloadJson)) {
+        if (sink != null) {
             sink.accept("event: stream-end\ndata: done\n\n");
-            unregister(runId);
+            sinks.remove(runId);
+        }
+        Consumer<String> terminal = terminalHandlers.remove(runId);
+        if (terminal != null) {
+            terminal.accept(payloadJson);
         }
     }
 

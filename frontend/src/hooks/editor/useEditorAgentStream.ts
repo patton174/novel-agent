@@ -524,6 +524,13 @@ export function useEditorAgentStream({
         return
       }
       handleAgentEvent(eventName, rawData)
+      if (recoveryActive && parsedType && parsedType !== 'run.recovering') {
+        liveBox.state = {
+          ...liveBox.state,
+          hostGuardMessage: undefined,
+        }
+        syncStreamState()
+      }
       if (
         recoveryActive &&
         (parsedType === 'run.completed' ||

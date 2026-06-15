@@ -123,10 +123,20 @@ public class PgRunStreamService {
                         sink.complete();
                     }
                 });
-                sink.onDispose(() -> {
-                    runLiveSseFanout.unregister(runId);
-                    runLiveRedisSubscriber.unsubscribe(runId);
+                runLiveSseFanout.registerTerminalHandler(runId, payloadJson -> {
+                    String type = parsePayloadType(payloadJson);
+                    boolean failed = "run.failed".equals(type);
+                    persistTurn(
+                        persisted,
+                        state,
+                        runId,
+                        mode,
+                        sanitizeAssistantText(assistantCollector.buildSanitized()),
+                        failed ? "failed" : "completed",
+                        failed ? extractErrorFromPayload(payloadJson) : null
+                    );
                 });
+                sink.onDispose(() -> runLiveSseFanout.unregisterSink(runId));
                 String startedFrame = buildRunStarted(runId, finalSessionId, messageId);
                 appendJournalPayload(runId, startedFrame);
                 sink.next(startedFrame);
@@ -152,6 +162,23 @@ public class PgRunStreamService {
             return payload.path("error").asText("run failed");
         } catch (Exception ex) {
             return "run failed";
+        }
+    }
+
+    private String extractErrorFromPayload(String payloadJson) {
+        try {
+            JsonNode root = objectMapper.readTree(payloadJson);
+            return root.path("payload").path("error").asText("run failed");
+        } catch (Exception ex) {
+            return "run failed";
+        }
+    }
+
+    private String parsePayloadType(String payloadJson) {
+        try {
+            return objectMapper.readTree(payloadJson).path("type").asText("");
+        } catch (Exception ex) {
+            return "";
         }
     }
 
@@ -217,6 +244,8 @@ public class PgRunStreamService {
         } catch (Exception ex) {
             log.warn("queued persist failed runId={}: {}", state.getRunId(), ex.getMessage());
         } finally {
+            runLiveRedisSubscriber.unsubscribe(runId);
+            runLiveSseFanout.unregister(runId);
             eventJournal.completeRun(runId);
         }
     }

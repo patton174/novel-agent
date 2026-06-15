@@ -90,6 +90,33 @@ public class AgentRunEventJournal {
         return redisTemplate.opsForValue().get(activeKey(userId, sessionId));
     }
 
+    public RunMeta readMeta(String runId) {
+        if (runId == null || runId.isBlank()) {
+            return null;
+        }
+        String metaKey = metaKey(runId);
+        Object userIdRaw = redisTemplate.opsForHash().get(metaKey, "userId");
+        Object sessionIdRaw = redisTemplate.opsForHash().get(metaKey, "sessionId");
+        if (sessionIdRaw == null) {
+            return null;
+        }
+        String sessionId = String.valueOf(sessionIdRaw).trim();
+        if (sessionId.isBlank()) {
+            return null;
+        }
+        Long userId = null;
+        if (userIdRaw != null) {
+            try {
+                userId = Long.parseLong(String.valueOf(userIdRaw));
+            } catch (NumberFormatException ignored) {
+                return null;
+            }
+        }
+        return new RunMeta(userId, sessionId);
+    }
+
+    public record RunMeta(Long userId, String sessionId) {}
+
     public void completeRun(String runId) {
         if (runId == null || runId.isBlank()) {
             return;
