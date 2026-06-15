@@ -143,6 +143,28 @@ public class UsageCrmBiz extends BaseBiz {
         return ok(new PlatformUsageTrendsResp(points));
     }
 
+    private static LocalDate toLocalDate(Object raw) {
+        if (raw == null) {
+            throw new IllegalArgumentException("date column is null");
+        }
+        if (raw instanceof java.sql.Date sqlDate) {
+            return sqlDate.toLocalDate();
+        }
+        if (raw instanceof LocalDate localDate) {
+            return localDate;
+        }
+        if (raw instanceof java.sql.Timestamp timestamp) {
+            return timestamp.toInstant().atZone(ZoneOffset.UTC).toLocalDate();
+        }
+        if (raw instanceof java.util.Date utilDate) {
+            return utilDate.toInstant().atZone(ZoneOffset.UTC).toLocalDate();
+        }
+        if (raw instanceof String text) {
+            return LocalDate.parse(text);
+        }
+        throw new IllegalArgumentException("Unsupported date type: " + raw.getClass().getName());
+    }
+
     private UsageEventResp toEventResp(UsageEventEntity e) {
         long totalTokens = (long) e.getInputTokens() + e.getOutputTokens()
             + e.getCacheReadTokens() + e.getCacheWriteTokens();
