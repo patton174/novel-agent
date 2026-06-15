@@ -143,6 +143,7 @@ const PLANNING_ACTIVE_LABELS: Record<string, string> = {
   memory_patch: '更新创作记忆…',
   memory_delete: '整理记忆条目…',
   WriteMemory: '写入记忆…',
+  ReadMemory: '查阅记忆…',
   WriteChapter: '写入章节…',
   EditMemory: '更新创作记忆…',
   context_search: '检索相关设定…',

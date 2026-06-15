@@ -45,6 +45,17 @@ const LEGACY_TOOL_ALIASES: Record<string, string> = {
   memory_update: 'Edit',
   memory_delete: 'Delete',
   memory_patch: 'Edit',
+  ReadMemory: 'Read',
+  WriteMemory: 'Write',
+  EditMemory: 'Edit',
+  DeleteMemory: 'Delete',
+  ListMemory: 'Glob',
+  ReadChapter: 'Read',
+  WriteChapter: 'Write',
+  EditChapter: 'Edit',
+  DeleteChapter: 'Delete',
+  ListChapters: 'Glob',
+  SearchKnowledge: 'Grep',
   choose: 'AskUser',
   ask_user: 'AskUser',
   context_search: 'Grep',
@@ -68,7 +79,24 @@ export function isAskUserTool(name: string | undefined): boolean {
   return raw === 'AskUser' || raw === 'choose' || raw === 'ask_user'
 }
 
+/** CC memory tools — normalize to Read/Write for icons but must not inherit chapter heuristics. */
+const MEMORY_CC_TOOL_NAMES = new Set([
+  'ReadMemory',
+  'WriteMemory',
+  'EditMemory',
+  'DeleteMemory',
+  'ListMemory',
+])
+
+function isMemoryCcToolName(name: string | undefined): boolean {
+  const raw = (name ?? '').trim()
+  return Boolean(raw && MEMORY_CC_TOOL_NAMES.has(raw))
+}
+
 export function isChapterWriteTool(name: string | undefined): boolean {
+  if (isMemoryCcToolName(name)) {
+    return false
+  }
   const n = normalizeToolName(name)
   return n === 'Write' || n === 'Edit'
 }
@@ -81,7 +109,7 @@ export function isVfsReadTool(name: string | undefined): boolean {
 /** Consecutive read-style tools (Read/Grep/Glob or legacy memory_read) with result_labels. */
 export function isCollapsibleReadTool(name: string | undefined): boolean {
   const raw = (name ?? '').trim()
-  if (raw === 'memory_read') {
+  if (raw === 'memory_read' || raw === 'ReadMemory') {
     return true
   }
   const n = normalizeToolName(name)
@@ -120,6 +148,9 @@ export function isChapterContentSideEffect(
   payload?: Record<string, unknown>,
 ): boolean {
   const raw = (toolName ?? '').trim()
+  if (isMemoryCcToolName(raw)) {
+    return false
+  }
   if (/^chapter_(create|update|delete)$/i.test(raw)) {
     return true
   }
@@ -147,7 +178,11 @@ export function isChapterContentSideEffect(
 
 /** WriteChapter/EditChapter 或 legacy Write/Edit 是否走 chapter.stream.* 管线 */
 export function isChapterStreamTool(toolName: string | undefined): boolean {
-  const n = normalizeToolName((toolName ?? '').trim())
+  const raw = (toolName ?? '').trim()
+  if (isMemoryCcToolName(raw)) {
+    return false
+  }
+  const n = normalizeToolName(raw)
   return n === 'WriteChapter' || n === 'EditChapter' || n === 'Write' || n === 'Edit'
 }
 
@@ -156,6 +191,13 @@ export function shouldRefreshStoryMemoryAfterTool(
   payload?: Record<string, unknown>,
 ): boolean {
   const raw = (toolName ?? '').trim()
+  if (
+    raw === 'WriteMemory' ||
+    raw === 'EditMemory' ||
+    raw === 'DeleteMemory'
+  ) {
+    return true
+  }
   const canonical = normalizeToolName(raw)
   if (
     canonical === 'WriteMemory' ||

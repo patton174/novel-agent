@@ -17,6 +17,7 @@ from app.agent.harness.events import build_tool_completed_sse_payload
 from app.agent.harness.tool_display import (
     chapter_write_progress_message,
     format_tool_display_excerpt,
+    memory_mutation_progress_message,
     read_progress_message,
 )
 from app.agent.schemas import AgentRunContext, StepRequest
@@ -37,6 +38,9 @@ logger = logging.getLogger(__name__)
 _MESSAGE_DELTA_INTERVAL = 0.022
 _READ_PROGRESS_TOOLS = frozenset(
     {"ReadChapter", "ListChapters", "ReadMemory", "ListMemory", "SearchKnowledge"}
+)
+_MEMORY_MUTATION_PROGRESS_TOOLS = frozenset(
+    {"WriteMemory", "EditMemory", "DeleteMemory"}
 )
 _EXCERPT_STREAM_INTERVAL = 0.008
 
@@ -126,6 +130,7 @@ async def stream_cc_tool_step(
             },
         )
         seq += 1
+        await asyncio.sleep(0)
 
     if stream_chapter:
         chapter_outcome = ChapterStreamResult()
@@ -190,6 +195,22 @@ async def stream_cc_tool_step(
                 },
             )
             seq += 1
+            await asyncio.sleep(0)
+        elif tool in _MEMORY_MUTATION_PROGRESS_TOOLS:
+            yield build_event(
+                event_type="tool.progress",
+                run_id=run_id,
+                session_id=session_id,
+                message_id=message_id,
+                step_id=step_id,
+                sequence=seq,
+                payload={
+                    "name": tool,
+                    "message": memory_mutation_progress_message(tool, inp),
+                },
+            )
+            seq += 1
+            await asyncio.sleep(0)
         result = await run_tool_use(tool, inp, ctx, tool_use_id=step_id)
         if not result.is_error and tool in _READ_PROGRESS_TOOLS:
             excerpt = format_tool_display_excerpt(

@@ -10,7 +10,8 @@ from typing import Any, Literal
 from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import BaseModel, Field
 
-from app.agent.backend import chapter_client, memory_client
+from app.agent.backend import chapter_client
+from app.agent.backend.memory_store import _read_memory_json_impl
 from app.agent.backend.chapter_meta import sorted_chapter_summaries
 from app.agent.backend.memory_catalog import load_story_memory_tree
 from app.agent.schemas import AgentRunContext
@@ -132,7 +133,7 @@ def _load_scope_text(
         return ""
     parts: list[str] = []
     for key in sorted(bucket.keys(), key=str)[:24]:
-        text, err = memory_client.read_memory_json(ctx, scope, str(key))
+        text, err = _read_memory_json_impl(ctx, scope, str(key))
         if err or not text:
             continue
         parts.append(f"## {key}\n{text.strip()[:1600]}")
@@ -140,7 +141,7 @@ def _load_scope_text(
 
 
 def _chapter_memory_excerpt(ctx: AgentRunContext, chapter_id: str) -> str:
-    text, err = memory_client.read_memory_json(
+    text, err = _read_memory_json_impl(
         ctx, "chapter", chapter_id, item_id=chapter_id
     )
     if err or not text:

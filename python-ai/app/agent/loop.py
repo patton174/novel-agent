@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from collections.abc import AsyncIterator
 from dataclasses import dataclass
@@ -755,6 +756,7 @@ async def run_query_loop(
             )
             for vis_ev in vis_events:
                 yield vis_ev
+            await asyncio.sleep(0)
 
             waited = False
             batch_tool_recover = False

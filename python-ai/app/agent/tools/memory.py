@@ -50,7 +50,7 @@ async def read_memory(ctx: AgentRunContext, inp: ReadMemoryInput) -> ToolCallRes
         ctx, scope, inp.key, offset=inp.offset, limit=inp.limit
     )
     if err:
-        text, err = memory_client.read_memory_json(ctx, scope, inp.key)
+        text, err = await memory_client.read_memory_json(ctx, scope, inp.key)
     if err:
         return ToolCallResult(content=f"<tool_use_error>{err}</tool_use_error>", is_error=True)
     patch: dict[str, Any] = {"last_memory_read": {"ok": True, "scope": scope, "key": inp.key}}
@@ -68,7 +68,7 @@ async def write_memory(ctx: AgentRunContext, inp: WriteMemoryInput) -> ToolCallR
             content=f"<tool_use_error>InputValidationError: {exc}</tool_use_error>",
             is_error=True,
         )
-    ok, err = memory_client.persist_memory_document(
+    ok, err = await memory_client.persist_memory_document(
         ctx, scope, inp.key, envelope, item_id=inp.key if scope in ("character", "chapter") else ""
     )
     if not ok:
@@ -81,7 +81,7 @@ async def write_memory(ctx: AgentRunContext, inp: WriteMemoryInput) -> ToolCallR
 
 async def edit_memory(ctx: AgentRunContext, inp: EditMemoryInput) -> ToolCallResult:
     scope = inp.scope.value
-    text, err = memory_client.read_memory_json(ctx, scope, inp.key)
+    text, err = await memory_client.read_memory_json(ctx, scope, inp.key)
     if err or not text:
         return ToolCallResult(
             content=f"<tool_use_error>{err or 'memory not found'}</tool_use_error>",
@@ -99,18 +99,18 @@ async def edit_memory(ctx: AgentRunContext, inp: EditMemoryInput) -> ToolCallRes
     try:
         payload = json.loads(new_text)
     except json.JSONDecodeError:
-        ok, err = memory_client.write_memory_json(ctx, scope, inp.key, new_text)
+        ok, err = await memory_client.write_memory_json(ctx, scope, inp.key, new_text)
         if not ok:
             return ToolCallResult(content=f"<tool_use_error>{err}</tool_use_error>", is_error=True)
         return ToolCallResult(content=json.dumps({"ok": True}, ensure_ascii=False))
-    ok, err = memory_client.persist_memory_document(ctx, scope, inp.key, payload)
+    ok, err = await memory_client.persist_memory_document(ctx, scope, inp.key, payload)
     if not ok:
         return ToolCallResult(content=f"<tool_use_error>{err}</tool_use_error>", is_error=True)
     return ToolCallResult(content=json.dumps({"ok": True}, ensure_ascii=False))
 
 
 async def delete_memory_tool(ctx: AgentRunContext, inp: DeleteMemoryInput) -> ToolCallResult:
-    ok, err = memory_client.delete_memory(ctx, inp.scope.value, inp.key)
+    ok, err = await memory_client.delete_memory(ctx, inp.scope.value, inp.key)
     if not ok:
         return ToolCallResult(content=f"<tool_use_error>{err}</tool_use_error>", is_error=True)
     return ToolCallResult(

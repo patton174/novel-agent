@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 from typing import Any
 
@@ -14,30 +15,7 @@ from app.runtime.story_memory import (
 )
 
 
-async def fetch_memory_read_slice(
-    ctx: AgentRunContext,
-    scope: str,
-    key: str = "",
-    *,
-    item_id: str = "",
-    offset: int | None = None,
-    limit: int | None = None,
-) -> tuple[str | None, str | None]:
-    """Content API paginated read (numbered lines)."""
-    novel_id = str(ctx.novel_id or (ctx.project or {}).get("id") or "").strip()
-    return story_memory_content.fetch_memory_read_slice(
-        ctx.user_id,
-        novel_id=novel_id or None,
-        session_id=ctx.session_id if not novel_id else None,
-        scope=scope,
-        key=key,
-        item_id=item_id or None,
-        offset=offset,
-        limit=limit,
-    )
-
-
-def read_memory_json(
+def _read_memory_json_impl(
     ctx: AgentRunContext, scope: str, key: str, *, item_id: str = ""
 ) -> tuple[str | None, str | None]:
     try:
@@ -61,7 +39,13 @@ def read_memory_json(
     return json.dumps(result, ensure_ascii=False, indent=2), None
 
 
-def write_memory_json(
+async def read_memory_json(
+    ctx: AgentRunContext, scope: str, key: str, *, item_id: str = ""
+) -> tuple[str | None, str | None]:
+    return await asyncio.to_thread(_read_memory_json_impl, ctx, scope, key, item_id=item_id)
+
+
+def _write_memory_json_impl(
     ctx: AgentRunContext,
     scope: str,
     key: str,
@@ -90,7 +74,20 @@ def write_memory_json(
         return False, str(exc)
 
 
-def delete_memory(
+async def write_memory_json(
+    ctx: AgentRunContext,
+    scope: str,
+    key: str,
+    value: Any,
+    *,
+    item_id: str = "",
+) -> tuple[bool, str]:
+    return await asyncio.to_thread(
+        _write_memory_json_impl, ctx, scope, key, value, item_id=item_id
+    )
+
+
+def _delete_memory_impl(
     ctx: AgentRunContext, scope: str, key: str, *, item_id: str = ""
 ) -> tuple[bool, str]:
     try:
@@ -111,7 +108,13 @@ def delete_memory(
         return False, str(exc)
 
 
-def persist_memory_document(
+async def delete_memory(
+    ctx: AgentRunContext, scope: str, key: str, *, item_id: str = ""
+) -> tuple[bool, str]:
+    return await asyncio.to_thread(_delete_memory_impl, ctx, scope, key, item_id=item_id)
+
+
+def _persist_memory_document_impl(
     ctx: AgentRunContext,
     scope: str,
     entry_id: str,
@@ -129,7 +132,9 @@ def persist_memory_document(
         if not cid:
             return False, "item_id required for character/chapter memory"
         for field_key, value in fields.items():
-            ok, err = write_memory_json(ctx, scope_norm, field_key, value, item_id=cid)
+            ok, err = _write_memory_json_impl(
+                ctx, scope_norm, field_key, value, item_id=cid
+            )
             if not ok:
                 return False, err or "patch failed"
         return True, ""
@@ -138,4 +143,46 @@ def persist_memory_document(
     if not storage_key:
         return False, "memory key required"
     payload = json.dumps(envelope, ensure_ascii=False)
-    return write_memory_json(ctx, scope_norm, storage_key, payload)
+    return _write_memory_json_impl(ctx, scope_norm, storage_key, payload)
+
+
+async def persist_memory_document(
+    ctx: AgentRunContext,
+    scope: str,
+    entry_id: str,
+    envelope: dict[str, Any],
+    *,
+    item_id: str = "",
+) -> tuple[bool, str]:
+    return await asyncio.to_thread(
+        _persist_memory_document_impl,
+        ctx,
+        scope,
+        entry_id,
+        envelope,
+        item_id=item_id,
+    )
+
+
+async def fetch_memory_read_slice(
+    ctx: AgentRunContext,
+    scope: str,
+    key: str = "",
+    *,
+    item_id: str = "",
+    offset: int | None = None,
+    limit: int | None = None,
+) -> tuple[str | None, str | None]:
+    """Content API paginated read (numbered lines)."""
+    novel_id = str(ctx.novel_id or (ctx.project or {}).get("id") or "").strip()
+    return await asyncio.to_thread(
+        story_memory_content.fetch_memory_read_slice,
+        ctx.user_id,
+        novel_id=novel_id or None,
+        session_id=ctx.session_id if not novel_id else None,
+        scope=scope,
+        key=key,
+        item_id=item_id or None,
+        offset=offset,
+        limit=limit,
+    )

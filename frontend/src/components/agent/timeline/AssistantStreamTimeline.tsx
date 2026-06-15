@@ -390,7 +390,15 @@ export function AssistantStreamTimeline({
     }
 
     if (block.kind === 'tool') {
-      const step = stepByTimelineBlockId.get(block.id)
+      let step = stepByTimelineBlockId.get(block.id)
+      if (!step && block.stepId) {
+        step = findStepState(stepStates, block.stepId) ?? {
+          stepId: block.stepId,
+          type: 'tool',
+          status: 'started',
+          title: '执行中…',
+        }
+      }
       if (!step) {
         return null
       }

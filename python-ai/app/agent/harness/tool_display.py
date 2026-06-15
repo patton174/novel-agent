@@ -393,6 +393,29 @@ def chapter_write_progress_message(
     return f"正在{tool_display_name(tool, tool_input)}…"
 
 
+def memory_mutation_progress_message(tool: str, tool_input: dict[str, Any] | None) -> str:
+    from app.agent.harness.cc_visibility import tool_display_name
+
+    raw = (tool or "").strip()
+    inp = dict(tool_input or {})
+    if raw == "WriteMemory":
+        key = str(inp.get("key") or "").strip()
+        if key:
+            return f"正在写入记忆「{key}」…"
+        return "正在写入记忆…"
+    if raw == "EditMemory":
+        key = str(inp.get("key") or "").strip()
+        if key:
+            return f"正在更新记忆「{key}」…"
+        return "正在更新记忆…"
+    if raw == "DeleteMemory":
+        key = str(inp.get("key") or "").strip()
+        if key:
+            return f"正在删除记忆「{key}」…"
+        return "正在删除记忆…"
+    return f"正在{tool_display_name(tool, tool_input)}…"
+
+
 def read_progress_message(tool: str, tool_input: dict[str, Any] | None) -> str:
     from app.agent.harness.cc_visibility import tool_display_name, vfs_path_from_tool_input
 
