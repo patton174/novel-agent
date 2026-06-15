@@ -26,6 +26,18 @@ ENV_FILE="$(ci_env_file mw)"
 deploy_ssh "$REMOTE" bash -s <<EOF
 set -euo pipefail
 cd '$RDIR/$DOCKER_REL'
+FULLCHAIN="letsencrypt/live/$CERT_NAME/fullchain.pem"
+if [[ ! -f "\$FULLCHAIN" ]]; then
+  echo "[deploy-mw-nginx] ERROR: missing \$FULLCHAIN"
+  ls -la letsencrypt/live/ || true
+  exit 1
+fi
+openssl x509 -in "\$FULLCHAIN" -noout -subject -dates
+EOF
+
+deploy_ssh "$REMOTE" bash -s <<EOF
+set -euo pipefail
+cd '$RDIR/$DOCKER_REL'
 COMPOSE="docker compose"
 if ! docker compose version >/dev/null 2>&1; then COMPOSE="docker-compose"; fi
 
