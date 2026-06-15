@@ -2,6 +2,7 @@ import { useLayoutEffect, useRef } from 'react'
 import type { AgentSubagentState } from '../../../types/agent'
 import { deriveSubagentDisplayMeta } from '../../../utils/subagentDisplayMeta'
 import { AppModalShell } from '@/components/ui/AppModalShell'
+import { DialogTitle } from '@/components/ui/dialog'
 import { SubagentTimelineContent } from './SubagentTimelineContent'
 import { subagentStatusChipClass } from '@/lib/timelineClasses'
 
@@ -48,9 +49,9 @@ export function SubagentDetailModal({
         <div className="flex items-start justify-between gap-3 pr-8">
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <h2 id="subagent-modal-title" className="m-0 text-[15px] font-bold text-foreground">
+              <DialogTitle className="m-0 text-[15px] font-bold text-foreground">
                 {meta.name}
-              </h2>
+              </DialogTitle>
               <span className={subagentStatusChipClass(meta.statusKind)}>
                 {meta.statusLabel}
               </span>

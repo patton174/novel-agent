@@ -29,6 +29,7 @@ import {
   STREAM_RECOVERY_BANNER,
 } from '../../utils/agentStreamRecovery'
 import { createStreamPersistDebouncer } from '../../utils/streamPersist'
+import { createRafBatcher } from '../../utils/rafBatcher'
 import { buildAgentHistory } from '../../utils/buildAgentHistory'
 import { extractStoryContext } from '../../utils/extractStoryContext'
 import {

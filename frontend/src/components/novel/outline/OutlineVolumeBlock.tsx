@@ -10,7 +10,6 @@ import { ChevronIcon, PlusIcon } from './outlineIcons'
 import type { DragPayload, DropTarget } from './outlineTypes'
 import { cn } from '@/lib/utils'
 import {
-  OUTLINE_CHAPTER_ACTIVE_GRADIENT,
   OUTLINE_CHAPTER_ACTION_BTN,
   OUTLINE_CHAPTER_ACTION_BTN_DANGER,
   OUTLINE_CHAPTER_LIST_INNER,
@@ -158,7 +157,6 @@ export function OutlineVolumeBlock({
                   }}
                   onDrop={(event) => void onChapterDrop(event, volume.id, chapter.id)}
                 >
-                  {isActive ? <div aria-hidden className={OUTLINE_CHAPTER_ACTIVE_GRADIENT} /> : null}
                   <div className={OUTLINE_CHAPTER_ROW}>
                     <OutlineDragHandle
                       title={t('editor:picker.dragChapter')}

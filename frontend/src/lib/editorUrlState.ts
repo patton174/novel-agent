@@ -143,8 +143,9 @@ export function buildEditorLocation(input: {
   theme?: ThemeMode
   baseSearch?: string
 }): { pathname: string; search: string } {
+  const pathChapterId = input.tab === 'story' ? input.chapterId : null
   return {
-    pathname: buildEditorPathname(input.chapterId),
+    pathname: buildEditorPathname(pathChapterId),
     search: buildEditorSearch(input),
   }
 }

@@ -4,6 +4,7 @@ import { AgentMarkdown } from '../agent/AgentMarkdown'
 import { MotionSegmentRail } from '../motion/MotionSegmentRail'
 import { MotionPane } from '../motion/MotionPane'
 import { AppModalShell } from '@/components/ui/AppModalShell'
+import { DialogTitle } from '@/components/ui/dialog'
 import type {
   MemoryTabId,
   NormalizedStoryMemory,
@@ -155,9 +156,9 @@ export function StoryMemoryModal({
       size="memory"
       header={
         <div className="border-b border-border/60 px-4 pb-3 pt-1 max-md:px-3">
-          <h2 id="memory-modal-title" className="m-0 text-[17px] font-bold text-foreground">
+          <DialogTitle className="m-0 text-[17px] font-bold text-foreground">
             {t('editor:memory.title')}
-          </h2>
+          </DialogTitle>
           <p className="mt-1 text-[11px] text-muted-foreground">
             {updatedAt
               ? t('editor:memory.readonlyUpdated', { time: updatedAt.toLocaleTimeString() })

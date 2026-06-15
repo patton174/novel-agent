@@ -22,7 +22,7 @@ export function ComposerStatusBar({
 
   return (
     <div
-      className="flex w-full min-w-0 items-center gap-2 px-0.5"
+      className="relative flex w-full min-w-0 items-center px-0.5"
       data-testid="composer-status-bar"
     >
       <ComposerTokenTicker
@@ -32,11 +32,13 @@ export function ComposerStatusBar({
         spinnerMode={spinnerMode}
       />
 
-      <span className="min-w-0 flex-1 truncate text-center text-[11px] leading-none text-muted-foreground">
+      <span className="pointer-events-none absolute left-1/2 max-w-[min(52%,14rem)] -translate-x-1/2 truncate text-center text-[11px] leading-none text-muted-foreground">
         {t('editor:chat.aiWarning')}
       </span>
 
-      <ContextUsageMeter usage={contextUsage} pending={pending} />
+      <div className="ml-auto shrink-0">
+        <ContextUsageMeter usage={contextUsage} pending={pending} />
+      </div>
     </div>
   )
 }

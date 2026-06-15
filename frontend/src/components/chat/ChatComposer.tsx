@@ -141,7 +141,7 @@ export function ChatComposer({
         </div>
       </div>
 
-      <div className="mt-1.5 hidden md:block">
+      <div className="mt-1.5 hidden px-2.5 md:block">
         <ComposerStatusBar
           contextUsage={contextUsage}
           pending={streamActive && !contextUsage}

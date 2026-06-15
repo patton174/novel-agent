@@ -25,4 +25,24 @@ describe('editorUrlState', () => {
     expect(loc.search).toContain('lang=zh')
     expect(loc.search).toContain('theme=dark')
   })
+
+  it('uses chapter path only on story tab', () => {
+    const chat = buildEditorLocation({
+      chapterId: 'ch-1',
+      novelId: 'n-1',
+      sessionId: 's-1',
+      tab: 'chat',
+    })
+    expect(chat.pathname).toBe('/editor')
+    expect(chat.search).toContain('novelId=n-1')
+
+    const story = buildEditorLocation({
+      chapterId: 'ch-1',
+      novelId: 'n-1',
+      sessionId: 's-1',
+      tab: 'story',
+    })
+    expect(story.pathname).toBe('/editor/ch-1')
+    expect(story.search).toContain('tab=story')
+  })
 })
