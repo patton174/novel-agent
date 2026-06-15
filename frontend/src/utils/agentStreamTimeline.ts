@@ -13,6 +13,25 @@ import { sanitizeMessageDeltaChunk, sanitizeThinkText } from './sanitizeAgentTex
 
 export { PLANNING_GENERIC_TITLES } from './agentOrchestration'
 
+function planningSegmentEnd(timeline: AgentTimelineBlock[], planStepId: string): number {
+  if (!planStepId) {
+    return timeline.length
+  }
+  const transitionId = `transition:${planStepId}`
+  const transitionIdx = timeline.findIndex(
+    (b) => b.kind === 'transition' && b.id === transitionId,
+  )
+  if (transitionIdx < 0) {
+    return timeline.length
+  }
+  for (let i = transitionIdx + 1; i < timeline.length; i += 1) {
+    if (timeline[i].kind === 'transition') {
+      return i
+    }
+  }
+  return timeline.length
+}
+
 function seedPlannedToolBlocks(
   timeline: AgentTimelineBlock[],
   payload: Record<string, unknown>,
@@ -22,21 +41,7 @@ function seedPlannedToolBlocks(
   if (calls.length === 0) {
     return timeline
   }
-  let insertIdx = timeline.length
-  if (planStepId) {
-    const transitionId = `transition:${planStepId}`
-    const transitionIdx = timeline.findIndex(
-      (b) => b.kind === 'transition' && b.id === transitionId,
-    )
-    if (transitionIdx >= 0) {
-      insertIdx = transitionIdx + 1
-    } else {
-      const lastTransitionIdx = findLastIndex(timeline, (b) => b.kind === 'transition')
-      if (lastTransitionIdx >= 0) {
-        insertIdx = lastTransitionIdx + 1
-      }
-    }
-  }
+  const insertIdx = planningSegmentEnd(timeline, planStepId)
   const newBlocks: AgentTimelineBlock[] = []
   for (const call of calls) {
     if (isHiddenTimelineToolName(call.tool)) {

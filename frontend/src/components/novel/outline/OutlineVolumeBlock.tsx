@@ -10,10 +10,13 @@ import { ChevronIcon, PlusIcon } from './outlineIcons'
 import type { DragPayload, DropTarget } from './outlineTypes'
 import { cn } from '@/lib/utils'
 import {
-  OUTLINE_CHAPTER_ACTIONS,
+  OUTLINE_CHAPTER_ACTIVE_GRADIENT,
+  OUTLINE_CHAPTER_ACTION_BTN,
+  OUTLINE_CHAPTER_ACTION_BTN_DANGER,
   OUTLINE_CHAPTER_LIST_INNER,
   OUTLINE_CHAPTER_ROW,
   OUTLINE_VOLUME_HEADER,
+  outlineChapterActionsClass,
   outlineChapterDropZoneClass,
   outlineChapterListCollapsibleClass,
   outlineChevronWrapClass,
@@ -126,14 +129,15 @@ export function OutlineVolumeBlock({
                 dropTarget?.kind === 'chapter' &&
                 dropTarget.volumeId === volume.id &&
                 dropTarget.chapterId === chapter.id
+              const isActive = chapter.id === activeChapterId
               return (
                 <div
                   key={chapter.id}
                   className={cn(
                     'group/chapter',
                     outlineItemClass({
-                      active: chapter.id === activeChapterId,
-                      inProgress: chapter.wordCount > 0 && chapter.id !== activeChapterId,
+                      active: isActive,
+                      inProgress: chapter.wordCount > 0 && !isActive,
                       dragOver: chapterDropActive,
                     }),
                   )}
@@ -154,6 +158,7 @@ export function OutlineVolumeBlock({
                   }}
                   onDrop={(event) => void onChapterDrop(event, volume.id, chapter.id)}
                 >
+                  {isActive ? <div aria-hidden className={OUTLINE_CHAPTER_ACTIVE_GRADIENT} /> : null}
                   <div className={OUTLINE_CHAPTER_ROW}>
                     <OutlineDragHandle
                       title={t('editor:picker.dragChapter')}
@@ -165,7 +170,7 @@ export function OutlineVolumeBlock({
                     <EditorButton
                       variant="chapter"
                       type="button"
-                      active={chapter.id === activeChapterId}
+                      active={isActive}
                       onClick={() => void onSelectChapter(chapter.id)}
                       className="min-w-0 flex-1"
                     >
@@ -174,20 +179,21 @@ export function OutlineVolumeBlock({
                       </span>
                       <span className="chapter-title">{chapter.title}</span>
                       <span className="chapter-status">
-                        {chapter.id === activeChapterId
+                        {isActive
                           ? t('editor:picker.editing')
                           : chapter.wordCount > 0
                             ? t('editor:picker.wordCount', { count: chapter.wordCount })
                             : t('editor:picker.toWrite')}
                       </span>
                     </EditorButton>
-                    <div className={OUTLINE_CHAPTER_ACTIONS}>
+                    <div className={outlineChapterActionsClass(isActive)}>
                       <EditorButton
                         variant="icon"
                         type="button"
                         size="sm"
                         title={t('editor:sessionList.rename')}
                         disabled={busy}
+                        className={OUTLINE_CHAPTER_ACTION_BTN}
                         onClick={(event) => {
                           event.stopPropagation()
                           void onRenameChapter(chapter.id, chapter.title)
@@ -201,12 +207,13 @@ export function OutlineVolumeBlock({
                         size="sm"
                         title={t('editor:outline.deleteChapterTitle')}
                         disabled={busy}
+                        className={OUTLINE_CHAPTER_ACTION_BTN_DANGER}
                         onClick={(event) => {
                           event.stopPropagation()
                           void onDeleteChapter(chapter.id, chapter.title)
                         }}
                       >
-                        <Trash2 className="size-3.5 text-destructive" />
+                        <Trash2 className="size-3.5" />
                       </EditorButton>
                     </div>
                   </div>

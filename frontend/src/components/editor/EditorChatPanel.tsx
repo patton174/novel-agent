@@ -158,10 +158,10 @@ export function EditorChatPanel({
             )}
             style={{
               maxWidth: editorLayout.contentMaxWidth,
-              padding: `0 ${editorLayout.mainPaddingX} 0.65rem`,
+              paddingBottom: '0.65rem',
             }}
           >
-            <div className="mx-auto w-full" style={{ maxWidth: editorLayout.contentMaxWidth }}>
+            <div className="mx-auto w-full">
               <ChatComposer
                 value={inputValue}
                 onChange={onInputChange}

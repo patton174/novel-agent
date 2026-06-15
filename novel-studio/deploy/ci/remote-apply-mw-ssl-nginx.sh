@@ -91,4 +91,5 @@ echo "[apply-ssl] probe HTTPS (expect 200)"
 curl -skI "https://127.0.0.1/" -H "Host: ${DOMAIN}" | head -8
 
 openssl x509 -in "$FULLCHAIN" -noout -subject -issuer -dates
+echo "[apply-ssl] cert chain certs: $(grep -c 'BEGIN CERTIFICATE' "$FULLCHAIN" || echo 0)"
 echo "[apply-ssl] done"

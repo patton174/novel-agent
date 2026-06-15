@@ -420,6 +420,32 @@ describe('agentStreamTimeline', () => {
     expect(transition?.kind === 'transition' && transition.title).toBe('准备创作方向')
   })
 
+  it('appends planned tools after in-round streaming blocks', () => {
+    let timeline = applyTimelineEvent([], {
+      type: 'planning.next_step',
+      step_id: 'step-plan',
+      payload: { title: '编排中…' },
+    })
+    timeline = applyTimelineEvent(timeline, {
+      type: 'reasoning.started',
+      step_id: 'step-plan',
+      payload: {},
+    })
+    timeline = applyTimelineEvent(timeline, {
+      type: 'reasoning.delta',
+      step_id: 'step-plan',
+      payload: { text: '分析章节结构' },
+    })
+    timeline = applyTimelineEvent(timeline, {
+      type: 'planning.completed',
+      step_id: 'step-plan',
+      payload: {
+        tool_calls: [{ tool: 'ReadMemory', tool_call_id: 'call_mem' }],
+      },
+    })
+    expect(timeline.map((b) => b.kind)).toEqual(['transition', 'reasoning', 'tool'])
+  })
+
   it('adds tool block on step.started for chapter tools', () => {
     const timeline = applyTimelineEvent([], {
       type: 'step.started',

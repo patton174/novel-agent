@@ -64,7 +64,7 @@ export function outlineItemClass(opts?: {
   return cn(
     'rounded-lg border border-transparent transition-[background,border-color,box-shadow] duration-150',
     dragOver && 'border-primary/30 bg-primary/10',
-    !dragOver && active && 'border-primary/25 bg-primary text-primary-foreground shadow-sm',
+    !dragOver && active && 'relative overflow-hidden border-primary/30 bg-primary/5 shadow-sm ring-1 ring-primary/15',
     !dragOver &&
       !active &&
       inProgress &&
@@ -73,7 +73,23 @@ export function outlineItemClass(opts?: {
   )
 }
 
-export const OUTLINE_CHAPTER_ACTIONS =
-  'flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover/chapter:opacity-100 group-focus-within/chapter:opacity-100'
+export const OUTLINE_CHAPTER_ACTIVE_GRADIENT =
+  'pointer-events-none absolute inset-y-0 right-0 z-[1] w-[5.5rem] rounded-r-lg bg-gradient-to-l from-background from-35% via-background/80 to-transparent'
+
+export function outlineChapterActionsClass(active?: boolean) {
+  return cn(
+    'relative z-[2] flex shrink-0 items-center gap-1 pr-1',
+    active
+      ? 'opacity-100'
+      : 'opacity-0 transition-opacity group-hover/chapter:opacity-100 group-focus-within/chapter:opacity-100',
+  )
+}
+
+export const OUTLINE_CHAPTER_ACTION_BTN =
+  'size-7 shrink-0 rounded-lg border border-border/70 bg-background/95 text-muted-foreground shadow-sm backdrop-blur-sm hover:border-primary/25 hover:bg-primary/8 hover:text-foreground'
+
+export const OUTLINE_CHAPTER_ACTION_BTN_DANGER =
+  'size-7 shrink-0 rounded-lg border border-border/70 bg-background/95 text-muted-foreground shadow-sm backdrop-blur-sm hover:border-destructive/30 hover:bg-destructive/10 hover:text-destructive'
+
 
 export const OUTLINE_CHAPTER_ROW = 'flex items-stretch gap-[0.2rem]'

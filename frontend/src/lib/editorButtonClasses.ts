@@ -73,7 +73,7 @@ export function editorChapterButtonClass(active?: boolean, className?: string) {
     '[&_.chapter-title]:mt-0.5 [&_.chapter-title]:text-ui [&_.chapter-title]:font-semibold',
     '[&_.chapter-status]:mt-0.5 [&_.chapter-status]:text-[10px]',
     active
-      ? '[&_.chapter-num]:text-primary-foreground/80 [&_.chapter-title]:text-primary-foreground [&_.chapter-status]:text-primary-foreground/75'
+      ? '[&_.chapter-num]:text-primary/80 [&_.chapter-title]:text-foreground [&_.chapter-status]:text-primary/70'
       : '[&_.chapter-num]:text-muted-foreground/70 [&_.chapter-title]:text-muted-foreground [&_.chapter-status]:text-muted-foreground/60',
     className,
   )
