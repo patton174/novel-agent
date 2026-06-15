@@ -98,7 +98,7 @@ export function buildEditorSearch(input: {
     params.delete(EDITOR_QUERY.CONVERSATION_ID)
   }
 
-  if (input.tab && input.tab !== 'chat') {
+  if (input.tab) {
     params.set(EDITOR_QUERY.TAB, input.tab)
   } else {
     params.delete(EDITOR_QUERY.TAB)

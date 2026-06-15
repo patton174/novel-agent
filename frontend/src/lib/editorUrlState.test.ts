@@ -35,6 +35,7 @@ describe('editorUrlState', () => {
     })
     expect(chat.pathname).toBe('/editor')
     expect(chat.search).toContain('novelId=n-1')
+    expect(chat.search).toContain('tab=chat')
 
     const story = buildEditorLocation({
       chapterId: 'ch-1',

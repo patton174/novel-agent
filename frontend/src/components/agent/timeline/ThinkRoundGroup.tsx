@@ -65,7 +65,6 @@ export function ThinkRoundGroup({
   thinkExpanded,
   onThinkExpandedChange,
   orchestrationActive = false,
-  suppressRail = false,
   renderTool,
   renderText,
 }: {
@@ -77,7 +76,6 @@ export function ThinkRoundGroup({
   thinkExpanded?: boolean
   onThinkExpandedChange?: (open: boolean) => void
   orchestrationActive?: boolean
-  suppressRail?: boolean
   renderTool: (block: Extract<AgentTimelineBlock, { kind: 'tool' }>, key: string) => ReactNode
   renderText?: (block: OrchestrationBodyBlock, key: string) => ReactNode
 }) {
@@ -111,7 +109,7 @@ export function ThinkRoundGroup({
   const thinkLeadCount = insightBlocks.filter(
     (b) => b.kind === 'think' || b.kind === 'reasoning',
   ).length
-  const showThinkRail = !suppressRail && thinkLeadCount >= 2
+  const showThinkRail = thinkLeadCount >= 2
 
   const renderBodyText = (block: OrchestrationBodyBlock, key: string) => (
     <div key={key} className={ORCHESTRATION_FLAT_ROW} data-testid="timeline-orchestration-text">

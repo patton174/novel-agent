@@ -30,6 +30,7 @@ from app.agent.context.usage import (
     build_context_usage_event,
     should_compress_context,
 )
+from app.agent.harness.events import _tool_input_for_sse
 from app.agent.harness.checkpoint_persist import persist_sse_checkpoint
 from app.agent.harness.llm_trace import extract_cache_usage
 from app.agent.harness.loop_support import (
@@ -730,7 +731,7 @@ async def run_query_loop(
                     "tool_calls": [
                         {
                             "tool": i.tool,
-                            "input": i.input,
+                            "input": _tool_input_for_sse(i.tool, dict(i.input or {})),
                             "tool_call_id": i.tool_call_id,
                         }
                         for i in exec_items

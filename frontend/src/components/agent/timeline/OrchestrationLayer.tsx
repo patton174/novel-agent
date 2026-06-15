@@ -18,7 +18,6 @@ import {
   TIMELINE_PENDING_IN,
   planningStackBodyClass,
   planningStackWrapClass,
-  thinkRoundWrapClass,
   toolLeadCellClass,
 } from '@/lib/timelineClasses'
 import { resolveToolVisualStatus, TimelineLeadIcon } from './TimelineLeadIcon'
@@ -95,21 +94,6 @@ export function OrchestrationLayer({
   )
   const headlineText = translateOrchestrationHeadline(headline)
 
-  const totalInsightLeads = rounds.reduce((count, round) => {
-    for (const item of round.items) {
-      if (item.kind !== 'insight') {
-        continue
-      }
-      for (const block of item.blocks) {
-        if (block.kind === 'think' || block.kind === 'reasoning') {
-          count += 1
-        }
-      }
-    }
-    return count
-  }, 0)
-  const showOrchestrationRail = totalInsightLeads >= 2
-
   return (
     <div
       data-testid="timeline-orchestration-layer"
@@ -154,7 +138,7 @@ export function OrchestrationLayer({
       {expanded ? (
         <div className={cn(planningStackBodyClass({ branchIndent: true }), TIMELINE_PENDING_IN)}>
           {rounds.length === 0 ? null : (
-            <div className={thinkRoundWrapClass(showOrchestrationRail)}>
+            <div className="flex flex-col gap-0">
               {rounds.map((round, index) => (
                 <ThinkRoundGroup
                   key={`${messageKey}:orch-round:${index}`}
@@ -166,7 +150,6 @@ export function OrchestrationLayer({
                   thinkExpanded={thinkExpanded}
                   onThinkExpandedChange={onThinkExpandedChange}
                   orchestrationActive={isActive}
-                  suppressRail={showOrchestrationRail}
                   renderTool={renderTool}
                   renderText={renderText}
                 />

@@ -150,6 +150,14 @@ export function shouldRefreshStoryMemoryAfterTool(
   payload?: Record<string, unknown>,
 ): boolean {
   const raw = (toolName ?? '').trim()
+  const canonical = normalizeToolName(raw)
+  if (
+    canonical === 'WriteMemory' ||
+    canonical === 'EditMemory' ||
+    canonical === 'DeleteMemory'
+  ) {
+    return true
+  }
   if (/^memory_(create|update|delete|patch)$/.test(raw)) {
     return true
   }

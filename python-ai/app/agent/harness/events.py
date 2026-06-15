@@ -324,7 +324,7 @@ _SSE_TOOL_INPUT_KEYS = (
     "merge",
 )
 
-_SSE_OMIT_BODY_KEYS = frozenset({"content", "old_string", "new_string"})
+_SSE_OMIT_BODY_KEYS = frozenset({"content", "old_string", "new_string", "payload"})
 
 
 def _tool_input_for_sse(tool: str, inp: dict[str, Any]) -> dict[str, Any]:

@@ -62,5 +62,8 @@ describe('agentToolNames', () => {
       }),
     ).toBe(false)
     expect(shouldRefreshStoryMemoryAfterTool('memory_update')).toBe(true)
+    expect(shouldRefreshStoryMemoryAfterTool('WriteMemory')).toBe(true)
+    expect(shouldRefreshStoryMemoryAfterTool('EditMemory')).toBe(true)
+    expect(shouldRefreshStoryMemoryAfterTool('DeleteMemory')).toBe(true)
   })
 })

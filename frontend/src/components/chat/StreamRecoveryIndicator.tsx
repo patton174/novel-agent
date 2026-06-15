@@ -1,5 +1,4 @@
 import { useTranslation } from 'react-i18next'
-import { ShimmerScanBar } from '../loaders/ShimmerScanBar'
 import { ShimmerScanText } from '../loaders/ShimmerScanText'
 import { PLANNING_TITLE } from '@/lib/timelineClasses'
 import { cn } from '@/lib/utils'
@@ -29,9 +28,8 @@ export function StreamRecoveryIndicator({ label, className }: StreamRecoveryIndi
         role="status"
         aria-live="polite"
         aria-label={ariaLabel}
-        className="agent-stream-recovery-indicator relative z-[1] flex w-full max-w-[280px] flex-col items-center gap-3 rounded-2xl border border-primary/15 bg-background/90 px-6 py-4 shadow-[0_10px_40px_rgba(15,23,42,0.08)] backdrop-blur-md dark:border-primary/20 dark:bg-background/85 dark:shadow-[0_10px_40px_rgba(0,0,0,0.4)]"
+        className="agent-stream-recovery-indicator relative z-[1] flex w-full max-w-[280px] flex-col items-center rounded-2xl border border-primary/15 bg-background/90 px-6 py-4 shadow-[0_10px_40px_rgba(15,23,42,0.08)] backdrop-blur-md dark:border-primary/20 dark:bg-background/85 dark:shadow-[0_10px_40px_rgba(0,0,0,0.4)]"
       >
-        <ShimmerScanBar width={132} height={3} />
         <ShimmerScanText
           active
           className={cn(PLANNING_TITLE, 'agent-stream-recovery-caption text-[13px] font-semibold')}

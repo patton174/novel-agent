@@ -37,6 +37,7 @@ from app.agent.harness.tool_result_routing import (
 )
 from app.agent.harness.transcript import AgentTranscript, apply_interaction_to_context
 from app.agent.schemas import AgentRunContext, StepResult
+from app.agent.harness.events import _tool_input_for_sse
 from app.agent.streaming.sse_bridge import stream_cc_tool_step
 from app.runtime.events import build_event
 
@@ -536,7 +537,7 @@ def planned_tool_visibility_events(
                 "display_name": tool_display_name(tool, inp),
             }
             if inp:
-                payload["tool_input"] = inp
+                payload["tool_input"] = _tool_input_for_sse(tool, inp)
             events.append(
                 build_event(
                     event_type="tool.started",

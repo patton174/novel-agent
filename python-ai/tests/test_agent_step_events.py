@@ -130,6 +130,27 @@ def test_write_completed_payload_omits_body_from_tool_input():
     assert "content" not in payload["tool_input"]
 
 
+def test_write_memory_completed_payload_omits_document_from_tool_input():
+    from app.agent.harness.events import _tool_input_for_sse
+
+    doc = {"sections": [{"title": "设定", "body": "x" * 8000}]}
+    slim = _tool_input_for_sse(
+        "WriteMemory",
+        {"scope": "novel", "key": "world", "payload": doc},
+    )
+    assert slim["scope"] == "novel"
+    assert slim["key"] == "world"
+    assert "payload" not in slim
+
+    payload = build_tool_completed_sse_payload(
+        "WriteMemory",
+        content='{"ok": true}',
+        tool_input={"scope": "novel", "key": "world", "payload": doc},
+    )
+    assert payload["tool_input"]["scope"] == "novel"
+    assert "payload" not in payload["tool_input"]
+
+
 def test_todo_write_completed_payload_includes_todos():
     todos = [
         {"id": "a", "content": "写第一章", "status": "in_progress"},
