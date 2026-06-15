@@ -147,6 +147,27 @@
   animation: agent-timeline-todo-row-in 0.22s ease-out both;
 }
 
+@keyframes agent-orchestration-summary-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.agent-timeline-orchestration-summary-reveal {
+  animation: agent-orchestration-summary-reveal 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .agent-timeline-orchestration-summary-reveal {
+    animation: none;
+  }
+}
+
 @keyframes agent-todo-stroke-pulse {
   0% {
     stroke-dashoffset: 40;

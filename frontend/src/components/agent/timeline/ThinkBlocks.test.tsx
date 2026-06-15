@@ -7,7 +7,7 @@ describe('ThinkBlock', () => {
   const block: Extract<AgentTimelineBlock, { kind: 'think' }> = {
     kind: 'think',
     id: 'think-1',
-    text: '分析完成后的思考正文',
+    text: '先分析上下文。再给出结论。',
     stepId: 'step-think',
   }
 

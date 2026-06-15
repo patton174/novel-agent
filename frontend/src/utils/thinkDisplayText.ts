@@ -4,17 +4,63 @@ export function splitThinkLines(text: string, omitEmpty = false): string[] {
   return omitEmpty ? lines.filter((line) => line.trim().length > 0) : lines
 }
 
+/** 按中英文句界切分（保留句末标点） */
+export function splitSentences(text: string): string[] {
+  const trimmed = text.trim()
+  if (!trimmed) {
+    return []
+  }
+  const parts = trimmed.match(/[^。！？.!?]+[。！？.!?]?/gu)
+  if (!parts?.length) {
+    return [trimmed]
+  }
+  return parts.map((s) => s.trim()).filter(Boolean)
+}
+
+function stripListPrefix(line: string): string {
+  return line.replace(/^[-*•]\s+/, '').replace(/^\d+[.)]\s+/, '').trim()
+}
+
 /**
- * 思考面板内渲染的正文：
- * - 展开：全文
- * - 思考中且未展开：尾部 maxLines 行（流式窗口）
- * - 已完成且未展开：空（点击标题展开看全文）
+ * 编排区正文：仅最后一句话（末句），不是末行。
+ * 模型常把多句写在同一行，按行切会把整段误当作「末句」。
  */
-export function formatThinkDisplayText(
+export function extractOrchestrationSummary(text: string): string {
+  const trimmed = text.trim()
+  if (!trimmed) {
+    return ''
+  }
+  const sentences = splitSentences(trimmed)
+  if (sentences.length > 1) {
+    return stripListPrefix(sentences[sentences.length - 1] ?? trimmed)
+  }
+  const lines = splitThinkLines(trimmed, true)
+  const last = lines[lines.length - 1] ?? trimmed
+  return stripListPrefix(last)
+}
+
+/** 思考面板正文：去掉末句（末句仅展示在编排区 flat row） */
+export function thinkBodyExcludingSummary(text: string): string {
+  const trimmed = text.trim()
+  if (!trimmed) {
+    return ''
+  }
+  const sentences = splitSentences(trimmed)
+  if (sentences.length > 1) {
+    return sentences.slice(0, -1).join('').trim()
+  }
+  const lines = splitThinkLines(trimmed, true)
+  if (lines.length <= 1) {
+    return ''
+  }
+  return lines.slice(0, -1).join('\n')
+}
+
+/** 推理进行中：完整正文，不做末句拆分 */
+export function formatThinkStreamingDisplay(
   text: string,
-  opts: { isThinking: boolean; expanded: boolean; maxLines?: number },
+  opts: { expanded: boolean; maxLines?: number },
 ): string {
-  const maxLines = opts.maxLines ?? 3
   const trimmed = text.trim()
   if (!trimmed) {
     return ''
@@ -22,9 +68,7 @@ export function formatThinkDisplayText(
   if (opts.expanded) {
     return text
   }
-  if (!opts.isThinking) {
-    return ''
-  }
+  const maxLines = opts.maxLines ?? 3
   const lines = splitThinkLines(trimmed, true)
   if (lines.length === 0) {
     return trimmed
@@ -32,18 +76,22 @@ export function formatThinkDisplayText(
   return lines.slice(-maxLines).join('\n')
 }
 
-/** @deprecated 编排区不再拆分「末句」；保留供旧测试/回放兼容 */
-export function extractOrchestrationSummary(text: string): string {
-  const trimmed = text.trim()
+/**
+ * 思考完成后面板内正文（不含编排末句）：
+ * - 展开：除末句外的全文
+ * - 收起：空（末句在编排 flat row）
+ */
+export function formatThinkDisplayText(
+  text: string,
+  opts: { expanded: boolean; maxLines?: number },
+): string {
+  const body = thinkBodyExcludingSummary(text)
+  const trimmed = body.trim()
   if (!trimmed) {
     return ''
   }
-  const lines = splitThinkLines(trimmed, true)
-  const last = lines[lines.length - 1] ?? trimmed
-  return last.replace(/^[-*•]\s+/, '').replace(/^\d+[.)]\s+/, '').trim()
-}
-
-/** @deprecated */
-export function thinkBodyExcludingSummary(text: string): string {
-  return text.trim()
+  if (opts.expanded) {
+    return body
+  }
+  return ''
 }

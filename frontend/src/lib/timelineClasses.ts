@@ -97,6 +97,8 @@ export const ORCHESTRATION_FLAT_ROW = cn(
   'box-border w-full max-w-full px-0 py-[0.05rem] pb-[0.1rem] pl-[calc(1.35rem+0.4rem)]',
 )
 
+export const ORCHESTRATION_SUMMARY_REVEAL = 'agent-timeline-orchestration-summary-reveal'
+
 export const THINK_BODY_IN_ROUND = ORCHESTRATION_FLAT_ROW
 
 export const CC_TOOL_ROW_WRAP = 'w-full max-w-full px-0 py-[0.1rem]'
