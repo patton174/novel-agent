@@ -81,16 +81,7 @@ function EditorChatMessageInner({
       phase === 'waiting' ||
       !isActiveStream ||
       !isLoading
-  const showConnectingPlaceholder =
-    streamActive &&
-    !message.content?.trim() &&
-    !hasTimeline &&
-    !hasTrace &&
-    phase === 'connecting' &&
-    !message.agentAwaitingInteraction &&
-    !message.agentSteps?.some((s) => (s.choices?.length ?? 0) > 0)
-  const showAgentTimeline =
-    !showConnectingPlaceholder && (hasTimeline || hasTrace || streamActive)
+  const showAgentTimeline = hasTimeline || hasTrace || streamActive
   const timelineShowsContent = replayTimeline.some(
     (block) => block.kind === 'text' && block.content.trim().length > 0,
   )
@@ -170,11 +161,6 @@ function EditorChatMessageInner({
             {sanitizeAgentStreamError(message.agentStreamError)}
           </div>
         )}
-        {showConnectingPlaceholder && (
-          <ChatMessageSurfaceBody className="flex min-h-7 items-center" aria-hidden>
-            <ShimmerScanText active>{t('editor:chat.preparing')}</ShimmerScanText>
-          </ChatMessageSurfaceBody>
-        )}
         {showAgentTimeline ? (
           <div className="flex w-full max-w-full flex-col" data-testid="assistant-stream-shell">
             {processCollapsed && streamActive && !deliveryText ? (
@@ -245,7 +231,7 @@ function EditorChatMessageInner({
               />
             ) : null}
           </div>
-        ) : !showConnectingPlaceholder && hasChoiceSteps ? (
+        ) : hasChoiceSteps ? (
           <>
             {(thinkText?.trim() || (isActiveStream && isLoading && message.agentIsThinking)) ? (
               <ChatMessageSurfaceBody className="pb-2">
@@ -274,7 +260,7 @@ function EditorChatMessageInner({
               onSubmitInteraction={onSubmitInteraction}
             />
           </>
-        ) : !showConnectingPlaceholder && message.content?.trim() ? (
+        ) : message.content?.trim() ? (
           <div className="flex w-full max-w-full flex-col gap-1.5 px-0 py-0.5">
             <AgentMarkdown text={message.content} variant="chat" />
           </div>

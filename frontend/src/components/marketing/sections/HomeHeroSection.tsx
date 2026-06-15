@@ -1,10 +1,11 @@
 import { motion, useReducedMotion } from 'framer-motion'
-import { ChevronDown, Sparkles } from 'lucide-react'
+import { Sparkles } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { isLoggedIn } from '../../../utils/auth'
 import { MKT_CTA_PRIMARY_LG, MKT_CTA_SECONDARY } from '@/lib/marketingCta'
 import { ArrowIcon } from '../icons'
+import { MarketingStrokeTitle } from '../MarketingStrokeTitle'
 
 const TRUST_KEYS = ['trustFree', 'trustZh', 'trustStream', 'trustMemory'] as const
 
@@ -37,16 +38,14 @@ export function HomeHeroSection() {
         {t('home.hero.eyebrow')}
       </motion.p>
 
-      <motion.h1
-        {...fade(0.08)}
-        className="mb-6 text-4xl font-bold leading-[1.1] tracking-tight text-foreground sm:text-5xl md:text-6xl lg:text-[4.25rem]"
-      >
-        {t('home.hero.title')}
-        <br />
-        <span className={reduced ? 'text-primary' : 'mkt-gradient-text'}>
+      <motion.div {...fade(0.08)} className="mb-6 space-y-1">
+        <h1 className="sr-only">
+          {t('home.hero.title')}
           {t('home.hero.titleAccent')}
-        </span>
-      </motion.h1>
+        </h1>
+        <MarketingStrokeTitle text={t('home.hero.title')} size="hero" variant="default" block />
+        <MarketingStrokeTitle text={t('home.hero.titleAccent')} size="hero" variant="accent" block />
+      </motion.div>
 
       <motion.p
         {...fade(0.16)}
@@ -70,7 +69,7 @@ export function HomeHeroSection() {
 
       <motion.div
         {...fade(0.32)}
-        className="mb-6 flex flex-wrap items-center justify-center gap-2 sm:mb-8"
+        className="mb-2 flex flex-wrap items-center justify-center gap-2 sm:mb-4"
       >
         {TRUST_KEYS.map((key) => (
           <span key={key} className="mkt-glass-pill rounded-full px-3 py-1 text-xs font-medium text-muted-foreground">
@@ -83,11 +82,10 @@ export function HomeHeroSection() {
         {...fade(0.4)}
         type="button"
         onClick={scrollToStory}
-        className="group mx-auto mt-4 flex flex-col items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-primary sm:mt-6"
+        className="mx-auto mt-4 text-xs text-muted-foreground underline-offset-4 transition-colors hover:text-primary hover:underline sm:mt-6"
         aria-label={t('home.hero.scrollHint')}
       >
-        <span>{t('home.hero.scrollHint')}</span>
-        <ChevronDown className="size-4 animate-bounce motion-reduce:animate-none" />
+        {t('home.hero.scrollHint')}
       </motion.button>
     </div>
   )

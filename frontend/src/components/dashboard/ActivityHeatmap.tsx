@@ -2,12 +2,15 @@ import { Fragment, useMemo, useState } from 'react'
 import { cn } from '@/lib/utils'
 import type { DashboardActivity, DashboardActivityDay } from '@/api/dashboardApi'
 import { Skeleton } from '@/components/ui/skeleton'
+import {
+  activityAsOfLabel,
+  formatCompactMetric,
+} from '@/utils/dashboardMetrics'
 import { useTranslation } from 'react-i18next'
 import i18n from '@/i18n'
 
 export type ActivityMode = 'all' | 'writing' | 'agent'
 
-/** 与网格 gap、标签列宽、格子尺寸保持一致 */
 const WEEKDAY_COL_WIDTH = '1.25rem'
 const CELL_SIZE_PX = 14
 const GRID_GAP_PX = 4
@@ -65,7 +68,6 @@ function trimWeeksToActiveRange(
     }
   }
 
-  // 无活跃：只展示最近 12 周，避免整年空白
   if (firstActive === -1) {
     const tail = Math.min(12, weeks.length)
     const start = weeks.length - tail
@@ -184,85 +186,23 @@ function buildHeatmapGrid(days: DashboardActivityDay[], mode: ActivityMode) {
   return { weeks, maxValue, monthLabels }
 }
 
-function computeStreaks(days: DashboardActivityDay[], mode: ActivityMode) {
-  let longest = 0
-  let current = 0
-  let run = 0
-
-  for (const day of days) {
-    if (getDayValue(day, mode) > 0) {
-      run += 1
-      longest = Math.max(longest, run)
-    } else {
-      run = 0
-    }
-  }
-
-  for (let i = days.length - 1; i >= 0; i--) {
-    if (getDayValue(days[i], mode) > 0) {
-      current += 1
-    } else {
-      break
-    }
-  }
-
-  return { longest, current }
-}
-
-function computeHighlights(days: DashboardActivityDay[], mode: ActivityMode, t: (key: string, options?: Record<string, unknown>) => string) {
-  const monthTotals = new Map<number, number>()
-  let bestDay = days[0]?.date ?? '—'
-  let bestValue = -1
-
-  for (const day of days) {
-    const value = getDayValue(day, mode)
-    const month = parseUtcDate(day.date).getUTCMonth()
-    monthTotals.set(month, (monthTotals.get(month) ?? 0) + value)
-    if (value > bestValue) {
-      bestValue = value
-      bestDay = day.date
-    }
-  }
-
-  let bestMonth = 0
-  let bestMonthValue = -1
-  monthTotals.forEach((total, month) => {
-    if (total > bestMonthValue) {
-      bestMonthValue = total
-      bestMonth = month
-    }
-  })
-
-  const dateLocale = i18n.language === 'zh' ? 'zh-CN' : 'en-US'
-
-  const bestDayLabel =
-    bestValue > 0
-      ? parseUtcDate(bestDay).toLocaleDateString(dateLocale, {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-          timeZone: 'UTC',
-        })
-      : '—'
-
-  const bestMonthLabel =
-    bestMonthValue > 0 ? t('dashboard:heatmap.bestMonthValue', { month: bestMonth + 1 }) : '—'
-
-  return { bestMonthLabel, bestDayLabel }
-}
-
-function formatTotal(activity: DashboardActivity, mode: ActivityMode): string {
+function formatTotal(activity: DashboardActivity, mode: ActivityMode, locale: string): string {
   switch (mode) {
     case 'writing':
-      return activity.totalWritingWords.toLocaleString('zh-CN')
+      return formatCompactMetric(activity.totalWritingWords, locale)
     case 'agent':
-      return activity.totalAgentRuns.toLocaleString('zh-CN')
+      return formatCompactMetric(activity.totalAgentRuns, locale)
     case 'all':
-      return (activity.totalWritingWords + activity.totalAgentRuns * 800).toLocaleString('zh-CN')
+      return formatCompactMetric(activity.totalWritingWords + activity.totalAgentRuns * 800, locale)
   }
 }
 
-function formatTooltip(date: string, value: number, mode: ActivityMode, t: any): string {
+function formatTooltip(
+  date: string,
+  value: number,
+  mode: ActivityMode,
+  t: (key: string) => string,
+): string {
   const label = parseUtcDate(date).toLocaleDateString('zh-CN', {
     year: 'numeric',
     month: 'long',
@@ -284,19 +224,24 @@ export function ActivityHeatmap({ activity, loading }: ActivityHeatmapProps) {
   const { t } = useTranslation(['dashboard'])
   const [mode, setMode] = useState<ActivityMode>('all')
   const days = activity?.days ?? []
+  const dateLocale = i18n.language === 'zh' ? 'zh-CN' : 'en-US'
 
-  const MODE_OPTIONS: { id: ActivityMode; label: string; metricLabel: string }[] = useMemo(() => [
-    { id: 'all', label: t('dashboard:heatmap.modeAll'), metricLabel: t('dashboard:heatmap.metricAll') },
-    { id: 'writing', label: t('dashboard:heatmap.modeWriting'), metricLabel: t('dashboard:heatmap.metricWriting') },
-    { id: 'agent', label: t('dashboard:heatmap.modeAgent'), metricLabel: t('dashboard:heatmap.metricAgent') },
-  ], [t])
+  const MODE_OPTIONS: { id: ActivityMode; label: string }[] = useMemo(
+    () => [
+      { id: 'all', label: t('dashboard:heatmap.modeAll') },
+      { id: 'writing', label: t('dashboard:heatmap.modeWriting') },
+      { id: 'agent', label: t('dashboard:heatmap.modeAgent') },
+    ],
+    [t],
+  )
 
-  const WEEKDAY_LABELS = useMemo(() => [
-    { row: 0, label: t('dashboard:heatmap.sun') },
-    { row: 1, label: t('dashboard:heatmap.mon') },
-    { row: 3, label: t('dashboard:heatmap.wed') },
-    { row: 5, label: t('dashboard:heatmap.fri') },
-  ], [t])
+  const WEEKDAY_LABELS = useMemo(
+    () =>
+      i18n.language === 'zh'
+        ? ['日', '一', '二', '三', '四', '五', '六']
+        : ['S', 'M', 'T', 'W', 'T', 'F', 'S'],
+    [],
+  )
 
   const { weeks, maxValue, monthLabels } = useMemo(() => {
     const built = buildHeatmapGrid(days, mode)
@@ -308,10 +253,6 @@ export function ActivityHeatmap({ activity, loading }: ActivityHeatmapProps) {
     }
   }, [days, mode])
 
-  const streaks = useMemo(() => computeStreaks(days, mode), [days, mode])
-  const highlights = useMemo(() => computeHighlights(days, mode, t), [days, mode, t])
-  const activeMode = MODE_OPTIONS.find((m) => m.id === mode)!
-
   const monthLabelByWeek = useMemo(
     () => new Map(monthLabels.map((m) => [m.weekIndex, m.label])),
     [monthLabels],
@@ -319,135 +260,109 @@ export function ActivityHeatmap({ activity, loading }: ActivityHeatmapProps) {
 
   const weekCount = weeks.length
   const gridColumns = heatmapGridColumns(weekCount)
+  const asOf = activityAsOfLabel(days, dateLocale)
+  const peak = useMemo(() => {
+    if (days.length === 0) return 0
+    return Math.max(...days.map((day) => getDayValue(day, mode)), 0)
+  }, [days, mode])
+
+  const activeDays = useMemo(
+    () => days.filter((day) => getDayValue(day, mode) > 0).length,
+    [days, mode],
+  )
 
   return (
-    <div className="py-0">
+    <div className="flex h-full flex-col">
       <div className="border-b border-border/60 px-6 py-4">
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-xs font-medium text-muted-foreground">{activeMode.metricLabel}</p>
-            {loading ? (
-              <Skeleton className="mt-1.5 h-8 w-28" />
-            ) : (
-              <p className="mt-0.5 text-2xl font-bold tabular-nums tracking-tight text-foreground">
-                {activity ? formatTotal(activity, mode) : '0'}
-              </p>
-            )}
+            <h2 className="text-base font-semibold text-foreground">
+              {t('dashboard:home.heatmapTitle')}
+            </h2>
+            <div className="mt-2 flex flex-wrap gap-1 rounded-lg bg-muted p-0.5">
+              {MODE_OPTIONS.map((option) => (
+                <button
+                  key={option.id}
+                  type="button"
+                  onClick={() => setMode(option.id)}
+                  className={cn(
+                    'rounded-md px-2 py-0.5 text-[11px] font-medium transition-colors',
+                    mode === option.id
+                      ? 'bg-background text-foreground shadow-sm ring-1 ring-border/60'
+                      : 'text-muted-foreground hover:text-foreground',
+                  )}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="flex shrink-0 rounded-lg bg-muted p-0.5">
-            {MODE_OPTIONS.map((option) => (
-              <button
-                key={option.id}
-                type="button"
-                onClick={() => setMode(option.id)}
-                className={cn(
-                  'rounded-md px-2.5 py-1 text-xs font-medium transition-colors',
-                  mode === option.id
-                    ? 'bg-background text-foreground shadow-sm ring-1 ring-border/60'
-                    : 'text-muted-foreground hover:bg-background/60 hover:text-foreground',
-                )}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
+          <p className="shrink-0 text-xs text-muted-foreground">
+            {t('dashboard:home.dataAsOf', { date: asOf })}
+          </p>
         </div>
       </div>
 
-      <div className="px-6 py-4">
-        {loading ? (
-          <Skeleton className="mx-auto h-[95px] w-full max-w-md rounded-lg" />
-        ) : weekCount === 0 ? (
-          <p className="py-8 text-center text-sm text-muted-foreground">{t('dashboard:heatmap.noData')}</p>
-        ) : (
-          <div className="w-full overflow-x-auto pb-1">
-            <div className="min-w-fit">
-              <div
-                className="mb-2 grid"
-                style={{
-                  gridTemplateColumns: gridColumns,
-                  gap: GRID_GAP_PX,
-                }}
-              >
-                <div aria-hidden />
-                {weeks.map((_, weekIndex) => (
-                  <div
-                    key={weekIndex}
-                    className="truncate text-ui-xs font-medium leading-none text-muted-foreground"
-                  >
-                    {monthLabelByWeek.get(weekIndex)
-                      ? t('dashboard:heatmap.monthAxis', { month: monthLabelByWeek.get(weekIndex) })
-                      : ''}
-                  </div>
-                ))}
-              </div>
-
-              <div
-                className="grid"
-                style={{
-                  gridTemplateColumns: gridColumns,
-                  gap: GRID_GAP_PX,
-                }}
-              >
-                {Array.from({ length: 7 }).map((_, rowIndex) => (
-                  <Fragment key={rowIndex}>
-                    <div className="flex items-center text-ui-xs font-medium leading-none text-muted-foreground">
-                      {WEEKDAY_LABELS.find((l) => l.row === rowIndex)?.label ?? ''}
+      <div className="flex flex-1 flex-col gap-4 px-6 py-4 lg:flex-row lg:items-start">
+        <div className="min-w-0 flex-1">
+          {loading ? (
+            <Skeleton className="h-[120px] w-full rounded-lg" />
+          ) : weekCount === 0 ? (
+            <p className="py-10 text-center text-sm text-muted-foreground">
+              {t('dashboard:heatmap.noData')}
+            </p>
+          ) : (
+            <div className="w-full overflow-x-auto pb-1">
+              <div className="min-w-fit">
+                <div
+                  className="mb-2 grid"
+                  style={{ gridTemplateColumns: gridColumns, gap: GRID_GAP_PX }}
+                >
+                  <div aria-hidden />
+                  {weeks.map((_, weekIndex) => (
+                    <div
+                      key={weekIndex}
+                      className="truncate text-[10px] font-medium leading-none text-muted-foreground"
+                    >
+                      {monthLabelByWeek.get(weekIndex)
+                        ? t('dashboard:heatmap.monthAxis', { month: monthLabelByWeek.get(weekIndex) })
+                        : ''}
                     </div>
-                    {weeks.map((week, weekIndex) => {
-                      const cell = week[rowIndex]
-                      const level = cell.date ? valueToLevel(cell.value, maxValue) : 0
-                      return (
-                        <div
-                          key={`${weekIndex}-${rowIndex}`}
-                          title={
-                            cell.date
-                              ? formatTooltip(cell.date, cell.value, mode, t)
-                              : undefined
-                          }
-                          className={cn(
-                            'size-[14px] shrink-0 rounded-[3px] transition-colors',
-                            cellClass(cell, level),
-                          )}
-                        />
-                      )
-                    })}
-                  </Fragment>
-                ))}
+                  ))}
+                </div>
+
+                <div className="grid" style={{ gridTemplateColumns: gridColumns, gap: GRID_GAP_PX }}>
+                  {Array.from({ length: 7 }).map((_, rowIndex) => (
+                    <Fragment key={rowIndex}>
+                      <div className="flex items-center text-[10px] font-medium leading-none text-muted-foreground">
+                        {WEEKDAY_LABELS[rowIndex]}
+                      </div>
+                      {weeks.map((week, weekIndex) => {
+                        const cell = week[rowIndex]
+                        const level = cell.date ? valueToLevel(cell.value, maxValue) : 0
+                        return (
+                          <div
+                            key={`${weekIndex}-${rowIndex}`}
+                            title={
+                              cell.date
+                                ? formatTooltip(cell.date, cell.value, mode, t)
+                                : undefined
+                            }
+                            className={cn(
+                              'size-[14px] shrink-0 rounded-[3px] transition-colors',
+                              cellClass(cell, level),
+                            )}
+                          />
+                        )
+                      })}
+                    </Fragment>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        <div className="mt-4 flex flex-col gap-4 border-t border-border pt-4 sm:flex-row sm:items-end sm:justify-between">
-          <div className="grid flex-1 grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-4">
-            <div>
-              <p className="text-ui-sm text-muted-foreground">{t('dashboard:heatmap.bestMonth')}</p>
-              <p className="mt-0.5 text-sm font-medium text-foreground">
-                {loading ? '—' : highlights.bestMonthLabel}
-              </p>
-            </div>
-            <div>
-              <p className="text-ui-sm text-muted-foreground">{t('dashboard:heatmap.bestDay')}</p>
-              <p className="mt-0.5 text-sm font-medium text-foreground">
-                {loading ? '—' : highlights.bestDayLabel}
-              </p>
-            </div>
-            <div>
-              <p className="text-ui-sm text-muted-foreground">{t('dashboard:heatmap.longestStreak')}</p>
-              <p className="mt-0.5 text-sm font-medium text-foreground">
-                {loading ? '—' : t('dashboard:heatmap.daysCount', { count: streaks.longest })}
-              </p>
-            </div>
-            <div>
-              <p className="text-ui-sm text-muted-foreground">{t('dashboard:heatmap.currentStreak')}</p>
-              <p className="mt-0.5 text-sm font-medium text-foreground">
-                {loading ? '—' : t('dashboard:heatmap.daysCount', { count: streaks.current })}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex shrink-0 items-center gap-1.5 text-ui-xs text-muted-foreground">
+          <div className="mt-4 flex items-center justify-end gap-1.5 text-[10px] text-muted-foreground">
             <span>{t('dashboard:heatmap.less')}</span>
             {LEVEL_CLASSES.map((cls, i) => (
               <div key={i} className={cn('size-3 rounded-[2px]', cls)} />
@@ -455,7 +370,51 @@ export function ActivityHeatmap({ activity, loading }: ActivityHeatmapProps) {
             <span>{t('dashboard:heatmap.more')}</span>
           </div>
         </div>
+
+        <div className="flex shrink-0 flex-row gap-6 border-t border-border/60 pt-4 lg:w-[9.5rem] lg:flex-col lg:border-l lg:border-t-0 lg:pl-5 lg:pt-0">
+          <SideStat
+            loading={loading}
+            label={t('dashboard:home.sideTotal')}
+            value={activity ? formatTotal(activity, mode, dateLocale) : '0'}
+          />
+          <SideStat
+            loading={loading}
+            label={t('dashboard:home.sidePeak')}
+            value={formatCompactMetric(peak, dateLocale)}
+          />
+          <SideStat
+            loading={loading}
+            label={t('dashboard:home.sideActiveDays')}
+            value={String(activeDays)}
+          />
+        </div>
       </div>
+    </div>
+  )
+}
+
+function SideStat({
+  label,
+  value,
+  loading,
+}: {
+  label: string
+  value: string
+  loading?: boolean
+}) {
+  return (
+    <div>
+      {loading ? (
+        <>
+          <Skeleton className="h-7 w-16" />
+          <Skeleton className="mt-1.5 h-3 w-14" />
+        </>
+      ) : (
+        <>
+          <p className="text-xl font-bold tabular-nums leading-none text-foreground">{value}</p>
+          <p className="mt-1.5 text-xs text-muted-foreground">{label}</p>
+        </>
+      )}
     </div>
   )
 }

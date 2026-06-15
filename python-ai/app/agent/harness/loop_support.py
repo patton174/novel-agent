@@ -8,9 +8,15 @@ from dataclasses import dataclass, field
 from typing import Any
 from uuid import uuid4
 
-from langchain_core.messages import BaseMessage
+from langchain_core.messages import BaseMessage, HumanMessage
 
 from app.agent.context.usage import RunUsageAccumulator
+from app.agent.tools.todo_helpers import (
+    TODO_REMINDER_INTERVAL,
+    TODO_REMINDER_TURNS,
+    format_todos_for_model,
+    working_todos_from_patch,
+)
 from app.agent.harness.orchestration_contract import (
     QUERY_LOOP_END_RUN_TOOLS as _END_RUN_TOOLS,
 )
@@ -280,6 +286,8 @@ class RunLoopState:
     tool_recoveries: int = 0
     assistant_message_emitted: bool = False
     messages: list[BaseMessage] | None = None
+    turns_since_todo_write: int = 0
+    last_todo_reminder_turn: int = -100
 
 
 _CC_TOOL_TITLES = {
@@ -346,6 +354,53 @@ def build_todo_exit_review_message(context_patch: dict[str, Any] | None) -> str 
 def build_open_todos_blocking_message(context_patch: dict[str, Any] | None) -> str | None:
     """Alias for tests / legacy import."""
     return build_todo_exit_review_message(context_patch)
+
+
+def build_todo_reminder_message(context_patch: dict[str, Any] | None) -> str | None:
+    """Nudge the model to update TodoWrite when todos exist but haven't been touched."""
+    todos = working_todos_from_patch(context_patch if isinstance(context_patch, dict) else None)
+    if not todos:
+        return None
+    open_items = open_todo_items(context_patch)
+    if not open_items:
+        return None
+    summary = format_todos_for_model(todos)
+    return (
+        "【系统】TodoWrite 已有一段时间未更新，但待办清单中仍有未完成项。"
+        "请对照实际进度调用 TodoWrite（merge=true，提交完整清单）：\n"
+        "· 正在做的 → in_progress（同时仅一项）\n"
+        "· 刚完成的 → completed\n"
+        "· 不再需要的 → cancelled\n\n"
+        f"{summary}"
+    )
+
+
+def should_inject_todo_reminder(state: RunLoopState) -> bool:
+    if state.turns_since_todo_write < TODO_REMINDER_TURNS:
+        return False
+    if state.turn - state.last_todo_reminder_turn < TODO_REMINDER_INTERVAL:
+        return False
+    patch = state.ctx.context_patch if isinstance(state.ctx.context_patch, dict) else {}
+    return build_todo_reminder_message(patch) is not None
+
+
+def block_run_end_for_open_todos(
+    state: RunLoopState,
+    messages: list[BaseMessage],
+    *,
+    refresh_context: Any,
+) -> bool:
+    """Inject exit review once when the model tries to end with open todos."""
+    patch = state.ctx.context_patch if isinstance(state.ctx.context_patch, dict) else {}
+    review = build_todo_exit_review_message(patch)
+    if not review or patch.get("_todo_exit_reviewed"):
+        return False
+    messages.append(HumanMessage(content=review))
+    merged = dict(patch)
+    merged["_todo_exit_reviewed"] = True
+    state.ctx = state.ctx.model_copy(update={"context_patch": merged})
+    refresh_context(messages, state.ctx, state.transcript)
+    return True
 
 
 async def wait_for_user_interaction(

@@ -22,5 +22,6 @@ export function deriveAssistantStreamPhase(state: AgentStreamUiState): AgentAssi
   if (state.isThinking) {
     return 'planning'
   }
-  return 'connecting'
+  // 流已开始、首条编排事件尚未到达：归入 planning，避免「准备中」独立占位框
+  return 'planning'
 }

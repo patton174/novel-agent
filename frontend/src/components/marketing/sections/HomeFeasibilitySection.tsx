@@ -4,6 +4,7 @@ import { ArrowRight, BookMarked, PenTool, Sparkles, Users } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useAppMobile } from '@/hooks/useMediaQuery'
 import { MarketingAmbient } from '../MarketingAmbient'
+import { MarketingStrokeTitle } from '../MarketingStrokeTitle'
 import { MKT_CTA_PRIMARY, MKT_CTA_SECONDARY } from '@/lib/marketingCta'
 import { marketingInViewMotion } from '../motion/marketingInViewMotion'
 
@@ -43,9 +44,14 @@ export function HomeFeasibilitySection() {
             <Sparkles className="size-3" />
             {t('home.feasibility.eyebrow')}
           </p>
-          <h2 className="mb-3 text-3xl font-bold tracking-tight text-foreground md:text-4xl lg:text-4xl">
-            {t('home.feasibility.title')}
-          </h2>
+          <h2 className="sr-only">{t('home.feasibility.title')}</h2>
+          <MarketingStrokeTitle
+            text={t('home.feasibility.title')}
+            size="section"
+            variant="default"
+            block
+            className="mb-3"
+          />
           <p className="text-base leading-relaxed text-muted-foreground md:text-lg">{t('home.feasibility.subtitle')}</p>
         </motion.div>
 

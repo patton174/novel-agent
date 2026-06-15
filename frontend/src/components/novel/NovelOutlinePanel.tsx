@@ -5,13 +5,13 @@ import {
   reorderVolumeIds,
   sortChapters,
 } from '../../utils/outlineDrag'
-import { alertDialog, promptDialog } from '../../stores/appDialog'
+import { alertDialog, confirmAction, promptDialog } from '../../stores/appDialog'
 import { useOutlineTouchDrag } from '../../hooks/useOutlineTouchDrag'
 import { EditorButton } from '../ui/EditorButton'
 import { OutlineVolumeBlock } from './outline/OutlineVolumeBlock'
 import { readDragPayload, writeDragPayload } from './outline/outlineDrag'
 import { PlusIcon } from './outline/outlineIcons'
-import { OUTLINE_DRAG_HINT, OUTLINE_HINT, OUTLINE_LIST } from '@/lib/outlineClasses'
+import { OUTLINE_DRAG_HINT, OUTLINE_HINT, OUTLINE_LIST, OUTLINE_SECTION_LABEL } from '@/lib/outlineClasses'
 import type { DragPayload, DropTarget } from './outline/outlineTypes'
 
 export interface NovelOutlinePanelProps {
@@ -31,6 +31,8 @@ export function NovelOutlinePanel({
   const activeChapterId = useNovelStore((s) => s.activeChapterId)
   const selectChapter = useNovelStore((s) => s.selectChapter)
   const addChapter = useNovelStore((s) => s.addChapter)
+  const deleteChapter = useNovelStore((s) => s.deleteChapter)
+  const renameChapter = useNovelStore((s) => s.renameChapter)
   const addVolume = useNovelStore((s) => s.addVolume)
   const reorderVolumes = useNovelStore((s) => s.reorderVolumes)
   const applyChapterReorderPlans = useNovelStore((s) => s.applyChapterReorderPlans)
@@ -77,6 +79,51 @@ export function NovelOutlinePanel({
       void alertDialog({ title: '创建卷失败' })
     }
   }, [activeNovelId, volumes.length, addVolume])
+
+  const handleDeleteChapter = useCallback(
+    async (chapterId: string, title: string) => {
+      if (
+        !(await confirmAction({
+          title: '删除章节',
+          description: `确定删除「${title}」？此操作不可撤销。`,
+          confirmLabel: '删除',
+          danger: true,
+        }))
+      ) {
+        return
+      }
+      setBusy(true)
+      try {
+        await deleteChapter(chapterId)
+      } catch {
+        void alertDialog({ title: '删除章节失败' })
+      } finally {
+        setBusy(false)
+      }
+    },
+    [deleteChapter],
+  )
+
+  const handleRenameChapter = useCallback(
+    async (chapterId: string, currentTitle: string) => {
+      const title = await promptDialog({
+        title: '重命名章节',
+        defaultValue: currentTitle,
+        placeholder: '章节标题',
+        confirmLabel: '保存',
+      })
+      if (!title || title.trim() === currentTitle.trim()) return
+      setBusy(true)
+      try {
+        await renameChapter(chapterId, title.trim())
+      } catch {
+        void alertDialog({ title: '重命名失败' })
+      } finally {
+        setBusy(false)
+      }
+    },
+    [renameChapter],
+  )
 
   const handleDragEnd = useCallback(() => {
     setDragging(null)
@@ -193,6 +240,7 @@ export function NovelOutlinePanel({
   return (
     <>
       {touchDragGhost}
+      <div className={OUTLINE_SECTION_LABEL}>作品目录</div>
       <div className={OUTLINE_DRAG_HINT}>拖拽卷标题栏排序；拖拽章节可跨卷移动或调整顺序</div>
       <div className={OUTLINE_LIST}>
         {volumeGroups.length === 0 ? (
@@ -223,6 +271,8 @@ export function NovelOutlinePanel({
               onSetDropTarget={setDropTarget}
               onSelectChapter={selectChapter}
               onAddChapter={addChapter}
+              onDeleteChapter={handleDeleteChapter}
+              onRenameChapter={handleRenameChapter}
               bindTouchHandle={bindTouchHandle}
             />
           ))

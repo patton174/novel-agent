@@ -6,6 +6,7 @@ from typing import Any
 
 from app.agent.schemas import AgentRunContext
 from app.agent.tools.schemas import AgentInput, AskUserInput, TodoWriteInput
+from app.agent.tools.todo_helpers import format_todos_for_model
 from app.agent.tools.tool import ToolCallResult, build_tool
 
 
@@ -32,7 +33,10 @@ async def todo_write(ctx: AgentRunContext, inp: TodoWriteInput) -> ToolCallResul
         item = t.model_dump()
         by_id[str(item["id"])] = item
     todos = list(by_id.values())
-    return ToolCallResult(content="Todos updated.", context_patch={"todos": todos})
+    return ToolCallResult(
+        content=format_todos_for_model(todos),
+        context_patch={"todos": todos},
+    )
 
 
 async def run_agent(ctx: AgentRunContext, inp: AgentInput) -> ToolCallResult:
@@ -54,7 +58,10 @@ INTERACTION_TOOLS = [
     ),
     build_tool(
         name="TodoWrite",
-        description="Update the task todo list. Each todo needs id + content + status.",
+        description=(
+            "Update the task todo list. Each todo needs id + content + status. "
+            "Mark in_progress before work and completed immediately after; send full list with merge=true."
+        ),
         input_model=TodoWriteInput,
         call=todo_write,
     ),

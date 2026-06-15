@@ -124,6 +124,14 @@ export function isChapterContentSideEffect(
     return true
   }
   const n = normalizeToolName(raw)
+  if (
+    n === 'WriteChapter' ||
+    n === 'EditChapter' ||
+    n === 'DeleteChapter' ||
+    n === 'ReorderChapters'
+  ) {
+    return true
+  }
   if (n !== 'Write' && n !== 'Edit' && n !== 'Delete') {
     return false
   }

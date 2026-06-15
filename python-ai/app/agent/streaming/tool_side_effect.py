@@ -117,6 +117,11 @@ async def finalize_streamed_chapter_write(
         return None, fail_events, seq
 
     cw_pre = patch.get("chapter_write") if isinstance(patch.get("chapter_write"), dict) else {}
+    for key in ("target_position", "position", "sort_order", "after_chapter_id", "before_chapter_id"):
+        if key in stream_input and stream_input[key] is not None and key not in cw_pre:
+            cw_pre[key] = stream_input[key]
+    if cw_pre:
+        patch["chapter_write"] = cw_pre
     save_label = str(
         cw_pre.get("display_label") or cw_pre.get("title") or stream_input.get("title") or "章节"
     )

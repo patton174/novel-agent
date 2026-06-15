@@ -1,10 +1,9 @@
 import { Link } from 'react-router-dom'
-import { BookOpen, GitBranch, PenLine, Rocket, ArrowRight, CheckCircle2 } from 'lucide-react'
+import { BookOpen, GitBranch, PenLine, Rocket, CheckCircle2 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import { MarketingPageLayout } from '@/components/marketing/MarketingPageLayout'
 import { MarketingSubpageHero } from '@/components/marketing/MarketingSubpageHero'
-import { MKT_CTA_PRIMARY } from '@/lib/marketingCta'
 
 const STEP_ICONS = [BookOpen, GitBranch, PenLine, Rocket] as const
 const SUITABILITY_KEYS = ['1', '2', '3'] as const
@@ -20,12 +19,6 @@ export default function GuidePage() {
         eyebrow={t('guide.eyebrow')}
         title={t('guide.title')}
         subtitle={t('guide.subtitle')}
-        action={
-          <Link to="/register" className={MKT_CTA_PRIMARY}>
-            {t('common:cta.startCreating')}
-            <ArrowRight className="size-4" />
-          </Link>
-        }
       />
 
       <div className="mx-auto max-w-6xl px-6 py-16">

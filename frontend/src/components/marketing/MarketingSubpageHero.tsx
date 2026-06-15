@@ -3,6 +3,7 @@ import { motion, useReducedMotion } from 'framer-motion'
 import { Sparkles } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { MarketingAmbient } from './MarketingAmbient'
+import { MarketingStrokeTitle } from './MarketingStrokeTitle'
 
 type Variant = 'light' | 'dark' | 'soft'
 
@@ -11,16 +12,14 @@ export function MarketingSubpageHero({
   title,
   titleAccent,
   subtitle,
-  action,
   variant = 'light',
   className,
   children,
 }: {
   eyebrow?: string
-  title: ReactNode
-  titleAccent?: ReactNode
+  title: string
+  titleAccent?: string
   subtitle?: ReactNode
-  action?: ReactNode
   variant?: Variant
   className?: string
   children?: ReactNode
@@ -32,9 +31,9 @@ export function MarketingSubpageHero({
     <section
       className={cn(
         'relative overflow-hidden border-b border-border/50',
-        variant === 'dark' && 'border-white/10 bg-[#070a14] text-white',
-        variant === 'light' && 'bg-gradient-to-b from-white via-slate-50/90 to-white',
-        variant === 'soft' && 'bg-gradient-to-br from-primary/[0.04] via-white to-violet-500/[0.06]',
+        isDark && 'border-white/10 bg-marketing-dark text-white',
+        variant === 'light' && 'bg-gradient-to-b from-background via-muted/35 to-background',
+        variant === 'soft' && 'bg-gradient-to-br from-primary/[0.05] via-background to-violet-500/[0.06]',
         className,
       )}
     >
@@ -46,16 +45,16 @@ export function MarketingSubpageHero({
       ) : (
         <>
           <MarketingAmbient variant="subtle" />
-          <div className="mkt-grid-bg pointer-events-none absolute inset-0 opacity-60" />
+          <div className="mkt-grid-bg pointer-events-none absolute inset-0 opacity-50 dark:opacity-25" />
         </>
       )}
 
-      <div className="relative mx-auto flex max-w-6xl flex-col gap-8 px-6 pb-16 pt-28 md:flex-row md:items-end md:justify-between md:pb-20">
+      <div className="relative mx-auto max-w-6xl px-6 pb-14 pt-28 md:pb-16 md:pt-32">
         <motion.div
           initial={reduced ? false : { opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-          className="max-w-2xl space-y-4"
+          className="mx-auto max-w-3xl space-y-5 text-center md:space-y-6"
         >
           {eyebrow ? (
             <p
@@ -70,37 +69,41 @@ export function MarketingSubpageHero({
               {eyebrow}
             </p>
           ) : null}
-          <h1
-            className={cn(
-              'text-3xl font-bold leading-tight tracking-tight md:text-4xl lg:text-5xl',
-              isDark ? 'text-white' : 'text-foreground',
-            )}
-          >
-            {title}
+
+          <div className="space-y-2">
+            <h1 className="sr-only">
+              {title}
+              {titleAccent ?? ''}
+            </h1>
+            <MarketingStrokeTitle
+              text={title}
+              size="subpage"
+              variant={isDark ? 'onDark' : 'default'}
+              block
+            />
             {titleAccent ? (
-              <>
-                <br />
-                <span className={reduced ? (isDark ? 'text-indigo-300' : 'text-primary') : 'mkt-gradient-text'}>
-                  {titleAccent}
-                </span>
-              </>
+              <MarketingStrokeTitle
+                text={titleAccent}
+                size="subpage"
+                variant="accent"
+                block
+              />
             ) : null}
-          </h1>
+          </div>
+
           {subtitle ? (
             <p
               className={cn(
-                'max-w-xl text-base leading-relaxed md:text-lg',
+                'mx-auto max-w-2xl text-base leading-relaxed md:text-lg',
                 isDark ? 'text-slate-400' : 'text-muted-foreground',
               )}
             >
               {subtitle}
             </p>
           ) : null}
-          {children}
+
+          {children ? <div className="pt-2">{children}</div> : null}
         </motion.div>
-        {action ? (
-          <div className="w-full shrink-0 self-stretch sm:w-auto sm:self-auto">{action}</div>
-        ) : null}
       </div>
     </section>
   )

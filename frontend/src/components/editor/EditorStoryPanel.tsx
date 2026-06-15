@@ -312,6 +312,7 @@ function EditorStoryPanelDesktop({
                   reindexProgress={reindexProgress}
                   onReindex={onReindex}
                 />
+                <div className="my-3 border-t border-border/70" />
                 <ChapterVersionPanel
                   chapterId={activeChapterId}
                   currentTitle={activeChapterTitle}

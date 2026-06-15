@@ -8,6 +8,7 @@ from app.agent.backend.catalog_constants import API_SOURCE_HEADER
 from app.agent.backend.ids import CHAPTER_ID_RE
 from app.agent.context.compact import _chapter_sort_key
 from app.agent.schemas import AgentRunContext
+from app.agent.backend.chapter_title import strip_chapter_number_prefix
 
 # 禁止作为持久化章节标题的占位名
 _FORBIDDEN_CHAPTER_TITLES = frozenset({"新章节", "新对话", "未命名", "章节"})
@@ -40,7 +41,7 @@ def resolve_chapter_write_title(
     frontmatter_title: str,
 ) -> tuple[str | None, str | None]:
     """Resolve title for Content API persist. New chapters must set frontmatter title."""
-    fm = (frontmatter_title or "").strip()
+    fm = strip_chapter_number_prefix((frontmatter_title or "").strip())
     if fm and not is_valid_chapter_title(fm):
         return None, "章节名不能使用「新章节」等占位名，请在 frontmatter 的 title 填写真实章节名。"
     if is_valid_chapter_title(fm):

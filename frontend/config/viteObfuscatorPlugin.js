@@ -1,6 +1,8 @@
 import JavaScriptObfuscator from 'javascript-obfuscator';
 /** shadcn / Radix UI 等共享组件 chunk 名前缀（混淆会破坏 React ref / 事件合成） */
 var UI_CHUNK_PREFIX = /^(dialog|badge|button|avatar|separator|select|dropdown-menu|sheet|switch|popover|tooltip|tabs|checkbox|label|input|card|skeleton)-/;
+/** 含大量点击/动效的页面 chunk 不混淆（controlFlowFlattening 会破坏 React 事件与 hover） */
+var INTERACTIVE_PAGE_CHUNK = /^(HomePage|HomeFooterSection|PricingPage|AboutPage|GuidePage|LoginPage|RegisterPage|ForgotPasswordPage|ResetPasswordPage|VerifyEmailPage|GenericContentPage)-/;
 /** framer-motion / radix / lucide 等 vendor chunk 不可混淆（会破坏事件合成与 ref 回调） */
 var VENDOR_CHUNK_SKIP = /^(motion|gsap|recharts|markdown|radix|icons|styled|i18n)-/;
 /**
@@ -13,6 +15,9 @@ function shouldSkipChunkObfuscation(code, chunk) {
         return true;
     }
     var baseName = (_a = chunk.fileName.split('/').pop()) !== null && _a !== void 0 ? _a : chunk.fileName;
+    if (INTERACTIVE_PAGE_CHUNK.test(baseName)) {
+        return true;
+    }
     if (VENDOR_CHUNK_SKIP.test(baseName)) {
         return true;
     }

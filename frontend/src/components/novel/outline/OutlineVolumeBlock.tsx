@@ -1,4 +1,5 @@
 import type { DragEvent } from 'react'
+import { Pencil, Trash2 } from 'lucide-react'
 import type { ChapterSummary, Volume } from '../../../types/novel'
 import { EditorButton } from '../../ui/EditorButton'
 import { allowOutlineDrop } from './outlineDrag'
@@ -6,7 +7,9 @@ import { OutlineDragHandle } from './OutlineDragHandle'
 import { outlineChapterDropProps, outlineVolumeDropProps } from './outlineTouchDom'
 import { ChevronIcon, PlusIcon } from './outlineIcons'
 import type { DragPayload, DropTarget } from './outlineTypes'
+import { cn } from '@/lib/utils'
 import {
+  OUTLINE_CHAPTER_ACTIONS,
   OUTLINE_CHAPTER_LIST_INNER,
   OUTLINE_CHAPTER_ROW,
   OUTLINE_VOLUME_HEADER,
@@ -35,6 +38,8 @@ export interface OutlineVolumeBlockProps {
   onSetDropTarget: (target: DropTarget | null | ((current: DropTarget | null) => DropTarget | null)) => void
   onSelectChapter: (chapterId: string) => void
   onAddChapter: (title: string, volumeId: string) => void
+  onDeleteChapter: (chapterId: string, title: string) => void
+  onRenameChapter: (chapterId: string, title: string) => void
   bindTouchHandle?: (payload: DragPayload, label: string) => {
     onTouchStart: (event: React.TouchEvent) => void
   }
@@ -58,6 +63,8 @@ export function OutlineVolumeBlock({
   onSetDropTarget,
   onSelectChapter,
   onAddChapter,
+  onDeleteChapter,
+  onRenameChapter,
   bindTouchHandle,
 }: OutlineVolumeBlockProps) {
   const volumeDropActive = dropTarget?.kind === 'volume' && dropTarget.volumeId === volume.id
@@ -120,11 +127,14 @@ export function OutlineVolumeBlock({
               return (
                 <div
                   key={chapter.id}
-                  className={outlineItemClass({
-                    active: chapter.id === activeChapterId,
-                    inProgress: chapter.wordCount > 0 && chapter.id !== activeChapterId,
-                    dragOver: chapterDropActive,
-                  })}
+                  className={cn(
+                    'group/chapter',
+                    outlineItemClass({
+                      active: chapter.id === activeChapterId,
+                      inProgress: chapter.wordCount > 0 && chapter.id !== activeChapterId,
+                      dragOver: chapterDropActive,
+                    }),
+                  )}
                   {...outlineChapterDropProps(volume.id, chapter.id)}
                   onDragOver={(event) => {
                     if (dragging?.kind !== 'chapter') return
@@ -155,6 +165,7 @@ export function OutlineVolumeBlock({
                       type="button"
                       active={chapter.id === activeChapterId}
                       onClick={() => void onSelectChapter(chapter.id)}
+                      className="min-w-0 flex-1"
                     >
                       <span className="chapter-num">第{index + 1}章</span>
                       <span className="chapter-title">{chapter.title}</span>
@@ -166,6 +177,34 @@ export function OutlineVolumeBlock({
                             : '待写'}
                       </span>
                     </EditorButton>
+                    <div className={OUTLINE_CHAPTER_ACTIONS}>
+                      <EditorButton
+                        variant="icon"
+                        type="button"
+                        size="sm"
+                        title="重命名章节"
+                        disabled={busy}
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          void onRenameChapter(chapter.id, chapter.title)
+                        }}
+                      >
+                        <Pencil className="size-3.5" />
+                      </EditorButton>
+                      <EditorButton
+                        variant="icon"
+                        type="button"
+                        size="sm"
+                        title="删除章节"
+                        disabled={busy}
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          void onDeleteChapter(chapter.id, chapter.title)
+                        }}
+                      >
+                        <Trash2 className="size-3.5 text-destructive" />
+                      </EditorButton>
+                    </div>
                   </div>
                 </div>
               )

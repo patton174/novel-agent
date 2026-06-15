@@ -116,4 +116,19 @@ describe('applySubagentStepEvent', () => {
     expect(steps[0].subagent?.status).toBe('done')
     expect(steps[0].subagent?.summaryPreview).toContain('全部完成')
   })
+
+  it('uses 审查 Agent title for review subagent_kind', () => {
+    const steps = applySubagentStepEvent([], {
+      type: 'subagent.started',
+      sequence: 1,
+      step_id: 'step_review_abc',
+      payload: {
+        parent_step_id: 'step_review_abc',
+        description: '审查：全书连贯性与最近改动',
+        subagent_kind: 'review',
+      },
+    } as AgentEventEnvelope)
+    expect(steps[0]?.title).toBe('审查 Agent')
+    expect(steps[0]?.detail).toBe('审查：全书连贯性与最近改动')
+  })
 })

@@ -46,6 +46,9 @@ def chapter_stream_input_api(inp: dict[str, Any], ctx: AgentRunContext) -> dict[
     stream_input.setdefault("task", (ctx.user_message or "")[:500])
     if chapter_id:
         stream_input["chapter_id"] = chapter_id
+    for key in ("position", "sort_order", "after_chapter_id", "before_chapter_id", "target_position"):
+        if key in inp and inp[key] is not None:
+            stream_input[key] = inp[key]
     return stream_input
 
 

@@ -45,6 +45,9 @@ describe('agentToolNames', () => {
       }),
     ).toBe(false)
     expect(isChapterContentSideEffect('chapter_update')).toBe(true)
+    expect(isChapterContentSideEffect('WriteChapter')).toBe(true)
+    expect(isChapterContentSideEffect('ReorderChapters')).toBe(true)
+    expect(isChapterContentSideEffect('ChapterAudit')).toBe(false)
   })
 
   it('refreshes memory on vfs memory path mutations', () => {

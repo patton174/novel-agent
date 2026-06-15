@@ -1,4 +1,5 @@
-import { shimmerTextClass } from '@/lib/shimmerClasses'
+import { cn } from '@/lib/utils'
+import { SHIMMER_OVERLAY, SHIMMER_ROW_HOST, shimmerTextClass } from '@/lib/shimmerClasses'
 
 export interface ShimmerScanTextProps {
   children: string
@@ -13,9 +14,20 @@ export function ShimmerScanText({
   className,
   active = true,
 }: ShimmerScanTextProps) {
+  if (!active) {
+    return (
+      <span className={shimmerTextClass(false, className)} data-testid="shimmer-scan-text">
+        {children}
+      </span>
+    )
+  }
   return (
-    <span className={shimmerTextClass(active, className)} data-testid="shimmer-scan-text">
-      {children}
+    <span
+      className={cn(SHIMMER_ROW_HOST, 'inline-block max-w-full align-baseline', className)}
+      data-testid="shimmer-scan-text"
+    >
+      <span className="relative z-[1] text-foreground/80">{children}</span>
+      <span className={SHIMMER_OVERLAY} aria-hidden />
     </span>
   )
 }

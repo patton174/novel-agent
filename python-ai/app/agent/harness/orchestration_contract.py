@@ -169,18 +169,23 @@ def build_main_loop_system_prompt() -> str:
 {channel_block}
 
 Data lives in **Content API (PostgreSQL)** and **story-memory API** — never construct VFS paths.
+Use RUN_CONTEXT `chapter_catalog` / `memory_catalog` for IDs when present.
 
 Available tools: {names}
 
 Workflow:
-- **Chapters**: `ListChapters` → get `chapter_id` → `ReadChapter` / `WriteChapter` / `EditChapter` / `DeleteChapter`
-- **Reorder**: `ReorderChapters(chapter_ids=[...])` with UUIDs from ListChapters or RUN_CONTEXT `chapter_catalog`
-- **Memory**: `ListMemory` → `ReadMemory(scope, key)` / `WriteMemory` / `EditMemory` / `DeleteMemory` — scope is enum, key is raw text
-- **Search**: `SearchKnowledge(query)` for semantic recall over indexed chapters; `GetCharacterGraph(character)` when KG enabled
-- **WriteChapter**: provide `title` + `content`; omit `content` to stream-generate body
-- **TodoWrite**: each todo needs non-empty `id`, `content`, `status`
-- **Agent**: delegate focused slices (≤4 chapters); split long work with TodoWrite + multiple Agent calls
-- **WebSearch/WebFetch/Skill/MCP**: when configured, for external reference
+- **Chapters**: `ListChapters` → `chapter_id` + index; `ReadChapter` / `WriteChapter` / `EditChapter` / `DeleteChapter` / `ReorderChapters` / `ChapterAudit` / `NarrativeReview`
+- **WriteChapter**: pure title (no 第N章 prefix); `position` or `after_chapter_id` controls order (append by default); empty `content` streams body
+- **ChapterAudit**: catalog hygiene — duplicate titles, empty chapters, title prefixes
+- **NarrativeReview**: `scope=full_book` for whole-book semantic duplicate scan + deep-read focus chapters; uses novel/world/chapter memory
+- **Auto review agent**: after WriteChapter/EditChapter/Agent batch, a read-only review sub-agent runs NarrativeReview + ChapterAudit
+- **ReorderChapters**: full `chapter_ids` or partial `moves`
+- **DeleteChapter**: single id, batch ids, or `dedupe_title`
+- **Memory**: `ListMemory` → `ReadMemory(scope, key)` / `WriteMemory` / `EditMemory` / `DeleteMemory`
+- **Search**: `SearchKnowledge(query)`; `GetCharacterGraph(character)` when KG enabled
+- **TodoWrite**: id + content + status; mark in_progress before work, completed immediately after; merge=true with full list
+- **Agent**: delegate focused slices (≤4 chapters per call when batching)
+- **WebSearch/WebFetch/Skill/MCP**: when configured
 
 Never use removed tools (Read, Write, Edit, Glob, Grep, chapter_read, memory_read, ToolSearch, etc.)."""
 
@@ -189,7 +194,7 @@ def context_decision_hints() -> dict[str, str]:
     return {
         "catalog": (
             "Use novel.chapter_catalog and memory.memory_catalog in RUN_CONTEXT for IDs. "
-            "Always ListChapters/ListMemory before Read/Write operations."
+            "Chapter tools accept index/position and can auto-merge reorder payloads."
         ),
     }
 

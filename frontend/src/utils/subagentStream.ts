@@ -46,17 +46,20 @@ function ensureAgentParentStep(
   stepStates: AgentStepState[],
   parentStepId: string,
   description: string,
+  subagentKind?: string,
 ): AgentStepState[] {
   if (stepStates.some((s) => s.stepId === parentStepId)) {
     return stepStates
   }
+  const title =
+    subagentKind === 'review' ? '审查 Agent' : '子 Agent'
   return [
     ...stepStates,
     {
       stepId: parentStepId,
       type: 'tool',
       status: 'started',
-      title: '子 Agent',
+      title,
       toolName: 'Agent',
       detail: description,
     },
@@ -68,8 +71,9 @@ function upsertStepSubagent(
   parentStepId: string,
   updater: (prev: AgentSubagentState | undefined) => AgentSubagentState,
   description = '子任务',
+  subagentKind?: string,
 ): AgentStepState[] {
-  const working = ensureAgentParentStep(stepStates, parentStepId, description)
+  const working = ensureAgentParentStep(stepStates, parentStepId, description, subagentKind)
   const idx = working.findIndex((s) => s.stepId === parentStepId)
   if (idx < 0) {
     return stepStates
@@ -111,6 +115,8 @@ export function applySubagentStepEvent(
 
   const description =
     typeof p.description === 'string' ? p.description : '子任务'
+  const subagentKind =
+    typeof p.subagent_kind === 'string' ? p.subagent_kind.trim() : undefined
 
   if (event.type === 'subagent.started') {
     return upsertStepSubagent(
@@ -126,6 +132,7 @@ export function applySubagentStepEvent(
         logs: [],
       }),
       description,
+      subagentKind,
     )
   }
 

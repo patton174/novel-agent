@@ -37,8 +37,11 @@ from app.agent.harness.loop_support import (
     _MAX_TOOL_RECOVERIES_PER_TURN,
     _MAX_VALIDATION_RETRIES_PER_TURN,
     RunLoopState,
+    block_run_end_for_open_todos,
+    build_todo_reminder_message,
     planning_title,
     planned_tool_visibility_events,
+    should_inject_todo_reminder,
     stream_tool_step,
     tool_batch_end_run,
     wait_for_user_interaction,
@@ -71,6 +74,15 @@ from app.agent.harness.subagent import (
     build_subagent_run_context_human,
     build_subagent_system_prompt,
 )
+from app.agent.harness.review_agent import (
+    build_review_subagent_run_context_human,
+    build_review_subagent_system_prompt,
+    is_review_agent,
+    mark_batch_needs_review,
+    record_chapter_mutation,
+    REVIEW_TRIGGER_TOOLS,
+)
+from app.agent.harness.review_agent_sse import stream_review_subagent
 from app.agent.harness.subagent_policy import is_subagent_run
 from app.agent.harness.tool_batch_errors import (
     append_batch_validation_errors,
@@ -255,8 +267,12 @@ def _max_turns_for_ctx(ctx: AgentRunContext) -> int:
 
 def _build_messages(ctx: AgentRunContext, transcript: AgentTranscript) -> list:
     if is_subagent_run(ctx):
-        system = build_subagent_system_prompt()
-        human = build_subagent_run_context_human(ctx, transcript)
+        if is_review_agent(ctx):
+            system = build_review_subagent_system_prompt()
+            human = build_review_subagent_run_context_human(ctx, transcript)
+        else:
+            system = build_subagent_system_prompt()
+            human = build_subagent_run_context_human(ctx, transcript)
     else:
         system = build_main_loop_system_prompt()
         human = build_run_context_human(ctx, transcript)
@@ -329,10 +345,23 @@ async def run_query_loop(
     try:
         while state.turn < turn_limit and not state.terminal:
             state.turn += 1
+            state.turns_since_todo_write += 1
             step_id = f"step_turn_{uuid4().hex[:8]}"
 
             state.ctx = await refresh_chapters_from_content_api(state.ctx)
             refresh_run_context_human(messages, state.ctx, state.transcript)
+
+            if should_inject_todo_reminder(state):
+                patch = (
+                    state.ctx.context_patch
+                    if isinstance(state.ctx.context_patch, dict)
+                    else {}
+                )
+                reminder = build_todo_reminder_message(patch)
+                if reminder:
+                    messages.append(HumanMessage(content=reminder))
+                    state.last_todo_reminder_turn = state.turn
+                    refresh_run_context_human(messages, state.ctx, state.transcript)
 
             yield build_event(
                 event_type="planning.next_step",
@@ -573,6 +602,12 @@ async def run_query_loop(
                     state.assistant_message_emitted = True
                     for ev in msg_events:
                         yield ev
+                if block_run_end_for_open_todos(
+                    state,
+                    messages,
+                    refresh_context=refresh_run_context_human,
+                ):
+                    continue
                 state.terminal = True
                 yield build_event(
                     event_type="planning.completed",
@@ -630,6 +665,12 @@ async def run_query_loop(
                 state.ctx, ai_calls, think_text=think_text
             )
             if prepared.end_run:
+                if block_run_end_for_open_todos(
+                    state,
+                    messages,
+                    refresh_context=refresh_run_context_human,
+                ):
+                    continue
                 state.terminal = True
                 yield build_event(
                     event_type="planning.completed",
@@ -716,6 +757,8 @@ async def run_query_loop(
 
             waited = False
             batch_tool_recover = False
+            batch_had_agent = any(i.tool == "Agent" for i in exec_items)
+            batch_had_writes = any(i.tool in REVIEW_TRIGGER_TOOLS for i in exec_items)
             batches = partition_tool_calls(exec_items)
 
             async for kind, payload in execute_tool_batches(
@@ -835,9 +878,13 @@ async def run_query_loop(
                             merged_patch.update(patch)
                             if tool == "TodoWrite" and patch.get("todos"):
                                 merged_patch.pop("_todo_exit_reviewed", None)
+                                state.turns_since_todo_write = 0
                             state.ctx = state.ctx.model_copy(
                                 update={"context_patch": merged_patch}
                             )
+                            state.ctx = record_chapter_mutation(state.ctx, tool, patch)
+                            if tool in ("Agent", "ReorderChapters") and not run.failed:
+                                state.ctx = mark_batch_needs_review(state.ctx)
                             fresh = patch.get("chapters")
                             if isinstance(fresh, list):
                                 state.ctx = state.ctx.model_copy(
@@ -902,6 +949,67 @@ async def run_query_loop(
                 break
             if waited:
                 continue
+
+            if (
+                batch_had_writes
+                and not state.terminal
+                and not is_subagent_run(state.ctx)
+            ):
+                patch = state.ctx.context_patch if isinstance(state.ctx.context_patch, dict) else {}
+                if patch.get("run_needs_review"):
+                    state.ctx = await refresh_chapters_from_content_api(state.ctx)
+                    changed = patch.get("run_changed_chapter_ids")
+                    changed_ids = (
+                        [str(c) for c in changed if str(c).strip()]
+                        if isinstance(changed, list)
+                        else None
+                    )
+                    review_summary = ""
+                    review_patch: dict[str, Any] = {}
+                    try:
+                        async for review_ev in stream_review_subagent(
+                            state.ctx,
+                            changed_chapter_ids=changed_ids,
+                            sequence=state.sequence,
+                        ):
+                            yield review_ev
+                            state.sequence = int(review_ev.get("sequence") or state.sequence) + 1
+                            et = str(review_ev.get("type") or "")
+                            pl = (
+                                review_ev.get("payload")
+                                if isinstance(review_ev.get("payload"), dict)
+                                else {}
+                            )
+                            if et == "subagent.completed":
+                                review_summary = str(pl.get("summary_preview") or "").strip()
+                                cp = pl.get("context_patch")
+                                if isinstance(cp, dict):
+                                    review_patch = cp
+                            elif et == "subagent.failed":
+                                review_summary = str(pl.get("error") or "").strip()
+                                cp = pl.get("context_patch")
+                                if isinstance(cp, dict):
+                                    review_patch = cp
+                        if review_summary:
+                            messages.append(
+                                HumanMessage(
+                                    content=(
+                                        "【审查 Agent 报告】\n"
+                                        + review_summary[:12000]
+                                    )
+                                )
+                            )
+                        if review_patch:
+                            merged = dict(state.ctx.context_patch or {})
+                            merged.update(review_patch)
+                            state.ctx = state.ctx.model_copy(
+                                update={"context_patch": merged}
+                            )
+                        refresh_run_context_human(messages, state.ctx, state.transcript)
+                    except Exception:
+                        logger.exception(
+                            "review agent failed run_id=%s", state.ctx.run_id
+                        )
 
             state.messages = list(messages)
             if not worker_mode:

@@ -52,7 +52,7 @@ describe('deriveAssistantStreamPhase', () => {
     expect(deriveAssistantStreamPhase(s)).toBe('waiting')
   })
 
-  it('returns connecting before any think or tool activity', () => {
-    expect(deriveAssistantStreamPhase(createInitialAgentStreamUiState())).toBe('connecting')
+  it('returns planning before any think or tool activity', () => {
+    expect(deriveAssistantStreamPhase(createInitialAgentStreamUiState())).toBe('planning')
   })
 })

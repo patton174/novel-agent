@@ -59,6 +59,8 @@ export function OrchestrationLayer({
   ) => ReactNode
 }) {
   const isActive = status === 'active' && streamLive && !streamFinished
+  const planningComplete = Boolean(orchestrationOverview?.trim())
+  const showHeaderShimmer = isActive && !planningComplete
   const isMobile = useAppMobile()
   const userToggledRef = useRef(false)
   const [expanded, setExpanded] = useState(() => !isMobile)
@@ -122,7 +124,7 @@ export function OrchestrationLayer({
           </div>
           <div className={CC_TOOL_MAIN}>
             <div className={PLANNING_HEADER_MAIN}>
-              {isActive ? (
+              {showHeaderShimmer ? (
                 <ShimmerScanText active className={PLANNING_TITLE}>
                   {headlineText}
                 </ShimmerScanText>

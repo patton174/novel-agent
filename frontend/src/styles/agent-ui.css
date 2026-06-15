@@ -193,21 +193,39 @@
 }
 
 .agent-prose thead th {
-  background: #f8fafc;
+  background: hsl(var(--muted) / 0.65);
   font-weight: 600;
-  color: #334155;
+  color: hsl(var(--foreground) / 0.88);
 }
 
 .agent-prose th,
 .agent-prose td {
-  border: 1px solid #e2e8f0;
+  border: 1px solid hsl(var(--border));
   padding: 0.4rem 0.55rem;
   text-align: left;
   vertical-align: top;
 }
 
 .agent-prose tr:nth-child(even) td {
-  background: #f8fafc;
+  background: hsl(var(--muted) / 0.35);
+}
+
+.dark .agent-prose thead th {
+  background: hsl(var(--muted) / 0.55);
+  color: hsl(var(--foreground) / 0.9);
+}
+
+.dark .agent-prose th,
+.dark .agent-prose td {
+  border-color: hsl(var(--border) / 0.85);
+}
+
+.dark .agent-prose tr:nth-child(even) td {
+  background: hsl(var(--muted) / 0.28);
+}
+
+.dark .agent-prose tr:nth-child(odd) td {
+  background: hsl(var(--background) / 0.35);
 }
 
 .agent-prose-chat {
@@ -215,7 +233,7 @@
   font-size: 0.875rem;
   line-height: 1.72;
   letter-spacing: 0.01em;
-  color: #334155;
+  color: hsl(var(--foreground) / 0.88);
 }
 
 .agent-prose-chat h2 {
@@ -223,7 +241,7 @@
   padding-left: 0;
   font-size: 0.92rem;
   font-weight: 600;
-  color: #334155;
+  color: hsl(var(--foreground) / 0.92);
 }
 
 .agent-prose-chat h3,

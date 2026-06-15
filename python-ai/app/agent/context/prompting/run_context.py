@@ -17,6 +17,7 @@ from app.agent.harness.orchestration_contract import MAIN_LOOP_TOOLS
 from app.agent.harness.plan_context import _transcript_has_interaction, think_text_for_plan
 from app.agent.harness.routing import format_dialogue_history, project_summary_from_ctx
 from app.agent.schemas import AgentRunContext, PlanRequest
+from app.agent.tools.todo_helpers import working_todos_from_patch
 
 _USER_MESSAGE_MAX = 800
 _DIALOGUE_MAX = 1600
@@ -123,6 +124,14 @@ def assemble_run_context(
     relevant = patch.get("relevant_context")
     if isinstance(relevant, list) and relevant:
         working["relevant_context"] = relevant[:5]
+
+    todos = working_todos_from_patch(patch)
+    if todos:
+        working["todos"] = todos[:20]
+        open_count = sum(
+            1 for t in todos if str(t.get("status") or "") in ("pending", "in_progress")
+        )
+        working["todos_open_count"] = open_count
 
     out: dict[str, Any] = {
         "intent": intent,

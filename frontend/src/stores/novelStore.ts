@@ -31,6 +31,8 @@ interface NovelStoreState {
   saveActiveChapter: () => Promise<void>
   addVolume: (title: string) => Promise<Volume | null>
   addChapter: (title?: string, volumeId?: string) => Promise<Chapter | null>
+  deleteChapter: (chapterId: string) => Promise<void>
+  renameChapter: (chapterId: string, title: string) => Promise<void>
   reorderVolumes: (volumeIds: string[]) => Promise<void>
   applyChapterReorderPlans: (plans: ChapterReorderPlan[]) => Promise<void>
   refreshActiveChapter: () => Promise<void>
@@ -216,6 +218,37 @@ export const useNovelStore = create<NovelStoreState>((set, get) => ({
     await get().loadChapters(novelId)
     await get().selectChapter(chapter.id)
     return chapter
+  },
+
+  deleteChapter: async (chapterId: string) => {
+    const novelId = get().activeNovelId
+    if (!novelId) return
+    await api.deleteChapter(chapterId)
+    const wasActive = get().activeChapterId === chapterId
+    await get().loadChapters(novelId)
+    if (!wasActive) return
+    const next = get().chapters[0]
+    if (next) {
+      await get().selectChapter(next.id)
+      return
+    }
+    set({
+      activeChapterId: null,
+      chapterContent: '',
+      chapterDirty: false,
+      chapterDiffActive: false,
+      chapterDiffBaseline: null,
+    })
+  },
+
+  renameChapter: async (chapterId: string, title: string) => {
+    const trimmed = title.trim()
+    if (!trimmed) return
+    await api.updateChapter(chapterId, { title: trimmed })
+    const novelId = get().activeNovelId
+    if (novelId) {
+      await get().loadChapters(novelId)
+    }
   },
 
   reorderVolumes: async (volumeIds: string[]) => {

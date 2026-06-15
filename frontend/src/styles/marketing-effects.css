@@ -489,6 +489,66 @@
   opacity: 0;
 }
 
+/* MarketingStrokeTitle — 营销主标题 SVG 描边入场 */
+
+@keyframes mkt-stroke-title-draw {
+  from {
+    stroke-dashoffset: var(--mkt-stroke-len, 400);
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes mkt-stroke-title-fill-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.mkt-stroke-title-svg {
+  display: block;
+  overflow: visible;
+}
+
+.mkt-stroke-title-stroke {
+  stroke-dasharray: var(--mkt-stroke-len, 400);
+  stroke-dashoffset: 0;
+}
+
+.mkt-stroke-title-svg:not(.mkt-stroke-title-svg--animate) .mkt-stroke-title-stroke {
+  opacity: 0;
+}
+
+.mkt-stroke-title-svg:not(.mkt-stroke-title-svg--animate) .mkt-stroke-title-fill {
+  opacity: 1;
+}
+
+.mkt-stroke-title-svg--animate .mkt-stroke-title-stroke {
+  stroke-dashoffset: var(--mkt-stroke-len, 400);
+  animation: mkt-stroke-title-draw 1.15s cubic-bezier(0.45, 0, 0.2, 1) forwards;
+}
+
+.mkt-stroke-title-svg--animate .mkt-stroke-title-fill {
+  opacity: 0;
+  animation: mkt-stroke-title-fill-in 0.65s cubic-bezier(0.22, 1, 0.36, 1) 0.72s forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mkt-stroke-title-svg--animate .mkt-stroke-title-stroke,
+  .mkt-stroke-title-svg--animate .mkt-stroke-title-fill {
+    animation: none !important;
+    opacity: 1;
+    stroke-dashoffset: 0;
+    transform: none;
+  }
+}
+
 .mkt-wordmark-svg:not(.mkt-wordmark-svg--animate) .mkt-wordmark-fill {
   opacity: 1;
 }

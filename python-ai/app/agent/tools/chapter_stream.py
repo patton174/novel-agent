@@ -106,6 +106,39 @@ async def persist_chapter_write_patch(
         patch = {**patch, "chapter_persist_failures": failures}
         return patch, err
     patch = {**patch, "chapter_write": updated}
+    chapter_id = str(updated.get("chapter_id") or cw.get("chapter_id") or "").strip()
+    target_position = cw.get("target_position")
+    if chapter_id and not isinstance(target_position, int):
+        pos = cw.get("position") if cw.get("position") is not None else cw.get("sort_order")
+        from app.agent.tools.chapter_position import resolve_target_position
+
+        rows = await chapter_client.fetch_chapter_summaries(ctx)
+        resolved, _ = resolve_target_position(
+            rows,
+            chapter_id=chapter_id,
+            position=pos if isinstance(pos, int) else None,
+            after_chapter_id=str(cw.get("after_chapter_id") or "") or None,
+            before_chapter_id=str(cw.get("before_chapter_id") or "") or None,
+        )
+        target_position = resolved
+    if chapter_id and isinstance(target_position, int) and target_position >= 1:
+        from app.agent.tools.chapter_position import (
+            find_chapter_index,
+            insert_id_at_position,
+            ordered_chapter_ids,
+        )
+
+        rows = await chapter_client.fetch_chapter_summaries(ctx)
+        if find_chapter_index(rows, chapter_id) != target_position:
+            ids = insert_id_at_position(ordered_chapter_ids(rows), chapter_id, target_position)
+            ok_reorder, summaries, reorder_err = await chapter_client.reorder_novel_chapters(
+                ctx, ids
+            )
+            if not ok_reorder:
+                return patch, reorder_err
+            if summaries:
+                patch["chapters"] = summaries
+                return patch, None
     fresh = await chapter_client.fetch_chapter_summaries(ctx)
     if fresh:
         patch["chapters"] = fresh

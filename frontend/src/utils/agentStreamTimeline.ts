@@ -1088,6 +1088,10 @@ export function deriveOrchestrationHeadline(
   if (status === 'done') {
     return '成稿中…'
   }
+  const overview = completedOverview?.trim()
+  if (overview && !PLANNING_GENERIC_TITLES.has(overview)) {
+    return `编排完成 · ${overview}`
+  }
   for (const round of rounds) {
     for (const item of round.items) {
       if (item.kind !== 'tools') {

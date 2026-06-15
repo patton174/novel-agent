@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { Check, ChevronDown } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { fetchPlans, formatTokenCount, type PlanPublic } from '@/api/billingApi'
-import { MKT_CTA_PRIMARY, MKT_CTA_TIER_HIGHLIGHT, MKT_CTA_TIER_OUTLINE } from '@/lib/marketingCta'
+import { MKT_CTA_TIER_HIGHLIGHT, MKT_CTA_TIER_OUTLINE } from '@/lib/marketingCta'
 import { Skeleton } from '@/components/ui/skeleton'
 import { MarketingPageLayout } from '@/components/marketing/MarketingPageLayout'
 import { MarketingSubpageHero } from '@/components/marketing/MarketingSubpageHero'
@@ -40,11 +40,6 @@ export default function PricingPage() {
         variant="light"
         eyebrow={t('nav.pricing')}
         title={t('pricing.title')}
-        action={
-          <Link to="/register" className={MKT_CTA_PRIMARY}>
-            {t('common:cta.registerFree')}
-          </Link>
-        }
         subtitle={
           <>
             {t('pricing.subtitle')}
@@ -58,7 +53,7 @@ export default function PricingPage() {
         }
       />
 
-      <div className="relative px-6 pb-24">
+      <div className="relative bg-background px-6 pb-24">
         <div className="relative mx-auto max-w-6xl space-y-16 pt-12">
           {error ? <p className="text-center text-sm text-destructive">{error}</p> : null}
 

@@ -20,8 +20,11 @@ CHAPTER_WINDOW_SCOPE_NOTE = (
 )
 
 CHAPTER_LIST_SCOPE_NOTE = (
-    "【完整版·元数据】全书章节的 chapter_id / 标题 / 列表位 / 字数 / 是否已写（来自作品库，非本地 .md 文件个数）。"
-    "正文 → Read `…/chapters/{chapter_id}.md`（按 id 从库拉取）。"
+    "【章节目录】index=阅读顺序，chapter_id=工具 ID，word_count=字数。"
+    "标题为纯文本（勿写第N章前缀，UI 用 index 显示章序）。"
+    "WriteChapter 可用 position / after_chapter_id 指定位置（默认追加）；"
+    "ReorderChapters 可用 moves 局部调序；DeleteChapter 可用 dedupe_title 去重；"
+    "并行写章后可用 ChapterAudit 审查。"
 )
 
 CHAPTER_DB_CATALOG_NOTE = (

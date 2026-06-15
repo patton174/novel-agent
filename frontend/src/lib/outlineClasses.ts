@@ -4,7 +4,12 @@ export const OUTLINE_CHAPTER_LIST_INNER =
   'flex flex-col gap-[0.35rem] overflow-hidden'
 
 export const OUTLINE_DRAG_HINT =
-  'mb-[0.45rem] text-[0.68rem] font-medium leading-snug text-slate-400'
+  'mb-2 rounded-md border border-border/60 bg-muted/25 px-2 py-1.5 text-[0.68rem] font-medium leading-snug text-muted-foreground'
+
+export const OUTLINE_SECTION_LABEL =
+  'mb-1.5 px-0.5 text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground/80'
+
+export const OUTLINE_SECTION_DIVIDER = 'my-3 border-t border-border/70'
 
 export const OUTLINE_HINT =
   'px-[0.15rem] py-2 text-[0.74rem] font-medium leading-snug text-slate-400'
@@ -20,19 +25,19 @@ export function outlineChapterListCollapsibleClass(open: boolean) {
 
 export function outlineVolumeBlockClass(dragOver?: boolean) {
   return cn(
-    'flex flex-col gap-[0.35rem] rounded-[10px] border p-[0.45rem]',
-    'transition-[background,border-color] duration-150',
+    'flex flex-col gap-1 rounded-xl border p-2 shadow-sm',
+    'transition-[background,border-color,box-shadow] duration-150',
     dragOver
-      ? 'border-primary/30 bg-primary/10'
-      : 'border-border bg-white/95',
+      ? 'border-primary/40 bg-primary/10 shadow-md'
+      : 'border-border/70 bg-muted/20',
   )
 }
 
 export const OUTLINE_VOLUME_HEADER = 'flex items-center gap-1'
 
 export const OUTLINE_DRAG_HANDLE = cn(
-  'inline-flex w-[1.1rem] cursor-grab select-none items-center justify-center',
-  'text-[0.68rem] font-medium tracking-tighter text-slate-400 active:cursor-grabbing',
+  'inline-flex w-[1.1rem] shrink-0 cursor-grab select-none items-center justify-center',
+  'text-[0.68rem] font-medium tracking-tighter text-muted-foreground/70 active:cursor-grabbing',
 )
 
 export function outlineChevronWrapClass(open: boolean) {
@@ -57,15 +62,18 @@ export function outlineItemClass(opts?: {
 }) {
   const { active, inProgress, dragOver } = opts ?? {}
   return cn(
-    'rounded-[10px] transition-[background] duration-150',
-    dragOver && 'bg-primary/8',
-    !dragOver && active && 'bg-primary shadow-[inset_1px_1px_3px_rgba(0,0,0,0.15),inset_-1px_-1px_3px_rgba(255,255,255,0.3)]',
+    'rounded-lg border border-transparent transition-[background,border-color,box-shadow] duration-150',
+    dragOver && 'border-primary/30 bg-primary/10',
+    !dragOver && active && 'border-primary/25 bg-primary text-primary-foreground shadow-sm',
     !dragOver &&
       !active &&
       inProgress &&
-      'bg-slate-50 shadow-[2px_2px_5px_rgba(0,0,0,0.08),-1px_-1px_3px_rgba(255,255,255,0.5)]',
-    !dragOver && !active && !inProgress && 'bg-transparent shadow-none',
+      'border-border/50 bg-muted/40',
+    !dragOver && !active && !inProgress && 'bg-transparent',
   )
 }
+
+export const OUTLINE_CHAPTER_ACTIONS =
+  'flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover/chapter:opacity-100 group-focus-within/chapter:opacity-100'
 
 export const OUTLINE_CHAPTER_ROW = 'flex items-stretch gap-[0.2rem]'

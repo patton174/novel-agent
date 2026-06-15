@@ -28,6 +28,7 @@ def build_subagent_context(
     *,
     description: str,
     prompt: str,
+    extra_patch: dict[str, Any] | None = None,
 ) -> AgentRunContext:
     depth = subagent_depth(parent)
     child_patch = dict(parent.context_patch or {})
@@ -38,6 +39,8 @@ def build_subagent_context(
     child_patch[_PATCH_DESCRIPTION] = (description or "")[:200]
     child_patch.pop("agent_prompt", None)
     child_patch.pop("tasks", None)
+    if extra_patch:
+        child_patch.update(extra_patch)
 
     return parent.model_copy(
         update={

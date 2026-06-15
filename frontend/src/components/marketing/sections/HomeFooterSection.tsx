@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { ArrowIcon } from '../icons'
+import { MarketingStrokeTitle } from '../MarketingStrokeTitle'
 import { MKT_CTA_FOOTER_PRIMARY, MKT_CTA_FOOTER_SECONDARY } from '@/lib/marketingCta'
 
 type FooterVariant = 'full' | 'linksOnly'
@@ -40,7 +41,14 @@ export function HomeFooterSection({ variant = 'full' }: { variant?: FooterVarian
             }}
           />
           <div className="relative mx-auto flex max-w-4xl flex-col items-center gap-6 text-center">
-            <h2 className="text-2xl font-bold tracking-tight drop-shadow-sm md:text-4xl">{t('footer.ctaTitle')}</h2>
+            <h2 className="sr-only">{t('footer.ctaTitle')}</h2>
+            <MarketingStrokeTitle
+              text={t('footer.ctaTitle')}
+              size="cta"
+              variant="onDark"
+              block
+              className="text-white"
+            />
             <p className="max-w-xl text-sm leading-relaxed text-white/85 md:text-base">{t('footer.ctaDesc')}</p>
             <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link to="/register" className={MKT_CTA_FOOTER_PRIMARY}>
