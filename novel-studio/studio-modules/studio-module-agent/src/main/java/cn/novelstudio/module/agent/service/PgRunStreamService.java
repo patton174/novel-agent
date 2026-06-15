@@ -146,6 +146,15 @@ public class PgRunStreamService {
         return "run.failed".equals(type);
     }
 
+    private String extractError(String frame) {
+        try {
+            JsonNode payload = SseEventCodec.extractPayload(frame, objectMapper);
+            return payload.path("error").asText("run failed");
+        } catch (Exception ex) {
+            return "run failed";
+        }
+    }
+
     private void appendJournalPayload(String runId, String sseFrame) {
         String data = SseEventCodec.extractData(sseFrame);
         if (data != null && !data.isBlank()) {
