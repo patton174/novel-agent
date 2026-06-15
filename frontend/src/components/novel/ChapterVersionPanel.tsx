@@ -8,13 +8,13 @@ import { PanelLoadingSkeleton } from '@/components/loading/PageSkeletons'
 import {
   CHAPTER_VERSION_ACTIONS,
   CHAPTER_VERSION_BODY,
+  CHAPTER_VERSION_HEADING,
   CHAPTER_VERSION_HINT,
   CHAPTER_VERSION_ITEM,
   CHAPTER_VERSION_META,
   CHAPTER_VERSION_PANEL,
   CHAPTER_VERSION_TIMELINE,
   CHAPTER_VERSION_TITLE,
-  chapterVersionChevronClass,
 } from '@/lib/chapterVersionClasses'
 import i18n from '@/i18n'
 
@@ -22,8 +22,6 @@ interface ChapterVersionPanelProps {
   chapterId: string | null
   currentTitle: string
   currentContent: string
-  expanded: boolean
-  onToggle: () => void
   onRestored: () => void
   previewVersionId: string | null
   onPreviewVersion: (version: ChapterVersion | null) => void
@@ -31,8 +29,6 @@ interface ChapterVersionPanelProps {
 
 export const ChapterVersionPanel: React.FC<ChapterVersionPanelProps> = ({
   chapterId,
-  expanded,
-  onToggle,
   onRestored,
   previewVersionId,
   onPreviewVersion,
@@ -63,13 +59,15 @@ export const ChapterVersionPanel: React.FC<ChapterVersionPanelProps> = ({
   }, [])
 
   useEffect(() => {
-    if (!chapterId || !expanded) {
+    if (!chapterId) {
+      setVersions([])
+      onPreviewVersion(null)
       return
     }
     onPreviewVersion(null)
     void loadVersions(chapterId)
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- clear preview only when chapter/panel changes
-  }, [chapterId, expanded, loadVersions])
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- clear preview only when chapter changes
+  }, [chapterId, loadVersions])
 
   const handleRestore = async (versionId: string) => {
     if (!chapterId) return
@@ -91,65 +89,58 @@ export const ChapterVersionPanel: React.FC<ChapterVersionPanelProps> = ({
 
   return (
     <div className={CHAPTER_VERSION_PANEL}>
-      <EditorButton variant="panel" type="button" onClick={onToggle}>
-        <span>{t('editor:versions.title')}</span>
-        <span className={chapterVersionChevronClass(expanded)}>▾</span>
-      </EditorButton>
-      {expanded && (
-        <>
-          {!chapterId ? (
-            <div className={CHAPTER_VERSION_HINT}>{t('editor:versions.selectChapter')}</div>
-          ) : loading ? (
-            <PanelLoadingSkeleton rows={3} />
-          ) : versions.length === 0 ? (
-            <div className={CHAPTER_VERSION_HINT}>{t('editor:versions.empty')}</div>
-          ) : (
-            <div className={CHAPTER_VERSION_TIMELINE}>
-              {versions.map((v) => (
-                <div key={v.id} className={CHAPTER_VERSION_ITEM}>
-                  <div className={CHAPTER_VERSION_BODY}>
-                    <div className={CHAPTER_VERSION_META}>
-                      <span className="time">
-                        {new Date(v.createdAt).toLocaleString(dateLocale)}
-                      </span>
-                      <span className="badge">{sourceLabel(v.source)}</span>
-                      <span className="words">
-                        {t('editor:versions.wordCount', { count: v.wordCount })}
-                      </span>
-                    </div>
-                    <div className={CHAPTER_VERSION_TITLE}>{v.title}</div>
-                    <div className={CHAPTER_VERSION_ACTIONS}>
-                      <EditorButton
-                        type="button"
-                        variant="secondary"
-                        size="sm"
-                        active={previewVersionId === v.id}
-                        onClick={() =>
-                          onPreviewVersion(previewVersionId === v.id ? null : v)
-                        }
-                      >
-                        {previewVersionId === v.id
-                          ? t('editor:versions.closePreview')
-                          : t('editor:versions.preview')}
-                      </EditorButton>
-                      <EditorButton
-                        type="button"
-                        variant="primary"
-                        size="sm"
-                        disabled={restoringId === v.id}
-                        onClick={() => void handleRestore(v.id)}
-                      >
-                        {restoringId === v.id
-                          ? t('editor:versions.restoring')
-                          : t('editor:versions.restore')}
-                      </EditorButton>
-                    </div>
-                  </div>
+      <div className={CHAPTER_VERSION_HEADING}>{t('editor:versions.title')}</div>
+      {!chapterId ? (
+        <div className={CHAPTER_VERSION_HINT}>{t('editor:versions.selectChapter')}</div>
+      ) : loading ? (
+        <PanelLoadingSkeleton rows={3} />
+      ) : versions.length === 0 ? (
+        <div className={CHAPTER_VERSION_HINT}>{t('editor:versions.empty')}</div>
+      ) : (
+        <div className={CHAPTER_VERSION_TIMELINE}>
+          {versions.map((v) => (
+            <div key={v.id} className={CHAPTER_VERSION_ITEM}>
+              <div className={CHAPTER_VERSION_BODY}>
+                <div className={CHAPTER_VERSION_META}>
+                  <span className="time">
+                    {new Date(v.createdAt).toLocaleString(dateLocale)}
+                  </span>
+                  <span className="badge">{sourceLabel(v.source)}</span>
+                  <span className="words">
+                    {t('editor:versions.wordCount', { count: v.wordCount })}
+                  </span>
                 </div>
-              ))}
+                <div className={CHAPTER_VERSION_TITLE}>{v.title}</div>
+                <div className={CHAPTER_VERSION_ACTIONS}>
+                  <EditorButton
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    active={previewVersionId === v.id}
+                    onClick={() =>
+                      onPreviewVersion(previewVersionId === v.id ? null : v)
+                    }
+                  >
+                    {previewVersionId === v.id
+                      ? t('editor:versions.closePreview')
+                      : t('editor:versions.preview')}
+                  </EditorButton>
+                  <EditorButton
+                    type="button"
+                    variant="primary"
+                    size="sm"
+                    disabled={restoringId === v.id}
+                    onClick={() => void handleRestore(v.id)}
+                  >
+                    {restoringId === v.id
+                      ? t('editor:versions.restoring')
+                      : t('editor:versions.restore')}
+                  </EditorButton>
+                </div>
+              </div>
             </div>
-          )}
-        </>
+          ))}
+        </div>
       )}
     </div>
   )

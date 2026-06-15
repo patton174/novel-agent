@@ -56,7 +56,9 @@
       "writing": "Writing...",
       "writingDone": "Writing completed",
       "toolCall": "Tool Call",
-      "skillCall": "Skill Call"
+      "skillCall": "Skill Call",
+      "emptyHint": "Send a message to plan outlines, continue chapters, or adjust settings",
+      "hostRunningBanner": "Hosted run in progress — keep this browser tab open"
     },
     "picker": {
       "unselectedChapter": "No chapter selected",

@@ -241,8 +241,8 @@ export const TOOL_DETAIL_SECTION_LABEL =
 
 export function toolDetailPreClass(error?: boolean) {
   return cn(
-    'm-0 max-h-64 overflow-auto rounded-md border border-border bg-[#f8fafc] p-[0.4rem] px-[0.45rem] font-mono text-[0.68rem] leading-[1.45] whitespace-pre-wrap break-words',
-    error ? 'text-red-500' : 'text-[#475569]',
+    'm-0 max-h-64 overflow-auto rounded-md border border-border bg-muted/40 p-[0.4rem] px-[0.45rem] font-mono text-[0.68rem] leading-[1.45] whitespace-pre-wrap break-words',
+    error ? 'text-destructive' : 'text-muted-foreground',
   )
 }
 

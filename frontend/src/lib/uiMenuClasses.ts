@@ -73,23 +73,25 @@ export function dropdownMenuOptionClass(active?: boolean) {
 }
 
 export const MOTION_TAB_TRACK =
-  'relative inline-flex items-center gap-1.5 rounded-xl bg-black/[0.03] p-1'
+  'relative inline-flex items-center gap-1.5'
 
 export const MOTION_TAB_INDICATOR =
-  'absolute z-0 rounded-[10px] border border-primary/35 bg-primary/10 shadow-[inset_0_1px_2px_rgba(15,23,42,0.06)] pointer-events-none'
+  'absolute z-0 rounded-lg border border-primary/30 bg-primary/10 pointer-events-none'
 
 export function motionTabButtonClass(active?: boolean) {
   return cn(
-    'relative z-[1] inline-flex items-center gap-1.5 rounded-[10px] border-none bg-transparent',
-    'px-[0.85rem] py-[0.45rem] font-[inherit] text-[0.82rem] cursor-pointer',
-    active ? 'font-semibold text-foreground' : 'font-medium text-muted-foreground',
-    'hover:text-foreground disabled:cursor-not-allowed disabled:opacity-45',
+    'relative z-[1] inline-flex h-8 items-center gap-1.5 rounded-lg border bg-background px-2.5',
+    'font-[inherit] text-xs font-medium cursor-pointer shadow-xs transition-colors',
+    active
+      ? 'border-primary/35 text-foreground'
+      : 'border-border text-muted-foreground',
+    'hover:bg-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-45',
   )
 }
 
 export function motionTabIconClass(active?: boolean) {
   return cn(
-    'inline-flex items-center text-muted-foreground [&_svg]:size-4',
+    'inline-flex items-center text-muted-foreground [&_svg]:size-3.5',
     active && 'text-primary',
   )
 }

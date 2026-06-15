@@ -283,6 +283,66 @@ describe('agentStreamTimeline', () => {
     }
   })
 
+  it('starts a new think round after tools instead of reopening an earlier think block', () => {
+    let timeline = applyTimelineEvent([], {
+      type: 'think.started',
+      step_id: 'step-think-1',
+      payload: {},
+    })
+    timeline = applyTimelineEvent(timeline, {
+      type: 'think.delta',
+      step_id: 'step-think-1',
+      payload: { text: '首轮思考' },
+    })
+    timeline = applyTimelineEvent(timeline, {
+      type: 'think.completed',
+      step_id: 'step-think-1',
+      payload: {},
+    })
+    timeline = applyTimelineEvent(timeline, {
+      type: 'step.started',
+      step_id: 'step-list',
+      payload: { tool: 'ListChapters' },
+    })
+    timeline = applyTimelineEvent(timeline, {
+      type: 'think.delta',
+      step_id: 'step-think-2',
+      payload: { text: '工具前思考' },
+    })
+
+    const thinkBlocks = timeline.filter(
+      (block): block is Extract<typeof block, { kind: 'think' }> => block.kind === 'think',
+    )
+    expect(thinkBlocks).toHaveLength(2)
+    expect(thinkBlocks[0]?.text).toContain('首轮思考')
+    expect(thinkBlocks[1]?.text).toContain('工具前思考')
+
+    const toolIdx = timeline.findIndex((block) => block.kind === 'tool')
+    const secondThinkIdx = timeline.findIndex(
+      (block) => block.kind === 'think' && block.text.includes('工具前思考'),
+    )
+    expect(toolIdx).toBeGreaterThanOrEqual(0)
+    expect(secondThinkIdx).toBeGreaterThan(toolIdx)
+
+    const units = groupTimelineUnits(timeline, [
+      {
+        stepId: 'step-list',
+        toolName: 'ListChapters',
+        title: '列举章节',
+        status: 'completed',
+      },
+    ])
+    const orch = units.find((unit) => unit.kind === 'orchestration')
+    expect(orch?.kind).toBe('orchestration')
+    if (orch?.kind === 'orchestration') {
+      const roundItems = orch.rounds.flatMap((round) => round.items.map((item) => item.kind))
+      const insightIdx = roundItems.indexOf('insight')
+      const toolsIdx = roundItems.indexOf('tools')
+      expect(insightIdx).toBeGreaterThanOrEqual(0)
+      expect(toolsIdx).toBeGreaterThan(insightIdx)
+    }
+  })
+
   it('flattens CC orchestration transition children into orchestration layer', () => {
     let timeline = applyTimelineEvent([], {
       type: 'planning.next_step',

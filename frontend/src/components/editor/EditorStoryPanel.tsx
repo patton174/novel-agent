@@ -6,12 +6,6 @@ import { EditorButton } from '../ui/EditorButton'
 import { confirmAction } from '../../stores/appDialog'
 import { EditorIcons } from './icons'
 import { useAppMobile } from '@/hooks/useMediaQuery'
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet'
 import { cn } from '@/lib/utils'
 import type { ChapterVersion } from '../../types/novel'
 
@@ -26,8 +20,6 @@ export interface EditorStoryPanelProps {
   activeChapterId: string | null
   activeChapterTitle: string
   chapterContent: string
-  versionsExpanded: boolean
-  onVersionsToggle: () => void
   onChapterRestored: () => void
   versionPreview: ChapterVersion | null
   onVersionPreviewChange: (version: ChapterVersion | null) => void
@@ -70,8 +62,6 @@ function EditorStoryPanelMobile({
   activeChapterId,
   activeChapterTitle,
   chapterContent,
-  versionsExpanded,
-  onVersionsToggle,
   onChapterRestored,
   versionPreview,
   onVersionPreviewChange,
@@ -118,11 +108,6 @@ function EditorStoryPanelMobile({
             {chapterDirty ? t('editor:story.unsaved') : ''}
           </span>
           <div className="flex shrink-0 items-center gap-1">
-            {hasChapter ? (
-              <EditorButton variant="ghost" size="sm" className="h-8 px-2 text-xs" onClick={onVersionsToggle}>
-                {t('editor:story.version')}
-              </EditorButton>
-            ) : null}
             <EditorButton variant="secondary" size="sm" className="h-8 px-2.5" onClick={onCopyChapter}>
               <EditorIcons.Copy />
             </EditorButton>
@@ -175,42 +160,31 @@ function EditorStoryPanelMobile({
               onDismiss={onDismissChapterDiff}
             />
           ) : (
-            <textarea
-              value={chapterContent}
-              onChange={(e) => onChapterContentChange(e.target.value)}
-              placeholder={t('editor:story.editorPlaceholder')}
-              readOnly={agentChapterStreaming}
-              className={cn(
-                'min-h-full w-full resize-none border-none bg-transparent font-serif text-base leading-[1.85] tracking-wide text-foreground outline-none whitespace-pre-wrap',
-                agentChapterStreaming && 'caret-primary',
-              )}
-            />
+            <>
+              <textarea
+                value={chapterContent}
+                onChange={(e) => onChapterContentChange(e.target.value)}
+                placeholder={t('editor:story.editorPlaceholder')}
+                readOnly={agentChapterStreaming}
+                className={cn(
+                  'min-h-[40vh] w-full resize-none border-none bg-transparent font-serif text-base leading-[1.85] tracking-wide text-foreground outline-none whitespace-pre-wrap',
+                  agentChapterStreaming && 'caret-primary',
+                )}
+              />
+              {hasChapter ? (
+                <ChapterVersionPanel
+                  chapterId={activeChapterId}
+                  currentTitle={activeChapterTitle}
+                  currentContent={chapterContent}
+                  onRestored={onChapterRestored}
+                  previewVersionId={versionPreview?.id ?? null}
+                  onPreviewVersion={onVersionPreviewChange}
+                />
+              ) : null}
+            </>
           )}
         </div>
       </div>
-
-      <Sheet
-        open={versionsExpanded}
-        onOpenChange={(open) => {
-          if (!open && versionsExpanded) onVersionsToggle()
-        }}
-      >
-        <SheetContent side="bottom" className="max-h-[72vh] overflow-y-auto rounded-t-2xl px-4 pb-6">
-          <SheetHeader className="px-0">
-            <SheetTitle>{t('editor:story.chapterVersions')}</SheetTitle>
-          </SheetHeader>
-          <ChapterVersionPanel
-            chapterId={activeChapterId}
-            currentTitle={activeChapterTitle}
-            currentContent={chapterContent}
-            expanded
-            onToggle={onVersionsToggle}
-            onRestored={onChapterRestored}
-            previewVersionId={versionPreview?.id ?? null}
-            onPreviewVersion={onVersionPreviewChange}
-          />
-        </SheetContent>
-      </Sheet>
     </section>
   )
 }
@@ -224,8 +198,6 @@ function EditorStoryPanelDesktop({
   activeChapterId,
   activeChapterTitle,
   chapterContent,
-  versionsExpanded,
-  onVersionsToggle,
   onChapterRestored,
   versionPreview,
   onVersionPreviewChange,
@@ -317,8 +289,6 @@ function EditorStoryPanelDesktop({
                   chapterId={activeChapterId}
                   currentTitle={activeChapterTitle}
                   currentContent={chapterContent}
-                  expanded={versionsExpanded}
-                  onToggle={onVersionsToggle}
                   onRestored={onChapterRestored}
                   previewVersionId={versionPreview?.id ?? null}
                   onPreviewVersion={onVersionPreviewChange}

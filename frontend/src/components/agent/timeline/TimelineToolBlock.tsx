@@ -314,6 +314,7 @@ export function TimelineToolBlock({
     !deleteSummary &&
     !chapterWriteInBranch &&
     !vfsInventoryTool &&
+    !showBodySummary &&
     !(readLabel && readBodyExcerpt) &&
     (step.status === 'completed' ||
       (step.status === 'failed' && !showFailedDetail) ||

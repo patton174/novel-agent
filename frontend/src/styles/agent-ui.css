@@ -274,7 +274,7 @@
   font-family: 'Geist Variable', ui-sans-serif, system-ui, sans-serif;
   font-size: 0.78rem;
   line-height: 1.68;
-  color: #64748b;
+  color: hsl(var(--muted-foreground));
 }
 
 .agent-prose-think h1,
@@ -287,7 +287,7 @@
   font-weight: 600;
   border-left: none;
   padding-left: 0;
-  color: #475569;
+  color: hsl(var(--foreground) / 0.82);
   margin: 0.5rem 0 0.35rem;
 }
 
@@ -297,13 +297,13 @@
 
 .agent-prose-think strong {
   font-weight: 600;
-  color: #94a3b8;
+  color: hsl(var(--foreground) / 0.9);
 }
 
 .agent-prose-think blockquote {
-  border-left-color: #e2e8f0;
-  background: #f8fafc;
-  color: #64748b;
+  border-left-color: hsl(var(--border));
+  background: hsl(var(--muted) / 0.45);
+  color: hsl(var(--muted-foreground));
 }
 
 .agent-prose-novel {

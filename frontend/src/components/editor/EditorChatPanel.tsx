@@ -1,4 +1,5 @@
 import { useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useComposerSafeInset } from '../../hooks/editor/useComposerSafeInset'
 import { ChatComposer } from '../chat/ChatComposer'
 import type {
@@ -78,6 +79,7 @@ export function EditorChatPanel({
   marketingPinOrchestration = false,
   hideComposer = false,
 }: EditorChatPanelProps) {
+  const { t } = useTranslation(['editor'])
   const isInitial = isInitialChatView(messages, activeNovel)
   const visibleMessages = filterVisibleChatMessages(messages, activeNovel)
   const composerRef = useRef<HTMLDivElement>(null)
@@ -141,7 +143,7 @@ export function EditorChatPanel({
             <div ref={messagesAreaRef} className="hidden" aria-hidden />
             <div className="pointer-events-none absolute inset-x-0 top-[18%] flex justify-center px-4">
               <p className="max-w-md text-center text-sm leading-relaxed text-muted-foreground">
-                向 AI 发送消息，开始规划大纲、续写章节或调整设定
+                {t('editor:chat.emptyHint')}
               </p>
             </div>
           </>

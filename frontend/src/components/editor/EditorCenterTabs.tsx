@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { LayoutDashboard } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
@@ -17,12 +18,15 @@ export interface EditorCenterTabsProps {
 }
 
 export function EditorCenterTabs({ activeTab, onTabChange }: EditorCenterTabsProps) {
-  const { t } = useTranslation(['editor', 'common'])
+  const { t, i18n } = useTranslation(['editor', 'common'])
 
-  const TAB_ITEMS = [
-    { id: 'chat' as const, label: t('editor:tabs.chat'), icon: <EditorIcons.MessageCircle /> },
-    { id: 'story' as const, label: t('editor:tabs.story'), icon: <EditorIcons.BookOpen /> },
-  ]
+  const tabItems = useMemo(
+    () => [
+      { id: 'chat' as const, label: t('editor:tabs.chat'), icon: <EditorIcons.MessageCircle /> },
+      { id: 'story' as const, label: t('editor:tabs.story'), icon: <EditorIcons.BookOpen /> },
+    ],
+    [t, i18n.language],
+  )
 
   return (
     <div
@@ -30,7 +34,7 @@ export function EditorCenterTabs({ activeTab, onTabChange }: EditorCenterTabsPro
       style={{ minHeight: editorLayout.chromeMinHeight, padding: `0 ${editorLayout.mainPaddingX}` }}
     >
       <MotionTabBar
-        items={TAB_ITEMS}
+        items={tabItems}
         activeId={activeTab}
         onChange={onTabChange}
         aria-label={t('editor:tabs.ariaLabel')}

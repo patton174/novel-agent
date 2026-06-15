@@ -122,8 +122,6 @@ const EditorPage: React.FC = () => {
             activeChapterId={editor.activeChapterId}
             activeChapterTitle={editor.activeChapter?.title ?? ''}
             chapterContent={editor.chapterContent}
-            versionsExpanded={editor.versionsExpanded}
-            onVersionsToggle={() => editor.setVersionsExpanded((v) => !v)}
             onChapterRestored={() => void editor.refreshActiveChapter()}
             toolbarTitle={
               editor.agentChapterStreamTitle ||

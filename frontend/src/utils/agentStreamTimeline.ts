@@ -238,6 +238,33 @@ function appendReasoningDelta(timeline: AgentTimelineBlock[], delta: string): Ag
   return next
 }
 
+/** 工具/编排 transition 之后不得复用旧思考块，否则正文会挤到时间线前段 */
+function canReopenThinkBlock(timeline: AgentTimelineBlock[], thinkIdx: number): boolean {
+  for (let i = thinkIdx + 1; i < timeline.length; i += 1) {
+    const block = timeline[i]
+    if (block.kind === 'tool' || block.kind === 'transition') {
+      return false
+    }
+  }
+  return true
+}
+
+function appendActiveThinkBlock(
+  timeline: AgentTimelineBlock[],
+  text: string,
+  stepId?: string,
+): AgentTimelineBlock[] {
+  return [
+    ...timeline,
+    {
+      kind: 'think' as const,
+      id: stepId ? uniqueBlockId(timeline, 'think', stepId) : `think-${timeline.length + 1}`,
+      text,
+      status: 'active' as const,
+    },
+  ]
+}
+
 function appendThinkDelta(timeline: AgentTimelineBlock[], delta: string): AgentTimelineBlock[] {
   const clean = sanitizeThinkText(delta)
   if (!clean) {
@@ -247,22 +274,15 @@ function appendThinkDelta(timeline: AgentTimelineBlock[], delta: string): AgentT
   if (lastThinkIdx < 0) {
     lastThinkIdx = findLastIndex(timeline, (b) => b.kind === 'think')
     if (lastThinkIdx < 0) {
-      return [
-        ...timeline,
-        {
-          kind: 'think',
-          id: `think-${timeline.length + 1}`,
-          text: clean,
-          status: 'active',
-        },
-      ]
+      return appendActiveThinkBlock(timeline, clean)
     }
     const reopen = timeline[lastThinkIdx]
-    if (reopen.kind === 'think') {
+    if (reopen.kind === 'think' && canReopenThinkBlock(timeline, lastThinkIdx)) {
       const next = [...timeline]
       next[lastThinkIdx] = { ...reopen, text: `${reopen.text}${clean}`, status: 'active' }
       return next
     }
+    return appendActiveThinkBlock(timeline, clean)
   }
   const block = timeline[lastThinkIdx]
   if (block.kind !== 'think') {
@@ -408,16 +428,23 @@ export function applyTimelineEvent(
   if (type === 'step.started') {
     const tool = typeof event.payload.tool === 'string' ? event.payload.tool : ''
     if (tool === 'think') {
+      if (timeline.some((b) => b.kind === 'think' && b.status === 'active')) {
+        return timeline
+      }
       const lastThinkIdx = findLastIndex(timeline, (b) => b.kind === 'think')
       if (lastThinkIdx >= 0) {
         const block = timeline[lastThinkIdx]
-        if (block.kind === 'think' && block.status === 'done' && block.text.trim()) {
+        if (
+          block.kind === 'think' &&
+          block.status === 'done' &&
+          canReopenThinkBlock(timeline, lastThinkIdx)
+        ) {
           const next = [...timeline]
           next[lastThinkIdx] = { ...block, status: 'active' }
           return freezeTrailingStreamBlocks(next)
         }
       }
-      return timeline
+      return freezeTrailingStreamBlocks(appendActiveThinkBlock(timeline, '', stepId))
     }
     if (tool && !isHiddenTimelineToolName(tool)) {
       if (timeline.some((b) => b.kind === 'tool' && b.stepId === stepId)) {

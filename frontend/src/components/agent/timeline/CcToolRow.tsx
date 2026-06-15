@@ -17,7 +17,6 @@ import {
   CHEVRON_SLOT,
   HEADLINE_CLUSTER,
   TIMELINE_PENDING_IN,
-  TOOL_DETAIL_TREE,
   ccHeadlineChevronClass,
   ccToolBranchClass,
   toolLeadCellClass,
@@ -160,15 +159,9 @@ export function CcToolBranchLine({ children }: { children: ReactNode }) {
   )
 }
 
-/** 工具详情内二级树状行（嵌套在 ⎿ 分支内） */
 export function CcToolNestedBranch({ children }: { children: ReactNode }) {
   if (!children) {
     return null
   }
-  return (
-    <div className={TOOL_DETAIL_TREE}>
-      <span className={CC_BRANCH_GLYPH} aria-hidden />
-      <div className={CC_BRANCH_CONTENT}>{children}</div>
-    </div>
-  )
+  return <div className="mt-0.5 flex flex-col gap-1">{children}</div>
 }

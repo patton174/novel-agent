@@ -56,7 +56,9 @@
       "writing": "写作中...",
       "writingDone": "写作完成",
       "toolCall": "工具调用",
-      "skillCall": "技能调用"
+      "skillCall": "技能调用",
+      "emptyHint": "向 AI 发送消息，开始规划大纲、续写章节或调整设定",
+      "hostRunningBanner": "托管运行中：任务在后台继续，请勿关闭浏览器标签页"
     },
     "picker": {
       "unselectedChapter": "未选章节",

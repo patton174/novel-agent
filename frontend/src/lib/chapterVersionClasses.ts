@@ -4,12 +4,9 @@ export const CHAPTER_VERSION_PANEL = cn(
   'mt-[0.85rem] rounded-[10px] border border-border bg-card/90 p-[0.65rem]',
 )
 
-export function chapterVersionChevronClass(open: boolean) {
-  return cn(
-    'inline-block text-muted-foreground transition-transform duration-200 ease-out',
-    open && 'rotate-180',
-  )
-}
+export const CHAPTER_VERSION_HEADING = cn(
+  'mb-2 text-[0.82rem] font-bold text-foreground',
+)
 
 export const CHAPTER_VERSION_HINT =
   'px-[0.15rem] py-2 text-[0.78rem] leading-normal text-muted-foreground'

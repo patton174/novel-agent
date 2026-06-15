@@ -26,6 +26,7 @@ import { useEditorScroll } from './useEditorScroll'
 import { useEditorStoryMemory } from './useEditorStoryMemory'
 import { useEditorReindex } from './useEditorReindex'
 import { useEditorBootstrap } from './useEditorBootstrap'
+import i18n from '@/i18n'
 
 export function useEditorPage() {
   const location = useLocation()
@@ -48,7 +49,6 @@ export function useEditorPage() {
     () => initialUrl.action === 'create',
   )
   const [storyOutlineCollapsed, setStoryOutlineCollapsed] = useState(() => matchesAppMobile())
-  const [versionsExpanded, setVersionsExpanded] = useState(false)
   const [versionPreview, setVersionPreview] = useState<ChapterVersion | null>(null)
   const [messages, setMessages] = useState<EditorMessage[]>([INITIAL_ASSISTANT_MESSAGE])
   const preferredSessionIdRef = useRef<string | null>(initialSessionId)
@@ -307,7 +307,7 @@ export function useEditorPage() {
     hostRunningInBackground || stream.liveStreamMessage?.agentHostGuardMessage
       ? stream.liveStreamMessage?.agentHostGuardMessage
         ?? (hostRunningInBackground
-          ? '托管运行中：任务在后台继续，请勿关闭浏览器标签页'
+          ? i18n.t('editor:chat.hostRunningBanner')
           : '')
       : undefined
 
@@ -318,8 +318,6 @@ export function useEditorPage() {
     setShowCreateNovel,
     storyOutlineCollapsed,
     setStoryOutlineCollapsed,
-    versionsExpanded,
-    setVersionsExpanded,
     versionPreview,
     setVersionPreview,
     messages,

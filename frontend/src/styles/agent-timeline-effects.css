@@ -63,8 +63,8 @@
   bottom: 0.04em;
   width: 0.36em;
   height: 0.36em;
-  border-left: 1.5px solid #64748b;
-  border-bottom: 1.5px solid #64748b;
+  border-left: 1.5px solid hsl(var(--muted-foreground) / 0.55);
+  border-bottom: 1.5px solid hsl(var(--muted-foreground) / 0.55);
   border-bottom-left-radius: 1px;
 }
 
@@ -79,7 +79,7 @@
   top: calc(1.35rem + 0.08rem);
   bottom: 0.06rem;
   width: 2px;
-  background: #e2e8f0;
+  background: hsl(var(--border));
   pointer-events: none;
   border-radius: 1px;
 }
@@ -88,12 +88,12 @@
 .agent-timeline-delivery-body [data-variant='chat'] {
   font-size: 0.9rem;
   line-height: 1.78;
-  color: #334155;
+  color: hsl(var(--foreground) / 0.88);
 }
 
 .agent-timeline-text-block [data-variant='chat'] p,
 .agent-timeline-delivery-body [data-variant='chat'] p {
-  color: #1e293b;
+  color: hsl(var(--foreground));
 }
 
 .agent-timeline-delivery-body [data-variant='chat'] p:first-child {
@@ -103,7 +103,7 @@
 .agent-timeline-text-block [data-variant='chat'] strong,
 .agent-timeline-delivery-body [data-variant='chat'] strong {
   font-weight: 600;
-  color: #0f172a;
+  color: hsl(var(--foreground));
 }
 
 @keyframes agent-tool-status-dot-blink {
