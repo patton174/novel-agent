@@ -1,0 +1,13 @@
+import type { AgentStreamUiState } from '../types/agent'
+
+/** SSE 断开后是否应走 status WS 追事件 */
+export function shouldAttachStreamRecovery(state: AgentStreamUiState): boolean {
+  return Boolean(state.runId) && !state.runTerminalAck && !state.isStreamEnded
+}
+
+export const STREAM_RECOVERY_BANNER =
+  '连接中断，正在通过备用通道同步进度…'
+
+export function isPeerDroppedStreamError(message: string): boolean {
+  return /incomplete chunked read|peer closed connection/i.test(message)
+}

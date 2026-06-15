@@ -45,6 +45,8 @@ export interface AgentThinkPanelProps {
   hideHeader?: boolean
   /** 处于 think_round 内：正文与工具共用左侧竖线 */
   inThinkRound?: boolean
+  /** 流式窗口：最多三行高度并自动滚到底 */
+  streamScrollWindow?: boolean
   /** 外层编排进行中：保持思考展开，由编排层统一收起 */
   orchestrationActive?: boolean
   defaultExpanded?: boolean
@@ -123,6 +125,7 @@ export function AgentThinkPanel({
   hideHeader = false,
   inThinkRound = false,
   orchestrationActive = false,
+  streamScrollWindow = false,
   defaultExpanded: defaultExpandedProp,
   className,
   'data-testid': testId = 'agent-think-panel',
@@ -131,6 +134,7 @@ export function AgentThinkPanel({
   const resolvedThinkingTitle = thinkingTitle ?? t('editor:timeline.thinking')
   const resolvedDoneTitle = doneTitle ?? t('editor:timeline.thinking')
   const bodyId = useId()
+  const bodyScrollRef = useRef<HTMLDivElement>(null)
   const trimmed = text.trim()
   const hasBody = Boolean(trimmed)
   const autoDuration = useThinkDuration(isThinking, durationProp === undefined)
@@ -185,6 +189,17 @@ export function AgentThinkPanel({
     }
   }, [isThinking, orchestrationActive, expandedProp, autoCollapseWhenDone])
 
+  useEffect(() => {
+    if (!streamScrollWindow || !isThinking) {
+      return
+    }
+    const node = bodyScrollRef.current
+    if (!node) {
+      return
+    }
+    node.scrollTop = node.scrollHeight
+  }, [text, streamScrollWindow, isThinking])
+
   if (!isThinking && !hasBody) {
     return null
   }
@@ -193,14 +208,21 @@ export function AgentThinkPanel({
   const { phase, duration } = formatThinkStatus(isThinking, durationSec, t)
   const holdExpandedInRound = inThinkRound && orchestrationActive && isThinking
   const canToggle = hasBody && !isThinking && !holdExpandedInRound
+  const showDoneLinePreview = !isThinking && hasBody && !expanded && !holdExpandedInRound
   const showBody =
-    hasBody && (hideHeader || isThinking || expanded || holdExpandedInRound)
+    hasBody &&
+    (hideHeader || isThinking || expanded || holdExpandedInRound || showDoneLinePreview)
 
   const bodyContent = (
     <div
+      ref={streamScrollWindow ? bodyScrollRef : undefined}
       id={bodyId}
       data-testid="agent-think-content"
-      className={thinkBodyClass(nested)}
+      className={cn(
+        thinkBodyClass(nested),
+        streamScrollWindow &&
+          'max-h-[4.65em] overflow-y-auto overflow-x-hidden [scrollbar-width:none] [-ms-overflow-style:none] [-webkit-overflow-scrolling:touch] [&::-webkit-scrollbar]:hidden',
+      )}
     >
       {markdown ? (
         <AgentMarkdown text={text} variant="think" />
@@ -214,11 +236,12 @@ export function AgentThinkPanel({
     <div
       className={cn('w-full', nested ? 'opacity-[0.92]' : 'opacity-100', TIMELINE_PENDING_IN, className)}
       data-testid={testId}
+      data-think-rail-row={inThinkRound ? 'true' : undefined}
     >
       <div className={CC_TOOL_ROW_WRAP}>
         <div className={CC_TOOL_HEADLINE_ROW}>
           {!hideHeader ? (
-            <div className={toolLeadCellClass()}>
+            <div className={toolLeadCellClass()} data-timeline-lead>
               <TimelineLeadIcon
                 iconName="think"
                 status={isThinking ? 'loading' : 'success'}

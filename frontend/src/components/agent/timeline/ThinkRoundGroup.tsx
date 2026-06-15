@@ -55,7 +55,7 @@ function renderInsightBlock(
   return null
 }
 
-/** 单轮：思考块竖线轴 → 正文/工具右缩进同级 */
+/** 单轮：思考块之间可连竖线；工具/正文平铺缩进，不做树状分支 */
 export function ThinkRoundGroup({
   items,
   stepStates,
@@ -65,6 +65,7 @@ export function ThinkRoundGroup({
   thinkExpanded,
   onThinkExpandedChange,
   orchestrationActive = false,
+  suppressRail = false,
   renderTool,
   renderText,
 }: {
@@ -76,6 +77,7 @@ export function ThinkRoundGroup({
   thinkExpanded?: boolean
   onThinkExpandedChange?: (open: boolean) => void
   orchestrationActive?: boolean
+  suppressRail?: boolean
   renderTool: (block: Extract<AgentTimelineBlock, { kind: 'tool' }>, key: string) => ReactNode
   renderText?: (block: OrchestrationBodyBlock, key: string) => ReactNode
 }) {
@@ -106,13 +108,10 @@ export function ThinkRoundGroup({
     .filter((item): item is Extract<ThinkRoundItem, { kind: 'insight' }> => item.kind === 'insight')
     .flatMap((item) => item.blocks)
 
-  const hasBody = items.some(
-    (item) => item.kind === 'narration' || item.kind === 'text' || item.kind === 'tools',
-  )
-
-  const thinkBlockCount = insightBlocks.filter((b) => b.kind === 'think').length
-  const showThinkRail =
-    thinkBlockCount >= 2 || (thinkBlockCount >= 1 && hasBody)
+  const thinkLeadCount = insightBlocks.filter(
+    (b) => b.kind === 'think' || b.kind === 'reasoning',
+  ).length
+  const showThinkRail = !suppressRail && thinkLeadCount >= 2
 
   const renderBodyText = (block: OrchestrationBodyBlock, key: string) => (
     <div key={key} className={ORCHESTRATION_FLAT_ROW} data-testid="timeline-orchestration-text">

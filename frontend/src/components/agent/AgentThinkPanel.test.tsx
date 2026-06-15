@@ -11,8 +11,8 @@ describe('AgentThinkPanel', () => {
     expect(document.querySelector('[data-tool-icon="think"]')).not.toBeNull()
   })
 
-  it('hides body after thinking completes until user expands', () => {
-    const { getByTestId, queryByTestId } = render(
+  it('shows last line preview after thinking completes', () => {
+    const { getByTestId } = render(
       <AgentThinkPanel
         isThinking={false}
         text="分析完成"
@@ -23,7 +23,7 @@ describe('AgentThinkPanel', () => {
     )
     expect(getByTestId('agent-think-toggle')).toHaveTextContent('思考')
     expect(getByTestId('agent-think-toggle')).toHaveTextContent('已完成 · 3 秒')
-    expect(queryByTestId('agent-think-content')).toBeNull()
+    expect(getByTestId('agent-think-content')).toHaveTextContent('分析完成')
   })
 
   it('toggles body on header click', () => {

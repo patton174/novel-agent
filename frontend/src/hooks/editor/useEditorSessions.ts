@@ -24,6 +24,7 @@ import { contentMessageToEditorMessage } from '../../utils/contentMessageMap'
 import { adoptAgentSessionId, resetAgentSessionId } from '../../utils/agentSession'
 import { api } from '../../utils/api'
 import { appToast } from '../../stores/appToastStore'
+import { sessionNeedsGeneratedTitle } from '../../utils/sessionTitle'
 import type { Novel } from '../../types/novel'
 
 export interface NovelSessionGroup {
@@ -363,6 +364,42 @@ export function useEditorSessions({
     })
   }, [])
 
+  const syncSessionTitleFromServer = useCallback(
+    async (sessionId: string) => {
+      try {
+        const remoteList = activeNovelId
+          ? await api.listNovelSessions(activeNovelId, 50)
+          : await api.listContentSessions(50)
+        const remote = remoteList.find((s) => s.id === sessionId)
+        if (!remote) return
+        upsertSession({
+          id: remote.id,
+          title: remote.title || '新对话',
+          updatedAt: new Date(remote.updatedAt).toISOString(),
+          novelId: remote.novelId ?? activeNovelId ?? undefined,
+        })
+        refreshSessions(activeNovelId)
+        if (!sessionNeedsGeneratedTitle(remote.title)) {
+          clearSessionTitlePending(sessionId)
+        }
+      } catch {
+        // keep local title; retry on next poll
+      }
+    },
+    [activeNovelId, refreshSessions, clearSessionTitlePending],
+  )
+
+  const scheduleSessionTitleSync = useCallback(
+    (sessionId: string) => {
+      for (const delayMs of [1500, 4000, 8000, 15000]) {
+        window.setTimeout(() => {
+          void syncSessionTitleFromServer(sessionId)
+        }, delayMs)
+      }
+    },
+    [syncSessionTitleFromServer],
+  )
+
   const novelSessions = useMemo(() => {
     if (!activeNovelId) return []
     return listSessionsByNovel(activeNovelId).map((s) => ({
@@ -460,6 +497,7 @@ export function useEditorSessions({
     titlePendingSessionIds,
     markSessionTitlePending,
     clearSessionTitlePending,
+    scheduleSessionTitleSync,
     bootstrapSessions,
     emptyMemory,
   }

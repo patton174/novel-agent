@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { AgentTimelineBlock } from '../../../types/agent'
 import { shouldRenderThinkBlock } from '../../../utils/agentStreamTimeline'
+import { formatThinkDisplayText } from '../../../utils/thinkDisplayText'
 import { AgentThinkPanel } from '../AgentThinkPanel'
 import { useTimelineBlockStreamText } from './useTimelineBlockStreamText'
 
@@ -22,12 +23,21 @@ export function PlanReasoningBlock({
   /** @deprecated 推理完成后始终自动折叠，不再随编排层保持展开 */
   orchestrationActive?: boolean
 }) {
-  const { displayText, isThinking } = useTimelineBlockStreamText(
+  const { displayText: rawText, isThinking } = useTimelineBlockStreamText(
     block,
     messageKey,
     streamLive,
     streamFinished,
     4,
+  )
+  const displayText = useMemo(
+    () =>
+      formatThinkDisplayText(rawText, {
+        isThinking,
+        expanded: false,
+        maxLines: 3,
+      }),
+    [rawText, isThinking],
   )
 
   if (!isThinking && !displayText.trim()) {
@@ -43,6 +53,7 @@ export function PlanReasoningBlock({
       autoCollapseWhenDone
       inThinkRound={inThinkRound}
       orchestrationActive={false}
+      streamScrollWindow={isThinking}
     />
   )
 }
@@ -72,7 +83,7 @@ export function ThinkBlock({
   orchestrationActive?: boolean
 }) {
   const visible = shouldRenderThinkBlock(block, { streamLive, streamFinished })
-  const { displayText, isThinking } = useTimelineBlockStreamText(
+  const { displayText: rawText, isThinking } = useTimelineBlockStreamText(
     block,
     messageKey,
     streamLive,
@@ -86,12 +97,22 @@ export function ThinkBlock({
     setPinnedOpen(null)
   }, [messageKey, block.id])
 
-  if (!visible && !displayText.trim() && !isThinking) {
+  if (!visible && !rawText.trim() && !isThinking) {
     return null
   }
 
   const controlledExpand = !isolateExpand ? thinkExpanded : undefined
   const panelExpanded = pinnedOpen ?? controlledExpand ?? undefined
+  const isPanelExpanded = panelExpanded === true
+  const displayText = useMemo(
+    () =>
+      formatThinkDisplayText(rawText, {
+        isThinking,
+        expanded: isPanelExpanded,
+        maxLines: 3,
+      }),
+    [rawText, isThinking, isPanelExpanded],
+  )
   const handleExpandedChange = (open: boolean) => {
     if (!isolateExpand && typeof onThinkExpandedChange === 'function') {
       onThinkExpandedChange(open)
@@ -113,6 +134,7 @@ export function ThinkBlock({
       }
       inThinkRound={inThinkRound}
       orchestrationActive={orchestrationActive}
+      streamScrollWindow={isThinking && !isPanelExpanded}
     />
   )
 }

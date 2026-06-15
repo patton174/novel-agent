@@ -68,20 +68,31 @@
   border-bottom-left-radius: 1px;
 }
 
-.agent-timeline-think-rail {
+.agent-timeline-think-tree {
   position: relative;
 }
 
-.agent-timeline-think-rail::before {
+/* 主竖线：连接同一轮内各思考图标 */
+.agent-timeline-think-tree::before {
   content: '';
   position: absolute;
   left: calc(1.35rem / 2 - 1px);
   top: calc(1.35rem * 0.5);
   bottom: calc(1.35rem * 0.5);
   width: 2px;
-  background: hsl(var(--border));
+  background: hsl(var(--primary) / 0.34);
   pointer-events: none;
   border-radius: 1px;
+  z-index: 0;
+}
+
+.dark .agent-timeline-think-tree::before {
+  background: hsl(var(--primary) / 0.5);
+}
+
+.agent-timeline-think-tree > * {
+  position: relative;
+  z-index: 1;
 }
 
 .agent-timeline-text-block [data-variant='chat'],

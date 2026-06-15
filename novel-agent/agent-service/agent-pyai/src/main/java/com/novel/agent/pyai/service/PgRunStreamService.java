@@ -193,6 +193,13 @@ public class PgRunStreamService {
         try {
             messageProducer.send(MqTopic.AGENT_SESSION, message);
             contentInternalClient.transitionRun(state.getRunId(), mapPgStatus(status), error);
+            sessionTitleService.maybeGenerateTitleAsync(
+                state.getUserId(),
+                state.getSessionId(),
+                message.userMessage(),
+                assistantMessage == null ? "" : assistantMessage,
+                SessionTitleContext.extractNovelTitle(state.getAssembledContext())
+            );
         } catch (Exception ex) {
             log.warn("queued persist failed runId={}: {}", state.getRunId(), ex.getMessage());
         }

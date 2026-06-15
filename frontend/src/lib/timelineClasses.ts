@@ -122,10 +122,10 @@ export function toolIconSlotClass(status?: ToolVisualStatus) {
   )
 }
 
-export function thinkRoundWrapClass(hasRail?: boolean) {
+export function thinkRoundWrapClass(hasThinkRail?: boolean) {
   return cn(
     'relative mx-0 my-[0.04rem] mb-[0.12rem] flex w-full max-w-full flex-col gap-[0.12rem]',
-    hasRail && 'agent-timeline-think-rail',
+    hasThinkRail && 'agent-timeline-think-tree',
   )
 }
 

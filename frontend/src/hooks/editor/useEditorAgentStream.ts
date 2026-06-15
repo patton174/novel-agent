@@ -23,7 +23,11 @@ import {
   isChapterContentSideEffect,
   shouldRefreshStoryMemoryAfterTool,
 } from '../../utils/agentToolNames'
-import { createRafBatcher } from '../../utils/rafBatcher'
+import {
+  isPeerDroppedStreamError,
+  shouldAttachStreamRecovery,
+  STREAM_RECOVERY_BANNER,
+} from '../../utils/agentStreamRecovery'
 import { createStreamPersistDebouncer } from '../../utils/streamPersist'
 import { buildAgentHistory } from '../../utils/buildAgentHistory'
 import { extractStoryContext } from '../../utils/extractStoryContext'
@@ -37,12 +41,8 @@ import {
   sendAgentRunPause,
   sendAgentRunResume,
 } from '../../utils/api'
-import { listSessions, listSessionsByNovel, upsertSession } from '../../utils/chatSessionStore'
-import {
-  buildSessionTitleFallback,
-  sanitizeAssistantSnippetForTitle,
-  sessionNeedsGeneratedTitle,
-} from '../../utils/sessionTitle'
+import { listSessions, listSessionsByNovel } from '../../utils/chatSessionStore'
+import { sessionNeedsGeneratedTitle } from '../../utils/sessionTitle'
 import type { EditorCenterTab } from '../../components/editor/EditorCenterTabs'
 import type { Novel } from '../../types/novel'
 import { useNovelStore } from '../../stores/novelStore'
@@ -60,7 +60,7 @@ export interface UseEditorAgentStreamOptions {
   setInputValue: (value: string) => void
   refreshSessions: (novelId?: string | null) => void
   markSessionTitlePending?: (sessionId: string) => void
-  clearSessionTitlePending?: (sessionId: string) => void
+  scheduleSessionTitleSync?: (sessionId: string) => void
   refreshStoryMemory: (novelId?: string | null) => void
   refreshActiveChapter: () => void | Promise<void>
   reloadActiveChapterContent: () => void | Promise<void>
@@ -89,7 +89,7 @@ export function useEditorAgentStream({
   setInputValue,
   refreshSessions,
   markSessionTitlePending,
-  clearSessionTitlePending,
+  scheduleSessionTitleSync,
   refreshStoryMemory,
   refreshActiveChapter: _refreshActiveChapter,
   reloadActiveChapterContent: _reloadActiveChapterContent,
@@ -123,8 +123,9 @@ export function useEditorAgentStream({
   /** 最近一次 context.usage（流结束后仍显示在输入区，对齐 CC statusline） */
   const lastContextUsageRef = useRef<AgentContextUsage | undefined>(undefined)
   const [contextUsageVersion, setContextUsageVersion] = useState(0)
-  const titleGenerationInFlightRef = useRef<Set<string>>(new Set())
   const sendInFlightRef = useRef(false)
+  const streamRecoveryRef = useRef(false)
+  const streamRecoveryTimerRef = useRef<number | null>(null)
   const messagesRef = useRef(messages)
   useEffect(() => {
     messagesRef.current = messages
@@ -143,6 +144,12 @@ export function useEditorAgentStream({
 
     sendInFlightRef.current = true
     const userText = rawText.trim()
+    const sessionIdAtSend = agentSessionIdRef.current
+    const localSessions = activeNovelId ? listSessionsByNovel(activeNovelId) : listSessions()
+    const titleAtSend = localSessions.find((s) => s.id === sessionIdAtSend)?.title ?? '新对话'
+    if (userText && sessionNeedsGeneratedTitle(titleAtSend)) {
+      markSessionTitlePending?.(sessionIdAtSend)
+    }
 
     const userMessage: EditorMessage = {
       id: Date.now().toString(),
@@ -454,23 +461,86 @@ export function useEditorAgentStream({
       }
     }
 
-    const handleStatusEvent = (eventName: string, rawData: string) => {
-      // 非 host：worker 事件只走 SSE（RunLiveSseFanout），status WS 仅用于 run.recovering，避免双通道重复。
-      if (eventName === 'agent-event' && !hostModeEnabled) {
-        try {
-          const parsed = JSON.parse(rawData) as AgentEventEnvelope
-          if (parsed.type !== 'run.recovering') {
+    const clearStreamRecoveryTimer = () => {
+      if (streamRecoveryTimerRef.current != null) {
+        window.clearTimeout(streamRecoveryTimerRef.current)
+        streamRecoveryTimerRef.current = null
+      }
+    }
+
+    const finishStreamRecovery = () => {
+      streamRecoveryRef.current = false
+      clearStreamRecoveryTimer()
+    }
+
+    const attachStreamRecovery = (banner?: string) => {
+      if (!shouldAttachStreamRecovery(liveBox.state)) {
+        return
+      }
+      streamRecoveryRef.current = true
+      liveBox.state = {
+        ...liveBox.state,
+        hostGuardMessage: banner ?? liveBox.state.hostGuardMessage ?? STREAM_RECOVERY_BANNER,
+        streamError: undefined,
+      }
+      syncStreamState()
+      statusWsRef.current?.close()
+      statusWsSessionIdRef.current = null
+      void openAgentStatusSocket(agentSessionIdRef.current, handleStatusEvent, {
+        onClose: () => {
+          if (!streamRecoveryRef.current || !shouldAttachStreamRecovery(liveBox.state)) {
             return
           }
-        } catch {
-          return
-        }
-      }
+          clearStreamRecoveryTimer()
+          streamRecoveryTimerRef.current = window.setTimeout(() => {
+            attachStreamRecovery()
+          }, 2000)
+        },
+      }).then((ws) => {
+        statusWsRef.current = ws
+        statusWsSessionIdRef.current = agentSessionIdRef.current
+      })
+    }
+
+    const handleStatusEvent = (eventName: string, rawData: string) => {
       if (eventName === 'agent-event' && rawData.includes('"type":"stream-end"')) {
+        finishStreamRecovery()
         handleAgentEvent('stream-end', 'done')
         return
       }
+      if (eventName !== 'agent-event') {
+        return
+      }
+      let parsedType: string | undefined
+      try {
+        const parsed = JSON.parse(rawData) as AgentEventEnvelope
+        parsedType = parsed.type
+      } catch {
+        return
+      }
+      const recoveryActive = streamRecoveryRef.current
+      if (!hostModeEnabled && !recoveryActive && parsedType !== 'run.recovering') {
+        return
+      }
       handleAgentEvent(eventName, rawData)
+      if (
+        recoveryActive &&
+        (parsedType === 'run.completed' ||
+          parsedType === 'run.failed' ||
+          liveBox.state.runTerminalAck ||
+          liveBox.state.isStreamEnded)
+      ) {
+        finishStreamRecovery()
+        setIsLoading(false)
+        const stillAwaiting =
+          liveBox.state.awaitingInteraction ||
+          hasPendingUserInteraction(liveBox.state.stepStates)
+        if (!stillAwaiting && activeStreamMessageId === assistantMessageId) {
+          setActiveStreamMessageId(null)
+          liveStreamRef.current = null
+          streamSyncRef.current = null
+        }
+      }
     }
 
     const targetSessionId = agentSessionIdRef.current
@@ -518,7 +588,9 @@ export function useEditorAgentStream({
         handleAgentEvent,
         { signal: abortController.signal },
       )
-      if (
+      if (shouldAttachStreamRecovery(liveBox.state)) {
+        sseDisconnectedEarly = true
+      } else if (
         hostModeEnabled &&
         liveBox.state.runId &&
         !liveBox.state.runTerminalAck &&
@@ -532,8 +604,16 @@ export function useEditorAgentStream({
       }
       const msg = error instanceof Error ? error.message : String(error)
       const peerDropped =
-        /incomplete chunked read|peer closed connection/i.test(msg)
-      if (hostModeEnabled && liveBox.state.runId && peerDropped) {
+        isPeerDroppedStreamError(msg)
+      if (liveBox.state.runId && peerDropped && shouldAttachStreamRecovery(liveBox.state)) {
+        sseDisconnectedEarly = true
+        liveBox.state = {
+          ...liveBox.state,
+          hostGuardMessage: STREAM_RECOVERY_BANNER,
+          streamError: undefined,
+        }
+        syncStreamState()
+      } else if (hostModeEnabled && liveBox.state.runId && peerDropped) {
         sseDisconnectedEarly = true
         liveBox.state = {
           ...liveBox.state,
@@ -566,10 +646,8 @@ export function useEditorAgentStream({
       sendInFlightRef.current = false
       const hostDetached =
         sseDisconnectedEarly ||
-        (hostModeEnabled &&
-          Boolean(liveBox.state.runId) &&
-          !liveBox.state.runTerminalAck &&
-          !liveBox.state.isStreamEnded)
+        (shouldAttachStreamRecovery(liveBox.state) &&
+          Boolean(liveBox.state.runId))
       const finalState = liveBox.state
       const sessionId = agentSessionIdRef.current
       if (
@@ -591,68 +669,8 @@ export function useEditorAgentStream({
           )
           .catch(() => {})
       }
-      const resolveSessionTitle = (): string => {
-        const local = activeNovelId
-          ? listSessionsByNovel(activeNovelId)
-          : listSessions()
-        return local.find((s) => s.id === sessionId)?.title ?? '新对话'
-      }
-      const applySessionTitle = (title: string) => {
-        const clean = title.trim() || '新对话'
-        upsertSession({
-          id: sessionId,
-          title: clean,
-          updatedAt: new Date().toISOString(),
-          novelId: activeNovelId ?? undefined,
-        })
-        void api.upsertContentSession(sessionId, clean, activeNovelId ?? undefined).catch(() => {})
-        refreshSessions(activeNovelId)
-      }
-      const currentTitle = resolveSessionTitle()
-      const shouldGenerateTitle =
-        userText.trim().length > 0 &&
-        sessionNeedsGeneratedTitle(currentTitle) &&
-        !titleGenerationInFlightRef.current.has(sessionId)
-      if (shouldGenerateTitle) {
-        titleGenerationInFlightRef.current.add(sessionId)
-        markSessionTitlePending?.(sessionId)
-        const assistantSnippet = sanitizeAssistantSnippetForTitle(
-          finalizeAgentMessageContent(finalState),
-        )
-        void api
-          .generateSessionTitle({
-            user_message: userText,
-            assistant_snippet: assistantSnippet,
-            novel_title: activeNovel?.title,
-          })
-          .then(({ title }) => {
-            if (!sessionNeedsGeneratedTitle(resolveSessionTitle())) return
-            const clean = title.trim()
-            if (!clean || sessionNeedsGeneratedTitle(clean)) {
-              applySessionTitle(
-                buildSessionTitleFallback({
-                  userMessage: userText,
-                  novelTitle: activeNovel?.title,
-                }),
-              )
-              return
-            }
-            applySessionTitle(clean)
-          })
-          .catch(() => {
-            if (sessionNeedsGeneratedTitle(resolveSessionTitle())) {
-              applySessionTitle(
-                buildSessionTitleFallback({
-                  userMessage: userText,
-                  novelTitle: activeNovel?.title,
-                }),
-              )
-            }
-          })
-          .finally(() => {
-            titleGenerationInFlightRef.current.delete(sessionId)
-            clearSessionTitlePending?.(sessionId)
-          })
+      if (userText.trim().length > 0) {
+        scheduleSessionTitleSync?.(sessionId)
       }
       flushChapterDeltaBuffer()
       batcher.flushNow()
@@ -668,21 +686,14 @@ export function useEditorAgentStream({
         if (!liveBox.state.hostGuardMessage) {
           liveBox.state = {
             ...liveBox.state,
-            hostGuardMessage:
-              '连接中断，任务在后台继续；正在通过托管通道同步进度…',
+            hostGuardMessage: STREAM_RECOVERY_BANNER,
             streamError: undefined,
           }
           syncStreamState()
         }
-        statusWsRef.current?.close()
-        void openAgentStatusSocket(
-          agentSessionIdRef.current,
-          handleStatusEvent,
-        ).then((ws) => {
-          statusWsRef.current = ws
-        })
-        statusWsSessionIdRef.current = agentSessionIdRef.current
+        attachStreamRecovery()
       } else {
+        finishStreamRecovery()
         setIsLoading(false)
         const stillAwaiting =
           liveBox.state.awaitingInteraction ||

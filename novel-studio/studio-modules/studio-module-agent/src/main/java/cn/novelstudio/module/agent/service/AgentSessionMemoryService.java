@@ -89,9 +89,23 @@ public class AgentSessionMemoryService {
             return;
         }
         try {
-            sessionBiz.upsert(String.valueOf(userId), new UpsertSessionRequest(sessionId, inferTitle(seedTitle), null));
+            String novelId = resolveExistingNovelId(userId, sessionId);
+            sessionBiz.upsert(
+                String.valueOf(userId),
+                new UpsertSessionRequest(sessionId, inferTitle(seedTitle), novelId)
+            );
         } catch (Exception ignored) {
             // best effort
+        }
+    }
+
+    private String resolveExistingNovelId(Long userId, String sessionId) {
+        try {
+            Result<SessionDTO> result = sessionBiz.get(String.valueOf(userId), sessionId);
+            SessionDTO session = result == null ? null : result.data();
+            return session == null ? null : session.novelId();
+        } catch (Exception ex) {
+            return null;
         }
     }
 

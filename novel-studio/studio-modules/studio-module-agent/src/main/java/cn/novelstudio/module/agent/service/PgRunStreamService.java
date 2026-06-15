@@ -9,6 +9,7 @@ import cn.novelstudio.module.agent.dto.agent.AgentSessionPersistMessage;
 import cn.novelstudio.module.agent.dto.agent.AgentStreamRequest;
 import cn.novelstudio.module.agent.mq.AgentRunMqPublisher;
 import cn.novelstudio.module.agent.dto.agent.AgentRunContextDto;
+import cn.novelstudio.module.agent.orchestration.AgentRunEventJournal;
 import cn.novelstudio.module.agent.orchestration.AgentRunState;
 import cn.novelstudio.module.agent.orchestration.AssistantPersistCollector;
 import cn.novelstudio.module.agent.orchestration.SseEventCodec;
@@ -37,6 +38,7 @@ public class PgRunStreamService {
     private final RunLiveRedisSubscriber runLiveRedisSubscriber;
     private final RunWorkerContextStore workerContextStore;
     private final RunLiveSseFanout runLiveSseFanout;
+    private final AgentRunEventJournal eventJournal;
     private final IMessageProducer messageProducer;
     private final SessionTitleService sessionTitleService;
     private final ObjectMapper objectMapper;
@@ -48,6 +50,7 @@ public class PgRunStreamService {
         RunLiveRedisSubscriber runLiveRedisSubscriber,
         RunWorkerContextStore workerContextStore,
         RunLiveSseFanout runLiveSseFanout,
+        AgentRunEventJournal eventJournal,
         IMessageProducer messageProducer,
         SessionTitleService sessionTitleService,
         ObjectMapper objectMapper
@@ -58,6 +61,7 @@ public class PgRunStreamService {
         this.runLiveRedisSubscriber = runLiveRedisSubscriber;
         this.workerContextStore = workerContextStore;
         this.runLiveSseFanout = runLiveSseFanout;
+        this.eventJournal = eventJournal;
         this.messageProducer = messageProducer;
         this.sessionTitleService = sessionTitleService;
         this.objectMapper = objectMapper;
@@ -91,6 +95,7 @@ public class PgRunStreamService {
                     mode
                 );
                 runLiveRedisSubscriber.subscribe(userId, finalSessionId, runId);
+                eventJournal.beginRun(runId, userId, finalSessionId);
                 runLiveSseFanout.register(runId, frame -> {
                     sink.next(frame);
                     assistantCollector.onFrame(frame, objectMapper);
@@ -122,7 +127,9 @@ public class PgRunStreamService {
                     runLiveSseFanout.unregister(runId);
                     runLiveRedisSubscriber.unsubscribe(runId);
                 });
-                sink.next(buildRunStarted(runId, finalSessionId, messageId));
+                String startedFrame = buildRunStarted(runId, finalSessionId, messageId);
+                appendJournalPayload(runId, startedFrame);
+                sink.next(startedFrame);
                 runMqPublisher.publishDispatchStart(runId);
             } catch (Exception ex) {
                 log.error("queued stream bootstrap failed runId={}: {}", runId, ex.getMessage());
@@ -139,12 +146,10 @@ public class PgRunStreamService {
         return "run.failed".equals(type);
     }
 
-    private String extractError(String frame) {
-        try {
-            JsonNode payload = SseEventCodec.extractPayload(frame, objectMapper);
-            return payload.path("error").asText("run failed");
-        } catch (Exception ex) {
-            return "run failed";
+    private void appendJournalPayload(String runId, String sseFrame) {
+        String data = SseEventCodec.extractData(sseFrame);
+        if (data != null && !data.isBlank()) {
+            eventJournal.append(runId, data);
         }
     }
 
@@ -193,8 +198,17 @@ public class PgRunStreamService {
         try {
             messageProducer.send(MqTopic.AGENT_SESSION, message);
             contentInternalClient.transitionRun(state.getRunId(), mapPgStatus(status), error);
+            sessionTitleService.maybeGenerateTitleAsync(
+                state.getUserId(),
+                state.getSessionId(),
+                message.userMessage(),
+                assistantMessage == null ? "" : assistantMessage,
+                SessionTitleContext.extractNovelTitle(state.getAssembledContext())
+            );
         } catch (Exception ex) {
             log.warn("queued persist failed runId={}: {}", state.getRunId(), ex.getMessage());
+        } finally {
+            eventJournal.completeRun(runId);
         }
     }
 

@@ -252,23 +252,12 @@ public class AgentBridgeService {
                 state.getRunId(),
                 status
             );
-            String novelTitle = "";
-            Object project = state.getAssembledContext().get("project");
-            if (project instanceof Map<?, ?> projectMap) {
-                Object title = projectMap.get("title");
-                if (title == null) {
-                    title = projectMap.get("name");
-                }
-                if (title != null) {
-                    novelTitle = String.valueOf(title);
-                }
-            }
             sessionTitleService.maybeGenerateTitleAsync(
                 state.getUserId(),
                 state.getSessionId(),
                 state.buildPersistedUserMessage(),
                 assistantMessage,
-                novelTitle
+                SessionTitleContext.extractNovelTitle(state.getAssembledContext())
             );
         } catch (Exception ex) {
             log.warn(

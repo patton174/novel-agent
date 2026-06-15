@@ -222,6 +222,10 @@ export function sendAgentRunAbort(ws: WebSocket, runId: string): void {
 export async function openAgentStatusSocket(
   sessionId: string,
   onStatus: AgentStreamEventHandler,
+  options?: {
+    onClose?: (event: CloseEvent) => void
+    onOpen?: () => void
+  },
 ): Promise<WebSocket | null> {
   const userId = getUserId()
   if (!userId || !sessionId) {
@@ -235,10 +239,16 @@ export async function openAgentStatusSocket(
     return null
   }
   const ws = new WebSocket(url)
+  ws.onopen = () => {
+    options?.onOpen?.()
+  }
   ws.onmessage = (event) => {
     if (typeof event.data === 'string' && event.data.trim()) {
       onStatus('agent-event', event.data)
     }
+  }
+  ws.onclose = (event) => {
+    options?.onClose?.(event)
   }
   return ws
 }

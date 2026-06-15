@@ -1,6 +1,7 @@
 package cn.novelstudio.module.agent.service;
 
 import cn.novelstudio.module.agent.config.AgentRuntimeProperties;
+import cn.novelstudio.module.agent.orchestration.AgentRunEventJournal;
 import org.springframework.data.redis.connection.Message;
 import org.springframework.data.redis.connection.MessageListener;
 import org.springframework.data.redis.listener.PatternTopic;
@@ -23,18 +24,21 @@ public class RunLiveRedisSubscriber implements MessageListener {
     private final AgentRuntimeProperties runtimeProperties;
     private final AgentStatusHub statusHub;
     private final RunLiveSseFanout runLiveSseFanout;
+    private final AgentRunEventJournal eventJournal;
     private final Map<String, LiveSubscription> subscriptions = new ConcurrentHashMap<>();
 
     public RunLiveRedisSubscriber(
         RedisMessageListenerContainer listenerContainer,
         AgentRuntimeProperties runtimeProperties,
         AgentStatusHub statusHub,
-        RunLiveSseFanout runLiveSseFanout
+        RunLiveSseFanout runLiveSseFanout,
+        AgentRunEventJournal eventJournal
     ) {
         this.listenerContainer = listenerContainer;
         this.runtimeProperties = runtimeProperties;
         this.statusHub = statusHub;
         this.runLiveSseFanout = runLiveSseFanout;
+        this.eventJournal = eventJournal;
     }
 
     @PostConstruct
@@ -67,8 +71,10 @@ public class RunLiveRedisSubscriber implements MessageListener {
         if (sub == null) {
             return;
         }
-        statusHub.publish(sub.userId(), sub.sessionId(), new String(message.getBody()));
-        runLiveSseFanout.onLivePayload(runId, new String(message.getBody()));
+        String payload = new String(message.getBody());
+        eventJournal.append(runId, payload);
+        statusHub.publish(sub.userId(), sub.sessionId(), payload);
+        runLiveSseFanout.onLivePayload(runId, payload);
     }
 
     private record LiveSubscription(Long userId, String sessionId) {

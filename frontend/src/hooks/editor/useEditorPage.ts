@@ -80,7 +80,7 @@ export function useEditorPage() {
   const refreshSessionsRef = useRef<(novelId?: string | null) => void>(() => {})
   const scrollToBottomRef = useRef<(force?: boolean) => void>(() => {})
   const markTitlePendingRef = useRef<(sessionId: string) => void>(() => {})
-  const clearTitlePendingRef = useRef<(sessionId: string) => void>(() => {})
+  const scheduleTitleSyncRef = useRef<(sessionId: string) => void>(() => {})
 
   const novels = useNovelStore((s) => s.novels)
   const activeNovelId = useNovelStore((s) => s.activeNovelId)
@@ -134,7 +134,7 @@ export function useEditorPage() {
     setInputValue,
     refreshSessions: (id) => refreshSessionsRef.current(id),
     markSessionTitlePending: (id) => markTitlePendingRef.current(id),
-    clearSessionTitlePending: (id) => clearTitlePendingRef.current(id),
+    scheduleSessionTitleSync: (id) => scheduleTitleSyncRef.current(id),
     refreshStoryMemory: memory.refreshStoryMemory,
     refreshActiveChapter,
     reloadActiveChapterContent,
@@ -171,7 +171,7 @@ export function useEditorPage() {
 
   refreshSessionsRef.current = sessions.refreshSessions
   markTitlePendingRef.current = sessions.markSessionTitlePending
-  clearTitlePendingRef.current = sessions.clearSessionTitlePending
+  scheduleTitleSyncRef.current = sessions.scheduleSessionTitleSync
 
   useEditorBootstrap({
     messages,

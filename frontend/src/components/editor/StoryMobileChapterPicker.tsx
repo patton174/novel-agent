@@ -460,7 +460,7 @@ export function StoryMobileChapterPicker() {
               </div>
             ) : (
               <div className="relative w-full" style={{ height: `${browseVirtualizer.getTotalSize()}px` }}>
-                {browseVirtualizer.getVirtualItems().map((item) => {
+                {(virtualEnabled ? browseVirtualizer.getVirtualItems() : []).map((item) => {
                   const row = browseRows[item.index]
                   if (!row) return null
 
