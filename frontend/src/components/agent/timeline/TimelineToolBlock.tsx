@@ -13,6 +13,12 @@ import {
 } from '../../../utils/agentToolNames'
 import { planningActiveLabel } from '../../../utils/agentOrchestration'
 import {
+  ccToolArgsSubtitle,
+  ccToolNameLabel,
+  ccToolResultHint,
+  readToolBranchLabels,
+} from '../../../utils/ccToolDisplay'
+import {
   readToolBodyExcerpt,
   toolDetailHasExpandableContent,
 } from '../../../utils/toolDetailFormat'

@@ -12,19 +12,20 @@ import i18n from '@/i18n'
 export type ActivityMode = 'all' | 'writing' | 'agent'
 
 const WEEKDAY_COL_WIDTH = '1.25rem'
+const CELL_SIZE = '0.75rem'
 const GRID_GAP_PX = 4
 const ACTIVE_WEEK_PAD = 2
 
 const LEVEL_CLASSES = [
-  'bg-muted/50 ring-1 ring-border/40',
-  'bg-indigo-200/90 ring-1 ring-indigo-300/50 dark:bg-indigo-900/45',
-  'bg-indigo-400/90 ring-1 ring-indigo-400/40 dark:bg-indigo-700/70',
-  'bg-indigo-600/95 ring-1 ring-indigo-500/30 dark:bg-indigo-600/85',
-  'bg-indigo-800 ring-1 ring-indigo-700/40 dark:bg-indigo-500/90',
+  'bg-muted/50',
+  'bg-indigo-200/90 dark:bg-indigo-900/45',
+  'bg-indigo-400/90 dark:bg-indigo-700/70',
+  'bg-indigo-600/95 dark:bg-indigo-600/85',
+  'bg-indigo-800 dark:bg-indigo-500/90',
 ]
 
 function heatmapGridColumns(weekCount: number): string {
-  return `${WEEKDAY_COL_WIDTH} repeat(${weekCount}, minmax(0, 1fr))`
+  return `${WEEKDAY_COL_WIDTH} repeat(${weekCount}, ${CELL_SIZE})`
 }
 
 function trimWeeksToActiveRange(
@@ -273,10 +274,22 @@ export function ActivityHeatmap({ activity, loading }: ActivityHeatmapProps) {
             {t('dashboard:home.dataAsOf', { date: asOf })}
           </p>
         </div>
+        <div className="mt-4 flex flex-wrap gap-x-8 gap-y-3">
+          <HeaderStat
+            loading={loading}
+            label={t('dashboard:home.sidePeak')}
+            value={formatCompactMetric(peak, dateLocale)}
+          />
+          <HeaderStat
+            loading={loading}
+            label={t('dashboard:home.sideActiveDays')}
+            value={String(activeDays)}
+          />
+        </div>
       </div>
 
-      <div className="flex flex-1 flex-col gap-4 px-6 py-4 lg:flex-row lg:items-start">
-        <div className="min-w-0 flex-1">
+      <div className="flex flex-1 flex-col px-6 py-4">
+        <div className="min-w-0">
           {loading ? (
             <Skeleton className="h-[120px] w-full rounded-lg" />
           ) : weekCount === 0 ? (
@@ -284,7 +297,8 @@ export function ActivityHeatmap({ activity, loading }: ActivityHeatmapProps) {
               {t('dashboard:heatmap.noData')}
             </p>
           ) : (
-            <div className="w-full">
+            <div className="w-full overflow-x-auto">
+              <div className="inline-block min-w-0">
               <div
                 className="mb-2 grid"
                 style={{ gridTemplateColumns: gridColumns, gap: GRID_GAP_PX }}
@@ -320,7 +334,7 @@ export function ActivityHeatmap({ activity, loading }: ActivityHeatmapProps) {
                               : undefined
                           }
                           className={cn(
-                            'aspect-square w-full min-w-0 rounded-[3px] transition-colors',
+                            'size-3 shrink-0 rounded-[3px] transition-colors',
                             cellClass(cell, level),
                           )}
                         />
@@ -328,6 +342,7 @@ export function ActivityHeatmap({ activity, loading }: ActivityHeatmapProps) {
                     })}
                   </Fragment>
                 ))}
+              </div>
               </div>
             </div>
           )}
@@ -340,25 +355,12 @@ export function ActivityHeatmap({ activity, loading }: ActivityHeatmapProps) {
             <span>{t('dashboard:heatmap.more')}</span>
           </div>
         </div>
-
-        <div className="flex shrink-0 flex-row gap-6 border-t border-border/60 pt-4 lg:w-[9.5rem] lg:flex-col lg:border-l lg:border-t-0 lg:pl-5 lg:pt-0">
-          <SideStat
-            loading={loading}
-            label={t('dashboard:home.sidePeak')}
-            value={formatCompactMetric(peak, dateLocale)}
-          />
-          <SideStat
-            loading={loading}
-            label={t('dashboard:home.sideActiveDays')}
-            value={String(activeDays)}
-          />
-        </div>
       </div>
     </div>
   )
 }
 
-function SideStat({
+function HeaderStat({
   label,
   value,
   loading,
@@ -368,16 +370,16 @@ function SideStat({
   loading?: boolean
 }) {
   return (
-    <div>
+    <div className="min-w-[4.5rem]">
       {loading ? (
         <>
-          <Skeleton className="h-7 w-16" />
-          <Skeleton className="mt-1.5 h-3 w-14" />
+          <Skeleton className="h-6 w-14" />
+          <Skeleton className="mt-1 h-3 w-12" />
         </>
       ) : (
         <>
-          <p className="text-xl font-bold tabular-nums leading-none text-foreground">{value}</p>
-          <p className="mt-1.5 text-xs text-muted-foreground">{label}</p>
+          <p className="text-lg font-bold tabular-nums leading-none text-foreground">{value}</p>
+          <p className="mt-1 text-xs text-muted-foreground">{label}</p>
         </>
       )}
     </div>
