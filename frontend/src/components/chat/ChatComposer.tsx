@@ -139,15 +139,15 @@ export function ChatComposer({
             </EditorSendIconLayer>
           </EditorButton>
         </div>
-      </div>
 
-      <div className="mt-1.5 hidden px-2.5 md:block">
-        <ComposerStatusBar
-          contextUsage={contextUsage}
-          pending={streamActive && !contextUsage}
-          streamActive={streamActive}
-          spinnerMode={spinnerMode}
-        />
+        <div className="hidden border-t border-border/50 pt-1.5 md:block">
+          <ComposerStatusBar
+            contextUsage={contextUsage}
+            pending={streamActive && !contextUsage}
+            streamActive={streamActive}
+            spinnerMode={spinnerMode}
+          />
+        </div>
       </div>
     </footer>
   )

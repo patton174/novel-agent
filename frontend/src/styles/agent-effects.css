@@ -181,6 +181,25 @@
   animation: agent-stream-recovery-fade-in 320ms cubic-bezier(0.34, 1.15, 0.64, 1);
 }
 
+.agent-stream-recovery-caption.agent-shimmer-text-active {
+  display: inline-block;
+  text-align: center;
+}
+
+.dark .agent-stream-recovery-caption.agent-shimmer-text-active {
+  background: linear-gradient(
+    90deg,
+    hsl(var(--muted-foreground) / 0.72) 0%,
+    hsl(var(--muted-foreground) / 0.72) 32%,
+    hsl(var(--primary) / 1) 50%,
+    hsl(var(--muted-foreground) / 0.72) 68%,
+    hsl(var(--muted-foreground) / 0.72) 100%
+  );
+  background-size: 200% auto;
+  background-clip: text;
+  -webkit-background-clip: text;
+}
+
 /* ── Motion transitions ── */
 
 .motion-interactive {

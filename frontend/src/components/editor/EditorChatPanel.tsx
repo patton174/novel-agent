@@ -119,7 +119,7 @@ export function EditorChatPanel({
             style={{ maxWidth: editorLayout.contentMaxWidth }}
           >
             {hostBannerRecovering && hostBannerText ? (
-              <StreamRecoveryIndicator label={hostBannerText} />
+              <StreamRecoveryIndicator label={hostBannerText} className="z-[15]" />
             ) : null}
             <EditorChatMessageList
               messages={visibleMessages}
@@ -136,6 +136,29 @@ export function EditorChatPanel({
               marketingScrubPlaying={marketingScrubPlaying}
               marketingPinOrchestration={marketingPinOrchestration}
             />
+            {!hideComposer ? (
+              <div
+                ref={composerRef}
+                className={cn(
+                  'absolute inset-x-0 bottom-0 z-[12] box-border w-full pointer-events-none [&>*]:pointer-events-auto',
+                  'bg-gradient-to-t from-background from-[12%] via-background/95 via-[42%] to-transparent',
+                )}
+                style={{ paddingBottom: '0.65rem' }}
+              >
+                <ChatComposer
+                  value={inputValue}
+                  onChange={onInputChange}
+                  onSend={onSend}
+                  isLoading={isLoading}
+                  hostModeEnabled={hostModeEnabled}
+                  onHostModeChange={onHostModeChange}
+                  streamActive={isLoading}
+                  spinnerMode={spinnerMode}
+                  onStreamAbort={onStreamAbort}
+                  contextUsage={contextUsage}
+                />
+              </div>
+            ) : null}
           </div>
         ) : (
           <>
@@ -148,7 +171,7 @@ export function EditorChatPanel({
           </>
         )}
 
-        {!hideComposer && (
+        {!hideComposer && isInitial ? (
           <div
             ref={composerRef}
             className={cn(
@@ -175,7 +198,7 @@ export function EditorChatPanel({
               />
             </div>
           </div>
-        )}
+        ) : null}
       </div>
     </section>
   )
