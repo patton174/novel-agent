@@ -1,70 +1,61 @@
 ---
-description: 生产部署全流程、CI、脚本、安全对齐与运维禁忌
+description: 生产部署全流程、CI、脚本、安全对齐与运维禁忌（novel-studio 单体栈）
 alwaysApply: true
 ---
 
-# 部署与运维（权威：`novel-agent/agent-document/docs/deploy/README.md`）
+# 部署与运维（权威：`novel-studio/deploy/README.md`）
+
+> **2026 起生产为 novel-studio 单体**，`novel-agent/agent-service/*` 微服务 **已停止维护，禁止部署**。
 
 ## 环境与服务映射
 
 | 服务 | 部署目标 | Workflow |
 |------|----------|----------|
-| gateway | MW | `deploy-gateway.yml` |
-| auth | MW | `deploy-auth.yml` |
-| consumer | MW | `deploy-consumer.yml` |
-| billing | MW | `deploy-billing.yml` |
-| pyai | Worker | `deploy-pyai.yml` |
-| content | Worker | `deploy-content.yml` |
-| frontend | Worker | `deploy-frontend.yml` |
-| python-ai | Worker | `deploy-python-ai.yml` |
+| **novel-studio**（单体 JVM） | Worker | `deploy-novel-studio.yml` |
+| **python-ai** | Worker | `deploy-python-ai.yml` |
+| **frontend** | Worker | `deploy-frontend.yml` |
+| MW 基础设施 | MW | `deploy-mw-nginx.yml`、`deploy-migrate-stack.yml` |
 
-仓库路径：`/opt/novel-agent`（MW/Worker 默认）。
+Worker 容器：`novel-studio-worker-novel-studio-1`、`novel-studio-worker-python-ai-1`、`novel-studio-worker-frontend-1`。
 
-## GitHub Actions（推荐）
+仓库路径：`/opt/novel-agent` 或 `/opt/novel-studio`（以服务器 compose 为准）。
 
-- **分服务独立 workflow**，一个失败不影响其他
-- GitHub 编译 → scp 产物 → 服务器 **仅 runtime Docker**（不在 MW 跑 Maven）
+## 已废弃（勿部署 / 勿引用）
+
+| 废弃项 | 说明 |
+|--------|------|
+| `deploy-gateway.yml` / `deploy-auth.yml` / `deploy-pyai.yml` 等 | 旧微服务 CI |
+| `agent-gateway` / `agent-pyai` / `agent-content:8091` | 已并入 novel-studio |
+| Nacos 分服务路由 | 单体直连模块 |
+| `restart-dev.sh` / `start-dev*.bat` | 本地勿连生产 MQ |
+
+## GitHub Actions
+
+- **分 workflow 独立部署**，一个失败不影响其他
+- GitHub 编译 → scp 产物 → 服务器 Docker runtime
 - Secrets：`DEPLOY_SSH_KEY`、`MW_HOST=107.150.112.140`、`WORKER_HOST=47.80.80.224`
-- 清单：`novel-agent/agent-document/docs/deploy/ci/SECRETS.example.md`
-- 手动：`gh workflow run deploy-gateway.yml`
-- 排查：`gh run list --workflow=deploy-gateway.yml` → `gh run watch <id>`
+- 手动：`gh workflow run deploy-novel-studio.yml`
+- 排查：`gh run list --workflow=deploy-novel-studio.yml` → `gh run watch <id>`
 
-CI 脚本：`novel-agent/agent-document/docs/deploy/ci/`
+## 客户端安全（Phase 0e）
 
-## 本地补部署（可选）
+Sign / AES / 路由脱敏仍生效，配置在 **novel-studio** 与前端 env，不再经独立 Gateway Nacos。
 
-```bash
-bash novel-agent/agent-document/docs/deploy/ci/build-java.sh agent-gateway
-bash novel-agent/agent-document/docs/deploy/ci/deploy-java.sh gateway mw
-```
-
-回滚：`rollback.sh <service> <mw|worker>`
-
-路由脱敏 v2：`deploy-route-v2.sh all`；首次 0e：`apply-enable-route-field-crypto.sh`。
-
-## 客户端安全对齐（易踩坑）
-
-| 层 | 配置 |
-|----|------|
-| Gateway Nacos | `route-obfuscation`、`field-encryption`、`aes-required`；**`encrypt-stream: true`** |
 | 前端构建 | `VITE_SECURITY_AES`、`VITE_ROUTE_OBFUSCATION`、`VITE_FIELD_ENCRYPTION`、`VITE_SECURITY_ENCRYPT_STREAM=true` |
-| Gateway 行为 | `/chat/stream` 走 AES 解密；字段 `__sec` 由 `FieldPayloadExpandGatewayFilter` 展开 |
-| 前端 stream | **不做**字段级 `__sec` |
-
-Sign：POST+envelope → body.sign；GET/无 body → URL `_na_t/_na_n/_na_k/_na_s`。
+| SSE | `/api/agent/chat/stream` 经 novel-studio；字段级 `__sec` 前端 stream **不做** |
 
 详见 `.cursor/rules/security-deploy.mdc`。
 
 ## 运维禁忌
 
-1. **勿在 MW 上 `docker compose build` / Maven 全量编译**（易 OOM）
-2. **勿提交**：`.env.split`、`MAILTRAP_TOKEN`、`nacos-split-rendered-*`
-3. **勿本地启 Consumer 连生产 RabbitMQ**
-4. **勿用** `restart-dev.sh` / `start-dev*.bat`（已废弃）
-5. Auth/Gateway 安全变更必须 **同版本** 发布 MW
+1. **勿在 MW 上全量 Maven 编译**（易 OOM）
+2. **勿提交**：`.env.split`、`MAILTRAP_TOKEN`、含密钥的 rendered env
+3. **勿本地启旧 Consumer 连生产 RabbitMQ**
+4. **勿用** `restart-dev.sh` / `start-dev*.bat`
+5. **勿再部署** gateway/auth/pyai/content 微服务
 6. `git commit` 仅用户明确要求时执行
 
 ## 验收
 
 - 线上：https://www.novel-agent.cn
-- 各 deploy workflow 独立绿即该服务部署成功
+- `deploy-novel-studio` + `deploy-python-ai` + `deploy-frontend` 绿即 Worker 栈成功

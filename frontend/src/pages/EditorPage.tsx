@@ -143,6 +143,7 @@ const EditorPage: React.FC = () => {
             agentChapterStreaming={editor.agentChapterStreaming}
             agentChapterStreamPhase={editor.agentChapterStreamPhase}
             agentChapterStreamCharCount={editor.chapterContent.length}
+            agentChapterStreamTitle={editor.agentChapterStreamTitle}
             onChapterContentChange={editor.updateChapterContent}
             versionPreview={editor.versionPreview}
             onVersionPreviewChange={editor.setVersionPreview}

@@ -56,9 +56,9 @@ C:\Users\JZJ\.cursor\projects\d-Users-JZJ-Desktop-agent\claude-code-ref\src\
 
 | 改动范围 | 是否重启 | 说明 |
 |----------|----------|------|
-| `python-ai/` Agent、工具、提示词、路由 | **部署 Worker** | CI 或 `deploy-fast.sh` |
-| `novel-agent/` Java 业务、SSE、SideEffect | **部署对应服务** | 同上 |
-| `frontend/` 仅 TSX/CSS | 通常 HMR | 单独 `npm run dev`；线上改走 CI frontend 部署 |
+| `python-ai/` Agent、工具、提示词、路由 | **部署 Worker** | CI `deploy-python-ai.yml` |
+| `novel-studio/` Java（Agent SSE、Content、Auth） | **部署 Worker** | CI `deploy-novel-studio.yml` |
+| `frontend/` 仅 TSX/CSS | 通常 HMR | 单独 `npm run dev`；线上 `deploy-frontend.yml` |
 | `frontend/` 新增 npm 依赖 | **重启 frontend** | 本地 dev 或 CI |
 | 仅改 Markdown/文档/测试 | 不必 | |
 

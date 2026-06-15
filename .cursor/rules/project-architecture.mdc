@@ -21,7 +21,7 @@ novel-studio ──HTTP──→ python-lb:8000 → python-ai（query_loop、工
 python-ai ──HTTP──→ novel-studio:8080 /api/content/auth/*（X-Internal-Service-Key + X-User-Id）
 ```
 
-**已废弃（勿再部署/引用）**：Gateway、Nacos、独立 Auth/Consumer/Billing/Content/PyAI 六个 Java 微服务、`agent-content:8091`。
+**已废弃（勿再部署/引用）**：Gateway、Nacos、独立 Auth/Consumer/Billing/Content/PyAI 六个 Java 微服务、`agent-content:8091`。**微服务栈已停止维护**；新功能只改 `novel-studio/` + `python-ai/` + `frontend/`。
 
 遗留目录 `agent-content/`、`agent-pyai/` 等仅作历史对照，**生产数据面在 `novel-studio/studio-modules/`**。
 

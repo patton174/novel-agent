@@ -103,6 +103,10 @@ export function EditorChatPanel({
         className="relative flex min-h-0 flex-1 flex-col overflow-hidden box-border"
         style={{ paddingLeft: editorLayout.mainPaddingX, paddingRight: editorLayout.mainPaddingX }}
       >
+        {hostBannerRecovering && hostBannerText ? (
+          <StreamRecoveryIndicator label={hostBannerText} className="z-[30]" />
+        ) : null}
+
         {!isInitial && hostBannerText && !hostBannerRecovering ? (
           <div
             data-testid="host-mode-banner"
@@ -118,9 +122,6 @@ export function EditorChatPanel({
             className="relative mx-auto flex min-h-0 w-full flex-1 flex-col overflow-hidden"
             style={{ maxWidth: editorLayout.contentMaxWidth }}
           >
-            {hostBannerRecovering && hostBannerText ? (
-              <StreamRecoveryIndicator label={hostBannerText} className="z-[15]" />
-            ) : null}
             <EditorChatMessageList
               messages={visibleMessages}
               isLoading={isLoading}

@@ -7,6 +7,7 @@ import { confirmAction } from '../../stores/appDialog'
 import { EditorIcons } from './icons'
 import { useAppMobile } from '@/hooks/useMediaQuery'
 import { cn } from '@/lib/utils'
+import { ChapterStreamViewer } from './ChapterStreamViewer'
 import type { ChapterVersion } from '../../types/novel'
 
 import { useTranslation } from 'react-i18next'
@@ -33,6 +34,7 @@ export interface EditorStoryPanelProps {
   agentChapterStreaming?: boolean
   agentChapterStreamPhase?: 'idle' | 'generating' | 'saving'
   agentChapterStreamCharCount?: number
+  agentChapterStreamTitle?: string
   onChapterContentChange: (content: string) => void
   chapterDiffActive: boolean
   chapterDiffBaseline: string | null
@@ -159,17 +161,20 @@ function EditorStoryPanelMobile({
               onAccept={onAcceptChapterDiff}
               onDismiss={onDismissChapterDiff}
             />
+          ) : agentChapterStreaming ? (
+            <ChapterStreamViewer
+              content={chapterContent}
+              streaming={agentChapterStreamPhase === 'generating'}
+              streamKey={agentChapterStreamTitle || activeChapterId || 'chapter-stream'}
+              className="min-h-[40vh]"
+            />
           ) : (
             <>
               <textarea
                 value={chapterContent}
                 onChange={(e) => onChapterContentChange(e.target.value)}
                 placeholder={t('editor:story.editorPlaceholder')}
-                readOnly={agentChapterStreaming}
-                className={cn(
-                  'min-h-[40vh] w-full resize-none border-none bg-transparent font-serif text-base leading-[1.85] tracking-wide text-foreground outline-none whitespace-pre-wrap',
-                  agentChapterStreaming && 'caret-primary',
-                )}
+                className="min-h-[40vh] w-full resize-none border-none bg-transparent font-serif text-base leading-[1.85] tracking-wide text-foreground outline-none whitespace-pre-wrap"
               />
               {hasChapter ? (
                 <ChapterVersionPanel
@@ -211,6 +216,7 @@ function EditorStoryPanelDesktop({
   agentChapterStreaming = false,
   agentChapterStreamPhase = 'idle',
   agentChapterStreamCharCount = 0,
+  agentChapterStreamTitle = '',
   onChapterContentChange,
   chapterDiffActive,
   chapterDiffBaseline,
@@ -358,16 +364,18 @@ function EditorStoryPanelDesktop({
                 onAccept={onAcceptChapterDiff}
                 onDismiss={onDismissChapterDiff}
               />
+            ) : agentChapterStreaming ? (
+              <ChapterStreamViewer
+                content={chapterContent}
+                streaming={agentChapterStreamPhase === 'generating'}
+                streamKey={agentChapterStreamTitle || activeChapterId || 'chapter-stream'}
+              />
             ) : (
               <textarea
                 value={chapterContent}
                 onChange={(e) => onChapterContentChange(e.target.value)}
                 placeholder={t('editor:story.editorPlaceholder')}
-                readOnly={agentChapterStreaming}
-                className={cn(
-                  'min-h-full w-full resize-none border-none bg-transparent font-serif text-[1.05rem] leading-loose tracking-wide text-foreground outline-none whitespace-pre-wrap',
-                  agentChapterStreaming && 'caret-primary',
-                )}
+                className="min-h-full w-full resize-none border-none bg-transparent font-serif text-[1.05rem] leading-loose tracking-wide text-foreground outline-none whitespace-pre-wrap"
               />
             )}
           </div>

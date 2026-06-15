@@ -46,6 +46,7 @@ import {
   TIMELINE_SLOT,
   TIMELINE_THINK_WRAP,
 } from '@/lib/timelineClasses'
+import { cn } from '@/lib/utils'
 import { runeLength, visiblePrefixForBlock } from './timelineUtils'
 
 export function AssistantStreamTimeline({
@@ -635,7 +636,13 @@ export function AssistantStreamTimeline({
   }
 
   return (
-    <div className={TIMELINE_COLUMN} data-testid="agent-stream-timeline">
+    <div
+      className={cn(
+        TIMELINE_COLUMN,
+        streamLive && !streamFinished && 'agent-stream-timeline-block-enter',
+      )}
+      data-testid="agent-stream-timeline"
+    >
       <div className={TIMELINE_SLOT}>
         {showOrchestrationPending ? <OrchestrationPendingRow /> : null}
         {timelineUnits.map((unit, unitIndex) => (

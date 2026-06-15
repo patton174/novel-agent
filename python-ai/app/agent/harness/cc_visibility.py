@@ -107,6 +107,26 @@ def should_bridge_llm_delta_to_chat(tool: str | None) -> bool:
     return (tool or "").strip() == "output"
 
 
+def should_forward_worker_live_event(event: dict[str, Any]) -> bool:
+    """Queued worker Redis fanout: drop frames the browser must not receive (align Java RunLiveSseFanout)."""
+    et = str(event.get("type") or "")
+    if et in ("step.completed", "plan.result"):
+        return False
+    payload = event.get("payload") if isinstance(event.get("payload"), dict) else {}
+    if et == "step.started":
+        tool = str(payload.get("tool") or "")
+        if should_skip_java_step_started_forward(tool):
+            return False
+    if et.startswith("tool."):
+        name = str(payload.get("name") or "")
+        if et == "tool.completed":
+            if is_hidden_ui_tool(name) and not should_forward_tool_completed_to_client(name):
+                return False
+        elif is_hidden_ui_tool(name):
+            return False
+    return True
+
+
 def should_emit_read_result_labels(tool: str, file_path: str) -> bool:
     raw = (tool or "").strip()
     if raw in ("ReadChapter", "ReadMemory"):

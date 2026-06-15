@@ -1,9 +1,10 @@
 import React from 'react'
-import { useTypewriterStream } from '../../hooks/useTypewriterStream'
+import { useTypewriterBuffer } from '../../hooks/useTypewriterStream'
 import {
   STREAMING_REVEAL_PARAGRAPH,
   STREAMING_REVEAL_WRAP,
 } from '@/lib/agentChatClasses'
+import { cn } from '@/lib/utils'
 
 export interface StreamingRevealContentProps {
   paragraphs: string[]
@@ -39,7 +40,7 @@ function renderParagraphNodes(paragraphs: string[]): React.ReactNode {
 }
 
 /**
- * 助手正文：SSE 累积全文，展示层用 rAF 逐字追赶（打字机效果）。
+ * 助手正文：SSE 累积全文，展示层用 rAF 逐字追赶 + 渐变渐显。
  */
 export function StreamingRevealContent({
   paragraphs,
@@ -47,20 +48,41 @@ export function StreamingRevealContent({
   messageKey,
 }: StreamingRevealContentProps) {
   const fullText = paragraphs.join('\n\n')
-  const { visible } = useTypewriterStream(fullText, {
-    active: animate,
+  const { visible, isTyping } = useTypewriterBuffer(fullText, {
     resetKey: messageKey,
+    playing: animate,
+    finished: !animate,
+    maxCharsPerFrame: 2,
   })
 
   if (!animate) {
-    return <div className={STREAMING_REVEAL_WRAP}>{renderParagraphNodes(paragraphs)}</div>
+    return (
+      <div className={cn(STREAMING_REVEAL_WRAP, 'agent-stream-gradient-body')}>
+        {renderParagraphNodes(paragraphs)}
+      </div>
+    )
   }
 
   const visibleParagraphs = visible ? visible.split(/\n{2,}/) : ['']
 
   return (
-    <div className={STREAMING_REVEAL_WRAP} data-testid="typewriter-stream">
-      {renderParagraphNodes(visibleParagraphs)}
+    <div
+      className={cn(
+        STREAMING_REVEAL_WRAP,
+        'agent-stream-gradient-body agent-stream-gradient-body--live',
+        'agent-stream-delivery-live',
+      )}
+      data-testid="typewriter-stream"
+    >
+      <div className={cn('agent-stream-reveal-text', animate && 'agent-stream-reveal-text--active')}>
+        {renderParagraphNodes(visibleParagraphs)}
+        {isTyping ? (
+          <span
+            className="agent-stream-caret ml-px inline-block w-[2px] animate-pulse bg-primary align-baseline"
+            aria-hidden
+          />
+        ) : null}
+      </div>
     </div>
   )
 }

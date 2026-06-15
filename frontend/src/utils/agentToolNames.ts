@@ -145,6 +145,12 @@ export function isChapterContentSideEffect(
   return !path
 }
 
+/** WriteChapter/EditChapter 或 legacy Write/Edit 是否走 chapter.stream.* 管线 */
+export function isChapterStreamTool(toolName: string | undefined): boolean {
+  const n = normalizeToolName((toolName ?? '').trim())
+  return n === 'WriteChapter' || n === 'EditChapter' || n === 'Write' || n === 'Edit'
+}
+
 export function shouldRefreshStoryMemoryAfterTool(
   toolName: string | undefined,
   payload?: Record<string, unknown>,

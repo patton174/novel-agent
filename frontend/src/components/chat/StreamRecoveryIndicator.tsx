@@ -18,7 +18,10 @@ export function StreamRecoveryIndicator({ label, className }: StreamRecoveryIndi
   return (
     <div
       data-testid="stream-recovery-indicator"
-      className={cn('absolute inset-0 z-[3] flex items-center justify-center px-4', className)}
+      className={cn(
+        'pointer-events-auto absolute inset-0 z-[3] flex items-center justify-center px-4',
+        className,
+      )}
     >
       <div
         className="agent-stream-recovery-backdrop absolute inset-0 bg-background/52 backdrop-blur-[10px] dark:bg-background/68"

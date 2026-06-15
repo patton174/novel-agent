@@ -21,6 +21,7 @@ import { deriveAssistantStreamPhase } from '../../utils/agentStreamPhase'
 import { deriveComposerSpinnerMode } from '../../utils/deriveComposerSpinnerMode'
 import {
   isChapterContentSideEffect,
+  isChapterStreamTool,
   shouldRefreshStoryMemoryAfterTool,
 } from '../../utils/agentToolNames'
 import {
@@ -356,7 +357,7 @@ export function useEditorAgentStream({
           if (parsed.type === 'tool.started') {
             const startedTool =
               typeof parsed.payload?.name === 'string' ? parsed.payload.name : ''
-            if (startedTool === 'Write' || startedTool === 'Edit') {
+            if (isChapterStreamTool(startedTool)) {
               useNovelStore.getState().snapshotChapterDiffBeforeAgent()
             }
           }
@@ -373,8 +374,7 @@ export function useEditorAgentStream({
               void loadChapters(activeNovelId)
             }
             const streamedWrite =
-              (toolName === 'Write' || toolName === 'Edit') &&
-              chapterStreamActiveRef.current
+              isChapterStreamTool(toolName) && chapterStreamActiveRef.current
             if (streamedWrite) {
               chapterStreamActiveRef.current = false
               finishAgentChapterStream()
@@ -386,7 +386,7 @@ export function useEditorAgentStream({
             } else {
               void (async () => {
                 await selectChapterAfterAgentWrite(agentChapterTitleRef.current)
-                if (toolName === 'Write' || toolName === 'Edit') {
+                if (isChapterStreamTool(toolName)) {
                   setActiveCenterTab('story')
                 }
               })()

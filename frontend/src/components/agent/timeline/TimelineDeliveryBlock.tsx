@@ -36,7 +36,10 @@ export function TimelineDeliveryBlock({
   const collapsed = canCollapse && !expanded
 
   return (
-    <div className={DELIVERY_BODY_WRAP} data-testid={testId}>
+    <div
+      className={cn(DELIVERY_BODY_WRAP, streamLive && 'agent-stream-delivery-live')}
+      data-testid={testId}
+    >
       <div
         className={cn(
           'relative',

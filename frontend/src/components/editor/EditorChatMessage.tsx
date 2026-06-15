@@ -28,6 +28,7 @@ import {
 import { sanitizeAgentStreamError } from '../../utils/sanitizeAgentStreamError'
 import { useAppMobile } from '@/hooks/useMediaQuery'
 import { EditorIcons } from './icons'
+import { cn } from '@/lib/utils'
 
 import { useTranslation } from 'react-i18next'
 
@@ -162,7 +163,13 @@ function EditorChatMessageInner({
           </div>
         )}
         {showAgentTimeline ? (
-          <div className="flex w-full max-w-full flex-col" data-testid="assistant-stream-shell">
+          <div
+            className={cn(
+              'flex w-full max-w-full flex-col',
+              streamActive && 'agent-stream-reveal-shell',
+            )}
+            data-testid="assistant-stream-shell"
+          >
             {processCollapsed && streamActive && !deliveryText ? (
               <ChatMessageSurfaceBody className="flex min-h-7 items-center py-1" aria-live="polite">
                 <ShimmerScanText active>{t('editor:chat.creating')}</ShimmerScanText>
