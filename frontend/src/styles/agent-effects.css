@@ -37,6 +37,21 @@
   animation: agent-shimmer-sweep 1.8s linear infinite;
 }
 
+.dark .agent-shimmer-text-active,
+.dark .agent-shimmer-cluster-active {
+  background: linear-gradient(
+    90deg,
+    hsl(var(--muted-foreground) / 0.55) 0%,
+    hsl(var(--muted-foreground) / 0.55) 35%,
+    hsl(var(--primary) / 0.95) 50%,
+    hsl(var(--muted-foreground) / 0.55) 65%,
+    hsl(var(--muted-foreground) / 0.55) 100%
+  );
+  background-size: 200% auto;
+  background-clip: text;
+  -webkit-background-clip: text;
+}
+
 .agent-shimmer-cluster-active {
   color: transparent;
   background: linear-gradient(

@@ -238,6 +238,28 @@ function appendReasoningDelta(timeline: AgentTimelineBlock[], delta: string): Ag
   return next
 }
 
+function thinkBlockMatchesStep(block: AgentTimelineBlock, stepId: string): boolean {
+  if (block.kind !== 'think') {
+    return false
+  }
+  const base = `think:${stepId}`
+  return block.id === base || block.id.startsWith(`${base}:`)
+}
+
+function findThinkBlockIndex(timeline: AgentTimelineBlock[], stepId?: string): number {
+  if (stepId?.trim()) {
+    const byStep = timeline.findIndex((b) => thinkBlockMatchesStep(b, stepId.trim()))
+    if (byStep >= 0) {
+      return byStep
+    }
+  }
+  const activeIdx = findLastIndex(timeline, (b) => b.kind === 'think' && b.status === 'active')
+  if (activeIdx >= 0) {
+    return activeIdx
+  }
+  return findLastIndex(timeline, (b) => b.kind === 'think')
+}
+
 /** 工具/编排 transition 之后不得复用旧思考块，否则正文会挤到时间线前段 */
 function canReopenThinkBlock(timeline: AgentTimelineBlock[], thinkIdx: number): boolean {
   for (let i = thinkIdx + 1; i < timeline.length; i += 1) {
@@ -265,31 +287,39 @@ function appendActiveThinkBlock(
   ]
 }
 
-function appendThinkDelta(timeline: AgentTimelineBlock[], delta: string): AgentTimelineBlock[] {
+function appendThinkDelta(
+  timeline: AgentTimelineBlock[],
+  delta: string,
+  stepId?: string,
+): AgentTimelineBlock[] {
   const clean = sanitizeThinkText(delta)
   if (!clean) {
     return timeline
   }
-  let lastThinkIdx = findLastIndex(timeline, (b) => b.kind === 'think' && b.status === 'active')
-  if (lastThinkIdx < 0) {
-    lastThinkIdx = findLastIndex(timeline, (b) => b.kind === 'think')
-    if (lastThinkIdx < 0) {
-      return appendActiveThinkBlock(timeline, clean)
-    }
-    const reopen = timeline[lastThinkIdx]
-    if (reopen.kind === 'think' && canReopenThinkBlock(timeline, lastThinkIdx)) {
-      const next = [...timeline]
-      next[lastThinkIdx] = { ...reopen, text: `${reopen.text}${clean}`, status: 'active' }
-      return next
-    }
-    return appendActiveThinkBlock(timeline, clean)
+  const targetIdx = findThinkBlockIndex(timeline, stepId)
+  if (targetIdx < 0) {
+    return appendActiveThinkBlock(timeline, clean, stepId)
   }
-  const block = timeline[lastThinkIdx]
+  const block = timeline[targetIdx]
   if (block.kind !== 'think') {
     return timeline
   }
+  if (
+    block.status === 'done' &&
+    stepId &&
+    !thinkBlockMatchesStep(block, stepId)
+  ) {
+    return appendActiveThinkBlock(timeline, clean, stepId)
+  }
+  if (block.status === 'done' && !canReopenThinkBlock(timeline, targetIdx)) {
+    return appendActiveThinkBlock(timeline, clean, stepId)
+  }
   const next = [...timeline]
-  next[lastThinkIdx] = { ...block, text: `${block.text}${clean}` }
+  next[targetIdx] = {
+    ...block,
+    text: `${block.text}${clean}`,
+    status: 'active',
+  }
   return next
 }
 
@@ -464,15 +494,19 @@ export function applyTimelineEvent(
 
   if (type === 'think.delta') {
     const text = typeof event.payload.text === 'string' ? event.payload.text : ''
-    return appendThinkDelta(freezeTrailingStreamBlocks(timeline), text)
+    return appendThinkDelta(freezeTrailingStreamBlocks(timeline), text, stepId)
   }
 
   if (type === 'think.completed') {
-    return timeline.map((block) =>
-      block.kind === 'think' && block.status === 'active'
-        ? { ...block, status: 'done' }
-        : block,
-    )
+    return timeline.map((block) => {
+      if (block.kind !== 'think' || block.status !== 'active') {
+        return block
+      }
+      if (stepId && !thinkBlockMatchesStep(block, stepId)) {
+        return block
+      }
+      return { ...block, status: 'done' as const }
+    })
   }
 
   if (type === 'think.transition') {

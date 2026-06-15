@@ -20,7 +20,10 @@ export type SubagentDisplayMeta = {
   toolStats: string | null
 }
 
-function subagentNameFromDescription(description: string): string {
+function subagentNameFromDescription(description: string, kind?: string): string {
+  if (kind === 'review') {
+    return '审查'
+  }
   const line = description.trim().split('\n')[0]?.trim() ?? ''
   if (!line) {
     return '子代理'
@@ -87,7 +90,7 @@ export function deriveSubagentDisplayMeta(
   runActive: boolean,
 ): SubagentDisplayMeta {
   const description = subagent.description.trim()
-  const name = subagentNameFromDescription(description)
+  const name = subagentNameFromDescription(description, subagent.kind)
   const body = subagentDescriptionBody(description)
 
   const statusKind: SubagentVisualStatus =

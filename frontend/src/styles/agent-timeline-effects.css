@@ -76,8 +76,8 @@
   content: '';
   position: absolute;
   left: calc(1.35rem / 2 - 1px);
-  top: calc(1.35rem + 0.08rem);
-  bottom: 0.06rem;
+  top: calc(1.35rem * 0.5);
+  bottom: calc(1.35rem * 0.5);
   width: 2px;
   background: hsl(var(--border));
   pointer-events: none;

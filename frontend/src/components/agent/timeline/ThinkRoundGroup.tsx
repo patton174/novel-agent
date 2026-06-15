@@ -110,8 +110,9 @@ export function ThinkRoundGroup({
     (item) => item.kind === 'narration' || item.kind === 'text' || item.kind === 'tools',
   )
 
+  const thinkBlockCount = insightBlocks.filter((b) => b.kind === 'think').length
   const showThinkRail =
-    insightBlocks.length > 1 || (insightBlocks.length > 0 && hasBody)
+    thinkBlockCount >= 2 || (thinkBlockCount >= 1 && hasBody)
 
   const renderBodyText = (block: OrchestrationBodyBlock, key: string) => (
     <div key={key} className={ORCHESTRATION_FLAT_ROW} data-testid="timeline-orchestration-text">

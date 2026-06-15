@@ -123,6 +123,7 @@ export function applySubagentStepEvent(
       stepStates,
       parentId,
       () => ({
+        kind: subagentKind,
         description,
         childRunId:
           typeof p.child_run_id === 'string' ? p.child_run_id : undefined,

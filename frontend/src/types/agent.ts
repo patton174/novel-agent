@@ -111,6 +111,8 @@ export interface AgentSubagentLogEntry {
 
 export interface AgentSubagentState {
   description: string
+  /** review 等 — 来自 SSE subagent_kind */
+  kind?: string
   childRunId?: string
   status: 'active' | 'done' | 'failed'
   maxTurns?: number

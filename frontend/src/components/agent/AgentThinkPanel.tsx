@@ -19,6 +19,7 @@ import {
   toolLeadCellClass,
 } from '@/lib/timelineClasses'
 import { TimelineLeadIcon } from './timeline/TimelineLeadIcon'
+import { ShimmerScanText } from '../loaders/ShimmerScanText'
 
 export interface AgentThinkPanelProps {
   /** 思考正文（Markdown） */
@@ -239,8 +240,17 @@ export function AgentThinkPanel({
                   <span className={HEADLINE_CLUSTER}>
                     <span className={CC_TOOL_NAME}>{label}</span>
                     <span className={CC_TOOL_ARGS}>
-                      {phase}
-                      {duration ? ` · ${duration}` : ''}
+                      {isThinking ? (
+                        <ShimmerScanText active>
+                          {phase}
+                          {duration ? ` · ${duration}` : ''}
+                        </ShimmerScanText>
+                      ) : (
+                        <>
+                          {phase}
+                          {duration ? ` · ${duration}` : ''}
+                        </>
+                      )}
                     </span>
                   </span>
                 </div>

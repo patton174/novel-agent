@@ -11,12 +11,7 @@ import {
   normalizeToolName,
   vfsPathFromPayload,
 } from '../../../utils/agentToolNames'
-import {
-  ccToolArgsSubtitle,
-  ccToolNameLabel,
-  ccToolResultHint,
-  readToolBranchLabels,
-} from '../../../utils/ccToolDisplay'
+import { planningActiveLabel } from '../../../utils/agentOrchestration'
 import {
   readToolBodyExcerpt,
   toolDetailHasExpandableContent,
@@ -60,10 +55,10 @@ export function TimelineToolBlock({
   const suppress = Boolean(suppressStatus)
   const readTool = isCollapsibleReadTool(step.toolName)
   const vfsRead = isVfsReadTool(step.toolName)
-  const agentToolEarly = normalizeToolName(step.toolName) === 'Agent'
   if (step.subagent) {
     return <SubagentPanel subagent={step.subagent} loading={toolLoading} />
   }
+  const agentToolEarly = normalizeToolName(step.toolName) === 'Agent'
   if (agentToolEarly) {
     const phase = toolLoading
       ? '运行中'
@@ -120,16 +115,21 @@ export function TimelineToolBlock({
       : null
   const memoryActionLabel =
     memoryDetail && !readTool && !deleteSummary ? memoryDetail : null
+  const chapterWriteTool = isChapterWriteTool(step.toolName)
+  const chapterProgressHint =
+    chapterWriteTool && toolLoading ? chapterWriteProgressHint(step) : null
   const readProgressHint =
     toolLoading && vfsRead && step.detail?.trim() ? step.detail.trim() : undefined
-  const chapterWriteTool = isChapterWriteTool(step.toolName)
+  const earlyProgressHint =
+    toolLoading && !chapterProgressHint && !readProgressHint
+      ? planningActiveLabel(step.toolName ?? '') ??
+        (step.title?.trim() && !step.title.includes('…') ? `${step.title}…` : null)
+      : null
   const todoWriteTool = normalizeToolName(step.toolName) === 'TodoWrite'
   const vfsInventoryTool =
     normalizeToolName(step.toolName) === 'Glob' ||
     normalizeToolName(step.toolName) === 'Grep'
   const hasTodoList = Boolean(step.todos?.length)
-  const chapterProgressHint =
-    chapterWriteTool && toolLoading ? chapterWriteProgressHint(step) : null
   const rawSummary = step.outputSummary || step.detail
   const hideAskNoise =
     isAsk &&
@@ -260,6 +260,12 @@ export function TimelineToolBlock({
         更新待办…
       </ShimmerScanText>,
     )
+  } else if (earlyProgressHint) {
+    branchInner.push(
+      <ShimmerScanText key="early-progress" active>
+        {earlyProgressHint}
+      </ShimmerScanText>,
+    )
   } else if (toolLoading && step.displayExcerpt?.trim()) {
     branchInner.push(
       <ShimmerScanText key="stream-excerpt" active>
@@ -291,6 +297,16 @@ export function TimelineToolBlock({
     Boolean(chapterResultSummary) ||
     (chapterWriteTool && resolved && toolDetailHasExpandableContent(step))
 
+  const resultHint = ccToolResultHint(step, {
+    readLabel,
+    deleteSummary,
+    chapterResultSummary,
+    memoryActionLabel,
+    loading,
+  })
+  const summaryLine = summary?.trim() ?? ''
+  const summaryIsJsonLike =
+    summaryLine.startsWith('{') && summaryLine.endsWith('}')
   const showBodySummary = Boolean(
     !readLabel &&
       !memoryActionLabel &&
@@ -303,7 +319,8 @@ export function TimelineToolBlock({
       !isAsk &&
       resolved &&
       summary &&
-      !showInteraction,
+      !showInteraction &&
+      !(summaryIsJsonLike && resultHint),
   )
 
   const showDetailPeek =
@@ -323,13 +340,6 @@ export function TimelineToolBlock({
       ? Boolean(readBodyExcerpt) && !readLabel
       : !readLabel && !memoryActionLabel)
 
-  const resultHint = ccToolResultHint(step, {
-    readLabel,
-    deleteSummary,
-    chapterResultSummary,
-    memoryActionLabel,
-    loading,
-  })
   const awaitingUserInput = Boolean(showInteraction)
   const phase = loading
     ? '运行中'
@@ -489,9 +499,9 @@ function ExpandableTimelineToolRow({
       iconStatus={iconStatus}
       trailing={trailing}
       branch={branch}
-      collapsible={collapsible}
+      collapsible={false}
       expanded={expanded}
-      onToggle={() => setBodyExpanded((open) => !open)}
+      onToggle={undefined}
     >
       {showVerboseSummary ? (
         <CcToolNestedBranch>
