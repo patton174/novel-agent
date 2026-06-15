@@ -48,6 +48,17 @@ pick_existing_cert_name() {
   return 1
 }
 
+render_ssl_nginx() {
+  local worker_host
+  worker_host="$(grep -E '^WORKER_HOST=' .env.mw 2>/dev/null | cut -d= -f2- || true)"
+  : "${worker_host:?WORKER_HOST missing in .env.mw}"
+  sed -e "s/\${WORKER_HOST}/${worker_host}/g" \
+      -e "s/\${DOMAIN}/${DOMAIN}/g" \
+      -e "s/\${DOMAIN_ALIASES}/${DOMAIN_ALIASES}/g" \
+      -e "s/\${CERT_NAME}/${CERT_NAME}/g" \
+      nginx-entry-mw-ssl.conf.template > nginx-entry-mw.conf
+}
+
 render_acme_nginx() {
   local worker_host
   worker_host="$(grep -E '^WORKER_HOST=' .env.mw 2>/dev/null | cut -d= -f2- || true)"
@@ -67,6 +78,8 @@ if existing="$(pick_existing_cert_name)"; then
   fi
   echo "[ensure-cert] valid cert ($existing), skip issue"
   openssl x509 -in "$FULLCHAIN" -noout -subject -dates
+  render_ssl_nginx
+  $COMPOSE -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d --force-recreate entry-nginx
   exit 0
 fi
 
@@ -104,4 +117,6 @@ if ! cert_valid "$FULLCHAIN"; then
 fi
 
 openssl x509 -in "$FULLCHAIN" -noout -subject -dates
+render_ssl_nginx
+$COMPOSE -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d --force-recreate entry-nginx
 echo "[ensure-cert] issued -> live/$CERT_NAME"

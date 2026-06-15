@@ -20,61 +20,21 @@ bash "$CI_DIR/ensure-mw-https-cert.sh"
 
 REMOTE="$(ci_remote mw)"
 RDIR="$(ci_remote_dir mw)"
-COMPOSE_FILE="$(ci_compose_file mw)"
-ENV_FILE="$(ci_env_file mw)"
 
 deploy_ssh "$REMOTE" bash -s <<EOF
 set -euo pipefail
-cd '$RDIR/$DOCKER_REL'
-FULLCHAIN="letsencrypt/live/$CERT_NAME/fullchain.pem"
-if [[ ! -f "\$FULLCHAIN" ]]; then
-  echo "[deploy-mw-nginx] ERROR: missing \$FULLCHAIN"
-  ls -la letsencrypt/live/ || true
-  exit 1
+ENV='$RDIR/$DOCKER_REL/.env.mw'
+touch "\$ENV"
+if grep -q '^WORKER_HOST=' "\$ENV"; then
+  sed -i 's|^WORKER_HOST=.*|WORKER_HOST=$WORKER_HOST|' "\$ENV"
+else
+  echo 'WORKER_HOST=$WORKER_HOST' >> "\$ENV"
 fi
-openssl x509 -in "\$FULLCHAIN" -noout -subject -dates
 EOF
 
-deploy_ssh "$REMOTE" bash -s <<EOF
-set -euo pipefail
-cd '$RDIR/$DOCKER_REL'
-COMPOSE="docker compose"
-if ! docker compose version >/dev/null 2>&1; then COMPOSE="docker-compose"; fi
-
-if [[ -f .env.mw ]]; then
-  for kv in "DOMAIN=$DOMAIN" "DOMAIN_ALIASES=$DOMAIN_ALIASES" "CERT_NAME=$CERT_NAME" "WORKER_HOST=$WORKER_HOST"; do
-    key="\${kv%%=*}"
-    val="\${kv#*=}"
-    if grep -q "^\${key}=" .env.mw; then
-      sed -i "s|^\${key}=.*|\${key}=\${val}|" .env.mw
-    else
-      echo "\${key}=\${val}" >> .env.mw
-    fi
-  done
-fi
-
-WORKER_UPSTREAM="\$(grep -E '^WORKER_HOST=' .env.mw | cut -d= -f2-)"
-: "\${WORKER_UPSTREAM:?WORKER_HOST missing in .env.mw}"
-echo "[deploy-mw-nginx] probe worker http://\${WORKER_UPSTREAM}:3000/"
-if ! curl -sf --connect-timeout 8 --max-time 15 "http://\${WORKER_UPSTREAM}:3000/" -o /dev/null; then
-  echo "[deploy-mw-nginx] WARN: worker frontend unreachable from MW"
-fi
-
-sed -e "s/\\\${WORKER_HOST}/\${WORKER_UPSTREAM}/g" \
-    -e 's/\${DOMAIN}/$DOMAIN/g' \
-    -e 's/\${DOMAIN_ALIASES}/$DOMAIN_ALIASES/g' \
-    -e 's/\${CERT_NAME}/$CERT_NAME/g' \
-    nginx-entry-mw-ssl.conf.template > nginx-entry-mw.conf
-
-\$COMPOSE -f '$COMPOSE_FILE' --env-file '$ENV_FILE' up -d --no-build entry-nginx
-\$COMPOSE -f '$COMPOSE_FILE' --env-file '$ENV_FILE' exec -T entry-nginx nginx -t
-\$COMPOSE -f '$COMPOSE_FILE' --env-file '$ENV_FILE' restart entry-nginx
-
-echo "[deploy-mw-nginx] 本机探针"
-curl -skI "https://127.0.0.1/" -H "Host: $DOMAIN" | head -5
-curl -skI "https://127.0.0.1/" -H "Host: $DOMAIN_ALIASES" | head -5
-\$COMPOSE -f '$COMPOSE_FILE' --env-file '$ENV_FILE' ps entry-nginx
-EOF
+REMOTE_SSL="$CI_DIR/remote-apply-mw-ssl-nginx.sh"
+deploy_scp "$REMOTE_SSL" "$REMOTE:/tmp/remote-apply-mw-ssl-nginx.sh"
+deploy_ssh "$REMOTE" "chmod +x /tmp/remote-apply-mw-ssl-nginx.sh && bash /tmp/remote-apply-mw-ssl-nginx.sh '$DOMAIN' '$DOMAIN_ALIASES' '$CERT_NAME' '$RDIR' '$DOCKER_REL'"
 
 WORKER_REMOTE="$(ci_remote worker)"
 WORKER_RDIR="$(ci_remote_dir worker)"
@@ -87,26 +47,11 @@ if [[ -f "\$ENV_FILE" ]]; then
   else
     echo 'AUTH_FRONTEND_BASE_URL=https://$DOMAIN' >> "\$ENV_FILE"
   fi
-  echo "[deploy-mw-nginx] worker AUTH_FRONTEND_BASE_URL → https://$DOMAIN"
 fi
 cd '$WORKER_RDIR/$DOCKER_REL'
 COMPOSE="docker compose"
 if ! docker compose version >/dev/null 2>&1; then COMPOSE="docker-compose"; fi
-\$COMPOSE -f docker-compose.worker.yml --env-file .env.worker up -d --no-deps --no-build --force-recreate frontend
-sleep 2
-curl -sf --connect-timeout 5 --max-time 10 "http://127.0.0.1:\${FRONTEND_PORT:-3000}/" -o /dev/null && echo "[deploy-mw-nginx] worker frontend ok"
-EOF
-
-deploy_ssh "$REMOTE" bash -s <<EOF
-set -euo pipefail
-cd '$RDIR/$DOCKER_REL'
-WORKER_UPSTREAM="\$(grep -E '^WORKER_HOST=' .env.mw | cut -d= -f2-)"
-if curl -sf --connect-timeout 8 --max-time 15 "http://\${WORKER_UPSTREAM}:3000/" -o /dev/null; then
-  echo "[deploy-mw-nginx] MW → worker upstream ok"
-else
-  echo "[deploy-mw-nginx] ERROR: MW still cannot reach worker :3000"
-  exit 1
-fi
+\$COMPOSE -f docker-compose.worker.yml --env-file .env.worker up -d --no-deps --no-build frontend
 EOF
 
 echo "[deploy-mw-nginx] 完成 → https://$DOMAIN"
