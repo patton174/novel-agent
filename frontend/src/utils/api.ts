@@ -16,6 +16,7 @@ import { fetchWsTicket } from '../security/wsTicket'
 import { toStreamRequestBody } from './agentStreamPayload'
 import { parseResultResponse, throwOnErrorResponse } from './resultApi'
 import { parseSseFrame, splitSseBuffer } from './sse'
+import { isPeerDroppedStreamError } from './agentStreamRecovery'
 
 export type AgentStreamEventHandler = (eventName: string, data: string) => void
 
@@ -109,12 +110,7 @@ export async function openAgentStream(
       throw new DOMException('The stream was aborted', 'AbortError')
     }
     const msg = error instanceof Error ? error.message : String(error)
-    if (
-      receivedEvent &&
-      /incomplete chunked read|peer closed connection without sending complete message body/i.test(
-        msg,
-      )
-    ) {
+    if (receivedEvent && isPeerDroppedStreamError(msg)) {
       return
     }
     throw error

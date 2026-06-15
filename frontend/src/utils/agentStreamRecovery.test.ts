@@ -10,6 +10,8 @@ describe('agentStreamRecovery', () => {
     expect(isPeerDroppedStreamError('peer closed connection without sending complete message body')).toBe(
       true,
     )
+    expect(isPeerDroppedStreamError('net::ERR_HTTP2_PROTOCOL_ERROR')).toBe(true)
+    expect(isPeerDroppedStreamError('NetworkError when attempting to fetch resource.')).toBe(true)
   })
 
   it('requests recovery while run is active', () => {

@@ -9,5 +9,7 @@ export const STREAM_RECOVERY_BANNER =
   '连接中断，正在通过备用通道同步进度…'
 
 export function isPeerDroppedStreamError(message: string): boolean {
-  return /incomplete chunked read|peer closed connection/i.test(message)
+  return /incomplete chunked read|peer closed connection|ERR_HTTP2_PROTOCOL_ERROR|HTTP2_PROTOCOL_ERROR|net::ERR_|network error|NetworkError when attempting to fetch|Load failed/i.test(
+    message,
+  )
 }
