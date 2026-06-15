@@ -70,48 +70,33 @@
 
 .agent-timeline-think-tree {
   position: relative;
-  overflow: hidden;
 }
 
-/* 主竖线：连接同一轮内各思考图标（--primary 为 hex，不可用 hsl(var(--primary))） */
-.agent-timeline-think-tree::before {
-  content: '';
-  position: absolute;
-  left: calc(1.35rem / 2 - 1px);
-  top: calc(1.35rem * 0.5 + 0.07rem);
-  bottom: calc(1.35rem * 0.5);
-  width: 2px;
-  background: color-mix(in srgb, var(--primary) 52%, transparent);
-  pointer-events: none;
-  border-radius: 1px;
-  z-index: 0;
-}
-
-.dark .agent-timeline-think-tree::before {
-  background: color-mix(in srgb, var(--primary) 65%, transparent);
-}
-
-.agent-timeline-think-tree > * {
-  position: relative;
+/* 竖线：从思考图标下缘连到下一思考，不穿过图标 */
+[data-think-rail-row='true'] [data-timeline-lead] {
   z-index: 1;
 }
 
-/* 同轮内非最后一个思考：图标下方延伸竖线（与 ::before 叠加，跨工具/正文行更可靠） */
+[data-think-rail-row='true'] [data-timeline-lead] > span {
+  background: var(--background);
+  border-radius: 3px;
+}
+
 [data-think-rail-row='true'] [data-timeline-lead][data-think-connector='true']::after {
   content: '';
   position: absolute;
   left: calc(50% - 1px);
-  top: calc(100% - 0.07rem);
+  top: 100%;
   width: 2px;
-  height: 9999px;
-  background: color-mix(in srgb, var(--primary) 52%, transparent);
+  height: 5000px;
+  background: color-mix(in srgb, var(--primary) 50%, transparent);
   pointer-events: none;
   border-radius: 1px;
   z-index: 0;
 }
 
 .dark [data-think-rail-row='true'] [data-timeline-lead][data-think-connector='true']::after {
-  background: color-mix(in srgb, var(--primary) 65%, transparent);
+  background: color-mix(in srgb, var(--primary) 62%, transparent);
 }
 
 .agent-timeline-text-block [data-variant='chat'],

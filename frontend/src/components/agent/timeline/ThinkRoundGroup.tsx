@@ -137,11 +137,7 @@ export function ThinkRoundGroup({
     block: Extract<AgentTimelineBlock, { kind: 'tool' }>,
     key: string,
   ) => (
-    <div
-      key={key}
-      className="box-border w-full max-w-full px-0 py-[0.05rem] pb-[0.1rem]"
-      data-testid="timeline-orchestration-tool"
-    >
+    <div key={key} className={ORCHESTRATION_FLAT_ROW} data-testid="timeline-orchestration-tool">
       {renderTool(block, key)}
     </div>
   )
