@@ -42,7 +42,7 @@ COMPOSE="docker compose"
 if ! docker compose version >/dev/null 2>&1; then COMPOSE="docker-compose"; fi
 
 if [[ -f .env.mw ]]; then
-  for kv in "DOMAIN=$DOMAIN" "DOMAIN_ALIASES=$DOMAIN_ALIASES" "CERT_NAME=$CERT_NAME"; do
+  for kv in "DOMAIN=$DOMAIN" "DOMAIN_ALIASES=$DOMAIN_ALIASES" "CERT_NAME=$CERT_NAME" "WORKER_HOST=$WORKER_HOST"; do
     key="\${kv%%=*}"
     val="\${kv#*=}"
     if grep -q "^\${key}=" .env.mw; then
@@ -53,7 +53,14 @@ if [[ -f .env.mw ]]; then
   done
 fi
 
-sed -e 's/\${WORKER_HOST}/$WORKER_HOST/g' \
+WORKER_UPSTREAM="\$(grep -E '^WORKER_HOST=' .env.mw | cut -d= -f2-)"
+: "\${WORKER_UPSTREAM:?WORKER_HOST missing in .env.mw}"
+echo "[deploy-mw-nginx] probe worker http://\${WORKER_UPSTREAM}:3000/"
+if ! curl -sf --connect-timeout 8 --max-time 15 "http://\${WORKER_UPSTREAM}:3000/" -o /dev/null; then
+  echo "[deploy-mw-nginx] WARN: worker frontend unreachable from MW"
+fi
+
+sed -e "s/\\\${WORKER_HOST}/\${WORKER_UPSTREAM}/g" \
     -e 's/\${DOMAIN}/$DOMAIN/g' \
     -e 's/\${DOMAIN_ALIASES}/$DOMAIN_ALIASES/g' \
     -e 's/\${CERT_NAME}/$CERT_NAME/g' \
@@ -81,6 +88,24 @@ if [[ -f "\$ENV_FILE" ]]; then
     echo 'AUTH_FRONTEND_BASE_URL=https://$DOMAIN' >> "\$ENV_FILE"
   fi
   echo "[deploy-mw-nginx] worker AUTH_FRONTEND_BASE_URL → https://$DOMAIN"
+fi
+cd '$WORKER_RDIR/$DOCKER_REL'
+COMPOSE="docker compose"
+if ! docker compose version >/dev/null 2>&1; then COMPOSE="docker-compose"; fi
+\$COMPOSE -f docker-compose.worker.yml --env-file .env.worker up -d --no-deps --no-build --force-recreate frontend
+sleep 2
+curl -sf --connect-timeout 5 --max-time 10 "http://127.0.0.1:\${FRONTEND_PORT:-3000}/" -o /dev/null && echo "[deploy-mw-nginx] worker frontend ok"
+EOF
+
+deploy_ssh "$REMOTE" bash -s <<EOF
+set -euo pipefail
+cd '$RDIR/$DOCKER_REL'
+WORKER_UPSTREAM="\$(grep -E '^WORKER_HOST=' .env.mw | cut -d= -f2-)"
+if curl -sf --connect-timeout 8 --max-time 15 "http://\${WORKER_UPSTREAM}:3000/" -o /dev/null; then
+  echo "[deploy-mw-nginx] MW → worker upstream ok"
+else
+  echo "[deploy-mw-nginx] ERROR: MW still cannot reach worker :3000"
+  exit 1
 fi
 EOF
 

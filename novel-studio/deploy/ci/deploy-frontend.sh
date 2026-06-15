@@ -49,7 +49,12 @@ docker build -t "\$IMAGE" .
 cd "\$RDIR/\$DOCKER_REL"
 COMPOSE="docker compose"
 if ! docker compose version >/dev/null 2>&1; then COMPOSE="docker-compose"; fi
-\$COMPOSE -f docker-compose.worker.yml --env-file .env.worker up -d --no-deps --no-build frontend
+\$COMPOSE -f docker-compose.worker.yml --env-file .env.worker up -d --no-deps --no-build --force-recreate frontend
+curl -sf --connect-timeout 5 --max-time 10 "http://127.0.0.1:\${FRONTEND_PORT:-3000}/" -o /dev/null || {
+  echo "[deploy-frontend] WARN: local frontend probe failed"
+  \$COMPOSE -f docker-compose.worker.yml --env-file .env.worker ps frontend || true
+  docker logs "\$(docker ps -q -f name=frontend | head -1)" --tail 40 2>&1 || true
+}
 EOF
 
 echo "[deploy-frontend] 注册 crypto-runtime.json ..."
