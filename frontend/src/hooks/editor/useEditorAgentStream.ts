@@ -263,11 +263,32 @@ export function useEditorAgentStream({
     }
   }, [isSseRecovering])
 
+  const wrapRecoveryEventHandler = useCallback(
+    (handler: (eventName: string, rawData: string) => void) =>
+      (eventName: string, rawData: string) => {
+        if (eventName === 'stream-end') {
+          dismissRecoveryOverlay()
+        } else if (eventName === 'agent-event') {
+          try {
+            const parsed = JSON.parse(rawData) as AgentEventEnvelope
+            if (parsed.type === 'gateway.connected') {
+              dismissRecoveryOverlay()
+            }
+          } catch {
+            // ignore malformed frames
+          }
+        }
+        handler(eventName, rawData)
+      },
+    [dismissRecoveryOverlay],
+  )
+
   const startRunSseRecovery = useCallback(
     (banner?: string) => {
       const live = liveStreamRef.current
       const runId = live?.state.runId
-      if (!runId) {
+      const sessionId = agentSessionIdRef.current
+      if (!runId && !sessionId) {
         return
       }
       if (!shouldAttachStreamRecovery(live.state) && !streamRecoveryRef.current) {
@@ -284,15 +305,25 @@ export function useEditorAgentStream({
       streamResumeAbortRef.current?.abort()
       const resumeAbort = new AbortController()
       streamResumeAbortRef.current = resumeAbort
-      void openAgentRunSseStream(
-        runId,
-        (eventName, rawData) => agentEventHandlerRef.current(eventName, rawData),
-        {
-          signal: resumeAbort.signal,
-          afterSequence: lastPolledSequenceRef.current,
-          sessionId: agentSessionIdRef.current,
-        },
+      const onEvent = wrapRecoveryEventHandler((eventName, rawData) =>
+        agentEventHandlerRef.current(eventName, rawData),
       )
+      const resumePromise = runId
+        ? openAgentRunSseStream(runId, onEvent, {
+            signal: resumeAbort.signal,
+            afterSequence: lastPolledSequenceRef.current,
+            sessionId,
+          })
+        : openAgentStream(
+            {
+              message: '',
+              session_id: sessionId,
+              after_sequence: lastPolledSequenceRef.current,
+            },
+            onEvent,
+            { signal: resumeAbort.signal },
+          )
+      void resumePromise
         .then(() => {
           if (!streamRecoveryRef.current) {
             return
@@ -322,7 +353,7 @@ export function useEditorAgentStream({
           attachStatusWsFallbackRef.current()
         })
     },
-    [finishStreamRecovery, endRunLiveFollow],
+    [finishStreamRecovery, endRunLiveFollow, wrapRecoveryEventHandler],
   )
 
   useEffect(() => {
@@ -1185,9 +1216,14 @@ export function useEditorAgentStream({
           })
         }
         streamSyncRef.current = syncResumedStream
-        agentEventHandlerRef.current = (eventName, rawData) => {
+        agentEventHandlerRef.current = wrapRecoveryEventHandler((eventName, rawData) => {
           liveBox.state = applyAgentEvent(liveBox.state, eventName, rawData)
           activeStreamStateRef.current = liveBox.state
+          if (eventName === 'stream-end') {
+            finishStreamRecovery()
+            endRunLiveFollow()
+            setIsLoading(false)
+          }
           if (eventName === 'agent-event') {
             try {
               const parsed = JSON.parse(rawData) as AgentEventEnvelope
@@ -1197,12 +1233,21 @@ export function useEditorAgentStream({
                   parsed.sequence,
                 )
               }
+              if (
+                parsed.type === 'run.completed' ||
+                parsed.type === 'run.failed' ||
+                liveBox.state.runTerminalAck
+              ) {
+                finishStreamRecovery()
+                endRunLiveFollow()
+                setIsLoading(false)
+              }
             } catch {
               // ignore malformed replay frames
             }
           }
           syncResumedStream()
-        }
+        })
         setIsLoading(true)
         setActiveStreamMessageId(assistantMessageId)
         setMessages((prev) => {
@@ -1236,6 +1281,9 @@ export function useEditorAgentStream({
     isLoading,
     setMessages,
     startRunSseRecovery,
+    finishStreamRecovery,
+    endRunLiveFollow,
+    wrapRecoveryEventHandler,
   ])
 
   return {

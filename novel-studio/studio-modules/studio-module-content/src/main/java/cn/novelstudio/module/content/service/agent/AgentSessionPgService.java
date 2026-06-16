@@ -6,6 +6,8 @@ import cn.novelstudio.module.content.entity.agent.AgentSessionEntity;
 import cn.novelstudio.module.content.repository.agent.AgentMessageRepository;
 import cn.novelstudio.module.content.repository.agent.AgentSessionRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -20,6 +22,11 @@ public class AgentSessionPgService {
 
     private final AgentSessionRepository sessionRepository;
     private final AgentMessageRepository messageRepository;
+
+    /** Avoid self-invocation skipping REQUIRES_NEW on upsertSession. */
+    @Lazy
+    @Autowired
+    private AgentSessionPgService self;
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void upsertSession(Long userId, String sessionId, String title, String novelId) {
@@ -59,6 +66,11 @@ public class AgentSessionPgService {
             entity.setNovelId(novelId);
         }
         entity.setStatus("active");
+        Instant now = Instant.now();
+        if (entity.getCreatedAt() == null) {
+            entity.setCreatedAt(now);
+        }
+        entity.setUpdatedAt(now);
     }
 
     @Transactional(readOnly = true)
@@ -95,7 +107,7 @@ public class AgentSessionPgService {
         String runId
     ) {
         if (!isSessionOwnedByUser(userId, sessionId)) {
-            upsertSession(userId, sessionId, "新对话", null);
+            self.upsertSession(userId, sessionId, "新对话", null);
         }
         AgentMessageEntity entity = messageRepository.findById(messageId).orElseGet(AgentMessageEntity::new);
         entity.setId(messageId);

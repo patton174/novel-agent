@@ -59,6 +59,7 @@ public class PgRunResumeStreamService {
         }
         return Flux.<String>create(sink -> Schedulers.boundedElastic().schedule(() -> {
             try {
+                log.info("run SSE resume start userId={} runId={} afterSequence={}", userId, runId, afterSequence);
                 AgentRunDTO run = requireOwnedRun(userId, runId);
                 List<String> payloads = loadReplayPayloads(runId, afterSequence);
                 boolean sawTerminalPayload = false;
