@@ -6,16 +6,16 @@ import {
   CC_BRANCH_CONTENT,
   CC_BRANCH_GLYPH,
   CC_TOOL_ARGS,
-  CC_TOOL_HEADLINE,
   CC_TOOL_HEADLINE_BUTTON,
-  CC_TOOL_HEADLINE_ROW,
-  CC_TOOL_HEADLINE_STATIC,
-  CC_TOOL_MAIN,
   CC_TOOL_MERGE,
   CC_TOOL_NAME,
   CC_TOOL_ROW_WRAP,
   HEADLINE_CLUSTER,
   TIMELINE_PENDING_IN,
+  TOOL_HEADLINE,
+  TOOL_HEADLINE_ROW,
+  TOOL_HEADLINE_STATIC,
+  TOOL_MAIN,
   ccToolBranchClass,
   toolLeadCellClass,
 } from '@/lib/timelineClasses'
@@ -61,7 +61,7 @@ export function CcToolRow({
   const displayPhase = translateToolPhase(phase)
 
   const headline = (
-    <div className={CC_TOOL_HEADLINE}>
+    <div className={TOOL_HEADLINE}>
       <span className={HEADLINE_CLUSTER}>
         <span className={CC_TOOL_NAME}>{displayName}</span>
         {phase || args || resultHint ? (
@@ -95,9 +95,9 @@ export function CcToolRow({
 
   return (
     <div className={cn(CC_TOOL_ROW_WRAP, TIMELINE_PENDING_IN)} data-testid={testId}>
-      <div className={CC_TOOL_HEADLINE_ROW}>
+      <div className={TOOL_HEADLINE_ROW} data-timeline-tool-headline-row>
         {iconName ? (
-          <div className={toolLeadCellClass()}>
+          <div className={toolLeadCellClass()} data-timeline-tool-lead>
             <TimelineLeadIcon
               iconName={iconName}
               status={
@@ -111,7 +111,7 @@ export function CcToolRow({
             />
           </div>
         ) : null}
-        <div className={CC_TOOL_MAIN}>
+        <div className={TOOL_MAIN}>
           {interactive ? (
             <button
               type="button"
@@ -123,7 +123,7 @@ export function CcToolRow({
               {headline}
             </button>
           ) : (
-            <div className={CC_TOOL_HEADLINE_STATIC}>{headline}</div>
+            <div className={TOOL_HEADLINE_STATIC}>{headline}</div>
           )}
         </div>
       </div>

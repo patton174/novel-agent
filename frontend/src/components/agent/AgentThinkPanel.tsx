@@ -8,7 +8,7 @@ import {
   CC_TOOL_ARGS,
   CC_TOOL_HEADLINE,
   CC_TOOL_HEADLINE_BUTTON,
-  CC_TOOL_HEADLINE_ROW,
+  THINK_HEADLINE_ROW,
   CC_TOOL_MAIN,
   CC_TOOL_NAME,
   CC_TOOL_ROW_WRAP,
@@ -16,7 +16,7 @@ import {
   THINK_BODY_IN_ROUND,
   TIMELINE_PENDING_IN,
   ccToolBranchClass,
-  toolLeadCellClass,
+  thinkLeadCellClass,
 } from '@/lib/timelineClasses'
 import { TimelineLeadIcon } from './timeline/TimelineLeadIcon'
 import { ShimmerScanText } from '../loaders/ShimmerScanText'
@@ -247,10 +247,10 @@ export function AgentThinkPanel({
       data-think-rail-row={inThinkRound ? 'true' : undefined}
     >
       <div className={CC_TOOL_ROW_WRAP}>
-        <div className={CC_TOOL_HEADLINE_ROW}>
+        <div className={THINK_HEADLINE_ROW}>
           {!hideHeader ? (
             <div
-              className={toolLeadCellClass()}
+              className={thinkLeadCellClass()}
               data-timeline-lead
               data-think-lead-id={leadId}
               ref={onLeadRef}

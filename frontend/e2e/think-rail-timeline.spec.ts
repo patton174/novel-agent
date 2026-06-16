@@ -44,12 +44,12 @@ test.describe('think rail timeline fixture', () => {
   })
 
   test('aligns tool icon with tool title within tolerance', async ({ page }) => {
-    const toolRows = page.locator('[data-testid^="fixture-tool-"]')
+    const toolRows = page.locator('[data-timeline-tool-headline-row]')
     const count = await toolRows.count()
     for (let i = 0; i < count; i += 1) {
-      const toolRow = toolRows.nth(i)
-      const icon = toolRow.getByTestId('timeline-lead-icon')
-      const title = toolRow.locator('.font-semibold').first()
+      const row = toolRows.nth(i)
+      const icon = row.locator('[data-timeline-tool-lead] [data-testid="timeline-lead-icon"]')
+      const title = row.locator('.font-semibold').first()
       const iconBox = await icon.boundingBox()
       const titleBox = await title.boundingBox()
       expect(iconBox).not.toBeNull()

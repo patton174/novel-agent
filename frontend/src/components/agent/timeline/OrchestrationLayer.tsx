@@ -18,7 +18,7 @@ import {
   TIMELINE_PENDING_IN,
   planningStackBodyClass,
   planningStackWrapClass,
-  toolLeadCellClass,
+  thinkLeadCellClass,
 } from '@/lib/timelineClasses'
 import { resolveToolVisualStatus, TimelineLeadIcon } from './TimelineLeadIcon'
 
@@ -124,7 +124,7 @@ export function OrchestrationLayer({
         }}
       >
         <div className={PLANNING_HEADLINE_ROW}>
-          <div className={toolLeadCellClass()}>
+          <div className={thinkLeadCellClass()}>
             <TimelineLeadIcon
               iconName="reasoning"
               status={resolveToolVisualStatus({

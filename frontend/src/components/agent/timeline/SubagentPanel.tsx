@@ -12,12 +12,12 @@ import {
   CC_TOOL_ARGS,
   CC_TOOL_HEADLINE,
   CC_TOOL_HEADLINE_BUTTON,
-  CC_TOOL_HEADLINE_ROW,
-  CC_TOOL_MAIN,
   CC_TOOL_NAME,
   CC_TOOL_ROW_WRAP,
   HEADLINE_CLUSTER,
   SUBAGENT_PANEL_ROOT,
+  TOOL_HEADLINE_ROW,
+  TOOL_MAIN,
   ccToolBranchClass,
   toolLeadCellClass,
 } from '@/lib/timelineClasses'
@@ -60,11 +60,11 @@ export function SubagentPanel({
     <>
       <div className={SUBAGENT_PANEL_ROOT} data-testid="subagent-panel">
         <div className={CC_TOOL_ROW_WRAP}>
-          <div className={CC_TOOL_HEADLINE_ROW}>
-            <div className={toolLeadCellClass()}>
+          <div className={TOOL_HEADLINE_ROW} data-timeline-tool-headline-row>
+            <div className={toolLeadCellClass()} data-timeline-tool-lead>
               <TimelineLeadIcon iconName="Agent" status={iconStatus} />
             </div>
-            <div className={CC_TOOL_MAIN}>
+            <div className={TOOL_MAIN}>
               <button
                 type="button"
                 className={CC_TOOL_HEADLINE_BUTTON}
