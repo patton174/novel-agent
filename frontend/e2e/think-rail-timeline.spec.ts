@@ -27,36 +27,37 @@ test.describe('think rail timeline fixture', () => {
     }
   })
 
-  test('keeps think round under orchestration and aligns tool headline with think title', async ({ page }) => {
-    const round = page.getByTestId('timeline-think-round')
-    const toolHeadlineRow = page.getByTestId('fixture-tool-fixture-tool-1').locator('> div').first()
-    const thinkHeadlineRow = page
-      .locator('[data-think-lead-id="fixture-think-1"]')
-      .locator('xpath=..')
+  test('indents tool rows relative to think headline column', async ({ page }) => {
+    const thinkLead = page.locator('[data-think-lead-id="fixture-think-1"]')
+    const toolRow = page.getByTestId('timeline-orchestration-tool').first()
+    const toolIcon = page.getByTestId('fixture-tool-fixture-tool-1').getByTestId('timeline-lead-icon')
 
-    const roundPaddingLeft = await round.evaluate((el) =>
-      parseFloat(window.getComputedStyle(el.parentElement ?? el).paddingLeft),
+    const thinkLeadBox = await thinkLead.boundingBox()
+    const toolIconBox = await toolIcon.boundingBox()
+    const paddingLeft = await toolRow.evaluate((el) =>
+      parseFloat(window.getComputedStyle(el).paddingLeft),
     )
-    expect(roundPaddingLeft).toBeGreaterThan(8)
-
-    const toolRowBox = await toolHeadlineRow.boundingBox()
-    const thinkRowBox = await thinkHeadlineRow.boundingBox()
-    expect(toolRowBox).not.toBeNull()
-    expect(thinkRowBox).not.toBeNull()
-    expect(Math.abs(toolRowBox!.x - thinkRowBox!.x)).toBeLessThan(6)
+    expect(paddingLeft).toBeGreaterThan(24)
+    expect(thinkLeadBox).not.toBeNull()
+    expect(toolIconBox).not.toBeNull()
+    expect(toolIconBox!.x).toBeGreaterThan(thinkLeadBox!.x + thinkLeadBox!.width + 4)
   })
 
   test('aligns tool icon with tool title within tolerance', async ({ page }) => {
-    const toolRow = page.getByTestId('fixture-tool-fixture-tool-1')
-    const icon = toolRow.getByTestId('timeline-lead-icon')
-    const title = toolRow.locator('.font-semibold').first()
-    const iconBox = await icon.boundingBox()
-    const titleBox = await title.boundingBox()
-    expect(iconBox).not.toBeNull()
-    expect(titleBox).not.toBeNull()
-    const iconCenter = iconBox!.y + iconBox!.height / 2
-    const titleCenter = titleBox!.y + titleBox!.height / 2
-    expect(Math.abs(iconCenter - titleCenter)).toBeLessThan(5)
+    const toolRows = page.locator('[data-testid^="fixture-tool-"]')
+    const count = await toolRows.count()
+    for (let i = 0; i < count; i += 1) {
+      const toolRow = toolRows.nth(i)
+      const icon = toolRow.getByTestId('timeline-lead-icon')
+      const title = toolRow.locator('.font-semibold').first()
+      const iconBox = await icon.boundingBox()
+      const titleBox = await title.boundingBox()
+      expect(iconBox).not.toBeNull()
+      expect(titleBox).not.toBeNull()
+      const iconCenter = iconBox!.y + iconBox!.height / 2
+      const titleCenter = titleBox!.y + titleBox!.height / 2
+      expect(Math.abs(iconCenter - titleCenter)).toBeLessThan(3)
+    }
   })
 
   test('aligns think icon with first headline line within tolerance', async ({ page }) => {
@@ -75,7 +76,7 @@ test.describe('think rail timeline fixture', () => {
 
       const leadCenter = leadBox!.y + leadBox!.height / 2
       const labelCenter = labelBox!.y + labelBox!.height / 2
-      expect(Math.abs(leadCenter - labelCenter)).toBeLessThan(5)
+      expect(Math.abs(leadCenter - labelCenter)).toBeLessThan(3)
     }
   })
 })

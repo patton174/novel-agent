@@ -129,7 +129,7 @@ describe('ThinkRoundGroup', () => {
     )
 
     expect(screen.getByTestId('timeline-think-round')).toHaveClass('agent-timeline-think-tree')
-    expect(screen.getByTestId('timeline-orchestration-tool').className).not.toContain(
+    expect(screen.getByTestId('timeline-orchestration-tool').className).toContain(
       'pl-[calc(1.35rem+0.4rem)]',
     )
 
