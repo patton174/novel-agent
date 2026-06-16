@@ -61,6 +61,7 @@ function EditorStoryPanelMobile({
   agentChapterStreaming = false,
   agentChapterStreamPhase = 'idle',
   agentChapterStreamCharCount = 0,
+  agentChapterStreamTitle = '',
   activeChapterId,
   activeChapterTitle,
   chapterContent,

@@ -474,7 +474,6 @@ function ExpandableTimelineToolRow({
   children?: ReactNode
 }) {
   const [bodyExpanded, setBodyExpanded] = useState(false)
-  const collapsible = hasExpandableDetail && !loading && !awaitingUserInput
   const expanded = loading || awaitingUserInput || bodyExpanded
 
   useEffect(() => {

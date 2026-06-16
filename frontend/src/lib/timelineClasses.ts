@@ -104,14 +104,13 @@ export const THINK_BODY_IN_ROUND = ORCHESTRATION_FLAT_ROW
 export const CC_TOOL_ROW_WRAP = 'w-full max-w-full px-0 py-[0.1rem]'
 
 export const CC_TOOL_HEADLINE_ROW =
-  'flex w-full min-w-0 flex-row items-baseline gap-[0.4rem]'
+  'flex w-full min-w-0 flex-row items-center gap-[0.4rem]'
 
 export const PLANNING_HEADLINE_ROW = CC_TOOL_HEADLINE_ROW
 
 export function toolLeadCellClass(_compact?: boolean) {
   return cn(
-    'relative z-[1] flex w-[1.35rem] flex-[0_0_1.35rem] shrink-0 items-center justify-center self-baseline leading-none',
-    '-translate-y-px',
+    'relative z-[1] flex h-[1.35rem] w-[1.35rem] flex-[0_0_1.35rem] shrink-0 items-center justify-center self-center',
   )
 }
 
@@ -140,7 +139,7 @@ export const TIMELINE_META_RAIL = cn(
 )
 
 export const CC_TOOL_MAIN =
-  'flex min-w-0 flex-1 flex-col justify-center gap-[0.08rem] pl-0 pt-[0.02rem]'
+  'flex min-w-0 flex-1 flex-col gap-[0.08rem] pl-0'
 
 export const CC_TOOL_HEADLINE = cn(
   'flex min-h-[1.35rem] w-full min-w-0 flex-wrap items-start gap-x-[0.35rem] gap-y-[0.2rem] text-[0.74rem] leading-[1.35]',

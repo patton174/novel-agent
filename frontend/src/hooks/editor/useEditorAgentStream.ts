@@ -89,7 +89,7 @@ export function useEditorAgentStream({
   hostModeEnabled,
   inputValue,
   setInputValue,
-  refreshSessions,
+  refreshSessions: _refreshSessions,
   markSessionTitlePending,
   scheduleSessionTitleSync,
   refreshStoryMemory,

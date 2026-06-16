@@ -139,7 +139,7 @@ export function PlanReasoningBlock({
   onThinkExpandedChange,
   inThinkRound = false,
   orchestrationActive = false,
-  showThinkConnector = false,
+  onLeadRef,
 }: {
   block: ReasoningTimelineBlock
   messageKey: string
@@ -149,7 +149,7 @@ export function PlanReasoningBlock({
   onThinkExpandedChange?: (open: boolean) => void
   inThinkRound?: boolean
   orchestrationActive?: boolean
-  showThinkConnector?: boolean
+  onLeadRef?: (el: HTMLElement | null) => void
 }) {
   const { displayText: rawText, isThinking } = useTimelineBlockStreamText(
     block,
@@ -186,7 +186,8 @@ export function PlanReasoningBlock({
           !orchestrationActive && controlledExpand === undefined && pinnedOpen === null
         }
         inThinkRound={inThinkRound}
-        showThinkConnector={showThinkConnector}
+        onLeadRef={onLeadRef}
+        leadId={block.id}
         orchestrationActive={orchestrationActive}
         streamScrollWindow={isThinking && !isPanelExpanded}
       />
@@ -210,7 +211,7 @@ export function ThinkBlock({
   isolateExpand = false,
   inThinkRound = false,
   orchestrationActive = false,
-  showThinkConnector = false,
+  onLeadRef,
 }: {
   block: ThinkTimelineBlock
   messageKey: string
@@ -221,7 +222,7 @@ export function ThinkBlock({
   isolateExpand?: boolean
   inThinkRound?: boolean
   orchestrationActive?: boolean
-  showThinkConnector?: boolean
+  onLeadRef?: (el: HTMLElement | null) => void
 }) {
   const visible = shouldRenderThinkBlock(block, { streamLive, streamFinished })
   const { displayText: rawText, isThinking } = useTimelineBlockStreamText(
@@ -267,7 +268,8 @@ export function ThinkBlock({
           !orchestrationActive && controlledExpand === undefined && pinnedOpen === null
         }
         inThinkRound={inThinkRound}
-        showThinkConnector={showThinkConnector}
+        onLeadRef={onLeadRef}
+        leadId={block.id}
         orchestrationActive={orchestrationActive}
         streamScrollWindow={isThinking && !isPanelExpanded}
       />

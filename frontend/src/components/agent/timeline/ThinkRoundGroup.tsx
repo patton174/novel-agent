@@ -1,10 +1,11 @@
-import type { ReactNode } from 'react'
+import { useCallback, useMemo, useRef, type ReactNode } from 'react'
 import type { AgentStepState, AgentTimelineBlock } from '../../../types/agent'
 import type { ThinkRoundItem } from '../../../utils/agentStreamTimeline'
 import { findStepState } from '../../../utils/agentStreamTimeline'
 import { AgentThinkPanel } from '../AgentThinkPanel'
 import { ThinkBlock, PlanReasoningBlock } from './ThinkBlocks'
 import { OrchestrationStreamBody } from './OrchestrationStreamBody'
+import { ThinkRailOverlay } from './ThinkRailOverlay'
 import { ORCHESTRATION_FLAT_ROW, thinkRoundWrapClass } from '@/lib/timelineClasses'
 
 type OrchestrationBodyBlock =
@@ -21,7 +22,7 @@ function renderInsightBlock(
     onThinkExpandedChange?: (open: boolean) => void
     inThinkRound?: boolean
     orchestrationActive?: boolean
-    showThinkConnector?: boolean
+    onLeadRef?: (el: HTMLElement | null) => void
   },
 ): ReactNode {
   if (block.kind === 'reasoning') {
@@ -33,7 +34,7 @@ function renderInsightBlock(
         streamLive={ctx.streamLive}
         streamFinished={ctx.streamFinished}
         inThinkRound={ctx.inThinkRound}
-        showThinkConnector={ctx.showThinkConnector}
+        onLeadRef={ctx.onLeadRef}
         orchestrationActive={ctx.orchestrationActive}
       />
     )
@@ -50,7 +51,7 @@ function renderInsightBlock(
         onThinkExpandedChange={ctx.onThinkExpandedChange}
         isolateExpand
         inThinkRound={ctx.inThinkRound}
-        showThinkConnector={ctx.showThinkConnector}
+        onLeadRef={ctx.onLeadRef}
         orchestrationActive={ctx.orchestrationActive}
       />
     )
@@ -71,7 +72,6 @@ export function ThinkRoundGroup({
   renderTool,
   renderText,
   railContext,
-  suppressRailWrap = false,
 }: {
   items: ThinkRoundItem[]
   stepStates: AgentStepState[]
@@ -84,8 +84,10 @@ export function ThinkRoundGroup({
   renderTool: (block: Extract<AgentTimelineBlock, { kind: 'tool' }>, key: string) => ReactNode
   renderText?: (block: OrchestrationBodyBlock, key: string) => ReactNode
   railContext?: { showThinkRail: boolean; lastThinkRailId?: string }
-  suppressRailWrap?: boolean
 }) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const leadRefs = useRef<Map<string, HTMLElement>>(new Map())
+
   const toolsRunning = items.some(
     (item) =>
       item.kind === 'tools' &&
@@ -94,6 +96,33 @@ export function ThinkRoundGroup({
         return step?.status === 'started'
       }),
   )
+
+  const insightBlocks = items
+    .filter((item): item is Extract<ThinkRoundItem, { kind: 'insight' }> => item.kind === 'insight')
+    .flatMap((item) => item.blocks)
+
+  const thinkRailBlocks = insightBlocks.filter(
+    (b) => b.kind === 'think' || b.kind === 'reasoning',
+  )
+  const showThinkRail = railContext?.showThinkRail ?? thinkRailBlocks.length >= 2
+  const thinkRailIds = useMemo(
+    () => thinkRailBlocks.map((block) => block.id),
+    [thinkRailBlocks],
+  )
+
+  const registerLead = useCallback((blockId: string, el: HTMLElement | null) => {
+    const prev = leadRefs.current.get(blockId)
+    if (el) {
+      if (prev === el) {
+        return
+      }
+      leadRefs.current.set(blockId, el)
+    } else if (prev) {
+      leadRefs.current.delete(blockId)
+    } else {
+      return
+    }
+  }, [])
 
   if (items.length === 0) {
     return null
@@ -108,18 +137,6 @@ export function ThinkRoundGroup({
     inThinkRound: true,
     orchestrationActive,
   }
-
-  const insightBlocks = items
-    .filter((item): item is Extract<ThinkRoundItem, { kind: 'insight' }> => item.kind === 'insight')
-    .flatMap((item) => item.blocks)
-
-  const thinkRailBlocks = insightBlocks.filter(
-    (b) => b.kind === 'think' || b.kind === 'reasoning',
-  )
-  const showThinkRail = railContext?.showThinkRail ?? thinkRailBlocks.length >= 2
-  const lastThinkRailId =
-    railContext?.lastThinkRailId ??
-    (thinkRailBlocks.length > 0 ? thinkRailBlocks[thinkRailBlocks.length - 1]?.id : undefined)
 
   const renderBodyText = (block: OrchestrationBodyBlock, key: string) => (
     <div key={key} className={ORCHESTRATION_FLAT_ROW} data-testid="timeline-orchestration-text">
@@ -142,18 +159,19 @@ export function ThinkRoundGroup({
     </div>
   )
 
-  const inner = (
-    <>
+  return (
+    <div
+      ref={containerRef}
+      data-testid="timeline-think-round"
+      className={thinkRoundWrapClass(showThinkRail)}
+    >
       {items.map((item, itemIndex) => {
         const itemKey = `${messageKey}:item:${itemIndex}:${item.kind}`
         if (item.kind === 'insight') {
           return item.blocks.map((block) =>
             renderInsightBlock(block, {
               ...ctx,
-              showThinkConnector:
-                showThinkRail &&
-                (block.kind === 'think' || block.kind === 'reasoning') &&
-                block.id !== lastThinkRailId,
+              onLeadRef: (el) => registerLead(block.id, el),
             }),
           )
         }
@@ -178,20 +196,14 @@ export function ThinkRoundGroup({
           orchestrationActive={orchestrationActive}
         />
       ) : null}
-    </>
-  )
-
-  if (suppressRailWrap) {
-    return (
-      <div data-testid="timeline-think-round" className="contents">
-        {inner}
-      </div>
-    )
-  }
-
-  return (
-    <div data-testid="timeline-think-round" className={thinkRoundWrapClass(showThinkRail)}>
-      {inner}
+      {showThinkRail ? (
+        <ThinkRailOverlay
+          thinkIds={thinkRailIds}
+          leadRefs={leadRefs}
+          containerRef={containerRef}
+          remeasureKey={thinkRailIds.join(',')}
+        />
+      ) : null}
     </div>
   )
 }

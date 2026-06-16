@@ -18,7 +18,6 @@ import {
   TIMELINE_PENDING_IN,
   planningStackBodyClass,
   planningStackWrapClass,
-  thinkRoundWrapClass,
   toolLeadCellClass,
 } from '@/lib/timelineClasses'
 import { resolveToolVisualStatus, TimelineLeadIcon } from './TimelineLeadIcon'
@@ -105,7 +104,6 @@ export function OrchestrationLayer({
     [mergedItems],
   )
   const showThinkRail = thinkRailBlocks.length >= 2
-  const lastThinkRailId = thinkRailBlocks[thinkRailBlocks.length - 1]?.id
 
   return (
     <div
@@ -151,22 +149,19 @@ export function OrchestrationLayer({
       {expanded ? (
         <div className={cn(planningStackBodyClass(), TIMELINE_PENDING_IN)}>
           {mergedItems.length === 0 ? null : (
-            <div className={thinkRoundWrapClass(showThinkRail)}>
-              <ThinkRoundGroup
-                items={mergedItems}
-                stepStates={stepStates}
-                streamLive={streamLive}
-                streamFinished={streamFinished}
-                messageKey={messageKey}
-                thinkExpanded={thinkExpanded}
-                onThinkExpandedChange={onThinkExpandedChange}
-                orchestrationActive={isActive}
-                renderTool={renderTool}
-                renderText={renderText}
-                railContext={{ showThinkRail, lastThinkRailId }}
-                suppressRailWrap
-              />
-            </div>
+            <ThinkRoundGroup
+              items={mergedItems}
+              stepStates={stepStates}
+              streamLive={streamLive}
+              streamFinished={streamFinished}
+              messageKey={messageKey}
+              thinkExpanded={thinkExpanded}
+              onThinkExpandedChange={onThinkExpandedChange}
+              orchestrationActive={isActive}
+              renderTool={renderTool}
+              renderText={renderText}
+              railContext={{ showThinkRail }}
+            />
           )}
         </div>
       ) : null}

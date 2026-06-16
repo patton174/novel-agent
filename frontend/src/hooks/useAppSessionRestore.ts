@@ -64,8 +64,9 @@ export function useAppSessionRestore() {
     }
 
     const locale = currentAppLocale(i18n.language)
+    const activeTheme = useThemeStore.getState().theme
     const businessSearch = stripSessionQuery(location.search)
-    const nextSearch = buildSearchWithSessionPrefs(businessSearch, locale, theme)
+    const nextSearch = buildSearchWithSessionPrefs(businessSearch, locale, activeTheme)
     const normalizedCurrent = location.search || ''
     const normalizedNext = nextSearch.startsWith('?') ? nextSearch : nextSearch ? `?${nextSearch}` : ''
 
@@ -75,7 +76,7 @@ export function useAppSessionRestore() {
         search: businessSearch,
         hash: location.hash,
         locale,
-        theme,
+        theme: activeTheme,
       })
     }
 

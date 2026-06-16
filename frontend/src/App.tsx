@@ -36,6 +36,7 @@ const SettingsPage = lazy(() => import('./pages/dashboard/SettingsPage'))
 const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'))
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'))
 const VerifyEmailPage = lazy(() => import('./pages/VerifyEmailPage'))
+const ThinkRailFixturePage = lazy(() => import('./pages/dev/ThinkRailFixturePage'))
 const AdminHomePage = lazy(() => import('./pages/admin/AdminHomePage'))
 const UsersPage = lazy(() => import('./pages/admin/UsersPage'))
 const StatsPage = lazy(() => import('./pages/admin/StatsPage'))
@@ -76,6 +77,7 @@ function AppRouteTree() {
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/verify-email" element={<VerifyEmailPage />} />
+        <Route path="/dev/think-rail-fixture" element={<ThinkRailFixturePage />} />
 
         <Route path="/editor/:chapterId?" element={<EditorPage />} />
 

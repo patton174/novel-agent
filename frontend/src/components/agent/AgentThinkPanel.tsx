@@ -47,8 +47,10 @@ export interface AgentThinkPanelProps {
   hideHeader?: boolean
   /** 处于 think_round 内：正文与工具共用左侧竖线 */
   inThinkRound?: boolean
-  /** 同轮内非最后一个思考块：图标下方延伸竖线 */
-  showThinkConnector?: boolean
+  /** 注册思考图标列 DOM，供竖线测量 */
+  onLeadRef?: (el: HTMLElement | null) => void
+  /** think_round 内块 id，供竖线测量 */
+  leadId?: string
   /** 流式窗口：最多三行高度并自动滚到底 */
   streamScrollWindow?: boolean
   /** 外层编排进行中：保持思考展开，由编排层统一收起 */
@@ -129,7 +131,8 @@ export function AgentThinkPanel({
   nested = false,
   hideHeader = false,
   inThinkRound = false,
-  showThinkConnector = false,
+  onLeadRef,
+  leadId,
   orchestrationActive = false,
   streamScrollWindow = false,
   defaultExpanded: defaultExpandedProp,
@@ -207,7 +210,7 @@ export function AgentThinkPanel({
     node.scrollTop = node.scrollHeight
   }, [text, streamScrollWindow, isThinking])
 
-  if (!isThinking && !hasBody) {
+  if (!isThinking && !hasBody && !(inThinkRound && leadId)) {
     return null
   }
 
@@ -249,7 +252,8 @@ export function AgentThinkPanel({
             <div
               className={toolLeadCellClass()}
               data-timeline-lead
-              data-think-connector={showThinkConnector ? 'true' : undefined}
+              data-think-lead-id={leadId}
+              ref={onLeadRef}
             >
               <TimelineLeadIcon
                 iconName="think"
@@ -273,10 +277,7 @@ export function AgentThinkPanel({
                     <span className={CC_TOOL_NAME}>{label}</span>
                     <span className={CC_TOOL_ARGS}>
                       {isThinking ? (
-                        <ShimmerScanText active>
-                          {phase}
-                          {duration ? ` · ${duration}` : ''}
-                        </ShimmerScanText>
+                        <ShimmerScanText active>{`${phase}${duration ? ` · ${duration}` : ''}`}</ShimmerScanText>
                       ) : (
                         <>
                           {phase}

@@ -171,7 +171,7 @@ export function applySessionPrefsFromSearch(search: string): void {
   }
 
   const theme = readThemeFromSearch(search)
-  if (theme && useThemeStore.getState().theme !== theme) {
+  if (theme) {
     useThemeStore.getState().setTheme(theme)
   }
 }
