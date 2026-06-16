@@ -38,7 +38,7 @@ export function ThinkRailOverlay({
       }
     }
     setSegments(computeThinkRailSegments(containerRect, thinkIds, leadRects))
-  }, [containerRef, leadRefs, thinkIds, remeasureKey])
+  }, [containerRef, leadRefs, thinkIds])
 
   useLayoutEffect(() => {
     measure()

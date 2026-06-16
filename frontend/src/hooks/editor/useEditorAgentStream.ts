@@ -1075,6 +1075,7 @@ export function useEditorAgentStream({
         return msg.agentContextUsage
       }
     }
+    void contextUsageVersion
     return lastContextUsageRef.current
   }, [messages, liveStreamMessage, contextUsageVersion])
 

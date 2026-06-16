@@ -18,14 +18,14 @@ export interface EditorCenterTabsProps {
 }
 
 export function EditorCenterTabs({ activeTab, onTabChange }: EditorCenterTabsProps) {
-  const { t, i18n } = useTranslation(['editor', 'common'])
+  const { t } = useTranslation(['editor', 'common'])
 
   const tabItems = useMemo(
     () => [
       { id: 'chat' as const, label: t('editor:tabs.chat'), icon: <EditorIcons.MessageCircle /> },
       { id: 'story' as const, label: t('editor:tabs.story'), icon: <EditorIcons.BookOpen /> },
     ],
-    [t, i18n.language],
+    [t],
   )
 
   return (

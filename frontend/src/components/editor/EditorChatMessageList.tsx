@@ -46,7 +46,10 @@ export function EditorChatMessageList({
   const activeId = activeStreamMessageId
   const loadingState = isLoading
   const scrubPlaying = marketingScrubPlaying
-  const safeMessages = Array.isArray(messages) ? messages : []
+  const safeMessages = useMemo(
+    () => (Array.isArray(messages) ? messages : []),
+    [messages],
+  )
 
   const thinkExpandedByMessage = useMemo(() => {
     const map = new Map<string, boolean | undefined>()
