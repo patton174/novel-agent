@@ -166,7 +166,7 @@ public class PgRunStreamService {
                     "type", "run.recovering",
                     "run_id", runId,
                     "payload", Map.of(
-                        "message", "SSE 已断开，任务在 Worker 继续；请通过状态通道同步进度"
+                        "message", "连接中断，正在重连 SSE…"
                     )
                 )
             );

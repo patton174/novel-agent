@@ -31,6 +31,12 @@ public class AgentRunService {
     @Transactional
     public AgentRunDTO createRun(CreateAgentRunRequest request) {
         String runId = blankOr(request.getRunId(), IdWorker.prefixed("run_"));
+        return runRepository.findById(runId)
+            .map(this::toDto)
+            .orElseGet(() -> insertRun(request, runId));
+    }
+
+    private AgentRunDTO insertRun(CreateAgentRunRequest request, String runId) {
         String userMessageId = blankOr(request.getUserMessageId(), IdWorker.prefixed("message_"));
         String assistantMessageId = blankOr(request.getAssistantMessageId(), IdWorker.prefixed("message_"));
 

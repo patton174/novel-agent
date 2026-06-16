@@ -33,6 +33,7 @@ import {
 } from '../../utils/agentActiveRunResume'
 import {
   clearStreamRecoveryBanner,
+  isHostDetachMessage,
   isPeerDroppedStreamError,
   isStreamRecoveryBanner,
   shouldAttachStreamRecovery,
@@ -284,14 +285,20 @@ export function useEditorAgentStream({
   )
 
   const startRunSseRecovery = useCallback(
-    (banner?: string) => {
+    (banner?: string, force = false) => {
       const live = liveStreamRef.current
       const runId = live?.state.runId
       const sessionId = agentSessionIdRef.current
       if (!runId && !sessionId) {
         return
       }
-      if (!shouldAttachStreamRecovery(live.state) && !streamRecoveryRef.current) {
+      if (streamRecoveryRef.current && streamResumeAbortRef.current) {
+        return
+      }
+      if (!live) {
+        return
+      }
+      if (!force && !shouldAttachStreamRecovery(live.state) && !streamRecoveryRef.current) {
         return
       }
       streamRecoveryRef.current = true
@@ -559,6 +566,11 @@ export function useEditorAgentStream({
               runWsRef.current = ws
             })
           }
+          if (parsed.type === 'run.recovering') {
+            statusWsFollowRunRef.current = true
+            scheduleRunEventPoll(500)
+            attachRecoveryRef.current(STREAM_RECOVERY_BANNER, true)
+          }
           if (typeof parsed.sequence === 'number') {
             lastPolledSequenceRef.current = Math.max(
               lastPolledSequenceRef.current,
@@ -746,6 +758,11 @@ export function useEditorAgentStream({
         statusWsFollowRunRef.current && shouldFollowRunLiveEvents(liveBox.state)
       if (!recoveryActive && parsedType !== 'run.recovering' && !followRun) {
         return
+      }
+      if (parsedType === 'run.recovering') {
+        statusWsFollowRunRef.current = true
+        scheduleRunEventPoll(500)
+        attachRecoveryRef.current(STREAM_RECOVERY_BANNER, true)
       }
       handleAgentEvent(eventName, rawData)
       if (recoveryActive && parsedType && parsedType !== 'run.recovering') {

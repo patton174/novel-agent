@@ -16,6 +16,18 @@ export function isStreamRecoveryBanner(message?: string): boolean {
   return text === STREAM_RECOVERY_BANNER || text.includes('正在重连 SSE')
 }
 
+export function isHostDetachMessage(message?: string): boolean {
+  const text = (message ?? '').trim()
+  if (!text) {
+    return false
+  }
+  return (
+    isStreamRecoveryBanner(text) ||
+    text.includes('任务在 Worker 继续') ||
+    text.includes('状态通道')
+  )
+}
+
 export function clearStreamRecoveryBanner(
   state: AgentStreamUiState,
 ): AgentStreamUiState {

@@ -116,7 +116,23 @@ public class AgentSessionPgService {
         entity.setRole(role);
         entity.setContent(content);
         entity.setStatus(status == null || status.isBlank() ? "completed" : status);
-        messageRepository.save(entity);
+        if (entity.getCreatedAt() == null) {
+            entity.setCreatedAt(Instant.now());
+        }
+        try {
+            messageRepository.saveAndFlush(entity);
+        } catch (DataIntegrityViolationException ex) {
+            AgentMessageEntity raced = messageRepository.findById(messageId).orElseThrow(() -> ex);
+            raced.setSessionId(sessionId);
+            raced.setRunId(runId);
+            raced.setRole(role);
+            raced.setContent(content);
+            raced.setStatus(status == null || status.isBlank() ? "completed" : status);
+            if (raced.getCreatedAt() == null) {
+                raced.setCreatedAt(Instant.now());
+            }
+            messageRepository.save(raced);
+        }
 
         sessionRepository.findById(sessionId).ifPresent(session -> {
             session.setUpdatedAt(Instant.now());

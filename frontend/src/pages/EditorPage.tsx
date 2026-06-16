@@ -98,7 +98,14 @@ const EditorPage: React.FC = () => {
             onHostModeChange={editor.handleHostModeChange}
             onStreamAbort={editor.stream.handleStreamAbort}
             hostBannerText={editor.hostBannerText}
-            hostBannerRecovering={editor.stream.isSseRecovering}
+            hostBannerRecovering={
+              editor.stream.isSseRecovering ||
+              Boolean(
+                editor.hostBannerText &&
+                  (editor.hostBannerText.includes('正在重连 SSE') ||
+                    editor.hostBannerText.includes('状态通道')),
+              )
+            }
             activeStreamMessageId={editor.stream.activeStreamMessageId}
             thinkPanelOpen={editor.stream.thinkPanelOpen}
             onThinkPanelChange={(id, open) =>
