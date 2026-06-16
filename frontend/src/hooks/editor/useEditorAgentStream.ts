@@ -245,7 +245,8 @@ export function useEditorAgentStream({
   const startRunSseRecovery = useCallback(
     (banner?: string) => {
       const live = liveStreamRef.current
-      if (!live?.state.runId) {
+      const runId = live?.state.runId
+      if (!runId) {
         return
       }
       if (!shouldAttachStreamRecovery(live.state) && !streamRecoveryRef.current) {
@@ -261,7 +262,6 @@ export function useEditorAgentStream({
       streamResumeAbortRef.current?.abort()
       const resumeAbort = new AbortController()
       streamResumeAbortRef.current = resumeAbort
-      const runId = live.state.runId
       void openAgentRunSseStream(
         runId,
         (eventName, rawData) => agentEventHandlerRef.current(eventName, rawData),
