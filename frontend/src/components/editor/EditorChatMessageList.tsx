@@ -64,7 +64,8 @@ export function EditorChatMessageList({
         return
       }
       if (messagesAreaRef && 'current' in messagesAreaRef) {
-        ;(messagesAreaRef as { current: HTMLDivElement | null }).current = node
+        const mutableRef = messagesAreaRef as { current: HTMLDivElement | null }
+        mutableRef.current = node
       }
     },
     [messagesAreaRef],

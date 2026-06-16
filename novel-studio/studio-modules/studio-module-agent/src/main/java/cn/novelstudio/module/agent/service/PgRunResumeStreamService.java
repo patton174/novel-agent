@@ -84,6 +84,8 @@ public class PgRunResumeStreamService {
                     return;
                 }
 
+                final int liveAfterSequence = lastSequence;
+
                 AgentRunEventJournal.RunMeta meta = eventJournal.readMeta(runId);
                 if (meta != null && meta.userId() != null && meta.sessionId() != null) {
                     runLiveRedisSubscriber.subscribe(meta.userId(), meta.sessionId(), runId);
@@ -94,7 +96,7 @@ public class PgRunResumeStreamService {
                     if (completed.get()) {
                         return;
                     }
-                    if (shouldSkipLiveFrame(frame, lastSequence)) {
+                    if (shouldSkipLiveFrame(frame, liveAfterSequence)) {
                         return;
                     }
                     sink.next(frame);
