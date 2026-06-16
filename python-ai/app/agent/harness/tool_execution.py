@@ -115,6 +115,9 @@ def classify_tool_step_failure(
     """Return (is_failure, error_code, error_detail)."""
     if executor_failed:
         err = executor_error or "step failed"
+        err_lower = err.lower()
+        if "old_string not found" in err_lower or "new_string" in err_lower and "not found" in err_lower:
+            return True, "tool_validation", err
         if _is_vfs_input_error(err):
             return True, "vfs_input", err
         if _is_chapter_title_validation_error(err):

@@ -147,7 +147,7 @@ export function OrchestrationLayer({
         </div>
       </button>
       {expanded ? (
-        <div className={cn(planningStackBodyClass(), TIMELINE_PENDING_IN)}>
+        <div className={cn(planningStackBodyClass({ branchIndent: true }), TIMELINE_PENDING_IN)}>
           {mergedItems.length === 0 ? null : (
             <ThinkRoundGroup
               items={mergedItems}

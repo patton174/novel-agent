@@ -2,6 +2,8 @@ import type { AgentTimelineBlock } from '../../types/agent'
 import type { ThinkRoundItem } from '../../utils/agentStreamTimeline'
 import { ThinkRoundGroup } from '../../components/agent/timeline/ThinkRoundGroup'
 import { CcToolRow } from '../../components/agent/timeline/CcToolRow'
+import { planningStackBodyClass } from '@/lib/timelineClasses'
+import { cn } from '@/lib/utils'
 
 const FIXTURE_ITEMS: ThinkRoundItem[] = [
   {
@@ -55,7 +57,8 @@ const FIXTURE_ITEMS: ThinkRoundItem[] = [
 export default function ThinkRailFixturePage() {
   return (
     <main data-testid="think-rail-fixture" className="mx-auto max-w-xl bg-background p-6">
-      <ThinkRoundGroup
+      <div data-testid="think-rail-orchestration-body" className={cn(planningStackBodyClass({ branchIndent: true }))}>
+        <ThinkRoundGroup
         items={FIXTURE_ITEMS}
         stepStates={[
           { stepId: 'fixture-read-1', type: 'tool', status: 'completed', toolName: 'ReadMemory', title: '查阅记忆' },
@@ -73,7 +76,8 @@ export default function ThinkRailFixturePage() {
             testId={`fixture-tool-${block.id}`}
           />
         )}
-      />
+        />
+      </div>
     </main>
   )
 }

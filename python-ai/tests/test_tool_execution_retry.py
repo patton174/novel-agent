@@ -85,3 +85,14 @@ def test_prepare_tool_retry_injects_block_without_mutating_fields():
     assert retry.get("attempt") == 2
     assert retry.get("error_detail") == "缺少 title"
     assert "title" not in inp
+
+
+def test_edit_memory_old_string_not_found_is_recoverable_validation():
+    fail, code, _ = classify_tool_step_failure(
+        "EditMemory",
+        None,
+        executor_failed=True,
+        executor_error="<tool_use_error>old_string not found</tool_use_error>",
+    )
+    assert fail is True
+    assert code == "tool_validation"

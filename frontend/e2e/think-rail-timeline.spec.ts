@@ -27,24 +27,36 @@ test.describe('think rail timeline fixture', () => {
     }
   })
 
-  test('keeps tool rows indented under think title column', async ({ page }) => {
-    const toolRow = page.getByTestId('timeline-orchestration-tool').first()
-    const thinkToggle = page
-      .locator('[data-think-lead-id="fixture-think-1"]')
-      .locator('..')
-      .getByTestId('agent-think-toggle')
-
-    const paddingLeft = await toolRow.evaluate((el) =>
-      parseFloat(window.getComputedStyle(el).paddingLeft),
-    )
-    expect(paddingLeft).toBeGreaterThan(24)
-
+  test('keeps think round under orchestration and aligns tool headline with think title', async ({ page }) => {
+    const round = page.getByTestId('timeline-think-round')
     const toolHeadlineRow = page.getByTestId('fixture-tool-fixture-tool-1').locator('> div').first()
+    const thinkHeadlineRow = page
+      .locator('[data-think-lead-id="fixture-think-1"]')
+      .locator('xpath=..')
+
+    const roundPaddingLeft = await round.evaluate((el) =>
+      parseFloat(window.getComputedStyle(el.parentElement ?? el).paddingLeft),
+    )
+    expect(roundPaddingLeft).toBeGreaterThan(8)
+
     const toolRowBox = await toolHeadlineRow.boundingBox()
-    const toggleBox = await thinkToggle.boundingBox()
+    const thinkRowBox = await thinkHeadlineRow.boundingBox()
     expect(toolRowBox).not.toBeNull()
-    expect(toggleBox).not.toBeNull()
-    expect(Math.abs(toolRowBox!.x - toggleBox!.x)).toBeLessThan(6)
+    expect(thinkRowBox).not.toBeNull()
+    expect(Math.abs(toolRowBox!.x - thinkRowBox!.x)).toBeLessThan(6)
+  })
+
+  test('aligns tool icon with tool title within tolerance', async ({ page }) => {
+    const toolRow = page.getByTestId('fixture-tool-fixture-tool-1')
+    const icon = toolRow.getByTestId('timeline-lead-icon')
+    const title = toolRow.locator('.font-semibold').first()
+    const iconBox = await icon.boundingBox()
+    const titleBox = await title.boundingBox()
+    expect(iconBox).not.toBeNull()
+    expect(titleBox).not.toBeNull()
+    const iconCenter = iconBox!.y + iconBox!.height / 2
+    const titleCenter = titleBox!.y + titleBox!.height / 2
+    expect(Math.abs(iconCenter - titleCenter)).toBeLessThan(5)
   })
 
   test('aligns think icon with first headline line within tolerance', async ({ page }) => {

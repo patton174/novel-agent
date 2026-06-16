@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from typing import Any
 
 from app.agent.backend import memory_client
@@ -79,6 +80,26 @@ async def write_memory(ctx: AgentRunContext, inp: WriteMemoryInput) -> ToolCallR
     )
 
 
+def _strip_read_memory_line_prefixes(text: str) -> str:
+    """ReadMemory 行号前缀（`     1\\t`）与 EditMemory 存储文本不一致时做归一化。"""
+    lines = text.splitlines()
+    if not lines:
+        return text
+    stripped = [re.sub(r"^\s*\d+\t", "", line) for line in lines]
+    return "\n".join(stripped)
+
+
+def _resolve_old_string_match(text: str, old_string: str) -> str | None:
+    candidates = [old_string]
+    normalized = _strip_read_memory_line_prefixes(old_string)
+    if normalized and normalized not in candidates:
+        candidates.append(normalized)
+    for candidate in candidates:
+        if candidate and candidate in text:
+            return candidate
+    return None
+
+
 async def edit_memory(ctx: AgentRunContext, inp: EditMemoryInput) -> ToolCallResult:
     scope = inp.scope.value
     text, err = await memory_client.read_memory_json(ctx, scope, inp.key)
@@ -87,14 +108,15 @@ async def edit_memory(ctx: AgentRunContext, inp: EditMemoryInput) -> ToolCallRes
             content=f"<tool_use_error>{err or 'memory not found'}</tool_use_error>",
             is_error=True,
         )
-    if inp.old_string not in text:
+    matched = _resolve_old_string_match(text, inp.old_string)
+    if not matched:
         return ToolCallResult(
             content="<tool_use_error>old_string not found</tool_use_error>", is_error=True
         )
     new_text = (
-        text.replace(inp.old_string, inp.new_string)
+        text.replace(matched, inp.new_string)
         if inp.replace_all
-        else text.replace(inp.old_string, inp.new_string, 1)
+        else text.replace(matched, inp.new_string, 1)
     )
     try:
         payload = json.loads(new_text)
