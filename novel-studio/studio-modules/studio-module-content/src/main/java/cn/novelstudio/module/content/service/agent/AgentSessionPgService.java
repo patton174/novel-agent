@@ -6,6 +6,7 @@ import cn.novelstudio.module.content.entity.agent.AgentSessionEntity;
 import cn.novelstudio.module.content.repository.agent.AgentMessageRepository;
 import cn.novelstudio.module.content.repository.agent.AgentSessionRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +26,24 @@ public class AgentSessionPgService {
             return;
         }
         AgentSessionEntity entity = sessionRepository.findById(sessionId).orElseGet(AgentSessionEntity::new);
+        applySessionFields(entity, sessionId, userId, title, novelId);
+        try {
+            sessionRepository.saveAndFlush(entity);
+        } catch (DataIntegrityViolationException ex) {
+            AgentSessionEntity existing = sessionRepository.findById(sessionId)
+                .orElseThrow(() -> ex);
+            applySessionFields(existing, sessionId, userId, title, novelId);
+            sessionRepository.save(existing);
+        }
+    }
+
+    private static void applySessionFields(
+        AgentSessionEntity entity,
+        String sessionId,
+        Long userId,
+        String title,
+        String novelId
+    ) {
         entity.setId(sessionId);
         entity.setUserId(userId);
         entity.setTitle(title == null || title.isBlank() ? "新对话" : title);
@@ -32,7 +51,6 @@ public class AgentSessionPgService {
             entity.setNovelId(novelId);
         }
         entity.setStatus("active");
-        sessionRepository.save(entity);
     }
 
     @Transactional(readOnly = true)

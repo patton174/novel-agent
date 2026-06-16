@@ -8,6 +8,8 @@ import cn.novelstudio.module.agent.support.PyaiRequestSupport;
 import jakarta.validation.Valid;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -40,7 +42,28 @@ public class AgentStreamController {
     ) {
         Long userId = PyaiRequestSupport.parseUserId(userIdHeader);
         AgentStreamBiz.StreamFrames session = biz.streamFrames(userId, request, contentOnly);
+        return sseResponse(session, true);
+    }
 
+    /**
+     * Queued 模式：浏览器 SSE 断线后重连同一 run（Worker 继续执行，Java 回放 journal + live fanout）。
+     */
+    @GetMapping(value = "/runs/{runId}/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public ResponseEntity<StreamingResponseBody> resumeRunStream(
+        @PathVariable String runId,
+        @RequestHeader(name = PyaiRequestSupport.USER_ID_HEADER, required = false) String userIdHeader,
+        @RequestParam(name = "after_sequence", defaultValue = "-1") int afterSequence,
+        @RequestParam(name = "contentOnly", defaultValue = "false") boolean contentOnly
+    ) {
+        Long userId = PyaiRequestSupport.parseUserId(userIdHeader);
+        AgentStreamBiz.StreamFrames session = biz.resumeRunStreamFrames(userId, runId, afterSequence, contentOnly);
+        return sseResponse(session, true);
+    }
+
+    private ResponseEntity<StreamingResponseBody> sseResponse(
+        AgentStreamBiz.StreamFrames session,
+        boolean includeConnectedPrelude
+    ) {
         ResponseEntity.BodyBuilder builder = ResponseEntity.ok()
             .contentType(MediaType.TEXT_EVENT_STREAM)
             .header("Cache-Control", "no-cache")
@@ -52,7 +75,9 @@ public class AgentStreamController {
         }
 
         StreamingResponseBody body = outputStream -> {
-            writeFrame(outputStream, AgentStreamSsePrelude.connectedFrame());
+            if (includeConnectedPrelude) {
+                writeFrame(outputStream, AgentStreamSsePrelude.connectedFrame());
+            }
             session.frames()
                 .onErrorResume(ex -> Flux.fromIterable(AgentStreamSupport.errorFrames(ex)))
                 .doOnNext(frame -> writeFrame(outputStream, frame))

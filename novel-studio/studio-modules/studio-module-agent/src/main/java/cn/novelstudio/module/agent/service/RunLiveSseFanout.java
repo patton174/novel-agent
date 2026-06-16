@@ -52,15 +52,23 @@ public class RunLiveSseFanout {
         }
     }
 
+    /** 将 Redis / journal payload 转为客户端 SSE 帧；不可展示时返回 null。 */
+    public String toClientSseFrame(String payloadJson) {
+        String clientPayload = filterForClient(payloadJson);
+        if (clientPayload == null || clientPayload.isBlank()) {
+            return null;
+        }
+        return "event: agent-event\ndata: " + clientPayload + "\n\n";
+    }
+
     public void onLivePayload(String runId, String payloadJson) {
         if (runId == null || payloadJson == null || payloadJson.isBlank()) {
             return;
         }
         Consumer<String> sink = sinks.get(runId);
         if (sink != null) {
-            String clientPayload = filterForClient(payloadJson);
-            if (clientPayload != null) {
-                String frame = "event: agent-event\ndata: " + clientPayload + "\n\n";
+            String frame = toClientSseFrame(payloadJson);
+            if (frame != null) {
                 sink.accept(frame);
             }
         }

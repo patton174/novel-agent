@@ -25,8 +25,11 @@ import {
   shouldRefreshStoryMemoryAfterTool,
 } from '../../utils/agentToolNames'
 import {
+  applyStoredRunEvents,
   isResumableAgentRunStatus,
+  maxStoredEventSequence,
   parseStoredAgentEvent,
+  shouldFollowRunLiveEvents,
 } from '../../utils/agentActiveRunResume'
 import {
   isPeerDroppedStreamError,
@@ -40,6 +43,7 @@ import { extractStoryContext } from '../../utils/extractStoryContext'
 import {
   api,
   openAgentRunSocket,
+  openAgentRunSseStream,
   openAgentStatusSocket,
   openAgentStream,
   sendAgentRunAbort,
@@ -117,6 +121,7 @@ export function useEditorAgentStream({
   const [thinkPanelOpen, setThinkPanelOpen] = useState<Record<string, boolean>>({})
 
   const streamAbortRef = useRef<AbortController | null>(null)
+  const streamResumeAbortRef = useRef<AbortController | null>(null)
   const statusWsRef = useRef<WebSocket | null>(null)
   const statusWsSessionIdRef = useRef<string | null>(null)
   const runWsRef = useRef<WebSocket | null>(null)
@@ -133,8 +138,13 @@ export function useEditorAgentStream({
   const streamRecoveryRef = useRef(false)
   const streamRecoveryTimerRef = useRef<number | null>(null)
   const resumeCheckedSessionRef = useRef<string | null>(null)
+  const statusWsFollowRunRef = useRef(false)
+  const lastPolledSequenceRef = useRef(-1)
+  const eventPollTimerRef = useRef<number | null>(null)
+  const runEventPollInFlightRef = useRef(false)
   const agentEventHandlerRef = useRef<(eventName: string, rawData: string) => void>(() => {})
   const attachRecoveryRef = useRef<(banner?: string) => void>(() => {})
+  const attachStatusWsFallbackRef = useRef<() => void>(() => {})
   const messagesRef = useRef(messages)
   useEffect(() => {
     messagesRef.current = messages
@@ -143,9 +153,152 @@ export function useEditorAgentStream({
   const abortActiveStream = useCallback(() => {
     streamAbortRef.current?.abort()
     streamAbortRef.current = null
+    streamResumeAbortRef.current?.abort()
+    streamResumeAbortRef.current = null
     runWsRef.current?.close()
     runWsRef.current = null
   }, [])
+
+  const clearStreamRecoveryTimer = useCallback(() => {
+    if (streamRecoveryTimerRef.current != null) {
+      window.clearTimeout(streamRecoveryTimerRef.current)
+      streamRecoveryTimerRef.current = null
+    }
+  }, [])
+
+  const stopRunEventPolling = useCallback(() => {
+    if (eventPollTimerRef.current != null) {
+      window.clearTimeout(eventPollTimerRef.current)
+      eventPollTimerRef.current = null
+    }
+  }, [])
+
+  const scheduleRunEventPoll = useCallback(
+    (delayMs = 1500) => {
+      stopRunEventPolling()
+      eventPollTimerRef.current = window.setTimeout(() => {
+        void pollRunEventsOnceRef.current()
+      }, delayMs)
+    },
+    [stopRunEventPolling],
+  )
+
+  const pollRunEventsOnceRef = useRef<() => Promise<void>>(async () => {})
+
+  const endRunLiveFollow = useCallback(() => {
+    statusWsFollowRunRef.current = false
+    stopRunEventPolling()
+  }, [stopRunEventPolling])
+
+  pollRunEventsOnceRef.current = async () => {
+    const live = liveStreamRef.current
+    if (!live) {
+      return
+    }
+    const state = live.state
+    if (!shouldFollowRunLiveEvents(state) && !streamRecoveryRef.current) {
+      stopRunEventPolling()
+      return
+    }
+    const runId = state.runId
+    if (!runId || runEventPollInFlightRef.current) {
+      scheduleRunEventPoll()
+      return
+    }
+    runEventPollInFlightRef.current = true
+    try {
+      const rows = await api.fetchAgentRunEvents(runId, lastPolledSequenceRef.current)
+      if (rows.length > 0) {
+        for (const row of rows.sort((a, b) => a.sequence - b.sequence)) {
+          const envelope = parseStoredAgentEvent(row.payloadJson)
+          if (!envelope) {
+            continue
+          }
+          agentEventHandlerRef.current('agent-event', JSON.stringify(envelope))
+          lastPolledSequenceRef.current = Math.max(lastPolledSequenceRef.current, row.sequence)
+        }
+        streamSyncRef.current?.()
+        scrollMessagesToBottom(true)
+      }
+      const nextState = liveStreamRef.current?.state
+      if (nextState && (shouldFollowRunLiveEvents(nextState) || streamRecoveryRef.current)) {
+        scheduleRunEventPoll()
+      }
+    } catch {
+      const nextState = liveStreamRef.current?.state
+      if (nextState && (shouldFollowRunLiveEvents(nextState) || streamRecoveryRef.current)) {
+        scheduleRunEventPoll(2500)
+      }
+    } finally {
+      runEventPollInFlightRef.current = false
+    }
+  }
+
+  const finishStreamRecovery = useCallback(() => {
+    streamRecoveryRef.current = false
+    clearStreamRecoveryTimer()
+    streamResumeAbortRef.current?.abort()
+    streamResumeAbortRef.current = null
+    stopRunEventPolling()
+  }, [clearStreamRecoveryTimer, stopRunEventPolling])
+
+  const startRunSseRecovery = useCallback(
+    (banner?: string) => {
+      const live = liveStreamRef.current
+      if (!live?.state.runId) {
+        return
+      }
+      if (!shouldAttachStreamRecovery(live.state) && !streamRecoveryRef.current) {
+        return
+      }
+      streamRecoveryRef.current = true
+      live.state = {
+        ...live.state,
+        hostGuardMessage: banner ?? live.state.hostGuardMessage ?? STREAM_RECOVERY_BANNER,
+        streamError: undefined,
+      }
+      streamSyncRef.current?.()
+      streamResumeAbortRef.current?.abort()
+      const resumeAbort = new AbortController()
+      streamResumeAbortRef.current = resumeAbort
+      const runId = live.state.runId
+      void openAgentRunSseStream(
+        runId,
+        (eventName, rawData) => agentEventHandlerRef.current(eventName, rawData),
+        {
+          signal: resumeAbort.signal,
+          afterSequence: lastPolledSequenceRef.current,
+        },
+      )
+        .then(() => {
+          if (!streamRecoveryRef.current) {
+            return
+          }
+          finishStreamRecovery()
+          endRunLiveFollow()
+          setIsLoading(false)
+          const stillAwaiting =
+            live.state.awaitingInteraction ||
+            hasPendingUserInteraction(live.state.stepStates)
+          if (!stillAwaiting) {
+            setActiveStreamMessageId((current) => (current === live.messageId ? null : current))
+            liveStreamRef.current = null
+            streamSyncRef.current = null
+          }
+        })
+        .catch((error) => {
+          if (error instanceof DOMException && error.name === 'AbortError') {
+            return
+          }
+          attachStatusWsFallbackRef.current()
+        })
+    },
+    [finishStreamRecovery, endRunLiveFollow],
+  )
+
+  useEffect(() => {
+    attachRecoveryRef.current = startRunSseRecovery
+  }, [startRunSseRecovery])
 
   const handleSend = async (overrideText?: string) => {
     const rawText = overrideText ?? inputValue
@@ -179,6 +332,7 @@ export function useEditorAgentStream({
       setInputValue('')
     }
     abortActiveStream()
+    endRunLiveFollow()
     setIsLoading(true)
 
     const abortController = new AbortController()
@@ -316,6 +470,7 @@ export function useEditorAgentStream({
           runWsRef.current = null
         }
         if (!streamRecoveryRef.current) {
+          endRunLiveFollow()
           setIsLoading(false)
           if (!pendingInteraction && activeStreamMessageId === assistantMessageId) {
             setActiveStreamMessageId(null)
@@ -335,6 +490,12 @@ export function useEditorAgentStream({
             void openAgentRunSocket(parsed.run_id).then((ws) => {
               runWsRef.current = ws
             })
+          }
+          if (typeof parsed.sequence === 'number') {
+            lastPolledSequenceRef.current = Math.max(
+              lastPolledSequenceRef.current,
+              parsed.sequence,
+            )
           }
           if (parsed.type === 'chapter.stream.started') {
             const title =
@@ -475,48 +636,26 @@ export function useEditorAgentStream({
 
     agentEventHandlerRef.current = handleAgentEvent
 
-    const clearStreamRecoveryTimer = () => {
-      if (streamRecoveryTimerRef.current != null) {
-        window.clearTimeout(streamRecoveryTimerRef.current)
-        streamRecoveryTimerRef.current = null
-      }
-    }
-
-    const finishStreamRecovery = () => {
-      streamRecoveryRef.current = false
-      clearStreamRecoveryTimer()
-    }
-
-    const attachStreamRecovery = (banner?: string) => {
-      if (!shouldAttachStreamRecovery(liveBox.state)) {
-        return
-      }
-      streamRecoveryRef.current = true
-      liveBox.state = {
-        ...liveBox.state,
-        hostGuardMessage: banner ?? liveBox.state.hostGuardMessage ?? STREAM_RECOVERY_BANNER,
-        streamError: undefined,
-      }
-      syncStreamState()
+    const attachStatusWsFallback = () => {
       statusWsRef.current?.close()
       statusWsSessionIdRef.current = null
       void openAgentStatusSocket(agentSessionIdRef.current, handleStatusEvent, {
         onClose: () => {
-          if (!streamRecoveryRef.current || !shouldAttachStreamRecovery(liveBox.state)) {
+          if (!streamRecoveryRef.current && !shouldAttachStreamRecovery(liveBox.state)) {
             return
           }
           clearStreamRecoveryTimer()
           streamRecoveryTimerRef.current = window.setTimeout(() => {
-            attachStreamRecovery()
+            startRunSseRecovery()
           }, 2000)
         },
       }).then((ws) => {
         statusWsRef.current = ws
         statusWsSessionIdRef.current = agentSessionIdRef.current
       })
+      scheduleRunEventPoll(500)
     }
-
-    attachRecoveryRef.current = attachStreamRecovery
+    attachStatusWsFallbackRef.current = attachStatusWsFallback
 
     const handleStatusEvent = (eventName: string, rawData: string) => {
       if (eventName === 'agent-event' && rawData.includes('"type":"stream-end"')) {
@@ -535,7 +674,9 @@ export function useEditorAgentStream({
         return
       }
       const recoveryActive = streamRecoveryRef.current
-      if (!recoveryActive && parsedType !== 'run.recovering') {
+      const followRun =
+        statusWsFollowRunRef.current && shouldFollowRunLiveEvents(liveBox.state)
+      if (!recoveryActive && parsedType !== 'run.recovering' && !followRun) {
         return
       }
       handleAgentEvent(eventName, rawData)
@@ -554,6 +695,7 @@ export function useEditorAgentStream({
           liveBox.state.isStreamEnded)
       ) {
         finishStreamRecovery()
+        endRunLiveFollow()
         setIsLoading(false)
         const stillAwaiting =
           liveBox.state.awaitingInteraction ||
@@ -712,9 +854,10 @@ export function useEditorAgentStream({
           }
           syncStreamState()
         }
-        attachStreamRecovery()
+        startRunSseRecovery(STREAM_RECOVERY_BANNER)
       } else {
         finishStreamRecovery()
+        endRunLiveFollow()
         setIsLoading(false)
         const stillAwaiting =
           liveBox.state.awaitingInteraction ||
@@ -945,10 +1088,11 @@ export function useEditorAgentStream({
   }, [isLoading, liveStreamMessage])
 
   const closeStreamSockets = useCallback(() => {
+    endRunLiveFollow()
     statusWsRef.current?.close()
     statusWsRef.current = null
     statusWsSessionIdRef.current = null
-  }, [])
+  }, [endRunLiveFollow])
 
   useEffect(() => {
     const sessionId = agentSessionIdRef.current
@@ -966,15 +1110,8 @@ export function useEditorAgentStream({
         let streamState = createInitialAgentStreamUiState()
         streamState = { ...streamState, runId: active.id }
         const events = await api.fetchAgentRunEvents(active.id, -1)
-        for (const row of events.sort((a, b) => a.sequence - b.sequence)) {
-          const envelope = parseStoredAgentEvent(row.payloadJson)
-          if (!envelope) continue
-          streamState = applyAgentEvent(
-            streamState,
-            'agent-event',
-            JSON.stringify(envelope),
-          )
-        }
+        streamState = applyStoredRunEvents(streamState, events)
+        lastPolledSequenceRef.current = maxStoredEventSequence(events, -1)
         if (
           streamState.isStreamEnded ||
           streamState.runTerminalAck ||
@@ -982,10 +1119,56 @@ export function useEditorAgentStream({
         ) {
           return
         }
+        const liveBox = { messageId: assistantMessageId, state: streamState }
+        liveStreamRef.current = liveBox
+        const syncResumedStream = () => {
+          const state = liveBox.state
+          activeStreamStateRef.current = state
+          setMessages((prev) => {
+            const idx = prev.findIndex((m) => m.id === assistantMessageId)
+            if (idx < 0) {
+              return prev
+            }
+            const current = prev[idx]
+            const next = [...prev]
+            next[idx] = {
+              ...current,
+              content: finalizeAgentMessageContent(state),
+              agentThinkText: state.thinkText || undefined,
+              agentSteps: state.stepStates.length > 0 ? state.stepStates : undefined,
+              agentTimeline: state.timeline.length > 0 ? state.timeline : undefined,
+              agentTodos: state.todos?.length ? state.todos : undefined,
+              agentRunId: active.id,
+              agentHostGuardMessage: streamRecoveryRef.current
+                ? STREAM_RECOVERY_BANNER
+                : undefined,
+              agentStreamPhase: deriveAssistantStreamPhase(state),
+              agentAwaitingInteraction: state.awaitingInteraction,
+            }
+            return next
+          })
+        }
+        streamSyncRef.current = syncResumedStream
+        agentEventHandlerRef.current = (eventName, rawData) => {
+          liveBox.state = applyAgentEvent(liveBox.state, eventName, rawData)
+          activeStreamStateRef.current = liveBox.state
+          if (eventName === 'agent-event') {
+            try {
+              const parsed = JSON.parse(rawData) as AgentEventEnvelope
+              if (typeof parsed.sequence === 'number') {
+                lastPolledSequenceRef.current = Math.max(
+                  lastPolledSequenceRef.current,
+                  parsed.sequence,
+                )
+              }
+            } catch {
+              // ignore malformed replay frames
+            }
+          }
+          syncResumedStream()
+        }
         setIsLoading(true)
         setActiveStreamMessageId(assistantMessageId)
-        activeStreamStateRef.current = streamState
-        liveStreamRef.current = { messageId: assistantMessageId, state: streamState }
         setMessages((prev) => {
           const existing = prev.find((m) => m.id === assistantMessageId)
           const resumed: EditorMessage = {
@@ -1007,8 +1190,7 @@ export function useEditorAgentStream({
           }
           return [...prev, resumed]
         })
-        streamRecoveryRef.current = true
-        attachRecoveryRef.current(STREAM_RECOVERY_BANNER)
+        startRunSseRecovery(STREAM_RECOVERY_BANNER)
       } catch {
         resumeCheckedSessionRef.current = null
       }
@@ -1016,8 +1198,8 @@ export function useEditorAgentStream({
   }, [
     agentSessionIdRef,
     isLoading,
-    persistMessages,
     setMessages,
+    startRunSseRecovery,
   ])
 
   return {

@@ -1,11 +1,16 @@
 package cn.novelstudio.module.agent.client;
 
 import cn.novelstudio.module.content.agent.AgentRunStatus;
+import cn.novelstudio.module.content.dto.agent.AgentEventDTO;
+import cn.novelstudio.module.content.dto.agent.AgentRunDTO;
 import cn.novelstudio.module.content.dto.agent.CreateAgentRunRequest;
 import cn.novelstudio.module.content.dto.agent.RecordAgentCommandRequest;
 import cn.novelstudio.module.content.dto.agent.TransitionAgentRunRequest;
 import cn.novelstudio.module.content.service.internal.InternalAgentRunBiz;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 @Component
 public class ContentInternalClient {
@@ -41,6 +46,15 @@ public class ContentInternalClient {
         request.setStatus(AgentRunStatus.valueOf(status));
         request.setErrorMessage(errorMessage == null ? "" : errorMessage);
         internalAgentRunBiz.transition(runId, request);
+    }
+
+    public AgentRunDTO getRun(String runId) {
+        ResponseEntity<AgentRunDTO> response = internalAgentRunBiz.getRun(runId);
+        return response == null ? null : response.getBody();
+    }
+
+    public List<AgentEventDTO> listEvents(String runId, int afterSequence) {
+        return internalAgentRunBiz.listEvents(runId, afterSequence);
     }
 
     public void recordCommand(String runId, String commandId, String commandType, String payloadJson) {

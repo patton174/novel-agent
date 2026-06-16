@@ -26,28 +26,11 @@ function throwIfAborted(signal?: AbortSignal): void {
   }
 }
 
-export async function openAgentStream(
-  body: AgentStreamRequestBody,
+async function consumeAgentSseResponse(
+  response: Response,
   onEvent: AgentStreamEventHandler,
-  init?: RequestInit,
+  signal?: AbortSignal,
 ): Promise<void> {
-  const signal = init?.signal ?? undefined
-
-  throwIfAborted(signal)
-
-  const streamUrl = `${PYTHON_API_BASE}/agent/chat/stream`
-  const response = await secureFetch(streamUrl, {
-    method: 'POST',
-    headers: {
-      ...(DIRECT_PYTHON ? {} : getAuthHeaders()),
-      ...init?.headers,
-    },
-    body: JSON.stringify(toStreamRequestBody(body)),
-    ...init,
-  })
-
-  throwIfAborted(signal)
-
   if (!response.ok || !response.body) {
     if (response.status === 401) {
       throw new Error('未登录或登录已过期，请重新登录')
@@ -124,6 +107,57 @@ export async function openAgentStream(
       // reader may already be released after cancel
     }
   }
+}
+
+export async function openAgentStream(
+  body: AgentStreamRequestBody,
+  onEvent: AgentStreamEventHandler,
+  init?: RequestInit,
+): Promise<void> {
+  const signal = init?.signal ?? undefined
+
+  throwIfAborted(signal)
+
+  const streamUrl = `${PYTHON_API_BASE}/agent/chat/stream`
+  const response = await secureFetch(streamUrl, {
+    method: 'POST',
+    headers: {
+      ...(DIRECT_PYTHON ? {} : getAuthHeaders()),
+      ...init?.headers,
+    },
+    body: JSON.stringify(toStreamRequestBody(body)),
+    ...init,
+  })
+
+  throwIfAborted(signal)
+  await consumeAgentSseResponse(response, onEvent, signal)
+}
+
+/** Queued 模式：断线后重连同一 run 的 SSE（Java 回放 + live fanout，Worker 不受影响） */
+export async function openAgentRunSseStream(
+  runId: string,
+  onEvent: AgentStreamEventHandler,
+  init?: RequestInit & { afterSequence?: number },
+): Promise<void> {
+  const signal = init?.signal ?? undefined
+  const afterSequence = init?.afterSequence ?? -1
+
+  throwIfAborted(signal)
+
+  const streamUrl =
+    `${PYTHON_API_BASE}/agent/runs/${encodeURIComponent(runId)}/stream` +
+    `?after_sequence=${afterSequence}`
+  const response = await secureFetch(streamUrl, {
+    method: 'GET',
+    headers: {
+      ...(DIRECT_PYTHON ? {} : getAuthHeaders()),
+      ...init?.headers,
+    },
+    ...init,
+  })
+
+  throwIfAborted(signal)
+  await consumeAgentSseResponse(response, onEvent, signal)
 }
 
 async function buildAgentWsUrl(path: string, params: Record<string, string>): Promise<string | null> {
