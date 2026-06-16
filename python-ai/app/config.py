@@ -69,6 +69,8 @@ class Settings(BaseSettings):
     agent_durable_checkpoint: bool = False
     agent_relevance_inject: bool = False
     agent_run_session_ttl_sec: int = 3600
+    # 生产分布式：false → 禁止浏览器/ Java 直连 /agent/run/stream（仅 Worker /internal/worker/run/execute）
+    agent_allow_direct_stream: bool = True
 
     crawl_request_delay_ms: int = 800
     crawl_http_proxy: str = ""

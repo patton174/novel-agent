@@ -104,8 +104,24 @@ class WriteChapterInput(BaseModel):
 
 
 class EditChapterInput(BaseModel):
-    chapter_id: str = Field(..., min_length=1)
-    old_string: str = Field(..., min_length=1)
+    chapter_id: str | None = Field(
+        None,
+        description="Chapter UUID from ListChapters. Optional if title or index is set.",
+    )
+    title: str | None = Field(
+        None,
+        min_length=1,
+        description="Resolve chapter by exact title when chapter_id is missing or wrong.",
+    )
+    index: int | None = Field(
+        None,
+        ge=1,
+        description="1-based reading-order index from ListChapters.",
+    )
+    old_string: str = Field(
+        "",
+        description="Snippet to replace; empty replaces the entire chapter body.",
+    )
     new_string: str = Field("")
     replace_all: bool = False
     position: int | None = Field(None, ge=1, description="Move chapter to this reading slot.")
@@ -117,6 +133,16 @@ class EditChapterInput(BaseModel):
 class DeleteChapterInput(BaseModel):
     chapter_id: str | None = Field(None, description="Delete a single chapter.")
     chapter_ids: list[str] | None = Field(None, description="Delete multiple chapters.")
+    title: str | None = Field(
+        None,
+        min_length=1,
+        description="Delete by exact title (when chapter_id unknown).",
+    )
+    index: int | None = Field(
+        None,
+        ge=1,
+        description="Delete chapter at 1-based reading-order index.",
+    )
     dedupe_title: str | None = Field(
         None,
         min_length=1,
@@ -162,7 +188,7 @@ class WriteMemoryInput(BaseModel):
 class EditMemoryInput(BaseModel):
     scope: MemoryScope
     key: str = Field(..., min_length=1)
-    old_string: str = Field(..., min_length=1)
+    old_string: str = Field("", description="Snippet to replace; empty replaces entire entry body.")
     new_string: str = Field(...)
     replace_all: bool = False
 

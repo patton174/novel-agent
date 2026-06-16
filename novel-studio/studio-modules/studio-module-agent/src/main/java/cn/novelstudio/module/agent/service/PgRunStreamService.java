@@ -39,6 +39,7 @@ public class PgRunStreamService {
     private final RunWorkerContextStore workerContextStore;
     private final RunLiveSseFanout runLiveSseFanout;
     private final AgentRunEventJournal eventJournal;
+    private final AgentStatusHub statusHub;
     private final IMessageProducer messageProducer;
     private final SessionTitleService sessionTitleService;
     private final ObjectMapper objectMapper;
@@ -51,6 +52,7 @@ public class PgRunStreamService {
         RunWorkerContextStore workerContextStore,
         RunLiveSseFanout runLiveSseFanout,
         AgentRunEventJournal eventJournal,
+        AgentStatusHub statusHub,
         IMessageProducer messageProducer,
         SessionTitleService sessionTitleService,
         ObjectMapper objectMapper
@@ -62,6 +64,7 @@ public class PgRunStreamService {
         this.workerContextStore = workerContextStore;
         this.runLiveSseFanout = runLiveSseFanout;
         this.eventJournal = eventJournal;
+        this.statusHub = statusHub;
         this.messageProducer = messageProducer;
         this.sessionTitleService = sessionTitleService;
         this.objectMapper = objectMapper;
@@ -76,6 +79,7 @@ public class PgRunStreamService {
         String runId = AgentRunState.newRunId();
         String messageId = AgentRunState.newMessageId();
         String finalSessionId = sessionId;
+        Long finalUserId = userId;
         AtomicBoolean persisted = new AtomicBoolean(false);
         AssistantPersistCollector assistantCollector = new AssistantPersistCollector();
 
@@ -137,6 +141,10 @@ public class PgRunStreamService {
                     );
                 });
                 sink.onDispose(() -> runLiveSseFanout.unregisterSink(runId));
+                sink.onCancel(() -> {
+                    runLiveSseFanout.unregisterSink(runId);
+                    publishRecovering(runId, finalUserId, finalSessionId);
+                });
                 String startedFrame = buildRunStarted(runId, finalSessionId, messageId);
                 appendJournalPayload(runId, startedFrame);
                 sink.next(startedFrame);
@@ -146,6 +154,27 @@ public class PgRunStreamService {
                 sink.error(ex);
             }
         })).subscribeOn(Schedulers.boundedElastic());
+    }
+
+    private void publishRecovering(String runId, Long userId, String sessionId) {
+        if (userId == null || sessionId == null || sessionId.isBlank()) {
+            return;
+        }
+        try {
+            String json = objectMapper.writeValueAsString(
+                Map.of(
+                    "type", "run.recovering",
+                    "run_id", runId,
+                    "payload", Map.of(
+                        "message", "SSE 已断开，任务在 Worker 继续；请通过状态通道同步进度"
+                    )
+                )
+            );
+            eventJournal.append(runId, json);
+            statusHub.publish(userId, sessionId, json);
+        } catch (Exception ex) {
+            log.warn("publishRecovering failed runId={}: {}", runId, ex.getMessage());
+        }
     }
 
     private boolean isFailedFrame(String frame) {

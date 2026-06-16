@@ -406,6 +406,18 @@ async def stream_subagent_tool(
             turn_counter += 1
             child_payload = {**child_payload, "turn": turn_counter}
             child_ev = {**child_ev, "payload": child_payload}
+        if et in ("chapter.stream.started", "chapter.stream.delta", "chapter.stream.completed"):
+            yield build_event(
+                event_type=et,
+                run_id=run_id,
+                session_id=session_id,
+                message_id=message_id,
+                step_id=step_id,
+                sequence=seq,
+                payload=child_payload,
+            )
+            seq += 1
+            continue
         progress = _map_child_to_subagent_progress(
             child_ev,
             parent_step_id=step_id,

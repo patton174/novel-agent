@@ -8,6 +8,11 @@ server:
   tomcat:
     connection-timeout: ${SERVER_CONNECTION_TIMEOUT:3600000}
 
+agent:
+  runtime:
+    mode: ${AGENT_RUNTIME_MODE:queued}
+    pg-run-enabled: ${AGENT_PG_RUN_ENABLED:true}
+
 auth:
   cookie:
     secure: true

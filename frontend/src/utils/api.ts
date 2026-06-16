@@ -445,6 +445,30 @@ export const api = {
     })
   },
 
+  fetchActiveAgentRun(sessionId: string) {
+    return this.request<{
+      id: string
+      sessionId: string
+      status: string
+      mode?: string
+      assistantMessageId?: string
+    } | null>(`/content/auth/agent/sessions/${encodeURIComponent(sessionId)}/active-run`)
+  },
+
+  fetchAgentRunEvents(runId: string, afterSequence = -1) {
+    return this.request<
+      Array<{
+        id: string
+        runId: string
+        sequence: number
+        eventType: string
+        payloadJson: string
+      }>
+    >(
+      `/content/auth/agent/runs/${encodeURIComponent(runId)}/events?after_sequence=${afterSequence}`,
+    )
+  },
+
   async generateSessionTitle(payload: {
     user_message: string
     assistant_snippet?: string

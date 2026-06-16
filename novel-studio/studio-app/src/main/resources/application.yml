@@ -54,6 +54,10 @@ agent:
     enabled: ${AGENT_BILLING_ENABLED:true}
   internal:
     service-key: ${AGENT_INTERNAL_SERVICE_KEY:${INTERNAL_SERVICE_KEY:dev-internal-key-change-me}}
+  runtime:
+    # legacy = Java 直连 Python /agent/run/stream；queued = MQ dispatch + Worker slice + Redis live
+    mode: ${AGENT_RUNTIME_MODE:legacy}
+    pg-run-enabled: ${AGENT_PG_RUN_ENABLED:false}
 
 studio:
   security:

@@ -22,7 +22,7 @@ describe('parseMemoryReadTitles', () => {
 })
 
 describe('collapseConsecutiveMemoryReads', () => {
-  it('merges consecutive memory_read tools and aggregates titles', () => {
+  it('keeps each read tool as its own timeline block', () => {
     const blocks: AgentTimelineBlock[] = [
       { kind: 'tool', id: 't1', stepId: 's1' },
       { kind: 'tool', id: 't2', stepId: 's2' },
@@ -64,9 +64,10 @@ describe('collapseConsecutiveMemoryReads', () => {
     ])
     const { blocks: out, mergedMemoryReadTitles, mergedMemoryReadCount } =
       collapseConsecutiveMemoryReads(blocks, stepByBlockId)
-    expect(out.map((b) => b.id)).toEqual(['t1', 't3'])
-    expect(mergedMemoryReadTitles.get('t1')).toEqual(['力量体系', '地理层级'])
-    expect(mergedMemoryReadCount.get('t1')).toBe(2)
+    expect(out.map((b) => b.id)).toEqual(['t1', 't2', 't3'])
+    expect(mergedMemoryReadTitles.get('t1')).toEqual(['力量体系'])
+    expect(mergedMemoryReadTitles.get('t2')).toEqual(['地理层级'])
+    expect(mergedMemoryReadCount.size).toBe(0)
   })
 })
 

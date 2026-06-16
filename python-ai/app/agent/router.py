@@ -86,6 +86,11 @@ async def agent_step(raw_request: Request):
 @router.post("/agent/run/stream")
 async def agent_run_stream(raw_request: Request):
     """Agent run loop (bind_tools); returns full run SSE."""
+    if not settings.agent_allow_direct_stream:
+        raise HTTPException(
+            status_code=503,
+            detail="direct agent stream disabled; use distributed worker dispatch",
+        )
     if not llm_provider.is_configured:
         raise HTTPException(status_code=503, detail="LLM not configured")
 

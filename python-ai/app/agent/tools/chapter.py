@@ -21,6 +21,8 @@ from app.agent.tools.chapter_position import (
     ordered_chapter_ids,
     resolve_target_position,
 )
+from app.agent.tools.chapter_resolve import resolve_chapter_row
+from app.agent.tools.text_edit import apply_string_replace
 from app.agent.tools.schemas import (
     ChapterAuditInput,
     DeleteChapterInput,
@@ -211,25 +213,49 @@ async def write_chapter(ctx: AgentRunContext, inp: WriteChapterInput) -> ToolCal
 
 
 async def edit_chapter(ctx: AgentRunContext, inp: EditChapterInput) -> ToolCallResult:
-    full = await chapter_client.fetch_chapter_full(ctx, inp.chapter_id)
+    if not inp.chapter_id and not inp.title and inp.index is None:
+        return ToolCallResult(
+            content="<tool_use_error>Provide chapter_id, title, or index.</tool_use_error>",
+            is_error=True,
+        )
+    rows = await chapter_client.fetch_chapter_summaries(ctx)
+    row, resolve_err = resolve_chapter_row(
+        rows,
+        chapter_id=inp.chapter_id,
+        title=inp.title,
+        index=inp.index,
+    )
+    if resolve_err or not row:
+        return ToolCallResult(
+            content=f"<tool_use_error>{resolve_err or 'chapter not found'}</tool_use_error>",
+            is_error=True,
+        )
+    chapter_id = str(row.get("id") or row.get("chapter_id") or "").strip()
+    full = await chapter_client.fetch_chapter_full(ctx, chapter_id)
     if not full:
         return ToolCallResult(
-            content=f"<tool_use_error>chapter not found: {inp.chapter_id}</tool_use_error>",
+            content=f"<tool_use_error>chapter not found: {chapter_id}</tool_use_error>",
             is_error=True,
         )
     body = str(full.get("content") or "")
-    if inp.old_string not in body:
+    new_body, edit_err = apply_string_replace(
+        body,
+        inp.old_string,
+        inp.new_string,
+        replace_all=inp.replace_all,
+    )
+    if edit_err or new_body is None:
+        hint = (
+            "Re-read with ReadChapter and copy body text without line numbers, "
+            "or pass empty old_string to replace the full body."
+        )
         return ToolCallResult(
-            content="<tool_use_error>old_string not found in chapter content</tool_use_error>",
+            content=f"<tool_use_error>{edit_err or 'edit failed'} in chapter {chapter_id}. {hint}</tool_use_error>",
             is_error=True,
         )
-    if inp.replace_all:
-        new_body = body.replace(inp.old_string, inp.new_string)
-    else:
-        new_body = body.replace(inp.old_string, inp.new_string, 1)
 
     payload = {
-        "chapter_id": inp.chapter_id,
+        "chapter_id": chapter_id,
         "title": full.get("title") or "未命名",
         "content": normalize_chapter_body_for_persist(new_body),
         "sort_order": full.get("sort_order") or 0,
@@ -244,7 +270,7 @@ async def edit_chapter(ctx: AgentRunContext, inp: EditChapterInput) -> ToolCallR
         rows, reorder_err = await _apply_reading_order(
             ctx,
             rows,
-            inp.chapter_id,
+            chapter_id,
             position=position,
             after_chapter_id=inp.after_chapter_id,
             before_chapter_id=inp.before_chapter_id,
@@ -259,8 +285,8 @@ async def edit_chapter(ctx: AgentRunContext, inp: EditChapterInput) -> ToolCallR
         content=json.dumps(
             {
                 "ok": True,
-                "chapter_id": inp.chapter_id,
-                "index": find_chapter_index(rows or [], inp.chapter_id),
+                "chapter_id": chapter_id,
+                "index": find_chapter_index(rows or [], chapter_id),
             },
             ensure_ascii=False,
         ),
@@ -285,14 +311,34 @@ async def delete_chapter(ctx: AgentRunContext, inp: DeleteChapterInput) -> ToolC
         targets.extend(ids[1:])
 
     if inp.chapter_id:
-        targets.append(inp.chapter_id.strip())
+        row, err = resolve_chapter_row(rows, chapter_id=inp.chapter_id.strip())
+        if err or not row:
+            return ToolCallResult(content=f"<tool_use_error>{err}</tool_use_error>", is_error=True)
+        targets.append(str(row.get("id") or row.get("chapter_id") or "").strip())
     if inp.chapter_ids:
-        targets.extend(str(cid).strip() for cid in inp.chapter_ids if str(cid).strip())
+        for raw in inp.chapter_ids:
+            cid = str(raw).strip()
+            if not cid:
+                continue
+            row, err = resolve_chapter_row(rows, chapter_id=cid)
+            if err or not row:
+                return ToolCallResult(content=f"<tool_use_error>{err}</tool_use_error>", is_error=True)
+            targets.append(str(row.get("id") or row.get("chapter_id") or "").strip())
+    if inp.title and inp.title.strip():
+        row, err = resolve_chapter_row(rows, title=inp.title.strip())
+        if err or not row:
+            return ToolCallResult(content=f"<tool_use_error>{err}</tool_use_error>", is_error=True)
+        targets.append(str(row.get("id") or row.get("chapter_id") or "").strip())
+    if inp.index is not None:
+        row, err = resolve_chapter_row(rows, index=inp.index)
+        if err or not row:
+            return ToolCallResult(content=f"<tool_use_error>{err}</tool_use_error>", is_error=True)
+        targets.append(str(row.get("id") or row.get("chapter_id") or "").strip())
 
     unique_targets = list(dict.fromkeys(targets))
     if not unique_targets:
         return ToolCallResult(
-            content="<tool_use_error>Provide chapter_id, chapter_ids, or dedupe_title.</tool_use_error>",
+            content="<tool_use_error>Provide chapter_id, chapter_ids, title, index, or dedupe_title.</tool_use_error>",
             is_error=True,
         )
 
@@ -306,7 +352,9 @@ async def delete_chapter(ctx: AgentRunContext, inp: DeleteChapterInput) -> ToolC
             errors.append(f"{cid}: {err}")
 
     fresh = await chapter_client.fetch_chapter_summaries(ctx)
-    patch = {"chapters": fresh} if fresh else {}
+    patch: dict[str, Any] = {"chapter_delete": {"deleted": deleted}}
+    if fresh:
+        patch["chapters"] = fresh
     if errors and not deleted:
         return ToolCallResult(
             content=f"<tool_use_error>{'; '.join(errors[:3])}</tool_use_error>",
@@ -401,7 +449,9 @@ CHAPTER_TOOLS = [
     build_tool(
         name="EditChapter",
         description=(
-            "Patch chapter text via old_string/new_string. "
+            "Patch chapter text via old_string/new_string (empty old_string replaces full body). "
+            "Target by chapter_id, title, or index (ListChapters). "
+            "Snippets from ReadChapter may include line numbers — tool normalizes them. "
             "Optional position / after_chapter_id / before_chapter_id to move it."
         ),
         input_model=EditChapterInput,
@@ -410,8 +460,8 @@ CHAPTER_TOOLS = [
     build_tool(
         name="DeleteChapter",
         description=(
-            "Delete chapter_id, a chapter_ids batch, or dedupe_title "
-            "(keeps earliest chapter with that title)."
+            "Delete by chapter_id, chapter_ids, title, index (ListChapters), "
+            "or dedupe_title (keeps earliest chapter with that title)."
         ),
         input_model=DeleteChapterInput,
         call=delete_chapter,

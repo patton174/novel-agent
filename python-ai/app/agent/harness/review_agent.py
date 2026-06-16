@@ -96,6 +96,12 @@ def record_chapter_mutation(
         cid = str(cw.get("chapter_id") or "").strip()
         if cid and cid not in ids:
             ids.append(cid)
+    deleted = context_patch.get("chapter_delete")
+    if isinstance(deleted, dict):
+        for raw in deleted.get("deleted") or []:
+            cid = str(raw).strip()
+            if cid and cid not in ids:
+                ids.append(cid)
     if ids:
         patch["run_changed_chapter_ids"] = ids
     patch["run_needs_review"] = True

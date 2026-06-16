@@ -82,7 +82,6 @@ from app.agent.harness.review_agent import (
     is_review_agent,
     mark_batch_needs_review,
     record_chapter_mutation,
-    REVIEW_TRIGGER_TOOLS,
 )
 from app.agent.harness.review_agent_sse import stream_review_subagent
 from app.agent.harness.subagent_policy import is_subagent_run
@@ -253,6 +252,8 @@ def _fresh_run_context(ctx: AgentRunContext) -> AgentRunContext:
     """Strip stale ask_user residue from prior runs so a new run cannot hallucinate answers."""
     patch = dict(ctx.context_patch) if isinstance(ctx.context_patch, dict) else {}
     patch.pop("user_interactions", None)
+    patch.pop("run_needs_review", None)
+    patch.pop("run_changed_chapter_ids", None)
     return ctx.model_copy(update={"context_patch": patch, "selected_choice": None})
 
 
@@ -760,8 +761,9 @@ async def run_query_loop(
 
             waited = False
             batch_tool_recover = False
+            turn_recoverable_failure = False
+            turn_fatal_failure = False
             batch_had_agent = any(i.tool == "Agent" for i in exec_items)
-            batch_had_writes = any(i.tool in REVIEW_TRIGGER_TOOLS for i in exec_items)
             batches = partition_tool_calls(exec_items)
 
             async for kind, payload in execute_tool_batches(
@@ -793,10 +795,8 @@ async def run_query_loop(
                 if not isinstance(runs, list):
                     continue
 
-                handled_ids: set[str] = set()
                 for run in runs:
                     tool = run.item.tool
-                    handled_ids.add(run.item.tool_call_id)
                     if run.failed:
                         messages.append(
                             ToolMessage(
@@ -813,27 +813,13 @@ async def run_query_loop(
                             executor_error=run.error,
                         )
                         if _fail and is_recoverable_tool_execution_failure(err_code):
-                            pending = [
-                                i.tool_call_id
-                                for i in exec_items
-                                if i.tool_call_id not in handled_ids
-                            ]
-                            if pending:
-                                append_tool_messages_for_detail(
-                                    messages,
-                                    pending,
-                                    "本批前置工具失败，请根据错误修正后重试。",
-                                )
-                            state.tool_recoveries += 1
-                            if state.tool_recoveries >= _MAX_TOOL_RECOVERIES_PER_TURN:
-                                state.last_run_error = err_detail or run.error
-                                state.terminal = True
-                            else:
-                                batch_tool_recover = True
-                            break
-                        state.last_run_error = run.error
-                        state.terminal = True
-                        break
+                            if int(getattr(run, "silent_retry_attempts", 0) or 0) <= 0:
+                                turn_recoverable_failure = True
+                            state.last_run_error = err_detail or run.error
+                        elif _fail:
+                            turn_fatal_failure = True
+                            state.last_run_error = run.error
+                        continue
 
                     display_content = (
                         str(run.result.display.content)
@@ -918,8 +904,17 @@ async def run_query_loop(
                             )
                         break
 
-                if state.terminal or batch_tool_recover:
+                if waited:
                     break
+
+            if turn_recoverable_failure:
+                state.tool_recoveries += 1
+                if state.tool_recoveries >= _MAX_TOOL_RECOVERIES_PER_TURN:
+                    state.terminal = True
+                else:
+                    batch_tool_recover = True
+            elif turn_fatal_failure:
+                state.terminal = True
 
             patch = state.ctx.context_patch if isinstance(state.ctx.context_patch, dict) else {}
             failures = patch.get("chapter_persist_failures")
@@ -950,69 +945,65 @@ async def run_query_loop(
                 continue
             if state.terminal:
                 break
-            if waited:
-                continue
 
-            if (
-                batch_had_writes
-                and not state.terminal
-                and not is_subagent_run(state.ctx)
-            ):
-                patch = state.ctx.context_patch if isinstance(state.ctx.context_patch, dict) else {}
-                if patch.get("run_needs_review"):
-                    state.ctx = await refresh_chapters_from_content_api(state.ctx)
-                    changed = patch.get("run_changed_chapter_ids")
-                    changed_ids = (
-                        [str(c) for c in changed if str(c).strip()]
-                        if isinstance(changed, list)
-                        else None
-                    )
-                    review_summary = ""
-                    review_patch: dict[str, Any] = {}
-                    try:
-                        async for review_ev in stream_review_subagent(
-                            state.ctx,
-                            changed_chapter_ids=changed_ids,
-                            sequence=state.sequence,
-                        ):
-                            yield review_ev
-                            state.sequence = int(review_ev.get("sequence") or state.sequence) + 1
-                            et = str(review_ev.get("type") or "")
-                            pl = (
-                                review_ev.get("payload")
-                                if isinstance(review_ev.get("payload"), dict)
-                                else {}
-                            )
-                            if et == "subagent.completed":
-                                review_summary = str(pl.get("summary_preview") or "").strip()
-                                cp = pl.get("context_patch")
-                                if isinstance(cp, dict):
-                                    review_patch = cp
-                            elif et == "subagent.failed":
-                                review_summary = str(pl.get("error") or "").strip()
-                                cp = pl.get("context_patch")
-                                if isinstance(cp, dict):
-                                    review_patch = cp
-                        if review_summary:
-                            messages.append(
-                                HumanMessage(
-                                    content=(
-                                        "【审查 Agent 报告】\n"
-                                        + review_summary[:12000]
-                                    )
+            patch = state.ctx.context_patch if isinstance(state.ctx.context_patch, dict) else {}
+            if patch.get("run_needs_review") and not is_subagent_run(state.ctx):
+                state.ctx = await refresh_chapters_from_content_api(state.ctx)
+                changed = patch.get("run_changed_chapter_ids")
+                changed_ids = (
+                    [str(c) for c in changed if str(c).strip()]
+                    if isinstance(changed, list)
+                    else None
+                )
+                review_summary = ""
+                review_patch: dict[str, Any] = {}
+                try:
+                    async for review_ev in stream_review_subagent(
+                        state.ctx,
+                        changed_chapter_ids=changed_ids,
+                        sequence=state.sequence,
+                    ):
+                        yield review_ev
+                        state.sequence = int(review_ev.get("sequence") or state.sequence) + 1
+                        et = str(review_ev.get("type") or "")
+                        pl = (
+                            review_ev.get("payload")
+                            if isinstance(review_ev.get("payload"), dict)
+                            else {}
+                        )
+                        if et == "subagent.completed":
+                            review_summary = str(pl.get("summary_preview") or "").strip()
+                            cp = pl.get("context_patch")
+                            if isinstance(cp, dict):
+                                review_patch = cp
+                        elif et == "subagent.failed":
+                            review_summary = str(pl.get("error") or "").strip()
+                            cp = pl.get("context_patch")
+                            if isinstance(cp, dict):
+                                review_patch = cp
+                    if review_summary:
+                        messages.append(
+                            HumanMessage(
+                                content=(
+                                    "【审查 Agent 报告】\n"
+                                    + review_summary[:12000]
                                 )
                             )
-                        if review_patch:
-                            merged = dict(state.ctx.context_patch or {})
-                            merged.update(review_patch)
-                            state.ctx = state.ctx.model_copy(
-                                update={"context_patch": merged}
-                            )
-                        refresh_run_context_human(messages, state.ctx, state.transcript)
-                    except Exception:
-                        logger.exception(
-                            "review agent failed run_id=%s", state.ctx.run_id
                         )
+                    if review_patch:
+                        merged = dict(state.ctx.context_patch or {})
+                        merged.update(review_patch)
+                        state.ctx = state.ctx.model_copy(
+                            update={"context_patch": merged}
+                        )
+                    refresh_run_context_human(messages, state.ctx, state.transcript)
+                except Exception:
+                    logger.exception(
+                        "review agent failed run_id=%s", state.ctx.run_id
+                    )
+
+            if waited:
+                continue
 
             state.messages = list(messages)
             if not worker_mode:

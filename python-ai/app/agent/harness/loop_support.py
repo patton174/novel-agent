@@ -22,15 +22,17 @@ from app.agent.harness.orchestration_contract import (
 )
 from app.agent.harness.run_session import RunSession, WorkerSliceSession
 from app.agent.harness.tool_execution import (
-    _RETRY_SUPPRESS_EVENT_TYPES,
     RETRYABLE_TOOLS,
     TOOL_EXECUTION_MAX_ATTEMPTS,
     classify_tool_step_failure,
+    filter_tool_step_events_for_ui,
+    is_silent_tool_retry_eligible,
     is_tool_failure_retryable,
     merge_tool_retry_context,
     prepare_tool_retry_input,
     tool_retry_delay,
 )
+from app.agent.harness.tool_input_repair import repair_tool_input_with_llm
 from app.agent.harness.tool_result_routing import (
     model_text_from_sse_tool_completed,
     model_text_from_step_payload,
@@ -92,6 +94,7 @@ class ToolStepOutcome:
     message_output: str = ""
     failed: bool = False
     error: str = ""
+    silent_retry_attempts: int = 0
 
 
 async def stream_tool_step_once(
@@ -172,15 +175,18 @@ async def stream_tool_step(
     outcome: ToolStepOutcome,
     step_id: str | None = None,
 ) -> AsyncIterator[dict[str, Any]]:
-    use_retry = tool in RETRYABLE_TOOLS
     working_ctx = ctx
-    working_input = dict(tool_input or {})
+    working_input = {
+        k: v for k, v in dict(tool_input or {}).items() if not str(k).startswith("_")
+    }
     seq = sequence
     last_code = ""
     last_detail = ""
+    silent_attempts = 0
 
     for attempt in range(1, TOOL_EXECUTION_MAX_ATTEMPTS + 1):
         attempt_outcome = ToolStepOutcome()
+        buffered: list[dict[str, Any]] = []
         async for ev in stream_tool_step_once(
             working_ctx,
             tool,
@@ -189,9 +195,7 @@ async def stream_tool_step(
             outcome=attempt_outcome,
             step_id=step_id,
         ):
-            if attempt > 1 and ev.get("type") in _RETRY_SUPPRESS_EVENT_TYPES:
-                continue
-            yield ev
+            buffered.append(ev)
 
         seq = attempt_outcome.next_sequence
         is_fail, code, detail = classify_tool_step_failure(
@@ -202,58 +206,106 @@ async def stream_tool_step(
         )
 
         if not is_fail:
+            for ev in filter_tool_step_events_for_ui(
+                buffered,
+                attempt=attempt,
+                will_retry=False,
+                succeeded=True,
+            ):
+                yield ev
             outcome.result = attempt_outcome.result
             outcome.tool_output = attempt_outcome.tool_output
             outcome.message_output = attempt_outcome.message_output
             outcome.failed = attempt_outcome.failed
             outcome.error = attempt_outcome.error
             outcome.next_sequence = seq
+            outcome.silent_retry_attempts = silent_attempts
             return
 
-        if not is_tool_failure_retryable(
+        can_silent = is_silent_tool_retry_eligible(
             tool,
             attempt_outcome.result,
             executor_failed=attempt_outcome.failed,
             executor_error=attempt_outcome.error,
+        )
+        legacy_stream = is_tool_failure_retryable(
+            tool,
+            attempt_outcome.result,
+            executor_failed=attempt_outcome.failed,
+            executor_error=attempt_outcome.error,
+        )
+        will_retry = attempt < TOOL_EXECUTION_MAX_ATTEMPTS and (
+            can_silent or (legacy_stream and tool in RETRYABLE_TOOLS)
+        )
+
+        if will_retry:
+            silent_attempts += 1
+            for ev in filter_tool_step_events_for_ui(
+                buffered,
+                attempt=attempt,
+                will_retry=True,
+                succeeded=False,
+            ):
+                yield ev
+
+            last_code, last_detail = code, detail
+            repaired = None
+            if can_silent:
+                repaired = await repair_tool_input_with_llm(
+                    working_ctx,
+                    tool,
+                    working_input,
+                    error_code=code,
+                    error_detail=detail,
+                    attempt=attempt + 1,
+                )
+            if repaired:
+                working_input = repaired
+            else:
+                working_ctx = merge_tool_retry_context(
+                    working_ctx,
+                    tool,
+                    error_code=code,
+                    error_detail=detail,
+                    attempt=attempt + 1,
+                )
+                working_input = prepare_tool_retry_input(
+                    tool,
+                    working_input,
+                    error_code=code,
+                    error_detail=detail,
+                    attempt=attempt + 1,
+                )
+            await tool_retry_delay(attempt + 1)
+            continue
+
+        for ev in filter_tool_step_events_for_ui(
+            buffered,
+            attempt=attempt,
+            will_retry=False,
+            succeeded=False,
         ):
-            outcome.result = attempt_outcome.result
-            outcome.tool_output = attempt_outcome.tool_output
-            outcome.message_output = attempt_outcome.message_output
-            outcome.failed = True
-            outcome.error = detail or code or "tool validation failed"
-            outcome.next_sequence = seq
-            return
-
-        last_code, last_detail = code, detail
-        if attempt >= TOOL_EXECUTION_MAX_ATTEMPTS or not use_retry:
-            break
-
-        working_ctx = merge_tool_retry_context(
-            working_ctx,
-            tool,
-            error_code=code,
-            error_detail=detail,
-            attempt=attempt + 1,
-        )
-        working_input = prepare_tool_retry_input(
-            tool,
-            working_input,
-            error_code=code,
-            error_detail=detail,
-            attempt=attempt + 1,
-        )
-        await tool_retry_delay(attempt + 1)
+            yield ev
+        outcome.result = attempt_outcome.result
+        outcome.tool_output = attempt_outcome.tool_output
+        outcome.message_output = attempt_outcome.message_output
+        outcome.failed = True
+        outcome.error = detail or code or "tool validation failed"
+        outcome.next_sequence = seq
+        outcome.silent_retry_attempts = silent_attempts
+        return
 
     outcome.failed = True
     outcome.error = last_detail or last_code or f"{tool} failed after retries"
     outcome.result = None
     outcome.next_sequence = seq
+    outcome.silent_retry_attempts = silent_attempts
     yield build_event(
         event_type="step.failed",
         run_id=ctx.run_id,
         session_id=ctx.session_id,
         message_id=ctx.message_id,
-        step_id=f"step_{uuid4().hex[:8]}",
+        step_id=step_id or f"step_{uuid4().hex[:8]}",
         sequence=seq,
         payload={
             "error": outcome.error,
@@ -261,6 +313,7 @@ async def stream_tool_step(
             "error_code": last_code,
             "attempts": TOOL_EXECUTION_MAX_ATTEMPTS,
             "retryable": False,
+            "silent_retries": silent_attempts,
         },
     )
     outcome.next_sequence = seq + 1

@@ -34,6 +34,22 @@ _RETRY_SUPPRESS_EVENT_TYPES = frozenset(
     }
 )
 
+_TOOL_START_EVENT_TYPES = frozenset({"step.started", "tool.started"})
+
+_FORWARD_ON_SUCCESSFUL_RETRY = frozenset(
+    {
+        "tool.completed",
+        "step.completed",
+        "tool.progress",
+        "message.delta",
+        "message.started",
+        "message.completed",
+        "chapter.stream.started",
+        "chapter.stream.delta",
+        "chapter.stream.completed",
+    }
+)
+
 # step_kind / reason tokens that mean validation or IO failed (not a successful wait).
 # Validation failures before tool LLM — retry cannot fix missing resolved fields.
 _NON_RETRYABLE_VALIDATION_REASONS = frozenset(
@@ -170,6 +186,73 @@ RECOVERABLE_TOOL_ERROR_CODES = frozenset(
 
 def is_recoverable_tool_execution_failure(error_code: str) -> bool:
     return (error_code or "").strip() in RECOVERABLE_TOOL_ERROR_CODES
+
+
+def is_silent_tool_retry_eligible(
+    tool: str,
+    result: StepResult | None,
+    *,
+    executor_failed: bool,
+    executor_error: str,
+) -> bool:
+    """Recoverable validation/IO failures eligible for in-tool silent retry."""
+    is_fail, code, _detail = classify_tool_step_failure(
+        tool,
+        result,
+        executor_failed=executor_failed,
+        executor_error=executor_error,
+    )
+    if not is_fail or not is_recoverable_tool_execution_failure(code):
+        return False
+    reason = (result.reason or "").strip() if result else ""
+    return reason not in _NON_RETRYABLE_VALIDATION_REASONS
+
+
+def is_failure_sse_event(event: dict[str, Any]) -> bool:
+    et = str(event.get("type") or "")
+    if et == "step.failed":
+        return True
+    if et != "tool.completed":
+        return False
+    payload = event.get("payload")
+    if not isinstance(payload, dict):
+        return False
+    if payload.get("failed") is True or payload.get("status") == "error":
+        return True
+    content = str(payload.get("content") or payload.get("output") or "")
+    return "<tool_use_error>" in content.lower()
+
+
+def filter_tool_step_events_for_ui(
+    buffered: list[dict[str, Any]],
+    *,
+    attempt: int,
+    will_retry: bool,
+    succeeded: bool,
+) -> list[dict[str, Any]]:
+    """Control which SSE events reach the browser during silent tool retries."""
+    if succeeded:
+        if attempt <= 1:
+            return list(buffered)
+        out: list[dict[str, Any]] = []
+        for ev in buffered:
+            et = str(ev.get("type") or "")
+            if et in _TOOL_START_EVENT_TYPES or is_failure_sse_event(ev):
+                continue
+            if et in _FORWARD_ON_SUCCESSFUL_RETRY or et.startswith("chapter.stream."):
+                out.append(ev)
+        return out
+
+    if will_retry:
+        if attempt <= 1:
+            return [
+                ev
+                for ev in buffered
+                if str(ev.get("type") or "") in _TOOL_START_EVENT_TYPES
+            ]
+        return []
+
+    return list(buffered)
 
 
 def is_tool_failure_retryable(

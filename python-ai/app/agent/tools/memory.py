@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import re
 from typing import Any
 
 from app.agent.backend import memory_client
@@ -16,6 +15,7 @@ from app.agent.tools.schemas import (
     ReadMemoryInput,
     WriteMemoryInput,
 )
+from app.agent.tools.text_edit import apply_string_replace
 from app.agent.tools.tool import ToolCallResult, build_tool
 from app.runtime.story_memory import get_story_memory
 
@@ -80,26 +80,6 @@ async def write_memory(ctx: AgentRunContext, inp: WriteMemoryInput) -> ToolCallR
     )
 
 
-def _strip_read_memory_line_prefixes(text: str) -> str:
-    """ReadMemory 行号前缀（`     1\\t`）与 EditMemory 存储文本不一致时做归一化。"""
-    lines = text.splitlines()
-    if not lines:
-        return text
-    stripped = [re.sub(r"^\s*\d+\t", "", line) for line in lines]
-    return "\n".join(stripped)
-
-
-def _resolve_old_string_match(text: str, old_string: str) -> str | None:
-    candidates = [old_string]
-    normalized = _strip_read_memory_line_prefixes(old_string)
-    if normalized and normalized not in candidates:
-        candidates.append(normalized)
-    for candidate in candidates:
-        if candidate and candidate in text:
-            return candidate
-    return None
-
-
 async def edit_memory(ctx: AgentRunContext, inp: EditMemoryInput) -> ToolCallResult:
     scope = inp.scope.value
     text, err = await memory_client.read_memory_json(ctx, scope, inp.key)
@@ -108,16 +88,17 @@ async def edit_memory(ctx: AgentRunContext, inp: EditMemoryInput) -> ToolCallRes
             content=f"<tool_use_error>{err or 'memory not found'}</tool_use_error>",
             is_error=True,
         )
-    matched = _resolve_old_string_match(text, inp.old_string)
-    if not matched:
-        return ToolCallResult(
-            content="<tool_use_error>old_string not found</tool_use_error>", is_error=True
-        )
-    new_text = (
-        text.replace(matched, inp.new_string)
-        if inp.replace_all
-        else text.replace(matched, inp.new_string, 1)
+    new_text, edit_err = apply_string_replace(
+        text,
+        inp.old_string,
+        inp.new_string,
+        replace_all=inp.replace_all,
     )
+    if edit_err or new_text is None:
+        return ToolCallResult(
+            content=f"<tool_use_error>{edit_err or 'old_string not found'}</tool_use_error>",
+            is_error=True,
+        )
     try:
         payload = json.loads(new_text)
     except json.JSONDecodeError:
@@ -132,7 +113,30 @@ async def edit_memory(ctx: AgentRunContext, inp: EditMemoryInput) -> ToolCallRes
 
 
 async def delete_memory_tool(ctx: AgentRunContext, inp: DeleteMemoryInput) -> ToolCallResult:
-    ok, err = await memory_client.delete_memory(ctx, inp.scope.value, inp.key)
+    scope = inp.scope.value
+    key = (inp.key or "").strip()
+    if not key:
+        return ToolCallResult(
+            content="<tool_use_error>key is required</tool_use_error>",
+            is_error=True,
+        )
+    entries = _list_memory_entries(ctx, inp.scope)
+    known = {e["key"] for e in entries}
+    if key not in known:
+        exact_ci = [e["key"] for e in entries if e["key"].lower() == key.lower()]
+        if len(exact_ci) == 1:
+            key = exact_ci[0]
+        else:
+            prefix = [e["key"] for e in entries if e["key"].startswith(key) or key in e["key"]]
+            if len(prefix) == 1:
+                key = prefix[0]
+            elif key not in known:
+                sample = ", ".join(sorted(known)[:6])
+                return ToolCallResult(
+                    content=f"<tool_use_error>memory key not found: {inp.key}. Known: {sample}</tool_use_error>",
+                    is_error=True,
+                )
+    ok, err = await memory_client.delete_memory(ctx, scope, key)
     if not ok:
         return ToolCallResult(content=f"<tool_use_error>{err}</tool_use_error>", is_error=True)
     return ToolCallResult(

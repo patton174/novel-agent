@@ -67,6 +67,7 @@ class ToolRunResult:
     failed: bool
     error: str
     final_ctx: AgentRunContext
+    silent_retry_attempts: int = 0
 
 
 def _branch_context(ctx: AgentRunContext) -> AgentRunContext:
@@ -100,6 +101,7 @@ def _finalize_tool_run(
         failed=outcome.failed,
         error=outcome.error,
         final_ctx=ctx,
+        silent_retry_attempts=int(getattr(outcome, "silent_retry_attempts", 0) or 0),
     )
 
 
@@ -176,7 +178,26 @@ async def _stream_parallel_batch(
                     else:
                         await queue.put(("result", idx, payload))
             except Exception as exc:
-                await queue.put(("error", idx, exc))
+                logger.exception(
+                    "parallel tool failed tool=%s id=%s",
+                    item.tool,
+                    item.tool_call_id,
+                )
+                await queue.put(
+                    (
+                        "result",
+                        idx,
+                        ToolRunResult(
+                            item=item,
+                            events=[],
+                            result=None,
+                            message_output="",
+                            failed=True,
+                            error=str(exc),
+                            final_ctx=_branch_context(ctx),
+                        ),
+                    )
+                )
 
     tasks = [
         asyncio.create_task(_runner(idx, item))
@@ -193,20 +214,12 @@ async def _stream_parallel_batch(
                 idx, run = rest[0], rest[1]
                 results[idx] = run
                 done_count += 1
-            elif tag == "error":
-                idx, exc = rest[0], rest[1]
-                for t in tasks:
-                    t.cancel()
-                raise exc
     finally:
         await asyncio.gather(*tasks, return_exceptions=True)
 
     ordered = [r for r in results if r is not None]
     if len(ordered) != len(batch.items):
         raise RuntimeError("parallel tool batch missing results")
-    if any(r.failed for r in ordered):
-        yield ("result", ordered)
-        return
     yield ("result", ordered)
 
 
@@ -232,11 +245,8 @@ async def execute_tool_batches(
                     yield ("event", payload)
                     continue
                 runs: list[ToolRunResult] = payload
-                if any(r.failed for r in runs):
-                    yield ("result", runs)
-                    return
                 for run in runs:
-                    if run.result:
+                    if run.result and not run.failed:
                         working_ctx = apply_step_completed(
                             working_ctx, run.result.model_dump()
                         )
@@ -256,10 +266,7 @@ async def execute_tool_batches(
                     else:
                         run = payload
                         batch_results.append(run)
-                        if run.failed:
-                            yield ("result", batch_results)
-                            return
-                        if run.result:
+                        if run.result and not run.failed:
                             working_ctx = apply_step_completed(
                                 working_ctx, run.result.model_dump()
                             )

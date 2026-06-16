@@ -25,6 +25,10 @@ import {
   shouldRefreshStoryMemoryAfterTool,
 } from '../../utils/agentToolNames'
 import {
+  isResumableAgentRunStatus,
+  parseStoredAgentEvent,
+} from '../../utils/agentActiveRunResume'
+import {
   isPeerDroppedStreamError,
   shouldAttachStreamRecovery,
   STREAM_RECOVERY_BANNER,
@@ -128,6 +132,9 @@ export function useEditorAgentStream({
   const sendInFlightRef = useRef(false)
   const streamRecoveryRef = useRef(false)
   const streamRecoveryTimerRef = useRef<number | null>(null)
+  const resumeCheckedSessionRef = useRef<string | null>(null)
+  const agentEventHandlerRef = useRef<(eventName: string, rawData: string) => void>(() => {})
+  const attachRecoveryRef = useRef<(banner?: string) => void>(() => {})
   const messagesRef = useRef(messages)
   useEffect(() => {
     messagesRef.current = messages
@@ -308,7 +315,7 @@ export function useEditorAgentStream({
           runWsRef.current?.close()
           runWsRef.current = null
         }
-        if (hostModeEnabled) {
+        if (!streamRecoveryRef.current) {
           setIsLoading(false)
           if (!pendingInteraction && activeStreamMessageId === assistantMessageId) {
             setActiveStreamMessageId(null)
@@ -455,12 +462,18 @@ export function useEditorAgentStream({
         type === 'run.recovering'
       ) {
         batcher.flushNow()
-      } else if (type === 'tool.progress') {
-        batcher.schedule()
+      } else if (
+        type === 'tool.progress' ||
+        type === 'chapter.stream.started' ||
+        type === 'chapter.stream.completed'
+      ) {
+        batcher.flushNow()
       } else {
         batcher.schedule()
       }
     }
+
+    agentEventHandlerRef.current = handleAgentEvent
 
     const clearStreamRecoveryTimer = () => {
       if (streamRecoveryTimerRef.current != null) {
@@ -503,6 +516,8 @@ export function useEditorAgentStream({
       })
     }
 
+    attachRecoveryRef.current = attachStreamRecovery
+
     const handleStatusEvent = (eventName: string, rawData: string) => {
       if (eventName === 'agent-event' && rawData.includes('"type":"stream-end"')) {
         finishStreamRecovery()
@@ -520,7 +535,7 @@ export function useEditorAgentStream({
         return
       }
       const recoveryActive = streamRecoveryRef.current
-      if (!hostModeEnabled && !recoveryActive && parsedType !== 'run.recovering') {
+      if (!recoveryActive && parsedType !== 'run.recovering') {
         return
       }
       handleAgentEvent(eventName, rawData)
@@ -599,7 +614,6 @@ export function useEditorAgentStream({
       if (shouldAttachStreamRecovery(liveBox.state)) {
         sseDisconnectedEarly = true
       } else if (
-        hostModeEnabled &&
         liveBox.state.runId &&
         !liveBox.state.runTerminalAck &&
         !liveBox.state.isStreamEnded
@@ -621,12 +635,11 @@ export function useEditorAgentStream({
           streamError: undefined,
         }
         syncStreamState()
-      } else if (hostModeEnabled && liveBox.state.runId && peerDropped) {
+      } else if (liveBox.state.runId && peerDropped) {
         sseDisconnectedEarly = true
         liveBox.state = {
           ...liveBox.state,
-          hostGuardMessage:
-            '连接中断，任务在后台继续；正在通过托管通道同步进度…',
+          hostGuardMessage: STREAM_RECOVERY_BANNER,
           streamError: undefined,
         }
         syncStreamState()
@@ -936,6 +949,76 @@ export function useEditorAgentStream({
     statusWsRef.current = null
     statusWsSessionIdRef.current = null
   }, [])
+
+  useEffect(() => {
+    const sessionId = agentSessionIdRef.current
+    if (!sessionId || isLoading || resumeCheckedSessionRef.current === sessionId) {
+      return
+    }
+    resumeCheckedSessionRef.current = sessionId
+    void (async () => {
+      try {
+        const active = await api.fetchActiveAgentRun(sessionId)
+        if (!active?.id || !isResumableAgentRunStatus(active.status)) {
+          return
+        }
+        const assistantMessageId = `assistant-resume-${active.id}`
+        let streamState = createInitialAgentStreamUiState()
+        streamState = { ...streamState, runId: active.id }
+        const events = await api.fetchAgentRunEvents(active.id, -1)
+        for (const row of events.sort((a, b) => a.sequence - b.sequence)) {
+          const envelope = parseStoredAgentEvent(row.payloadJson)
+          if (!envelope) continue
+          streamState = applyAgentEvent(
+            streamState,
+            'agent-event',
+            JSON.stringify(envelope),
+          )
+        }
+        if (
+          streamState.isStreamEnded ||
+          streamState.runTerminalAck ||
+          !isResumableAgentRunStatus(active.status)
+        ) {
+          return
+        }
+        setIsLoading(true)
+        setActiveStreamMessageId(assistantMessageId)
+        activeStreamStateRef.current = streamState
+        liveStreamRef.current = { messageId: assistantMessageId, state: streamState }
+        setMessages((prev) => {
+          const existing = prev.find((m) => m.id === assistantMessageId)
+          const resumed: EditorMessage = {
+            id: assistantMessageId,
+            role: 'assistant',
+            content: finalizeAgentMessageContent(streamState),
+            timestamp: new Date(),
+            agentThinkText: streamState.thinkText || undefined,
+            agentSteps: streamState.stepStates.length > 0 ? streamState.stepStates : undefined,
+            agentTimeline: streamState.timeline.length > 0 ? streamState.timeline : undefined,
+            agentTodos: streamState.todos?.length ? streamState.todos : undefined,
+            agentRunId: active.id,
+            agentHostGuardMessage: STREAM_RECOVERY_BANNER,
+            agentStreamPhase: deriveAssistantStreamPhase(streamState),
+            agentAwaitingInteraction: streamState.awaitingInteraction,
+          }
+          if (existing) {
+            return prev.map((m) => (m.id === assistantMessageId ? resumed : m))
+          }
+          return [...prev, resumed]
+        })
+        streamRecoveryRef.current = true
+        attachRecoveryRef.current(STREAM_RECOVERY_BANNER)
+      } catch {
+        resumeCheckedSessionRef.current = null
+      }
+    })()
+  }, [
+    agentSessionIdRef,
+    isLoading,
+    persistMessages,
+    setMessages,
+  ])
 
   return {
     isLoading,

@@ -96,7 +96,7 @@ export function useEditorBootstrap({
   }, [hostModeEnabled, isLoading, setHostRunningInBackground])
 
   useEffect(() => () => {
-    if (hostModeRef.current && isLoadingRef.current) {
+    if (isLoadingRef.current) {
       return
     }
     abortActiveStream()
