@@ -79,4 +79,12 @@ test.describe('think rail timeline fixture', () => {
       expect(Math.abs(leadCenter - labelCenter)).toBeLessThan(3)
     }
   })
+
+  test('matches think headline font size on tool title', async ({ page }) => {
+    const thinkLabel = page.getByTestId('agent-think-toggle').first().locator('.font-semibold').first()
+    const toolTitle = page.locator('[data-timeline-tool-title-row] .font-semibold').first()
+    const thinkSize = await thinkLabel.evaluate((el) => parseFloat(window.getComputedStyle(el).fontSize))
+    const toolSize = await toolTitle.evaluate((el) => parseFloat(window.getComputedStyle(el).fontSize))
+    expect(Math.abs(thinkSize - toolSize)).toBeLessThan(0.5)
+  })
 })

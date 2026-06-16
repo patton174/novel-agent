@@ -111,8 +111,11 @@ export const THINK_HEADLINE_ROW =
 export const TOOL_HEADLINE_ROW =
   'flex w-full min-w-0 flex-row items-start gap-[0.4rem]'
 
-export const TOOL_TITLE_ROW =
-  'flex min-h-[1.35rem] w-full min-w-0 items-center gap-x-[0.35rem] gap-y-[0.2rem]'
+export const TOOL_TITLE_ROW = cn(
+  'flex min-h-[1.35rem] w-full min-w-0 flex-wrap items-center gap-x-[0.35rem] gap-y-[0.2rem]',
+  'text-[0.74rem] leading-[1.35rem]',
+  'max-md:text-[0.7rem] max-md:leading-snug',
+)
 
 export const CC_TOOL_HEADLINE_ROW = THINK_HEADLINE_ROW
 
@@ -178,7 +181,8 @@ export function ccHeadlineChevronClass(open?: boolean) {
 export const CC_BRANCH_GLYPH = 'agent-timeline-branch-glyph'
 
 export const CC_TOOL_NAME = cn(
-  'font-semibold leading-[1.35rem] text-muted-foreground',
+  'text-[0.74rem] font-semibold leading-[1.35rem] text-muted-foreground',
+  'max-md:text-[0.7rem] max-md:leading-snug',
   'group-hover:text-foreground',
 )
 
@@ -196,7 +200,7 @@ export const TOOL_HEADLINE_STATIC = cn(
 )
 
 export const CC_TOOL_HEADLINE = cn(
-  'flex min-h-[1.35rem] w-full min-w-0 flex-wrap items-center gap-x-[0.35rem] gap-y-[0.2rem] text-[0.74rem] leading-[1.35rem]',
+  TOOL_TITLE_ROW,
 )
 
 export const ORCHESTRATION_PENDING_LABEL = cn(

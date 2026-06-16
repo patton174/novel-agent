@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { thinkLeadCellClass, toolLeadCellClass, TOOL_HEADLINE_ROW } from './timelineClasses'
+import { thinkLeadCellClass, toolLeadCellClass, TOOL_HEADLINE_ROW, TOOL_TITLE_ROW } from './timelineClasses'
 
 describe('timelineClasses lead alignment', () => {
   it('keeps think lead cell on flex headline row', () => {
@@ -15,5 +15,10 @@ describe('timelineClasses lead alignment', () => {
     const cls = toolLeadCellClass()
     expect(cls).toContain('flex-[0_0_1.35rem]')
     expect(cls).toContain('items-center')
+  })
+
+  it('pins tool title row to timeline headline typography', () => {
+    expect(TOOL_TITLE_ROW).toContain('text-[0.74rem]')
+    expect(TOOL_TITLE_ROW).toContain('leading-[1.35rem]')
   })
 })
