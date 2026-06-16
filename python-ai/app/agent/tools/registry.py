@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from app.agent.harness.subagent_policy import SUBAGENT_EXCLUDED_TOOLS, is_subagent_run
 from app.agent.harness.review_agent import REVIEW_AGENT_ALLOWED_TOOLS, is_review_agent
+from app.agent.harness.subagent_policy import SUBAGENT_EXCLUDED_TOOLS, is_subagent_run
 from app.agent.schemas import AgentRunContext
 from app.agent.tools.chapter import CHAPTER_TOOLS
 from app.agent.tools.interaction import INTERACTION_TOOLS

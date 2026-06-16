@@ -31,8 +31,8 @@ from app.agent.context.usage import (
     build_context_usage_event,
     should_compress_context,
 )
-from app.agent.harness.events import _tool_input_for_sse
 from app.agent.harness.checkpoint_persist import persist_sse_checkpoint
+from app.agent.harness.events import _tool_input_for_sse
 from app.agent.harness.llm_trace import extract_cache_usage
 from app.agent.harness.loop_support import (
     _MAX_LLM_PAIRING_RETRIES_PER_TURN,
@@ -41,8 +41,8 @@ from app.agent.harness.loop_support import (
     RunLoopState,
     block_run_end_for_open_todos,
     build_todo_reminder_message,
-    planning_title,
     planned_tool_visibility_events,
+    planning_title,
     should_inject_todo_reminder,
     stream_tool_step,
     tool_batch_end_run,
@@ -66,6 +66,14 @@ from app.agent.harness.orchestration_contract import (
     normalize_tool_calls,
     validate_plan_batch,
 )
+from app.agent.harness.review_agent import (
+    build_review_subagent_run_context_human,
+    build_review_subagent_system_prompt,
+    is_review_agent,
+    mark_batch_needs_review,
+    record_chapter_mutation,
+)
+from app.agent.harness.review_agent_sse import stream_review_subagent
 from app.agent.harness.run_session import (
     RunSession,
     WorkerSliceSession,
@@ -76,18 +84,9 @@ from app.agent.harness.subagent import (
     build_subagent_run_context_human,
     build_subagent_system_prompt,
 )
-from app.agent.harness.review_agent import (
-    build_review_subagent_run_context_human,
-    build_review_subagent_system_prompt,
-    is_review_agent,
-    mark_batch_needs_review,
-    record_chapter_mutation,
-)
-from app.agent.harness.review_agent_sse import stream_review_subagent
 from app.agent.harness.subagent_policy import is_subagent_run
 from app.agent.harness.tool_batch_errors import (
     append_batch_validation_errors,
-    append_tool_messages_for_detail,
     append_unknown_tool_errors,
 )
 from app.agent.harness.tool_errors import format_input_validation_error
@@ -763,7 +762,6 @@ async def run_query_loop(
             batch_tool_recover = False
             turn_recoverable_failure = False
             turn_fatal_failure = False
-            batch_had_agent = any(i.tool == "Agent" for i in exec_items)
             batches = partition_tool_calls(exec_items)
 
             async for kind, payload in execute_tool_batches(

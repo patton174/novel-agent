@@ -22,7 +22,6 @@ from app.agent.tools.chapter_position import (
     resolve_target_position,
 )
 from app.agent.tools.chapter_resolve import resolve_chapter_row
-from app.agent.tools.text_edit import apply_string_replace
 from app.agent.tools.schemas import (
     ChapterAuditInput,
     DeleteChapterInput,
@@ -32,6 +31,7 @@ from app.agent.tools.schemas import (
     ReorderChaptersInput,
     WriteChapterInput,
 )
+from app.agent.tools.text_edit import apply_string_replace
 from app.agent.tools.tool import ToolCallResult, build_tool
 
 

@@ -9,9 +9,9 @@ from typing import Any
 from uuid import uuid4
 
 from app.agent.harness.review_agent import (
-    REVIEW_DESCRIPTION,
     _PATCH_CHANGED_IDS,
     _PATCH_REVIEW_AGENT,
+    REVIEW_DESCRIPTION,
     _build_review_prompt,
 )
 from app.agent.harness.subagent import (

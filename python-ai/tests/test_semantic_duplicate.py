@@ -2,8 +2,6 @@
 
 import pytest
 
-from app.agent.tools.semantic_duplicate import find_semantic_duplicates
-
 
 @pytest.mark.asyncio
 async def test_find_semantic_duplicates_detects_similar(monkeypatch):

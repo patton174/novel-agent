@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import pytest
 
-from app.billing.reporter import report_llm_usage, _model_cost_micros
+from app.billing.reporter import _model_cost_micros, report_llm_usage
 
 
 def test_model_cost_micros_positive():

@@ -11,15 +11,15 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import BaseModel, Field
 
 from app.agent.backend import chapter_client
-from app.agent.backend.memory_store import _read_memory_json_impl
 from app.agent.backend.chapter_meta import sorted_chapter_summaries
 from app.agent.backend.memory_catalog import load_story_memory_tree
+from app.agent.backend.memory_store import _read_memory_json_impl
+from app.agent.harness.structured_llm import invoke_structured_with_retry
 from app.agent.schemas import AgentRunContext
 from app.agent.tools.chapter_position import chapter_row_id
 from app.agent.tools.schemas import NarrativeReviewInput, NarrativeReviewScope
 from app.agent.tools.semantic_duplicate import find_semantic_duplicates
 from app.agent.tools.tool import ToolCallResult, build_tool
-from app.agent.harness.structured_llm import invoke_structured_with_retry
 from app.core.llm import llm_provider
 
 logger = logging.getLogger(__name__)
@@ -163,7 +163,6 @@ def _pick_review_chapter_ids(
     inp: NarrativeReviewInput,
 ) -> tuple[list[str], list[str]]:
     """Return (deep_read_ids, semantic_scan_ids)."""
-    ordered = sorted_chapter_summaries([dict(r) for r in rows if isinstance(r, dict)])
     written = _written_chapter_ids(rows)
     limit = min(inp.max_chapters, 12)
 

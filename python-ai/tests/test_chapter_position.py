@@ -3,7 +3,6 @@
 from app.agent.tools.chapter_position import (
     apply_moves,
     build_reorder_ids,
-    duplicate_title_groups,
     insert_id_at_position,
     resolve_target_position,
 )

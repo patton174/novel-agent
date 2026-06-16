@@ -11,7 +11,7 @@ from uuid import uuid4
 
 from langchain_core.messages import AIMessage, AIMessageChunk
 
-from app.agent.harness.llm_trace import log_llm_exchange, extract_cache_usage
+from app.agent.harness.llm_trace import extract_cache_usage, log_llm_exchange
 from app.agent.harness.visible_text_channel import (
     VisibleChannel,
     classify_visible_channel_prefix,

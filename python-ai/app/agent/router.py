@@ -17,6 +17,7 @@ from app.agent.harness.session_title import (
 from app.agent.loop import run_query_loop
 from app.agent.schemas import RunRequest, StepRequest
 from app.agent.streaming.sse_bridge import stream_cc_tool_step
+from app.config import settings
 from app.core.llm import llm_provider
 from app.runtime.events import encode_sse
 from app.runtime.host_guard import resolve_host_mode, stream_text_with_keepalive

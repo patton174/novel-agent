@@ -11,12 +11,7 @@ from uuid import uuid4
 from langchain_core.messages import BaseMessage, HumanMessage
 
 from app.agent.context.usage import RunUsageAccumulator
-from app.agent.tools.todo_helpers import (
-    TODO_REMINDER_INTERVAL,
-    TODO_REMINDER_TURNS,
-    format_todos_for_model,
-    working_todos_from_patch,
-)
+from app.agent.harness.events import _tool_input_for_sse
 from app.agent.harness.orchestration_contract import (
     QUERY_LOOP_END_RUN_TOOLS as _END_RUN_TOOLS,
 )
@@ -39,8 +34,13 @@ from app.agent.harness.tool_result_routing import (
 )
 from app.agent.harness.transcript import AgentTranscript, apply_interaction_to_context
 from app.agent.schemas import AgentRunContext, StepResult
-from app.agent.harness.events import _tool_input_for_sse
 from app.agent.streaming.sse_bridge import stream_cc_tool_step
+from app.agent.tools.todo_helpers import (
+    TODO_REMINDER_INTERVAL,
+    TODO_REMINDER_TURNS,
+    format_todos_for_model,
+    working_todos_from_patch,
+)
 from app.runtime.events import build_event
 
 logger = logging.getLogger(__name__)
