@@ -12,10 +12,10 @@ import {
   CC_TOOL_ROW_WRAP,
   HEADLINE_CLUSTER,
   TIMELINE_PENDING_IN,
-  TOOL_HEADLINE,
   TOOL_HEADLINE_ROW,
   TOOL_HEADLINE_STATIC,
   TOOL_MAIN,
+  TOOL_TITLE_ROW,
   ccToolBranchClass,
   toolLeadCellClass,
 } from '@/lib/timelineClasses'
@@ -60,8 +60,8 @@ export function CcToolRow({
   const displayName = translateToolDisplayName(name)
   const displayPhase = translateToolPhase(phase)
 
-  const headline = (
-    <div className={TOOL_HEADLINE}>
+  const titleLine = (
+    <div className={TOOL_TITLE_ROW} data-timeline-tool-title-row>
       <span className={HEADLINE_CLUSTER}>
         <span className={CC_TOOL_NAME}>{displayName}</span>
         {phase || args || resultHint ? (
@@ -120,10 +120,10 @@ export function CcToolRow({
               onClick={onToggle}
               data-testid={testId ? `${testId}-toggle` : undefined}
             >
-              {headline}
+              {titleLine}
             </button>
           ) : (
-            <div className={TOOL_HEADLINE_STATIC}>{headline}</div>
+            <div className={TOOL_HEADLINE_STATIC}>{titleLine}</div>
           )}
         </div>
       </div>

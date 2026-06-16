@@ -9,10 +9,11 @@ describe('timelineClasses lead alignment', () => {
     expect(cls).toContain('flex-[0_0_1.35rem]')
   })
 
-  it('uses grid tool headline row for icon/title pairing', () => {
-    expect(TOOL_HEADLINE_ROW).toContain('grid-cols-[1.35rem_minmax(0,1fr)]')
+  it('uses flex tool headline row pinned to title line', () => {
+    expect(TOOL_HEADLINE_ROW).toContain('items-start')
+    expect(TOOL_HEADLINE_ROW).not.toContain('items-center')
     const cls = toolLeadCellClass()
-    expect(cls).toContain('col-start-1')
+    expect(cls).toContain('flex-[0_0_1.35rem]')
     expect(cls).toContain('items-center')
   })
 })

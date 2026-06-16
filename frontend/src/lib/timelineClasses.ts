@@ -107,9 +107,12 @@ export const CC_TOOL_ROW_WRAP = 'w-full max-w-full px-0 py-0'
 export const THINK_HEADLINE_ROW =
   'flex w-full min-w-0 flex-row items-center gap-[0.4rem]'
 
-/** 工具头行：图标列与标题列 grid 对齐 */
+/** 工具头行：图标与工具名首行顶对齐（勿 items-center 整行） */
 export const TOOL_HEADLINE_ROW =
-  'grid w-full min-w-0 grid-cols-[1.35rem_minmax(0,1fr)] items-center gap-x-[0.4rem]'
+  'flex w-full min-w-0 flex-row items-start gap-[0.4rem]'
+
+export const TOOL_TITLE_ROW =
+  'flex min-h-[1.35rem] w-full min-w-0 items-center gap-x-[0.35rem] gap-y-[0.2rem]'
 
 export const CC_TOOL_HEADLINE_ROW = THINK_HEADLINE_ROW
 
@@ -123,7 +126,7 @@ export function thinkLeadCellClass(_compact?: boolean) {
 
 export function toolLeadCellClass(_compact?: boolean) {
   return cn(
-    'relative z-[1] col-start-1 row-start-1 flex h-[1.35rem] w-[1.35rem] items-center justify-center justify-self-center',
+    'relative z-[1] flex h-[1.35rem] w-[1.35rem] flex-[0_0_1.35rem] shrink-0 items-center justify-center',
   )
 }
 
@@ -155,13 +158,9 @@ export const CC_TOOL_MAIN =
   'flex min-h-[1.35rem] min-w-0 flex-1 flex-col justify-center gap-[0.08rem] pl-0'
 
 export const TOOL_MAIN =
-  'col-start-2 row-start-1 flex min-h-[1.35rem] min-w-0 flex-col justify-center pl-0'
+  'flex min-w-0 flex-1 flex-col justify-start gap-[0.04rem] pl-0'
 
-export const CC_TOOL_HEADLINE = cn(
-  'flex min-h-[1.35rem] w-full min-w-0 flex-wrap items-center gap-x-[0.35rem] gap-y-[0.2rem] text-[0.74rem] leading-[1.35rem]',
-)
-
-export const TOOL_HEADLINE = CC_TOOL_HEADLINE
+export const TOOL_HEADLINE = TOOL_TITLE_ROW
 
 export const HEADLINE_CLUSTER =
   'inline-flex min-w-0 flex-[1_1_auto] flex-wrap items-center gap-x-[0.35rem] gap-y-[0.2rem]'
@@ -193,7 +192,11 @@ export const CC_TOOL_HEADLINE_STATIC = 'w-full min-w-0'
 
 export const TOOL_HEADLINE_STATIC = cn(
   CC_TOOL_HEADLINE_STATIC,
-  'flex min-h-[1.35rem] w-full items-center',
+  'flex w-full min-w-0 flex-col gap-[0.04rem]',
+)
+
+export const CC_TOOL_HEADLINE = cn(
+  'flex min-h-[1.35rem] w-full min-w-0 flex-wrap items-center gap-x-[0.35rem] gap-y-[0.2rem] text-[0.74rem] leading-[1.35rem]',
 )
 
 export const ORCHESTRATION_PENDING_LABEL = cn(

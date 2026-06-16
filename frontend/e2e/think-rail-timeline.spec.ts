@@ -49,7 +49,7 @@ test.describe('think rail timeline fixture', () => {
     for (let i = 0; i < count; i += 1) {
       const row = toolRows.nth(i)
       const icon = row.locator('[data-timeline-tool-lead] [data-testid="timeline-lead-icon"]')
-      const title = row.locator('.font-semibold').first()
+      const title = row.locator('[data-timeline-tool-title-row] .font-semibold').first()
       const iconBox = await icon.boundingBox()
       const titleBox = await title.boundingBox()
       expect(iconBox).not.toBeNull()
