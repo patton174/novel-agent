@@ -391,7 +391,7 @@ public class StoryMemoryService {
                 }
             } else if ("chapter".equals(scopeNorm)) {
                 @SuppressWarnings("unchecked")
-                Map<String, Object> chapters = castNestedMap(memory.get("chapters"));
+                Map<String, Map<String, String>> chapters = castNestedMap(memory.get("chapters"));
                 if (!id.isBlank()) {
                     if (!chapters.containsKey(id)) {
                         id = id.trim();
