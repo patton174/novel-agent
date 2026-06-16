@@ -98,8 +98,5 @@ export function isCryptoExemptUrl(_url: string): boolean {
 }
 
 export function isStreamUrl(url: string): boolean {
-  return (
-    url.includes('/agent/chat/stream') ||
-    (url.includes('/agent/runs/') && url.includes('/stream'))
-  )
+  return url.includes('/agent/chat/stream')
 }

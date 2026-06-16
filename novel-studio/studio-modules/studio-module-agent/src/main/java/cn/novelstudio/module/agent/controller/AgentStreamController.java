@@ -46,8 +46,9 @@ public class AgentStreamController {
     }
 
     /**
-     * Queued 模式：浏览器 SSE 断线后重连同一 run（Worker 继续执行，Java 回放 journal + live fanout）。
+     * @deprecated 请使用 POST {@code /chat/stream}（body 带 run_id 或空 message + session_id）
      */
+    @Deprecated
     @GetMapping(value = "/runs/{runId}/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public ResponseEntity<StreamingResponseBody> resumeRunStream(
         @PathVariable String runId,
@@ -56,7 +57,19 @@ public class AgentStreamController {
         @RequestParam(name = "contentOnly", defaultValue = "false") boolean contentOnly
     ) {
         Long userId = PyaiRequestSupport.parseUserId(userIdHeader);
-        AgentStreamBiz.StreamFrames session = biz.resumeRunStreamFrames(userId, runId, afterSequence, contentOnly);
+        AgentStreamRequest resume = new AgentStreamRequest(
+            "",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            runId,
+            afterSequence
+        );
+        AgentStreamBiz.StreamFrames session = biz.streamFrames(userId, resume, contentOnly);
         return sseResponse(session, true);
     }
 

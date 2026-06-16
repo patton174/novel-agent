@@ -6,8 +6,10 @@ import json
 from typing import Any
 
 from app.agent.backend import memory_client
+from app.agent.backend.memory_api_contract import list_memory_entries_from_tree
 from app.agent.schemas import AgentRunContext
 from app.agent.tools.schemas import (
+    ClearMemoryInput,
     DeleteMemoryInput,
     EditMemoryInput,
     ListMemoryInput,
@@ -27,17 +29,8 @@ def _list_memory_entries(ctx: AgentRunContext, scope: MemoryScope | None) -> lis
         novel_id=ctx.novel_id,
         project=ctx.project if isinstance(ctx.project, dict) else None,
     )
-    out: list[dict[str, str]] = []
-    scopes = [scope.value] if scope else [s.value for s in MemoryScope]
-    for sc in scopes:
-        bucket = tree.get(sc) if sc != "character" else tree.get("characters")
-        if sc == "background":
-            bucket = tree.get("background")
-        if not isinstance(bucket, dict):
-            continue
-        for key in sorted(bucket.keys(), key=str):
-            out.append({"scope": sc, "key": str(key)})
-    return out
+    scope_value = scope.value if scope else None
+    return list_memory_entries_from_tree(tree, scope_filter=scope_value)
 
 
 async def list_memory(ctx: AgentRunContext, inp: ListMemoryInput) -> ToolCallResult:
@@ -47,11 +40,19 @@ async def list_memory(ctx: AgentRunContext, inp: ListMemoryInput) -> ToolCallRes
 
 async def read_memory(ctx: AgentRunContext, inp: ReadMemoryInput) -> ToolCallResult:
     scope = inp.scope.value
+    item_id = (inp.item_id or "").strip()
     text, err = await memory_client.fetch_memory_read_slice(
-        ctx, scope, inp.key, offset=inp.offset, limit=inp.limit
+        ctx,
+        scope,
+        inp.key,
+        item_id=item_id,
+        offset=inp.offset,
+        limit=inp.limit,
     )
     if err:
-        text, err = await memory_client.read_memory_json(ctx, scope, inp.key)
+        text, err = await memory_client.read_memory_json(
+            ctx, scope, inp.key, item_id=item_id
+        )
     if err:
         return ToolCallResult(content=f"<tool_use_error>{err}</tool_use_error>", is_error=True)
     patch: dict[str, Any] = {"last_memory_read": {"ok": True, "scope": scope, "key": inp.key}}
@@ -70,7 +71,11 @@ async def write_memory(ctx: AgentRunContext, inp: WriteMemoryInput) -> ToolCallR
             is_error=True,
         )
     ok, err = await memory_client.persist_memory_document(
-        ctx, scope, inp.key, envelope, item_id=inp.key if scope in ("character", "chapter") else ""
+        ctx,
+        scope,
+        inp.key,
+        envelope,
+        item_id=(inp.item_id or inp.key) if scope in ("character", "chapter") else "",
     )
     if not ok:
         return ToolCallResult(content=f"<tool_use_error>{err}</tool_use_error>", is_error=True)
@@ -82,7 +87,8 @@ async def write_memory(ctx: AgentRunContext, inp: WriteMemoryInput) -> ToolCallR
 
 async def edit_memory(ctx: AgentRunContext, inp: EditMemoryInput) -> ToolCallResult:
     scope = inp.scope.value
-    text, err = await memory_client.read_memory_json(ctx, scope, inp.key)
+    item_id = (inp.item_id or "").strip()
+    text, err = await memory_client.read_memory_json(ctx, scope, inp.key, item_id=item_id)
     if err or not text:
         return ToolCallResult(
             content=f"<tool_use_error>{err or 'memory not found'}</tool_use_error>",
@@ -102,11 +108,15 @@ async def edit_memory(ctx: AgentRunContext, inp: EditMemoryInput) -> ToolCallRes
     try:
         payload = json.loads(new_text)
     except json.JSONDecodeError:
-        ok, err = await memory_client.write_memory_json(ctx, scope, inp.key, new_text)
+        ok, err = await memory_client.write_memory_json(
+            ctx, scope, inp.key, new_text, item_id=item_id
+        )
         if not ok:
             return ToolCallResult(content=f"<tool_use_error>{err}</tool_use_error>", is_error=True)
         return ToolCallResult(content=json.dumps({"ok": True}, ensure_ascii=False))
-    ok, err = await memory_client.persist_memory_document(ctx, scope, inp.key, payload)
+    ok, err = await memory_client.persist_memory_document(
+        ctx, scope, inp.key, payload, item_id=item_id or inp.key if scope in ("character", "chapter") else ""
+    )
     if not ok:
         return ToolCallResult(content=f"<tool_use_error>{err}</tool_use_error>", is_error=True)
     return ToolCallResult(content=json.dumps({"ok": True}, ensure_ascii=False))
@@ -115,39 +125,53 @@ async def edit_memory(ctx: AgentRunContext, inp: EditMemoryInput) -> ToolCallRes
 async def delete_memory_tool(ctx: AgentRunContext, inp: DeleteMemoryInput) -> ToolCallResult:
     scope = inp.scope.value
     key = (inp.key or "").strip()
+    item_id = (inp.item_id or "").strip()
     if not key:
         return ToolCallResult(
             content="<tool_use_error>key is required</tool_use_error>",
             is_error=True,
         )
-    entries = _list_memory_entries(ctx, inp.scope)
-    known = {e["key"] for e in entries}
-    if key not in known:
-        exact_ci = [e["key"] for e in entries if e["key"].lower() == key.lower()]
-        if len(exact_ci) == 1:
-            key = exact_ci[0]
-        else:
-            prefix = [e["key"] for e in entries if e["key"].startswith(key) or key in e["key"]]
-            if len(prefix) == 1:
-                key = prefix[0]
-            elif key not in known:
-                sample = ", ".join(sorted(known)[:6])
-                return ToolCallResult(
-                    content=f"<tool_use_error>memory key not found: {inp.key}. Known: {sample}</tool_use_error>",
-                    is_error=True,
-                )
-    ok, err = await memory_client.delete_memory(ctx, scope, key)
+    if not item_id and key not in ("*", "全部", "__all__"):
+        entries = _list_memory_entries(ctx, inp.scope)
+        known = {e["key"] for e in entries}
+        by_key = {e["key"]: e.get("item_id", e["key"]) for e in entries}
+        if key in by_key and by_key[key]:
+            item_id = str(by_key[key])
+        if key not in known:
+            exact_ci = [e["key"] for e in entries if e["key"].lower() == key.lower()]
+            if len(exact_ci) == 1:
+                key = exact_ci[0]
+            else:
+                prefix = [e["key"] for e in entries if e["key"].startswith(key) or key in e["key"]]
+                if len(prefix) == 1:
+                    key = prefix[0]
+                elif key not in known:
+                    sample = ", ".join(sorted(known)[:6])
+                    return ToolCallResult(
+                        content=f"<tool_use_error>memory key not found: {inp.key}. Known: {sample}</tool_use_error>",
+                        is_error=True,
+                    )
+    ok, err = await memory_client.delete_memory(ctx, scope, key, item_id=item_id)
     if not ok:
         return ToolCallResult(content=f"<tool_use_error>{err}</tool_use_error>", is_error=True)
     return ToolCallResult(
-        content=json.dumps({"ok": True, "deleted": inp.key}, ensure_ascii=False),
+        content=json.dumps({"ok": True, "deleted": inp.key, "scope": scope}, ensure_ascii=False),
+    )
+
+
+async def clear_memory(ctx: AgentRunContext, inp: ClearMemoryInput) -> ToolCallResult:
+    ok, err = await memory_client.clear_memory_scope(ctx, inp.scope.value)
+    if not ok:
+        return ToolCallResult(content=f"<tool_use_error>{err}</tool_use_error>", is_error=True)
+    return ToolCallResult(
+        content=json.dumps({"ok": True, "cleared": True, "scope": inp.scope.value}, ensure_ascii=False),
     )
 
 
 MEMORY_TOOLS = [
     build_tool(
         name="ListMemory",
-        description="List memory entries (scope + key). Use before ReadMemory/WriteMemory.",
+        description="List memory entries. character/chapter rows include item_id; use key=item name for whole-item ops.",
         input_model=ListMemoryInput,
         call=list_memory,
         is_concurrency_safe=lambda _i: True,
@@ -176,9 +200,16 @@ MEMORY_TOOLS = [
     ),
     build_tool(
         name="DeleteMemory",
-        description="Delete a memory entry by scope and key.",
+        description="Delete a memory entry by scope and key (character/chapter key from ListMemory deletes the whole item).",
         input_model=DeleteMemoryInput,
         call=delete_memory_tool,
+        is_destructive=lambda _i: True,
+    ),
+    build_tool(
+        name="ClearMemory",
+        description="Clear all entries under a memory scope. Prefer over looping DeleteMemory when wiping a scope.",
+        input_model=ClearMemoryInput,
+        call=clear_memory,
         is_destructive=lambda _i: True,
     ),
 ]

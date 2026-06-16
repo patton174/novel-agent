@@ -13,10 +13,24 @@ from app.agent.backend.chapter_meta import (
     resolve_chapter_write_meta,
     sorted_chapter_summaries,
 )
-from app.agent.backend.content_api import content_auth_url, unwrap_result, user_headers
+from app.agent.backend.content_api import content_auth_url, extract_api_error, unwrap_result, user_headers
 from app.agent.schemas import AgentRunContext
 
 logger = logging.getLogger(__name__)
+
+
+def _chapter_http_error(resp: httpx.Response) -> str:
+    body: Any = None
+    try:
+        if resp.content:
+            body = resp.json()
+    except Exception:
+        body = None
+    return extract_api_error(
+        body,
+        status_code=resp.status_code,
+        default=resp.text[:300] if resp.text else f"HTTP {resp.status_code}",
+    )
 
 
 def normalize_chapter_summary(raw: dict[str, Any]) -> dict[str, Any]:
@@ -127,7 +141,8 @@ async def delete_chapter(ctx: AgentRunContext, chapter_id: str) -> tuple[bool, s
                 return True, ""
             if resp.status_code == 404:
                 return False, f"chapter not found: {chapter_id}"
-            return False, f"delete failed HTTP {resp.status_code}"
+            body = resp.json() if resp.content else {}
+            return False, extract_api_error(body, status_code=resp.status_code, default="delete failed")
     except Exception as exc:
         return False, str(exc)
 
@@ -190,14 +205,14 @@ async def persist_chapter_write(
                         if isinstance(created, dict) and created.get("id"):
                             out["chapter_id"] = str(created["id"])
                     else:
-                        detail = resp.text[:300] if resp.text else f"HTTP {resp.status_code}"
+                        detail = _chapter_http_error(resp)
                         return (
                             False,
                             out,
                             format_persist_failure_message(out, detail),
                         )
                 else:
-                    detail = resp.text[:300] if resp.text else f"HTTP {resp.status_code}"
+                    detail = _chapter_http_error(resp)
                     return (
                         False,
                         out,
@@ -207,7 +222,7 @@ async def persist_chapter_write(
                 url = content_auth_url(f"/novels/{novel_id}/chapters")
                 resp = await client.post(url, headers=headers, json=body)
                 if resp.status_code not in (200, 201):
-                    detail = resp.text[:300] if resp.text else f"HTTP {resp.status_code}"
+                    detail = _chapter_http_error(resp)
                     return (
                         False,
                         out,
@@ -245,7 +260,7 @@ async def update_chapter_sort_order(
             )
             if resp.status_code in (200, 204):
                 return True, ""
-            detail = resp.text[:300] if resp.text else f"HTTP {resp.status_code}"
+            detail = _chapter_http_error(resp)
             return False, detail
     except Exception as exc:
         return False, str(exc)
@@ -269,7 +284,7 @@ async def reorder_novel_chapters(
         async with httpx.AsyncClient(timeout=20.0) as client:
             resp = await client.post(url, headers=headers, json={"ids": ids})
             if resp.status_code != 200:
-                detail = resp.text[:300] if resp.text else f"HTTP {resp.status_code}"
+                detail = _chapter_http_error(resp)
                 return False, [], detail
             body = unwrap_result(resp.json())
             if not isinstance(body, list):

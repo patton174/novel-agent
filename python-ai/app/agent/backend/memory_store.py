@@ -114,6 +114,28 @@ async def delete_memory(
     return await asyncio.to_thread(_delete_memory_impl, ctx, scope, key, item_id=item_id)
 
 
+def _clear_memory_scope_impl(ctx: AgentRunContext, scope: str) -> tuple[bool, str]:
+    from app.runtime import story_memory_content
+    from app.runtime.story_memory import resolve_novel_id
+
+    novel_id = resolve_novel_id(ctx.novel_id, project=ctx.project if isinstance(ctx.project, dict) else None)
+    if ctx.user_id <= 0 or (not novel_id and not ctx.session_id):
+        return False, "invalid user/novel/session"
+    result = story_memory_content.clear_story_memory_remote(
+        ctx.user_id,
+        novel_id=novel_id,
+        session_id=ctx.session_id if not novel_id else None,
+        scope=scope,
+    )
+    if isinstance(result, dict) and result.get("ok"):
+        return True, ""
+    return False, str((result or {}).get("reason") or "clear failed")
+
+
+async def clear_memory_scope(ctx: AgentRunContext, scope: str) -> tuple[bool, str]:
+    return await asyncio.to_thread(_clear_memory_scope_impl, ctx, scope)
+
+
 def _persist_memory_document_impl(
     ctx: AgentRunContext,
     scope: str,

@@ -1,6 +1,7 @@
 """Story-memory API client."""
 
 from app.agent.backend.memory_store import (
+    clear_memory_scope,
     delete_memory,
     fetch_memory_read_slice,
     persist_memory_document,
@@ -9,6 +10,7 @@ from app.agent.backend.memory_store import (
 )
 
 __all__ = [
+    "clear_memory_scope",
     "delete_memory",
     "fetch_memory_read_slice",
     "persist_memory_document",

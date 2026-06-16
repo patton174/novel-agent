@@ -53,6 +53,10 @@ public class ContentInternalClient {
         return response == null ? null : response.getBody();
     }
 
+    public AgentRunDTO getActiveRunForSession(String sessionId) {
+        return internalAgentRunBiz.getActiveRunForSession(sessionId);
+    }
+
     public List<AgentEventDTO> listEvents(String runId, int afterSequence) {
         return internalAgentRunBiz.listEvents(runId, afterSequence);
     }

@@ -389,6 +389,18 @@ public class StoryMemoryService {
                     String matched = fuzzyMatchCharacterName(keyNorm, characters);
                     id = matched != null ? matched : keyNorm;
                 }
+            } else if ("chapter".equals(scopeNorm)) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> chapters = castNestedMap(memory.get("chapters"));
+                if (!id.isBlank()) {
+                    if (!chapters.containsKey(id)) {
+                        id = id.trim();
+                    }
+                } else if (deleteWholeItem || isKnownCharacterFieldKey(keyNorm)) {
+                    return Map.of("ok", false, "reason", "item_id required for character/chapter delete");
+                } else {
+                    id = chapters.containsKey(keyNorm) ? keyNorm : keyNorm;
+                }
             }
             if (id.isBlank()) {
                 return Map.of("ok", false, "reason", "item_id required for character/chapter delete");
@@ -397,6 +409,20 @@ public class StoryMemoryService {
             if (keyNorm.isBlank()) {
                 keyNorm = "*";
                 deleteWholeItem = true;
+            } else if (!deleteWholeItem && !isKnownCharacterFieldKey(keyNorm)) {
+                // ListMemory returns character/chapter names as keys — delete whole item, not a field.
+                if (keyNorm.equals(id)) {
+                    deleteWholeItem = true;
+                    keyNorm = "*";
+                } else if ("character".equals(scopeNorm)) {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Map<String, String>> characters = castNestedMap(memory.get("characters"));
+                    String matchedKey = fuzzyMatchCharacterName(keyNorm, characters);
+                    if (matchedKey != null && matchedKey.equals(id)) {
+                        deleteWholeItem = true;
+                        keyNorm = "*";
+                    }
+                }
             }
             @SuppressWarnings("unchecked")
             Map<String, Object> groups = (Map<String, Object>) memory.get(

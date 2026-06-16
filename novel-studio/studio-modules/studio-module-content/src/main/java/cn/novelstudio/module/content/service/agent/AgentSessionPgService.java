@@ -8,6 +8,7 @@ import cn.novelstudio.module.content.repository.agent.AgentSessionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
@@ -20,20 +21,27 @@ public class AgentSessionPgService {
     private final AgentSessionRepository sessionRepository;
     private final AgentMessageRepository messageRepository;
 
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void upsertSession(Long userId, String sessionId, String title, String novelId) {
         if (userId == null || sessionId == null || sessionId.isBlank()) {
             return;
         }
-        AgentSessionEntity entity = sessionRepository.findById(sessionId).orElseGet(AgentSessionEntity::new);
+        var existing = sessionRepository.findById(sessionId);
+        if (existing.isPresent()) {
+            AgentSessionEntity entity = existing.get();
+            applySessionFields(entity, sessionId, userId, title, novelId);
+            sessionRepository.save(entity);
+            return;
+        }
+        AgentSessionEntity entity = new AgentSessionEntity();
         applySessionFields(entity, sessionId, userId, title, novelId);
         try {
             sessionRepository.saveAndFlush(entity);
         } catch (DataIntegrityViolationException ex) {
-            AgentSessionEntity existing = sessionRepository.findById(sessionId)
+            AgentSessionEntity raced = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> ex);
-            applySessionFields(existing, sessionId, userId, title, novelId);
-            sessionRepository.save(existing);
+            applySessionFields(raced, sessionId, userId, title, novelId);
+            sessionRepository.save(raced);
         }
     }
 

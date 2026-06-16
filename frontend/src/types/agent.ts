@@ -233,4 +233,8 @@ export interface AgentStreamRequestBody {
   /** 当前小说 / 章节，供 Agent 上下文与章节工具 */
   novel_id?: string
   chapter_id?: string
+  /** 断线重连：指定 run（与空 message + session_id 二选一） */
+  run_id?: string
+  /** 重连回放游标，默认 -1 */
+  after_sequence?: number
 }

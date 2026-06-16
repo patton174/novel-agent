@@ -30,6 +30,10 @@ public class InternalAgentRunBiz extends BaseBiz {
         return run == null ? ResponseEntity.notFound().build() : ResponseEntity.ok(run);
     }
 
+    public AgentRunDTO getActiveRunForSession(String sessionId) {
+        return agentRunService.getActiveRunForSession(sessionId);
+    }
+
     public AgentRunDTO transition(String runId, TransitionAgentRunRequest request) {
         return agentRunService.transition(runId, request);
     }

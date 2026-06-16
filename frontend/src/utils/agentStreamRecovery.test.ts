@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { createInitialAgentStreamUiState } from './agentStreamState'
 import {
+  clearStreamRecoveryBanner,
   isPeerDroppedStreamError,
+  isStreamRecoveryBanner,
   shouldAttachStreamRecovery,
+  STREAM_RECOVERY_BANNER,
 } from './agentStreamRecovery'
 
 describe('agentStreamRecovery', () => {
@@ -30,5 +33,25 @@ describe('agentStreamRecovery', () => {
       isStreamEnded: true,
     }
     expect(shouldAttachStreamRecovery(state)).toBe(false)
+  })
+
+  it('detects recovery banner copy', () => {
+    expect(isStreamRecoveryBanner(STREAM_RECOVERY_BANNER)).toBe(true)
+    expect(isStreamRecoveryBanner('连接中断，任务在后台继续')).toBe(false)
+  })
+
+  it('clears only recovery banner from state', () => {
+    const state = {
+      ...createInitialAgentStreamUiState(),
+      hostGuardMessage: STREAM_RECOVERY_BANNER,
+    }
+    expect(clearStreamRecoveryBanner(state).hostGuardMessage).toBeUndefined()
+    const host = {
+      ...state,
+      hostGuardMessage: '连接中断，任务在后台继续',
+    }
+    expect(clearStreamRecoveryBanner(host).hostGuardMessage).toBe(
+      '连接中断，任务在后台继续',
+    )
   })
 })

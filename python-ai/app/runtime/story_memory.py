@@ -609,13 +609,31 @@ def delete_story_memory_item(
         resolved_item_id = bucket_id
 
     if user_id and user_id > 0:
+        snapshot = get_story_memory(
+            session_id,
+            user_id=user_id,
+            novel_id=novel_id,
+            project=project,
+        )
+        from app.agent.backend.memory_api_contract import resolve_delete_api_payload
+
+        resolved = resolve_delete_api_payload(
+            scope=scope_norm,
+            key=key_norm,
+            item_id=(item_id or resolved_item_id or ""),
+            characters=snapshot.get("characters"),
+            chapters=snapshot.get("chapters"),
+        )
+        if resolved[0] is None:
+            return {"ok": False, "reason": str(resolved[2])}
+        api_scope, api_key, api_item_id = resolved
         remote = story_memory_content.delete_story_memory_remote(
             user_id,
             novel_id=resolved_novel,
             session_id=session_id if not resolved_novel else None,
-            scope=scope_norm,
-            key=key_norm,
-            item_id=resolved_item_id,
+            scope=api_scope,
+            key=api_key,
+            item_id=api_item_id or None,
         )
         if remote.get("ok"):
             memory = remote.get("memory")

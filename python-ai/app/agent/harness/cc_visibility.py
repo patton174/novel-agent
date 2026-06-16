@@ -21,6 +21,7 @@ TOOL_DISPLAY_NAMES: dict[str, str] = {
     "WriteMemory": "写入记忆",
     "EditMemory": "编辑记忆",
     "DeleteMemory": "删除记忆",
+    "ClearMemory": "清空记忆",
     "SearchKnowledge": "知识检索",
     "GetCharacterGraph": "角色关系图",
     "AskUser": "询问",

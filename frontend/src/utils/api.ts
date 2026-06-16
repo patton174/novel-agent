@@ -20,6 +20,68 @@ import { isPeerDroppedStreamError } from './agentStreamRecovery'
 
 export type AgentStreamEventHandler = (eventName: string, data: string) => void
 
+export type AgentStreamOpenOptions = RequestInit & {
+  afterSequence?: number
+}
+
+function isResumeStreamBody(body: AgentStreamRequestBody): boolean {
+  if (body.run_id?.trim()) {
+    return true
+  }
+  return !body.message?.trim() && Boolean(body.session_id?.trim())
+}
+
+export async function openAgentStream(
+  body: AgentStreamRequestBody,
+  onEvent: AgentStreamEventHandler,
+  init?: AgentStreamOpenOptions,
+): Promise<void> {
+  const signal = init?.signal ?? undefined
+  const afterSequence = init?.afterSequence ?? body.after_sequence ?? -1
+
+  throwIfAborted(signal)
+
+  const streamUrl = `${PYTHON_API_BASE}/agent/chat/stream`
+  const payload: AgentStreamRequestBody = isResumeStreamBody(body)
+    ? {
+        ...body,
+        message: body.message ?? '',
+        after_sequence: afterSequence,
+      }
+    : body
+
+  const response = await secureFetch(streamUrl, {
+    method: 'POST',
+    headers: {
+      ...(DIRECT_PYTHON ? {} : getAuthHeaders()),
+      ...init?.headers,
+    },
+    body: JSON.stringify(toStreamRequestBody(payload)),
+    ...init,
+  })
+
+  throwIfAborted(signal)
+  await consumeAgentSseResponse(response, onEvent, signal)
+}
+
+/** 断线重连：与 openAgentStream 同一路径 POST /chat/stream（run_id + after_sequence） */
+export async function openAgentRunSseStream(
+  runId: string,
+  onEvent: AgentStreamEventHandler,
+  init?: AgentStreamOpenOptions & { sessionId?: string },
+): Promise<void> {
+  return openAgentStream(
+    {
+      message: '',
+      run_id: runId,
+      session_id: init?.sessionId,
+      after_sequence: init?.afterSequence ?? -1,
+    },
+    onEvent,
+    init,
+  )
+}
+
 function throwIfAborted(signal?: AbortSignal): void {
   if (signal?.aborted) {
     throw new DOMException('The stream was aborted', 'AbortError')
@@ -107,57 +169,6 @@ async function consumeAgentSseResponse(
       // reader may already be released after cancel
     }
   }
-}
-
-export async function openAgentStream(
-  body: AgentStreamRequestBody,
-  onEvent: AgentStreamEventHandler,
-  init?: RequestInit,
-): Promise<void> {
-  const signal = init?.signal ?? undefined
-
-  throwIfAborted(signal)
-
-  const streamUrl = `${PYTHON_API_BASE}/agent/chat/stream`
-  const response = await secureFetch(streamUrl, {
-    method: 'POST',
-    headers: {
-      ...(DIRECT_PYTHON ? {} : getAuthHeaders()),
-      ...init?.headers,
-    },
-    body: JSON.stringify(toStreamRequestBody(body)),
-    ...init,
-  })
-
-  throwIfAborted(signal)
-  await consumeAgentSseResponse(response, onEvent, signal)
-}
-
-/** Queued 模式：断线后重连同一 run 的 SSE（Java 回放 + live fanout，Worker 不受影响） */
-export async function openAgentRunSseStream(
-  runId: string,
-  onEvent: AgentStreamEventHandler,
-  init?: RequestInit & { afterSequence?: number },
-): Promise<void> {
-  const signal = init?.signal ?? undefined
-  const afterSequence = init?.afterSequence ?? -1
-
-  throwIfAborted(signal)
-
-  const streamUrl =
-    `${PYTHON_API_BASE}/agent/runs/${encodeURIComponent(runId)}/stream` +
-    `?after_sequence=${afterSequence}`
-  const response = await secureFetch(streamUrl, {
-    method: 'GET',
-    headers: {
-      ...(DIRECT_PYTHON ? {} : getAuthHeaders()),
-      ...init?.headers,
-    },
-    ...init,
-  })
-
-  throwIfAborted(signal)
-  await consumeAgentSseResponse(response, onEvent, signal)
 }
 
 async function buildAgentWsUrl(path: string, params: Record<string, string>): Promise<string | null> {

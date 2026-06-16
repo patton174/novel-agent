@@ -260,6 +260,7 @@ def default_ui_excerpt_registry() -> dict[str, UiExcerptFn]:
         "EditMemory": edit,
         "DeleteChapter": delete_ui_excerpt,
         "DeleteMemory": delete_ui_excerpt,
+        "ClearMemory": delete_ui_excerpt,
         "TodoWrite": todo_write_ui_excerpt,
         "AskUser": ask_user_ui_excerpt,
         "ReorderChapters": reorder_chapters_ui_excerpt,

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { secureFetch } from '../security/secureFetch'
-import { openAgentStream } from './api'
+import { openAgentRunSseStream, openAgentStream } from './api'
 
 vi.mock('../security/secureFetch', () => ({
   secureFetch: vi.fn(),
@@ -100,5 +100,21 @@ describe('openAgentStream', () => {
 
     await expect(streamPromise).rejects.toMatchObject({ name: 'AbortError' })
     expect(received).toHaveLength(1)
+  })
+
+  it('resume uses POST /chat/stream with run_id', async () => {
+    mockEventStream(['event: stream-end\ndata: done\n\n'])
+
+    await openAgentRunSseStream('run_abc', () => {}, { afterSequence: 3, sessionId: 'sess_1' })
+
+    expect(secureFetch).toHaveBeenCalledOnce()
+    const [url, init] = vi.mocked(secureFetch).mock.calls[0]
+    expect(url).toContain('/agent/chat/stream')
+    expect(init?.method).toBe('POST')
+    const body = JSON.parse(String(init?.body))
+    expect(body.run_id).toBe('run_abc')
+    expect(body.after_sequence).toBe(3)
+    expect(body.session_id).toBe('sess_1')
+    expect(body.message).toBe('')
   })
 })

@@ -9,6 +9,7 @@ import httpx
 
 from app.agent.backend.content_api import (
     content_auth_url,
+    extract_api_error,
     unwrap_result,
     unwrap_story_memory,
     user_headers,
@@ -115,11 +116,7 @@ def patch_story_memory_remote(
             if resp.status_code >= 400:
                 return {
                     "ok": False,
-                    "reason": str(
-                        (body or {}).get("reason")
-                        or (body or {}).get("msg")
-                        or f"HTTP {resp.status_code}"
-                    ),
+                    "reason": extract_api_error(body, status_code=resp.status_code, default="patch failed"),
                 }
             if isinstance(body, dict) and body.get("ok") is False:
                 return body
@@ -174,11 +171,7 @@ def delete_story_memory_remote(
             if resp.status_code >= 400:
                 return {
                     "ok": False,
-                    "reason": str(
-                        (body or {}).get("reason")
-                        or (body or {}).get("msg")
-                        or f"HTTP {resp.status_code}"
-                    ),
+                    "reason": extract_api_error(body, status_code=resp.status_code, default="delete failed"),
                 }
             if isinstance(body, dict) and body.get("ok") is False:
                 return body
@@ -197,6 +190,55 @@ def delete_story_memory_remote(
     except Exception as exc:
         logger.warning(
             "delete story memory failed novel=%s session=%s: %s",
+            novel or "-",
+            session or "-",
+            exc,
+        )
+        return {"ok": False, "reason": str(exc)}
+
+
+def clear_story_memory_remote(
+    user_id: int,
+    *,
+    novel_id: str | None = None,
+    session_id: str | None = None,
+    scope: str,
+) -> dict[str, Any]:
+    novel = (novel_id or "").strip()
+    session = (session_id or "").strip()
+    if user_id <= 0 or (not novel and not session):
+        return {"ok": False, "reason": "invalid user/novel/session"}
+    if novel:
+        url = content_auth_url(f"/novels/{novel}/story-memory/clear")
+    else:
+        url = content_auth_url(f"/sessions/{session}/story-memory/clear")
+    try:
+        with httpx.Client(timeout=10.0) as client:
+            resp = client.post(
+                url,
+                json={"scope": scope},
+                headers=user_headers(user_id),
+            )
+            body = unwrap_result(resp.json()) if resp.content else {}
+            if resp.status_code >= 400:
+                return {
+                    "ok": False,
+                    "reason": extract_api_error(body, status_code=resp.status_code, default="clear failed"),
+                }
+            if isinstance(body, dict) and body.get("ok") is False:
+                return body
+            result: dict[str, Any] = {
+                "ok": True,
+                "scope": body.get("scope", scope),
+                "cleared": body.get("cleared", True),
+            }
+            memory = body.get("memory")
+            if isinstance(memory, dict):
+                result["memory"] = _normalize_snapshot(memory)
+            return result
+    except Exception as exc:
+        logger.warning(
+            "clear story memory failed novel=%s session=%s: %s",
             novel or "-",
             session or "-",
             exc,

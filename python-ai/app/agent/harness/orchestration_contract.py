@@ -181,7 +181,9 @@ Workflow:
 - **Auto review agent**: after WriteChapter/EditChapter/Agent batch, a read-only review sub-agent runs NarrativeReview + ChapterAudit
 - **ReorderChapters**: full `chapter_ids` or partial `moves`
 - **DeleteChapter**: single id, batch ids, or `dedupe_title`
-- **Memory**: `ListMemory` → `ReadMemory(scope, key)` / `WriteMemory` / `EditMemory` / `DeleteMemory`
+- **Memory**: `ListMemory` → `ReadMemory(scope, key)` / `WriteMemory` / `EditMemory` / `DeleteMemory` / `ClearMemory(scope)`
+- **Memory wipe**: to remove all memories in a scope, call `ClearMemory` (e.g. `character`, `chapter`, `world`); do not loop `DeleteMemory` unless deleting specific items
+- **Memory nested scopes**: `ListMemory` returns `item_id` for character/chapter; `DeleteMemory(key=角色名)` deletes the whole character/chapter card
 - **Search**: `SearchKnowledge(query)`; `GetCharacterGraph(character)` when KG enabled
 - **TodoWrite**: id + content + status; mark in_progress before work, completed immediately after; merge=true with full list
 - **Agent**: delegate focused slices (≤4 chapters per call when batching)
@@ -195,6 +197,10 @@ def context_decision_hints() -> dict[str, str]:
         "catalog": (
             "Use novel.chapter_catalog and memory.memory_catalog in RUN_CONTEXT for IDs. "
             "Chapter tools accept index/position and can auto-merge reorder payloads."
+        ),
+        "memory": (
+            "ListMemory entries for character/chapter include item_id. "
+            "DeleteMemory(key=角色名) removes the whole item; ClearMemory(scope) wipes an entire scope."
         ),
     }
 

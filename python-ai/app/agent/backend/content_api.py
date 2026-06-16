@@ -55,6 +55,24 @@ def unwrap_result(body: Any) -> Any:
     return body
 
 
+def extract_api_error(body: Any, *, status_code: int, default: str = "request failed") -> str:
+    """Pull human-readable error from Content API Result / legacy bodies."""
+    data = unwrap_result(body) if body is not None else {}
+    if isinstance(data, dict):
+        for key in ("reason", "message", "msg", "error"):
+            val = data.get(key)
+            if val is not None and str(val).strip():
+                return str(val).strip()
+    if isinstance(body, dict):
+        for key in ("reason", "message", "msg", "error"):
+            val = body.get(key)
+            if val is not None and str(val).strip():
+                return str(val).strip()
+    if status_code >= 400:
+        return f"HTTP {status_code}"
+    return default
+
+
 def unwrap_story_memory(body: Any) -> dict[str, Any] | None:
     """Extract ``memory`` tree from auth story-memory GET/patch/delete payloads."""
     data = unwrap_result(body)

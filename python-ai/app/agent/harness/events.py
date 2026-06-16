@@ -222,6 +222,7 @@ def _tool_completed_payload(
         "WriteMemory",
         "EditMemory",
         "DeleteMemory",
+        "ClearMemory",
     ) or name.startswith("memory_") or name in ("memory_update", "memory_create") or (
         canonical in ("Write", "Edit", "Delete")
         and file_path
@@ -257,7 +258,7 @@ def _tool_completed_payload(
         return payload
 
     canonical_del = normalize_tool_name(name)
-    if canonical_del in ("DeleteChapter", "DeleteMemory", "Delete") and not failed:
+    if canonical_del in ("DeleteChapter", "DeleteMemory", "ClearMemory", "Delete") and not failed:
         _attach_tool_display_excerpt(
             payload, name, content, file_path, tool_input=tool_input
         )

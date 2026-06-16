@@ -175,6 +175,10 @@ class ListMemoryInput(BaseModel):
 class ReadMemoryInput(BaseModel):
     scope: MemoryScope = Field(..., description="Memory scope.")
     key: str = Field(..., min_length=1, description="Entry key (raw, not URL-encoded).")
+    item_id: str | None = Field(
+        None,
+        description="Character/chapter bucket id when key is a field name.",
+    )
     offset: int | None = Field(None, ge=1)
     limit: int | None = Field(None, ge=1)
 
@@ -183,6 +187,10 @@ class WriteMemoryInput(BaseModel):
     scope: MemoryScope
     key: str = Field(..., min_length=1)
     payload: dict[str, Any] = Field(..., description="Memory document body (v1 JSON object).")
+    item_id: str | None = Field(
+        None,
+        description="Character/chapter bucket id; defaults to key for nested scopes.",
+    )
 
 
 class EditMemoryInput(BaseModel):
@@ -191,11 +199,23 @@ class EditMemoryInput(BaseModel):
     old_string: str = Field("", description="Snippet to replace; empty replaces entire entry body.")
     new_string: str = Field(...)
     replace_all: bool = False
+    item_id: str | None = Field(
+        None,
+        description="Character/chapter bucket id when key is a field name.",
+    )
 
 
 class DeleteMemoryInput(BaseModel):
     scope: MemoryScope
     key: str = Field(..., min_length=1)
+    item_id: str | None = Field(
+        None,
+        description="Character/chapter id; omit when key is the item name from ListMemory.",
+    )
+
+
+class ClearMemoryInput(BaseModel):
+    scope: MemoryScope = Field(..., description="Clear all entries under this scope.")
 
 
 class SearchKnowledgeInput(BaseModel):

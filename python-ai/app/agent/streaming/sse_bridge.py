@@ -40,7 +40,7 @@ _READ_PROGRESS_TOOLS = frozenset(
     {"ReadChapter", "ListChapters", "ReadMemory", "ListMemory", "SearchKnowledge"}
 )
 _MEMORY_MUTATION_PROGRESS_TOOLS = frozenset(
-    {"WriteMemory", "EditMemory", "DeleteMemory"}
+    {"WriteMemory", "EditMemory", "DeleteMemory", "ClearMemory"}
 )
 _EXCERPT_STREAM_INTERVAL = 0.008
 

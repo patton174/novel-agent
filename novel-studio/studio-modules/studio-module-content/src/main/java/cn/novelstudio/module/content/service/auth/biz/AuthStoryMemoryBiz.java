@@ -180,9 +180,13 @@ public class AuthStoryMemoryBiz extends BaseBiz {
 
     private void requireMemoryOk(Map<String, Object> result, String defaultMessage) {
         if (Boolean.FALSE.equals(result.get("ok"))) {
+            Object reason = result.get("reason");
+            if (reason == null || String.valueOf(reason).isBlank()) {
+                reason = result.get("message");
+            }
             badRequest(
                 ResultCode.STORY_MEMORY_FAILED,
-                String.valueOf(result.getOrDefault("message", defaultMessage))
+                String.valueOf(reason != null && !String.valueOf(reason).isBlank() ? reason : defaultMessage)
             );
         }
     }

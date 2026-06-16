@@ -98,7 +98,7 @@ const EditorPage: React.FC = () => {
             onHostModeChange={editor.handleHostModeChange}
             onStreamAbort={editor.stream.handleStreamAbort}
             hostBannerText={editor.hostBannerText}
-            hostBannerRecovering={Boolean(editor.stream.liveStreamMessage?.agentHostGuardMessage)}
+            hostBannerRecovering={editor.stream.isSseRecovering}
             activeStreamMessageId={editor.stream.activeStreamMessageId}
             thinkPanelOpen={editor.stream.thinkPanelOpen}
             onThinkPanelChange={(id, open) =>

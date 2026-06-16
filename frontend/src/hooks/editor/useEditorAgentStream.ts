@@ -32,7 +32,9 @@ import {
   shouldFollowRunLiveEvents,
 } from '../../utils/agentActiveRunResume'
 import {
+  clearStreamRecoveryBanner,
   isPeerDroppedStreamError,
+  isStreamRecoveryBanner,
   shouldAttachStreamRecovery,
   STREAM_RECOVERY_BANNER,
 } from '../../utils/agentStreamRecovery'
@@ -117,6 +119,7 @@ export function useEditorAgentStream({
   /** Write/Edit 走 chapter.stream.* 时标记，在 tool.completed 后再选章/结束流式 */
   const chapterStreamActiveRef = useRef(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [isSseRecovering, setIsSseRecovering] = useState(false)
   const [activeStreamMessageId, setActiveStreamMessageId] = useState<string | null>(null)
   const [thinkPanelOpen, setThinkPanelOpen] = useState<Record<string, boolean>>({})
 
@@ -236,11 +239,29 @@ export function useEditorAgentStream({
 
   const finishStreamRecovery = useCallback(() => {
     streamRecoveryRef.current = false
+    setIsSseRecovering(false)
     clearStreamRecoveryTimer()
     streamResumeAbortRef.current?.abort()
     streamResumeAbortRef.current = null
     stopRunEventPolling()
+    const live = liveStreamRef.current
+    if (live) {
+      live.state = clearStreamRecoveryBanner(live.state)
+      streamSyncRef.current?.()
+    }
   }, [clearStreamRecoveryTimer, stopRunEventPolling])
+
+  const dismissRecoveryOverlay = useCallback(() => {
+    if (!streamRecoveryRef.current && !isSseRecovering) {
+      return
+    }
+    setIsSseRecovering(false)
+    const live = liveStreamRef.current
+    if (live) {
+      live.state = clearStreamRecoveryBanner(live.state)
+      streamSyncRef.current?.()
+    }
+  }, [isSseRecovering])
 
   const startRunSseRecovery = useCallback(
     (banner?: string) => {
@@ -253,6 +274,7 @@ export function useEditorAgentStream({
         return
       }
       streamRecoveryRef.current = true
+      setIsSseRecovering(true)
       live.state = {
         ...live.state,
         hostGuardMessage: banner ?? live.state.hostGuardMessage ?? STREAM_RECOVERY_BANNER,
@@ -268,6 +290,7 @@ export function useEditorAgentStream({
         {
           signal: resumeAbort.signal,
           afterSequence: lastPolledSequenceRef.current,
+          sessionId: agentSessionIdRef.current,
         },
       )
         .then(() => {
@@ -290,6 +313,12 @@ export function useEditorAgentStream({
           if (error instanceof DOMException && error.name === 'AbortError') {
             return
           }
+          clearStreamRecoveryTimer()
+          streamRecoveryTimerRef.current = window.setTimeout(() => {
+            if (streamRecoveryRef.current && liveStreamRef.current?.state.runId) {
+              attachRecoveryRef.current()
+            }
+          }, 2500)
           attachStatusWsFallbackRef.current()
         })
     },
@@ -469,14 +498,15 @@ export function useEditorAgentStream({
           runWsRef.current?.close()
           runWsRef.current = null
         }
-        if (!streamRecoveryRef.current) {
-          endRunLiveFollow()
-          setIsLoading(false)
-          if (!pendingInteraction && activeStreamMessageId === assistantMessageId) {
-            setActiveStreamMessageId(null)
-            liveStreamRef.current = null
-            streamSyncRef.current = null
-          }
+        if (streamRecoveryRef.current) {
+          finishStreamRecovery()
+        }
+        endRunLiveFollow()
+        setIsLoading(false)
+        if (!pendingInteraction && activeStreamMessageId === assistantMessageId) {
+          setActiveStreamMessageId(null)
+          liveStreamRef.current = null
+          streamSyncRef.current = null
         }
         return
       }
@@ -485,6 +515,13 @@ export function useEditorAgentStream({
         try {
           const parsed = JSON.parse(rawData) as AgentEventEnvelope
           type = parsed.type
+          if (
+            streamRecoveryRef.current &&
+            (parsed.type === 'gateway.connected' ||
+              (parsed.type && parsed.type !== 'run.recovering'))
+          ) {
+            dismissRecoveryOverlay()
+          }
           if (parsed.type === 'run.started' && parsed.run_id) {
             runWsRef.current?.close()
             void openAgentRunSocket(parsed.run_id).then((ws) => {
@@ -681,11 +718,7 @@ export function useEditorAgentStream({
       }
       handleAgentEvent(eventName, rawData)
       if (recoveryActive && parsedType && parsedType !== 'run.recovering') {
-        liveBox.state = {
-          ...liveBox.state,
-          hostGuardMessage: undefined,
-        }
-        syncStreamState()
+        dismissRecoveryOverlay()
       }
       if (
         recoveryActive &&
@@ -1142,7 +1175,9 @@ export function useEditorAgentStream({
               agentRunId: active.id,
               agentHostGuardMessage: streamRecoveryRef.current
                 ? STREAM_RECOVERY_BANNER
-                : undefined,
+                : isStreamRecoveryBanner(state.hostGuardMessage)
+                  ? undefined
+                  : state.hostGuardMessage,
               agentStreamPhase: deriveAssistantStreamPhase(state),
               agentAwaitingInteraction: state.awaitingInteraction,
             }
@@ -1206,6 +1241,7 @@ export function useEditorAgentStream({
   return {
     isLoading,
     setIsLoading,
+    isSseRecovering,
     activeStreamMessageId,
     setActiveStreamMessageId,
     thinkPanelOpen,

@@ -222,7 +222,7 @@ def format_tool_display_excerpt(
                 "edit" if raw in ("EditChapter", "EditMemory") else "write", "", path
             )
 
-    if raw in ("DeleteChapter", "DeleteMemory"):
+    if raw in ("DeleteChapter", "DeleteMemory", "ClearMemory"):
         text = content.strip()
         if text and not text.lower().startswith("deleted"):
             return _truncate(text, 120)
@@ -413,6 +413,11 @@ def memory_mutation_progress_message(tool: str, tool_input: dict[str, Any] | Non
         if key:
             return f"正在删除记忆「{key}」…"
         return "正在删除记忆…"
+    if raw == "ClearMemory":
+        scope = str(inp.get("scope") or "").strip()
+        if scope:
+            return f"正在清空 {scope} 记忆…"
+        return "正在清空记忆…"
     return f"正在{tool_display_name(tool, tool_input)}…"
 
 
