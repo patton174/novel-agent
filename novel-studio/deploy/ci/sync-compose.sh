@@ -24,7 +24,10 @@ sync_to() {
 
   for f in \
     docker-compose.mw.yml \
+    docker-compose.infra.yml \
+    docker-compose.milvus.yml \
     docker-compose.worker.yml \
+    .env.infra.example \
     Dockerfile.studio.runtime \
     nginx-frontend-worker.conf.template \
     nginx-entry-mw-ssl.conf.template \

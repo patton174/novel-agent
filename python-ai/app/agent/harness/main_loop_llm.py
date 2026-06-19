@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import logging
 from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
@@ -12,6 +11,8 @@ from uuid import uuid4
 from langchain_core.messages import AIMessage, AIMessageChunk
 
 from app.agent.harness.llm_trace import extract_cache_usage, log_llm_exchange
+from app.agent.harness.tool_call_chunk_accumulator import ToolCallChunkAccumulator
+from app.agent.harness.tool_use_ready import build_validated_tool_use_events
 from app.agent.harness.visible_text_channel import (
     VisibleChannel,
     classify_visible_channel_prefix,
@@ -25,11 +26,8 @@ from app.agent.schemas import AgentRunContext
 from app.core.llm_chunk_split import LlmChunkSplitter
 from app.core.llm_content import extract_llm_text
 from app.runtime.events import build_event
-from app.runtime.streaming import emit_sse_text_chunks
 
 logger = logging.getLogger(__name__)
-
-_REASONING_DELTA_INTERVAL_SEC = 0.022
 
 VisibleRouteMode = Literal["pending", "delivery"]
 
@@ -307,18 +305,57 @@ async def _emit_planning_narration_delta(
     piece = (text or "").replace("\ufffd", "")
     if not piece:
         return
-    for delta in emit_sse_text_chunks(piece):
-        yield build_event(
-            event_type="narration.delta",
-            run_id=state.run_id,
-            session_id=state.session_id,
-            message_id=state.message_id,
-            step_id=state.step_id,
-            sequence=state.sequence,
-            payload={"text": delta},
-        )
-        state.sequence += 1
-        await asyncio.sleep(_REASONING_DELTA_INTERVAL_SEC)
+    yield build_event(
+        event_type="narration.delta",
+        run_id=state.run_id,
+        session_id=state.session_id,
+        message_id=state.message_id,
+        step_id=state.step_id,
+        sequence=state.sequence,
+        payload={"text": piece},
+    )
+    state.sequence += 1
+
+
+async def _emit_reasoning_completed(
+    state: MainLoopLlmStreamState,
+) -> AsyncIterator[dict[str, Any]]:
+    """Close open reasoning stream once — before tool_use SSE so UI think ends with reasoning."""
+    if not state.reasoning_open:
+        return
+    state.reasoning_open = False
+    yield build_event(
+        event_type="reasoning.completed",
+        run_id=state.run_id,
+        session_id=state.session_id,
+        message_id=state.message_id,
+        step_id=state.reasoning_step_id,
+        sequence=state.sequence,
+        payload={},
+    )
+    state.sequence += 1
+
+
+async def _yield_validated_tool_use_events(
+    *,
+    stream_state: MainLoopLlmStreamState,
+    ready: Any,
+    ctx: AgentRunContext,
+    planning_step_id: str,
+) -> AsyncIterator[dict[str, Any]]:
+    async for ev in _emit_reasoning_completed(stream_state):
+        yield ev
+    events, stream_state.sequence = build_validated_tool_use_events(
+        ready=ready,
+        ctx=ctx,
+        run_id=ctx.run_id,
+        session_id=ctx.session_id,
+        message_id=ctx.message_id,
+        step_id=planning_step_id,
+        sequence=stream_state.sequence,
+    )
+    for ev in events:
+        yield ev
 
 
 async def _emit_reasoning_delta(
@@ -340,18 +377,16 @@ async def _emit_reasoning_delta(
             payload={"title": "编排推理"},
         )
         state.sequence += 1
-    for delta in emit_sse_text_chunks(piece):
-        yield build_event(
-            event_type="reasoning.delta",
-            run_id=state.run_id,
-            session_id=state.session_id,
-            message_id=state.message_id,
-            step_id=state.reasoning_step_id,
-            sequence=state.sequence,
-            payload={"text": delta},
-        )
-        state.sequence += 1
-        await asyncio.sleep(_REASONING_DELTA_INTERVAL_SEC)
+    yield build_event(
+        event_type="reasoning.delta",
+        run_id=state.run_id,
+        session_id=state.session_id,
+        message_id=state.message_id,
+        step_id=state.reasoning_step_id,
+        sequence=state.sequence,
+        payload={"text": piece},
+    )
+    state.sequence += 1
 
 
 async def _emit_delivery_message_delta(
@@ -377,18 +412,16 @@ async def _emit_delivery_message_delta(
             payload={"role": "assistant"},
         )
         state.sequence += 1
-    for delta in emit_sse_text_chunks(piece):
-        yield build_event(
-            event_type="message.delta",
-            run_id=state.run_id,
-            session_id=state.session_id,
-            message_id=state.message_id,
-            step_id=delivery_step_id,
-            sequence=state.sequence,
-            payload={"text": delta},
-        )
-        state.sequence += 1
-        await asyncio.sleep(_REASONING_DELTA_INTERVAL_SEC)
+    yield build_event(
+        event_type="message.delta",
+        run_id=state.run_id,
+        session_id=state.session_id,
+        message_id=state.message_id,
+        step_id=delivery_step_id,
+        sequence=state.sequence,
+        payload={"text": piece},
+    )
+    state.sequence += 1
 
 
 def _chunk_signals_tool_use(chunk: AIMessageChunk) -> bool:
@@ -424,6 +457,7 @@ async def stream_bind_tools_turn(
     )
     splitter = LlmChunkSplitter(emit_reasoning=True)
     gathered: AIMessageChunk | None = None
+    tool_accumulator = ToolCallChunkAccumulator()
     delivery_step_id = f"step_msg_{uuid4().hex[:8]}"
     delivery_open = [False]
     router = _VisibleTextRouter(
@@ -442,6 +476,15 @@ async def stream_bind_tools_turn(
                 gathered
             )
 
+            for ready in tool_accumulator.feed(chunk):
+                async for ev in _yield_validated_tool_use_events(
+                    stream_state=stream_state,
+                    ready=ready,
+                    ctx=ctx,
+                    planning_step_id=planning_step_id,
+                ):
+                    yield ev
+
             raw = getattr(chunk, "content", chunk)
             for kind, text in splitter.feed(raw):
                 if kind == "reasoning":
@@ -453,17 +496,8 @@ async def stream_bind_tools_turn(
                     ):
                         yield ev
 
-        if stream_state.reasoning_open:
-            yield build_event(
-                event_type="reasoning.completed",
-                run_id=ctx.run_id,
-                session_id=ctx.session_id,
-                message_id=ctx.message_id,
-                step_id=stream_state.reasoning_step_id,
-                sequence=stream_state.sequence,
-                payload={},
-            )
-            stream_state.sequence += 1
+        async for ev in _emit_reasoning_completed(stream_state):
+            yield ev
 
         has_tool_calls = _gathered_has_tool_calls(gathered)
         full_visible = ""
@@ -495,6 +529,16 @@ async def stream_bind_tools_turn(
         if gathered is None:
             yield AIMessage(content="")
             return
+
+        final_tool_calls = getattr(gathered, "tool_calls", None) or []
+        for ready in tool_accumulator.feed_gathered_tool_calls(final_tool_calls):
+            async for ev in _yield_validated_tool_use_events(
+                stream_state=stream_state,
+                ready=ready,
+                ctx=ctx,
+                planning_step_id=planning_step_id,
+            ):
+                yield ev
 
         log_llm_exchange(
             phase="main_loop",
@@ -536,14 +580,6 @@ async def stream_bind_tools_turn(
             id=getattr(gathered, "id", None),
         )
     except Exception:
-        if stream_state.reasoning_open:
-            yield build_event(
-                event_type="reasoning.completed",
-                run_id=ctx.run_id,
-                session_id=ctx.session_id,
-                message_id=ctx.message_id,
-                step_id=stream_state.reasoning_step_id,
-                sequence=stream_state.sequence,
-                payload={},
-            )
+        async for ev in _emit_reasoning_completed(stream_state):
+            yield ev
         raise

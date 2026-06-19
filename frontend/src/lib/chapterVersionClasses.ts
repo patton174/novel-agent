@@ -1,45 +1,47 @@
 import { cn } from '@/lib/utils'
 
-export const CHAPTER_VERSION_PANEL = cn(
-  'mt-[0.85rem] rounded-[10px] border border-border bg-card/90 p-[0.65rem]',
-)
+export const CHAPTER_VERSION_PANEL = cn('flex min-h-0 flex-col')
 
 export const CHAPTER_VERSION_HEADING = cn(
-  'mb-2 text-[0.82rem] font-bold text-foreground',
+  'mb-2 px-0.5 text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground/80',
 )
 
 export const CHAPTER_VERSION_HINT =
-  'px-[0.15rem] py-2 text-[0.78rem] leading-normal text-muted-foreground'
+  'px-0.5 py-1.5 text-[0.74rem] leading-snug text-muted-foreground'
 
-export const CHAPTER_VERSION_TIMELINE = cn(
-  'relative mt-2 pl-5',
-  'before:absolute before:left-[7px] before:top-2 before:bottom-2 before:w-px before:bg-border',
+export const CHAPTER_VERSION_TIMELINE = cn('flex flex-col')
+
+export const CHAPTER_VERSION_ITEM = cn('flex gap-x-2.5')
+
+export const CHAPTER_VERSION_RAIL = cn('flex w-[14px] shrink-0 flex-col items-center')
+
+export function chapterVersionDotClass(opts: { current?: boolean; active?: boolean }) {
+  return cn(
+    'relative z-[1] mt-[0.22rem] size-[9px] shrink-0 rounded-full border-2',
+    opts.current
+      ? 'border-primary bg-primary shadow-[0_0_0_2px] shadow-background'
+      : 'border-muted-foreground/55 bg-background',
+    opts.active && !opts.current && 'border-primary/70 bg-primary/15',
+  )
+}
+
+export const CHAPTER_VERSION_CONNECTOR = cn(
+  'my-1 w-px min-h-[10px] flex-1 bg-border/70',
 )
 
-export const CHAPTER_VERSION_ITEM = cn(
-  'relative pb-4 last:pb-0',
-  'before:absolute before:-left-[13px] before:top-[0.55rem] before:size-2.5 before:rounded-full',
-  'before:border-2 before:border-primary before:bg-background',
-)
-
-export const CHAPTER_VERSION_BODY = cn(
-  'rounded-lg border border-border bg-background p-[0.55rem] px-[0.65rem]',
-  'max-md:p-2 max-md:px-2',
-)
+export const CHAPTER_VERSION_BODY = cn('min-w-0 flex-1 pb-3 last:pb-0')
 
 export const CHAPTER_VERSION_META = cn(
-  'flex flex-wrap items-center gap-x-2 gap-y-[0.35rem] text-[0.68rem] text-muted-foreground',
-  '[&_.badge]:rounded [&_.badge]:bg-primary/15 [&_.badge]:px-[0.35rem] [&_.badge]:py-0.5',
-  '[&_.badge]:font-semibold [&_.badge]:text-primary',
+  'flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[0.66rem] text-muted-foreground',
+  '[&_.badge]:rounded [&_.badge]:bg-muted/60 [&_.badge]:px-1.5 [&_.badge]:py-px',
+  '[&_.badge]:font-medium [&_.badge]:text-muted-foreground',
 )
 
 export const CHAPTER_VERSION_TITLE = cn(
-  'my-1 mb-[0.4rem] text-[0.8rem] font-semibold leading-snug text-foreground',
-  'max-md:line-clamp-2 max-md:overflow-hidden max-md:whitespace-normal',
-  'md:truncate md:whitespace-nowrap',
+  'mt-0.5 truncate text-[0.78rem] font-medium leading-snug text-foreground',
 )
 
 export const CHAPTER_VERSION_ACTIONS = cn(
-  'flex gap-[0.4rem]',
-  'max-md:flex-col max-md:gap-[0.3rem] max-md:[&_button]:w-full max-md:[&_button]:justify-center',
+  'mt-1.5 flex flex-wrap gap-1',
+  '[&_button]:h-7 [&_button]:px-2 [&_button]:text-[0.68rem]',
 )

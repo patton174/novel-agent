@@ -62,13 +62,13 @@ export function outlineItemClass(opts?: {
 }) {
   const { active, inProgress, dragOver } = opts ?? {}
   return cn(
-    'rounded-lg border border-transparent transition-[background,border-color,box-shadow] duration-150',
+    'rounded-lg border border-transparent transition-[border-color] duration-150',
     dragOver && 'border-primary/30 bg-primary/10',
-    !dragOver && active && 'relative overflow-hidden border-primary/30 bg-primary/5 shadow-sm ring-1 ring-primary/15',
+    !dragOver && active && 'border-l-2 border-l-primary bg-transparent',
     !dragOver &&
       !active &&
       inProgress &&
-      'border-border/50 bg-muted/40',
+      'border-border/50 bg-muted/25',
     !dragOver && !active && !inProgress && 'bg-transparent',
   )
 }

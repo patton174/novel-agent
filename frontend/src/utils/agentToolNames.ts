@@ -1,5 +1,5 @@
 /**
- * CC tool names + legacy aliases for persisted SSE / chat replay.
+ * Agent tool names — API wire names with icon aliases for CC-style UI.
  */
 
 /** Canonical CC tools exposed in orchestration UI */
@@ -33,23 +33,17 @@ export const CC_ORCHESTRATION_TOOLS = [
 /** @deprecated use CC_ORCHESTRATION_TOOLS */
 export const ORCHESTRATION_TOOLS = CC_ORCHESTRATION_TOOLS
 
-/** Map legacy wire names → CC canonical name (display / icons only). */
-const LEGACY_TOOL_ALIASES: Record<string, string> = {
-  chapter_list: 'Glob',
-  chapter_read: 'Read',
-  chapter_create: 'Write',
-  chapter_update: 'Edit',
-  chapter_delete: 'Delete',
-  memory_read: 'Read',
-  memory_create: 'Write',
-  memory_update: 'Edit',
-  memory_delete: 'Delete',
-  memory_patch: 'Edit',
+/** Map API tool names → CC icon bucket (display only). */
+const TOOL_ICON_ALIASES: Record<string, string> = {
   ReadMemory: 'Read',
-  WriteMemory: 'Write',
-  EditMemory: 'Edit',
+  CreateMemory: 'Write',
+  UpdateMemoryFields: 'Edit',
+  UpdateMemoryContent: 'Edit',
+  UpdateMemoryMeta: 'Edit',
+  MoveMemory: 'Edit',
   DeleteMemory: 'Delete',
   ListMemory: 'Glob',
+  GetMemoryTree: 'Glob',
   ReadChapter: 'Read',
   WriteChapter: 'Write',
   EditChapter: 'Edit',
@@ -58,20 +52,83 @@ const LEGACY_TOOL_ALIASES: Record<string, string> = {
   SearchKnowledge: 'Grep',
   choose: 'AskUser',
   ask_user: 'AskUser',
-  context_search: 'Grep',
+}
+
+const MEMORY_API_TOOLS = new Set([
+  'ReadMemory',
+  'CreateMemory',
+  'UpdateMemoryFields',
+  'UpdateMemoryContent',
+  'UpdateMemoryMeta',
+  'MoveMemory',
+  'DeleteMemory',
+  'ListMemory',
+  'GetMemoryTree',
+])
+
+const CHAPTER_API_TOOLS = new Set([
+  'ReadChapter',
+  'WriteChapter',
+  'EditChapter',
+  'DeleteChapter',
+  'ListChapters',
+  'ReorderChapters',
+])
+
+const MEMORY_MUTATION_TOOLS = new Set([
+  'CreateMemory',
+  'UpdateMemoryFields',
+  'UpdateMemoryContent',
+  'UpdateMemoryMeta',
+  'MoveMemory',
+  'DeleteMemory',
+])
+
+/** Wire/API tool name — use for branching logic, never for icon aliases. */
+export function canonicalToolName(name: string | undefined): string {
+  return (name ?? '').trim()
 }
 
 export function normalizeToolName(name: string | undefined): string {
-  const raw = (name ?? '').trim()
+  const raw = canonicalToolName(name)
   if (!raw) {
     return ''
   }
-  return LEGACY_TOOL_ALIASES[raw] ?? raw
+  return TOOL_ICON_ALIASES[raw] ?? raw
 }
 
-export function isLegacyToolName(name: string | undefined): boolean {
-  const raw = (name ?? '').trim()
-  return Boolean(raw && raw in LEGACY_TOOL_ALIASES)
+export function isMemoryListTool(name: string | undefined): boolean {
+  const raw = canonicalToolName(name)
+  return raw === 'ListMemory' || raw === 'GetMemoryTree'
+}
+
+export function isMemoryWriteTool(name: string | undefined): boolean {
+  const raw = canonicalToolName(name)
+  return (
+    raw === 'CreateMemory' ||
+    raw === 'UpdateMemoryFields' ||
+    raw === 'UpdateMemoryContent' ||
+    raw === 'UpdateMemoryMeta' ||
+    raw === 'MoveMemory' ||
+    raw === 'DeleteMemory'
+  )
+}
+
+export function isMemoryApiTool(name: string | undefined): boolean {
+  const raw = canonicalToolName(name)
+  return Boolean(raw && MEMORY_API_TOOLS.has(raw))
+}
+
+export function isListChaptersTool(name: string | undefined): boolean {
+  return canonicalToolName(name) === 'ListChapters'
+}
+
+export function isInventoryListTool(name: string | undefined): boolean {
+  return isListChaptersTool(name) || isMemoryListTool(name)
+}
+
+export function isLegacyToolName(_name: string | undefined): boolean {
+  return false
 }
 
 export function isAskUserTool(name: string | undefined): boolean {
@@ -79,52 +136,67 @@ export function isAskUserTool(name: string | undefined): boolean {
   return raw === 'AskUser' || raw === 'choose' || raw === 'ask_user'
 }
 
-/** CC memory tools — normalize to Read/Write for icons but must not inherit chapter heuristics. */
-const MEMORY_CC_TOOL_NAMES = new Set([
-  'ReadMemory',
-  'WriteMemory',
-  'EditMemory',
-  'DeleteMemory',
-  'ListMemory',
-])
-
-function isMemoryCcToolName(name: string | undefined): boolean {
-  const raw = (name ?? '').trim()
-  return Boolean(raw && MEMORY_CC_TOOL_NAMES.has(raw))
-}
-
 export function isChapterWriteTool(name: string | undefined): boolean {
-  if (isMemoryCcToolName(name)) {
+  if (isMemoryApiTool(name)) {
     return false
   }
-  const n = normalizeToolName(name)
-  return n === 'Write' || n === 'Edit'
+  const raw = (name ?? '').trim()
+  return (
+    CHAPTER_API_TOOLS.has(raw) &&
+    (raw === 'WriteChapter' || raw === 'EditChapter' || raw === 'ReorderChapters')
+  )
 }
 
 export function isVfsReadTool(name: string | undefined): boolean {
-  const n = normalizeToolName(name)
-  return n === 'Read' || n === 'Grep' || n === 'Glob'
+  const raw = (name ?? '').trim()
+  return raw === 'ReadMemory' || raw === 'ReadChapter' || raw === 'SearchKnowledge'
 }
 
-/** Consecutive read-style tools (Read/Grep/Glob or legacy memory_read) with result_labels. */
 export function isCollapsibleReadTool(name: string | undefined): boolean {
   const raw = (name ?? '').trim()
-  if (raw === 'memory_read' || raw === 'ReadMemory') {
-    return true
-  }
-  const n = normalizeToolName(name)
-  return n === 'Read' || n === 'Grep'
+  return raw === 'ReadMemory' || raw === 'ReadChapter' || raw === 'SearchKnowledge'
 }
 
 export function isMemoryMutationTool(name: string | undefined): boolean {
   const raw = (name ?? '').trim()
-  if (/^memory_(create|update|delete|patch)$/.test(raw)) {
-    return true
-  }
-  const n = normalizeToolName(name)
-  return n === 'Write' || n === 'Edit' || n === 'Delete'
+  return MEMORY_MUTATION_TOOLS.has(raw)
 }
 
+/** Write/Edit/Delete 是否作用于章节正文。 */
+export function isChapterContentSideEffect(
+  toolName: string | undefined,
+  _payload?: Record<string, unknown>,
+): boolean {
+  const raw = (toolName ?? '').trim()
+  if (isMemoryApiTool(raw)) {
+    return false
+  }
+  return (
+    raw === 'WriteChapter' ||
+    raw === 'EditChapter' ||
+    raw === 'DeleteChapter' ||
+    raw === 'ReorderChapters'
+  )
+}
+
+/** WriteChapter/EditChapter 是否走 chapter.stream.* 管线 */
+export function isChapterStreamTool(toolName: string | undefined): boolean {
+  const raw = (toolName ?? '').trim()
+  if (isMemoryApiTool(raw)) {
+    return false
+  }
+  return raw === 'WriteChapter' || raw === 'EditChapter'
+}
+
+export function shouldRefreshMemoryAfterTool(toolName: string | undefined): boolean {
+  const raw = (toolName ?? '').trim()
+  return MEMORY_MUTATION_TOOLS.has(raw)
+}
+
+/** @deprecated use shouldRefreshMemoryAfterTool */
+export const shouldRefreshStoryMemoryAfterTool = shouldRefreshMemoryAfterTool
+
+/** @deprecated VFS paths removed; kept for callers that still read optional file_path. */
 export function vfsPathFromPayload(payload: Record<string, unknown> | undefined): string {
   if (!payload) {
     return ''
@@ -138,82 +210,7 @@ export function vfsPathFromPayload(payload: Record<string, unknown> | undefined)
   return ''
 }
 
-export function isMemoryVfsPath(path: string): boolean {
-  return /\/memory\//i.test(path)
-}
-
-/** Write/Edit/Delete 是否作用于章节正文（而非 story-memory 路径）。 */
-export function isChapterContentSideEffect(
-  toolName: string | undefined,
-  payload?: Record<string, unknown>,
-): boolean {
-  const raw = (toolName ?? '').trim()
-  if (isMemoryCcToolName(raw)) {
-    return false
-  }
-  if (/^chapter_(create|update|delete)$/i.test(raw)) {
-    return true
-  }
-  const n = normalizeToolName(raw)
-  if (
-    n === 'WriteChapter' ||
-    n === 'EditChapter' ||
-    n === 'DeleteChapter' ||
-    n === 'ReorderChapters'
-  ) {
-    return true
-  }
-  if (n !== 'Write' && n !== 'Edit' && n !== 'Delete') {
-    return false
-  }
-  const path = vfsPathFromPayload(payload)
-  if (path && isMemoryVfsPath(path)) {
-    return false
-  }
-  if (path && /\/chapters\//i.test(path)) {
-    return true
-  }
-  return !path
-}
-
-/** WriteChapter/EditChapter 或 legacy Write/Edit 是否走 chapter.stream.* 管线 */
-export function isChapterStreamTool(toolName: string | undefined): boolean {
-  const raw = (toolName ?? '').trim()
-  if (isMemoryCcToolName(raw)) {
-    return false
-  }
-  const n = normalizeToolName(raw)
-  return n === 'WriteChapter' || n === 'EditChapter' || n === 'Write' || n === 'Edit'
-}
-
-export function shouldRefreshStoryMemoryAfterTool(
-  toolName: string | undefined,
-  payload?: Record<string, unknown>,
-): boolean {
-  const raw = (toolName ?? '').trim()
-  if (
-    raw === 'WriteMemory' ||
-    raw === 'EditMemory' ||
-    raw === 'DeleteMemory'
-  ) {
-    return true
-  }
-  const canonical = normalizeToolName(raw)
-  if (
-    canonical === 'WriteMemory' ||
-    canonical === 'EditMemory' ||
-    canonical === 'DeleteMemory'
-  ) {
-    return true
-  }
-  if (/^memory_(create|update|delete|patch)$/.test(raw)) {
-    return true
-  }
-  const path = vfsPathFromPayload(payload)
-  if (path && isMemoryVfsPath(path)) {
-    return normalizeToolName(raw) === 'Write' ||
-      normalizeToolName(raw) === 'Edit' ||
-      normalizeToolName(raw) === 'Delete'
-  }
+/** @deprecated VFS memory paths removed */
+export function isMemoryVfsPath(_path: string): boolean {
   return false
 }

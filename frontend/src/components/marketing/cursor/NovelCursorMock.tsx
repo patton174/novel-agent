@@ -212,10 +212,10 @@ export function CursorFloatCardMock({ className }: { className?: string }) {
         </div>
         <ul className={cn(CURSOR_AGENT_LIST, 'cursor-agent-list')}>
           <li className="cursor-step" data-step="float-step-0">
-            memory_read · 角色库
+            ReadMemory · 角色库
           </li>
           <li className="cursor-step" data-step="float-step-1">
-            chapter_create · 流式输出
+            WriteChapter · 流式输出
           </li>
         </ul>
         <div className={cn(CURSOR_FILE_CHIP, 'cursor-chip')} data-step="float-chip">
@@ -267,7 +267,7 @@ export function CursorPrdFeatureMock() {
                   调用 plan 生成步骤
                 </li>
                 <li className="cursor-step" data-step="step-2">
-                  chapter_create 流式写入
+                  WriteChapter 流式写入
                 </li>
               </ul>
               <div className={cn(CURSOR_FILE_CHIP, 'cursor-chip')} data-step="chip-0">

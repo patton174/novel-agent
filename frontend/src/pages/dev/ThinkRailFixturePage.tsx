@@ -72,7 +72,8 @@ export default function ThinkRailFixturePage() {
           <CcToolRow
             name={block.stepId === 'fixture-edit-1' ? 'EditMemory' : 'ReadMemory'}
             iconName={block.stepId === 'fixture-edit-1' ? 'EditMemory' : 'ReadMemory'}
-            phase={block.stepId === 'fixture-edit-1' ? '失败' : '已完成'}
+            outcomeBadge={block.stepId === 'fixture-edit-1' ? 'error' : 'success'}
+            branchLine={block.stepId === 'fixture-edit-1' ? '编辑记忆失败' : '已查阅创作记忆'}
             testId={`fixture-tool-${block.id}`}
           />
         )}

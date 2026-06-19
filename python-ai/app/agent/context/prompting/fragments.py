@@ -116,30 +116,10 @@ def build_output_delivery_hint(tool_input: dict) -> str:
 
 
 def main_loop_guide_block() -> str:
-    """主循环工具编排（直接 tool_use，无 PlanResult）。"""
-    from app.agent.context.compact import CHAPTER_INFO_CHAIN_FOR_PROMPT
+    """主循环工具编排 — 与 build_main_loop_system_prompt / bind_tools 同源。"""
+    from app.agent.harness.tool_contract import tool_contract_prompt_block
 
-    return f"""## 单轮 tool_use 批内顺序
-
-1. **准备**（可多个，在前）：`Read`（`chapters/index.json` 或单章 `.md`）、`Grep`、`memory` 路径、`context_search`
-2. **写章**（可单独一轮）：`Write` / `Edit` 到 `…/chapters/{{uuid}}.md`（正文写入作品库）
-3. **说明**（单独一轮）：`AskUser` | `end`
-
-{CHAPTER_INFO_CHAIN_FOR_PROMPT}
-
-## 工具 input（与 bind_tools schema 一致，服务端不补参）
-
-- 章节 **chapter_id** 仅来自 RUN_CONTEXT `chapter_catalog` 或 Read `chapters/index.json`（作品库）
-- `Write` / `Edit` 须 **file_path + content**（或 Edit 的 old/new）；禁止用 Glob 结果个数当章数
-- 禁止在 tool_use 粘贴整章 **content** 却不给 file_path（空 content 可触发流式写章）
-- memory_* / context_search：按 schema 填 scope/key/query 等
-
-缺字段会收到 tool_result 错误，修正后重试。
-
-## 结束与暂停
-
-- 任务完成：调用 `end` 或 `output` 后不再调用写章工具
-- 需要用户输入：调用 `ask_user` / `choose`（本 Run 将等待回复后继续）"""
+    return tool_contract_prompt_block()
 
 
 def build_chapter_task_text(

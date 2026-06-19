@@ -227,7 +227,7 @@ async def run_subagent(
             collected.append(event)
 
     summary, is_error = _summarize_subagent_events(description, collected)
-    patch = {
+    patch: dict[str, Any] = {
         "last_subagent": {
             "parent_run_id": parent.run_id,
             "child_run_id": child.run_id,
@@ -235,6 +235,18 @@ async def run_subagent(
             "ok": not is_error,
         }
     }
+    # 子 Agent 可能写章/改序——结束后强制用 Content API 真值刷新父上下文 catalog，
+    # 避免父 Agent 拿到陈旧 chapter_catalog 再写导致重复建章/错序。
+    try:
+        from app.agent.backend import chapter_client
+
+        fresh = await chapter_client.fetch_chapter_summaries(parent)
+        if fresh:
+            patch["chapters"] = fresh
+            patch["catalog_stale"] = False
+    except Exception as exc:  # 刷新失败不阻塞交付，仅标记需重取
+        logger.warning("subagent chapter refresh failed parent=%s: %s", parent.run_id, exc)
+        patch["catalog_stale"] = True
     logger.info(
         "subagent done parent=%s child=%s ok=%s chars=%s",
         parent.run_id,

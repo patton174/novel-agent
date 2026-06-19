@@ -2,6 +2,7 @@ package cn.novelstudio.module.agent.service;
 
 import cn.novelstudio.module.agent.dto.agent.PythonAgentRunRequest;
 import cn.novelstudio.module.agent.support.SseFrameAggregator;
+import cn.novelstudio.module.agent.support.Utf8StreamingDecoder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DataBufferUtils;
@@ -13,7 +14,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.netty.http.client.HttpClient;
 
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Map;
 
@@ -21,9 +21,11 @@ import java.util.Map;
 public class WebClientPythonAgentRunClient implements PythonAgentRunClient {
 
     private final WebClient webClient;
+    private final String internalServiceKey;
 
     public WebClientPythonAgentRunClient(
-        @Value("${agent.python.base-url:http://localhost:8000}") String baseUrl
+        @Value("${agent.python.base-url:http://localhost:8000}") String baseUrl,
+        @Value("${agent.internal.service-key:dev-internal-key-change-me}") String internalServiceKey
     ) {
         HttpClient httpClient = HttpClient.create()
             .responseTimeout(Duration.ZERO)
@@ -32,18 +34,20 @@ public class WebClientPythonAgentRunClient implements PythonAgentRunClient {
             .clientConnector(new ReactorClientHttpConnector(httpClient))
             .baseUrl(baseUrl)
             .build();
+        this.internalServiceKey = internalServiceKey;
     }
 
     @Override
     public Flux<String> runStream(PythonAgentRunRequest request) {
         Flux<String> chunks = webClient.post()
-            .uri("/api/agent/run/stream")
+            .uri("/internal/agent/run/stream")
+            .header("X-Internal-Service-Key", internalServiceKey)
             .contentType(MediaType.APPLICATION_JSON)
             .accept(MediaType.TEXT_EVENT_STREAM)
             .bodyValue(request)
             .retrieve()
             .bodyToFlux(DataBuffer.class)
-            .map(this::decodeUtf8)
+            .transform(Utf8StreamingDecoder::decode)
             .doOnDiscard(DataBuffer.class, DataBufferUtils::release);
 
         return SseFrameAggregator.aggregate(chunks);
@@ -70,12 +74,5 @@ public class WebClientPythonAgentRunClient implements PythonAgentRunClient {
             .timeout(Duration.ofSeconds(10))
             .onErrorComplete()
             .block();
-    }
-
-    private String decodeUtf8(DataBuffer dataBuffer) {
-        byte[] bytes = new byte[dataBuffer.readableByteCount()];
-        dataBuffer.read(bytes);
-        DataBufferUtils.release(dataBuffer);
-        return new String(bytes, StandardCharsets.UTF_8);
     }
 }

@@ -45,6 +45,31 @@ async def test_stream_bind_tools_accumulates_tool_calls():
 
 
 @pytest.mark.asyncio
+async def test_stream_bind_tools_emits_reasoning_completed_before_tool_use_ready():
+    chunk1 = AIMessageChunk(content="先列章节。")
+    chunk2 = AIMessageChunk(
+        content="",
+        tool_call_chunks=[{"name": "ListChapters", "args": "{}", "id": "c1", "index": 0}],
+    )
+    llm = MagicMock()
+    llm.astream = lambda _messages: _async_iter([chunk1, chunk2])
+
+    types: list[str] = []
+    async for item in stream_bind_tools_turn(
+        llm, [], ctx=_ctx(), planning_step_id="step_p", sequence=0
+    ):
+        if not isinstance(item, AIMessage):
+            types.append(str(item.get("type")))
+
+    assert "reasoning.delta" in types
+    assert "tool.use.ready" in types
+    ready_idx = types.index("tool.use.ready")
+    completed_idxs = [i for i, t in enumerate(types) if t == "reasoning.completed"]
+    assert completed_idxs
+    assert min(completed_idxs) < ready_idx
+
+
+@pytest.mark.asyncio
 async def test_stream_bind_tools_plain_preamble_before_tools_routes_to_reasoning():
     chunk1 = AIMessageChunk(content="我来帮你了解这本书的现状。")
     chunk2 = AIMessageChunk(

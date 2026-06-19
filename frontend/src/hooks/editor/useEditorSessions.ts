@@ -2,7 +2,6 @@ import { useCallback, useMemo, useRef, useState } from 'react'
 import { confirmAction, promptDialog } from '../../stores/appDialog'
 import {
   deleteSession,
-  deleteSessions,
   ensureSession,
   listSessions,
   listSessionsByNovel,
@@ -16,7 +15,6 @@ import {
   INITIAL_ASSISTANT_MESSAGE,
   type EditorChatSession,
   type EditorMessage,
-  type EditorStoryMemoryState,
 } from '../../types/editor'
 import { fromStoredChatMessage } from '../../utils/agentMessagePersist'
 import { mergeRemoteWithLocalTrace } from '../../utils/agentMessageReplay'
@@ -31,10 +29,6 @@ export interface NovelSessionGroup {
   novel: Novel
   sessions: EditorChatSession[]
 }
-
-import { emptyNormalizedStoryMemory } from '../../utils/storyMemoryModel'
-
-const emptyMemory = (): EditorStoryMemoryState => emptyNormalizedStoryMemory()
 
 export interface UseEditorSessionsOptions {
   agentSessionIdRef: React.MutableRefObject<string>
@@ -71,11 +65,7 @@ export function useEditorSessions({
 }: UseEditorSessionsOptions) {
   const [sessions, setSessions] = useState<EditorChatSession[]>([])
   const [activeSession, setActiveSession] = useState(agentSessionIdRef.current)
-  const [sessionSearch, setSessionSearch] = useState('')
   const [expandedNovelIds, setExpandedNovelIds] = useState<Set<string>>(() => new Set())
-  const [batchMode, setBatchMode] = useState(false)
-  const [batchNovelId, setBatchNovelId] = useState<string | null>(null)
-  const [selectedSessionIds, setSelectedSessionIds] = useState<Set<string>>(() => new Set())
   const [titlePendingSessionIds, setTitlePendingSessionIds] = useState<Set<string>>(() => new Set())
 
   const switchSessionRef = useRef<(sessionId: string) => void>(() => {})
@@ -218,11 +208,6 @@ export function useEditorSessions({
         await api.deleteContentSession(sessionId)
         deleteSession(sessionId)
         refreshSessions(activeNovelId)
-        setSelectedSessionIds((prev) => {
-          const next = new Set(prev)
-          next.delete(sessionId)
-          return next
-        })
         appToast.success('对话已删除')
         if (sessionId === activeSession) {
           handleNewChat()
@@ -246,111 +231,22 @@ export function useEditorSessions({
     setExpandedNovelIds(new Set([novelId]))
   }, [])
 
-  const startBatchForNovel = useCallback((novelId: string) => {
-    setBatchNovelId(novelId)
-    setBatchMode(true)
-    setSelectedSessionIds(new Set())
-    setExpandedNovelIds(new Set([novelId]))
-  }, [])
-
-  const exitBatchMode = useCallback(() => {
-    setBatchMode(false)
-    setBatchNovelId(null)
-    setSelectedSessionIds(new Set())
-  }, [])
-
-  const requestBatchDelete = () => {
-    if (selectedSessionIds.size === 0) return
-    const ids = [...selectedSessionIds]
-    void (async () => {
-      if (
-        !(await confirmAction({
-          title: '批量删除对话',
-          description: `将删除 ${ids.length} 条对话及其本地消息，不可撤销。`,
-          confirmLabel: '删除',
-          danger: true,
-        }))
-      ) {
-        return
-      }
-      try {
-        const result = await api.batchDeleteContentSessions(ids)
-        if (result.deleted <= 0) {
-          appToast.error('云端未删除任何对话，请稍后重试')
-          return
-        }
-        deleteSessions(ids)
-        refreshSessions(activeNovelId)
-        setSelectedSessionIds(new Set())
-        exitBatchMode()
-        appToast.success(`已删除 ${result.deleted} 条对话`)
-        if (ids.includes(activeSession)) {
-          handleNewChat()
-          return
-        }
-        setSessions((prev) => prev.filter((s) => !ids.includes(s.id)))
-      } catch {
-        appToast.error('批量删除失败')
-      }
-    })()
-  }
-
-  const handleDeleteNovelRequest = (novelId: string, title: string) => {
-    void (async () => {
-      if (
-        !(await confirmAction({
-          title: '删除小说',
-          description: `确定删除「${title}」？关联对话与本地消息将清除，章节数据将从服务端删除，不可撤销。`,
-          confirmLabel: '删除',
-          danger: true,
-        }))
-      ) {
-        return
-      }
-      try {
-        await onDeleteNovel(novelId)
-        refreshSessions(null)
-        exitBatchMode()
-        setExpandedNovelIds((prev) => {
-          const next = new Set(prev)
-          next.delete(novelId)
-          return next
-        })
-        appToast.success(`已删除小说「${title}」`)
-      } catch {
-        appToast.error('删除小说失败')
-      }
-    })()
-  }
-
-  const selectAllSessionsInBatch = useCallback(() => {
-    if (!batchNovelId) return
-    const query =
-      activeNovelId === batchNovelId && sessionSearch.trim()
-        ? sessionSearch.trim().toLowerCase()
-        : ''
-    const ids = listSessionsByNovel(batchNovelId)
-      .filter((s) => !query || s.title.toLowerCase().includes(query))
-      .map((s) => s.id)
-    const allSelected = ids.length > 0 && ids.every((id) => selectedSessionIds.has(id))
-    if (allSelected) {
-      setSelectedSessionIds(new Set())
-      return
+  const performDeleteNovel = async (novelId: string) => {
+    const title = novels.find((n) => n.id === novelId)?.title ?? '小说'
+    try {
+      await onDeleteNovel(novelId)
+      refreshSessions(null)
+      setExpandedNovelIds((prev) => {
+        const next = new Set(prev)
+        next.delete(novelId)
+        return next
+      })
+      appToast.success(`已删除小说「${title}」`)
+    } catch {
+      appToast.error('删除小说失败')
+      throw new Error('delete novel failed')
     }
-    setSelectedSessionIds(new Set(ids))
-  }, [batchNovelId, activeNovelId, sessionSearch, selectedSessionIds])
-
-  const toggleSessionSelected = useCallback((sessionId: string) => {
-    setSelectedSessionIds((prev) => {
-      const next = new Set(prev)
-      if (next.has(sessionId)) {
-        next.delete(sessionId)
-      } else {
-        next.add(sessionId)
-      }
-      return next
-    })
-  }, [])
+  }
 
   const markSessionTitlePending = useCallback((sessionId: string) => {
     setTitlePendingSessionIds((prev) => new Set(prev).add(sessionId))
@@ -413,26 +309,15 @@ export function useEditorSessions({
   }, [novelSessions, activeSession])
 
   const novelSessionGroups = useMemo((): NovelSessionGroup[] => {
-    const query =
-      activeNovelId && sessionSearch.trim()
-        ? sessionSearch.trim().toLowerCase()
-        : ''
     return novels.map((novel) => {
-      const items = listSessionsByNovel(novel.id)
-        .map((s) => ({
-          id: s.id,
-          title: s.title,
-          updatedAt: new Date(s.updatedAt),
-        }))
-        .filter(
-          (s) =>
-            !query ||
-            novel.id !== activeNovelId ||
-            s.title.toLowerCase().includes(query),
-        )
+      const items = listSessionsByNovel(novel.id).map((s) => ({
+        id: s.id,
+        title: s.title,
+        updatedAt: new Date(s.updatedAt),
+      }))
       return { novel, sessions: items }
     })
-  }, [novels, sessions, sessionSearch, activeNovelId])
+  }, [novels, sessions])
 
   const bootstrapSessions = useCallback(() => {
     const currentId = agentSessionIdRef.current
@@ -467,15 +352,10 @@ export function useEditorSessions({
     agentSessionIdRef,
     sessions,
     activeSession,
-    sessionSearch,
-    setSessionSearch,
     expandedNovelIds,
     toggleNovelExpanded,
     expandNovel,
-    batchNovelId,
-    startBatchForNovel,
-    exitBatchMode,
-    handleDeleteNovelRequest,
+    performDeleteNovel,
     refreshSessions,
     hydrateNovelSessions,
     handleNewChat,
@@ -487,18 +367,10 @@ export function useEditorSessions({
     novelSessions,
     activeSessionTitle,
     novelSessionGroups,
-    batchMode,
-    setBatchMode,
-    selectedSessionIds,
-    setSelectedSessionIds,
-    toggleSessionSelected,
-    requestBatchDelete,
-    selectAllSessionsInBatch,
     titlePendingSessionIds,
     markSessionTitlePending,
     clearSessionTitlePending,
     scheduleSessionTitleSync,
     bootstrapSessions,
-    emptyMemory,
   }
 }

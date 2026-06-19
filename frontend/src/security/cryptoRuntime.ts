@@ -80,6 +80,15 @@ function toMaterial(cfg: CryptoRuntimeConfig | null): SessionCryptoMaterial | nu
 }
 
 async function fetchRuntime(force: boolean): Promise<CryptoRuntimeConfig | null> {
+  // 本地 bypass / 未启用加密时不需要 crypto runtime，跳过请求避免
+  // /api/auth/crypto-config 404 噪音（后端无 runtime 注册时返回 404）。
+  const bypass = import.meta.env.VITE_SECURITY_BYPASS === 'true'
+    || import.meta.env.VITE_SECURITY_BYPASS === '1'
+  const aesOn = import.meta.env.VITE_SECURITY_AES === 'true'
+    || import.meta.env.VITE_SECURITY_AES === '1'
+  if (bypass || !aesOn) {
+    return null
+  }
   if (!force && runtime && !isExpired(runtime)) {
     return runtime
   }

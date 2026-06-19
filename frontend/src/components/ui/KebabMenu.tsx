@@ -14,6 +14,7 @@ import {
   KEBAB_ROOT,
   kebabMenuItemClass,
   kebabTriggerClass,
+  kebabTriggerGhostClass,
 } from '@/lib/uiMenuClasses'
 
 export interface KebabMenuItem {
@@ -27,6 +28,7 @@ export interface KebabMenuProps {
   items: KebabMenuItem[]
   /** auto：视口空间不足时向上展开（侧栏底部等场景） */
   preferredPlacement?: 'auto' | MotionPopPlacement
+  triggerVariant?: 'default' | 'ghost'
   'aria-label'?: string
 }
 
@@ -45,6 +47,7 @@ const MENU_ESTIMATED_ITEM_HEIGHT = 36
 export function KebabMenu({
   items,
   preferredPlacement = 'auto',
+  triggerVariant = 'default',
   'aria-label': ariaLabel = '更多操作',
 }: KebabMenuProps) {
   const [open, setOpen] = useState(false)
@@ -135,7 +138,7 @@ export function KebabMenu({
       <button
         ref={triggerRef}
         type="button"
-        className={`${kebabTriggerClass(open)} ${motionInteractiveClass()}`}
+        className={`${triggerVariant === 'ghost' ? kebabTriggerGhostClass(open) : kebabTriggerClass(open)} ${motionInteractiveClass()}`}
         aria-label={ariaLabel}
         aria-expanded={open}
         aria-haspopup="menu"

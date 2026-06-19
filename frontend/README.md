@@ -29,4 +29,4 @@ pnpm install
 pnpm dev
 ```
 
-生产构建见 `novel-agent/agent-document/docs/deploy/scripts/deploy-fast.sh frontend worker`。
+生产构建见 `legacy/novel-agent/agent-document/docs/deploy/scripts/deploy-fast.sh frontend worker`。

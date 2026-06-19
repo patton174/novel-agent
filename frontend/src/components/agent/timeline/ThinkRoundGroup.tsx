@@ -6,7 +6,8 @@ import { AgentThinkPanel } from '../AgentThinkPanel'
 import { ThinkBlock, PlanReasoningBlock } from './ThinkBlocks'
 import { OrchestrationStreamBody } from './OrchestrationStreamBody'
 import { ThinkRailOverlay } from './ThinkRailOverlay'
-import { ORCHESTRATION_FLAT_ROW, thinkRoundWrapClass } from '@/lib/timelineClasses'
+import { OrchestrationFlatSlot } from './layout'
+import { thinkRoundWrapClass } from '@/lib/timelineClasses'
 
 type OrchestrationBodyBlock =
   | Extract<AgentTimelineBlock, { kind: 'narration' }>
@@ -69,6 +70,7 @@ export function ThinkRoundGroup({
   thinkExpanded,
   onThinkExpandedChange,
   orchestrationActive = false,
+  layoutRemeasureKey = '',
   renderTool,
   renderText,
   railContext,
@@ -81,6 +83,7 @@ export function ThinkRoundGroup({
   thinkExpanded?: boolean
   onThinkExpandedChange?: (open: boolean) => void
   orchestrationActive?: boolean
+  layoutRemeasureKey?: string
   renderTool: (block: Extract<AgentTimelineBlock, { kind: 'tool' }>, key: string) => ReactNode
   renderText?: (block: OrchestrationBodyBlock, key: string) => ReactNode
   railContext?: { showThinkRail: boolean; lastThinkRailId?: string }
@@ -117,10 +120,10 @@ export function ThinkRoundGroup({
         return
       }
       leadRefs.current.set(blockId, el)
-    } else if (prev) {
-      leadRefs.current.delete(blockId)
-    } else {
       return
+    }
+    if (prev) {
+      leadRefs.current.delete(blockId)
     }
   }, [])
 
@@ -139,7 +142,7 @@ export function ThinkRoundGroup({
   }
 
   const renderBodyText = (block: OrchestrationBodyBlock, key: string) => (
-    <div key={key} className={ORCHESTRATION_FLAT_ROW} data-testid="timeline-orchestration-text">
+    <OrchestrationFlatSlot key={key} kind="text">
       {renderText?.(block, key) ?? (
         <OrchestrationStreamBody
           block={block}
@@ -147,16 +150,16 @@ export function ThinkRoundGroup({
           streamFinished={streamFinished}
         />
       )}
-    </div>
+    </OrchestrationFlatSlot>
   )
 
   const renderFlatTool = (
     block: Extract<AgentTimelineBlock, { kind: 'tool' }>,
     key: string,
   ) => (
-    <div key={key} className={ORCHESTRATION_FLAT_ROW} data-testid="timeline-orchestration-tool">
+    <OrchestrationFlatSlot key={key} kind="tool">
       {renderTool(block, key)}
-    </div>
+    </OrchestrationFlatSlot>
   )
 
   return (
@@ -201,7 +204,7 @@ export function ThinkRoundGroup({
           thinkIds={thinkRailIds}
           leadRefs={leadRefs}
           containerRef={containerRef}
-          remeasureKey={thinkRailIds.join(',')}
+          remeasureKey={`${thinkRailIds.join(',')}:${layoutRemeasureKey}`}
         />
       ) : null}
     </div>

@@ -34,8 +34,3 @@ def test_user_headers_includes_internal_key(monkeypatch):
 def test_unwrap_result():
     assert content_api.unwrap_result({"code": 200, "data": [{"id": "1"}]}) == [{"id": "1"}]
     assert content_api.unwrap_result({"memory": {}}) == {"memory": {}}
-
-
-def test_unwrap_story_memory():
-    payload = {"code": 200, "data": {"novel_id": "n1", "memory": {"world": {"a": "b"}}}}
-    assert content_api.unwrap_story_memory(payload) == {"world": {"a": "b"}}

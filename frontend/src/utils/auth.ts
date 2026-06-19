@@ -2,16 +2,14 @@ import { DIRECT_PYTHON } from '../config/runtime'
 import {
   clearAuthSession,
   getAccessToken,
+  getSessionId,
   getSessionUserId,
   hydrateSessionFromStorage,
   setAccessToken,
-  setHeartbeatIntervalSec,
-  setSessionCrypto,
-  setSessionId,
   setSessionUserId,
 } from '../security/sessionStore'
+import { commitLoginSession } from '../security/loginSession'
 import { getCachedFingerprint } from '../security/fingerprint'
-import { readUserIdFromAccessToken } from '../security/jwtPayload'
 
 const LEGACY_TOKEN_KEY = 'novel_agent_token'
 const LEGACY_USER_ID_KEY = 'novel_agent_user_id'
@@ -58,6 +56,14 @@ export function isLoggedIn(): boolean {
   return Boolean(getAccessToken())
 }
 
+export function hasAuthSessionHint(): boolean {
+  if (DIRECT_PYTHON) {
+    return true
+  }
+  hydrateSessionFromStorage()
+  return Boolean(getAccessToken() || getSessionUserId() || getSessionId())
+}
+
 export function getAuthHeaders(): Record<string, string> {
   const headers: Record<string, string> = {}
   const token = getAccessToken()
@@ -65,10 +71,8 @@ export function getAuthHeaders(): Record<string, string> {
     headers.Authorization = token
   }
   if (!DIRECT_PYTHON) {
-    const uid = (token && readUserIdFromAccessToken(token)) || getSessionUserId()
-    if (uid) {
-      headers['X-User-Id'] = uid
-    }
+    // userId 不再由前端发送：后端 AuthUserIdInjectFilter 鉴权后从 JWT 注入 X-User-Id，
+    // 前端传的会被覆盖，避免伪造。前端仅保留 fingerprint / csrf（非身份标识）。
     const fp = getCachedFingerprint()
     if (fp) {
       headers['X-Fingerprint'] = fp
@@ -95,24 +99,5 @@ export function applyLoginSession(data: {
   sessionId?: string
 }): void {
   migrateLegacyAuthStorage()
-  if (data.token) {
-    setAccessToken(data.token)
-  }
-  if (data.userId != null) {
-    setSessionUserId(data.userId)
-  }
-  if (data.sessionId) {
-    setSessionId(data.sessionId)
-  }
-  if (data.sessionCrypto) {
-    setSessionCrypto({
-      keyId: data.sessionCrypto.keyId,
-      aesKeyB64: data.sessionCrypto.aesKeyB64,
-      keyVersion: data.sessionCrypto.keyVersion,
-      expiresAt: data.sessionCrypto.expiresAtEpochMs ?? data.sessionCrypto.expiresAt ?? 0,
-    })
-  }
-  if (data.heartbeatIntervalSec) {
-    setHeartbeatIntervalSec(data.heartbeatIntervalSec)
-  }
+  commitLoginSession(data)
 }

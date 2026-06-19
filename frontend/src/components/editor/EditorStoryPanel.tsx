@@ -1,6 +1,5 @@
 import { ChapterInlineDiff } from './ChapterInlineDiff'
 import { ChapterVersionPanel } from '../novel/ChapterVersionPanel'
-import { NovelOutlinePanel } from '../novel/NovelOutlinePanel'
 import { StoryMobileChapterPicker } from './StoryMobileChapterPicker'
 import { EditorButton } from '../ui/EditorButton'
 import { confirmAction } from '../../stores/appDialog'
@@ -9,6 +8,8 @@ import { useAppMobile } from '@/hooks/useMediaQuery'
 import { cn } from '@/lib/utils'
 import { ChapterStreamViewer } from './ChapterStreamViewer'
 import type { ChapterVersion } from '../../types/novel'
+import { useRef, type ChangeEvent } from 'react'
+import { exportChapterContent, importChapterFromFile } from '../../utils/chapterImportExport'
 
 import { useTranslation } from 'react-i18next'
 
@@ -50,6 +51,91 @@ export function EditorStoryPanel(props: EditorStoryPanelProps) {
   return <EditorStoryPanelDesktop {...props} />
 }
 
+function StoryToolbarActions({
+  t,
+  chapterDirty,
+  canSave,
+  toolbarTitle,
+  chapterContent,
+  onCopyChapter,
+  onSaveChapter,
+  onChapterContentChange,
+}: {
+  t: (key: string) => string
+  chapterDirty: boolean
+  canSave: boolean
+  toolbarTitle: string
+  chapterContent: string
+  onCopyChapter: () => void
+  onSaveChapter: () => void
+  onChapterContentChange: (content: string) => void
+}) {
+  const importInputRef = useRef<HTMLInputElement>(null)
+
+  const handleImport = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+    const parsed = await importChapterFromFile(file)
+    if (parsed.content) {
+      onChapterContentChange(parsed.content)
+    }
+  }
+
+  return (
+    <div className="flex shrink-0 items-center gap-1">
+      <input
+        ref={importInputRef}
+        type="file"
+        accept=".txt,.md,.markdown,.json"
+        className="hidden"
+        onChange={(event) => void handleImport(event)}
+      />
+      <EditorButton
+        variant="icon"
+        size="sm"
+        className="size-8 px-0 [&_svg]:size-[15px]"
+        title={t('editor:story.import')}
+        aria-label={t('editor:story.import')}
+        onClick={() => importInputRef.current?.click()}
+      >
+        <EditorIcons.Upload />
+      </EditorButton>
+      <EditorButton
+        variant="icon"
+        size="sm"
+        className="size-8 px-0 [&_svg]:size-[15px]"
+        title={t('editor:story.export')}
+        aria-label={t('editor:story.export')}
+        onClick={() => exportChapterContent(toolbarTitle, chapterContent, 'md')}
+      >
+        <EditorIcons.Download />
+      </EditorButton>
+      <EditorButton
+        variant="secondary"
+        size="sm"
+        className="size-8 px-0 [&_svg]:size-[15px]"
+        title={t('editor:story.copy')}
+        aria-label={t('editor:story.copy')}
+        onClick={onCopyChapter}
+      >
+        <EditorIcons.Copy />
+      </EditorButton>
+      <EditorButton
+        variant="primary"
+        size="sm"
+        className="size-8 px-0 [&_svg]:size-[15px]"
+        title={`${t('editor:story.save')}${chapterDirty ? t('editor:story.unsaved') : ''}`}
+        aria-label={t('editor:story.save')}
+        onClick={onSaveChapter}
+        disabled={!canSave}
+      >
+        <EditorIcons.Save />
+      </EditorButton>
+    </div>
+  )
+}
+
 function EditorStoryPanelMobile({
   toolbarTitle,
   chapterDirty,
@@ -75,6 +161,7 @@ function EditorStoryPanelMobile({
   onDismissChapterDiff,
 }: EditorStoryPanelProps) {
   const { t } = useTranslation(['editor'])
+  const storyScrollRef = useRef<HTMLDivElement>(null)
   const streamStatusLabel =
     agentChapterStreamPhase === 'saving' ? t('editor:story.savingToLibrary') : t('editor:story.generatingContent')
 
@@ -110,14 +197,16 @@ function EditorStoryPanelMobile({
             {toolbarTitle}
             {chapterDirty ? t('editor:story.unsaved') : ''}
           </span>
-          <div className="flex shrink-0 items-center gap-1">
-            <EditorButton variant="secondary" size="sm" className="h-8 px-2.5" onClick={onCopyChapter}>
-              <EditorIcons.Copy />
-            </EditorButton>
-            <EditorButton variant="primary" size="sm" className="h-8 px-2.5" onClick={onSaveChapter} disabled={!canSave}>
-              <EditorIcons.Save />
-            </EditorButton>
-          </div>
+          <StoryToolbarActions
+            t={t}
+            chapterDirty={chapterDirty}
+            canSave={canSave}
+            toolbarTitle={toolbarTitle}
+            chapterContent={chapterContent}
+            onCopyChapter={onCopyChapter}
+            onSaveChapter={onSaveChapter}
+            onChapterContentChange={onChapterContentChange}
+          />
         </div>
 
         {agentChapterStreaming ? (
@@ -135,7 +224,7 @@ function EditorStoryPanelMobile({
           </div>
         ) : null}
 
-        <div className="min-h-0 flex-1 overflow-y-auto bg-background p-3">
+        <div ref={storyScrollRef} className="min-h-0 flex-1 overflow-y-auto bg-background p-3">
           {!hasNovel ? (
             <div className="px-2 py-10 text-center text-sm text-muted-foreground">
               {t('editor:story.emptyNovel')}
@@ -167,6 +256,7 @@ function EditorStoryPanelMobile({
               content={chapterContent}
               streaming={agentChapterStreamPhase === 'generating'}
               streamKey={agentChapterStreamTitle || activeChapterId || 'chapter-stream'}
+              scrollRootRef={storyScrollRef}
               className="min-h-[40vh]"
             />
           ) : (
@@ -196,13 +286,7 @@ function EditorStoryPanelMobile({
 }
 
 function EditorStoryPanelDesktop({
-  outlineCollapsed,
-  onOutlineCollapsedChange,
-  reindexing,
-  reindexProgress,
-  onReindex,
   activeChapterId,
-  activeChapterTitle,
   chapterContent,
   onChapterRestored,
   versionPreview,
@@ -225,6 +309,7 @@ function EditorStoryPanelDesktop({
   onDismissChapterDiff,
 }: EditorStoryPanelProps) {
   const { t } = useTranslation(['editor'])
+  const storyScrollRef = useRef<HTMLDivElement>(null)
   const showVersionDiff = versionPreview != null && hasChapter
   const showAgentDiff =
     !showVersionDiff &&
@@ -254,133 +339,80 @@ function EditorStoryPanelDesktop({
 
   return (
     <section className="flex min-h-0 flex-1 flex-col overflow-hidden bg-background animate-in fade-in slide-in-from-bottom-1 duration-200">
-      <div className="relative flex min-h-0 flex-1 overflow-hidden">
-        <aside
-          className={cn(
-            'flex shrink-0 flex-col min-h-0 overflow-hidden border-r bg-muted/30 transition-[width] duration-300 ease-out',
-            outlineCollapsed ? 'w-[52px]' : 'w-[280px]',
-          )}
+      <div className="flex items-center justify-between gap-3 border-t border-border/60 bg-background px-6 py-3">
+        <span className="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-[0.9rem] font-bold text-foreground">
+          {toolbarTitle}
+          {chapterDirty ? t('editor:story.unsaved') : ''}
+        </span>
+        <StoryToolbarActions
+          t={t}
+          chapterDirty={chapterDirty}
+          canSave={canSave}
+          toolbarTitle={toolbarTitle}
+          chapterContent={chapterContent}
+          onCopyChapter={onCopyChapter}
+          onSaveChapter={onSaveChapter}
+          onChapterContentChange={onChapterContentChange}
+        />
+      </div>
+
+      {agentChapterStreaming ? (
+        <div
+          role="status"
+          aria-live="polite"
+          className="flex items-center justify-between gap-3 border-b border-primary/10 bg-primary/5 px-6 py-[0.45rem] text-[0.78rem] text-primary"
         >
-          {outlineCollapsed ? (
-            <div className="box-border flex flex-1 items-start justify-center pt-3">
-              <EditorButton
-                variant="toggle"
-                type="button"
-                title={t('editor:story.expandOutline')}
-                onClick={() => onOutlineCollapsedChange(false)}
-              >
-                <EditorIcons.List />
-              </EditorButton>
-            </div>
-          ) : (
-            <>
-              <div className="flex items-center border-b border-border/60 px-3 py-[0.7rem]">
-                <button
-                  type="button"
-                  title={t('editor:story.collapseOutline')}
-                  className="inline-flex cursor-pointer items-center gap-[0.45rem] rounded-lg border-none bg-transparent px-[0.35rem] py-1 font-[inherit] text-[0.82rem] font-bold text-muted-foreground hover:bg-muted hover:text-foreground [&_svg]:size-[15px]"
-                  onClick={() => onOutlineCollapsedChange(true)}
-                >
-                  <EditorIcons.List />
-                  <span>{t('editor:story.chapterOutline')}</span>
-                </button>
-              </div>
-              <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-[0.85rem] pt-[0.65rem] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-                <NovelOutlinePanel
-                  reindexing={reindexing}
-                  reindexProgress={reindexProgress}
-                  onReindex={onReindex}
-                />
-                <div className="my-3 border-t border-border/70" />
-                <ChapterVersionPanel
-                  chapterId={activeChapterId}
-                  currentTitle={activeChapterTitle}
-                  currentContent={chapterContent}
-                  onRestored={onChapterRestored}
-                  previewVersionId={versionPreview?.id ?? null}
-                  onPreviewVersion={onVersionPreviewChange}
-                />
-              </div>
-            </>
-          )}
-        </aside>
-
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-          <div className="flex items-center justify-between gap-3 border-t border-border/60 bg-background px-6 py-3">
-            <span className="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-[0.9rem] font-bold text-foreground">
-              {toolbarTitle}
-              {chapterDirty ? t('editor:story.unsaved') : ''}
+          <span className="font-semibold">{streamStatusLabel}</span>
+          {agentChapterStreamCharCount > 0 ? (
+            <span className="tabular-nums text-muted-foreground">
+              {t('editor:story.wordCount', { count: agentChapterStreamCharCount })}
             </span>
-            <div className="flex shrink-0 gap-2">
-              <EditorButton variant="secondary" size="sm" onClick={onCopyChapter}>
-                <EditorIcons.Copy />
-                <span>{t('editor:story.copy')}</span>
-              </EditorButton>
-              <EditorButton variant="primary" size="sm" onClick={onSaveChapter} disabled={!canSave}>
-                <EditorIcons.Save />
-                <span>{t('editor:story.save')}</span>
-              </EditorButton>
-            </div>
-          </div>
-
-          {agentChapterStreaming ? (
-            <div
-              role="status"
-              aria-live="polite"
-              className="flex items-center justify-between gap-3 border-b border-primary/10 bg-primary/5 px-6 py-[0.45rem] text-[0.78rem] text-primary"
-            >
-              <span className="font-semibold">{streamStatusLabel}</span>
-              {agentChapterStreamCharCount > 0 ? (
-                <span className="tabular-nums text-muted-foreground">
-                  {t('editor:story.wordCount', { count: agentChapterStreamCharCount })}
-                </span>
-              ) : null}
-            </div>
           ) : null}
-
-          <div className="min-h-0 flex-1 overflow-y-auto bg-background p-6 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-            {!hasNovel ? (
-              <div className="px-4 py-12 text-center text-[0.95rem] text-muted-foreground">
-                {t('editor:story.emptyNovelDesktop')}
-              </div>
-            ) : !hasChapter ? (
-              <div className="px-4 py-12 text-center text-[0.95rem] text-muted-foreground">
-                {t('editor:story.emptyChapterDesktop')}
-              </div>
-            ) : showVersionDiff ? (
-              <ChapterInlineDiff
-                baseline={chapterContent}
-                current={versionPreview.content}
-                title={t('editor:story.versionDiffTitle')}
-                acceptLabel={t('editor:story.versionDiffAccept')}
-                onAccept={() => void handleRestoreVersion()}
-                onDismiss={() => onVersionPreviewChange(null)}
-              />
-            ) : showAgentDiff ? (
-              <ChapterInlineDiff
-                baseline={chapterDiffBaseline!}
-                current={chapterContent}
-                title={t('editor:story.agentDiffTitle')}
-                acceptLabel={t('editor:story.agentDiffAccept')}
-                onAccept={onAcceptChapterDiff}
-                onDismiss={onDismissChapterDiff}
-              />
-            ) : agentChapterStreaming ? (
-              <ChapterStreamViewer
-                content={chapterContent}
-                streaming={agentChapterStreamPhase === 'generating'}
-                streamKey={agentChapterStreamTitle || activeChapterId || 'chapter-stream'}
-              />
-            ) : (
-              <textarea
-                value={chapterContent}
-                onChange={(e) => onChapterContentChange(e.target.value)}
-                placeholder={t('editor:story.editorPlaceholder')}
-                className="min-h-full w-full resize-none border-none bg-transparent font-serif text-[1.05rem] leading-loose tracking-wide text-foreground outline-none whitespace-pre-wrap"
-              />
-            )}
-          </div>
         </div>
+      ) : null}
+
+      <div ref={storyScrollRef} className="min-h-0 flex-1 overflow-y-auto bg-background p-6 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+        {!hasNovel ? (
+          <div className="px-4 py-12 text-center text-[0.95rem] text-muted-foreground">
+            {t('editor:story.emptyNovelDesktop')}
+          </div>
+        ) : !hasChapter ? (
+          <div className="px-4 py-12 text-center text-[0.95rem] text-muted-foreground">
+            {t('editor:story.emptyChapterDesktop')}
+          </div>
+        ) : showVersionDiff ? (
+          <ChapterInlineDiff
+            baseline={chapterContent}
+            current={versionPreview.content}
+            title={t('editor:story.versionDiffTitle')}
+            acceptLabel={t('editor:story.versionDiffAccept')}
+            onAccept={() => void handleRestoreVersion()}
+            onDismiss={() => onVersionPreviewChange(null)}
+          />
+        ) : showAgentDiff ? (
+          <ChapterInlineDiff
+            baseline={chapterDiffBaseline!}
+            current={chapterContent}
+            title={t('editor:story.agentDiffTitle')}
+            acceptLabel={t('editor:story.agentDiffAccept')}
+            onAccept={onAcceptChapterDiff}
+            onDismiss={onDismissChapterDiff}
+          />
+        ) : agentChapterStreaming ? (
+          <ChapterStreamViewer
+            content={chapterContent}
+            streaming={agentChapterStreamPhase === 'generating'}
+            streamKey={agentChapterStreamTitle || activeChapterId || 'chapter-stream'}
+            scrollRootRef={storyScrollRef}
+          />
+        ) : (
+          <textarea
+            value={chapterContent}
+            onChange={(e) => onChapterContentChange(e.target.value)}
+            placeholder={t('editor:story.editorPlaceholder')}
+            className="min-h-full w-full resize-none border-none bg-transparent font-serif text-[1.05rem] leading-loose tracking-wide text-foreground outline-none whitespace-pre-wrap"
+          />
+        )}
       </div>
     </section>
   )

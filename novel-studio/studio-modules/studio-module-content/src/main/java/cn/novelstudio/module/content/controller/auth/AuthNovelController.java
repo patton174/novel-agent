@@ -3,6 +3,8 @@ package cn.novelstudio.module.content.controller.auth;
 import cn.novelstudio.kernel.base.Result;
 import cn.novelstudio.platform.web.BaseController;
 import cn.novelstudio.module.content.dto.ChapterDTO;
+import cn.novelstudio.module.content.dto.ChapterReadSliceDTO;
+import cn.novelstudio.module.content.dto.ChapterRowDTO;
 import cn.novelstudio.module.content.dto.ChapterSummaryDTO;
 import cn.novelstudio.module.content.dto.CoverPromptRequest;
 import cn.novelstudio.module.content.dto.CoverPromptResponse;
@@ -32,7 +34,9 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
+import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.Map;
 
@@ -135,6 +139,74 @@ public class AuthNovelController extends BaseController {
         return biz.listChapters(parseUserId(userId), novelId);
     }
 
+    @GetMapping("/{novelId}/chapters/rows")
+    public Result<List<ChapterRowDTO>> listChapterRows(
+        @RequestHeader("X-User-Id") String userId,
+        @PathVariable String novelId
+    ) {
+        return biz.listChapterRows(parseUserId(userId), novelId);
+    }
+
+    @GetMapping("/{novelId}/chapters/resolve")
+    public Result<ChapterRowDTO> resolveChapterRow(
+        @RequestHeader("X-User-Id") String userId,
+        @PathVariable String novelId,
+        @RequestParam(required = false) String chapterId,
+        @RequestParam(required = false) String title,
+        @RequestParam(required = false) Integer index
+    ) {
+        return biz.resolveChapterRow(parseUserId(userId), novelId, chapterId, title, index);
+    }
+
+    @GetMapping("/{novelId}/chapters/read")
+    public Result<ChapterReadSliceDTO> readChapterByTarget(
+        @RequestHeader("X-User-Id") String userId,
+        @PathVariable String novelId,
+        @RequestParam(required = false) String chapterId,
+        @RequestParam(required = false) String title,
+        @RequestParam(required = false) Integer index,
+        @RequestParam(required = false) Integer offset,
+        @RequestParam(required = false) Integer limit
+    ) {
+        return biz.readChapterByTarget(
+            parseUserId(userId),
+            novelId,
+            chapterId,
+            title,
+            index,
+            offset,
+            limit
+        );
+    }
+
+    @GetMapping(value = "/{novelId}/chapters/read/stream", produces = "application/x-ndjson")
+    public ResponseEntity<StreamingResponseBody> readChapterByTargetStream(
+        @RequestHeader("X-User-Id") String userId,
+        @PathVariable String novelId,
+        @RequestParam(required = false) String chapterId,
+        @RequestParam(required = false) String title,
+        @RequestParam(required = false) Integer index,
+        @RequestParam(required = false) Integer offset,
+        @RequestParam(required = false) Integer limit
+    ) {
+        Long uid = parseUserId(userId);
+        StreamingResponseBody body = outputStream -> {
+            try {
+                biz.readChapterByTargetStream(
+                    uid, novelId, chapterId, title, index, offset, limit, outputStream
+                );
+            } catch (UncheckedIOException ex) {
+                throw ex;
+            }
+        };
+        return ResponseEntity.ok()
+            .contentType(MediaType.parseMediaType("application/x-ndjson"))
+            .header("Cache-Control", "no-cache")
+            .header("Connection", "keep-alive")
+            .header("X-Accel-Buffering", "no")
+            .body(body);
+    }
+
     @PostMapping("/{novelId}/chapters")
     public Result<ChapterDTO> createChapter(
         @RequestHeader("X-User-Id") String userId,
@@ -164,6 +236,14 @@ public class AuthNovelController extends BaseController {
         @PathVariable String novelId
     ) {
         return biz.reindexStatus(parseUserId(userId), novelId);
+    }
+
+    @GetMapping("/{novelId}/knowledge-graph")
+    public Result<Map<String, Object>> knowledgeGraph(
+        @RequestHeader("X-User-Id") String userId,
+        @PathVariable String novelId
+    ) {
+        return biz.knowledgeGraph(parseUserId(userId), novelId);
     }
 
     @GetMapping("/{novelId}/sessions")

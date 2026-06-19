@@ -16,7 +16,6 @@ public record AgentRunContextDto(
     String userMessage,
     String chapterText,
     List<Map<String, String>> history,
-    String storyMemory,
     Map<String, Object> preferences,
     Map<String, Object> project,
     List<Map<String, Object>> chapters,

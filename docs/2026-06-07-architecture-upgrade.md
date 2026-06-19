@@ -1,5 +1,7 @@
 # Novel-Agent 全栈架构升级文档
 
+> ⚠️ **架构升级迁移记录（2026-06-07）**。本文记录了从 Spring Cloud 微服务（`novel-agent/`）向 novel-studio 单体迁移的方案与路线图，**迁移已完成**。文中引用的 `novel-agent/...` 旧微服务路径已归档至 `legacy/novel-agent/`；现状以 `CLAUDE.md` / `docs/ARCHITECTURE.md` 为准。
+
 > 版本：v1.0 ｜ 日期：2026-06-07 ｜ 范围：python-ai（写作/爬虫 Agent + RAG）、novel-agent（Java 微服务）、frontend（React）、infra/deploy（全链路部署）
 >
 > 本文基于对现有代码库的全量梳理，给出现状评估 + 深度优化方案 + 分阶段落地路线图。
@@ -626,7 +628,7 @@ jobs:
 - `docs/superpowers/specs/2026-05-27-java-python-agent-runtime-design.md`
 - `docs/superpowers/specs/2026-06-07-crawl-orchestrator-design.md`
 - `docs/superpowers/specs/2026-06-05-client-route-field-crypto-design.md`
-- `novel-agent/agent-document/docs/specs/2026-05-30-story-memory-mq-pg.md`
+- `legacy/novel-agent/agent-document/docs/specs/2026-05-30-story-memory-mq-pg.md`
 - `docs/ARCHITECTURE.md`
 
 ### 子代理深度分析报告（可追溯）

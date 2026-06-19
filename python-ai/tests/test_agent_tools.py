@@ -13,11 +13,10 @@ from app.agent.schemas import AgentRunContext
 from app.agent.tools import chapter
 from app.agent.tools.registry import build_agent_tools, find_tool_by_name, get_tool_names
 from app.agent.tools.schemas import (
-    MemoryScope,
+    CreateMemoryInput,
     ReadChapterInput,
     SearchKnowledgeInput,
     WriteChapterInput,
-    WriteMemoryInput,
 )
 
 
@@ -54,16 +53,18 @@ def test_legacy_tools_removed_from_build():
     assert len(build_agent_tools()) >= 14
 
 
-def test_read_chapter_requires_id():
+def test_read_chapter_requires_row_target():
     with pytest.raises(ValidationError):
         ReadChapterInput()
+    ok = ReadChapterInput(index=1)
+    assert ok.index == 1
 
 
-def test_memory_scope_enum():
-    with pytest.raises(ValidationError):
-        WriteMemoryInput(scope="bogus", key="k", payload={})
-    ok = WriteMemoryInput(scope=MemoryScope.character, key="林动", payload={"v": 1})
-    assert ok.scope == MemoryScope.character
+def test_create_memory_root_title_only():
+    ok = CreateMemoryInput(node_type="root", title="林动")
+    assert ok.title == "林动"
+    assert ok.parent_id is None
+    assert ok.node_type == "root"
 
 
 def test_list_chapters_returns_ids(monkeypatch):

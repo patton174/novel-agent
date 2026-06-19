@@ -24,10 +24,16 @@ public final class AgentStreamSupport {
         if (frames == null) {
             return Flux.empty();
         }
+        // frames 是冷流（Flux.create），其内部在
+        // 方法体里生成 runId/messageId 并闭包捕获。若直接被 merge + ignoreElements 各订阅
+        // 一次，lambda 会执行两次，导致同一 runId/messageId 触发 createRun 主键冲突
+        // → 事务 aborted → SSE bootstrap 失败 → 前端从开始就断线重连。share() 让多个
+        // 订阅者共享一次上游订阅，避免冷流被重复触发。
+        Flux<String> shared = frames.share();
         Flux<String> keepalive = Flux.interval(KEEPALIVE_INTERVAL)
             .map(tick -> KEEPALIVE_FRAME)
-            .takeUntilOther(frames.ignoreElements().then(Mono.empty()));
-        return Flux.merge(frames, keepalive);
+            .takeUntilOther(shared.ignoreElements().then(Mono.empty()));
+        return Flux.merge(shared, keepalive);
     }
 
     public static void applySseHeaders(ServerHttpResponse response) {

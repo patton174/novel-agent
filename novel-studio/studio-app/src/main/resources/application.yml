@@ -20,6 +20,12 @@ spring:
     username: ${DB_USER:postgres}
     password: ${DB_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      minimum-idle: ${HIKARI_MINIMUM_IDLE:2}
+      maximum-pool-size: ${HIKARI_MAXIMUM_POOL_SIZE:10}
+      connection-timeout: ${HIKARI_CONNECTION_TIMEOUT:20000}
+      max-lifetime: ${HIKARI_MAX_LIFETIME:45000}
+      keepalive-time: ${HIKARI_KEEPALIVE_TIME:20000}
   jpa:
     hibernate:
       ddl-auto: validate
@@ -54,10 +60,15 @@ agent:
     enabled: ${AGENT_BILLING_ENABLED:true}
   internal:
     service-key: ${AGENT_INTERNAL_SERVICE_KEY:${INTERNAL_SERVICE_KEY:dev-internal-key-change-me}}
-  runtime:
+    runtime:
     # legacy = Java 直连 Python /agent/run/stream；queued = MQ dispatch + Worker slice + Redis live
     mode: ${AGENT_RUNTIME_MODE:legacy}
     pg-run-enabled: ${AGENT_PG_RUN_ENABLED:false}
+    proxy-internal-url: ${AGENT_PROXY_INTERNAL_URL:}
+    proxy-instance-id: ${AGENT_PROXY_INSTANCE_ID:}
+    warmup-enabled: ${AGENT_RUNTIME_WARMUP_ENABLED:true}
+    warmup-redis-ping: ${AGENT_RUNTIME_WARMUP_REDIS:true}
+    warmup-python-ping: ${AGENT_RUNTIME_WARMUP_PYTHON:true}
 
 studio:
   security:

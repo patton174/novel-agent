@@ -1,0 +1,37 @@
+# MW 机 Consumer（MQ/Redis 在 MW；Content/Python 在 Worker）
+server:
+  port: 8090
+
+spring:
+  cloud:
+    nacos:
+      discovery:
+        ip: 107.150.112.140
+    inetutils:
+      ignored-interfaces:
+        - docker0
+      preferred-networks:
+        - 107.150.
+  data:
+    redis:
+      host: 107.150.112.140
+      port: 6379
+      password: LIxu20021008@
+      database: 0
+  rabbitmq:
+    host: 107.150.112.140
+    port: 5672
+    username: novel_agent
+    password: LIxu20021008@
+
+logging:
+  level:
+    com.novel.agent: info
+
+agent:
+  content:
+    base-url: http://47.80.80.224:8091
+  python:
+    base-url: http://python-lb:8000
+  internal:
+    service-key: prod-internal-key-novel-agent

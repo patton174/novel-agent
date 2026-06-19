@@ -1,5 +1,7 @@
 # Phase 9 实施计划：产品计量、配额与计费
 
+> ⚠️ **历史设计记录**。生产已迁移至 **novel-studio 单体**，现状以 `CLAUDE.md` / `.cursor/rules/project-architecture.mdc` 为准。本文保留作历史参考，**勿据以部署**（旧微服务 agent-gateway/auth/pyai/content/consumer 与 `restart-dev.sh` 均已废弃）。
+
 > **目标**：建立不可变计量账本、实时配额 enforcement、用户用量透明化；Pricing/Billing 页接真实 API。  
 > **周期**：约 4 周  
 > **前置**：Phase 8 T8.1（Flyway）必须完成  
@@ -29,7 +31,7 @@
 ### 模块结构
 
 ```
-novel-agent/agent-service/agent-billing/
+legacy/novel-agent/agent-service/agent-billing/
   pom.xml
   src/main/java/com/novel/agent/billing/
     NovelAgentBillingApplication.java

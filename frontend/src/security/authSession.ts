@@ -8,8 +8,12 @@ const AUTH_SELF_PREFIXES = [
   '/api/auth/api/login',
   '/api/auth/api/register',
   '/api/auth/api/refresh',
+  '/api/auth/api/logout',
   '/api/auth/api/captcha',
   '/api/auth/api/send-email-code',
+  '/api/auth/api/confirm-email-verify',
+  '/api/auth/api/forgot-password',
+  '/api/auth/api/confirm-password-reset',
 ]
 
 let redirecting = false

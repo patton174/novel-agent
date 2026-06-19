@@ -1,0 +1,59 @@
+# 本地 profile：连 MW 线上库时 Flyway 关闭（schema 已在生产维护）
+spring:
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:novel_agent}?tcpKeepAlive=true&ApplicationName=novel-studio-local
+    username: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:changeme}
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 1
+      max-lifetime: 45000
+      idle-timeout: 30000
+      keepalive-time: 20000
+      connection-timeout: 20000
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:changeme}
+      timeout: 10s
+      connect-timeout: 10s
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+    listener:
+      simple:
+        auto-startup: ${AGENT_MQ_LISTENER_AUTO_STARTUP:true}
+      direct:
+        auto-startup: ${AGENT_MQ_LISTENER_AUTO_STARTUP:true}
+  flyway:
+    # 单体 classpath 下 auth/billing/content 迁移版本会冲突；本地库通常已有 schema
+    enabled: false
+
+agent:
+  runtime:
+    mode: ${AGENT_RUNTIME_MODE:queued}
+    pg-run-enabled: ${AGENT_PG_RUN_ENABLED:true}
+  python:
+    base-url: http://127.0.0.1:8000
+  internal:
+    service-key: ${AGENT_INTERNAL_SERVICE_KEY:${INTERNAL_SERVICE_KEY:dev-internal-key-change-me}}
+
+auth:
+  client-security:
+    enabled: false
+    aes-required: false
+    route-obfuscation: false
+    field-encryption: false
+    encrypt-stream: false
+    enforce-csrf: false
+    enforce-fingerprint: false
+    enforce-heartbeat: false
+
+# 本地连远程 Redis：ReactiveHealthIndicator 在 Windows+Lettuce 上可能误报；liveness/readiness 仍可用
+management:
+  health:
+    redis:
+      enabled: false

@@ -1,0 +1,35 @@
+# 双机：Worker 机 Consumer
+server:
+  port: 8090
+
+spring:
+  cloud:
+    nacos:
+      discovery:
+        ip: 47.80.80.224
+    inetutils:
+      ignored-interfaces:
+        - docker0
+  data:
+    redis:
+      host: 107.150.112.140
+      port: 6379
+      password: LIxu20021008@
+      database: 0
+  rabbitmq:
+    host: 107.150.112.140
+    port: 5672
+    username: novel_agent
+    password: LIxu20021008@
+
+logging:
+  level:
+    com.novel.agent: info
+
+agent:
+  content:
+    base-url: http://agent-content:8091
+  python:
+    base-url: http://python-ai:8000
+  internal:
+    service-key: prod-internal-key-novel-agent

@@ -103,8 +103,11 @@ public class AgentRunState {
             ? null
             : String.valueOf(assembledContext.get("current_chapter_id"));
 
-        Object storyMemoryRaw = assembledContext.get("story_memory");
-        String storyMemory = storyMemoryRaw == null ? "" : String.valueOf(storyMemoryRaw);
+        Map<String, Object> patchForPython = new HashMap<>(contextPatch);
+        Object memoryTreeIndex = assembledContext.get("memory_tree_index");
+        if (memoryTreeIndex != null) {
+            patchForPython.put("memory_tree_index", memoryTreeIndex);
+        }
 
         return new AgentRunContextDto(
             runId,
@@ -115,7 +118,6 @@ public class AgentRunState {
             userMessage,
             chapterText,
             history,
-            storyMemory,
             preferences,
             project,
             chapters,
@@ -124,7 +126,7 @@ public class AgentRunState {
             stepIndex,
             lastTool,
             lastReason,
-            contextPatch,
+            patchForPython,
             selectedChoice
         );
     }
@@ -363,6 +365,20 @@ public class AgentRunState {
         if (choice != null) {
             this.contextPatch.put("selected_choice", choice);
         }
+    }
+
+    /** Restore in-run progress after cold failover from PG checkpoint. */
+    public void restoreFromCheckpoint(AgentRunContextDto dto) {
+        if (dto == null) {
+            return;
+        }
+        stepIndex = dto.stepIndex();
+        lastTool = dto.lastTool();
+        lastReason = dto.lastReason();
+        if (dto.contextPatch() != null && !dto.contextPatch().isEmpty()) {
+            contextPatch = new HashMap<>(dto.contextPatch());
+        }
+        selectedChoice = dto.selectedChoice();
     }
 
     public ObjectNode baseEvent(ObjectMapper mapper, String type, String stepId) {

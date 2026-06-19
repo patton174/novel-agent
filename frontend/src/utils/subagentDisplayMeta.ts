@@ -54,7 +54,7 @@ function deriveCurrentStep(
     .reverse()
     .find((log) => log.phase === 'reasoning' && log.reasoningOpen)
   if (openReasoning) {
-    return '思考中…'
+    return '编排中…'
   }
 
   const visible = visibleSubagentLogs(subagent.logs)
@@ -79,7 +79,7 @@ function deriveCurrentStep(
   }
 
   if (subagent.thinkText?.trim()) {
-    return '思考中…'
+    return '编排中…'
   }
 
   return runActive ? '启动中…' : null

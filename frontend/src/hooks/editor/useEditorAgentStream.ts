@@ -33,12 +33,13 @@ import {
 } from '../../utils/agentActiveRunResume'
 import {
   clearStreamRecoveryBanner,
-  isHostDetachMessage,
   isPeerDroppedStreamError,
   isStreamRecoveryBanner,
+  resolveAgentHostGuardMessage,
   shouldAttachStreamRecovery,
   STREAM_RECOVERY_BANNER,
 } from '../../utils/agentStreamRecovery'
+import { shouldOpenRecoverySse } from '../../utils/agentStreamLease'
 import { createStreamPersistDebouncer } from '../../utils/streamPersist'
 import { createRafBatcher } from '../../utils/rafBatcher'
 import { buildAgentHistory } from '../../utils/buildAgentHistory'
@@ -54,7 +55,7 @@ import {
   sendAgentRunPause,
   sendAgentRunResume,
 } from '../../utils/api'
-import { listSessions, listSessionsByNovel } from '../../utils/chatSessionStore'
+import { listSessions, listSessionsByNovel, loadSessionMessages } from '../../utils/chatSessionStore'
 import { sessionNeedsGeneratedTitle } from '../../utils/sessionTitle'
 import type { EditorCenterTab } from '../../components/editor/EditorCenterTabs'
 import type { Novel } from '../../types/novel'
@@ -119,6 +120,10 @@ export function useEditorAgentStream({
   const agentChapterTitleRef = useRef('')
   /** Write/Edit 走 chapter.stream.* 时标记，在 tool.completed 后再选章/结束流式 */
   const chapterStreamActiveRef = useRef(false)
+  /** 写章期间是否切到过 story 面板，用于 run.completed 兜底回聊天区 */
+  const chapterStoryTabOpenedRef = useRef(false)
+  /** chapter.stream.completed 已完成「存盘 + 回聊天」收尾，避免 tool.completed 重复执行 */
+  const chapterWriteFinalizedRef = useRef(false)
   const [isLoading, setIsLoading] = useState(false)
   const [isSseRecovering, setIsSseRecovering] = useState(false)
   const [activeStreamMessageId, setActiveStreamMessageId] = useState<string | null>(null)
@@ -147,7 +152,7 @@ export function useEditorAgentStream({
   const eventPollTimerRef = useRef<number | null>(null)
   const runEventPollInFlightRef = useRef(false)
   const agentEventHandlerRef = useRef<(eventName: string, rawData: string) => void>(() => {})
-  const attachRecoveryRef = useRef<(banner?: string) => void>(() => {})
+  const attachRecoveryRef = useRef<(banner?: string, force?: boolean) => void>(() => {})
   const attachStatusWsFallbackRef = useRef<() => void>(() => {})
   const messagesRef = useRef(messages)
   useEffect(() => {
@@ -296,6 +301,11 @@ export function useEditorAgentStream({
         return
       }
       if (!live) {
+        return
+      }
+      if (!shouldOpenRecoverySse(streamAbortRef.current)) {
+        statusWsFollowRunRef.current = true
+        scheduleRunEventPoll(500)
         return
       }
       if (!force && !shouldAttachStreamRecovery(live.state) && !streamRecoveryRef.current) {
@@ -450,6 +460,7 @@ export function useEditorAgentStream({
         const nextTimeline = state.timeline.length > 0 ? state.timeline : undefined
         const nextTodos = state.todos?.length ? state.todos : undefined
         const nextPhase = deriveAssistantStreamPhase(state)
+        const nextHostGuard = resolveAgentHostGuardMessage(state)
         const unchanged =
           current.content === nextContent &&
           current.agentThinkText === nextThinkText &&
@@ -458,7 +469,7 @@ export function useEditorAgentStream({
           current.agentIsThinking === state.isThinking &&
           current.agentStreamPaused === state.streamPaused &&
           current.agentRunId === state.runId &&
-          current.agentHostGuardMessage === state.hostGuardMessage &&
+          current.agentHostGuardMessage === nextHostGuard &&
           current.agentStreamPhase === nextPhase &&
           current.agentStreamError === state.streamError &&
           current.agentAwaitingInteraction === state.awaitingInteraction &&
@@ -478,7 +489,7 @@ export function useEditorAgentStream({
           agentIsThinking: state.isThinking,
           agentStreamPaused: state.streamPaused,
           agentRunId: state.runId,
-          agentHostGuardMessage: state.hostGuardMessage,
+          agentHostGuardMessage: nextHostGuard,
           agentStreamPhase: nextPhase,
           agentStreamError: state.streamError,
           agentAwaitingInteraction: state.awaitingInteraction,
@@ -499,6 +510,12 @@ export function useEditorAgentStream({
     streamSyncRef.current = syncStreamState
     syncStreamState()
     scrollMessagesToBottom(true)
+
+    const returnToChatAfterChapterWrite = () => {
+      chapterStoryTabOpenedRef.current = false
+      setActiveCenterTab('chat')
+      scrollMessagesToBottom(true)
+    }
 
     const chapterDeltaBufferRef = { current: '' }
     let chapterFlushRaf: number | null = null
@@ -569,7 +586,9 @@ export function useEditorAgentStream({
           if (parsed.type === 'run.recovering') {
             statusWsFollowRunRef.current = true
             scheduleRunEventPoll(500)
-            attachRecoveryRef.current(STREAM_RECOVERY_BANNER, true)
+            if (shouldOpenRecoverySse(streamAbortRef.current)) {
+              attachRecoveryRef.current(STREAM_RECOVERY_BANNER, true)
+            }
           }
           if (typeof parsed.sequence === 'number') {
             lastPolledSequenceRef.current = Math.max(
@@ -586,6 +605,8 @@ export function useEditorAgentStream({
                 : null
             agentChapterTitleRef.current = title
             chapterStreamActiveRef.current = true
+            chapterStoryTabOpenedRef.current = true
+            chapterWriteFinalizedRef.current = false
             setActiveCenterTab('story')
             beginAgentChapterStream({ title, chapterId })
           }
@@ -600,7 +621,18 @@ export function useEditorAgentStream({
           if (parsed.type === 'chapter.stream.completed') {
             flushChapterDeltaBuffer()
             markAgentChapterStreamSaving()
-            setActiveCenterTab('story')
+            // 章节正文已落库（StreamingChapterAppender 在流式期间持续写入），
+            // 此处即为「写完」的明确信号：存盘选章 + 回到聊天界面。
+            // 仅做一次，tool.completed / run.completed 走兜底（见下）。
+            if (chapterStreamActiveRef.current && !chapterWriteFinalizedRef.current) {
+              chapterWriteFinalizedRef.current = true
+              chapterStreamActiveRef.current = false
+              finishAgentChapterStream()
+              void (async () => {
+                await selectChapterAfterAgentWrite(agentChapterTitleRef.current)
+                returnToChatAfterChapterWrite()
+              })()
+            }
           }
           if (parsed.type === 'tool.started') {
             const startedTool =
@@ -621,23 +653,27 @@ export function useEditorAgentStream({
             if (activeNovelId) {
               void loadChapters(activeNovelId)
             }
-            const streamedWrite =
-              isChapterStreamTool(toolName) && chapterStreamActiveRef.current
-            if (streamedWrite) {
-              chapterStreamActiveRef.current = false
-              finishAgentChapterStream()
-              void (async () => {
-                await selectChapterAfterAgentWrite(agentChapterTitleRef.current)
-                setActiveCenterTab('story')
-                scrollMessagesToBottom(true)
-              })()
-            } else {
-              void (async () => {
-                await selectChapterAfterAgentWrite(agentChapterTitleRef.current)
-                if (isChapterStreamTool(toolName)) {
-                  setActiveCenterTab('story')
-                }
-              })()
+            // chapter.stream.completed 已完成存盘 + 回聊天，此处仅兜底；
+            // 未走流式（无 chapter.stream.*）的 Write/Edit 仍按原逻辑选章。
+            if (!chapterWriteFinalizedRef.current) {
+              const streamedWrite =
+                isChapterStreamTool(toolName) && chapterStreamActiveRef.current
+              if (streamedWrite) {
+                chapterWriteFinalizedRef.current = true
+                chapterStreamActiveRef.current = false
+                finishAgentChapterStream()
+                void (async () => {
+                  await selectChapterAfterAgentWrite(agentChapterTitleRef.current)
+                  returnToChatAfterChapterWrite()
+                })()
+              } else {
+                void (async () => {
+                  await selectChapterAfterAgentWrite(agentChapterTitleRef.current)
+                  if (isChapterStreamTool(toolName)) {
+                    returnToChatAfterChapterWrite()
+                  }
+                })()
+              }
             }
           }
           if (
@@ -652,6 +688,9 @@ export function useEditorAgentStream({
           }
           if (parsed.type === 'run.completed') {
             finishAgentChapterStream()
+            if (chapterStoryTabOpenedRef.current) {
+              returnToChatAfterChapterWrite()
+            }
             if (activeNovelId) {
               void loadChapters(activeNovelId)
             }
@@ -693,8 +732,13 @@ export function useEditorAgentStream({
           type = undefined
         }
       }
-      if (type === 'message.delta' || type === 'think.delta' || type === 'chapter.stream.delta') {
-        batcher.schedule()
+      if (
+        type === 'message.delta' ||
+        type === 'think.delta' ||
+        type === 'reasoning.delta' ||
+        type === 'narration.delta'
+      ) {
+        batcher.flushNow()
       } else if (
         type === 'tool.started' ||
         type === 'tool.completed' ||
@@ -710,6 +754,9 @@ export function useEditorAgentStream({
       ) {
         batcher.flushNow()
       } else {
+        // chapter.stream.delta 等高频事件走 rAF 合并：章节正文已由
+        // chapterDeltaBufferRef 单独 rAF 批量追加，写章期间聊天面板不可见，
+        // 无需每条 delta 同步 flushNow 重算消息列表 + 滚动
         batcher.schedule()
       }
     }
@@ -762,7 +809,9 @@ export function useEditorAgentStream({
       if (parsedType === 'run.recovering') {
         statusWsFollowRunRef.current = true
         scheduleRunEventPoll(500)
-        attachRecoveryRef.current(STREAM_RECOVERY_BANNER, true)
+        if (shouldOpenRecoverySse(streamAbortRef.current)) {
+          attachRecoveryRef.current(STREAM_RECOVERY_BANNER, true)
+        }
       }
       handleAgentEvent(eventName, rawData)
       if (recoveryActive && parsedType && parsedType !== 'run.recovering') {
@@ -802,17 +851,22 @@ export function useEditorAgentStream({
       statusWsSessionIdRef.current = targetSessionId
     }
 
+    const persistedTurns = loadSessionMessages(agentSessionIdRef.current)
+    const persistedById = new Map(persistedTurns.map((m) => [m.id, m]))
     const history = buildAgentHistory(
       messagesRef.current
         .filter((m) => m.id !== assistantMessageId)
         .filter((m) => !isWelcomeOnlyAssistantMessage(m, activeNovel))
-        .map((m) => ({
-          role: m.role,
-          content: m.content,
-          agentTimeline: m.agentTimeline,
-          agentSteps: m.agentSteps,
-          agentThinkText: m.agentThinkText,
-        })),
+        .map((m) => {
+          const stored = persistedById.get(m.id)
+          return {
+            role: m.role,
+            content: m.content || stored?.content || '',
+            agentTimeline: m.agentTimeline ?? stored?.agentTimeline,
+            agentSteps: m.agentSteps ?? stored?.agentSteps,
+            agentThinkText: m.agentThinkText ?? stored?.agentThinkText,
+          }
+        }),
       { maxTurns: 24, excludeTrailingUser: true },
     )
 
@@ -888,10 +942,7 @@ export function useEditorAgentStream({
       }
     } finally {
       sendInFlightRef.current = false
-      const hostDetached =
-        sseDisconnectedEarly ||
-        (shouldAttachStreamRecovery(liveBox.state) &&
-          Boolean(liveBox.state.runId))
+      const hostDetached = sseDisconnectedEarly
       const finalState = liveBox.state
       const sessionId = agentSessionIdRef.current
       if (
@@ -1184,8 +1235,19 @@ export function useEditorAgentStream({
     resumeCheckedSessionRef.current = sessionId
     void (async () => {
       try {
+        if (sendInFlightRef.current || liveStreamRef.current || streamAbortRef.current) {
+          return
+        }
         const active = await api.fetchActiveAgentRun(sessionId)
         if (!active?.id || !isResumableAgentRunStatus(active.status)) {
+          return
+        }
+        if (
+          sendInFlightRef.current ||
+          liveStreamRef.current ||
+          streamAbortRef.current ||
+          agentSessionIdRef.current !== sessionId
+        ) {
           return
         }
         const assistantMessageId = `assistant-resume-${active.id}`
@@ -1221,11 +1283,7 @@ export function useEditorAgentStream({
               agentTimeline: state.timeline.length > 0 ? state.timeline : undefined,
               agentTodos: state.todos?.length ? state.todos : undefined,
               agentRunId: active.id,
-              agentHostGuardMessage: streamRecoveryRef.current
-                ? STREAM_RECOVERY_BANNER
-                : isStreamRecoveryBanner(state.hostGuardMessage)
-                  ? undefined
-                  : state.hostGuardMessage,
+              agentHostGuardMessage: resolveAgentHostGuardMessage(state),
               agentStreamPhase: deriveAssistantStreamPhase(state),
               agentAwaitingInteraction: state.awaitingInteraction,
             }

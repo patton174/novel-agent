@@ -123,7 +123,13 @@ describe('ThinkRoundGroup', () => {
         streamFinished
         messageKey="fixture"
         renderTool={() => (
-          <CcToolRow name="ReadMemory" iconName="ReadMemory" phase="已完成" testId="fixture-tool" />
+          <CcToolRow
+            name="ReadMemory"
+            iconName="ReadMemory"
+            outcomeBadge="success"
+            branchLine="已查阅创作记忆"
+            testId="fixture-tool"
+          />
         )}
       />,
     )

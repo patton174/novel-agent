@@ -111,6 +111,21 @@ class _MemoryGraphStore:
     def clear_novel(self, novel_id: str) -> None:
         self._graphs.pop(novel_id, None)
 
+    def get_novel_graph(self, novel_id: str) -> dict[str, list[dict[str, str]]]:
+        bucket = self._graphs.get(novel_id, _EMPTY)
+        entities: dict[str, dict[str, str]] = bucket.get("entities") or {}
+        relations: list[dict[str, str]] = bucket.get("relations") or []
+        nodes = [
+            {"id": name, "name": meta["name"], "type": meta.get("type", "unknown")}
+            for name, meta in sorted(entities.items())
+        ]
+        edges = [
+            {"source": r["src"], "target": r["dst"], "rel": r["rel"]}
+            for r in relations
+            if isinstance(r, dict)
+        ]
+        return {"nodes": nodes, "edges": edges}
+
 
 _default_store = _MemoryGraphStore()
 _test_store: GraphStoreBackend | None = None
@@ -139,6 +154,13 @@ def get_subgraph(
     novel_id: str, entity: str, *, depth: int = 1
 ) -> dict[str, list[dict[str, str]]]:
     return _backend().get_subgraph(novel_id, entity, depth=depth)
+
+
+def get_novel_graph(novel_id: str) -> dict[str, list[dict[str, str]]]:
+    store = _backend()
+    if hasattr(store, "get_novel_graph"):
+        return store.get_novel_graph(novel_id)  # type: ignore[attr-defined]
+    return {"nodes": [], "edges": []}
 
 
 def clear_novel_graph(novel_id: str) -> None:

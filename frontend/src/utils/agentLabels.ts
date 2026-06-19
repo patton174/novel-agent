@@ -5,8 +5,12 @@ import { normalizeToolName } from './agentToolNames'
 
 const CC_TOOL_LABELS: Record<string, string> = {
   ReadMemory: '查阅记忆',
-  WriteMemory: '写入记忆',
-  EditMemory: '编辑记忆',
+  GetMemoryTree: '记忆树',
+  CreateMemory: '创建记忆',
+  UpdateMemoryFields: '更新记忆属性',
+  UpdateMemoryContent: '更新记忆正文',
+  UpdateMemoryMeta: '更新记忆元数据',
+  MoveMemory: '移动记忆',
   DeleteMemory: '删除记忆',
   ListMemory: '列举记忆',
   ReadChapter: '阅读章节',
@@ -14,6 +18,8 @@ const CC_TOOL_LABELS: Record<string, string> = {
   EditChapter: '编辑章节',
   DeleteChapter: '删除章节',
   ListChapters: '列举章节',
+  ChapterAudit: '章节目录审计',
+  NarrativeReview: '叙事审查',
   ReorderChapters: '调整章节顺序',
   SearchKnowledge: '知识检索',
   GetCharacterGraph: '角色关系图',
@@ -77,20 +83,9 @@ const TOOL_LABELS: Record<string, string> = {
 }
 
 const LEGACY_LABELS: Record<string, string> = {
-  chapter_list: '列举章节',
-  chapter_read: '阅读章节',
-  chapter_create: '写入章节',
-  chapter_update: '编辑章节',
-  chapter_delete: '删除章节',
-  memory_read: '查阅记忆',
-  memory_create: '写入记忆',
-  memory_update: '编辑记忆',
-  memory_delete: '删除记忆',
-  memory_patch: '编辑记忆',
   choose: '询问',
   ask_user: '询问',
   output: '回复',
-  context_search: '搜索',
 }
 
 function localizedLabel(zhKey: string): string {

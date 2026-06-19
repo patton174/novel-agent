@@ -1,5 +1,7 @@
 # Run 状态机（PostgreSQL + 队列）与 JWT 鉴权替换设计
 
+> ⚠️ **历史设计记录**。生产已迁移至 **novel-studio 单体**，现状以 `CLAUDE.md` / `.cursor/rules/project-architecture.mdc` 为准。本文保留作历史参考，**勿据以部署**（旧微服务 agent-gateway/auth/pyai/content/consumer 与 `restart-dev.sh` 均已废弃）。
+
 > 日期：2026-06-04  
 > 状态：**待评审（已扩展客户端安全层）**  
 > 关联：`docs/superpowers/specs/2026-05-27-java-python-agent-runtime-design.md`

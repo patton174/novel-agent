@@ -12,11 +12,11 @@ import { AgentThinkPanel } from '../AgentThinkPanel'
 import { AgentMarkdown } from '../AgentMarkdown'
 import { useTimelineBlockStreamText } from './useTimelineBlockStreamText'
 import {
-  ORCHESTRATION_FLAT_ROW,
   ORCHESTRATION_NARRATION,
   ORCHESTRATION_SUMMARY_REVEAL,
   TIMELINE_STREAM_CURSOR,
 } from '@/lib/timelineClasses'
+import { OrchestrationFlatSlot } from './layout'
 import { cn } from '@/lib/utils'
 
 export type ThinkTimelineBlock = Extract<AgentTimelineBlock, { kind: 'think' }>
@@ -35,13 +35,18 @@ function OrchestrationSummaryReveal({
     resetKey: `insight-summary:${blockId}`,
     playing: animate,
     finished: !animate,
-    maxCharsPerFrame: 4,
+    maxCharsPerFrame: 8,
   })
   const displayText = animate ? visible : text
 
   return (
     <div className={ORCHESTRATION_NARRATION}>
-      <AgentMarkdown text={displayText} variant="chat" />
+      <AgentMarkdown
+        text={displayText}
+        variant="chat"
+        streaming={animate && isTyping}
+        isAnimating={animate && isTyping}
+      />
       {animate && isTyping ? <span className={TIMELINE_STREAM_CURSOR} aria-hidden /> : null}
     </div>
   )
@@ -62,12 +67,13 @@ function InsightOrchestrationSummary({
     return null
   }
   return (
-    <div
-      className={cn(ORCHESTRATION_FLAT_ROW, animate && ORCHESTRATION_SUMMARY_REVEAL)}
-      data-testid="timeline-orchestration-insight-summary"
+    <OrchestrationFlatSlot
+      kind="text"
+      className={cn(animate && ORCHESTRATION_SUMMARY_REVEAL)}
+      testId="timeline-orchestration-insight-summary"
     >
       <OrchestrationSummaryReveal text={summary} blockId={blockId} animate={animate} />
-    </div>
+    </OrchestrationFlatSlot>
   )
 }
 
@@ -156,7 +162,7 @@ export function PlanReasoningBlock({
     messageKey,
     streamLive,
     streamFinished,
-    4,
+    8,
   )
   const { panelExpanded, isPanelExpanded, handleExpandedChange, controlledExpand, pinnedOpen } =
     useInsightExpandState(messageKey, block.id, thinkExpanded, false, onThinkExpandedChange)
@@ -230,7 +236,7 @@ export function ThinkBlock({
     messageKey,
     streamLive,
     streamFinished,
-    3,
+    8,
   )
 
   const { panelExpanded, isPanelExpanded, handleExpandedChange, controlledExpand, pinnedOpen } =

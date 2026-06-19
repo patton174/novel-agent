@@ -81,8 +81,8 @@ async def test_invoke_structured_wrong_native_tool_raises_without_salvage():
         content="",
         tool_calls=[
             {
-                "name": "memory_read",
-                "args": {"scope": "world"},
+                "name": "Read",
+                "args": {"file_path": "/tmp/x"},
                 "id": "call_bad",
                 "type": "tool_call",
             }
@@ -92,7 +92,7 @@ async def test_invoke_structured_wrong_native_tool_raises_without_salvage():
     mock_chain.ainvoke = AsyncMock(
         return_value={
             "parsed": None,
-            "parsing_error": ValueError("Unknown tool type: 'memory_read'"),
+            "parsing_error": ValueError("Unknown tool type: 'Read'"),
             "raw": raw,
         }
     )
@@ -100,7 +100,7 @@ async def test_invoke_structured_wrong_native_tool_raises_without_salvage():
     mock_llm.with_structured_output.return_value = mock_chain
 
     with patch("app.agent.harness.structured_llm.llm_provider.get_llm", return_value=mock_llm):
-        with pytest.raises(ValueError, match="tool_use_error.*No such tool available.*memory_read"):
+        with pytest.raises(ValueError, match="tool_use_error.*No such tool available.*Read"):
             await invoke_structured([HumanMessage(content="x")], PlanResult, profile="plan")
 
 
@@ -111,7 +111,7 @@ async def test_invoke_structured_with_retry_on_wrong_native_tool():
     ok = PlanResult.model_validate(
         {
             "action": "continue",
-            "tool_calls": [{"tool": "ReadMemory", "input": {"scope": "world", "key": "rules"}}],
+            "tool_calls": [{"tool": "ReadMemory", "input": {"memory_id": "mem-rules"}}],
             "reason": "ok",
         }
     )
@@ -119,8 +119,8 @@ async def test_invoke_structured_with_retry_on_wrong_native_tool():
         content="",
         tool_calls=[
             {
-                "name": "memory_read",
-                "args": {"scope": "world"},
+                "name": "Read",
+                "args": {"file_path": "/tmp/x"},
                 "id": "call_bad",
                 "type": "tool_call",
             }
@@ -131,7 +131,7 @@ async def test_invoke_structured_with_retry_on_wrong_native_tool():
         side_effect=[
             {
                 "parsed": None,
-                "parsing_error": ValueError("Unknown tool type: 'memory_read'"),
+                "parsing_error": ValueError("Unknown tool type: 'Read'"),
                 "raw": bad_raw,
             },
             {"parsed": ok, "parsing_error": None},
@@ -165,7 +165,7 @@ async def test_invoke_structured_salvages_raw_tool_args_on_parse_error():
                 "name": "PlanResult",
                 "args": {
                     "action": "continue",
-                    "tool_calls": '[{"tool":"ReadMemory","input":{"scope":"world","key":"rules"}}]',
+                    "tool_calls": '[{"tool":"ReadMemory","input":{"memory_id":"mem-rules"}}]',
                     "reason": "ok",
                     "continue_plan": False,
                 },
@@ -226,7 +226,7 @@ async def test_try_invoke_structured_returns_none_on_failure():
 
 def test_plan_result_coerces_tool_calls_json_string():
     raw = (
-        '[{"tool":"ReadMemory","input":{"scope":"world","key":"rules"}},'
+        '[{"tool":"ReadMemory","input":{"memory_id":"mem-rules"}},'
         '{"tool":"ListChapters","input":{}}]'
     )
     result = PlanResult.model_validate(

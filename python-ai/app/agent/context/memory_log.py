@@ -2,7 +2,12 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.agent.schemas import AgentRunContext
+
+from app.agent.backend.memory_catalog import extract_scope_root_ids
 
 _MAX_OPS = 24
 
@@ -63,7 +68,7 @@ def memory_ops_for_plan_json(log: Any, *, max_items: int = 12) -> list[dict[str,
             "tool": str(item.get("tool") or ""),
             "ok": bool(item.get("ok")),
         }
-        for key in ("scope", "item_id", "key"):
+        for key in ("scope", "item_id", "key", "title"):
             val = item.get(key)
             if val:
                 row[key] = val
@@ -74,12 +79,76 @@ def memory_ops_for_plan_json(log: Any, *, max_items: int = 12) -> list[dict[str,
     return entries
 
 
+def build_memory_write_batch_ack(
+    ctx: "AgentRunContext",
+    *,
+    min_entries: int = 1,
+) -> str | None:
+    """Human-readable batch summary so the model does not re-create existing roots."""
+    patch = ctx.context_patch if isinstance(ctx.context_patch, dict) else {}
+    log = patch.get("memory_ops_log")
+    if not isinstance(log, list) or not log:
+        return None
+    ok_rows = [
+        row
+        for row in log
+        if isinstance(row, dict)
+        and row.get("ok")
+        and str(row.get("tool") or "") in {
+            "CreateMemory",
+            "UpdateMemoryFields",
+            "UpdateMemoryContent",
+            "UpdateMemoryMeta",
+            "MoveMemory",
+            "DeleteMemory",
+        }
+    ]
+    if len(ok_rows) < min_entries:
+        return None
+    creates = [row for row in ok_rows if row.get("tool") == "CreateMemory"]
+    lines = [
+        "【记忆写入批结果】以下工具调用已成功，请勿重复 CreateMemory 同名 scope 根节点：",
+    ]
+    for row in ok_rows[-12:]:
+        tool = str(row.get("tool") or "")
+        title = str(row.get("title") or row.get("summary") or "").strip()
+        scope = str(row.get("scope") or "").strip()
+        mid = str(row.get("item_id") or "").strip()
+        label = title or scope or mid[:8] or tool
+        extra = []
+        if scope and scope != label:
+            extra.append(f"scope={scope}")
+        if mid:
+            extra.append(f"memory_id={mid}")
+        suffix = f" ({', '.join(extra)})" if extra else ""
+        lines.append(f"- {tool}: {label}{suffix}")
+    index = patch.get("memory_tree_index")
+    if isinstance(index, dict) and index:
+        root_ids = extract_scope_root_ids(
+            {
+                str(k): v
+                for k, v in index.items()
+                if isinstance(v, dict)
+            }
+        )
+        if root_ids:
+            lines.append("scope_root_ids（CreateMemory child 必填 parent_id）：")
+            for scope in sorted(root_ids.keys()):
+                lines.append(f"  - scope={scope} → parent_id={root_ids[scope]}")
+        else:
+            scopes = ", ".join(sorted(str(k) for k in index.keys()))
+            lines.append(f"memory_index 当前 scope：{scopes}")
+    if len(creates) >= 2:
+        lines.append(f"CreateMemory 成功 {len(creates)} 个根分类，均已写入，无需再次创建。")
+    return "\n".join(lines)
+
+
 def format_memory_ops_for_plan(log: Any, *, max_items: int = 12) -> str:
     lines: list[str] = []
     for row in memory_ops_for_plan_json(log, max_items=max_items):
         status = "OK" if row.get("ok") else "FAIL"
         parts = [status, str(row.get("tool") or "")]
-        for key in ("scope", "item_id", "key"):
+        for key in ("scope", "item_id", "key", "title"):
             val = row.get(key)
             if val:
                 parts.append(f"{key}={val}")

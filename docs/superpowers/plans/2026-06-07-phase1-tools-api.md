@@ -1,5 +1,7 @@
 # Phase 1 实施计划：Python-AI 工程化重构 + 工具全量 API 化
 
+> ⚠️ **历史设计记录**。生产已迁移至 **novel-studio 单体**，现状以 `CLAUDE.md` / `.cursor/rules/project-architecture.mdc` 为准。本文保留作历史参考，**勿据以部署**（旧微服务 agent-gateway/auth/pyai/content/consumer 与 `restart-dev.sh` 均已废弃）。
+
 > **方针（用户明确）**：彻底重构、不留旧代码。重写工具层、重组目录、删除死代码。只借鉴 CC 的循环/注册架构风格，不照抄工具集。有用工具（WebSearch/MCP/Skill）改造为真实 API；无用 stub 直接删。
 >
 > 周期：2-3 周 ｜ 风险：中（大改）→ 用「每步全量测试 + git mv 保历史」控制 ｜ ROI：最高

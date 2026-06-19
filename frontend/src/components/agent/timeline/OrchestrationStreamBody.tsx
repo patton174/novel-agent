@@ -25,7 +25,9 @@ export function OrchestrationStreamBody({
 
   return (
     <div className={ORCHESTRATION_NARRATION}>
-      {text.trim() ? <AgentMarkdown text={text} variant="chat" /> : null}
+      {text.trim() ? (
+        <AgentMarkdown text={text} variant="chat" streaming={isLive} isAnimating={isLive} />
+      ) : null}
       {isLive ? <span className={TIMELINE_STREAM_CURSOR} aria-hidden /> : null}
     </div>
   )

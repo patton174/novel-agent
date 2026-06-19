@@ -71,7 +71,7 @@ export function OrchestrationScene() {
           <SceneCopy
             tag="第二幕 · 智能编排"
             title="Plan 拆解步骤，工具依次就位"
-            body="从 memory_read 到 plan、chapter_create，整条链路在编排层内一镜展开——滚动即分镜，创作即成片。"
+            body="从 ReadMemory 到 plan、WriteChapter，整条链路在编排层内一镜展开——滚动即分镜，创作即成片。"
             bullets={[
               '工具状态实时：进行中 / 已完成',
               '参数与摘要同屏，可追溯可复盘',
@@ -121,7 +121,7 @@ export function StreamScene() {
           <SceneCopy
             tag="第四幕 · 流式成稿"
             title="章节正文丝滑流出，所见即所得"
-            body="chapter_create 将长篇正文以流式写入编辑器：字句逐行生长，可随时暂停、追问或改写。"
+            body="WriteChapter 将长篇正文以流式写入编辑器：字句逐行生长，可随时暂停、追问或改写。"
             bullets={[
               'SSE 推送，低延迟可见输出',
               '支持 diff 对比与一键采纳',

@@ -16,5 +16,5 @@ public interface UsagePeriodSummaryRepository extends JpaRepository<UsagePeriodS
         FROM UsagePeriodSummaryEntity s
         WHERE s.periodYyyyMm = :period
         """)
-    Object[] sumByPeriod(@Param("period") String period);
+    List<Object[]> sumByPeriod(@Param("period") String period);
 }

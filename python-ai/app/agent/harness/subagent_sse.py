@@ -26,14 +26,13 @@ def _parent_step_id(step_id: str) -> str:
 
 
 def _subagent_tool_meta(payload: dict[str, Any], tool: str) -> dict[str, Any]:
-    """Mirror main-agent tool.completed fields for subagent UI (chapter title, path)."""
+    """Mirror main-agent tool.completed fields for subagent UI."""
     from app.agent.harness.events import _tool_input_for_sse
-    from app.agent.harness.tool_ui import vfs_path_from_tool_input
 
     inp = payload.get("tool_input")
     if not isinstance(inp, dict):
         inp = {}
-    fp = str(payload.get("file_path") or vfs_path_from_tool_input(inp) or "").strip()
+    fp = str(payload.get("file_path") or inp.get("file_path") or "").strip()
     if fp and "file_path" not in inp:
         inp = {**inp, "file_path": fp}
     labels = payload.get("result_labels")

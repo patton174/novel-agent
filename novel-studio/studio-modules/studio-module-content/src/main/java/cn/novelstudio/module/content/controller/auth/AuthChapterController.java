@@ -9,6 +9,8 @@ import cn.novelstudio.module.content.dto.UpdateChapterRequest;
 import cn.novelstudio.module.content.service.auth.biz.AuthChapterBiz;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -19,7 +21,9 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
+import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.Map;
 
@@ -40,9 +44,35 @@ public class AuthChapterController extends BaseController {
         @RequestHeader("X-User-Id") String userId,
         @PathVariable String chapterId,
         @RequestParam(required = false) Integer offset,
+        @RequestParam(required = false) Integer limit,
+        @RequestParam(name = "listIndex", required = false) Integer listIndex
+    ) {
+        return biz.readSlice(parseUserId(userId), chapterId, offset, limit, listIndex);
+    }
+
+    @GetMapping(value = "/{chapterId}/read/stream", produces = "application/x-ndjson")
+    public ResponseEntity<StreamingResponseBody> readSliceStream(
+        @RequestHeader("X-User-Id") String userId,
+        @PathVariable String chapterId,
+        @RequestParam(required = false) Integer offset,
         @RequestParam(required = false) Integer limit
     ) {
-        return biz.readSlice(parseUserId(userId), chapterId, offset, limit);
+        Long uid = parseUserId(userId);
+        StreamingResponseBody body = outputStream -> {
+            try {
+                biz.readSliceStream(uid, chapterId, offset, limit, outputStream);
+            } catch (UncheckedIOException ex) {
+                throw ex;
+            } catch (RuntimeException ex) {
+                throw ex;
+            }
+        };
+        return ResponseEntity.ok()
+            .contentType(MediaType.parseMediaType("application/x-ndjson"))
+            .header("Cache-Control", "no-cache")
+            .header("Connection", "keep-alive")
+            .header("X-Accel-Buffering", "no")
+            .body(body);
     }
 
     @PutMapping("/{chapterId}")

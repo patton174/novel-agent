@@ -1,6 +1,5 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, type RefObject } from 'react'
 import { useTypewriterBuffer } from '../../hooks/useTypewriterStream'
-import { createDebouncedScrollToBottom } from '../../utils/debouncedScroll'
 import { cn } from '@/lib/utils'
 
 export interface ChapterStreamViewerProps {
@@ -8,44 +7,57 @@ export interface ChapterStreamViewerProps {
   streaming: boolean
   /** 章节流会话 key（title 或 chapterId） */
   streamKey: string
+  /** 正文区外层滚动容器（EditorStoryPanel 的 overflow-y-auto） */
+  scrollRootRef?: RefObject<HTMLElement | null>
   className?: string
 }
 
+function scrollToBottom(el: HTMLElement | null) {
+  if (!el) return
+  el.scrollTop = el.scrollHeight
+}
+
 /**
- * Agent 写章流式正文：rAF 逐字揭示 + 渐变渐显 + 防抖自动滚底。
+ * Agent 写章流式正文：rAF 逐字揭示 + 渐变渐显 + 跟随滚动。
  */
 export function ChapterStreamViewer({
   content,
   streaming,
   streamKey,
+  scrollRootRef,
   className,
 }: ChapterStreamViewerProps) {
-  const scrollRef = useRef<HTMLDivElement>(null)
+  const fallbackScrollRef = useRef<HTMLDivElement>(null)
+
+  const resolveScrollEl = () => scrollRootRef?.current ?? fallbackScrollRef.current
+
   const { visible, isTyping } = useTypewriterBuffer(content, {
     resetKey: streamKey,
     playing: streaming,
     finished: !streaming,
-    maxCharsPerFrame: 3,
+    maxCharsPerFrame: 10,
   })
 
   useEffect(() => {
-    const scroller = createDebouncedScrollToBottom(() => scrollRef.current, 80)
-    scroller.scrollToBottom(true)
-    return scroller.dispose
-  }, [streamKey])
+    scrollToBottom(resolveScrollEl())
+  }, [streamKey, scrollRootRef])
 
   useEffect(() => {
     if (!streaming) return
-    const scroller = createDebouncedScrollToBottom(() => scrollRef.current, 80)
-    scroller.scrollToBottom()
-    return scroller.dispose
-  }, [visible, streaming])
+    let raf = 0
+    const loop = () => {
+      scrollToBottom(resolveScrollEl())
+      raf = requestAnimationFrame(loop)
+    }
+    raf = requestAnimationFrame(loop)
+    return () => cancelAnimationFrame(raf)
+  }, [streaming, streamKey, scrollRootRef])
 
   return (
     <div
-      ref={scrollRef}
+      ref={scrollRootRef ? undefined : fallbackScrollRef}
       className={cn(
-        'min-h-full w-full overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden',
+        scrollRootRef ? 'min-h-full w-full' : 'min-h-full w-full overflow-y-auto',
         className,
       )}
       data-testid="chapter-stream-viewer"

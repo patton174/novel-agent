@@ -1,19 +1,27 @@
-"""Story-memory API client."""
+"""Memory node API client (replacement storage)."""
 
-from app.agent.backend.memory_store import (
-    clear_memory_scope,
-    delete_memory,
-    fetch_memory_read_slice,
-    persist_memory_document,
-    read_memory_json,
-    write_memory_json,
+from app.agent.backend.memory_node_store import (
+    create_memory_node,
+    delete_memory_node,
+    fetch_all_memory_trees,
+    fetch_all_memory_trees_sync,
+    fetch_memory_tree,
+    fetch_memory_tree_sync,
+    get_memory_node,
+    list_memory_nodes,
+    move_memory_node,
+    update_memory_node,
 )
 
 __all__ = [
-    "clear_memory_scope",
-    "delete_memory",
-    "fetch_memory_read_slice",
-    "persist_memory_document",
-    "read_memory_json",
-    "write_memory_json",
+    "create_memory_node",
+    "delete_memory_node",
+    "fetch_all_memory_trees",
+    "fetch_all_memory_trees_sync",
+    "fetch_memory_tree",
+    "fetch_memory_tree_sync",
+    "get_memory_node",
+    "list_memory_nodes",
+    "move_memory_node",
+    "update_memory_node",
 ]

@@ -1,7 +1,6 @@
 package cn.novelstudio.module.content.service.internal;
 
 import cn.novelstudio.kernel.base.Result;
-import cn.novelstudio.module.content.service.StoryMemoryService;
 import cn.novelstudio.module.content.service.auth.biz.AuthNovelAgentContextBiz;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -15,7 +14,6 @@ import java.util.Map;
 public class InternalAgentRunContextBiz {
 
     private final AuthNovelAgentContextBiz novelAgentContextBiz;
-    private final StoryMemoryService storyMemoryService;
 
     public Map<String, Object> aggregate(
         Long userId,
@@ -36,31 +34,10 @@ public class InternalAgentRunContextBiz {
             }
         }
         body.put("novelContext", novelContext);
-
-        String storyMemory = "";
-        Map<String, Object> storyMemoryData = emptyStoryMemory();
-        if (userId != null && userId > 0 && novelId != null && !novelId.isBlank()) {
-            String uid = String.valueOf(userId);
-            storyMemory = storyMemoryService.renderForPromptNovel(uid, novelId, 900);
-            storyMemoryData = storyMemoryService.getNovelMemory(uid, novelId);
-        }
-        body.put("storyMemory", storyMemory == null ? "" : storyMemory);
-        body.put("storyMemoryData", storyMemoryData);
-        // Session dialogue history is assembled on pyai (Redis); placeholder for contract stability.
         body.put("history", List.of());
         if (sessionId != null && !sessionId.isBlank()) {
             body.put("sessionId", sessionId);
         }
         return body;
-    }
-
-    private static Map<String, Object> emptyStoryMemory() {
-        Map<String, Object> copy = new LinkedHashMap<>();
-        copy.put("novel", new LinkedHashMap<>());
-        copy.put("world", new LinkedHashMap<>());
-        copy.put("characters", new LinkedHashMap<>());
-        copy.put("chapters", new LinkedHashMap<>());
-        copy.put("background", new LinkedHashMap<>());
-        return copy;
     }
 }

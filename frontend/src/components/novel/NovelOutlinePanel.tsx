@@ -9,6 +9,7 @@ import {
 import { alertDialog, confirmAction, promptDialog } from '../../stores/appDialog'
 import { useOutlineTouchDrag } from '../../hooks/useOutlineTouchDrag'
 import { EditorButton } from '../ui/EditorButton'
+import { EditorIcons } from '../editor/icons'
 import { OutlineVolumeBlock } from './outline/OutlineVolumeBlock'
 import { readDragPayload, writeDragPayload } from './outline/outlineDrag'
 import { PlusIcon } from './outline/outlineIcons'
@@ -292,21 +293,25 @@ export function NovelOutlinePanel({
         <span>{t('editor:outline.newVolume')}</span>
       </EditorButton>
       <EditorButton
-        variant="accent"
+        variant="secondary"
+        size="sm"
         fullWidth
         type="button"
         onClick={onReindex}
         disabled={!activeNovelId || reindexing || busy}
-        style={{ marginTop: '0.45rem' }}
+        className="mt-2 h-8 gap-1.5 border-border/70 text-[0.74rem] font-medium"
       >
-        {reindexing
-          ? reindexProgress
-            ? t('editor:outline.reindexProgress', {
-                processed: reindexProgress.processed,
-                chapters: reindexProgress.chapters,
-              })
-            : t('editor:outline.reindexing')
-          : t('editor:outline.reindex')}
+        {!reindexing ? <EditorIcons.Refresh /> : null}
+        <span>
+          {reindexing
+            ? reindexProgress
+              ? t('editor:outline.reindexProgress', {
+                  processed: reindexProgress.processed,
+                  chapters: reindexProgress.chapters,
+                })
+              : t('editor:outline.reindexing')
+            : t('editor:outline.reindex')}
+        </span>
       </EditorButton>
     </>
   )

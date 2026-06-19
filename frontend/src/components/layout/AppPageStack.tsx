@@ -133,7 +133,7 @@ export function AppChartCard({
   return (
     <AppShellCard className={className}>
       <AppShellCardHeader title={title} description={description} />
-      <AppShellCardBody className="pt-4">{children}</AppShellCardBody>
+      <AppShellCardBody className="py-4">{children}</AppShellCardBody>
     </AppShellCard>
   )
 }

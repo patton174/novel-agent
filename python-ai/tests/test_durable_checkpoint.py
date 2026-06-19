@@ -6,7 +6,7 @@ from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 
 from app.agent.harness.loop_support import RunLoopState
 from app.agent.harness.transcript import AgentTranscript
-from app.agent.harness.worker.checkpoint import restore_worker_state, serialize_worker_state
+from app.agent.harness.run_checkpoint import restore_run_checkpoint, serialize_run_checkpoint
 from app.agent.schemas import AgentRunContext
 
 
@@ -37,8 +37,8 @@ def test_messages_roundtrip():
         sequence=1,
         turn=1,
     )
-    blob = serialize_worker_state(state, messages=msgs)
-    restored = restore_worker_state(blob, _sample_ctx())
+    blob = serialize_run_checkpoint(state, messages=msgs)
+    restored = restore_run_checkpoint(blob, _sample_ctx())
     assert restored.messages is not None
     assert len(restored.messages) == 3
     ai = restored.messages[1]

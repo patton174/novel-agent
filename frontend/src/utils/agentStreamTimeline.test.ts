@@ -487,6 +487,49 @@ describe('agentStreamTimeline', () => {
     expect(headline).toBe('编排完成 · 列举 → 写入')
   })
 
+  it('deriveOrchestrationHeadline follows active tool while streaming', () => {
+    const rounds = [
+      {
+        items: [
+          {
+            kind: 'tools' as const,
+            blocks: [{ kind: 'tool' as const, id: 'tool-1', stepId: 'step-read' }],
+          },
+        ],
+      },
+    ]
+    const stepStates: AgentStepState[] = [
+      {
+        stepId: 'step-read',
+        type: 'tool',
+        toolName: 'ReadChapter',
+        status: 'started',
+      },
+    ]
+    expect(
+      deriveOrchestrationHeadline(rounds, stepStates, true, false, 'active'),
+    ).toBe('阅读章节…')
+    expect(
+      deriveOrchestrationHeadline(rounds, stepStates, true, false, 'done'),
+    ).toBe('阅读章节…')
+  })
+
+  it('deriveOrchestrationHeadline shows think label before tools start', () => {
+    const rounds = [
+      {
+        items: [
+          {
+            kind: 'insight' as const,
+            blocks: [
+              { kind: 'reasoning' as const, id: 'r1', text: '分析', status: 'active' as const },
+            ],
+          },
+        ],
+      },
+    ]
+    expect(deriveOrchestrationHeadline(rounds, [], true, false, 'active')).toBe('思考中…')
+  })
+
   it('reads orchestration overview from done transition title', () => {
     let timeline = applyTimelineEvent([], {
       type: 'planning.next_step',

@@ -37,6 +37,14 @@ export function translateToolPhase(raw: string | undefined): string | undefined 
   return key ? i18n.t(key) : raw
 }
 
+export function translateToolOutcome(outcome: 'success' | 'error'): string {
+  return i18n.t(
+    outcome === 'success'
+      ? 'editor:timeline.toolStatusSuccess'
+      : 'editor:timeline.toolStatusFailed',
+  )
+}
+
 export function translateToolDisplayName(raw: string): string {
   const trimmed = raw.trim()
   if (!trimmed) return trimmed

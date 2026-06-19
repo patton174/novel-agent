@@ -10,18 +10,16 @@ from typing import Any
 from app.agent.harness.tool_display import chapter_write_progress_message
 from app.agent.schemas import AgentRunContext
 from app.agent.streaming.context_enrich_bridge import enrich_context_for_tool_step
-from app.agent.streaming.tool_side_effect import (
-    failure_event_sequence,
-    finalize_streamed_chapter_write,
-)
+from app.agent.streaming.tool_side_effect import failure_event_sequence
+from app.agent.tools.chapter_stream_persist import StreamingChapterAppender
 from app.agent.tools.run_tool_use import run_tool_use
 from app.agent.tools.tool import ToolCallResult
 from app.runtime.events import build_event
 from app.runtime.streaming import emit_sse_text_chunks
 
-CHAPTER_STREAM_INTERVAL = 0.004
-CHAPTER_CHUNK_MIN = 48
-CHAPTER_CHUNK_MAX = 96
+CHAPTER_STREAM_INTERVAL = 0
+CHAPTER_CHUNK_MIN = 16
+CHAPTER_CHUNK_MAX = 32
 CHAPTER_STREAM_TOOLS = frozenset({"WriteChapter", "EditChapter"})
 
 
@@ -33,6 +31,7 @@ def is_chapter_markdown_path(file_path: str) -> bool:
 def chapter_stream_input_api(inp: dict[str, Any], ctx: AgentRunContext) -> dict[str, Any]:
     """Build stream input for WriteChapter API tool."""
     stream_input = dict(inp)
+    stream_input.pop("content", None)
     title = str(stream_input.get("title") or "").strip()
     chapter_id = str(stream_input.get("chapter_id") or "").strip()
     if not title and chapter_id:
@@ -77,8 +76,25 @@ def chapter_stream_input(
 
 def should_stream_chapter_write(tool: str, inp: dict[str, Any]) -> bool:
     tool_norm = (tool or "").strip()
-    preset_body = str(inp.get("content") or "").strip() or str(inp.get("new_string") or "").strip()
-    return tool_norm == "WriteChapter" and not preset_body
+    if tool_norm == "WriteChapter":
+        return True
+    preset_body = (
+        str(inp.get("new_string") or "").strip()
+        or str(inp.get("new_content") or "").strip()
+    )
+    if preset_body:
+        return False
+    if tool_norm == "EditChapter":
+        mode = str(inp.get("mode") or "patch").strip()
+        has_target = bool(
+            str(inp.get("chapter_id") or "").strip()
+            or inp.get("index") is not None
+            or str(inp.get("title") or "").strip()
+        )
+        if mode == "rewrite":
+            return has_target
+        return has_target and not str(inp.get("old_string") or "").strip()
+    return False
 
 
 async def yield_chapter_stream_deltas(
@@ -138,8 +154,9 @@ async def run_chapter_stream_pipeline(
     seq = sequence
     tool_norm = (tool or "").strip()
     fp = str(inp.get("file_path") or "")
-    preset_body = str(inp.get("content") or "").strip() or str(inp.get("new_string") or "").strip()
-    stream_input_preview = chapter_stream_input_api(inp, ctx)
+    preset_body = ""
+    if tool_norm == "EditChapter":
+        preset_body = str(inp.get("new_string") or "").strip() or str(inp.get("new_content") or "").strip()
 
     yield build_event(
         event_type="tool.progress",
@@ -151,6 +168,40 @@ async def run_chapter_stream_pipeline(
         payload={"name": tool, "message": chapter_write_progress_message(tool, inp, ctx)},
     )
     seq += 1
+
+    ctx = await enrich_context_for_tool_step(ctx, refresh_chapters=True)
+    if tool_norm == "EditChapter":
+        from app.agent.tools.chapter_catalog import enrich_stream_chapter_input
+
+        inp, resolve_err = await enrich_stream_chapter_input(ctx, inp)
+        if resolve_err:
+            fail_events, _ = failure_event_sequence(
+                tool=tool,
+                inp=inp,
+                result=ToolCallResult(
+                    content=f"<tool_use_error>{resolve_err}</tool_use_error>",
+                    is_error=True,
+                ),
+                run_id=run_id,
+                session_id=session_id,
+                message_id=message_id,
+                step_id=step_id,
+                sequence=seq,
+            )
+            outcome.failed = True
+            outcome.fail_events = fail_events
+            return
+    stream_input = chapter_stream_input_api(inp, ctx)
+    use_stream_persist = tool_norm == "WriteChapter"
+    appender: StreamingChapterAppender | None = None
+    if use_stream_persist:
+        appender = StreamingChapterAppender(
+            ctx,
+            title=str(stream_input.get("title") or "章节"),
+            chapter_id=str(stream_input.get("chapter_id") or ""),
+            stream_input=stream_input,
+        )
+
     yield build_event(
         event_type="chapter.stream.started",
         run_id=run_id,
@@ -160,18 +211,18 @@ async def run_chapter_stream_pipeline(
         sequence=seq,
         payload={
             "tool": tool,
-            "title": str(stream_input_preview.get("title") or "章节"),
-            "chapter_id": stream_input_preview.get("chapter_id"),
+            "title": str(stream_input.get("title") or "章节"),
+            "chapter_id": stream_input.get("chapter_id") or "",
         },
     )
     seq += 1
 
-    ctx = await enrich_context_for_tool_step(ctx)
-    stream_input = chapter_stream_input_api(inp, ctx)
     body_parts: list[str] = []
     try:
         if preset_body:
             body_parts.append(preset_body)
+            if appender is not None:
+                await appender.append_delta(preset_body)
             async for ev, next_seq in yield_chapter_stream_deltas(
                 preset_body,
                 run_id=run_id,
@@ -206,6 +257,8 @@ async def run_chapter_stream_pipeline(
                 if not piece:
                     continue
                 body_parts.append(piece)
+                if appender is not None:
+                    await appender.append_delta(piece)
                 async for ev, next_seq in yield_chapter_stream_deltas(
                     piece,
                     run_id=run_id,
@@ -242,8 +295,12 @@ async def run_chapter_stream_pipeline(
 
     if tool_norm == "EditChapter":
         edit_inp = dict(inp)
-        if content and not str(edit_inp.get("new_string") or "").strip():
-            edit_inp["new_string"] = content
+        if content:
+            # Streamed rewrite is always a full-body save — use new_content, the
+            # explicit full-replace path (no fragile old_string matching).
+            edit_inp["new_content"] = content
+            edit_inp.pop("old_string", None)
+            edit_inp.pop("new_string", None)
         result = await run_tool_use(tool, edit_inp, ctx, tool_use_id=step_id)
         if result.is_error:
             fail_events, _ = failure_event_sequence(
@@ -262,22 +319,43 @@ async def run_chapter_stream_pipeline(
         outcome.result = result
         return
 
-    write_result, progress_events, seq = await finalize_streamed_chapter_write(
-        ctx=ctx,
-        tool=tool,
-        inp=inp,
-        content=content,
-        stream_input=stream_input,
-        file_path=fp,
-        run_id=run_id,
-        session_id=session_id,
-        message_id=message_id,
-        step_id=step_id,
-        sequence=seq,
-    )
-    for ev in progress_events:
-        yield ev
-    if write_result is None:
+    if appender is None:
         outcome.failed = True
+        outcome.fail_events = []
         return
-    outcome.result = write_result
+
+    patch, perr = await appender.finalize()
+    if perr:
+        fail_events, seq = failure_event_sequence(
+            tool=tool,
+            inp=inp,
+            result=ToolCallResult(content=perr, is_error=True, context_patch=patch),
+            run_id=run_id,
+            session_id=session_id,
+            message_id=message_id,
+            step_id=step_id,
+            sequence=seq,
+        )
+        outcome.failed = True
+        outcome.fail_events = fail_events
+        return
+
+    cw = patch.get("chapter_write") if isinstance(patch.get("chapter_write"), dict) else {}
+    label = str(cw.get("display_label") or cw.get("title") or "章节")
+    events: list[dict[str, Any]] = [
+        build_event(
+            event_type="tool.progress",
+            run_id=run_id,
+            session_id=session_id,
+            message_id=message_id,
+            step_id=step_id,
+            sequence=seq,
+            payload={"name": tool, "message": f"已流式保存{label}到作品库"},
+        )
+    ]
+    outcome.result = ToolCallResult(
+        content=f"Wrote {label} ({len(content)} chars).",
+        context_patch=patch,
+    )
+    for ev in events:
+        yield ev

@@ -1,0 +1,74 @@
+# MW 机：Milvus standalone 栈（etcd + minio + milvus）
+# Worker python-ai: MILVUS_HOST=<MW IP> MILVUS_PORT=19530
+name: novel-studio-milvus
+
+services:
+  etcd:
+    container_name: novel-studio-milvus-etcd
+    image: quay.io/coreos/etcd:v3.5.18
+    restart: unless-stopped
+    environment:
+      ETCD_AUTO_COMPACTION_MODE: revision
+      ETCD_AUTO_COMPACTION_RETENTION: "1000"
+      ETCD_QUOTA_BACKEND_BYTES: "4294967296"
+      ETCD_SNAPSHOT_COUNT: "50000"
+    volumes:
+      - etcd_data:/etcd
+    command: etcd -advertise-client-urls=http://127.0.0.1:2379 -listen-client-urls=http://0.0.0.0:2379 --data-dir /etcd
+    mem_limit: ${MILVUS_ETCD_MEM:-192m}
+    healthcheck:
+      test: ["CMD", "etcdctl", "endpoint", "health"]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+
+  minio:
+    container_name: novel-studio-milvus-minio
+    image: minio/minio:RELEASE.2024-05-28T17-19-04Z-cpuv1
+    restart: unless-stopped
+    environment:
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+    volumes:
+      - minio_data:/minio_data
+    command: minio server /minio_data --console-address ":9001"
+    mem_limit: ${MILVUS_MINIO_MEM:-256m}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+
+  milvus:
+    container_name: novel-studio-milvus
+    image: milvusdb/milvus:v2.4.15
+    restart: unless-stopped
+    command: ["milvus", "run", "standalone"]
+    security_opt:
+      - seccomp:unconfined
+    environment:
+      ETCD_ENDPOINTS: etcd:2379
+      MINIO_ADDRESS: minio:9000
+      TZ: Asia/Shanghai
+    volumes:
+      - milvus_data:/var/lib/milvus
+    ports:
+      - "${MILVUS_BIND:-0.0.0.0}:${MILVUS_PORT:-19530}:19530"
+      - "9091:9091"
+    mem_limit: ${MILVUS_MEM_LIMIT:-1280m}
+    depends_on:
+      etcd:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9091/healthz"]
+      interval: 20s
+      timeout: 10s
+      retries: 12
+      start_period: 120s
+
+volumes:
+  etcd_data:
+  minio_data:
+  milvus_data:

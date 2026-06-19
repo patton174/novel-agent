@@ -1,12 +1,17 @@
 @import "tailwindcss";
+@import "./agent-markdown.css";
 @import "./agent-timeline-effects.css";
 @import "./marketing-effects.css";
 @import "./agent-effects.css";
+@import "./pixel-avatars.css";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/geist";
 
 @custom-variant dark (&:is(.dark *));
+
+@source "../../node_modules/streamdown/dist/*.js";
+@source "../../node_modules/@streamdown/cjk/dist/*.js";
 
 @theme {
   --color-background: #f8fafc;

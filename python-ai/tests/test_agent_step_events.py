@@ -34,16 +34,16 @@ def test_emit_think_display_events():
     assert seq == 3
 
 
-def test_memory_read_ok_when_world_content_contains_failure_word():
+def test_read_memory_ok_when_content_contains_failure_word():
     result = StepResult(
-        step_kind="memory_read",
+        step_kind="ReadMemory",
         action="continue",
         next_tool="",
         next_input={},
         context_patch={},
         display=DisplayPayload(
             type="tool",
-            tool="memory_read",
+            tool="ReadMemory",
             content="世界观记忆：\n- 禁区：登录失败率 30%，爆率分层已设定",
         ),
         reason="memory read",
@@ -61,42 +61,24 @@ def test_memory_read_ok_when_world_content_contains_failure_word():
     assert completed["payload"]["status"] == "ok"
 
 
-def test_memory_read_error_when_key_missing():
-    result = StepResult(
-        step_kind="memory_read",
-        action="continue",
-        next_tool="",
-        next_input={},
-        context_patch={},
-        display=DisplayPayload(
-            type="tool",
-            tool="memory_read",
-            content="key not found: 守序者一族",
-        ),
-        reason="memory read",
+def test_read_memory_error_envelope():
+    payload = build_tool_completed_sse_payload(
+        "ReadMemory",
+        content='<tool_use_error code="MEMORY_ITEM_NOT_FOUND">not found</tool_use_error>',
+        failed=True,
+        tool_input={"memory_id": "missing"},
     )
-    events, _ = emit_display_events(
-        result,
-        run_id="run_1",
-        session_id="session_1",
-        message_id="msg_1",
-        think_step_id="think_1",
-        message_step_id="msg_step_1",
-        sequence=0,
-    )
-    completed = next(e for e in events if e["type"] == "tool.completed")
-    assert completed["payload"]["status"] == "error"
+    assert payload["status"] == "error"
 
 
 def test_read_chapter_emits_title_labels_not_md_path():
     content = (
         "---\ntitle: 初入江湖\nchapter_id: abc\nlist_index: 2\nsort_order: 1\n---\n\n正文"
     )
-    path = "/novel/n1/chapters/abc.md"
     payload = build_tool_completed_sse_payload(
         "ReadChapter",
         content=content,
-        tool_input={"chapter_id": "abc", "file_path": path},
+        tool_input={"chapter_id": "abc"},
     )
     assert payload["result_labels"] == ["《初入江湖》·作品列表第2章"]
     assert "display_excerpt" in payload
@@ -104,7 +86,7 @@ def test_read_chapter_emits_title_labels_not_md_path():
     assert "chapter_id" not in payload["display_excerpt"]
 
 
-def test_glob_long_output_passes_inventory_body_for_frontend_ui():
+def test_list_chapters_sse_uses_display_excerpt():
     content = '{"chapters": [{"chapter_id": "ch_0", "title": "第一章"}]}'
     payload = build_tool_completed_sse_payload(
         "ListChapters",
@@ -113,10 +95,8 @@ def test_glob_long_output_passes_inventory_body_for_frontend_ui():
     )
     assert "display_excerpt" in payload
     assert "第一章" in payload["display_excerpt"]
-    assert "output" in payload
-    assert "ch_0" in payload["output"] or "第一章" in payload["output"]
     assert "output_summary" in payload
-    assert "第一章" in payload["output_summary"] or "ch_0" in payload["output_summary"]
+    assert "第一章" in payload["output_summary"]
 
 
 def test_write_completed_payload_omits_body_from_tool_input():
@@ -130,25 +110,25 @@ def test_write_completed_payload_omits_body_from_tool_input():
     assert "content" not in payload["tool_input"]
 
 
-def test_write_memory_completed_payload_omits_document_from_tool_input():
+def test_create_memory_completed_payload_omits_large_meta():
     from app.agent.harness.events import _tool_input_for_sse
 
-    doc = {"sections": [{"title": "设定", "body": "x" * 8000}]}
+    meta = {"sections": [{"title": "设定", "body": "x" * 8000}]}
     slim = _tool_input_for_sse(
-        "WriteMemory",
-        {"scope": "novel", "key": "world", "payload": doc},
+        "CreateMemory",
+        {"scope": "world", "title": "设定", "meta": meta},
     )
-    assert slim["scope"] == "novel"
-    assert slim["key"] == "world"
-    assert "payload" not in slim
+    assert slim["scope"] == "world"
+    assert slim["title"] == "设定"
+    assert "meta" not in slim
 
     payload = build_tool_completed_sse_payload(
-        "WriteMemory",
-        content='{"ok": true}',
-        tool_input={"scope": "novel", "key": "world", "payload": doc},
+        "CreateMemory",
+        content='{"memory_id": "m1"}',
+        tool_input={"scope": "world", "title": "设定", "meta": meta},
     )
-    assert payload["tool_input"]["scope"] == "novel"
-    assert "payload" not in payload["tool_input"]
+    assert payload["tool_input"]["scope"] == "world"
+    assert "meta" not in payload["tool_input"]
 
 
 def test_todo_write_completed_payload_includes_todos():

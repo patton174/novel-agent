@@ -218,16 +218,7 @@ export function mergeRemoteWithLocalTrace<T extends PersistableAssistantMessage>
 export function findStepForTimelineTool(
   stepStates: AgentStepState[],
   stepId: string,
-  renderedStepIds: Set<string>,
+  _renderedStepIds: Set<string>,
 ): AgentStepState | undefined {
-  const direct = stepStates.find((s) => s.stepId === stepId)
-  if (direct) {
-    return direct
-  }
-  return stepStates.find(
-    (s) =>
-      s.type === 'tool' &&
-      !renderedStepIds.has(s.stepId) &&
-      !isHiddenUiTool(s.toolName),
-  )
+  return stepStates.find((s) => s.stepId === stepId)
 }

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from langchain_core.messages import ToolMessage
 
 from app.agent.harness.tool_errors import (
@@ -50,3 +52,15 @@ def append_batch_validation_errors(
     detail: str,
 ) -> None:
     append_tool_messages_for_detail(messages, tool_call_ids, detail)
+
+
+def append_per_tool_validation_errors(
+    messages: list,
+    entries: list[Any],
+) -> None:
+    """One ToolMessage per failed tool_call_id (partial batch repair)."""
+    for entry in entries:
+        tid = str(getattr(entry, "tool_call_id", "") or "").strip()
+        err = str(getattr(entry, "error", "") or "invalid input").strip()
+        if tid:
+            append_tool_messages_for_detail(messages, [tid], err)

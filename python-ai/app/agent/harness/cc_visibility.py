@@ -9,6 +9,10 @@ HIDDEN_UI_TOOLS = frozenset(
 )
 LEGACY_HIDDEN_TOOLS = frozenset({"orchestrator", "plan", "write_chapter"})
 
+READ_RESULT_LABEL_TOOLS = frozenset(
+    {"ReadChapter", "ReadMemory", "ListMemory", "GetMemoryTree", "SearchKnowledge"}
+)
+
 TOOL_DISPLAY_NAMES: dict[str, str] = {
     "ListChapters": "列举章节",
     "ReadChapter": "阅读章节",
@@ -17,11 +21,14 @@ TOOL_DISPLAY_NAMES: dict[str, str] = {
     "DeleteChapter": "删除章节",
     "ReorderChapters": "调整章节顺序",
     "ListMemory": "列举记忆",
+    "GetMemoryTree": "记忆树",
     "ReadMemory": "查阅记忆",
-    "WriteMemory": "写入记忆",
-    "EditMemory": "编辑记忆",
+    "CreateMemory": "创建记忆",
+    "UpdateMemoryFields": "更新记忆属性",
+    "UpdateMemoryContent": "更新记忆正文",
+    "UpdateMemoryMeta": "更新记忆元数据",
+    "MoveMemory": "移动记忆",
     "DeleteMemory": "删除记忆",
-    "ClearMemory": "清空记忆",
     "SearchKnowledge": "知识检索",
     "GetCharacterGraph": "角色关系图",
     "AskUser": "询问",
@@ -41,7 +48,6 @@ def normalize_tool_name(name: str) -> str:
 
 
 def should_forward_tool_completed_to_client(name: str | None) -> bool:
-    """Hidden tools still forward tool.completed when the payload drives UI state."""
     return (name or "").strip() == "TodoWrite"
 
 
@@ -60,24 +66,6 @@ def is_ask_user_tool(name: str | None) -> bool:
     return (name or "").strip() == "AskUser"
 
 
-def is_memory_vfs_path(path: str) -> bool:
-    return "/memory/" in (path or "")
-
-
-def is_chapter_vfs_path(path: str) -> bool:
-    return "/chapters/" in (path or "")
-
-
-def vfs_path_from_tool_input(tool_input: dict[str, Any] | None) -> str:
-    if not tool_input:
-        return ""
-    for key in ("file_path", "path", "target_file"):
-        val = tool_input.get(key)
-        if isinstance(val, str) and val.strip():
-            return val.strip()
-    return ""
-
-
 def tool_display_name(tool: str, tool_input: dict[str, Any] | None = None) -> str:
     raw = (tool or "").strip()
     if not raw:
@@ -89,7 +77,9 @@ def tool_display_name(tool: str, tool_input: dict[str, Any] | None = None) -> st
         return "阅读章节"
     if raw == "WriteChapter" and inp.get("title"):
         return "写入章节"
-    if raw in ("ReadMemory", "WriteMemory", "EditMemory") and inp.get("key"):
+    if raw in ("ReadMemory", "CreateMemory", "UpdateMemoryFields", "UpdateMemoryContent", "UpdateMemoryMeta") and (
+        inp.get("memory_id") or inp.get("title")
+    ):
         return TOOL_DISPLAY_NAMES.get(raw, raw)
     return raw
 
@@ -99,17 +89,14 @@ def should_emit_tool_started(tool: str) -> bool:
 
 
 def should_skip_java_step_started_forward(tool: str | None) -> bool:
-    """PyAI gateway: step.started for AskUser is internal; tool.started carries UI."""
     return is_ask_user_tool(tool)
 
 
 def should_bridge_llm_delta_to_chat(tool: str | None) -> bool:
-    """Legacy output tool streaming via message.delta bridge."""
     return (tool or "").strip() == "output"
 
 
 def should_forward_worker_live_event(event: dict[str, Any]) -> bool:
-    """Queued worker Redis fanout: drop frames the browser must not receive (align Java RunLiveSseFanout)."""
     et = str(event.get("type") or "")
     if et in ("step.completed", "plan.result"):
         return False
@@ -128,12 +115,5 @@ def should_forward_worker_live_event(event: dict[str, Any]) -> bool:
     return True
 
 
-def should_emit_read_result_labels(tool: str, file_path: str) -> bool:
-    raw = (tool or "").strip()
-    if raw in ("ReadChapter", "ReadMemory"):
-        return True
-    if raw == "SearchKnowledge":
-        return False
-    if not file_path:
-        return False
-    return is_memory_vfs_path(file_path) or is_chapter_vfs_path(file_path)
+def should_emit_read_result_labels(tool: str, _file_path: str = "") -> bool:
+    return (tool or "").strip() in READ_RESULT_LABEL_TOOLS

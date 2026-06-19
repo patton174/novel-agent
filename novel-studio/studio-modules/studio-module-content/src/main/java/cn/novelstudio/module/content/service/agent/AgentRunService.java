@@ -267,11 +267,11 @@ public class AgentRunService {
                 return created;
             });
         checkpoint.setStepIndex(request.getStepIndex());
-        checkpoint.setLastAction(request.getLastAction());
+        checkpoint.setLastAction(truncateField(request.getLastAction(), 32));
         if (request.getContextPatchJson() != null) {
             checkpoint.setContextPatch(request.getContextPatchJson());
         }
-        checkpoint.setTranscriptRef(request.getTranscriptRef());
+        checkpoint.setTranscriptRef(truncateField(request.getTranscriptRef(), 128));
         checkpoint.setVersion(existed ? checkpoint.getVersion() + 1 : 1);
         checkpointRepository.save(checkpoint);
         return toCheckpointDto(checkpoint);
@@ -347,5 +347,16 @@ public class AgentRunService {
 
     private static String blankOr(String value, String fallback) {
         return value == null || value.isBlank() ? fallback : value;
+    }
+
+    private static String truncateField(String value, int maxLen) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        if (trimmed.length() <= maxLen) {
+            return trimmed;
+        }
+        return trimmed.substring(0, maxLen);
     }
 }

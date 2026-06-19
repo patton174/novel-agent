@@ -353,7 +353,7 @@ export default function CrawlerPage() {
             </Button>
           }
         />
-        <AppShellCardBody className="space-y-4 pt-2">
+        <AppShellCardBody className="space-y-4 py-3">
         <div className="flex flex-wrap gap-1 rounded-lg border border-border bg-muted/30 p-1">
             {(
               [

@@ -1,0 +1,63 @@
+# 双机：MW 机 Auth（PG/Redis/MQ 在 MW）
+server:
+  port: 8081
+
+spring:
+  cloud:
+    nacos:
+      discovery:
+        ip: 107.150.112.140
+    inetutils:
+      ignored-interfaces:
+        - docker0
+      preferred-networks:
+        - 107.150.
+  datasource:
+    url: jdbc:postgresql://107.150.112.140:5432/novel_agent?sslmode=disable
+    username: postgres
+    password: LIxu20021008@
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  data:
+    redis:
+      host: 107.150.112.140
+      port: 6379
+      password: LIxu20021008@
+      database: 0
+  rabbitmq:
+    host: 107.150.112.140
+    port: 5672
+    username: novel_agent
+    password: LIxu20021008@
+
+auth:
+  jwt:
+    issuer: novel-agent
+    secret: ${JWT_SECRET:novel-agent-dev-secret-change-in-production-32}
+    access-ttl-seconds: 3600
+    refresh-ttl-seconds: 2592000
+  cookie:
+    secure: true
+    domain: .novel-agent.cn
+  client-security:
+    enabled: true
+    aes-required: true
+    encrypt-stream: false
+    replay-window-seconds: 120
+    ws-ticket-ttl-seconds: 60
+    heartbeat-interval-seconds: 60
+    heartbeat-max-silence-seconds: 180
+    fingerprint-tolerance: 0.15
+    enforce-fingerprint: false
+    enforce-heartbeat: false
+    enforce-csrf: false
+
+logging:
+  level:
+    com.novel.agent: info

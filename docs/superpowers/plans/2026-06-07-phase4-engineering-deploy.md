@@ -1,5 +1,7 @@
 # Phase 4 实施计划：工程化 + CI/CD + 全链路部署 + 可观测性
 
+> ⚠️ **历史设计记录**。生产已迁移至 **novel-studio 单体**，现状以 `CLAUDE.md` / `.cursor/rules/project-architecture.mdc` 为准。本文保留作历史参考，**勿据以部署**（旧微服务 agent-gateway/auth/pyai/content/consumer 与 `restart-dev.sh` 均已废弃）。
+
 > 目标：①补齐三语言工程化（lint/typecheck/test 门禁）；②CI 质量 gate + branch protection；③CD 灰度/回滚/健康检查；④可观测性（结构化日志 + Prometheus 指标 + OTel 链路）。
 >
 > 周期：约 2 周 ｜ 可与 Phase 1~3 并行；**建议 CI 门禁（T4.1~T4.4）在 Phase 1 一开始就先落地**，让后续所有改动都受门禁保护。
@@ -164,7 +166,7 @@ jobs:
 
 ## T4.5 — CD 灰度/滚动发布 + 一键回滚
 
-### 改动 `novel-agent/agent-document/docs/deploy/scripts/`
+### 改动 `legacy/novel-agent/agent-document/docs/deploy/scripts/`
 **1. 镜像/制品按 git sha tag**：`deploy-fast.sh`/`ci-hot-deploy.sh` 给 jar/镜像打 `:{git_sha}` tag，保留最近 N 个。
 
 **2. python-ai 滚动发布**：`python-ai` + `python-ai-2` 双实例，先停一个 → 健康检查 → 再发另一个（python-lb 期间仍可服务）。

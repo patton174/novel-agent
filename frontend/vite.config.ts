@@ -125,7 +125,14 @@ export default defineConfig(({ mode }) => {
             if (id.includes('recharts') || id.includes('d3-')) return 'recharts'
             if (id.includes('framer-motion')) return 'motion'
             if (id.includes('/gsap')) return 'gsap'
-            if (id.includes('react-markdown') || id.includes('remark-')) return 'markdown'
+            if (
+              id.includes('streamdown') ||
+              id.includes('@streamdown') ||
+              id.includes('react-markdown') ||
+              id.includes('remark-')
+            ) {
+              return 'markdown'
+            }
             if (id.includes('@radix-ui') || id.includes('radix-ui')) return 'radix'
             if (id.includes('lucide-react')) return 'icons'
             if (id.includes('i18next')) return 'i18n'

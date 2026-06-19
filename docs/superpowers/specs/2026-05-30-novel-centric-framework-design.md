@@ -1,5 +1,7 @@
 # 小说中心化框架设计
 
+> ⚠️ **历史设计记录**。生产已迁移至 **novel-studio 单体**，现状以 `CLAUDE.md` / `.cursor/rules/project-architecture.mdc` 为准。本文保留作历史参考，**勿据以部署**（旧微服务 agent-gateway/auth/pyai/content/consumer 与 `restart-dev.sh` 均已废弃）。
+
 ## 摘要
 
 将 Editor 从「对话为中心」升级为「小说为中心」：左侧展示小说列表及其会话历史，右侧展示当前小说的章节列表，中间为 AI 聊天与章节正文编辑。小说元数据（名称、描述、目标章节字数等）作为 Agent 上下文注入；AI 通过 SSE 流式工具对章节增删查改。

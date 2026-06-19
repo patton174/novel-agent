@@ -1,5 +1,7 @@
 # 后端工程化 + 仪表盘 API 实施计划
 
+> ⚠️ **历史设计记录**。生产已迁移至 **novel-studio 单体**，现状以 `CLAUDE.md` / `.cursor/rules/project-architecture.mdc` 为准。本文保留作历史参考，**勿据以部署**（旧微服务 agent-gateway/auth/pyai/content/consumer 与 `restart-dev.sh` 均已废弃）。
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 参考 roncoo-education，将 novel-agent 后端工程化为 `common-core` + API 受众分层 + Biz 层，并交付用户/管理端仪表盘统计 API。
@@ -19,13 +21,13 @@
 ### Task B1-1: 创建 common-core 子模块
 
 **Files:**
-- Create: `novel-agent/agent-common/agent-common-core/pom.xml`
-- Modify: `novel-agent/agent-common/pom.xml`
-- Modify: `novel-agent/pom.xml`（dependencyManagement）
-- Create: `novel-agent/agent-common/agent-common-core/src/main/java/com/novel/agent/common/core/base/Result.java`
-- Create: `novel-agent/agent-common/agent-common-core/src/main/java/com/novel/agent/common/core/base/Page.java`
-- Create: `novel-agent/agent-common/agent-common-core/src/main/java/com/novel/agent/common/core/enums/StatusIdEnum.java`
-- Create: `novel-agent/agent-common/agent-common-core/src/main/java/com/novel/agent/common/core/biz/BaseBiz.java`
+- Create: `legacy/novel-agent/agent-common/agent-common-core/pom.xml`
+- Modify: `legacy/novel-agent/agent-common/pom.xml`
+- Modify: `legacy/novel-agent/pom.xml`（dependencyManagement）
+- Create: `legacy/novel-agent/agent-common/agent-common-core/src/main/java/com/novel/agent/common/core/base/Result.java`
+- Create: `legacy/novel-agent/agent-common/agent-common-core/src/main/java/com/novel/agent/common/core/base/Page.java`
+- Create: `legacy/novel-agent/agent-common/agent-common-core/src/main/java/com/novel/agent/common/core/enums/StatusIdEnum.java`
+- Create: `legacy/novel-agent/agent-common/agent-common-core/src/main/java/com/novel/agent/common/core/biz/BaseBiz.java`
 
 - [ ] **Step 1: 创建 pom.xml**
 
@@ -128,9 +130,9 @@ Expected: BUILD SUCCESS
 ### Task B2-1: JWT roles 注入 X-User-Roles
 
 **Files:**
-- Modify: `novel-agent/agent-common/agent-common-security/src/main/java/com/novel/agent/common/security/JwtCodec.java`
-- Modify: `novel-agent/agent-gateway/src/main/java/com/novel/agent/gateway/filter/AuthGatewayFilter.java`
-- Modify: `novel-agent/agent-gateway/src/main/java/com/novel/agent/gateway/support/GatewayAuthSupport.java`
+- Modify: `legacy/novel-agent/agent-common/agent-common-security/src/main/java/com/novel/agent/common/security/JwtCodec.java`
+- Modify: `legacy/novel-agent/agent-gateway/src/main/java/com/novel/agent/gateway/filter/AuthGatewayFilter.java`
+- Modify: `legacy/novel-agent/agent-gateway/src/main/java/com/novel/agent/gateway/support/GatewayAuthSupport.java`
 
 - [ ] **Step 1: 确认 JwtCodec 已写入 roles claim**
 
@@ -155,9 +157,9 @@ if (roles != null) {
 ### Task B2-2: CrmGatewayFilter + AuthAudienceFilter
 
 **Files:**
-- Create: `novel-agent/agent-gateway/src/main/java/com/novel/agent/gateway/filter/CrmGatewayFilter.java`
-- Create: `novel-agent/agent-gateway/src/main/java/com/novel/agent/gateway/filter/AuthAudienceFilter.java`
-- Modify: `novel-agent/agent-gateway/src/main/java/com/novel/agent/gateway/config/GatewayFilterConfig.java`（或等效注册处）
+- Create: `legacy/novel-agent/agent-gateway/src/main/java/com/novel/agent/gateway/filter/CrmGatewayFilter.java`
+- Create: `legacy/novel-agent/agent-gateway/src/main/java/com/novel/agent/gateway/filter/AuthAudienceFilter.java`
+- Modify: `legacy/novel-agent/agent-gateway/src/main/java/com/novel/agent/gateway/config/GatewayFilterConfig.java`（或等效注册处）
 
 - [ ] **Step 1: CrmGatewayFilter**
 
@@ -198,13 +200,13 @@ cd novel-agent && mvn compile -pl agent-gateway -am
 ### Task B2-3: 扩展 auth/info + 用户 dashboard API
 
 **Files:**
-- Create: `novel-agent/agent-auth/src/main/java/com/novel/agent/auth/service/auth/AuthUserInfoController.java`
-- Create: `novel-agent/agent-auth/src/main/java/com/novel/agent/auth/service/auth/biz/AuthUserInfoBiz.java`
-- Create: `novel-agent/agent-auth/src/main/java/com/novel/agent/auth/service/auth/resp/AuthUserInfoResp.java`
-- Create: `novel-agent/agent-content/src/main/java/com/novel/agent/content/service/auth/AuthDashboardController.java`
-- Create: `novel-agent/agent-content/src/main/java/com/novel/agent/content/service/auth/biz/AuthDashboardBiz.java`
-- Create: `novel-agent/agent-content/src/main/java/com/novel/agent/content/service/auth/resp/AuthDashboardSummaryResp.java`
-- Create: `novel-agent/agent-content/src/main/java/com/novel/agent/content/service/auth/resp/AuthRecentNovelResp.java`
+- Create: `legacy/novel-agent/agent-auth/src/main/java/com/novel/agent/auth/service/auth/AuthUserInfoController.java`
+- Create: `legacy/novel-agent/agent-auth/src/main/java/com/novel/agent/auth/service/auth/biz/AuthUserInfoBiz.java`
+- Create: `legacy/novel-agent/agent-auth/src/main/java/com/novel/agent/auth/service/auth/resp/AuthUserInfoResp.java`
+- Create: `legacy/novel-agent/agent-content/src/main/java/com/novel/agent/content/service/auth/AuthDashboardController.java`
+- Create: `legacy/novel-agent/agent-content/src/main/java/com/novel/agent/content/service/auth/biz/AuthDashboardBiz.java`
+- Create: `legacy/novel-agent/agent-content/src/main/java/com/novel/agent/content/service/auth/resp/AuthDashboardSummaryResp.java`
+- Create: `legacy/novel-agent/agent-content/src/main/java/com/novel/agent/content/service/auth/resp/AuthRecentNovelResp.java`
 
 - [ ] **Step 1: AuthUserInfoResp**
 
@@ -263,10 +265,10 @@ public AuthDashboardSummaryResp summary(Long userId) {
 ### Task B2-4: CRM 统计 API（content 侧）
 
 **Files:**
-- Create: `novel-agent/agent-content/src/main/java/com/novel/agent/content/service/crm/CrmStatsController.java`
-- Create: `novel-agent/agent-content/src/main/java/com/novel/agent/content/service/crm/biz/CrmStatsBiz.java`
-- Create: `novel-agent/agent-content/src/main/java/com/novel/agent/content/service/crm/resp/CrmStatsOverviewResp.java`
-- Create: `novel-agent/agent-content/src/main/java/com/novel/agent/content/service/crm/resp/CrmStatsTrendResp.java`
+- Create: `legacy/novel-agent/agent-content/src/main/java/com/novel/agent/content/service/crm/CrmStatsController.java`
+- Create: `legacy/novel-agent/agent-content/src/main/java/com/novel/agent/content/service/crm/biz/CrmStatsBiz.java`
+- Create: `legacy/novel-agent/agent-content/src/main/java/com/novel/agent/content/service/crm/resp/CrmStatsOverviewResp.java`
+- Create: `legacy/novel-agent/agent-content/src/main/java/com/novel/agent/content/service/crm/resp/CrmStatsTrendResp.java`
 
 - [ ] **Step 1: GET /api/content/crm/stats/overview**
 
@@ -291,14 +293,14 @@ cd novel-agent && mvn compile -pl agent-auth,agent-content,agent-gateway -am
 ### Task B3-1: 用户分页与编辑
 
 **Files:**
-- Create: `novel-agent/agent-auth/src/main/java/com/novel/agent/auth/service/crm/CrmUserController.java`
-- Create: `novel-agent/agent-auth/src/main/java/com/novel/agent/auth/service/crm/biz/CrmUserBiz.java`
-- Create: `novel-agent/agent-auth/src/main/java/com/novel/agent/auth/service/crm/req/CrmUserPageReq.java`
-- Create: `novel-agent/agent-auth/src/main/java/com/novel/agent/auth/service/crm/req/CrmUserUpdateReq.java`
-- Create: `novel-agent/agent-auth/src/main/java/com/novel/agent/auth/service/crm/resp/CrmUserPageResp.java`
-- Create: `novel-agent/agent-auth/src/main/java/com/novel/agent/auth/service/crm/resp/CrmUserItemResp.java`
-- Create: `novel-agent/agent-auth/src/main/java/com/novel/agent/auth/dao/UserInfoDao.java`（封装 AuthUserRepository）
-- Create: `novel-agent/agent-auth/src/main/java/com/novel/agent/auth/dao/impl/UserInfoDaoImpl.java`
+- Create: `legacy/novel-agent/agent-auth/src/main/java/com/novel/agent/auth/service/crm/CrmUserController.java`
+- Create: `legacy/novel-agent/agent-auth/src/main/java/com/novel/agent/auth/service/crm/biz/CrmUserBiz.java`
+- Create: `legacy/novel-agent/agent-auth/src/main/java/com/novel/agent/auth/service/crm/req/CrmUserPageReq.java`
+- Create: `legacy/novel-agent/agent-auth/src/main/java/com/novel/agent/auth/service/crm/req/CrmUserUpdateReq.java`
+- Create: `legacy/novel-agent/agent-auth/src/main/java/com/novel/agent/auth/service/crm/resp/CrmUserPageResp.java`
+- Create: `legacy/novel-agent/agent-auth/src/main/java/com/novel/agent/auth/service/crm/resp/CrmUserItemResp.java`
+- Create: `legacy/novel-agent/agent-auth/src/main/java/com/novel/agent/auth/dao/UserInfoDao.java`（封装 AuthUserRepository）
+- Create: `legacy/novel-agent/agent-auth/src/main/java/com/novel/agent/auth/dao/impl/UserInfoDaoImpl.java`
 
 - [ ] **Step 1: CrmUserPageReq**
 
@@ -354,10 +356,10 @@ Controller 只调 Biz，Biz 调 Dao。
 ### Task B4-1: 创建 agent-feign 父模块
 
 **Files:**
-- Create: `novel-agent/agent-feign/pom.xml`
-- Create: `novel-agent/agent-feign/agent-feign-auth/pom.xml`
-- Create: `novel-agent/agent-feign/agent-feign-content/pom.xml`
-- Modify: `novel-agent/pom.xml`
+- Create: `legacy/novel-agent/agent-feign/pom.xml`
+- Create: `legacy/novel-agent/agent-feign/agent-feign-auth/pom.xml`
+- Create: `legacy/novel-agent/agent-feign/agent-feign-content/pom.xml`
+- Modify: `legacy/novel-agent/pom.xml`
 
 - [ ] **Step 1: agent-feign-auth**
 
@@ -413,8 +415,8 @@ public interface IFeignContentStats {
 ### Task B5-1: 公开 API 路径 alias
 
 **Files:**
-- Modify: `novel-agent/agent-gateway`（可选 RewritePath 过滤器）
-- Modify: `novel-agent/agent-auth/.../AuthController.java`
+- Modify: `legacy/novel-agent/agent-gateway`（可选 RewritePath 过滤器）
+- Modify: `legacy/novel-agent/agent-auth/.../AuthController.java`
 
 - [ ] **Step 1: Gateway RewritePath 规则**
 
@@ -438,7 +440,7 @@ public interface IFeignContentStats {
 ### Task B5-2: Consumer 权限同步
 
 **Files:**
-- Modify: `novel-agent/agent-consumer/.../PermissionListener.java`
+- Modify: `legacy/novel-agent/agent-consumer/.../PermissionListener.java`
 
 - [ ] **Step 1: 登录事件写 Redis**
 

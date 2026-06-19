@@ -1,0 +1,238 @@
+{
+  "version": 1780655829,
+  "expiresAtEpochMs": 1780742229000,
+  "routes": {
+    "rrcAeXwL": {
+      "method": "POST",
+      "path": "/api/auth/api/login"
+    },
+    "rg2A09KW": {
+      "method": "POST",
+      "path": "/api/auth/api/register"
+    },
+    "rs2ym8a6": {
+      "method": "POST",
+      "path": "/api/auth/api/refresh"
+    },
+    "rqssMXAL": {
+      "method": "POST",
+      "path": "/api/auth/api/logout"
+    },
+    "ruHvlP8K": {
+      "method": "POST",
+      "path": "/api/auth/api/captcha/slider"
+    },
+    "rTlP3lGS": {
+      "method": "POST",
+      "path": "/api/auth/api/captcha/slider/verify"
+    },
+    "ra6FDq53": {
+      "method": "POST",
+      "path": "/api/auth/api/send-email-code"
+    },
+    "r7oQY7vb": {
+      "method": "GET",
+      "path": "/api/auth/crypto-manifest"
+    },
+    "rO3Le43s": {
+      "method": "GET",
+      "path": "/api/auth/crypto-config"
+    },
+    "rlU_LbW7": {
+      "method": "POST",
+      "path": "/api/auth/auth/heartbeat"
+    },
+    "rq43WwUd": {
+      "method": "POST",
+      "path": "/api/auth/auth/ws-ticket"
+    },
+    "r4ZnBBdl": {
+      "method": "GET",
+      "path": "/api/auth/auth/info"
+    },
+    "rSLUVukO": {
+      "method": "GET",
+      "path": "/api/auth/crm/stats/overview"
+    },
+    "rsxT-z7-": {
+      "method": "GET",
+      "path": "/api/auth/crm/user/page"
+    },
+    "r5fmLPoH": {
+      "method": "GET",
+      "path": "/api/auth/crm/user/{id}"
+    },
+    "r7hupoFZ": {
+      "method": "PUT",
+      "path": "/api/auth/crm/user/{id}"
+    },
+    "rccp0o1p": {
+      "method": "GET",
+      "path": "/api/content/auth/novels"
+    },
+    "rlxmDeE5": {
+      "method": "POST",
+      "path": "/api/content/auth/novels"
+    },
+    "rVDlqOpd": {
+      "method": "GET",
+      "path": "/api/content/auth/novels/{novelId}"
+    },
+    "rwLc-xjF": {
+      "method": "PUT",
+      "path": "/api/content/auth/novels/{novelId}"
+    },
+    "rTMeuMxF": {
+      "method": "DELETE",
+      "path": "/api/content/auth/novels/{novelId}"
+    },
+    "rgNqG03u": {
+      "method": "GET",
+      "path": "/api/content/auth/novels/{novelId}/chapters"
+    },
+    "rfBRDqd3": {
+      "method": "POST",
+      "path": "/api/content/auth/novels/{novelId}/chapters"
+    },
+    "rLBiL0Nq": {
+      "method": "POST",
+      "path": "/api/content/auth/novels/{novelId}/chapters/reorder"
+    },
+    "rrTM-Qch": {
+      "method": "POST",
+      "path": "/api/content/auth/novels/{novelId}/reindex"
+    },
+    "rrMYaPnR": {
+      "method": "GET",
+      "path": "/api/content/auth/novels/{novelId}/reindex/status"
+    },
+    "rf-UT3pr": {
+      "method": "GET",
+      "path": "/api/content/auth/novels/{novelId}/sessions"
+    },
+    "r4P8AamP": {
+      "method": "GET",
+      "path": "/api/content/auth/novels/{novelId}/volumes"
+    },
+    "rdL0Ju51": {
+      "method": "POST",
+      "path": "/api/content/auth/novels/{novelId}/volumes"
+    },
+    "rii_iBRd": {
+      "method": "POST",
+      "path": "/api/content/auth/novels/{novelId}/volumes/reorder"
+    },
+    "rPbRLVJi": {
+      "method": "GET",
+      "path": "/api/content/auth/novels/{novelId}/search"
+    },
+    "raeC_Vpk": {
+      "method": "GET",
+      "path": "/api/content/auth/novels/{novelId}/agent-context"
+    },
+    "rqy0LiGi": {
+      "method": "DELETE",
+      "path": "/api/content/auth/volumes/{volumeId}"
+    },
+    "rNCR2181": {
+      "method": "PUT",
+      "path": "/api/content/auth/volumes/{volumeId}"
+    },
+    "rVnMeebs": {
+      "method": "POST",
+      "path": "/api/content/auth/volumes/{volumeId}/chapters/reorder"
+    },
+    "ruOLAZ2v": {
+      "method": "GET",
+      "path": "/api/content/auth/chapters/{chapterId}"
+    },
+    "rCtg_463": {
+      "method": "PUT",
+      "path": "/api/content/auth/chapters/{chapterId}"
+    },
+    "rJ9xa-Id": {
+      "method": "DELETE",
+      "path": "/api/content/auth/chapters/{chapterId}"
+    },
+    "rYNSCmZs": {
+      "method": "GET",
+      "path": "/api/content/auth/chapters/{chapterId}/versions"
+    },
+    "rAGQzLhs": {
+      "method": "POST",
+      "path": "/api/content/auth/chapters/{chapterId}/versions/{versionId}/restore"
+    },
+    "r7qsyMIp": {
+      "method": "GET",
+      "path": "/api/content/auth/dashboard/summary"
+    },
+    "r9GY9x2d": {
+      "method": "GET",
+      "path": "/api/content/auth/dashboard/recent-novels"
+    },
+    "rrlBNO48": {
+      "method": "GET",
+      "path": "/api/content/auth/sessions"
+    },
+    "rAPjZ-C0": {
+      "method": "POST",
+      "path": "/api/content/auth/sessions/upsert"
+    },
+    "r9zeZ11h": {
+      "method": "GET",
+      "path": "/api/content/auth/sessions/{sessionId}"
+    },
+    "rFqNxgmp": {
+      "method": "PUT",
+      "path": "/api/content/auth/sessions/{sessionId}"
+    },
+    "rBj6V_Gj": {
+      "method": "DELETE",
+      "path": "/api/content/auth/sessions/{sessionId}"
+    },
+    "rFTxTyRf": {
+      "method": "POST",
+      "path": "/api/content/auth/sessions/batch-delete"
+    },
+    "rCBtnUyY": {
+      "method": "GET",
+      "path": "/api/content/auth/sessions/{sessionId}/messages"
+    },
+    "rV3NDzv2": {
+      "method": "PUT",
+      "path": "/api/content/auth/sessions/{sessionId}/runs/{runId}/trace"
+    },
+    "r1hep3ta": {
+      "method": "GET",
+      "path": "/api/content/crm/stats/overview"
+    },
+    "rZ1bDgDe": {
+      "method": "GET",
+      "path": "/api/content/crm/stats/trends"
+    },
+    "roiTlPtw": {
+      "method": "POST",
+      "path": "/api/agent/chat/stream"
+    },
+    "rFF2ENpt": {
+      "method": "POST",
+      "path": "/api/agent/session/title"
+    },
+    "r93VKwLG": {
+      "method": "GET",
+      "path": "/api/agent/memory/novel/{novelId}"
+    },
+    "rCjoyPnD": {
+      "method": "POST",
+      "path": "/api/agent/memory/novel/{novelId}/patch"
+    },
+    "rEdUJh-5": {
+      "method": "POST",
+      "path": "/api/agent/memory/novel/{novelId}/delete"
+    },
+    "r-3bCFvM": {
+      "method": "POST",
+      "path": "/api/agent/memory/novel/{novelId}/clear"
+    }
+  }
+}

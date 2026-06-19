@@ -72,16 +72,3 @@ def extract_api_error(body: Any, *, status_code: int, default: str = "request fa
         return f"HTTP {status_code}"
     return default
 
-
-def unwrap_story_memory(body: Any) -> dict[str, Any] | None:
-    """Extract ``memory`` tree from auth story-memory GET/patch/delete payloads."""
-    data = unwrap_result(body)
-    if not isinstance(data, dict):
-        return None
-    memory = data.get("memory")
-    if isinstance(memory, dict):
-        return memory
-    # Session/novel GET may return scopes directly when memory key absent.
-    if any(k in data for k in ("novel", "world", "characters", "chapters", "background")):
-        return data
-    return None

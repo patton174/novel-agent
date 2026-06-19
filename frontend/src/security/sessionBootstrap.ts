@@ -1,7 +1,7 @@
 import { DIRECT_PYTHON } from '../config/runtime'
-import { applyLoginSession } from '../utils/auth'
+import { hasAuthSessionHint, migrateLegacyAuthStorage } from '../utils/auth'
+import { commitLoginSession } from './loginSession'
 import {
-  getAccessToken,
   getSessionCrypto,
   hydrateSessionFromStorage,
 } from './sessionStore'
@@ -22,23 +22,14 @@ async function runBootstrap(): Promise<void> {
     // 部署会轮换 apiPathPrefix；已登录用户也必须拉最新 runtime，否则 /g/ 路由 404
     await ensureCryptoRuntime(true)
 
-    if (getAccessToken() && getSessionCrypto()) {
+    // 页面刷新：用 httpOnly refresh cookie 换新 JWT，避免复用过期 sessionStorage token
+    if (hasAuthSessionHint()) {
+      const { refreshSession } = await import('../utils/authApi')
+      await refreshSession()
       return
     }
 
-    if (!getAccessToken()) {
-      const { refreshSession } = await import('../utils/authApi')
-      const ok = await refreshSession()
-      if (ok && getSessionCrypto()) {
-        return
-      }
-    }
-
-    // 有 token 但缺 sessionCrypto（旧会话）：再拉一次 refresh 补密钥
-    if (getAccessToken() && !getSessionCrypto()) {
-      const { refreshSession } = await import('../utils/authApi')
-      await refreshSession()
-    }
+    // 无本地会话迹象 — 访客，不 silent refresh
   } finally {
     bootstrapRunning = false
   }
@@ -66,7 +57,12 @@ export async function ensureCryptoReady(): Promise<void> {
   await startSessionBootstrap()
 }
 
-export function primeSessionFromLogin(data: Parameters<typeof applyLoginSession>[0]): void {
-  applyLoginSession(data)
+export function markBootstrapSessionReady(): void {
   bootstrapPromise = Promise.resolve()
+}
+
+export function primeSessionFromLogin(data: Parameters<typeof commitLoginSession>[0]): void {
+  migrateLegacyAuthStorage()
+  commitLoginSession(data)
+  markBootstrapSessionReady()
 }

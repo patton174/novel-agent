@@ -4,9 +4,14 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from app.agent.harness.orchestration_contract import normalize_tool_calls, reorder_plan_tool_calls
+from app.agent.harness.orchestration_contract import (
+    normalize_tool_calls,
+    reorder_execution_items,
+    reorder_plan_tool_calls,
+)
 from app.agent.harness.tool_orchestration import ToolExecutionItem
-from app.agent.schemas import AgentRunContext, PlanToolCall
+from app.agent.schemas import PlanToolCall
+from app.agent.tools.prepare_tool_input import prepare_tool_input
 
 
 @dataclass(frozen=True)
@@ -18,12 +23,12 @@ class ToolBatchPrepareResult:
 
 
 def prepare_execution_batch(
-    ctx: AgentRunContext,
+    ctx,
     ai_calls: list,
     *,
     think_text: str = "",
 ) -> ToolBatchPrepareResult:
-    _ = ctx, think_text
+    _ = think_text
     ordered = reorder_plan_tool_calls(
         normalize_tool_calls([c.call for c in ai_calls])
     )
@@ -46,11 +51,16 @@ def prepare_execution_batch(
                     break
         if not tid:
             tid = f"call_{len(items)}"
+        raw = dict(call.input or {})
+        prepared, _err = prepare_tool_input(call.tool, raw, ctx)
+        inp = prepared.canonical if prepared is not None else raw
         items.append(
             ToolExecutionItem(
                 tool_call_id=tid,
                 tool=call.tool,
-                input=dict(call.input or {}),
+                input=inp,
+                call_order=len(items),
             )
         )
+    items = reorder_execution_items(items)
     return ToolBatchPrepareResult(calls=ordered, items=items)

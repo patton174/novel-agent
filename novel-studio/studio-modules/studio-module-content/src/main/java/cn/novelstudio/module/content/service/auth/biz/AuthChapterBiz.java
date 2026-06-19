@@ -11,6 +11,11 @@ import cn.novelstudio.module.content.service.ChapterVersionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.UncheckedIOException;
+
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -25,8 +30,32 @@ public class AuthChapterBiz extends BaseBiz {
         return ok(chapterService.getChapter(userId, chapterId));
     }
 
+    public Result<ChapterReadSliceDTO> readSlice(
+        Long userId,
+        String chapterId,
+        Integer offset,
+        Integer limit,
+        Integer listIndex
+    ) {
+        return ok(chapterService.readChapterSlice(userId, chapterId, offset, limit, listIndex));
+    }
+
     public Result<ChapterReadSliceDTO> readSlice(Long userId, String chapterId, Integer offset, Integer limit) {
-        return ok(chapterService.readChapterSlice(userId, chapterId, offset, limit));
+        return readSlice(userId, chapterId, offset, limit, null);
+    }
+
+    public void readSliceStream(
+        Long userId,
+        String chapterId,
+        Integer offset,
+        Integer limit,
+        OutputStream out
+    ) {
+        try {
+            chapterService.streamChapterReadSlice(userId, chapterId, offset, limit, out);
+        } catch (IOException ex) {
+            throw new UncheckedIOException(ex);
+        }
     }
 
     public Result<ChapterDTO> update(Long userId, String chapterId, UpdateChapterRequest request, String editSource) {
@@ -35,8 +64,11 @@ public class AuthChapterBiz extends BaseBiz {
     }
 
     public Result<Map<String, Object>> delete(Long userId, String chapterId) {
-        chapterService.deleteChapter(userId, chapterId);
-        return ok(Map.of("ok", true));
+        boolean existed = chapterService.deleteChapter(userId, chapterId);
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("ok", true);
+        body.put("already_absent", !existed);
+        return ok(body);
     }
 
     public Result<List<ChapterVersionDTO>> listVersions(Long userId, String chapterId, int limit) {

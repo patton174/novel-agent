@@ -1,6 +1,9 @@
 import { translateToolDisplayName } from './orchestrationI18n'
 import type { AgentStepState } from '../types/agent'
 import { toolDisplayName } from './agentLabels'
+import { planningActiveLabel } from './agentOrchestration'
+import i18n from '@/i18n'
+import { inferToolTitlePhase, resolveToolTitle } from './toolTitleI18n'
 import {
   isCollapsibleReadTool,
   isMemoryVfsPath,
@@ -543,4 +546,82 @@ export function ccToolResultHint(
   }
 
   return null
+}
+
+/** 工具行树状分支文案：运行中「正在…」/ 完成后「已…」 */
+export function ccToolBranchStatus(
+  step: AgentStepState,
+  options: {
+    loading: boolean
+    error: boolean
+    phase?: string
+    readLabel?: string | null
+    chapterProgressHint?: string | null
+    readProgressHint?: string | null
+    earlyProgressHint?: string | null
+    awaitingUserInput?: boolean
+    chooseLoading?: boolean
+  },
+): string {
+  const iconName = step.toolName ?? 'Tool'
+  const { loading, error, phase } = options
+
+  if (options.chooseLoading) {
+    return '正在生成选项…'
+  }
+
+  if (loading) {
+    if (options.chapterProgressHint?.trim()) {
+      return options.chapterProgressHint.trim()
+    }
+    if (options.readProgressHint?.trim()) {
+      return options.readProgressHint.trim()
+    }
+    if (options.readLabel?.trim()) {
+      return options.readLabel.trim()
+    }
+    if (options.earlyProgressHint?.trim()) {
+      return options.earlyProgressHint.trim()
+    }
+    const titlePhase = inferToolTitlePhase(phase, { active: true })
+    const running = resolveToolTitle(iconName, titlePhase)
+    if (running.hasPhaseTitle) {
+      return running.title
+    }
+    return planningActiveLabel(iconName) ?? i18n.t('editor:timeline.phaseRunning')
+  }
+
+  if (error) {
+    const failed = resolveToolTitle(iconName, 'failed')
+    if (failed.hasPhaseTitle) {
+      return failed.title
+    }
+    return i18n.t('editor:timeline.phaseFailed')
+  }
+
+  if (options.awaitingUserInput) {
+    const awaiting = resolveToolTitle(iconName, 'awaiting')
+    if (awaiting.hasPhaseTitle) {
+      return awaiting.title
+    }
+    return i18n.t('editor:timeline.phaseAwaiting')
+  }
+
+  const compactOutcome =
+    step.outputSummary?.trim() ||
+    step.resultLabels?.[0]?.trim() ||
+    ''
+  if (
+    compactOutcome &&
+    !compactOutcome.startsWith('{') &&
+    !/tool_use_error|upstream_/i.test(compactOutcome)
+  ) {
+    return compactOutcome.length > 96 ? `${compactOutcome.slice(0, 96)}…` : compactOutcome
+  }
+
+  const done = resolveToolTitle(iconName, 'done')
+  if (done.hasPhaseTitle) {
+    return done.title
+  }
+  return i18n.t('editor:timeline.phaseDone')
 }

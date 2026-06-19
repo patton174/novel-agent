@@ -7,7 +7,7 @@
 - 架构与链路：`.cursor/rules/project-architecture.mdc`
 - 部署与运维：`.cursor/rules/deploy-ops.mdc`
 - 长文架构：`docs/ARCHITECTURE.md`
-- 部署指南：`novel-studio/deploy/README.md`（单体栈；旧 `novel-agent/agent-document/docs/deploy/` 已废弃）
+- 部署指南：`novel-studio/deploy/README.md`（单体栈；旧 `legacy/novel-agent/agent-document/docs/deploy/` 已废弃）
 
 ## 项目架构（生产：novel-studio 单体）
 
@@ -72,7 +72,7 @@ docker compose up -d          # PostgreSQL / Redis / RabbitMQ
 .\scripts\start.ps1           # 同上
 ```
 
-健康检查：`novel-agent/scripts/check_local_infra.py`
+健康检查：`legacy/novel-agent/scripts/check_local_infra.py`
 
 ## 常用单服务命令（调试备用，非正常重启流程）
 
@@ -110,7 +110,7 @@ cd frontend && npm run dev -- --host
 
 **Sign 规则**：POST+envelope → body.sign；GET/无 body POST → URL `_na_t/_na_n/_na_k/_na_s`。不用 `X-Novel-Agent-*` 头。
 
-**部署**：见 `novel-agent/agent-document/docs/deploy/README.md`；`.cursor/rules/security-deploy.mdc` 速查。
+**部署**：见 `legacy/novel-agent/agent-document/docs/deploy/README.md`；`.cursor/rules/security-deploy.mdc` 速查。
 
 **注意**：
 

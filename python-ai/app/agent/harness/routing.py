@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import Any
 
 from app.agent.context.compact import (
-    compact_story_memory_text,
     ctx_with_write_anchor,
     format_chapter_window,
     is_onboarding_assistant_text,
@@ -142,18 +141,9 @@ def story_context_for_chapter_create(ctx: AgentRunContext, *, max_len: int = 400
     if chapter_window:
         parts.append(chapter_window)
 
-    memory = compact_story_memory_text(str(anchored.story_memory or ""), max_len=800)
-    if memory:
-        parts.append(f"设定记忆（摘要）：\n{memory}")
-
     dialogue = format_dialogue_history(anchored, max_len=min(max_len, 2000))
     if dialogue:
         parts.append(f"近期对话与确认：\n{dialogue}")
-
-    patch = anchored.context_patch if isinstance(anchored.context_patch, dict) else {}
-    retrieved = patch.get("retrieved_context")
-    if isinstance(retrieved, str) and retrieved.strip():
-        parts.append(f"检索上下文：\n{retrieved[:800]}")
 
     tail = previous_chapter_tail_for_create(anchored)
     if tail:
@@ -172,18 +162,9 @@ def story_context_from_ctx(ctx: AgentRunContext, *, max_len: int = 4000) -> str:
     if chapter_window:
         parts.append(chapter_window)
 
-    memory = compact_story_memory_text(str(ctx.story_memory or ""), max_len=800)
-    if memory:
-        parts.append(f"设定记忆（摘要）：\n{memory}")
-
     dialogue = format_dialogue_history(ctx, max_len=min(max_len, 2000))
     if dialogue:
         parts.append(f"近期对话与确认：\n{dialogue}")
-
-    patch = ctx.context_patch if isinstance(ctx.context_patch, dict) else {}
-    retrieved = patch.get("retrieved_context")
-    if isinstance(retrieved, str) and retrieved.strip():
-        parts.append(f"检索上下文：\n{retrieved[:800]}")
 
     return "\n".join(parts)[:max_len]
 

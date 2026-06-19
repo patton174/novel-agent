@@ -26,24 +26,24 @@ def test_tool_completed_memory_read_omits_full_output():
 def test_tool_completed_memory_update_uses_action_label():
     content = "已更新世界观 · 核心机制"
     payload = _tool_completed_payload(
-        name="WriteMemory",
-        display_name="更新记忆",
+        name="UpdateMemoryContent",
+        display_name="更新记忆正文",
         content=content,
         failed=False,
-        display=DisplayPayload(type="tool", tool="WriteMemory", content=content),
+        display=DisplayPayload(type="tool", tool="UpdateMemoryContent", content=content),
     )
-    assert payload["action_label"] == content
+    assert payload["action_label"] == "已更新记忆正文"
     assert "output" not in payload
 
 
 def test_tool_completed_failed_keeps_output():
     content = "记忆更新失败：HTTP 500"
     payload = _tool_completed_payload(
-        name="WriteMemory",
-        display_name="更新记忆",
+        name="UpdateMemoryContent",
+        display_name="更新记忆正文",
         content=content,
         failed=True,
-        display=DisplayPayload(type="tool", tool="WriteMemory", content=content),
+        display=DisplayPayload(type="tool", tool="UpdateMemoryContent", content=content),
     )
     assert payload["output"] == content
     assert payload["status"] == "error"

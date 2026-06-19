@@ -1,6 +1,6 @@
 package cn.novelstudio.module.agent.client;
 
-import cn.novelstudio.module.content.agent.AgentRunStatus;
+import cn.novelstudio.module.content.dto.agent.AgentCheckpointDTO;
 import cn.novelstudio.module.content.dto.agent.AgentEventDTO;
 import cn.novelstudio.module.content.dto.agent.AgentRunDTO;
 import cn.novelstudio.module.content.dto.agent.CreateAgentRunRequest;
@@ -43,7 +43,7 @@ public class ContentInternalClient {
 
     public void transitionRun(String runId, String status, String errorMessage) {
         TransitionAgentRunRequest request = new TransitionAgentRunRequest();
-        request.setStatus(AgentRunStatus.valueOf(status));
+        request.setStatus(cn.novelstudio.module.content.agent.AgentRunStatus.valueOf(status));
         request.setErrorMessage(errorMessage == null ? "" : errorMessage);
         internalAgentRunBiz.transition(runId, request);
     }
@@ -55,6 +55,11 @@ public class ContentInternalClient {
 
     public AgentRunDTO getActiveRunForSession(String sessionId) {
         return internalAgentRunBiz.getActiveRunForSession(sessionId);
+    }
+
+    public AgentCheckpointDTO getCheckpoint(String runId) {
+        ResponseEntity<AgentCheckpointDTO> response = internalAgentRunBiz.getCheckpoint(runId);
+        return response == null ? null : response.getBody();
     }
 
     public List<AgentEventDTO> listEvents(String runId, int afterSequence) {

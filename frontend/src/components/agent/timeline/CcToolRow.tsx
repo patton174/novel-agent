@@ -1,34 +1,25 @@
 import type { ReactNode } from 'react'
 import { ShimmerScanText } from '../../loaders/ShimmerScanText'
-import { translateToolDisplayName, translateToolPhase } from '../../../utils/orchestrationI18n'
-import { cn } from '@/lib/utils'
+import { translateToolDisplayName, translateToolOutcome } from '../../../utils/orchestrationI18n'
 import {
-  CC_BRANCH_CONTENT,
-  CC_BRANCH_GLYPH,
   CC_TOOL_ARGS,
   CC_TOOL_HEADLINE_BUTTON,
   CC_TOOL_MERGE,
   CC_TOOL_NAME,
-  CC_TOOL_ROW_WRAP,
-  HEADLINE_CLUSTER,
-  TIMELINE_PENDING_IN,
-  TOOL_HEADLINE_ROW,
   TOOL_HEADLINE_STATIC,
-  TOOL_MAIN,
   TOOL_TITLE_ROW,
-  ccToolBranchClass,
-  toolLeadCellClass,
+  TOOL_OUTCOME_ERROR,
+  TOOL_OUTCOME_SUCCESS,
 } from '@/lib/timelineClasses'
+import { TimelineBranchRow, TimelineToolRowShell } from './layout'
 import { resolveToolVisualStatus, TimelineLeadIcon, type ToolVisualStatus } from './TimelineLeadIcon'
 
 export function CcToolRow({
   name,
-  args,
-  phase,
   phaseActive = false,
-  resultHint,
+  outcomeBadge,
+  branchLine,
   mergeCount,
-  trailing,
   branch,
   children,
   testId,
@@ -39,12 +30,10 @@ export function CcToolRow({
   iconStatus,
 }: {
   name: string
-  args?: string
-  phase?: string
   phaseActive?: boolean
-  resultHint?: string | null
+  outcomeBadge?: 'success' | 'error' | null
+  branchLine?: string | null
   mergeCount?: number
-  trailing?: ReactNode
   branch?: ReactNode
   children?: ReactNode
   testId?: string
@@ -55,101 +44,91 @@ export function CcToolRow({
   iconStatus?: ToolVisualStatus
 }) {
   const interactive = collapsible && Boolean(onToggle)
-  const showBody = expanded && (Boolean(branch) || Boolean(children))
-
   const displayName = translateToolDisplayName(name)
-  const displayPhase = translateToolPhase(phase)
+  const showBranchArea = Boolean(branchLine?.trim() || branch || children)
+  const showOptionalDetail = Boolean(expanded && (branch || children))
 
   const titleLine = (
     <div className={TOOL_TITLE_ROW} data-timeline-tool-title-row>
-      <span className={HEADLINE_CLUSTER}>
-        <span className={CC_TOOL_NAME}>{displayName}</span>
-        {phase || args || resultHint ? (
-          <span className={CC_TOOL_ARGS}>
-            {displayPhase ? (
-              <>
-                {phaseActive ? (
-                  <ShimmerScanText active>{displayPhase}</ShimmerScanText>
-                ) : (
-                  displayPhase
-                )}
-                {args || resultHint ? ' · ' : ''}
-              </>
-            ) : null}
-            {args ? (
-              <>
-                {args}
-                {resultHint ? ' · ' : ''}
-              </>
-            ) : null}
-            {resultHint ? <span>{resultHint}</span> : null}
-          </span>
-        ) : null}
+      <span className={CC_TOOL_NAME}>
+        {phaseActive ? (
+          <ShimmerScanText active>{displayName}</ShimmerScanText>
+        ) : (
+          displayName
+        )}
       </span>
       {mergeCount && mergeCount > 1 ? (
         <span className={CC_TOOL_MERGE}> ×{mergeCount}</span>
       ) : null}
-      {trailing}
+      {!phaseActive && outcomeBadge ? (
+        <span className={CC_TOOL_ARGS} data-testid={testId ? `${testId}-outcome` : undefined}>
+          {' · '}
+          <span
+            className={
+              outcomeBadge === 'success' ? TOOL_OUTCOME_SUCCESS : TOOL_OUTCOME_ERROR
+            }
+          >
+            {translateToolOutcome(outcomeBadge)}
+          </span>
+        </span>
+      ) : null}
     </div>
   )
 
-  return (
-    <div className={cn(CC_TOOL_ROW_WRAP, TIMELINE_PENDING_IN)} data-testid={testId}>
-      <div className={TOOL_HEADLINE_ROW} data-timeline-tool-headline-row>
-        {iconName ? (
-          <div className={toolLeadCellClass()} data-timeline-tool-lead>
-            <TimelineLeadIcon
-              iconName={iconName}
-              status={
-                iconStatus ??
-                resolveToolVisualStatus({
-                  loading: phaseActive,
-                  error: phase === '失败',
-                  success: phase === '已完成',
-                })
-              }
-            />
-          </div>
-        ) : null}
-        <div className={TOOL_MAIN}>
-          {interactive ? (
-            <button
-              type="button"
-              className={CC_TOOL_HEADLINE_BUTTON}
-              aria-expanded={expanded}
-              onClick={onToggle}
-              data-testid={testId ? `${testId}-toggle` : undefined}
-            >
-              {titleLine}
-            </button>
-          ) : (
-            <div className={TOOL_HEADLINE_STATIC}>{titleLine}</div>
-          )}
-        </div>
-      </div>
-      {showBody ? (
-        <div
-          className={ccToolBranchClass({ hasLeadIcon: Boolean(iconName) })}
-          data-testid={testId ? `${testId}-branch` : undefined}
-        >
-          <span className={CC_BRANCH_GLYPH} aria-hidden />
-          <div className={CC_BRANCH_CONTENT}>
-            {branch}
-            {children}
-          </div>
-        </div>
+  const headline = interactive ? (
+    <button
+      type="button"
+      className={CC_TOOL_HEADLINE_BUTTON}
+      aria-expanded={expanded}
+      onClick={onToggle}
+      data-testid={testId ? `${testId}-toggle` : undefined}
+    >
+      {titleLine}
+    </button>
+  ) : (
+    <div className={TOOL_HEADLINE_STATIC}>{titleLine}</div>
+  )
+
+  const branchBody = showBranchArea ? (
+    <>
+      {branchLine?.trim() ? <div>{branchLine}</div> : null}
+      {showOptionalDetail ? (
+        <>
+          {branch}
+          {children}
+        </>
       ) : null}
-    </div>
+    </>
+  ) : null
+
+  const leadIcon = iconName ? (
+    <TimelineLeadIcon
+      iconName={iconName}
+      status={
+        iconStatus ??
+        resolveToolVisualStatus({
+          loading: phaseActive,
+          error: outcomeBadge === 'error',
+          success: outcomeBadge === 'success',
+        })
+      }
+    />
+  ) : undefined
+
+  return (
+    <TimelineToolRowShell
+      testId={testId}
+      leadIcon={leadIcon}
+      headline={headline}
+      branch={branchBody}
+      branchAnimateIn={showOptionalDetail}
+      branchTestId={testId ? `${testId}-branch` : undefined}
+    />
   )
 }
 
 export function CcToolBranchLine({ children }: { children: ReactNode }) {
-  return (
-    <div className={ccToolBranchClass({ nested: true })}>
-      <span className={CC_BRANCH_GLYPH} aria-hidden />
-      <div className={CC_BRANCH_CONTENT}>{children}</div>
-    </div>
-  )
+  return <TimelineBranchRow variant="nested">{children}</TimelineBranchRow>
 }
 
 export function CcToolNestedBranch({ children }: { children: ReactNode }) {

@@ -22,7 +22,9 @@ public final class SseEventCodec {
     );
 
     private static final java.util.Set<String> MEMORY_CHAPTER_TOOLS = java.util.Set.of(
-        "WriteChapter", "EditChapter", "WriteMemory", "EditMemory", "Write", "Edit"
+        "WriteChapter", "EditChapter", "DeleteChapter", "ReorderChapters",
+        "CreateMemory", "UpdateMemoryFields", "UpdateMemoryContent", "UpdateMemoryMeta", "MoveMemory", "DeleteMemory",
+        "ReadMemory", "ListMemory", "GetMemoryTree"
     );
 
     private SseEventCodec() {}

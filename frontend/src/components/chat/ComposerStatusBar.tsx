@@ -25,7 +25,7 @@ export function ComposerStatusBar({
       className="relative flex w-full min-w-0 items-center"
       data-testid="composer-status-bar"
     >
-      <div className="shrink-0">
+      <div className="flex min-w-0 shrink-0 items-center gap-2">
         <ComposerTokenTicker
           usage={contextUsage}
           pending={pending}

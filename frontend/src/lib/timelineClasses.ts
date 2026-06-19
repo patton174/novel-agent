@@ -16,6 +16,20 @@ export const TIMELINE_TREE_INDENT = '1.15rem'
 /** 分支行左缘与标题文字（如「思考」）左对齐 */
 export const TIMELINE_BRANCH_OFFSET = `calc(${TIMELINE_LEAD_WIDTH} + 0.4rem)`
 
+/** 图标列 + 标题列网格：分支行与标题左缘对齐 */
+export const TIMELINE_LEAD_GRID = cn(
+  'grid w-full max-w-full grid-cols-[1.35rem_minmax(0,1fr)] gap-x-[0.4rem] items-start',
+)
+
+export const TIMELINE_GRID_LEAD_CELL =
+  'col-start-1 row-start-1 flex h-[1.35rem] w-[1.35rem] items-center justify-center self-center'
+
+export const TIMELINE_GRID_MAIN_CELL = 'col-start-2 row-start-1 min-w-0'
+
+export const TIMELINE_GRID_BRANCH_CELL = cn(
+  'col-start-2 row-start-2 flex min-w-0 flex-row items-start gap-[0.3rem] pt-[0.05rem]',
+)
+
 /** 无左侧图标的工具行：详情分支相对标题略缩进 */
 export const TIMELINE_TOOL_BRANCH_INDENT = '0.2rem'
 
@@ -42,12 +56,20 @@ export function planningStackWrapClass(opts: {
 }) {
   return cn(
     'm-0 flex max-w-full flex-col border-l-0 p-0',
+    opts.flat && 'overflow-visible',
     !opts.flat && [
       'ml-[0.1rem] border-l-2 pl-[0.35rem]',
       opts.active ? 'border-l-primary' : 'border-l-border',
     ],
   )
 }
+
+export const ORCHESTRATION_HEADER_ROW =
+  'relative min-h-[1.35rem] w-full min-w-0'
+
+/** 助手流左侧图标 gutter，编排图标与正文左缘对齐 */
+export const TIMELINE_ICON_GUTTER =
+  'relative box-border w-full max-w-full pl-[calc(1.35rem+0.4rem)]'
 
 export const PLANNING_HEADER = cn(
   'group block min-h-[1.35rem] w-full cursor-pointer border-none bg-transparent py-[0.12rem] pl-0 pr-[0.25rem] text-left',
@@ -123,13 +145,13 @@ export const PLANNING_HEADLINE_ROW = THINK_HEADLINE_ROW
 
 export function thinkLeadCellClass(_compact?: boolean) {
   return cn(
-    'relative z-[1] flex h-[1.35rem] w-[1.35rem] flex-[0_0_1.35rem] shrink-0 items-center justify-center',
+    'agent-timeline-lead-cell relative z-[1] flex h-[1.35rem] w-[1.35rem] flex-[0_0_1.35rem] shrink-0 items-center justify-center',
   )
 }
 
 export function toolLeadCellClass(_compact?: boolean) {
   return cn(
-    'relative z-[1] flex h-[1.35rem] w-[1.35rem] flex-[0_0_1.35rem] shrink-0 items-center justify-center',
+    'agent-timeline-lead-cell relative z-[1] flex h-[1.35rem] w-[1.35rem] flex-[0_0_1.35rem] shrink-0 items-center justify-center',
   )
 }
 
@@ -224,6 +246,8 @@ export function ccToolBranchClass(opts?: {
   )
 }
 
+/** @deprecated 业务层请用 timeline/layout/TimelineBranchRow，勿直接拼 ccToolBranchClass */
+
 export const CC_BRANCH_CONTENT = cn(
   'min-w-0 flex-1 break-words text-[0.74rem] leading-[1.35] text-muted-foreground/80',
 )
@@ -237,8 +261,11 @@ export const THINK_TREE_GLYPH_CELL = CC_BRANCH_GLYPH
 export const CC_PROGRESS_HINT =
   'ml-auto text-[0.68rem] leading-[1.4] text-muted-foreground/80'
 
-export const FAIL_TAG =
-  'text-[0.68rem] font-semibold leading-[1.4] text-destructive'
+export const TOOL_OUTCOME_SUCCESS = 'font-semibold text-primary'
+
+export const TOOL_OUTCOME_ERROR = 'font-semibold text-destructive'
+
+export const FAIL_TAG = TOOL_OUTCOME_ERROR
 
 export function toolDetailClass(error?: boolean) {
   return cn(
@@ -363,7 +390,7 @@ export const SUBAGENT_SUMMARY_BOX =
   'mt-[0.35rem] px-0 py-[0.05rem] pb-[0.1rem] text-[0.74rem] leading-[1.45] text-foreground'
 
 export const TIMELINE_BODY_DIVIDER =
-  'mx-0 my-[0.42rem] mb-[0.36rem] h-0 w-full border-none border-t border-border max-md:my-2 max-md:mb-1.5'
+  'mx-0 my-3 flex w-full items-center py-0 before:block before:h-px before:flex-1 before:rounded-full before:bg-gradient-to-r before:from-transparent before:via-border/75 before:to-transparent after:block after:h-px after:flex-1 after:rounded-full after:bg-gradient-to-l after:from-transparent after:via-border/75 after:to-transparent max-md:my-2.5'
 
 export const DELIVERY_BODY_WRAP =
   'agent-timeline-delivery-body min-w-0 w-full max-w-full flex-1 px-0 py-[0.02rem] pb-[0.15rem] max-md:pb-0 max-md:text-[0.92rem] max-md:leading-normal'

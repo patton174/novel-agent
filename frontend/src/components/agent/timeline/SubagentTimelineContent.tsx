@@ -6,11 +6,11 @@ import { findStepState } from '../../../utils/agentStreamTimeline'
 import { OrchestrationLayer } from './OrchestrationLayer'
 import { TimelineDeliveryBlock } from './TimelineDeliveryBlock'
 import { TimelineToolBlock } from './TimelineToolBlock'
+import { TimelineBodyDivider } from './TimelineBodyDivider'
 import {
   SUBAGENT_ERROR_BOX,
   SUBAGENT_TIMELINE_WRAP,
   SUBAGENT_TURN_META,
-  TIMELINE_BODY_DIVIDER,
 } from '@/lib/timelineClasses'
 
 /** 子 Agent 完整运行时间线：编排层 + 流式正文，与主 Agent 一致 */
@@ -103,12 +103,7 @@ export function SubagentTimelineContent({
 
       {showOutput ? (
         <>
-          {rounds.length > 0 ? (
-            <div
-              className={TIMELINE_BODY_DIVIDER}
-              data-testid="subagent-modal-output-divider"
-            />
-          ) : null}
+          {rounds.length > 0 ? <TimelineBodyDivider data-testid="subagent-modal-output-divider" /> : null}
           <TimelineDeliveryBlock
             text={outputText}
             streamLive={active}

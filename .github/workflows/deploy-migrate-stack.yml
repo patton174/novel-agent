@@ -91,7 +91,7 @@ jobs:
           DEPLOY_SSH_OPTS: -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes -o ConnectTimeout=60 -o BatchMode=yes
           DEPLOY_SCP_OPTS: -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes -o ConnectTimeout=60 -o BatchMode=yes
         run: |
-          bash novel-agent/agent-document/docs/deploy/ci/build-python-ai.sh
+          bash legacy/novel-agent/agent-document/docs/deploy/ci/build-python-ai.sh
           bash novel-studio/deploy/ci/deploy-python-ai.sh
 
       - name: Build & deploy frontend

@@ -5,5 +5,6 @@ public record AuthUserInfoResp(
     String username,
     String email,
     String role,
-    Boolean emailVerified
+    Boolean emailVerified,
+    PixelAvatarPrefsResp pixelAvatar
 ) {}

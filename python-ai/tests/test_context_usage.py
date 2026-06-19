@@ -34,7 +34,6 @@ def test_measure_plan_prompt_sections():
         user_message="帮我续写下一章",
         mode="auto",
         step_index=0,
-        story_memory="世界观：修仙\n角色：林枫",
     )
     req = PlanRequest(context=ctx, think_content="## 分析\n用户希望续写", transcript=[])
     measure = measure_plan_prompt(req)

@@ -8,7 +8,6 @@ import reactor.core.scheduler.Schedulers;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -72,8 +71,6 @@ public class AgentContextAssembler {
         String novelId = request.novelId();
         String chapterId = request.chapterId();
         Map<String, Object> novelContext = Map.of();
-        String storyMemoryText = "";
-        Map<String, Object> storyMemoryData = emptyStoryMemory();
         if (novelId != null && !novelId.isBlank()) {
             Object rawNovel = aggregate.get("novelContext");
             if (rawNovel instanceof Map<?, ?> map) {
@@ -81,16 +78,6 @@ public class AgentContextAssembler {
                 Map<String, Object> cast = (Map<String, Object>) map;
                 novelContext = cast;
                 context.putAll(cast);
-            }
-            Object rawMem = aggregate.get("storyMemory");
-            if (rawMem != null) {
-                storyMemoryText = String.valueOf(rawMem);
-            }
-            Object rawData = aggregate.get("storyMemoryData");
-            if (rawData instanceof Map<?, ?> map) {
-                @SuppressWarnings("unchecked")
-                Map<String, Object> cast = (Map<String, Object>) map;
-                storyMemoryData = cast;
             }
         } else {
             context.put("project", Map.of());
@@ -121,21 +108,7 @@ public class AgentContextAssembler {
         context.put("preferences", preferences);
         context.put("host_mode", Boolean.TRUE.equals(request.hostMode()));
 
-        if (storyMemoryText != null && !storyMemoryText.isBlank()) {
-            context.put("story_memory", storyMemoryText);
-        }
-        context.put("story_memory_data", storyMemoryData);
         return context;
-    }
-
-    private static Map<String, Object> emptyStoryMemory() {
-        Map<String, Object> copy = new LinkedHashMap<>();
-        copy.put("novel", new LinkedHashMap<>());
-        copy.put("world", new LinkedHashMap<>());
-        copy.put("characters", new LinkedHashMap<>());
-        copy.put("chapters", new LinkedHashMap<>());
-        copy.put("background", new LinkedHashMap<>());
-        return copy;
     }
 
     private List<Map<String, String>> mergeHistory(

@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -48,10 +49,10 @@ public class AgentBridgeService {
     private final AgentRuntimeProperties runtimeProperties;
     private final ContentInternalClient contentInternalClient;
     private final AgentRunMqPublisher runMqPublisher;
-    private final RunLiveRedisSubscriber runLiveRedisSubscriber;
-    private final PgRunStreamService pgRunStreamService;
-    private final RunWorkerContextStore workerContextStore;
     private final Executor sideEffectExecutor;
+    private final RunProxyRegistry runProxyRegistry;
+    private final RunProxyLiveHub runProxyLiveHub;
+    private final QuotaGateService quotaGateService;
 
     public AgentBridgeService(
         PythonAgentRunClient runClient,
@@ -66,11 +67,11 @@ public class AgentBridgeService {
         AgentRuntimeProperties runtimeProperties,
         ContentInternalClient contentInternalClient,
         AgentRunMqPublisher runMqPublisher,
-        RunLiveRedisSubscriber runLiveRedisSubscriber,
-        PgRunStreamService pgRunStreamService,
-        RunWorkerContextStore workerContextStore,
         @org.springframework.beans.factory.annotation.Qualifier(AgentSideEffectExecutorConfig.BEAN_NAME)
-        Executor sideEffectExecutor
+        Executor sideEffectExecutor,
+        RunProxyRegistry runProxyRegistry,
+        RunProxyLiveHub runProxyLiveHub,
+        QuotaGateService quotaGateService
     ) {
         this.runClient = runClient;
         this.contextAssembler = contextAssembler;
@@ -84,16 +85,13 @@ public class AgentBridgeService {
         this.runtimeProperties = runtimeProperties;
         this.contentInternalClient = contentInternalClient;
         this.runMqPublisher = runMqPublisher;
-        this.runLiveRedisSubscriber = runLiveRedisSubscriber;
-        this.pgRunStreamService = pgRunStreamService;
-        this.workerContextStore = workerContextStore;
         this.sideEffectExecutor = sideEffectExecutor;
+        this.runProxyRegistry = runProxyRegistry;
+        this.runProxyLiveHub = runProxyLiveHub;
+        this.quotaGateService = quotaGateService;
     }
 
     public Flux<String> stream(Long userId, AgentStreamRequest request) {
-        if (runtimeProperties.isQueuedMode()) {
-            return pgRunStreamService.stream(userId, request);
-        }
         String mode = AgentContextAssembler.normalizeAgentMode(request.mode());
         String sessionId = request.sessionId();
         if (sessionId == null || sessionId.isBlank()) {
@@ -106,18 +104,24 @@ public class AgentBridgeService {
         AssistantPersistCollector assistantCollector = new AssistantPersistCollector();
         AtomicBoolean persisted = new AtomicBoolean(false);
         String finalSessionId = sessionId;
-        boolean hostMode = Boolean.TRUE.equals(request.hostMode());
         boolean pgRun = runtimeProperties.isPgRunEnabled();
+        runProxyRegistry.claim(runId);
 
         return Flux.<String>create(sink -> {
             AtomicBoolean clientAttached = new AtomicBoolean(true);
+            java.util.function.Consumer<String> primarySink = frame -> {
+                if (clientAttached.get()) {
+                    sink.next(frame);
+                }
+            };
+            runProxyLiveHub.attach(runId, primarySink);
             sink.onCancel(() -> {
                 clientAttached.set(false);
-                if (hostMode) {
-                    log.info("SSE client detached (host mode) runId={}, sessionId={}", runId, finalSessionId);
-                    publishHostRecovering(userId, finalSessionId, runId);
-                }
+                runProxyLiveHub.detach(runId, primarySink);
+                log.info("SSE client detached runId={}, sessionId={}", runId, finalSessionId);
+                publishHostRecovering(userId, finalSessionId, runId);
             });
+            sink.onDispose(() -> runProxyLiveHub.detach(runId, primarySink));
             Schedulers.boundedElastic().schedule(() -> {
             AgentRunState state;
             AgentRunCoordinator coordinator;
@@ -126,22 +130,27 @@ public class AgentBridgeService {
                 ? new PgRunEventFanout(runMqPublisher, finalSessionId, runId)
                 : null;
             try {
-                Map<String, Object> context = contextAssembler.assemble(userId, finalSessionId, request);
+                CompletableFuture<QuotaGateResult> quotaFuture = CompletableFuture.supplyAsync(
+                    () -> quotaGateService.assertCanStartRun(userId)
+                );
+                CompletableFuture<Map<String, Object>> contextFuture = CompletableFuture.supplyAsync(
+                    () -> contextAssembler.assemble(userId, finalSessionId, request)
+                );
+                CompletableFuture.allOf(quotaFuture, contextFuture).join();
+                quotaFuture.join();
+                Map<String, Object> context = contextFuture.join();
                 state = new AgentRunState(userId, finalSessionId, runId, messageId, request, context);
                 if (pgRun) {
-                    workerContextStore.save(runId, state.toContextDto());
                     bootstrapPgRun(userId, finalSessionId, runId, messageId, request.message(), mode);
                 }
                 coordinator = new AgentRunCoordinator(
                     state, runClient, objectMapper, chapterSideEffectService, sideEffectExecutor
                 );
                 runRegistry.register(coordinator);
-                if (hostMode) {
-                    eventJournal.beginRun(runId, userId, finalSessionId);
-                    fanout = new HostModeEventFanout(
-                        eventJournal, statusHub, objectMapper, userId, finalSessionId, runId
-                    );
-                }
+                eventJournal.beginRun(runId, userId, finalSessionId);
+                fanout = new HostModeEventFanout(
+                    eventJournal, statusHub, objectMapper, userId, finalSessionId, runId
+                );
             } catch (Exception ex) {
                 log.error("assemble agent context failed runId={}: {}", runId, ex.getMessage());
                 if (clientAttached.get()) {
@@ -158,13 +167,8 @@ public class AgentBridgeService {
                     }
                     if (hostFanout != null) {
                         hostFanout.onFrame(frame);
-                        if (!clientAttached.get()) {
-                            return;
-                        }
                     }
-                    if (clientAttached.get()) {
-                        sink.next(frame);
-                    }
+                    runProxyLiveHub.publish(runId, frame);
                 });
                 if (clientAttached.get()) {
                     sink.complete();
@@ -203,12 +207,9 @@ public class AgentBridgeService {
                 );
             } finally {
                 runRegistry.unregister(runId);
-                if (pgRun) {
-                    runLiveRedisSubscriber.unsubscribe(runId);
-                }
-                if (hostMode) {
-                    eventJournal.completeRun(runId);
-                }
+                eventJournal.completeRun(runId);
+                runProxyRegistry.release(runId);
+                runProxyLiveHub.complete(runId);
             }
             });
         }).subscribeOn(Schedulers.boundedElastic());
@@ -288,7 +289,6 @@ public class AgentBridgeService {
                 userMessage,
                 mode
             );
-            runLiveRedisSubscriber.subscribe(userId, sessionId, runId);
         } catch (Exception ex) {
             log.warn("pg run bootstrap failed runId={}: {}", runId, ex.getMessage());
         }

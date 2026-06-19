@@ -15,14 +15,13 @@ from app.agent.harness.events import _tool_input_for_sse
 from app.agent.harness.orchestration_contract import (
     QUERY_LOOP_END_RUN_TOOLS as _END_RUN_TOOLS,
 )
-from app.agent.harness.run_session import RunSession, WorkerSliceSession
+from app.agent.harness.run_session import RunSession
 from app.agent.harness.tool_execution import (
-    RETRYABLE_TOOLS,
     TOOL_EXECUTION_MAX_ATTEMPTS,
     classify_tool_step_failure,
-    filter_tool_step_events_for_ui,
+    deferred_tool_step_events_for_ui,
+    is_live_tool_sse_event,
     is_silent_tool_retry_eligible,
-    is_tool_failure_retryable,
     merge_tool_retry_context,
     prepare_tool_retry_input,
     tool_retry_delay,
@@ -196,6 +195,8 @@ async def stream_tool_step(
             step_id=step_id,
         ):
             buffered.append(ev)
+            if is_live_tool_sse_event(ev, attempt=attempt):
+                yield ev
 
         seq = attempt_outcome.next_sequence
         is_fail, code, detail = classify_tool_step_failure(
@@ -206,7 +207,7 @@ async def stream_tool_step(
         )
 
         if not is_fail:
-            for ev in filter_tool_step_events_for_ui(
+            for ev in deferred_tool_step_events_for_ui(
                 buffered,
                 attempt=attempt,
                 will_retry=False,
@@ -228,19 +229,11 @@ async def stream_tool_step(
             executor_failed=attempt_outcome.failed,
             executor_error=attempt_outcome.error,
         )
-        legacy_stream = is_tool_failure_retryable(
-            tool,
-            attempt_outcome.result,
-            executor_failed=attempt_outcome.failed,
-            executor_error=attempt_outcome.error,
-        )
-        will_retry = attempt < TOOL_EXECUTION_MAX_ATTEMPTS and (
-            can_silent or (legacy_stream and tool in RETRYABLE_TOOLS)
-        )
+        will_retry = attempt < TOOL_EXECUTION_MAX_ATTEMPTS and can_silent
 
         if will_retry:
             silent_attempts += 1
-            for ev in filter_tool_step_events_for_ui(
+            for ev in deferred_tool_step_events_for_ui(
                 buffered,
                 attempt=attempt,
                 will_retry=True,
@@ -279,7 +272,7 @@ async def stream_tool_step(
             await tool_retry_delay(attempt + 1)
             continue
 
-        for ev in filter_tool_step_events_for_ui(
+        for ev in deferred_tool_step_events_for_ui(
             buffered,
             attempt=attempt,
             will_retry=False,
@@ -322,6 +315,7 @@ async def stream_tool_step(
 _MAX_VALIDATION_RETRIES_PER_TURN = 6
 _MAX_TOOL_RECOVERIES_PER_TURN = 6
 _MAX_LLM_PAIRING_RETRIES_PER_TURN = 2
+_MAX_PARAM_REPAIR_ROUNDS = 3
 
 
 @dataclass
@@ -337,6 +331,7 @@ class RunLoopState:
     autocompacted_turn: int = 0
     after_interaction: bool = False
     validation_retries: int = 0
+    param_repair_rounds: int = 0
     tool_recoveries: int = 0
     assistant_message_emitted: bool = False
     messages: list[BaseMessage] | None = None
@@ -459,20 +454,18 @@ def block_run_end_for_open_todos(
 
 async def wait_for_user_interaction(
     state: RunLoopState,
-    session: RunSession | WorkerSliceSession,
+    session: RunSession,
 ) -> AsyncIterator[dict[str, Any]]:
-    has_resume = isinstance(session, WorkerSliceSession) and session._resume_payload is not None
-    if not has_resume:
-        yield build_event(
-            event_type="run.waiting",
-            run_id=state.ctx.run_id,
-            session_id=state.ctx.session_id,
-            message_id=state.ctx.message_id,
-            step_id=f"step_{uuid4().hex[:8]}",
-            sequence=state.sequence,
-            payload={"reason": "waiting for user interaction"},
-        )
-        state.sequence += 1
+    yield build_event(
+        event_type="run.waiting",
+        run_id=state.ctx.run_id,
+        session_id=state.ctx.session_id,
+        message_id=state.ctx.message_id,
+        step_id=f"step_{uuid4().hex[:8]}",
+        sequence=state.sequence,
+        payload={"reason": "waiting for user interaction"},
+    )
+    state.sequence += 1
     interaction = await session.wait_interaction()
     if session.aborted:
         state.terminal = True

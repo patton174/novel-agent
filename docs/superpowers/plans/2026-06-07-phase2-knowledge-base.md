@@ -1,5 +1,7 @@
 # Phase 2 实施计划：知识库打通 + 知识图谱
 
+> ⚠️ **历史设计记录**。生产已迁移至 **novel-studio 单体**，现状以 `CLAUDE.md` / `.cursor/rules/project-architecture.mdc` 为准。本文保留作历史参考，**勿据以部署**（旧微服务 agent-gateway/auth/pyai/content/consumer 与 `restart-dev.sh` 均已废弃）。
+
 > 目标：①爬取书库自动进 RAG（修复断裂）；②语义分块 + Hybrid 检索 + rerank；③知识图谱（实体/关系抽取 + 图检索）；④写作 Agent 接入知识检索。
 >
 > 周期：2-3 周 ｜ 依赖：Phase 1（embedding provider、Milvus 检索已修）｜ 可与 Phase 3 并行。

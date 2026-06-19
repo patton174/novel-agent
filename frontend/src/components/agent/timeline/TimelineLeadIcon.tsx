@@ -34,7 +34,6 @@ export function TimelineLeadIcon({
 }) {
   const key = normalizeToolName(iconName) || iconName
   const px = nested ? Math.max(13, size - 1) : size
-  const animate = status === 'loading'
 
   return (
     <span
@@ -42,7 +41,7 @@ export function TimelineLeadIcon({
       data-testid="timeline-lead-icon"
       data-status={status}
     >
-      <ToolIcon name={key} size={px} animate={animate} />
+      <ToolIcon name={key} size={px} animate={status === 'loading'} />
     </span>
   )
 }

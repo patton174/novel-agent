@@ -1,5 +1,7 @@
 # 用户/管理端仪表盘 + 后端工程化
 
+> ⚠️ **历史设计记录**。生产已迁移至 **novel-studio 单体**，现状以 `CLAUDE.md` / `.cursor/rules/project-architecture.mdc` 为准。本文保留作历史参考，**勿据以部署**（旧微服务 agent-gateway/auth/pyai/content/consumer 与 `restart-dev.sh` 均已废弃）。
+
 > 日期：2026-06-05  
 > 状态：**设计已确认**（用户确认 2026-06-05）  
 > 参考：后端工程化对齐 `roncoo-education`；前端基于开源模板改造（非 roncoo 前端）
@@ -358,4 +360,4 @@ Week 5: B5 清理 + E2E 验收
 | 新建 | `agent-content/.../service/auth/dashboard/`、`service/crm/stats/` |
 | 新建 | `agent-gateway/.../filter/CrmGatewayFilter.java` |
 | 修改 | `agent-gateway/.../filter/AuthGatewayFilter.java`（X-User-Roles） |
-| 修改 | `novel-agent/pom.xml`（新模块） |
+| 修改 | `legacy/novel-agent/pom.xml`（新模块） |

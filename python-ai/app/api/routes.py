@@ -3,7 +3,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-from fastapi import APIRouter, Header, HTTPException
+from fastapi import APIRouter, HTTPException
 
 from app import __version__
 from app.core.llm import LLMError, generate_text, llm_provider
@@ -31,95 +31,24 @@ from app.models.schemas import (
     RewriteRequest,
     RewriteResponse,
 )
-from app.runtime.story_memory import get_story_memory, patch_story_memory
+from app.models.schemas import (
+    ConfigResponse,
+    DialogueRequest,
+    DialogueResponse,
+    GenerationCandidate,
+    HealthResponse,
+    LLMProviderConfig,
+    OutlineRequest,
+    OutlineResponse,
+    ReviewRequest,
+    ReviewResponse,
+    RewriteRequest,
+    RewriteResponse,
+)
 from app.tools.content_filter import ContentFilter
 
 router = APIRouter()
 content_filter = ContentFilter()
-
-
-@router.get("/agent/memory/novel/{novel_id}")
-async def get_agent_novel_story_memory(
-    novel_id: str,
-    x_user_id: str | None = Header(default=None, alias="X-User-Id"),
-):
-    """Get long-term story memory for a novel."""
-    if not novel_id.strip():
-        raise HTTPException(status_code=400, detail="novel_id is required")
-    user_id: int | None = None
-    if x_user_id and x_user_id.strip().isdigit():
-        user_id = int(x_user_id.strip())
-    return {
-        "novel_id": novel_id,
-        "memory": get_story_memory("", user_id=user_id, novel_id=novel_id),
-    }
-
-
-@router.post("/agent/memory/novel/{novel_id}/patch")
-async def patch_agent_novel_story_memory(
-    novel_id: str,
-    body: dict,
-    x_user_id: str | None = Header(default=None, alias="X-User-Id"),
-):
-    """Patch long-term story memory for a novel."""
-    if not novel_id.strip():
-        raise HTTPException(status_code=400, detail="novel_id is required")
-    user_id: int | None = None
-    if x_user_id and x_user_id.strip().isdigit():
-        user_id = int(x_user_id.strip())
-    scope = str(body.get("scope") or "").strip()
-    key = str(body.get("key") or "").strip()
-    value = str(body.get("value") or "").strip()
-    item_id_raw = body.get("item_id")
-    item_id = str(item_id_raw).strip() if item_id_raw is not None else None
-    result = patch_story_memory(
-        "",
-        scope=scope,
-        key=key,
-        value=value,
-        item_id=item_id,
-        user_id=user_id,
-        novel_id=novel_id,
-    )
-    if not result.get("ok"):
-        raise HTTPException(status_code=400, detail=str(result.get("reason") or "patch failed"))
-    return {"novel_id": novel_id, **result, "memory": get_story_memory("", user_id=user_id, novel_id=novel_id)}
-
-
-@router.get("/agent/memory/{session_id}")
-async def get_agent_story_memory(
-    session_id: str,
-    x_user_id: str | None = Header(default=None, alias="X-User-Id"),
-):
-    """Get long-term story memory for a session."""
-    if not session_id.strip():
-        raise HTTPException(status_code=400, detail="session_id is required")
-    user_id: int | None = None
-    if x_user_id and x_user_id.strip().isdigit():
-        user_id = int(x_user_id.strip())
-    return {"session_id": session_id, "memory": get_story_memory(session_id, user_id=user_id)}
-
-
-@router.post("/agent/memory/{session_id}/patch")
-async def patch_agent_story_memory(session_id: str, body: dict):
-    """Patch long-term story memory for a session."""
-    if not session_id.strip():
-        raise HTTPException(status_code=400, detail="session_id is required")
-    scope = str(body.get("scope") or "").strip()
-    key = str(body.get("key") or "").strip()
-    value = str(body.get("value") or "").strip()
-    item_id_raw = body.get("item_id")
-    item_id = str(item_id_raw).strip() if item_id_raw is not None else None
-    result = patch_story_memory(
-        session_id,
-        scope=scope,
-        key=key,
-        value=value,
-        item_id=item_id,
-    )
-    if not result.get("ok"):
-        raise HTTPException(status_code=400, detail=str(result.get("reason") or "patch failed"))
-    return {"session_id": session_id, **result, "memory": get_story_memory(session_id)}
 
 
 def parse_candidates(text: str, count: int = 3) -> list[GenerationCandidate]:

@@ -9,5 +9,7 @@ public record ChapterSummaryDTO(
     String summary,
     int sortOrder,
     int wordCount,
-    long updatedAt
+    long updatedAt,
+    /** 1-based reading-order index (作品列表序); assigned server-side after sort. */
+    int listIndex
 ) {}

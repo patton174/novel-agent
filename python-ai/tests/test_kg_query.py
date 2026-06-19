@@ -23,7 +23,8 @@ def _ctx() -> AgentRunContext:
     )
 
 
-def test_get_character_graph_disabled():
+def test_get_character_graph_disabled(monkeypatch):
+    monkeypatch.setattr(settings, "kg_enabled", False)
     out = asyncio.run(
         knowledge.get_character_graph(_ctx(), GetCharacterGraphInput(character="林动"))
     )

@@ -18,7 +18,7 @@ fi
 ci_require_deploy_env
 ci_setup_ssh
 
-OLD_DOCKER_REL="novel-agent/agent-document/docs/deploy/docker"
+OLD_DOCKER_REL="legacy/novel-agent/agent-document/docs/deploy/docker"
 NEW_DOCKER_REL="$DOCKER_REL"
 
 bash "$CI_DIR/prepare-remote-env.sh"

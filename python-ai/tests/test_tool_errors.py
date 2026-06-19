@@ -1,30 +1,36 @@
-"""tool_use_error humanization."""
+"""tool_use_error / schema validation helpers."""
 
 from __future__ import annotations
 
-from app.agent.harness.tool_errors import humanize_tool_validation_error
+from app.agent.harness.tool_errors import (
+    format_no_such_tool_error,
+    schema_validation_error,
+    schema_validation_tool_result,
+)
+from app.agent.tools.errors import ToolErrorCode
 
 
-def test_write_missing_file_path_message():
-    detail = (
-        "1 validation error for WriteInput\nfile_path\n  Field required "
-        "[type=missing, input_value={'content': 'hello'}, input_type=dict]"
+def test_schema_validation_error_uses_tool_contract():
+    err = schema_validation_error(
+        "ReadChapter",
+        "1 validation error for ReadChapterInput\nchapter_id\n  Field required",
     )
-    msg = humanize_tool_validation_error(
-        "Write",
-        detail,
-        novel_id="d071d83d-a058-441b-ab67-847131d3c69a",
-    )
-    assert "file_path" in msg
-    assert "content" in msg
-    assert "d071d83d" in msg
+    assert err.code == ToolErrorCode.SCHEMA_INVALID
+    assert "chapter_id" in (err.hint or "")
+    assert "ReadChapter" in err.suggested_tools
+    assert "ListChapters" in err.suggested_tools
 
 
-def test_write_index_json_read_only_message():
-    detail = (
-        "chapters/index.json is read-only (catalog view from Content API, not a file). "
-        "To reorder chapters use ReorderChapters"
-    )
-    msg = humanize_tool_validation_error("Write", detail, novel_id="novel-1")
-    assert "ReorderChapters" in msg
-    assert "只读" in msg
+def test_schema_validation_tool_result_wraps_envelope():
+    result = schema_validation_tool_result("WriteChapter", "Field required: title")
+    assert result.is_error
+    assert "<tool_use_error" in result.content
+    assert 'code="SCHEMA_INVALID"' in result.content
+    assert result.error is not None
+    assert "title" in (result.error.hint or "")
+
+
+def test_no_such_tool_error_format():
+    text = format_no_such_tool_error("Read")
+    assert "No such tool available: Read" in text
+    assert text.startswith("<tool_use_error>")

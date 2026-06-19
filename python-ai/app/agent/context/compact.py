@@ -14,9 +14,9 @@ CHAPTER_WRITTEN_WORD_MIN = 100
 
 # --- Chapter info chain (window → list → read); keep wording in sync across surfaces ---
 CHAPTER_WINDOW_SCOPE_NOTE = (
-    "【省略版·章节概览】仅最近若干章的标题/列表位/字数（非全书、无 chapter_id、无正文）。"
-    "全书章表与 UUID → 优先看 RUN_CONTEXT `chapter_catalog`（作品库 PostgreSQL）；"
-    "或 Read `…/chapters/index.json`（同一数据源，非本机磁盘文件数）。"
+    "【省略版·章节概览】最近若干章的 index/chapter_id/title/字数（无正文）。"
+    "全书章表 → RUN_CONTEXT `chapter_catalog`（Content API）。"
+    "ReadChapter 须显式传 index 或 chapter_id（可从本段复制）。"
 )
 
 CHAPTER_LIST_SCOPE_NOTE = (
@@ -32,17 +32,17 @@ CHAPTER_DB_CATALOG_NOTE = (
     "禁止构造路径。以本章表的字数/状态为准。"
 )
 
-CHAPTER_INFO_CHAIN_FOR_PROMPT = """## 作品库数据（API 优先，非本机文件树）
-| 来源 | 说明 | 标识符 | 正文 |
-|------|------|--------|------|
-| RUN_CONTEXT `chapter_catalog` | **章节首选**：全书元数据（Content API） | chapter_id | 否 |
-| RUN_CONTEXT `memory_catalog` | **记忆首选**：story-memory（Redis/PG） | scope/key | 否 |
-| RUN_CONTEXT `chapter_window` | 最近若干章摘要 | 否 | 否 |
-| Read `…/chapters/index.json` | 与 chapter_catalog 同源 | chapter_id | 否 |
-| Read `…/chapters/{id}.md` | 单章正文 | id | 是 |
-| Read `…/memory/{scope}/{key}.json` | 单条记忆（同源 API） | 路径 | 是 |
-| Glob / Grep | **查询 API 库存量**，返回带 `# 数据来源：作品库 HTTP API` 头；行数≠磁盘文件数 |
-盘点章节/记忆 → **先看 catalog**；勿用 Glob 行数当章数。Write/Edit 章节写入 Content API。"""
+CHAPTER_INFO_CHAIN_FOR_PROMPT = """## 作品库与记忆（Content API，无 VFS 路径）
+| 来源 | 说明 | 工具字段 |
+|------|------|----------|
+| RUN_CONTEXT `chapter_catalog` | 全书章节元数据 | chapter_id, index, title |
+| RUN_CONTEXT `chapter_window` | 最近章节摘要（含 chapter_id） | chapter_id, index |
+| RUN_CONTEXT `memory_index` | 故事记忆标题索引 | memory_id, scope, title |
+| ListChapters | 章表 JSON（与 catalog 同字段名） | chapter_id, index |
+| ListMemory / GetMemoryTree | 记忆节点列表/树 | memory_id |
+
+盘点章节 → chapter_catalog 或 ListChapters；盘点记忆 → memory_index 或 ListMemory。
+WriteChapter 禁止预填 content；ReadChapter/EditChapter 禁止空参数 {}。"""
 _ONBOARDING_HINTS = (
     "你好！当前正在创作",
     "我已读取本书简介",
@@ -135,20 +135,10 @@ def _chapter_sort_label(ch: dict[str, Any]) -> str:
 
 
 def _chapter_catalog_line(ch: dict[str, Any]) -> str:
-    """Full DB row for RUN_CONTEXT chapter_catalog (includes chapter_id)."""
-    cid = str(ch.get("id") or "").strip()
-    title = str(ch.get("title") or "未命名").strip()
-    try:
-        list_index = int(ch.get("list_index") or 0)
-    except (TypeError, ValueError):
-        list_index = 0
-    try:
-        wc = int(ch.get("word_count") or ch.get("wordCount") or 0)
-    except (TypeError, ValueError):
-        wc = 0
-    status = "已写" if chapter_has_substantial_body(ch) else "待写/空"
-    pos = f"列表第{list_index}章" if list_index > 0 else _chapter_sort_label(ch)
-    return f"- id={cid} | {title} | {pos} | {wc}字 | {status}"
+    """Full DB row for RUN_CONTEXT chapter_catalog (tool_contract field names)."""
+    from app.agent.harness.tool_contract import format_chapter_catalog_line
+
+    return format_chapter_catalog_line(ch)
 
 
 def format_chapter_catalog_db(ctx: AgentRunContext, *, max_chars: int = 6500) -> str:
@@ -173,23 +163,10 @@ def format_chapter_catalog_db(ctx: AgentRunContext, *, max_chars: int = 6500) ->
 
 
 def _chapter_line_label(ch: dict[str, Any]) -> str:
-    """Metadata only — no body, no chapter_id (use chapter_catalog for ids)."""
-    title = str(ch.get("title") or "未命名").strip()
-    sort_lbl = _chapter_sort_label(ch)
-    try:
-        list_index = int(ch.get("list_index") or 0)
-    except (TypeError, ValueError):
-        list_index = 0
-    list_lbl = f"列表第{list_index}章" if list_index > 0 else ""
-    try:
-        wc = int(ch.get("word_count") or ch.get("wordCount") or 0)
-    except (TypeError, ValueError):
-        wc = 0
-    meta = "，".join(x for x in (list_lbl, sort_lbl) if x)
-    if chapter_has_substantial_body(ch):
-        wc_part = f"，约{wc}字" if wc else ""
-        return f"- {title}（{meta}{wc_part}）" if meta else f"- {title}（{sort_lbl}{wc_part}）"
-    return f"- {title}（{meta}，待写/占位）" if meta else f"- {title}（{sort_lbl}，待写/占位）"
+    """Metadata for chapter_window — includes index + chapter_id."""
+    from app.agent.harness.tool_contract import format_chapter_window_line
+
+    return format_chapter_window_line(ch)
 
 
 _CHAPTER_CREATE_TAIL_MAX = 1500
@@ -337,118 +314,3 @@ def format_chapter_window(ctx: AgentRunContext, *, radius: int = CHAPTER_WINDOW_
     for ch in window:
         lines.append(_chapter_line_label(ch))
     return "\n".join(lines)
-
-
-def _character_one_liner(name: str, attrs: dict[str, Any]) -> str:
-    card_raw = str(attrs.get("人物卡") or "").strip()
-    identity = ""
-    personality = ""
-    if card_raw.startswith("{"):
-        try:
-            parsed = json.loads(card_raw)
-            if isinstance(parsed, dict):
-                identity = str(parsed.get("身份") or "").strip()
-                personality = str(parsed.get("性格") or "").strip()[:40]
-        except json.JSONDecodeError:
-            pass
-    if not identity:
-        identity = str(attrs.get("身份") or "").strip()
-    ability = str(attrs.get("能力体系") or "").strip()[:_CHARACTER_PREVIEW_MAX]
-    bits = [b for b in (identity, personality, ability) if b]
-    if bits:
-        return f"- {name}: {' · '.join(bits[:2])}"
-    return f"- {name}"
-
-
-def render_story_memory_compact_from_snapshot(
-    snapshot: dict[str, Any],
-    *,
-    max_len: int = 900,
-    character_first: bool = False,
-) -> str:
-    lines: list[str] = []
-
-    def _emit_section(title: str, rows: dict[str, Any]) -> None:
-        if not rows:
-            return
-        lines.append(f"{title}:")
-        for k, v in list(rows.items())[:10]:
-            lines.append(f"- {k}: {str(v)[:_WORLD_VALUE_MAX]}")
-
-    chars = snapshot.get("characters") if isinstance(snapshot.get("characters"), dict) else {}
-    if character_first and chars:
-        lines.append("角色库:")
-        for name, attrs in list(chars.items())[:24]:
-            if isinstance(attrs, dict):
-                lines.append(_character_one_liner(str(name), attrs))
-            else:
-                lines.append(f"- {name}")
-
-    for section, title in (
-        ("novel", "小说信息"),
-        ("world", "世界观"),
-        ("background", "背景"),
-    ):
-        rows = snapshot.get(section) if isinstance(snapshot.get(section), dict) else {}
-        _emit_section(title, rows)
-
-    if chars and not character_first:
-        lines.append("角色库:")
-        for name, attrs in list(chars.items())[:24]:
-            if isinstance(attrs, dict):
-                lines.append(_character_one_liner(str(name), attrs))
-            else:
-                lines.append(f"- {name}")
-
-    text = "\n".join(lines).strip()
-    if len(text) > max_len:
-        return text[:max_len] + "…"
-    return text
-
-
-def compact_story_memory_text(raw: str, *, max_len: int = 900) -> str:
-    """Best-effort compacting when only rendered text is available."""
-    text = (raw or "").strip()
-    if not text:
-        return ""
-    if len(text) <= max_len and "人物卡:" not in text and '"身份"' not in text:
-        return text
-
-    lines: list[str] = []
-    current_name: str | None = None
-    for line in text.splitlines():
-        stripped = line.strip()
-        if not stripped:
-            continue
-        if stripped.startswith("人物塑造:") or stripped.startswith("角色库:"):
-            lines.append("角色库:")
-            continue
-        if stripped.startswith("- ") and not stripped.startswith("- 人物卡"):
-            m = re.match(r"^- ([^:]+):\s*$", stripped)
-            if m:
-                current_name = m.group(1).strip()
-                continue
-            if current_name and ("人物卡" in stripped or '"身份"' in stripped):
-                identity = ""
-                if '"身份"' in stripped:
-                    im = re.search(r'"身份"\s*:\s*"([^"]{1,80})"', stripped)
-                    if im:
-                        identity = im.group(1)
-                lines.append(f"- {current_name}: {identity or '（详见 memory_read）'}")
-                current_name = None
-                continue
-        if stripped.endswith(":") and not stripped.startswith("- "):
-            lines.append(stripped)
-            continue
-        if stripped.startswith("- ") and "人物卡" not in stripped:
-            key_val = stripped[2:]
-            if len(key_val) > _WORLD_VALUE_MAX + 20:
-                key, _, val = key_val.partition(": ")
-                lines.append(f"- {key}: {val[:_WORLD_VALUE_MAX]}")
-            else:
-                lines.append(stripped)
-
-    compact = "\n".join(lines).strip() or text[:max_len]
-    if len(compact) > max_len:
-        return compact[:max_len] + "…"
-    return compact

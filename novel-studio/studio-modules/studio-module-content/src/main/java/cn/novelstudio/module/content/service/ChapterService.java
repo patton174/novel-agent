@@ -1,6 +1,7 @@
 package cn.novelstudio.module.content.service;
 
 import cn.novelstudio.module.content.dto.ChapterDTO;
+import cn.novelstudio.module.content.dto.ChapterRowDTO;
 import cn.novelstudio.module.content.dto.ChapterReadSliceDTO;
 import cn.novelstudio.module.content.dto.ChapterSearchHitDTO;
 import cn.novelstudio.module.content.dto.ChapterSummaryDTO;
@@ -14,10 +15,14 @@ import cn.novelstudio.module.content.repository.ChapterRepository;
 import cn.novelstudio.module.content.repository.NovelRepository;
 import cn.novelstudio.module.content.repository.VolumeRepository;
 import cn.novelstudio.module.content.support.ContentExceptions;
+import cn.novelstudio.module.content.support.ChapterReadStreamWriter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -42,10 +47,80 @@ public class ChapterService {
         Map<String, String> volumeTitles = volumeRepository.findByNovelIdOrderBySortOrderAscCreatedAtAsc(novelId)
             .stream()
             .collect(Collectors.toMap(VolumeEntity::getId, VolumeEntity::getTitle, (a, b) -> a));
-        return chapterRepository.findByNovelIdOrderBySortOrderAscCreatedAtAsc(novelId)
+        return assignListIndex(chapterRepository.findByNovelIdOrderBySortOrderAscCreatedAtAsc(novelId)
             .stream()
             .map(entity -> toSummary(entity, volumeTitles.get(entity.getVolumeId())))
-            .toList();
+            .toList());
+    }
+
+    public List<ChapterSummaryDTO> listSummariesForNovel(String novelId) {
+        volumeService.ensureDefaultVolume(novelId);
+        Map<String, String> volumeTitles = volumeRepository.findByNovelIdOrderBySortOrderAscCreatedAtAsc(novelId)
+            .stream()
+            .collect(Collectors.toMap(VolumeEntity::getId, VolumeEntity::getTitle, (a, b) -> a));
+        return assignListIndex(chapterRepository.findByNovelIdOrderBySortOrderAscCreatedAtAsc(novelId)
+            .stream()
+            .map(entity -> toSummary(entity, volumeTitles.get(entity.getVolumeId())))
+            .toList());
+    }
+
+    /**
+     * Resolve one chapter row by chapter_id, exact title, or 1-based listIndex.
+     */
+    public ChapterSummaryDTO resolveChapterRow(
+        Long userId,
+        String novelId,
+        String chapterId,
+        String title,
+        Integer index
+    ) {
+        assertNovelOwned(userId, novelId);
+        List<ChapterSummaryDTO> rows = listSummaries(userId, novelId);
+        String cid = chapterId == null ? "" : chapterId.trim();
+        if (!cid.isBlank()) {
+            return rows.stream()
+                .filter(row -> cid.equals(row.id()))
+                .findFirst()
+                .orElseThrow(() -> ContentExceptions.badRequest("chapter not found: " + cid));
+        }
+        if (index != null) {
+            if (index < 1) {
+                throw ContentExceptions.badRequest("index must be >= 1");
+            }
+            if (index > rows.size()) {
+                throw ContentExceptions.badRequest(
+                    "index " + index + " out of range (1–" + rows.size() + ")"
+                );
+            }
+            return rows.get(index - 1);
+        }
+        String want = title == null ? "" : title.trim();
+        if (!want.isBlank()) {
+            List<ChapterSummaryDTO> exact = rows.stream()
+                .filter(row -> want.equals(row.title()))
+                .toList();
+            if (exact.size() == 1) {
+                return exact.get(0);
+            }
+            if (exact.size() > 1) {
+                throw ContentExceptions.badRequest("ambiguous title: " + want);
+            }
+            throw ContentExceptions.badRequest("no chapter titled: " + want);
+        }
+        throw ContentExceptions.badRequest("provide chapterId, title, or index");
+    }
+
+    public ChapterReadSliceDTO readChapterSliceByTarget(
+        Long userId,
+        String novelId,
+        String chapterId,
+        String title,
+        Integer index,
+        Integer offset,
+        Integer limit
+    ) {
+        ChapterSummaryDTO row = resolveChapterRow(userId, novelId, chapterId, title, index);
+        return readChapterSlice(userId, row.id(), offset, limit, row.listIndex());
     }
 
     public ChapterDTO getChapter(Long userId, String chapterId) {
@@ -69,8 +144,98 @@ public class ChapterService {
         Integer offset,
         Integer limit
     ) {
+        return readChapterSlice(userId, chapterId, offset, limit, null);
+    }
+
+    public ChapterReadSliceDTO readChapterSlice(
+        Long userId,
+        String chapterId,
+        Integer offset,
+        Integer limit,
+        Integer listIndexHint
+    ) {
         ChapterDTO chapter = getChapter(userId, chapterId);
-        String markdown = toAgentMarkdown(chapter);
+        int listIndex = listIndexHint != null && listIndexHint > 0
+            ? listIndexHint
+            : findListIndex(userId, chapter.novelId(), chapterId);
+        return readChapterSlice(userId, chapterId, offset, limit, listIndex);
+    }
+
+    public List<ChapterRowDTO> listChapterRows(Long userId, String novelId) {
+        return listSummaries(userId, novelId).stream()
+            .map(ChapterRowDTO::fromSummary)
+            .toList();
+    }
+
+    private ChapterReadSliceDTO readChapterSlice(
+        Long userId,
+        String chapterId,
+        Integer offset,
+        Integer limit,
+        int listIndex
+    ) {
+        ChapterReadStreamWriter.SliceView view = buildReadSliceView(userId, chapterId, offset, limit, listIndex);
+        String text = formatNumberedLines(view.sliceLines(), view.offsetOut());
+        if (view.hasMore() && view.nextOffset() != null) {
+            text += String.format(
+                "%n%n[章节共 %d 行，本次 %d 行；续读 offset=%d limit=…]",
+                view.totalLines(),
+                view.returnedLines(),
+                view.nextOffset()
+            );
+        }
+        return new ChapterReadSliceDTO(
+            view.chapter().id(),
+            view.listIndex(),
+            view.chapter().title(),
+            view.totalLines(),
+            view.offsetOut(),
+            view.returnedLines(),
+            view.hasMore(),
+            view.nextOffset(),
+            text
+        );
+    }
+
+    /**
+     * Stream numbered chapter lines as NDJSON ({@code meta} / {@code delta} / {@code done}).
+     */
+    public void streamChapterReadSlice(
+        Long userId,
+        String chapterId,
+        Integer offset,
+        Integer limit,
+        OutputStream out
+    ) throws IOException {
+        ChapterDTO chapter = getChapter(userId, chapterId);
+        int listIndex = findListIndex(userId, chapter.novelId(), chapterId);
+        ChapterReadStreamWriter.SliceView view = buildReadSliceView(userId, chapterId, offset, limit, listIndex);
+        ChapterReadStreamWriter.write(out, view);
+    }
+
+    public void streamChapterReadSliceByTarget(
+        Long userId,
+        String novelId,
+        String chapterId,
+        String title,
+        Integer index,
+        Integer offset,
+        Integer limit,
+        OutputStream out
+    ) throws IOException {
+        ChapterSummaryDTO row = resolveChapterRow(userId, novelId, chapterId, title, index);
+        streamChapterReadSlice(userId, row.id(), offset, limit, out);
+    }
+
+    private ChapterReadStreamWriter.SliceView buildReadSliceView(
+        Long userId,
+        String chapterId,
+        Integer offset,
+        Integer limit,
+        int listIndex
+    ) {
+        ChapterDTO chapter = getChapter(userId, chapterId);
+        String markdown = toAgentMarkdown(chapter, listIndex);
         String[] allLines = markdown.split("\\R", -1);
         int total = allLines.length;
         int start = offset == null || offset < 1 ? 0 : Math.min(offset - 1, total);
@@ -83,28 +248,30 @@ public class ChapterService {
         boolean hasMore = end < total;
         Integer nextOffset = hasMore ? end + 1 : null;
         int offsetOut = start + 1;
-        String text = formatNumberedLines(slice, offsetOut);
-        if (hasMore && nextOffset != null) {
-            text += String.format(
-                "%n%n[章节共 %d 行，本次 %d 行；续读 offset=%d limit=…]",
-                total,
-                returned,
-                nextOffset
-            );
-        }
-        return new ChapterReadSliceDTO(
-            chapter.id(),
-            chapter.title(),
-            total,
+        return new ChapterReadStreamWriter.SliceView(
+            chapter,
+            listIndex,
+            slice,
             offsetOut,
+            total,
             returned,
             hasMore,
-            nextOffset,
-            text
+            nextOffset
         );
     }
 
-    private static String toAgentMarkdown(ChapterDTO chapter) {
+    private int findListIndex(Long userId, String novelId, String chapterId) {
+        if (novelId == null || novelId.isBlank() || chapterId == null || chapterId.isBlank()) {
+            return 0;
+        }
+        return listSummaries(userId, novelId).stream()
+            .filter(row -> chapterId.equals(row.id()))
+            .map(ChapterSummaryDTO::listIndex)
+            .findFirst()
+            .orElse(0);
+    }
+
+    private static String toAgentMarkdown(ChapterDTO chapter, int listIndex) {
         String title = chapter.title() == null ? "未命名" : chapter.title();
         String cid = chapter.id() == null ? "" : chapter.id();
         int sortOrder = chapter.sortOrder();
@@ -114,6 +281,7 @@ public class ChapterService {
         sb.append("---\n");
         sb.append("title: ").append(title).append('\n');
         sb.append("chapter_id: ").append(cid).append('\n');
+        sb.append("list_index: ").append(listIndex).append('\n');
         sb.append("sort_order: ").append(sortOrder).append('\n');
         sb.append("---\n\n");
         if (!summary.isBlank() && !content.startsWith(summary)) {
@@ -220,12 +388,19 @@ public class ChapterService {
     }
 
     @Transactional
-    public void deleteChapter(Long userId, String chapterId) {
-        ChapterEntity entity = chapterRepository.findById(chapterId)
-            .orElseThrow(ContentExceptions::chapterNotFound);
+    /**
+     * Delete a chapter idempotently. Returns {@code true} if a chapter was removed,
+     * {@code false} if it was already absent (so a retried DELETE is not an error).
+     */
+    public boolean deleteChapter(Long userId, String chapterId) {
+        ChapterEntity entity = chapterRepository.findById(chapterId).orElse(null);
+        if (entity == null) {
+            return false;
+        }
         assertNovelOwned(userId, entity.getNovelId());
         indexClient.removeChapter(chapterId);
         chapterRepository.delete(entity);
+        return true;
     }
 
     public List<ChapterSearchHitDTO> searchChapters(Long userId, String novelId, String query, int limit) {
@@ -343,8 +518,29 @@ public class ChapterService {
             entity.getSummary(),
             entity.getSortOrder(),
             entity.getWordCount() == null ? 0 : entity.getWordCount(),
-            entity.getUpdatedAt().toEpochMilli()
+            entity.getUpdatedAt().toEpochMilli(),
+            0
         );
+    }
+
+    private static List<ChapterSummaryDTO> assignListIndex(List<ChapterSummaryDTO> rows) {
+        List<ChapterSummaryDTO> out = new ArrayList<>(rows.size());
+        for (int i = 0; i < rows.size(); i++) {
+            ChapterSummaryDTO row = rows.get(i);
+            out.add(new ChapterSummaryDTO(
+                row.id(),
+                row.novelId(),
+                row.volumeId(),
+                row.volumeTitle(),
+                row.title(),
+                row.summary(),
+                row.sortOrder(),
+                row.wordCount(),
+                row.updatedAt(),
+                i + 1
+            ));
+        }
+        return out;
     }
 
     private ChapterDTO toDto(ChapterEntity entity) {

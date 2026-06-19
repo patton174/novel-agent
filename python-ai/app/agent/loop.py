@@ -11,6 +11,7 @@ from uuid import uuid4
 
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 
+from app.agent.backend.memory_catalog import refresh_memory_tree_index_patch
 from app.agent.context.compact import apply_chapter_tool_patch_to_ctx
 from app.agent.context.compact_autocompact import autocompact_conversation
 from app.agent.context.compact_micro import microcompact_messages
@@ -21,6 +22,7 @@ from app.agent.context.enrich import (
     enrich_context_for_run,
     refresh_chapters_from_content_api,
 )
+from app.agent.context.memory_log import build_memory_write_batch_ack
 from app.agent.context.meter import measure_agent_context
 from app.agent.context.policy import (
     should_autocompact_context,
@@ -36,6 +38,7 @@ from app.agent.harness.events import _tool_input_for_sse
 from app.agent.harness.llm_trace import extract_cache_usage
 from app.agent.harness.loop_support import (
     _MAX_LLM_PAIRING_RETRIES_PER_TURN,
+    _MAX_PARAM_REPAIR_ROUNDS,
     _MAX_TOOL_RECOVERIES_PER_TURN,
     _MAX_VALIDATION_RETRIES_PER_TURN,
     RunLoopState,
@@ -76,7 +79,6 @@ from app.agent.harness.review_agent import (
 from app.agent.harness.review_agent_sse import stream_review_subagent
 from app.agent.harness.run_session import (
     RunSession,
-    WorkerSliceSession,
     register_run_session,
     unregister_run_session,
 )
@@ -87,15 +89,18 @@ from app.agent.harness.subagent import (
 from app.agent.harness.subagent_policy import is_subagent_run
 from app.agent.harness.tool_batch_errors import (
     append_batch_validation_errors,
+    append_per_tool_validation_errors,
     append_unknown_tool_errors,
 )
+from app.agent.harness.turn_tool_batch import TurnToolBatchState
 from app.agent.harness.tool_errors import format_input_validation_error
 from app.agent.harness.tool_execution import (
     classify_tool_step_failure,
     is_recoverable_tool_execution_failure,
 )
-from app.agent.harness.tool_orchestration import execute_tool_batches, partition_tool_calls
+from app.agent.harness.tool_orchestration import ToolExecutionItem, partition_tool_calls
 from app.agent.harness.tool_prepare import prepare_execution_batch
+from app.agent.tools.streaming_executor import StreamingToolExecutor
 from app.agent.harness.tool_result_routing import tool_message_text
 from app.agent.harness.transcript import AgentTranscript
 from app.agent.schemas import AgentRunContext, PlanRequest, PlanToolCall, RunRequest
@@ -107,6 +112,16 @@ from app.runtime.events import build_event
 logger = logging.getLogger(__name__)
 
 _MAX_TURNS = 48
+_MEMORY_WRITE_TOOLS = frozenset(
+    {
+        "CreateMemory",
+        "UpdateMemoryFields",
+        "UpdateMemoryContent",
+        "UpdateMemoryMeta",
+        "MoveMemory",
+        "DeleteMemory",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -311,29 +326,18 @@ _should_end_run_after_batch = should_end_run_after_batch
 
 async def run_query_loop(
     req: RunRequest,
-    *,
-    worker_mode: bool = False,
-    worker_session: RunSession | WorkerSliceSession | None = None,
-    initial_state: RunLoopState | None = None,
 ) -> AsyncIterator[dict[str, Any]]:
-    base_ctx = _enrich_context(req.context, refresh_story_memory=True)
+    base_ctx = _enrich_context(req.context)
     base_ctx = await refresh_chapters_from_content_api(base_ctx)
-    if initial_state is None:
-        base_ctx = await inject_relevant_context(base_ctx)
-        base_ctx = _fresh_run_context(base_ctx)
-        state = RunLoopState(
-            ctx=base_ctx,
-            transcript=AgentTranscript(),
-            think_content="",
-            sequence=0,
-        )
-    else:
-        state = initial_state
-        state.ctx = await refresh_chapters_from_content_api(state.ctx)
-    if worker_mode:
-        session = worker_session or WorkerSliceSession(state.ctx.run_id)
-    else:
-        session = register_run_session(state.ctx.run_id)
+    base_ctx = await inject_relevant_context(base_ctx)
+    base_ctx = _fresh_run_context(base_ctx)
+    state = RunLoopState(
+        ctx=base_ctx,
+        transcript=AgentTranscript(),
+        think_content="",
+        sequence=0,
+    )
+    session = register_run_session(state.ctx.run_id)
     if state.messages:
         messages, _ = repair_tool_message_pairing(list(state.messages))
     else:
@@ -350,7 +354,6 @@ async def run_query_loop(
             state.turns_since_todo_write += 1
             step_id = f"step_turn_{uuid4().hex[:8]}"
 
-            state.ctx = await refresh_chapters_from_content_api(state.ctx)
             refresh_run_context_human(messages, state.ctx, state.transcript)
 
             if should_inject_todo_reminder(state):
@@ -494,8 +497,24 @@ async def run_query_loop(
 
             ai_msg: AIMessage | None = None
             llm_pairing_retries = 0
+            stream_executor: StreamingToolExecutor | None = None
+            turn_batch = TurnToolBatchState()
+
+            def _discard_stream_executor() -> None:
+                if stream_executor is None:
+                    return
+                if stream_executor.has_completed:
+                    stream_executor.discard_pending()
+                else:
+                    stream_executor.discard()
+
             while True:
                 try:
+                    stream_executor = StreamingToolExecutor(
+                        state.ctx,
+                        stream_tool_step,
+                        sequence=state.sequence,
+                    )
                     async for item in stream_bind_tools_turn(
                         llm,
                         messages,
@@ -508,6 +527,57 @@ async def run_query_loop(
                             continue
                         if isinstance(item, dict):
                             et = str(item.get("type") or "")
+                            if et == "tool.use.invalid":
+                                payload = item.get("payload")
+                                if isinstance(payload, dict):
+                                    turn_batch.record_invalid(
+                                        str(payload.get("tool_call_id") or ""),
+                                        str(payload.get("tool") or ""),
+                                        dict(payload.get("input") or {}),
+                                        str(payload.get("error") or "invalid input"),
+                                    )
+                                continue
+                            if et == "tool.use.ready":
+                                payload = item.get("payload")
+                                if isinstance(payload, dict):
+                                    tool_name = str(payload.get("tool") or "").strip()
+                                    if tool_name:
+                                        ready_tid = str(
+                                            payload.get("tool_call_id")
+                                            or f"call_{uuid4().hex[:8]}"
+                                        )
+                                        ready_input = dict(payload.get("input") or {})
+                                        turn_batch.record_ready(
+                                            ready_tid, tool_name, ready_input
+                                        )
+                                        ready_item = ToolExecutionItem(
+                                            tool_call_id=ready_tid,
+                                            tool=tool_name,
+                                            input=ready_input,
+                                            call_order=int(
+                                                payload.get("stream_index") or 0
+                                            ),
+                                        )
+                                        await stream_executor.submit(ready_item)
+                                        async for kind, ev_payload in (
+                                            stream_executor.drain_available()
+                                        ):
+                                            if kind != "event":
+                                                continue
+                                            if isinstance(ev_payload, dict) and ev_payload.get(
+                                                "type"
+                                            ) in (
+                                                "message.delta",
+                                                "message.started",
+                                                "message.completed",
+                                            ):
+                                                state.assistant_message_emitted = True
+                                            yield ev_payload
+                                            state.sequence = max(
+                                                state.sequence,
+                                                int(ev_payload.get("sequence") or 0) + 1,
+                                            )
+                                continue
                             if et in (
                                 "message.delta",
                                 "message.started",
@@ -515,9 +585,10 @@ async def run_query_loop(
                             ):
                                 state.assistant_message_emitted = True
                         yield item
-                        state.sequence = max(
-                            state.sequence, int(item.get("sequence") or 0) + 1
-                        )
+                        if isinstance(item, dict):
+                            state.sequence = max(
+                                state.sequence, int(item.get("sequence") or 0) + 1
+                            )
                     break
                 except Exception as exc:
                     if (
@@ -556,6 +627,7 @@ async def run_query_loop(
                         )
                         state.sequence += 1
                         ai_msg = None
+                        _discard_stream_executor()
                         continue
                     logger.exception(
                         "agent loop LLM failed run_id=%s", state.ctx.run_id
@@ -587,8 +659,45 @@ async def run_query_loop(
                 messages, req=_context_request(state), source="api"
             )
             ai_calls = _tool_calls_from_ai(ai_msg)
+            valid_calls, invalid_entries = turn_batch.reconcile(ai_calls, state.ctx)
 
-            if not ai_calls:
+            if invalid_entries and not valid_calls and not (
+                stream_executor and stream_executor.has_completed
+            ):
+                append_per_tool_validation_errors(messages, invalid_entries)
+                state.param_repair_rounds += 1
+                if state.param_repair_rounds >= _MAX_PARAM_REPAIR_ROUNDS:
+                    detail = "; ".join(e.error for e in invalid_entries[:3])
+                    state.last_run_error = detail
+                    state.terminal = True
+                    yield _planning_failed_event(state, step_id, detail)
+                    break
+                yield build_event(
+                    event_type="planning.invoking",
+                    run_id=state.ctx.run_id,
+                    session_id=state.ctx.session_id,
+                    message_id=state.ctx.message_id,
+                    step_id=step_id,
+                    sequence=state.sequence,
+                    payload={
+                        "title": "修正工具参数…",
+                        "repair_round": state.param_repair_rounds,
+                    },
+                )
+                state.sequence += 1
+                _discard_stream_executor()
+                continue
+
+            working_calls = valid_calls if invalid_entries else ai_calls
+            pending_invalid = list(invalid_entries)
+
+            def _append_pending_invalid() -> None:
+                nonlocal pending_invalid
+                if pending_invalid:
+                    append_per_tool_validation_errors(messages, pending_invalid)
+                    pending_invalid = []
+
+            if not working_calls:
                 from app.agent.harness.events import assistant_message_events
                 from app.core.llm_content import extract_llm_text
 
@@ -623,8 +732,8 @@ async def run_query_loop(
                 state.sequence += 1
                 break
 
-            calls = normalize_tool_calls([c.call for c in ai_calls])
-            tool_ids = [c.tool_call_id for c in ai_calls]
+            calls = normalize_tool_calls([c.call for c in working_calls])
+            tool_ids = [c.tool_call_id for c in working_calls]
 
             def _validation_retry(detail: str) -> bool:
                 state.validation_retries += 1
@@ -640,11 +749,13 @@ async def run_query_loop(
                 if not _validation_retry(detail):
                     yield _planning_failed_event(state, step_id, detail)
                     break
+                _append_pending_invalid()
+                _discard_stream_executor()
                 continue
 
             allowed = get_main_loop_tools(state.ctx)
-            if any(c.call.tool not in allowed for c in ai_calls):
-                append_unknown_tool_errors(messages, ai_calls, allowed_tools=allowed)
+            if any(c.call.tool not in allowed for c in working_calls):
+                append_unknown_tool_errors(messages, working_calls, allowed_tools=allowed)
                 state.validation_retries += 1
                 if state.validation_retries >= _MAX_VALIDATION_RETRIES_PER_TURN:
                     detail = "unknown tool in batch"
@@ -652,6 +763,8 @@ async def run_query_loop(
                     state.terminal = True
                     yield _planning_failed_event(state, step_id, detail)
                     break
+                _append_pending_invalid()
+                _discard_stream_executor()
                 continue
 
             violations = validate_plan_batch(calls, resolved=False, ctx=state.ctx)
@@ -660,11 +773,13 @@ async def run_query_loop(
                 if not _validation_retry(detail):
                     yield _planning_failed_event(state, step_id, detail)
                     break
+                _append_pending_invalid()
+                _discard_stream_executor()
                 continue
 
             think_text = state.transcript.latest_think_text() or state.think_content
             prepared = prepare_execution_batch(
-                state.ctx, ai_calls, think_text=think_text
+                state.ctx, working_calls, think_text=think_text
             )
             if prepared.end_run:
                 if block_run_end_for_open_todos(
@@ -695,6 +810,8 @@ async def run_query_loop(
                 if not _validation_retry("empty tool batch"):
                     yield _planning_failed_event(state, step_id, "empty tool batch")
                     break
+                _append_pending_invalid()
+                _discard_stream_executor()
                 continue
 
             resolved_violations = blocking_resolved_plan_violations(enriched, ctx=state.ctx)
@@ -703,8 +820,12 @@ async def run_query_loop(
                 if not _validation_retry(detail):
                     yield _planning_failed_event(state, step_id, detail)
                     break
+                _append_pending_invalid()
+                _discard_stream_executor()
                 continue
 
+            if not invalid_entries:
+                state.param_repair_rounds = 0
             state.validation_retries = 0
             state.tool_recoveries = 0
 
@@ -764,12 +885,19 @@ async def run_query_loop(
             turn_fatal_failure = False
             batches = partition_tool_calls(exec_items)
 
-            async for kind, payload in execute_tool_batches(
-                batches,
-                state.ctx,
-                sequence=state.sequence,
-                stream_tool_step=stream_tool_step,
-            ):
+            if stream_executor is None:
+                stream_executor = StreamingToolExecutor(
+                    state.ctx,
+                    stream_tool_step,
+                    sequence=state.sequence,
+                )
+            stream_executor.sync_call_orders(exec_items)
+            for item in exec_items:
+                if item.tool_call_id not in stream_executor.submitted_ids:
+                    await stream_executor.submit(item)
+            await stream_executor.finish_submitting()
+
+            async for kind, payload in stream_executor.iter_combined():
                 if kind == "ctx":
                     state.ctx = payload
                     continue
@@ -811,8 +939,9 @@ async def run_query_loop(
                             executor_error=run.error,
                         )
                         if _fail and is_recoverable_tool_execution_failure(err_code):
-                            if int(getattr(run, "silent_retry_attempts", 0) or 0) <= 0:
-                                turn_recoverable_failure = True
+                            # P2.3: 即便已做过静默重试，最终仍失败也必须进 turn 恢复
+                            # （旧逻辑 silent_retry>0 时既不恢复也不致命 → 失败被吞）。
+                            turn_recoverable_failure = True
                             state.last_run_error = err_detail or run.error
                         elif _fail:
                             turn_fatal_failure = True
@@ -877,10 +1006,27 @@ async def run_query_loop(
                                 state.ctx = state.ctx.model_copy(
                                     update={"chapters": fresh}
                                 )
+                        _CHAPTER_WRITE_TOOLS = frozenset(
+                            {
+                                "WriteChapter",
+                                "EditChapter",
+                                "DeleteChapter",
+                                "ReorderChapters",
+                            }
+                        )
+                        # P1.2 上下文随写失效：mutation 后必须用真值刷新，不再因
+                        # "tool 是写工具" 就跳过。patch 已携带真值 chapters 时才跳过 API 拉取。
+                        patch_has_fresh_chapters = isinstance(patch, dict) and isinstance(
+                            patch.get("chapters"), list
+                        )
+                        catalog_stale = isinstance(patch, dict) and bool(
+                            patch.get("catalog_stale")
+                        )
+                        _ = (_CHAPTER_WRITE_TOOLS, _MEMORY_WRITE_TOOLS)  # record_chapter_mutation import
+                        refresh_chapters = catalog_stale or not patch_has_fresh_chapters
                         state.ctx = await enrich_context_for_run(
                             state.ctx,
-                            refresh_story_memory=True,
-                            refresh_chapters=True,
+                            refresh_chapters=refresh_chapters,
                         )
 
                     if (
@@ -904,6 +1050,16 @@ async def run_query_loop(
 
                 if waited:
                     break
+
+            if any(i.tool in _MEMORY_WRITE_TOOLS for i in exec_items):
+                merged_patch = dict(state.ctx.context_patch or {})
+                merged_patch.update(refresh_memory_tree_index_patch(state.ctx))
+                state.ctx = state.ctx.model_copy(update={"context_patch": merged_patch})
+                refresh_run_context_human(messages, state.ctx, state.transcript)
+                batch_ack = build_memory_write_batch_ack(state.ctx, min_entries=1)
+                if batch_ack:
+                    messages.append(HumanMessage(content=batch_ack))
+                    refresh_run_context_human(messages, state.ctx, state.transcript)
 
             if turn_recoverable_failure:
                 state.tool_recoveries += 1
@@ -938,6 +1094,31 @@ async def run_query_loop(
                             )
                         )
                     )
+
+            if pending_invalid:
+                _append_pending_invalid()
+                state.param_repair_rounds += 1
+                if state.param_repair_rounds >= _MAX_PARAM_REPAIR_ROUNDS:
+                    detail = "parameter repair exhausted"
+                    state.last_run_error = detail
+                    state.terminal = True
+                    yield _planning_failed_event(state, step_id, detail)
+                    break
+                yield build_event(
+                    event_type="planning.invoking",
+                    run_id=state.ctx.run_id,
+                    session_id=state.ctx.session_id,
+                    message_id=state.ctx.message_id,
+                    step_id=step_id,
+                    sequence=state.sequence,
+                    payload={
+                        "title": "修正工具参数…",
+                        "repair_round": state.param_repair_rounds,
+                    },
+                )
+                state.sequence += 1
+                _discard_stream_executor()
+                continue
 
             if batch_tool_recover:
                 continue
@@ -1004,8 +1185,7 @@ async def run_query_loop(
                 continue
 
             state.messages = list(messages)
-            if not worker_mode:
-                await persist_sse_checkpoint(state, messages)
+            await persist_sse_checkpoint(state, messages)
 
             if should_compress_context(int(prompt_measure.get("prompt_tokens") or 0)):
                 compacted = False
@@ -1068,6 +1248,5 @@ async def run_query_loop(
             )
     finally:
         state.messages = list(messages)
-        if not worker_mode:
-            session.abort()
-            unregister_run_session(state.ctx.run_id)
+        session.abort()
+        unregister_run_session(state.ctx.run_id)

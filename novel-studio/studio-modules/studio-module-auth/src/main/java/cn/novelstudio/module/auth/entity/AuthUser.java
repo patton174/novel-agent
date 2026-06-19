@@ -35,6 +35,10 @@ public class AuthUser {
     @Column(name = "email_verified")
     private Boolean emailVerified = false;
 
+    /** JSON：pixelAvatar 等 UI 偏好 */
+    @Column(name = "ui_prefs", columnDefinition = "TEXT")
+    private String uiPrefs;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private Instant createdAt;

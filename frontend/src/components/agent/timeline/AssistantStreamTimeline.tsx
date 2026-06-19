@@ -49,6 +49,10 @@ import {
 import { cn } from '@/lib/utils'
 import { runeLength, visiblePrefixForBlock } from './timelineUtils'
 
+function TimelineBlockEnter({ children }: { children: ReactNode }) {
+  return <div className="agent-stream-timeline-block-enter">{children}</div>
+}
+
 export function AssistantStreamTimeline({
   timeline,
   stepStates,
@@ -113,8 +117,11 @@ export function AssistantStreamTimeline({
   }, [timeline, stepStates, fallbackThinkText, messageKey, streamLive, streamFinished])
 
   const orchestrationOverview = useMemo(
-    () => orchestrationOverviewFromTimeline(effectiveTimeline),
-    [effectiveTimeline],
+    () =>
+      orchestrationOverviewFromTimeline(effectiveTimeline, stepStates, {
+        streamFinished,
+      }),
+    [effectiveTimeline, stepStates, streamFinished],
   )
 
   const stepByTimelineBlockId = useMemo(() => {
@@ -160,7 +167,7 @@ export function AssistantStreamTimeline({
     resetKey: messageKey,
     playing: streamTextLive,
     finished: streamFinished || !streamLive,
-    maxCharsPerFrame: 3,
+    maxCharsPerFrame: 8,
   })
 
   const globalVisible = typewriterVisible
@@ -315,13 +322,14 @@ export function AssistantStreamTimeline({
     }
     if (block.kind === 'reasoning') {
       return (
-        <PlanReasoningBlock
-          key={blockKey}
-          block={block}
-          messageKey={messageKey}
-          streamLive={streamLive}
-          streamFinished={streamFinished}
-        />
+        <TimelineBlockEnter key={blockKey}>
+          <PlanReasoningBlock
+            block={block}
+            messageKey={messageKey}
+            streamLive={streamLive}
+            streamFinished={streamFinished}
+          />
+        </TimelineBlockEnter>
       )
     }
     if (block.kind === 'think') {
@@ -341,12 +349,18 @@ export function AssistantStreamTimeline({
       )
       if (tier === 'primary') {
         return (
-          <div key={blockKey} className={TIMELINE_THINK_WRAP}>
-            {thinkPanel}
-          </div>
+          <TimelineBlockEnter key={blockKey}>
+            <div className={TIMELINE_THINK_WRAP}>
+              {thinkPanel}
+            </div>
+          </TimelineBlockEnter>
         )
       }
-      return <Fragment key={blockKey}>{thinkPanel}</Fragment>
+      return (
+        <TimelineBlockEnter key={blockKey}>
+          {thinkPanel}
+        </TimelineBlockEnter>
+      )
     }
 
     if (block.kind === 'text') {
@@ -369,12 +383,13 @@ export function AssistantStreamTimeline({
         (globalVisibleLen > blockStart && globalVisibleLen <= blockEnd ||
           (block.id === lastTextBlockId && globalVisibleLen >= blockEnd))
       return (
-        <TimelineDeliveryBlock
-          key={blockKey}
-          text={visible}
-          streamLive={showStreamCursor}
-          testId="timeline-delivery-text"
-        />
+        <TimelineBlockEnter key={blockKey}>
+          <TimelineDeliveryBlock
+            text={visible}
+            streamLive={showStreamCursor}
+            testId="timeline-delivery-text"
+          />
+        </TimelineBlockEnter>
       )
     }
 
@@ -392,11 +407,16 @@ export function AssistantStreamTimeline({
     if (block.kind === 'tool') {
       let step = stepByTimelineBlockId.get(block.id)
       if (!step && block.stepId) {
-        step = findStepState(stepStates, block.stepId) ?? {
-          stepId: block.stepId,
-          type: 'tool',
-          status: 'started',
-          title: '执行中…',
+        const direct = findStepState(stepStates, block.stepId)
+        if (direct) {
+          step = direct
+        } else if (streamLive && !streamFinished) {
+          step = {
+            stepId: block.stepId,
+            type: 'tool',
+            status: 'started',
+            title: '执行中…',
+          }
         }
       }
       if (!step) {
@@ -544,7 +564,11 @@ export function AssistantStreamTimeline({
           ) : null}
         </TimelineToolBlock>
       )
-      return <Fragment key={blockKey}>{toolNode}</Fragment>
+      return (
+        <TimelineBlockEnter key={blockKey}>
+          {toolNode}
+        </TimelineBlockEnter>
+      )
     }
 
     return null
@@ -645,14 +669,11 @@ export function AssistantStreamTimeline({
 
   return (
     <div
-      className={cn(
-        TIMELINE_COLUMN,
-        streamLive && !streamFinished && 'agent-stream-timeline-block-enter',
-      )}
+      className={TIMELINE_COLUMN}
       data-testid="agent-stream-timeline"
     >
       <div className={TIMELINE_SLOT}>
-        {showOrchestrationPending ? <OrchestrationPendingRow /> : null}
+        {showOrchestrationPending ? <OrchestrationPendingRow alignToGutter /> : null}
         {timelineUnits.map((unit, unitIndex) => (
           <Fragment key={`unit:${unitIndex}`}>
             {renderTimelineUnit(unit, String(unitIndex))}

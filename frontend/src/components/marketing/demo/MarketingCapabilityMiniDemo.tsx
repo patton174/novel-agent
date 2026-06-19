@@ -13,10 +13,10 @@ import {
 import { prefersReducedMotion } from '../scroll/useMarketingGsapEffect'
 
 const ORCH_STEPS = [
-  { name: 'memory_read', label: '读取角色记忆' },
-  { name: 'chapter_read', label: '对齐第一章结尾' },
+  { name: 'ReadMemory', label: '读取角色记忆' },
+  { name: 'ReadChapter', label: '对齐第一章结尾' },
   { name: 'plan', label: '规划第二章结构' },
-  { name: 'chapter_create', label: '流式写入正文' },
+  { name: 'WriteChapter', label: '流式写入正文' },
 ]
 
 const STREAM_TEXT =
@@ -101,7 +101,7 @@ export function MarketingCapabilityMiniDemo({ kind }: { kind: 'orchestrate' | 's
           <span className={demoStatusDotClass('loading')} />
           <div className="body">
             <div className="headline">
-              <span className="name">chapter_create</span>
+              <span className="name">WriteChapter</span>
               <span className="args">流式输出</span>
             </div>
           </div>

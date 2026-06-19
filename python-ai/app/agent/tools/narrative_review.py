@@ -12,8 +12,7 @@ from pydantic import BaseModel, Field
 
 from app.agent.backend import chapter_client
 from app.agent.backend.chapter_meta import sorted_chapter_summaries
-from app.agent.backend.memory_catalog import load_story_memory_tree
-from app.agent.backend.memory_store import _read_memory_json_impl
+from app.agent.backend.memory_node_store import fetch_memory_flat_sync
 from app.agent.harness.structured_llm import invoke_structured_with_retry
 from app.agent.schemas import AgentRunContext
 from app.agent.tools.chapter_position import chapter_row_id
@@ -111,15 +110,6 @@ def find_duplicate_paragraphs(
     return hits[:12]
 
 
-def _scope_bucket(tree: dict[str, Any], scope: str) -> dict[str, Any]:
-    if scope == "character":
-        raw = tree.get("characters")
-    elif scope == "chapter":
-        raw = tree.get("chapters")
-    else:
-        raw = tree.get(scope)
-    return raw if isinstance(raw, dict) else {}
-
 
 def _load_scope_text(
     ctx: AgentRunContext,
@@ -127,26 +117,30 @@ def _load_scope_text(
     *,
     max_chars: int,
 ) -> str:
-    tree = load_story_memory_tree(ctx)
-    bucket = _scope_bucket(tree, scope)
-    if not bucket:
+    nodes = fetch_memory_flat_sync(ctx, scope)
+    if not nodes:
         return ""
     parts: list[str] = []
-    for key in sorted(bucket.keys(), key=str)[:24]:
-        text, err = _read_memory_json_impl(ctx, scope, str(key))
-        if err or not text:
+    for node in nodes[:24]:
+        title = str(node.get("title") or "").strip()
+        content = str(node.get("content") or "").strip()
+        if not content:
             continue
-        parts.append(f"## {key}\n{text.strip()[:1600]}")
+        parts.append(f"## {title or node.get('memory_id')}\n{content[:1600]}")
     return "\n\n".join(parts)[:max_chars]
 
 
 def _chapter_memory_excerpt(ctx: AgentRunContext, chapter_id: str) -> str:
-    text, err = _read_memory_json_impl(
-        ctx, "chapter", chapter_id, item_id=chapter_id
-    )
-    if err or not text:
+    cid = (chapter_id or "").strip()
+    if not cid:
         return ""
-    return text.strip()[:_MEMORY_MAX]
+    for node in fetch_memory_flat_sync(ctx, "chapter"):
+        meta = node.get("meta") if isinstance(node.get("meta"), dict) else {}
+        if str(meta.get("linked_chapter_id") or "") == cid or str(node.get("memory_id") or "") == cid:
+            text = str(node.get("content") or "").strip()
+            if text:
+                return text[:_MEMORY_MAX]
+    return ""
 
 
 def _written_chapter_ids(rows: list[dict[str, Any]]) -> list[str]:
@@ -381,7 +375,7 @@ def _heuristic_report(bundle: dict[str, Any]) -> NarrativeReviewReport:
                 dimension="outline",
                 title="缺少大纲记忆",
                 detail="novel scope 无 ReadMemory 可读正文，无法核对是否偏离大纲。",
-                fix_hint="WriteMemory(scope=novel) 写入分章规划后再审查。",
+                fix_hint="CreateMemory(scope=novel) 写入分章规划后再审查。",
             )
         )
     critical = any(f.severity == "critical" for f in findings)
@@ -469,7 +463,7 @@ def format_narrative_review_message(report: NarrativeReviewReport) -> str:
             lines.append(f"- [{label}/{f.dimension}]{cid} {f.title}：{f.detail[:200]}")
             if f.fix_hint:
                 lines.append(f"  → {f.fix_hint[:160]}")
-    lines.append("可调用 NarrativeReview 查看完整 JSON，或 EditChapter / WriteMemory 修正。")
+    lines.append("可调用 NarrativeReview 查看完整 JSON，或 EditChapter / CreateMemory 修正。")
     return "\n".join(lines)
 
 

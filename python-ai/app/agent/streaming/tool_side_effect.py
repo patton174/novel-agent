@@ -22,7 +22,12 @@ def failure_event_sequence(
     sequence: int,
 ) -> tuple[list[dict[str, Any]], int]:
     """tool.completed (failed) then step.failed — same step_id for UI + query-loop recovery."""
+    from app.agent.tools.errors import extract_error_code
+
     err_text = (result.content or "").strip() or "tool failed"
+    err_code = getattr(getattr(result, "error", None), "code", None) or extract_error_code(
+        err_text
+    )
     seq = sequence
     events: list[dict[str, Any]] = []
     completed_payload = build_tool_completed_sse_payload(
@@ -52,7 +57,12 @@ def failure_event_sequence(
             message_id=message_id,
             step_id=step_id,
             sequence=seq,
-            payload={"error": err_text, "tool": tool, "name": tool},
+            payload={
+                "error": err_text,
+                "tool": tool,
+                "name": tool,
+                **({"error_code": err_code} if err_code else {}),
+            },
         )
     )
     seq += 1

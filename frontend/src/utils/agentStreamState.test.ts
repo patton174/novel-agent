@@ -661,4 +661,94 @@ describe('applyAgentEvent', () => {
     const afterDup = applyAgentEvent(state, 'agent-event', payload)
     expect(finalizeAgentMessageContent(afterDup)).toBe('交付')
   })
+
+  it('does not revert completed tool step to started on duplicate step.started', () => {
+    let state = createInitialAgentStreamUiState()
+    const sid = 'call_create_mem_1'
+    state = applyAgentEvent(
+      state,
+      'agent-event',
+      JSON.stringify({
+        type: 'step.started',
+        step_id: sid,
+        payload: { tool: 'CreateMemory', display_name: '创建记忆' },
+      }),
+    )
+    state = applyAgentEvent(
+      state,
+      'agent-event',
+      JSON.stringify({
+        type: 'step.completed',
+        step_id: sid,
+        payload: { tool: 'CreateMemory' },
+      }),
+    )
+    expect(state.stepStates[0].status).toBe('completed')
+    state = applyAgentEvent(
+      state,
+      'agent-event',
+      JSON.stringify({
+        type: 'step.started',
+        step_id: sid,
+        payload: { tool: 'CreateMemory', display_name: '创建记忆' },
+      }),
+    )
+    expect(state.stepStates[0].status).toBe('completed')
+    expect(state.activeToolCount).toBe(0)
+  })
+
+  it('does not revert completed tool step to started on duplicate tool.started', () => {
+    let state = createInitialAgentStreamUiState()
+    const sid = 'call_delete_mem_1'
+    state = applyAgentEvent(
+      state,
+      'agent-event',
+      JSON.stringify({
+        type: 'tool.started',
+        step_id: sid,
+        payload: { name: 'DeleteMemory', display_name: '删除记忆' },
+      }),
+    )
+    state = applyAgentEvent(
+      state,
+      'agent-event',
+      JSON.stringify({
+        type: 'tool.completed',
+        step_id: sid,
+        payload: {
+          name: 'DeleteMemory',
+          display_name: '删除记忆',
+          output_summary: '已删除记忆：林逸',
+        },
+      }),
+    )
+    expect(state.stepStates[0].status).toBe('completed')
+    state = applyAgentEvent(
+      state,
+      'agent-event',
+      JSON.stringify({
+        type: 'tool.started',
+        step_id: sid,
+        payload: { name: 'DeleteMemory', display_name: '删除记忆' },
+      }),
+    )
+    expect(state.stepStates[0].status).toBe('completed')
+    expect(state.stepStates[0].outputSummary).toBe('已删除记忆：林逸')
+    expect(state.activeToolCount).toBe(0)
+  })
+
+  it('gateway.connected clears SSE recovery banner', () => {
+    let state = createInitialAgentStreamUiState()
+    state = {
+      ...state,
+      hostGuardMessage: '连接中断，正在重连 SSE…',
+    }
+    state = applyAgentEvent(
+      state,
+      'agent-event',
+      JSON.stringify({ type: 'gateway.connected', payload: { status: 'accepted' } }),
+    )
+    expect(state.hostGuardMessage).toBeUndefined()
+    expect(state.isThinking).toBe(true)
+  })
 })

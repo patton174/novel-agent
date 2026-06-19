@@ -1,0 +1,82 @@
+# MW 数据面：PostgreSQL / Redis / RabbitMQ（脱离 1Panel，复用 infra-data 卷）
+# 与 entry-nginx / Milvus 分离部署；Worker 通过 MW 公网或内网 IP 连接。
+name: novel-studio-infra
+
+services:
+  postgresql:
+    image: postgres:18.4-alpine
+    container_name: novel-studio-postgresql
+    restart: unless-stopped
+    ports:
+      - "${INFRA_BIND:-0.0.0.0}:${DB_PORT:-5432}:5432"
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD required}
+      TZ: Asia/Shanghai
+    volumes:
+      # PG18 数据目录结构：infra-data/postgresql/18/...
+      - ./infra-data/postgresql:/var/lib/postgresql
+    mem_limit: ${POSTGRES_MEM:-768m}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -p 5432 -U ${DB_USER:-postgres} -q"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 30s
+    networks:
+      - infra-net
+
+  redis:
+    image: redis:8.6.3
+    container_name: novel-studio-redis
+    restart: unless-stopped
+    ports:
+      - "${INFRA_BIND:-0.0.0.0}:${REDIS_PORT:-6379}:6379"
+    command:
+      - redis-server
+      - /etc/redis/redis.conf
+      - --requirepass
+      - ${REDIS_PASSWORD:?REDIS_PASSWORD required}
+    volumes:
+      - ./infra-data/redis/data:/data
+      - ./infra-data/redis/conf/redis.conf:/etc/redis/redis.conf:ro
+      - ./infra-data/redis/logs:/logs
+    mem_limit: ${REDIS_MEM:-128m}
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" ping | grep -q PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 8
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD required}
+    networks:
+      - infra-net
+
+  rabbitmq:
+    image: rabbitmq:4.3.1-management-alpine
+    container_name: novel-studio-rabbitmq
+    restart: unless-stopped
+    hostname: rabbitmq
+    ports:
+      - "${INFRA_BIND:-0.0.0.0}:${RABBITMQ_PORT:-5672}:5672"
+      - "${INFRA_BIND:-0.0.0.0}:${RABBITMQ_MGMT_PORT:-15672}:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?RABBITMQ_PASSWORD required}
+      TZ: Asia/Shanghai
+    volumes:
+      - ./infra-data/rabbitmq/data:/var/lib/rabbitmq
+      - ./infra-data/rabbitmq/log:/var/log/rabbitmq
+    mem_limit: ${RABBITMQ_MEM:-384m}
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 40s
+    networks:
+      - infra-net
+
+networks:
+  infra-net:
+    driver: bridge

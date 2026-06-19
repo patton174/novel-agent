@@ -2,6 +2,17 @@ import { cn } from '@/lib/utils'
 
 export const KEBAB_ROOT = 'inline-flex shrink-0'
 
+export function kebabTriggerGhostClass(open?: boolean) {
+  return cn(
+    'inline-flex size-7 items-center justify-center rounded-md p-0 cursor-pointer',
+    'border-none bg-transparent text-muted-foreground/65 transition-colors',
+    '[&_svg]:size-4',
+    open ? 'text-foreground' : '',
+    'hover:bg-muted/45 hover:text-foreground',
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/35 focus-visible:text-foreground',
+  )
+}
+
 export function kebabTriggerClass(open?: boolean) {
   return cn(
     'inline-flex size-7 items-center justify-center rounded-lg p-0 cursor-pointer',

@@ -92,6 +92,7 @@ export function useEditorPage() {
   const loadNovels = useNovelStore((s) => s.loadNovels)
   const createNovel = useNovelStore((s) => s.createNovel)
   const deleteNovel = useNovelStore((s) => s.deleteNovel)
+  const updateNovel = useNovelStore((s) => s.updateNovel)
   const updateChapterContent = useNovelStore((s) => s.updateChapterContent)
   const saveActiveChapter = useNovelStore((s) => s.saveActiveChapter)
   const refreshActiveChapter = useNovelStore((s) => s.refreshActiveChapter)
@@ -151,6 +152,15 @@ export function useEditorPage() {
 
   const scrollLive = useEditorScroll(messages, stream.isLoading, activeCenterTab)
   scrollToBottomRef.current = scrollLive.scrollMessagesToBottom
+
+  const prevChapterStreamingRef = useRef(agentChapterStreaming)
+  useEffect(() => {
+    const wasStreaming = prevChapterStreamingRef.current
+    prevChapterStreamingRef.current = agentChapterStreaming
+    if (wasStreaming && !agentChapterStreaming && activeCenterTab === 'chat') {
+      scrollLive.scrollMessagesToBottom(true)
+    }
+  }, [agentChapterStreaming, activeCenterTab, scrollLive.scrollMessagesToBottom])
 
   const sessions = useEditorSessions({
     agentSessionIdRef,
@@ -336,6 +346,7 @@ export function useEditorPage() {
     dismissChapterDiff,
     selectNovel,
     createNovel,
+    updateNovel,
     updateChapterContent,
     saveActiveChapter,
     refreshActiveChapter,

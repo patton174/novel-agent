@@ -5,11 +5,11 @@ from __future__ import annotations
 from collections import deque
 from typing import Literal
 
-from app.runtime.story_memory import get_story_memory
-
 Role = Literal["user", "assistant"]
 _MAX_TURNS = 12
 _store: dict[str, deque[tuple[Role, str]]] = {}
+
+
 def get_turns(session_id: str) -> list[tuple[Role, str]]:
     if not session_id:
         return []
@@ -27,7 +27,3 @@ def append_turn(session_id: str, user: str, assistant: str) -> None:
 
 def clear_session(session_id: str) -> None:
     _store.pop(session_id, None)
-
-
-def get_story_snapshot(session_id: str) -> dict:
-    return get_story_memory(session_id)

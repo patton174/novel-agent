@@ -4,11 +4,11 @@ on:
   push:
     branches: [main, master]
     paths:
-      - 'novel-agent/agent-service/agent-gateway/**'
-      - 'novel-agent/agent-service/agent-common/**'
-      - 'novel-agent/config/crypto-routes.yaml'
-      - 'novel-agent/agent-document/docs/deploy/ci/build-java.sh'
-      - 'novel-agent/agent-document/docs/deploy/ci/deploy-java.sh'
+      - 'legacy/novel-agent/agent-service/agent-gateway/**'
+      - 'legacy/novel-agent/agent-service/agent-common/**'
+      - 'legacy/novel-agent/config/crypto-routes.yaml'
+      - 'legacy/novel-agent/agent-document/docs/deploy/ci/build-java.sh'
+      - 'legacy/novel-agent/agent-document/docs/deploy/ci/deploy-java.sh'
       - '.github/workflows/deploy-gateway.yml'
   workflow_dispatch:
 
@@ -44,7 +44,7 @@ jobs:
           ssh-keyscan -H "${{ secrets.MW_HOST }}" >> ~/.ssh/known_hosts
 
       - name: Build gateway JAR
-        run: bash novel-agent/agent-document/docs/deploy/ci/build-java.sh agent-gateway
+        run: bash legacy/novel-agent/agent-document/docs/deploy/ci/build-java.sh agent-gateway
 
       - name: Deploy gateway
         env:
@@ -52,4 +52,4 @@ jobs:
           MW_HOST: ${{ secrets.MW_HOST }}
           DEPLOY_SSH_OPTS: -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes -o ConnectTimeout=60 -o BatchMode=yes
           DEPLOY_SCP_OPTS: -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes -o ConnectTimeout=60 -o BatchMode=yes
-        run: bash novel-agent/agent-document/docs/deploy/ci/deploy-java.sh gateway mw
+        run: bash legacy/novel-agent/agent-document/docs/deploy/ci/deploy-java.sh gateway mw

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 
 from app.agent.schemas import AgentRunContext, PlanToolCall
@@ -9,6 +10,8 @@ from app.agent.tools.registry import (
     find_tool_by_name,
     get_tool_names,
 )
+
+logger = logging.getLogger(__name__)
 
 PLAN_MAX_TOOL_CALLS = 8
 
@@ -122,13 +125,38 @@ def reorder_plan_tool_calls(calls: list[PlanToolCall]) -> list[PlanToolCall]:
     return normal + asks[:1]
 
 
+def reorder_execution_items(items: list) -> list:
+    """Run concurrency-safe tools first so they share one parallel batch.
+
+    Model order is preserved via ``call_order`` on each item; ToolMessages are
+    still appended in original tool_call order after execution.
+    """
+    if len(items) <= 1:
+        return list(items)
+    asks = [i for i in items if (i.tool or "") in INTERACTION_TOOLS]
+    rest = [i for i in items if (i.tool or "") not in INTERACTION_TOOLS]
+    safe = [i for i in rest if is_tool_concurrency_safe(i.tool, i.input)]
+    serial = [i for i in rest if not is_tool_concurrency_safe(i.tool, i.input)]
+    reordered = safe + serial + asks[:1]
+    if len(reordered) != len(items):
+        return list(items)
+    if reordered == items:
+        return list(items)
+    logger.info(
+        "reordered tool batch for parallelism: %s -> %s",
+        [i.tool for i in items],
+        [i.tool for i in reordered],
+    )
+    return reordered
+
+
 def pick_terminal_tool_call(terminals: list[PlanToolCall]) -> PlanToolCall | None:
     return terminals[0] if terminals else None
 
 
 def plan_has_memory_batch(calls: list[PlanToolCall]) -> bool:
     return any(
-        (c.tool or "") in ("ReadMemory", "ListMemory", "SearchKnowledge") for c in calls
+        (c.tool or "") in ("ReadMemory", "ListMemory", "GetMemoryTree", "SearchKnowledge") for c in calls
     )
 
 
@@ -138,8 +166,14 @@ def plan_has_terminal_reply(calls: list[PlanToolCall]) -> bool:
 
 def is_tool_concurrency_safe(tool: str, inp: dict | None = None) -> bool:
     from app.agent.tools.registry import partition_concurrency_safe
+    import os
 
     raw = dict(inp or {})
+    if (tool or "").strip() == "Agent":
+        flag = os.environ.get("AGENT_PARALLEL_SUBAGENTS", "").strip().lower()
+        if flag in ("1", "true", "yes", "on"):
+            return True
+        return False
     if partition_concurrency_safe(tool, raw):
         return True
     t = find_tool_by_name(tool)
@@ -149,6 +183,7 @@ def is_tool_concurrency_safe(tool: str, inp: dict | None = None) -> bool:
         "ListChapters",
         "ReadChapter",
         "ListMemory",
+        "GetMemoryTree",
         "ReadMemory",
         "SearchKnowledge",
         "WebFetch",
@@ -159,48 +194,50 @@ def is_tool_concurrency_safe(tool: str, inp: dict | None = None) -> bool:
 
 
 def build_main_loop_system_prompt() -> str:
+    from app.agent.backend.memory_style_presets import memory_style_prompt_block
+    from app.agent.harness.tool_contract import tool_contract_prompt_block
     from app.agent.harness.visible_text_channel import visible_text_channel_prompt_block
     from app.agent.tools.registry import get_all_tools
 
     names = ", ".join(sorted(t.name for t in get_all_tools()))
     channel_block = visible_text_channel_prompt_block()
+    contract_block = tool_contract_prompt_block()
     return f"""You are a novel-writing agent with structured API tools (not file paths).
 
 {channel_block}
 
-Data lives in **Content API (PostgreSQL)** and **story-memory API** — never construct VFS paths.
-Use RUN_CONTEXT `chapter_catalog` / `memory_catalog` for IDs when present.
+{contract_block}
 
-Available tools: {names}
+{memory_style_prompt_block()}
 
-Workflow:
-- **Chapters**: `ListChapters` → `chapter_id` + index; `ReadChapter` / `WriteChapter` / `EditChapter` / `DeleteChapter` / `ReorderChapters` / `ChapterAudit` / `NarrativeReview`
-- **WriteChapter**: pure title (no 第N章 prefix); `position` or `after_chapter_id` controls order (append by default); empty `content` streams body
-- **ChapterAudit**: catalog hygiene — duplicate titles, empty chapters, title prefixes
-- **NarrativeReview**: `scope=full_book` for whole-book semantic duplicate scan + deep-read focus chapters; uses novel/world/chapter memory
-- **Auto review agent**: after WriteChapter/EditChapter/Agent batch, a read-only review sub-agent runs NarrativeReview + ChapterAudit
-- **ReorderChapters**: full `chapter_ids` or partial `moves`
-- **DeleteChapter**: single id, batch ids, or `dedupe_title`
-- **Memory**: `ListMemory` → `ReadMemory(scope, key)` / `WriteMemory` / `EditMemory` / `DeleteMemory` / `ClearMemory(scope)`
-- **Memory wipe**: to remove all memories in a scope, call `ClearMemory` (e.g. `character`, `chapter`, `world`); do not loop `DeleteMemory` unless deleting specific items
-- **Memory nested scopes**: `ListMemory` returns `item_id` for character/chapter; `DeleteMemory(key=角色名)` deletes the whole character/chapter card
-- **Search**: `SearchKnowledge(query)`; `GetCharacterGraph(character)` when KG enabled
-- **TodoWrite**: id + content + status; mark in_progress before work, completed immediately after; merge=true with full list
-- **Agent**: delegate focused slices (≤4 chapters per call when batching)
-- **WebSearch/WebFetch/Skill/MCP**: when configured
+Data lives in **Content API (PostgreSQL)** and **memory_node API** — never construct VFS paths.
+Use RUN_CONTEXT `chapter_catalog` / `memory_index` for IDs when present.
 
-Never use removed tools (Read, Write, Edit, Glob, Grep, chapter_read, memory_read, ToolSearch, etc.)."""
+Available tools: {names}"""
 
 
 def context_decision_hints() -> dict[str, str]:
+    from app.agent.harness.tool_contract import (
+        CHAPTER_ID_FIELD,
+        CHAPTER_INDEX_FIELD,
+        MEMORY_ID_FIELD,
+        MEMORY_NODE_TYPE_FIELD,
+        MEMORY_PARENT_ID_FIELD,
+        MEMORY_SCOPE_FIELD,
+    )
+
     return {
         "catalog": (
-            "Use novel.chapter_catalog and memory.memory_catalog in RUN_CONTEXT for IDs. "
-            "Chapter tools accept index/position and can auto-merge reorder payloads."
+            f"Use novel.chapter_catalog for `{CHAPTER_ID_FIELD}` / `{CHAPTER_INDEX_FIELD}`. "
+            "Chapter tools accept index or chapter_id; ListChapters returns the same field names."
         ),
         "memory": (
-            "ListMemory entries for character/chapter include item_id. "
-            "DeleteMemory(key=角色名) removes the whole item; ClearMemory(scope) wipes an entire scope."
+            f"Use memory.memory_index for `{MEMORY_ID_FIELD}` per node (each line shows `[{MEMORY_ID_FIELD}=…]`). "
+            f"CreateMemory: `{MEMORY_NODE_TYPE_FIELD}=root` (scope tab, once; short intro only) or "
+            f"`{MEMORY_NODE_TYPE_FIELD}=child` (content blocks under the tab — **prefer several children** "
+            f"by topic instead of one long root/update). "
+            f"Child: `{MEMORY_PARENT_ID_FIELD}` (scope root UUID from memory.scope_root_ids) required. "
+            "UI: left tab = root, sub-menu = children, panel = one child body. ReadMemory(memory_id) for bodies."
         ),
     }
 

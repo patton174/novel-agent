@@ -18,16 +18,16 @@ describe('buildMarketingSceneDemo', () => {
       (s) => s.toolName,
     )
     expect(earlyTools.length).toBeLessThan(lateTools.length)
-    expect(lateTools).toContain('memory_read')
-    expect(lateTools).toContain('chapter_read')
+    expect(lateTools).toContain('ReadMemory')
+    expect(lateTools).toContain('ReadChapter')
   })
 
-  it('orchestrate scene replays memory_read and chapter_read', () => {
+  it('orchestrate scene replays ReadMemory and ReadChapter', () => {
     const msgs = buildSceneMessages('orchestrate', 1)
     const assistant = msgs.find((m) => m.role === 'assistant')
     const tools = (assistant?.agentSteps ?? []).map((s) => s.toolName)
-    expect(tools).toContain('memory_read')
-    expect(tools).toContain('chapter_read')
+    expect(tools).toContain('ReadMemory')
+    expect(tools).toContain('ReadChapter')
   })
 
   it('progress advances one event band at a time', () => {

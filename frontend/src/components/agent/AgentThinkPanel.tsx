@@ -1,23 +1,17 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
+import { createDebouncedScrollToBottom } from '@/utils/debouncedScroll'
 import { AgentMarkdown } from './AgentMarkdown'
 import {
-  CC_BRANCH_CONTENT,
-  CC_BRANCH_GLYPH,
   CC_TOOL_ARGS,
   CC_TOOL_HEADLINE,
   CC_TOOL_HEADLINE_BUTTON,
-  THINK_HEADLINE_ROW,
-  CC_TOOL_MAIN,
   CC_TOOL_NAME,
-  CC_TOOL_ROW_WRAP,
   HEADLINE_CLUSTER,
-  THINK_BODY_IN_ROUND,
   TIMELINE_PENDING_IN,
-  ccToolBranchClass,
-  thinkLeadCellClass,
 } from '@/lib/timelineClasses'
+import { TimelineInsightRow } from './timeline/layout'
 import { TimelineLeadIcon } from './timeline/TimelineLeadIcon'
 import { ShimmerScanText } from '../loaders/ShimmerScanText'
 
@@ -144,6 +138,7 @@ export function AgentThinkPanel({
   const resolvedDoneTitle = doneTitle ?? t('editor:timeline.thinking')
   const bodyId = useId()
   const bodyScrollRef = useRef<HTMLDivElement>(null)
+  const bodyScrollDebouncedRef = useRef(createDebouncedScrollToBottom(() => bodyScrollRef.current, 120))
   const trimmed = text.trim()
   const bodyText = displayTextProp ?? text
   const hasBody = Boolean(trimmed)
@@ -207,8 +202,14 @@ export function AgentThinkPanel({
     if (!node) {
       return
     }
-    node.scrollTop = node.scrollHeight
+    const distance = node.scrollHeight - node.scrollTop - node.clientHeight
+    if (distance > 28) {
+      return
+    }
+    bodyScrollDebouncedRef.current.scrollToBottom()
   }, [text, streamScrollWindow, isThinking])
+
+  useEffect(() => () => bodyScrollDebouncedRef.current.dispose(), [])
 
   if (!isThinking && !hasBody && !(inThinkRound && leadId)) {
     return null
@@ -218,10 +219,13 @@ export function AgentThinkPanel({
   const { phase, duration } = formatThinkStatus(isThinking, durationSec, t)
   const holdExpandedInRound = inThinkRound && orchestrationActive && isThinking
   const canToggle = hasBody && !isThinking && !holdExpandedInRound
+  // 仅当有可见正文时才渲染分支行，避免思考完成后 displayText 收空、
+  // 面板仍被 orchestrationActive 持续展开时残留空树状符号（└）
+  const hasVisibleBody = bodyText.trim().length > 0
   const showBody =
-    hasBody && (hideHeader || isThinking || expanded || holdExpandedInRound)
+    hasVisibleBody && (hideHeader || isThinking || expanded || holdExpandedInRound)
 
-  const bodyContent = (
+  const bodyContent = showBody ? (
     <div
       ref={streamScrollWindow ? bodyScrollRef : undefined}
       id={bodyId}
@@ -233,76 +237,59 @@ export function AgentThinkPanel({
       )}
     >
       {markdown ? (
-        <AgentMarkdown text={bodyText} variant="think" />
+        <AgentMarkdown text={bodyText} variant="think" streaming={isThinking} isAnimating={isThinking} />
       ) : (
         bodyText.split('\n').filter(Boolean).map((line, i) => <p key={i}>{line}</p>)
       )}
     </div>
-  )
+  ) : undefined
 
   return (
-    <div
-      className={cn('w-full', nested ? 'opacity-[0.92]' : 'opacity-100', TIMELINE_PENDING_IN, className)}
-      data-testid={testId}
-      data-think-rail-row={inThinkRound ? 'true' : undefined}
-    >
-      <div className={CC_TOOL_ROW_WRAP}>
-        <div className={THINK_HEADLINE_ROW}>
-          {!hideHeader ? (
-            <div
-              className={thinkLeadCellClass()}
-              data-timeline-lead
-              data-think-lead-id={leadId}
-              ref={onLeadRef}
-            >
-              <TimelineLeadIcon
-                iconName="think"
-                status={isThinking ? 'loading' : 'success'}
-              />
+    <TimelineInsightRow
+      className={cn(nested ? 'opacity-[0.92]' : 'opacity-100', TIMELINE_PENDING_IN, className)}
+      testId={testId}
+      inThinkRound={inThinkRound}
+      railRow={inThinkRound}
+      onLeadRef={onLeadRef}
+      leadId={leadId}
+      leadIcon={
+        hideHeader ? undefined : (
+          <TimelineLeadIcon
+            iconName="think"
+            status={isThinking ? 'loading' : 'success'}
+          />
+        )
+      }
+      headline={
+        hideHeader ? undefined : (
+          <button
+            type="button"
+            className={CC_TOOL_HEADLINE_BUTTON}
+            disabled={!canToggle}
+            aria-expanded={canToggle ? expanded : undefined}
+            aria-controls={canToggle ? bodyId : undefined}
+            onClick={handleToggleClick}
+            data-testid="agent-think-toggle"
+          >
+            <div className={CC_TOOL_HEADLINE}>
+              <span className={HEADLINE_CLUSTER}>
+                <span className={CC_TOOL_NAME}>{label}</span>
+                <span className={CC_TOOL_ARGS}>
+                  {isThinking ? (
+                    <ShimmerScanText active>{`${phase}${duration ? ` · ${duration}` : ''}`}</ShimmerScanText>
+                  ) : (
+                    <>
+                      {phase}
+                      {duration ? ` · ${duration}` : ''}
+                    </>
+                  )}
+                </span>
+              </span>
             </div>
-          ) : null}
-          <div className={CC_TOOL_MAIN}>
-            {!hideHeader ? (
-              <button
-                type="button"
-                className={CC_TOOL_HEADLINE_BUTTON}
-                disabled={!canToggle}
-                aria-expanded={canToggle ? expanded : undefined}
-                aria-controls={canToggle ? bodyId : undefined}
-                onClick={handleToggleClick}
-                data-testid="agent-think-toggle"
-              >
-                <div className={CC_TOOL_HEADLINE}>
-                  <span className={HEADLINE_CLUSTER}>
-                    <span className={CC_TOOL_NAME}>{label}</span>
-                    <span className={CC_TOOL_ARGS}>
-                      {isThinking ? (
-                        <ShimmerScanText active>{`${phase}${duration ? ` · ${duration}` : ''}`}</ShimmerScanText>
-                      ) : (
-                        <>
-                          {phase}
-                          {duration ? ` · ${duration}` : ''}
-                        </>
-                      )}
-                    </span>
-                  </span>
-                </div>
-              </button>
-            ) : null}
-          </div>
-        </div>
-
-        {showBody ? (
-          inThinkRound ? (
-            <div className={THINK_BODY_IN_ROUND}>{bodyContent}</div>
-          ) : (
-            <div className={ccToolBranchClass()}>
-              <span className={CC_BRANCH_GLYPH} aria-hidden />
-              <div className={CC_BRANCH_CONTENT}>{bodyContent}</div>
-            </div>
-          )
-        ) : null}
-      </div>
-    </div>
+          </button>
+        )
+      }
+      body={bodyContent}
+    />
   )
 }

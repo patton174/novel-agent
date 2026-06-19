@@ -159,7 +159,7 @@ export default function AdminHomePage() {
     <AppPageStack className="gap-5">
       <AppShellCard>
         <AppShellCardHeader title={t('admin:home.quickLinksTitle')} description={t('admin:home.quickLinksDesc')} />
-        <AppShellCardBody className="pt-2">
+        <AppShellCardBody className="py-3">
           <AdminQuickLinks />
         </AppShellCardBody>
       </AppShellCard>
@@ -192,7 +192,7 @@ export default function AdminHomePage() {
           title={t('admin:home.billingTitle')}
           description={billingError ?? t('admin:home.billingDesc')}
         />
-        <AppShellCardBody className="pt-2">
+        <AppShellCardBody className="py-3">
           {loading ? (
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               {[1, 2, 3, 4].map((i) => (
@@ -232,7 +232,7 @@ export default function AdminHomePage() {
           title={t('admin:home.chartsTitle')}
           description={t('admin:home.chartsDesc')}
         />
-        <AppShellCardBody className="py-0">
+        <AppShellCardBody className="py-4">
           {chartsLoading ? (
             chartFallback
           ) : (

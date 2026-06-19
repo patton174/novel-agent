@@ -46,9 +46,9 @@ read_secret() {
     return 0
   fi
   for src in \
-    "novel-agent/agent-document/docs/deploy/docker/.env.worker" \
-    "novel-agent/agent-document/docs/deploy/docker/.env.mw" \
-    "novel-agent/agent-document/docs/deploy/docker/.env.split"; do
+    "legacy/novel-agent/agent-document/docs/deploy/docker/.env.worker" \
+    "legacy/novel-agent/agent-document/docs/deploy/docker/.env.mw" \
+    "legacy/novel-agent/agent-document/docs/deploy/docker/.env.split"; do
     v="$(env_get_remote "$(ci_remote mw)" "$src" "$key" || true)"
     if [[ -n "$v" ]]; then
       printf '%s' "$v"

@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-import json
 from typing import Any
 
-from app.agent.context.compact import compact_story_memory_text, format_chapter_window
+from app.agent.context.compact import format_chapter_window
 from app.agent.context.memory_log import memory_ops_for_plan_json
 from app.agent.harness.intent_message import intent_user_message_for_context
 from app.agent.harness.orchestration_contract import context_decision_hints
@@ -16,68 +15,29 @@ from app.agent.harness.routing import (
 from app.agent.schemas import PlanRequest
 
 _PREVIEW_CHAR = 120
-_CHARACTER_ROSTER_PREVIEW = 520
-_CHARACTER_ROSTER_BUDGET = 4800
 _VALUE_PREVIEW = 400
-_STORY_SNAPSHOT_MAX = 800
 _DIALOGUE_MAX = 2000
 _USER_MESSAGE_MAX = 800
-_RETRIEVED_MAX = 800
-
-
-def _character_entry_plan_preview(attrs: Any, *, max_len: int) -> str:
-    """Structured one-line summary for planner (not raw 人物卡 JSON dump)."""
-    if not isinstance(attrs, dict):
-        return str(attrs or "")[:max_len]
-    parts: list[str] = []
-    for key in ("身份", "性格", "能力体系", "人物关系", "剧情作用"):
-        val = attrs.get(key)
-        if val is not None and str(val).strip():
-            parts.append(f"{key}:{str(val).strip()[:72]}")
-    card_raw = str(attrs.get("人物卡") or "").strip()
-    if card_raw:
-        if card_raw.startswith("{"):
-            try:
-                parsed = json.loads(card_raw)
-                if isinstance(parsed, dict):
-                    for key in ("身份", "性格", "目标", "缺陷", "外貌"):
-                        val = parsed.get(key)
-                        if val is not None and str(val).strip():
-                            parts.append(f"{key}:{str(val).strip()[:56]}")
-                else:
-                    parts.append(card_raw[: min(160, max_len)])
-            except json.JSONDecodeError:
-                parts.append(card_raw[: min(200, max_len)])
-        else:
-            parts.append(card_raw[: min(200, max_len)])
-    if not parts:
-        for key, val in list(attrs.items())[:4]:
-            if val is not None and str(val).strip():
-                parts.append(f"{key}:{str(val).strip()[:48]}")
-    text = " | ".join(parts)
-    return text[:max_len] if text else "（无字段）"
 
 
 def has_character_roster_snapshot(patch: dict[str, Any] | None) -> bool:
-    """True when planner already has a character roster read (avoid repeat memory_read loops)."""
+    """True when planner already has a character roster from ListMemory / GetMemoryTree."""
     if not isinstance(patch, dict):
         return False
     if isinstance(patch.get("character_roster"), list) and patch["character_roster"]:
         return True
+    catalog = patch.get("memory_catalog")
+    if isinstance(catalog, list):
+        return any(
+            isinstance(row, dict) and str(row.get("scope") or "") == "character"
+            for row in catalog
+        )
     last = patch.get("last_memory_read")
-    if not isinstance(last, dict) or not last.get("ok"):
-        return False
-    if last.get("scope") != "character":
-        return False
-    if last.get("roster_loaded"):
-        return True
-    if last.get("previews") or last.get("item_ids"):
-        return True
-    return False
+    return isinstance(last, dict) and last.get("ok") and last.get("scope") == "character"
 
 
 def summarize_memory_read(result: dict[str, Any] | None, *, preview_len: int = _PREVIEW_CHAR) -> dict[str, Any]:
-    """Compact last_memory_read for context_patch / planner (no full entries blob)."""
+    """Compact last_memory_read for context_patch / planner."""
     if not isinstance(result, dict):
         return {"ok": False, "reason": "invalid read result"}
     if not result.get("ok"):
@@ -86,49 +46,13 @@ def summarize_memory_read(result: dict[str, Any] | None, *, preview_len: int = _
             "scope": result.get("scope"),
             "reason": str(result.get("reason") or "read failed")[:200],
         }
-    scope = result.get("scope")
-    out: dict[str, Any] = {"ok": True, "scope": scope}
-    if result.get("key"):
-        out["key"] = result["key"]
-    if result.get("item_id"):
-        out["item_id"] = result["item_id"]
-    if "value" in result:
-        out["value_preview"] = str(result.get("value") or "")[:_VALUE_PREVIEW]
-        return out
-    if "item_ids" in result:
-        ids = [str(x) for x in (result.get("item_ids") or [])]
-        out["count"] = int(result.get("count") or len(ids))
-        out["item_ids"] = ids[:40]
-        entries = result.get("entries") if isinstance(result.get("entries"), dict) else {}
-        if scope == "character" and entries:
-            per_char = (
-                _CHARACTER_ROSTER_PREVIEW
-                if not result.get("item_id")
-                else min(preview_len, _VALUE_PREVIEW)
-            )
-            previews: dict[str, str] = {}
-            budget = _CHARACTER_ROSTER_BUDGET
-            for name, attrs in list(entries.items())[:24]:
-                if budget <= 0:
-                    break
-                line = _character_entry_plan_preview(attrs, max_len=per_char)
-                previews[str(name)] = line
-                budget -= len(line)
-            if previews:
-                out["previews"] = previews
-                out["roster_loaded"] = True
-        elif scope == "character" and ids:
-            out["roster_loaded"] = True
-        return out
-    entries = result.get("entries") if isinstance(result.get("entries"), dict) else {}
-    if entries:
-        keys = list(entries.keys())
-        out["keys"] = keys[:30]
-        out["count"] = len(keys)
-        if len(entries) <= 6:
-            out["entries_preview"] = {
-                str(k): str(v)[:200] for k, v in list(entries.items())[:6]
-            }
+    out: dict[str, Any] = {"ok": True}
+    if result.get("scope"):
+        out["scope"] = result["scope"]
+    if result.get("memory_id"):
+        out["memory_id"] = str(result["memory_id"])
+    if "value_preview" in result:
+        out["value_preview"] = str(result["value_preview"])[:preview_len]
     return out
 
 
@@ -142,12 +66,12 @@ def summarize_memory_patch(result: dict[str, Any] | None) -> dict[str, Any]:
         }
     out: dict[str, Any] = {
         "ok": True,
-        "scope": result.get("scope"),
-        "key": result.get("key"),
         "changed": result.get("changed"),
     }
-    if result.get("item_id"):
-        out["item_id"] = result["item_id"]
+    if result.get("memory_id"):
+        out["memory_id"] = str(result["memory_id"])
+    if result.get("scope"):
+        out["scope"] = result["scope"]
     return {k: v for k, v in out.items() if v is not None}
 
 
@@ -168,13 +92,12 @@ def summarize_memory_delete(result: dict[str, Any] | None) -> dict[str, Any]:
         return out
     out = {
         "ok": True,
-        "scope": result.get("scope"),
         "deleted": result.get("deleted", True),
     }
-    if result.get("item_id"):
-        out["item_id"] = result["item_id"]
-    if result.get("key"):
-        out["key"] = result["key"]
+    if result.get("memory_id"):
+        out["memory_id"] = str(result["memory_id"])
+    if result.get("scope"):
+        out["scope"] = result["scope"]
     return {k: v for k, v in out.items() if v is not None}
 
 
@@ -182,11 +105,6 @@ def _character_roster(patch: dict[str, Any]) -> list[str]:
     roster = patch.get("character_roster")
     if isinstance(roster, list) and roster:
         return [str(x) for x in roster]
-    last_read = patch.get("last_memory_read")
-    if isinstance(last_read, dict) and last_read.get("scope") == "character":
-        ids = last_read.get("item_ids")
-        if isinstance(ids, list) and ids:
-            return [str(x) for x in ids]
     return []
 
 
@@ -264,10 +182,6 @@ def build_plan_context(req: PlanRequest, *, retry_feedback: str = "") -> dict[st
     if roster:
         memory_stable["character_roster"] = roster
 
-    story = compact_story_memory_text(str(ctx.story_memory or ""), max_len=_STORY_SNAPSHOT_MAX)
-    if story:
-        memory_stable["story_snapshot"] = story
-
     chapter_window = format_chapter_window(ctx)
     if chapter_window:
         memory_stable["chapter_window"] = chapter_window[:1200]
@@ -323,10 +237,6 @@ def build_plan_context(req: PlanRequest, *, retry_feedback: str = "") -> dict[st
     dialogue = format_dialogue_history(ctx, max_len=_DIALOGUE_MAX)
     if dialogue:
         out["dialogue"] = dialogue[:_DIALOGUE_MAX]
-
-    retrieved = patch.get("retrieved_context")
-    if isinstance(retrieved, str) and retrieved.strip():
-        out["retrieved"] = retrieved.strip()[:_RETRIEVED_MAX]
 
     memory: dict[str, Any] = {}
     memory.update(memory_stable)

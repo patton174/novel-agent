@@ -25,8 +25,10 @@ agent:
   internal:
     service-key: ${INTERNAL_SERVICE_KEY:dev-internal-key-change-me}
   runtime:
-    mode: legacy
-    pg-run-enabled: false
+    mode: ${AGENT_RUNTIME_MODE:queued}
+    pg-run-enabled: ${AGENT_PG_RUN_ENABLED:true}
+    proxy-internal-url: ${AGENT_PROXY_INTERNAL_URL:http://127.0.0.1:${SERVER_PORT:8080}}
+    proxy-instance-id: ${AGENT_PROXY_INSTANCE_ID:}
 
 logging:
   level:

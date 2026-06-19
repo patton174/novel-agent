@@ -18,16 +18,39 @@
 @keyframes agent-timeline-pending-in {
   from {
     opacity: 0;
-    transform: translateY(5px);
+    transform: translateY(10px) scale(0.98);
+    filter: blur(2px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
+    filter: blur(0);
   }
 }
 
 .agent-timeline-pending-in {
-  animation: agent-timeline-pending-in 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: agent-timeline-pending-in 0.48s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes agent-timeline-tool-body-in {
+  from {
+    opacity: 0;
+    max-height: 0;
+    transform: translateY(-6px);
+  }
+  60% {
+    opacity: 1;
+  }
+  to {
+    opacity: 1;
+    max-height: 1200px;
+    transform: translateY(0);
+  }
+}
+
+.agent-timeline-tool-body-in {
+  animation: agent-timeline-tool-body-in 0.44s cubic-bezier(0.22, 1, 0.36, 1) both;
+  overflow: hidden;
 }
 
 @keyframes agent-timeline-blink {

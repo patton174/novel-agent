@@ -58,8 +58,8 @@ const ORCHESTRATE_EVENTS: Array<[string, string]> = [
       type: 'tool.started',
       step_id: 'tool-mem',
       payload: {
-        name: 'memory_read',
-        input: { path: 'memory/characters/Tang_Yun' },
+        name: 'ReadMemory',
+        input: { memory_id: 'mem-tang-yun' },
       },
     }),
   ],
@@ -69,7 +69,7 @@ const ORCHESTRATE_EVENTS: Array<[string, string]> = [
       type: 'tool.completed',
       step_id: 'tool-mem',
       payload: {
-        name: 'memory_read',
+        name: 'ReadMemory',
         output: '命中 Tang_Yun、势力格局、天赋设定',
         display_excerpt: '角色卡 · 世界观',
       },
@@ -81,7 +81,7 @@ const ORCHESTRATE_EVENTS: Array<[string, string]> = [
       type: 'tool.started',
       step_id: 'tool-ch1',
       payload: {
-        name: 'chapter_read',
+        name: 'ReadChapter',
         input: { chapter_id: 'ch-01', title: '第一章 · 天赋觉醒' },
       },
     }),
@@ -92,7 +92,7 @@ const ORCHESTRATE_EVENTS: Array<[string, string]> = [
       type: 'tool.completed',
       step_id: 'tool-ch1',
       payload: {
-        name: 'chapter_read',
+        name: 'ReadChapter',
         output: '已读取第一章结尾',
         display_excerpt: '《第一章 · 天赋觉醒》\n…银月森林入口，铁剑生锈',
         result_labels: ['第一章 · 天赋觉醒'],
@@ -180,7 +180,7 @@ const SUBAGENT_EVENTS: Array<[string, string]> = [
       payload: {
         parent_step_id: 'parent-agent',
         phase: 'tool_done',
-        tool: 'memory_read',
+        tool: 'ReadMemory',
         title: '读取角色卡',
         excerpt: 'Tang_Yun 人设无冲突',
         child_step_id: 'sub-mem',
@@ -280,7 +280,7 @@ const STREAM_EVENTS: Array<[string, string]> = [
     JSON.stringify({
       type: 'tool.started',
       step_id: 'tool-write',
-      payload: { name: 'chapter_create', input: { title: '第二章 · 银月森林首战' } },
+      payload: { name: 'WriteChapter', input: { title: '第二章 · 银月森林首战' } },
     }),
   ],
   [

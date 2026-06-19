@@ -1,4 +1,4 @@
-import { getAuthHeaders } from '../utils/auth'
+import { getAuthHeaders, getToken, hasAuthSessionHint } from '../utils/auth'
 import { ensureCryptoReady } from './sessionBootstrap'
 import { isRouteObfuscationEnabled } from './cryptoManifest'
 import { buildEncryptedRouteUrl } from './routePathCrypto'
@@ -141,17 +141,21 @@ async function tryRefreshSessionOnce(): Promise<boolean> {
   }
 }
 
-async function handleUnauthorized(logicalUrl: string, retried: boolean): Promise<void> {
+async function handleUnauthorized(logicalUrl: string, retried: boolean): Promise<boolean> {
   if (isAuthSelfPath(logicalUrl)) {
-    return
+    return false
+  }
+  if (!hasAuthSessionHint()) {
+    return false
   }
   if (!retried) {
     const ok = await tryRefreshSessionOnce()
     if (ok) {
-      return
+      return true
     }
   }
   forceLogoutRedirect('session_expired')
+  return false
 }
 
 type SecureFetchInit = RequestInit & {
@@ -179,15 +183,17 @@ export async function secureFetch(input: RequestInfo | URL, init?: SecureFetchIn
     const { fetchUrl, headers, body } = await buildRequest(logicalUrl, method, init)
     const target =
       typeof input === 'string' ? fetchUrl : input instanceof URL ? new URL(fetchUrl) : input
-    return fetch(target, {
+    const sentToken = headers.Authorization ?? null
+    const response = await fetch(target, {
       ...init,
       credentials: init?.credentials ?? 'include',
       headers,
       body,
     })
+    return { response, sentToken }
   }
 
-  let response = await exec()
+  let { response, sentToken } = await exec()
 
   if (response.status >= 400 && isSecurityCryptoEnabled()) {
     for (let cryptoRetried = 0; cryptoRetried < 2; cryptoRetried += 1) {
@@ -205,7 +211,7 @@ export async function secureFetch(input: RequestInfo | URL, init?: SecureFetchIn
         setSessionCrypto(null)
       }
       await invalidateCryptoRuntime()
-      response = await exec()
+      ;({ response, sentToken } = await exec())
       if (response.ok) {
         break
       }
@@ -226,13 +232,14 @@ export async function secureFetch(input: RequestInfo | URL, init?: SecureFetchIn
   }
 
   if (response.status === 401 && !isAuthSelfPath(logicalUrl)) {
-    if (!retried) {
-      const ok = await tryRefreshSessionOnce()
-      if (ok) {
-        return secureFetch(input, { ...init, __authRetried: true })
-      }
+    const currentToken = getToken()
+    if (!retried && currentToken && sentToken !== currentToken) {
+      return secureFetch(input, { ...init, __authRetried: true })
     }
-    await handleUnauthorized(logicalUrl, retried)
+    const refreshed = await handleUnauthorized(logicalUrl, retried)
+    if (refreshed) {
+      return secureFetch(input, { ...init, __authRetried: true })
+    }
   }
 
   const ver = response.headers.get('X-Crypto-Key-Version')

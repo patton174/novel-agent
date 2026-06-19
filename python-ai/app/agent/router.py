@@ -8,19 +8,18 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
 
 from app.agent.context.enrich import enrich_context as _enrich_context
+from app.agent.harness.owner.run_stream import build_run_stream_response
 from app.agent.harness.run_session import abort_run_session, get_run_session
 from app.agent.harness.session_title import (
     SessionTitleRequest,
     SessionTitleResponse,
     generate_session_title,
 )
-from app.agent.loop import run_query_loop
 from app.agent.schemas import RunRequest, StepRequest
 from app.agent.streaming.sse_bridge import stream_cc_tool_step
 from app.config import settings
 from app.core.llm import llm_provider
 from app.runtime.events import encode_sse
-from app.runtime.host_guard import resolve_host_mode, stream_text_with_keepalive
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +39,7 @@ async def agent_step(raw_request: Request):
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
     req = StepRequest(
-        context=_enrich_context(req.context, refresh_story_memory=True),
+        context=_enrich_context(req.context),
         tool=req.tool,
         tool_input=req.tool_input,
     )
@@ -92,58 +91,12 @@ async def agent_run_stream(raw_request: Request):
             status_code=503,
             detail="direct agent stream disabled; use distributed worker dispatch",
         )
-    if not llm_provider.is_configured:
-        raise HTTPException(status_code=503, detail="LLM not configured")
-
     try:
         body = await raw_request.json()
         req = RunRequest.model_validate(body)
     except Exception as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
-
-    req = RunRequest(
-        context=_enrich_context(req.context, refresh_story_memory=True),
-    )
-    logger.info(
-        "agent_run_stream run_id=%s step_index=%s",
-        req.context.run_id,
-        req.context.step_index,
-    )
-
-    host_mode = resolve_host_mode(req.context.model_dump())
-
-    async def event_generator():
-        try:
-            async for event in run_query_loop(req):
-                yield encode_sse("agent-event", event)
-        except Exception as exc:
-            logger.error("agent_run_stream error: %s", exc)
-            yield encode_sse(
-                "agent-event",
-                {
-                    "type": "run.failed",
-                    "payload": {"error": str(exc)},
-                    "run_id": req.context.run_id,
-                },
-            )
-        yield "event: stream-end\ndata: done\n\n"
-
-    async def guarded_events():
-        async for chunk in stream_text_with_keepalive(
-            event_generator(),
-            enabled=host_mode,
-        ):
-            yield chunk
-
-    return StreamingResponse(
-        guarded_events(),
-        media_type="text/event-stream",
-        headers={
-            "Cache-Control": "no-cache",
-            "Connection": "keep-alive",
-            "X-Accel-Buffering": "no",
-        },
-    )
+    return build_run_stream_response(req)
 
 
 @router.post("/agent/run/{run_id}/interaction")

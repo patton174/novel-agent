@@ -2,9 +2,11 @@ package cn.novelstudio.module.content.controller.internal;
 
 import cn.novelstudio.platform.web.BaseController;
 import cn.novelstudio.module.content.dto.agent.*;
+import cn.novelstudio.module.content.service.agent.RunLiveLocalEvent;
 import cn.novelstudio.module.content.service.internal.InternalAgentRunBiz;
 import cn.novelstudio.module.content.service.internal.InternalAgentRunContextBiz;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,6 +20,7 @@ public class InternalAgentRunController extends BaseController {
 
     private final InternalAgentRunBiz biz;
     private final InternalAgentRunContextBiz contextBiz;
+    private final ApplicationEventPublisher eventPublisher;
 
     @PostMapping("/run-context")
     public Map<String, Object> runContext(@RequestBody AgentRunContextRequest request) {
@@ -62,6 +65,7 @@ public class InternalAgentRunController extends BaseController {
 
     @PostMapping("/runs/{runId}/events")
     public AgentEventDTO appendEvent(@PathVariable String runId, @RequestBody AppendAgentEventRequest request) {
+        eventPublisher.publishEvent(new RunLiveLocalEvent(runId, request.getPayloadJson()));
         return biz.appendEvent(runId, request);
     }
 

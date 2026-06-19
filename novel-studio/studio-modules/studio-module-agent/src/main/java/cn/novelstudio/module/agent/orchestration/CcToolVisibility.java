@@ -1,6 +1,5 @@
 package cn.novelstudio.module.agent.orchestration;
 
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -15,22 +14,6 @@ public final class CcToolVisibility {
 
     private static final Set<String> LEGACY_HIDDEN_TOOLS = Set.of(
         "orchestrator", "plan", "write_chapter"
-    );
-
-    private static final Map<String, String> LEGACY_ALIASES = Map.ofEntries(
-        Map.entry("chapter_list", "Glob"),
-        Map.entry("chapter_read", "Read"),
-        Map.entry("chapter_create", "Write"),
-        Map.entry("chapter_update", "Edit"),
-        Map.entry("chapter_delete", "Delete"),
-        Map.entry("memory_read", "Read"),
-        Map.entry("memory_create", "Write"),
-        Map.entry("memory_update", "Edit"),
-        Map.entry("memory_delete", "Delete"),
-        Map.entry("memory_patch", "Edit"),
-        Map.entry("choose", "AskUser"),
-        Map.entry("ask_user", "AskUser"),
-        Map.entry("context_search", "Grep")
     );
 
     private CcToolVisibility() {}
@@ -73,15 +56,10 @@ public final class CcToolVisibility {
         return "output".equals(tool);
     }
 
-    public static boolean isMemoryVfsPath(String path) {
-        return path != null && path.contains("/memory/");
-    }
-
     public static String normalizeToolName(String tool) {
         if (tool == null || tool.isBlank()) {
             return "";
         }
-        String name = tool.trim();
-        return LEGACY_ALIASES.getOrDefault(name, name);
+        return tool.trim();
     }
 }

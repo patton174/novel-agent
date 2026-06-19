@@ -1,5 +1,7 @@
 # Phase 8 实施计划：基础设施运营补齐
 
+> ⚠️ **历史设计记录**。生产已迁移至 **novel-studio 单体**，现状以 `CLAUDE.md` / `.cursor/rules/project-architecture.mdc` 为准。本文保留作历史参考，**勿据以部署**（旧微服务 agent-gateway/auth/pyai/content/consumer 与 `restart-dev.sh` 均已废弃）。
+
 > **目标**：补齐生产运维闭环——可观测平台、DB 治理与备份、RAG 生产依赖、CI/预发/E2E 硬化、安全边界基线。  
 > **周期**：约 4 周（可与 Phase 9 前期并行，Flyway 必须先于 billing 表迁移）  
 > **设计规格**：`docs/superpowers/specs/2026-06-08-platform-operations-design.md` §3.1、§9
@@ -47,9 +49,9 @@
 **2. 新建 baseline（每个有 JPA 的模块或统一到 content DB）**：
 
 ```
-novel-agent/agent-service/agent-auth/src/main/resources/db/migration/
+legacy/novel-agent/agent-service/agent-auth/src/main/resources/db/migration/
   V1__baseline_auth.sql          # 从现有 PG dump auth 相关表
-novel-agent/agent-service/agent-content/src/main/resources/db/migration/
+legacy/novel-agent/agent-service/agent-content/src/main/resources/db/migration/
   V1__baseline_content.sql
 ```
 
@@ -83,7 +85,7 @@ mvn -pl agent-auth spring-boot:run -Dspring-boot.run.profiles=local
 
 - [ ] 现有表结构有 V1 baseline SQL（可重复在新库执行）
 - [ ] 生产/预发 `ddl-auto=validate`
-- [ ] 文档更新：`novel-agent/agent-document/docs/deploy/README.md` 增加 migration 说明
+- [ ] 文档更新：`legacy/novel-agent/agent-document/docs/deploy/README.md` 增加 migration 说明
 
 ---
 
@@ -94,8 +96,8 @@ mvn -pl agent-auth spring-boot:run -Dspring-boot.run.profiles=local
 **新建脚本**：
 
 ```
-novel-agent/agent-document/docs/deploy/scripts/backup-postgres.sh
-novel-agent/agent-document/docs/deploy/scripts/restore-postgres.sh
+legacy/novel-agent/agent-document/docs/deploy/scripts/backup-postgres.sh
+legacy/novel-agent/agent-document/docs/deploy/scripts/restore-postgres.sh
 ```
 
 **backup-postgres.sh 要点**：
@@ -113,17 +115,17 @@ find "$BACKUP_DIR" -name '*.sql.gz' -mtime +30 -delete
 **MW cron**（文档说明，不自动改生产 crontab）：
 
 ```
-0 3 * * * /opt/novel-agent/novel-agent/agent-document/docs/deploy/scripts/backup-postgres.sh
+0 3 * * * /opt/novel-agent/legacy/novel-agent/agent-document/docs/deploy/scripts/backup-postgres.sh
 ```
 
 ### 验证
 
 ```bash
 # 备份
-bash novel-agent/agent-document/docs/deploy/scripts/backup-postgres.sh
+bash legacy/novel-agent/agent-document/docs/deploy/scripts/backup-postgres.sh
 
 # 恢复到测试库 novel_agent_restore
-bash novel-agent/agent-document/docs/deploy/scripts/restore-postgres.sh novel_agent_restore <backup_file>
+bash legacy/novel-agent/agent-document/docs/deploy/scripts/restore-postgres.sh novel_agent_restore <backup_file>
 # agent-auth 指向 restore 库能启动
 ```
 
@@ -143,7 +145,7 @@ bash novel-agent/agent-document/docs/deploy/scripts/restore-postgres.sh novel_ag
 
 ### 改动
 
-**新建** `novel-agent/agent-document/docs/deploy/docker/docker-compose.observability.yml`：
+**新建** `legacy/novel-agent/agent-document/docs/deploy/docker/docker-compose.observability.yml`：
 
 ```yaml
 services:

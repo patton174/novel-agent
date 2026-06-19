@@ -60,7 +60,7 @@ done
 
 # 旧路径 compose 可能仍占端口
 for legacy_dir in \
-  "$RDIR/novel-agent/agent-document/docs/deploy/docker" \
+  "$RDIR/legacy/novel-agent/agent-document/docs/deploy/docker" \
   "$RDIR/agent-document/docs/deploy/docker"; do
   if [[ -f "$legacy_dir/docker-compose.mw.yml" ]]; then
     echo "[apply-ssl] stop legacy compose in $legacy_dir"

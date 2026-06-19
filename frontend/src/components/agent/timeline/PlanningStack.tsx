@@ -4,14 +4,15 @@ import { deriveActivePlanningHeadline } from '../../../utils/agentStreamTimeline
 import { ShimmerScanText } from '../../loaders/ShimmerScanText'
 import {
   CC_TOOL_MAIN,
+  CC_TOOL_NAME,
   PLANNING_HEADER,
   PLANNING_HEADER_MAIN,
   PLANNING_HEADLINE_ROW,
-  PLANNING_TITLE,
   planningChevronClass,
   planningStackBodyClass,
   planningStackWrapClass,
   thinkLeadCellClass,
+  TOOL_TITLE_ROW,
 } from '@/lib/timelineClasses'
 import { resolveToolVisualStatus, TimelineLeadIcon } from './TimelineLeadIcon'
 
@@ -100,11 +101,15 @@ export function PlanningStack({
           </div>
           <div className={CC_TOOL_MAIN}>
             <div className={PLANNING_HEADER_MAIN}>
-              {headlineActive ? (
-                <ShimmerScanText active>{headline}</ShimmerScanText>
-              ) : (
-                <span className={PLANNING_TITLE}>{headline}</span>
-              )}
+              <div className={TOOL_TITLE_ROW} data-timeline-tool-title-row>
+                <span className={CC_TOOL_NAME}>
+                  {headlineActive ? (
+                    <ShimmerScanText active>{headline}</ShimmerScanText>
+                  ) : (
+                    headline
+                  )}
+                </span>
+              </div>
             </div>
           </div>
           <span className={planningChevronClass(expanded)} aria-hidden />

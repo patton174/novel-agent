@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import type { AgentChoiceOption, AgentInteractionPayload, AskUserAnswers } from '../../types/agent'
 import type { EditorMessage } from '../../types/editor'
 import { editorLayout } from '../../styles/theme'
@@ -60,6 +60,8 @@ export function EditorChatMessageList({
     return map
   }, [safeMessages, thinkPanelOpen])
 
+  const streamScrollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
   const setMessagesAreaNode = useCallback(
     (node: HTMLDivElement | null) => {
       if (typeof messagesAreaRef === 'function') {
@@ -78,18 +80,26 @@ export function EditorChatMessageList({
     if (!(scrubPlaying || (loadingState && activeId))) {
       return
     }
-    const raf = requestAnimationFrame(() => {
+    if (streamScrollTimerRef.current) {
+      clearTimeout(streamScrollTimerRef.current)
+    }
+    streamScrollTimerRef.current = setTimeout(() => {
+      streamScrollTimerRef.current = null
       if (messagesEndRef && 'current' in messagesEndRef && messagesEndRef.current) {
         messagesEndRef.current.scrollIntoView({ block: 'end', behavior: 'auto' })
       }
-    })
-    return () => cancelAnimationFrame(raf)
+    }, 120)
+    return () => {
+      if (streamScrollTimerRef.current) {
+        clearTimeout(streamScrollTimerRef.current)
+      }
+    }
   }, [safeMessages.length, scrubPlaying, loadingState, activeId, messagesEndRef])
 
   return (
     <div
       ref={setMessagesAreaNode}
-      className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto overscroll-contain py-3 [scrollbar-width:none] [-ms-overflow-style:none] [-webkit-overflow-scrolling:touch] [&::-webkit-scrollbar]:hidden"
+      className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-visible overflow-y-auto overscroll-contain py-3 [scrollbar-width:none] [-ms-overflow-style:none] [-webkit-overflow-scrolling:touch] [&::-webkit-scrollbar]:hidden"
       style={{
         paddingBottom: composerBottomInset != null ? `${composerBottomInset}px` : '10.5rem',
       }}

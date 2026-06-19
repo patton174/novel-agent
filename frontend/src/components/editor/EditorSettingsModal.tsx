@@ -1,15 +1,9 @@
 import { useTranslation } from 'react-i18next'
-import { useCallback, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { ExternalLink } from 'lucide-react'
-import { fetchUserInfo } from '@/api/userApi'
-import { AccountSettingsSections } from '@/components/dashboard/AccountSettingsSections'
 import { AppModalShell } from '@/components/ui/AppModalShell'
 import { EditorButton } from '../ui/EditorButton'
 import { Switch } from '../ui/switch'
-import { DIRECT_PYTHON } from '../../config/runtime'
-import { isLoggedIn } from '../../utils/auth'
-import { useUserStore } from '@/stores/userStore'
 import { cn } from '@/lib/utils'
 
 interface EditorSettingsModalProps {
@@ -17,33 +11,16 @@ interface EditorSettingsModalProps {
   onClose: () => void
   hostModeEnabled: boolean
   onHostModeChange: (enabled: boolean) => void
-  onLogout: () => void
 }
 
+/** Editor preferences only — account lives in EditorUserModal. */
 export function EditorSettingsModal({
   open,
   onClose,
   hostModeEnabled,
   onHostModeChange,
-  onLogout,
 }: EditorSettingsModalProps) {
   const { t } = useTranslation(['editor', 'common'])
-  const profile = useUserStore((s) => s.profile)
-  const setProfile = useUserStore((s) => s.setProfile)
-  const showAccount = !DIRECT_PYTHON && isLoggedIn()
-
-  const refreshProfile = useCallback(() => {
-    void fetchUserInfo()
-      .then(setProfile)
-      .catch(() => {
-        /* ignore */
-      })
-  }, [setProfile])
-
-  useEffect(() => {
-    if (!open || !showAccount) return
-    refreshProfile()
-  }, [open, refreshProfile, showAccount])
 
   return (
     <AppModalShell
@@ -51,14 +28,11 @@ export function EditorSettingsModal({
       onOpenChange={(next) => !next && onClose()}
       size="settings"
       title={t('editor:settings.title')}
-      description={t('editor:settings.desc')}
+      description={t('editor:settings.preferenceDesc')}
       className="sm:max-w-[480px]"
-      bodyClassName="space-y-5 pb-1"
+      bodyClassName="space-y-4 pb-1"
     >
-      <section className="flex flex-col gap-3.5">
-        <h3 className="m-0 border-b border-primary/20 pb-1.5 text-xs font-semibold tracking-wide text-muted-foreground">
-          {t('editor:settings.preference')}
-        </h3>
+      <section className="flex flex-col gap-3">
         <div
           className={cn(
             'flex items-center justify-between gap-4 rounded-xl border border-border bg-muted/30 p-3',
@@ -80,29 +54,16 @@ export function EditorSettingsModal({
         </div>
       </section>
 
-      {showAccount ? (
-        <section className="flex flex-col gap-3.5">
-          <div className="flex items-center justify-between gap-2 border-b border-primary/20 pb-1.5">
-            <h3 className="m-0 text-xs font-semibold tracking-wide text-muted-foreground">{t('editor:settings.account')}</h3>
-            <Link
-              to="/dashboard/settings"
-              onClick={onClose}
-              className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline"
-            >
-              {t('editor:settings.fullSettings')}
-              <ExternalLink className="size-3" />
-            </Link>
-          </div>
-          <AccountSettingsSections
-            profile={profile}
-            onVerified={refreshProfile}
-            variant="embedded"
-          />
-          <EditorButton type="button" variant="ghost" fullWidth onClick={onLogout}>
-            {t('editor:settings.logout')}
-          </EditorButton>
-        </section>
-      ) : null}
+      <div className="border-t border-border/60 pt-4">
+        <Link
+          to="/dashboard/settings"
+          onClick={onClose}
+          className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline"
+        >
+          {t('editor:settings.fullSettings')}
+          <ExternalLink className="size-3" />
+        </Link>
+      </div>
     </AppModalShell>
   )
 }

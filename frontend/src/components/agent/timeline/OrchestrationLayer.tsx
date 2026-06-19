@@ -6,15 +6,16 @@ import {
   deriveOrchestrationHeadline,
   type ThinkRoundPayload,
 } from '../../../utils/agentStreamTimeline'
+import { hasActiveOrchestrationSteps } from '../../../utils/agentToolStats'
+import { OrchestrationPendingRow } from './OrchestrationPendingRow'
 import { ThinkRoundGroup } from './ThinkRoundGroup'
 import { translateOrchestrationHeadline } from '../../../utils/orchestrationI18n'
 import { ShimmerScanText } from '../../loaders/ShimmerScanText'
 import {
-  CC_TOOL_MAIN,
+  CC_TOOL_NAME,
   PLANNING_HEADER,
   PLANNING_HEADER_MAIN,
-  PLANNING_HEADLINE_ROW,
-  PLANNING_TITLE,
+  THINK_HEADLINE_ROW,
   TIMELINE_PENDING_IN,
   planningStackBodyClass,
   planningStackWrapClass,
@@ -59,7 +60,11 @@ export function OrchestrationLayer({
   ) => ReactNode
 }) {
   const isActive = status === 'active' && streamLive && !streamFinished
-  const planningComplete = Boolean(orchestrationOverview?.trim())
+  const toolsStillRunning = hasActiveOrchestrationSteps(stepStates)
+  const planningComplete =
+    Boolean(orchestrationOverview?.trim()) &&
+    !toolsStillRunning &&
+    (!streamLive || streamFinished)
   const showHeaderShimmer = isActive && !planningComplete
   const isMobile = useAppMobile()
   const userToggledRef = useRef(false)
@@ -123,8 +128,8 @@ export function OrchestrationLayer({
           setExpanded((open) => !open)
         }}
       >
-        <div className={PLANNING_HEADLINE_ROW}>
-          <div className={thinkLeadCellClass()}>
+        <div className={THINK_HEADLINE_ROW}>
+          <div className={thinkLeadCellClass()} aria-hidden>
             <TimelineLeadIcon
               iconName="reasoning"
               status={resolveToolVisualStatus({
@@ -133,22 +138,22 @@ export function OrchestrationLayer({
               })}
             />
           </div>
-          <div className={CC_TOOL_MAIN}>
-            <div className={PLANNING_HEADER_MAIN}>
+          <div className={PLANNING_HEADER_MAIN}>
+            <span className={CC_TOOL_NAME}>
               {showHeaderShimmer ? (
-                <ShimmerScanText active className={PLANNING_TITLE}>
-                  {headlineText}
-                </ShimmerScanText>
+                <ShimmerScanText active>{headlineText}</ShimmerScanText>
               ) : (
-                <span className={PLANNING_TITLE}>{headlineText}</span>
+                headlineText
               )}
-            </div>
+            </span>
           </div>
         </div>
       </button>
       {expanded ? (
         <div className={cn(planningStackBodyClass({ branchIndent: true }), TIMELINE_PENDING_IN)}>
-          {mergedItems.length === 0 ? null : (
+          {mergedItems.length === 0 ? (
+            isActive ? <OrchestrationPendingRow /> : null
+          ) : (
             <ThinkRoundGroup
               items={mergedItems}
               stepStates={stepStates}
@@ -158,6 +163,7 @@ export function OrchestrationLayer({
               thinkExpanded={thinkExpanded}
               onThinkExpandedChange={onThinkExpandedChange}
               orchestrationActive={isActive}
+              layoutRemeasureKey={expanded ? 'open' : 'closed'}
               renderTool={renderTool}
               renderText={renderText}
               railContext={{ showThinkRail }}

@@ -47,7 +47,8 @@ public class PlanBiz extends BaseBiz {
             : (plan.getPriceCents() == 0 ? "免费" : "¥" + (plan.getPriceCents() / 100));
         String periodLabel = plan.getPriceCents() != null && plan.getPriceCents() > 0 ? "/月" : null;
         String cta = switch (plan.getCode()) {
-            case "hobby" -> "免费开始";
+            case "free", "hobby" -> "免费开始";
+            case "lite" -> "立即升级";
             case "pro" -> "联系升级";
             default -> "联系销售";
         };

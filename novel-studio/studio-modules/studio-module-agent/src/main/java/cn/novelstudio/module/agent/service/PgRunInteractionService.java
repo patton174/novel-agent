@@ -3,7 +3,6 @@ package cn.novelstudio.module.agent.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import cn.novelstudio.module.agent.client.ContentInternalClient;
 import cn.novelstudio.module.agent.config.AgentRuntimeProperties;
-import cn.novelstudio.module.agent.mq.AgentRunMqPublisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -17,35 +16,33 @@ public class PgRunInteractionService {
     private static final Logger log = LoggerFactory.getLogger(PgRunInteractionService.class);
 
     private final AgentRuntimeProperties runtimeProperties;
-    private final AgentRunMqPublisher runMqPublisher;
+    private final PythonAgentRunClient runClient;
     private final ObjectMapper objectMapper;
     private final ContentInternalClient contentInternalClient;
 
     public PgRunInteractionService(
         AgentRuntimeProperties runtimeProperties,
-        AgentRunMqPublisher runMqPublisher,
+        PythonAgentRunClient runClient,
         ObjectMapper objectMapper,
         ContentInternalClient contentInternalClient
     ) {
         this.runtimeProperties = runtimeProperties;
-        this.runMqPublisher = runMqPublisher;
+        this.runClient = runClient;
         this.objectMapper = objectMapper;
         this.contentInternalClient = contentInternalClient;
     }
 
     public void submitInteraction(String runId, Map<String, Object> payload) {
-        if (!runtimeProperties.isPgRunEnabled()) {
-            return;
-        }
         String commandId = extractCommandId(payload);
         try {
             String payloadJson = objectMapper.writeValueAsString(payload);
-            contentInternalClient.recordCommand(runId, commandId, "interaction.submit", payloadJson);
-            runMqPublisher.publishCommand(runId, commandId, payloadJson);
-            runMqPublisher.publishDispatchResume(runId, commandId);
-            log.info("pg interaction queued runId={} commandId={}", runId, commandId);
+            if (runtimeProperties.isPgRunEnabled()) {
+                contentInternalClient.recordCommand(runId, commandId, "interaction.submit", payloadJson);
+            }
+            runClient.submitInteraction(runId, payload);
+            log.info("interaction submitted runId={} commandId={}", runId, commandId);
         } catch (Exception ex) {
-            log.warn("pg interaction publish failed runId={}: {}", runId, ex.getMessage());
+            log.warn("interaction submit failed runId={}: {}", runId, ex.getMessage());
         }
     }
 

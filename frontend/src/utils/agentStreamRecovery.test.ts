@@ -4,6 +4,7 @@ import {
   clearStreamRecoveryBanner,
   isPeerDroppedStreamError,
   isStreamRecoveryBanner,
+  resolveAgentHostGuardMessage,
   shouldAttachStreamRecovery,
   STREAM_RECOVERY_BANNER,
 } from './agentStreamRecovery'
@@ -53,5 +54,18 @@ describe('agentStreamRecovery', () => {
     expect(clearStreamRecoveryBanner(host).hostGuardMessage).toBe(
       '连接中断，任务在后台继续',
     )
+  })
+
+  it('resolveAgentHostGuardMessage strips recovery copy', () => {
+    const state = {
+      ...createInitialAgentStreamUiState(),
+      hostGuardMessage: STREAM_RECOVERY_BANNER,
+    }
+    expect(resolveAgentHostGuardMessage(state)).toBeUndefined()
+    const host = {
+      ...state,
+      hostGuardMessage: '连接中断，任务在后台继续',
+    }
+    expect(resolveAgentHostGuardMessage(host)).toBe('连接中断，任务在后台继续')
   })
 })

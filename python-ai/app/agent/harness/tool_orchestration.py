@@ -9,10 +9,14 @@ from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
-from app.agent.harness.cc_visibility import normalize_tool_name
 from app.agent.harness.loop_support import apply_step_completed
 from app.agent.harness.orchestration_contract import is_tool_concurrency_safe
 from app.agent.schemas import AgentRunContext, StepResult
+from app.agent.tools.chapter_catalog import (
+    batch_needs_chapter_catalog,
+    clear_chapter_rows_cache,
+    prime_chapter_rows_cache,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +41,8 @@ class ToolExecutionItem:
     tool_call_id: str
     tool: str
     input: dict[str, Any]
+    """Original index in the model tool_use batch (for ToolMessage ordering)."""
+    call_order: int = 0
 
 
 @dataclass
@@ -111,7 +117,6 @@ async def _stream_single_tool(
     *,
     sequence: int,
     stream_tool_step,
-    startup_barrier: asyncio.Barrier | None = None,
 ) -> AsyncIterator[tuple[Literal["event", "result"], Any]]:
     """Yield SSE events as they are produced; final tuple is ToolRunResult."""
     from app.agent.harness.loop_support import ToolStepOutcome
@@ -126,14 +131,6 @@ async def _stream_single_tool(
         outcome=outcome,
         step_id=step_id,
     ):
-        if (
-            startup_barrier is not None
-            and isinstance(ev, dict)
-            and ev.get("type") == "subagent.started"
-        ):
-            yield ("event", ev)
-            await startup_barrier.wait()
-            continue
         yield ("event", ev)
     yield ("result", _finalize_tool_run(item, ctx, outcome))
 
@@ -156,13 +153,6 @@ async def _stream_parallel_batch(
         limit,
     )
 
-    use_startup_barrier = len(batch.items) > 1 and all(
-        normalize_tool_name(item.tool) == "Agent" for item in batch.items
-    )
-    startup_barrier = (
-        asyncio.Barrier(len(batch.items)) if use_startup_barrier else None
-    )
-
     async def _runner(idx: int, item: ToolExecutionItem) -> None:
         async with sem:
             try:
@@ -171,7 +161,6 @@ async def _stream_parallel_batch(
                     _branch_context(ctx),
                     sequence=sequence + idx * 50,
                     stream_tool_step=stream_tool_step,
-                    startup_barrier=startup_barrier,
                 ):
                     if kind == "event":
                         await queue.put(("event", payload))
@@ -223,6 +212,10 @@ async def _stream_parallel_batch(
     yield ("result", ordered)
 
 
+def _sort_runs_by_call_order(runs: list[ToolRunResult]) -> list[ToolRunResult]:
+    return sorted(runs, key=lambda r: r.item.call_order)
+
+
 async def execute_tool_batches(
     batches: list[ToolBatch],
     ctx: AgentRunContext,
@@ -234,41 +227,48 @@ async def execute_tool_batches(
     working_ctx = ctx
 
     for batch in batches:
-        if batch.concurrency_safe and len(batch.items) > 1:
-            async for kind, payload in _stream_parallel_batch(
-                batch,
-                working_ctx,
-                sequence=seq,
-                stream_tool_step=stream_tool_step,
-            ):
-                if kind == "event":
-                    yield ("event", payload)
-                    continue
-                runs: list[ToolRunResult] = payload
-                for run in runs:
-                    if run.result and not run.failed:
-                        working_ctx = apply_step_completed(
-                            working_ctx, run.result.model_dump()
-                        )
-                yield ("result", runs)
-                yield ("ctx", working_ctx)
-        else:
-            batch_results: list[ToolRunResult] = []
-            for item in batch.items:
-                async for kind, payload in _stream_single_tool(
-                    item,
+        clear_chapter_rows_cache()
+        try:
+            if batch.concurrency_safe and len(batch.items) > 1:
+                names = [item.tool for item in batch.items]
+                if batch_needs_chapter_catalog(names):
+                    await prime_chapter_rows_cache(working_ctx)
+                async for kind, payload in _stream_parallel_batch(
+                    batch,
                     working_ctx,
                     sequence=seq,
                     stream_tool_step=stream_tool_step,
                 ):
                     if kind == "event":
                         yield ("event", payload)
-                    else:
-                        run = payload
-                        batch_results.append(run)
+                        continue
+                    runs = _sort_runs_by_call_order(payload)
+                    for run in runs:
                         if run.result and not run.failed:
                             working_ctx = apply_step_completed(
                                 working_ctx, run.result.model_dump()
                             )
-            yield ("result", batch_results)
-            yield ("ctx", working_ctx)
+                    yield ("result", runs)
+                    yield ("ctx", working_ctx)
+            else:
+                batch_results: list[ToolRunResult] = []
+                for item in batch.items:
+                    async for kind, payload in _stream_single_tool(
+                        item,
+                        working_ctx,
+                        sequence=seq,
+                        stream_tool_step=stream_tool_step,
+                    ):
+                        if kind == "event":
+                            yield ("event", payload)
+                        else:
+                            run = payload
+                            batch_results.append(run)
+                            if run.result and not run.failed:
+                                working_ctx = apply_step_completed(
+                                    working_ctx, run.result.model_dump()
+                                )
+                yield ("result", _sort_runs_by_call_order(batch_results))
+                yield ("ctx", working_ctx)
+        finally:
+            clear_chapter_rows_cache()

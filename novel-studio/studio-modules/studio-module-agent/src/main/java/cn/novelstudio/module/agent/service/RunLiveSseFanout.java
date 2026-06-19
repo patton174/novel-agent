@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
@@ -20,6 +21,7 @@ public class RunLiveSseFanout {
     private final ObjectMapper objectMapper;
     private final Map<String, Consumer<String>> sinks = new ConcurrentHashMap<>();
     private final Map<String, Consumer<String>> terminalHandlers = new ConcurrentHashMap<>();
+    private final Map<String, Set<String>> deliveredPayloads = new ConcurrentHashMap<>();
 
     public RunLiveSseFanout(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
@@ -49,6 +51,7 @@ public class RunLiveSseFanout {
         if (runId != null) {
             sinks.remove(runId);
             terminalHandlers.remove(runId);
+            deliveredPayloads.remove(runId);
         }
     }
 
@@ -61,9 +64,12 @@ public class RunLiveSseFanout {
         return "event: agent-event\ndata: " + clientPayload + "\n\n";
     }
 
-    public void onLivePayload(String runId, String payloadJson) {
+    public boolean onLivePayload(String runId, String payloadJson) {
         if (runId == null || payloadJson == null || payloadJson.isBlank()) {
-            return;
+            return false;
+        }
+        if (!markDelivered(runId, payloadJson)) {
+            return false;
         }
         Consumer<String> sink = sinks.get(runId);
         if (sink != null) {
@@ -73,7 +79,7 @@ public class RunLiveSseFanout {
             }
         }
         if (!isTerminalEvent(payloadJson)) {
-            return;
+            return true;
         }
         if (sink != null) {
             sink.accept("event: stream-end\ndata: done\n\n");
@@ -83,6 +89,7 @@ public class RunLiveSseFanout {
         if (terminal != null) {
             terminal.accept(payloadJson);
         }
+        return true;
     }
 
     /**
@@ -132,5 +139,30 @@ public class RunLiveSseFanout {
         } catch (Exception ignored) {
             return false;
         }
+    }
+
+    private boolean markDelivered(String runId, String payloadJson) {
+        String key = payloadKey(payloadJson);
+        return deliveredPayloads
+            .computeIfAbsent(runId, ignored -> ConcurrentHashMap.newKeySet())
+            .add(key);
+    }
+
+    String payloadKey(String payloadJson) {
+        try {
+            JsonNode root = objectMapper.readTree(payloadJson);
+            String eventId = root.path("event_id").asText("");
+            if (!eventId.isBlank()) {
+                return "event:" + eventId;
+            }
+            String type = root.path("type").asText("");
+            int sequence = root.path("sequence").asInt(-1);
+            if (!type.isBlank() && sequence >= 0) {
+                return "seq:" + type + ":" + sequence;
+            }
+        } catch (Exception ignored) {
+            // fall through to payload hash
+        }
+        return "payload:" + Integer.toHexString(payloadJson.hashCode());
     }
 }

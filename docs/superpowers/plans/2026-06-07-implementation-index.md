@@ -1,5 +1,7 @@
 # 架构升级实施总索引
 
+> ⚠️ **历史设计记录**。生产已迁移至 **novel-studio 单体**，现状以 `CLAUDE.md` / `.cursor/rules/project-architecture.mdc` 为准。本文保留作历史参考，**勿据以部署**（旧微服务 agent-gateway/auth/pyai/content/consumer 与 `restart-dev.sh` 均已废弃）。
+
 > 配套设计文档：`docs/2026-06-07-architecture-upgrade.md`
 >
 > 本文是「无脑实施」级别的执行总索引。每个 Phase 是一份独立 plan 文件，可独立交付、独立回滚。**每个任务都附带单测要求与验收命令**。

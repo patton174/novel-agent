@@ -7,7 +7,6 @@ import type {
 } from './agent'
 import { buildWelcomeMessage } from '../utils/buildWelcomeMessage'
 import type { Novel } from './novel'
-import type { NormalizedStoryMemory } from './storyMemory'
 
 export interface EditorMessage {
   id: string
@@ -50,7 +49,8 @@ export interface EditorChatSession {
   updatedAt: Date
 }
 
-export type EditorStoryMemoryState = NormalizedStoryMemory
+/** @deprecated legacy flat memory — panel uses memory_node tree via useEditorStoryMemory */
+export type EditorStoryMemoryState = Record<string, never>
 
 export const INITIAL_ASSISTANT_MESSAGE: EditorMessage = {
   id: '1',

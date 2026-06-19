@@ -16,8 +16,8 @@ REMOTE="$(ci_remote worker)"
 RDIR="$(ci_remote_dir worker)"
 ENV_FILE="$RDIR/$DOCKER_REL/.env.worker"
 COMPOSE_FILE="$RDIR/$DOCKER_REL/docker-compose.worker.yml"
-OLD_ENV_WORKER="$RDIR/novel-agent/agent-document/docs/deploy/docker/.env.worker"
-OLD_ENV_MW="$RDIR/novel-agent/agent-document/docs/deploy/docker/.env.mw"
+OLD_ENV_WORKER="$RDIR/legacy/novel-agent/agent-document/docs/deploy/docker/.env.worker"
+OLD_ENV_MW="$RDIR/legacy/novel-agent/agent-document/docs/deploy/docker/.env.mw"
 NEW_ENV_MW="$RDIR/$DOCKER_REL/.env.mw"
 
 remote_env_get() {
@@ -67,8 +67,8 @@ v=\$(container_key)
 if [[ -n "\$v" ]]; then echo "\$v"; exit 0; fi
 for f in \\
   "\$RDIR/novel-studio/deploy/docker/.env.worker" \\
-  "\$RDIR/novel-agent/agent-document/docs/deploy/docker/.env.worker" \\
-  "\$RDIR/novel-agent/agent-document/docs/deploy/docker/.env.mw" \\
+  "\$RDIR/legacy/novel-agent/agent-document/docs/deploy/docker/.env.worker" \\
+  "\$RDIR/legacy/novel-agent/agent-document/docs/deploy/docker/.env.mw" \\
   "\$RDIR/python-ai/.env"; do
   v=\$(read_key_from "\$f")
   if [[ -n "\$v" ]]; then echo "\$v"; exit 0; fi

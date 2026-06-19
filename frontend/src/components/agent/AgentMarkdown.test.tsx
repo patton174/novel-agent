@@ -66,6 +66,9 @@ describe('AgentMarkdown', () => {
     expect(within(root).getByRole('table')).toBeInTheDocument()
     expect(within(root).getByText('列1')).toBeInTheDocument()
     expect(within(root).getByText('A')).toBeInTheDocument()
+    const th = within(root).getByText('列1').closest('th')
+    expect(th).toBeTruthy()
+    expect(window.getComputedStyle(th!).fontWeight).toMatch(/700|bold/)
   })
 
   it('renders ordered lists, hr and world sample structure', () => {
@@ -75,5 +78,22 @@ describe('AgentMarkdown', () => {
     expect(within(root).getByRole('heading', { level: 3 })).toHaveTextContent('一、创世法则')
     expect(within(root).getByText(/击杀者权重/)).toBeInTheDocument()
     expect(within(root).getByText(/备注：世界观/)).toBeInTheDocument()
+  })
+
+  it('streaming mode tolerates unclosed bold without showing raw asterisks', () => {
+    render(
+      <AgentMarkdown
+        text="精神小妹倒追各种搞笑日常 **第二卷：相"
+        streaming
+        isAnimating
+      />,
+    )
+    expect(screen.getByText(/第二卷：相/)).toBeInTheDocument()
+    expect(screen.queryByText(/\*\*/)).not.toBeInTheDocument()
+  })
+
+  it('uses static mode by default for replay content', () => {
+    const { container } = render(<AgentMarkdown text="**完成**" />)
+    expect(container.querySelector('[data-markdown-mode="static"]')).toBeTruthy()
   })
 })

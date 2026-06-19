@@ -8,7 +8,7 @@ source "$CI_DIR/_common.sh"
 ci_require_deploy_env
 ci_setup_ssh
 
-OLD_DOCKER_REL="novel-agent/agent-document/docs/deploy/docker"
+OLD_DOCKER_REL="legacy/novel-agent/agent-document/docs/deploy/docker"
 NEW_DOCKER_REL="$DOCKER_REL"
 
 bootstrap_env_on() {

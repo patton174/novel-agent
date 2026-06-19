@@ -5,6 +5,7 @@ package cn.novelstudio.module.content.dto;
  */
 public record ChapterReadSliceDTO(
     String chapterId,
+    int listIndex,
     String title,
     int totalLines,
     int offset,

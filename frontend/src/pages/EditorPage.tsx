@@ -10,6 +10,9 @@ import { EditorCenterTabs } from '../components/editor/EditorCenterTabs'
 import { EditorChatPanel } from '../components/editor/EditorChatPanel'
 import { EditorStoryPanel } from '../components/editor/EditorStoryPanel'
 import { EditorSettingsModal } from '../components/editor/EditorSettingsModal'
+import { EditorUserModal } from '../components/editor/EditorUserModal'
+import { PixelAvatarModal } from '../components/avatars/PixelAvatarModal'
+import { syncPixelAvatarForUser } from '../stores/pixelAvatarStore'
 import { MotionPane } from '../components/motion/MotionPane'
 import { useEditorPage } from '../hooks/editor/useEditorPage'
 import { copyToClipboard } from '../utils/copyToClipboard'
@@ -22,17 +25,16 @@ const EditorPage: React.FC = () => {
   const navigate = useNavigate()
   const editor = useEditorPage()
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [userModalOpen, setUserModalOpen] = useState(false)
+  const [avatarModalOpen, setAvatarModalOpen] = useState(false)
 
   const sidebarProps: EditorSidebarProps = {
-    sessionSearch: editor.sessions.sessionSearch,
-    onSessionSearchChange: editor.sessions.setSessionSearch,
+    centerTab: editor.activeCenterTab,
     activeNovelId: editor.activeNovelId,
     activeSession: editor.sessions.activeSession,
+    runningSessionId: editor.stream.isLoading ? editor.sessions.activeSession : null,
     novelSessionGroups: editor.sessions.novelSessionGroups,
     expandedNovelIds: editor.sessions.expandedNovelIds,
-    batchMode: editor.sessions.batchMode,
-    batchNovelId: editor.sessions.batchNovelId,
-    selectedSessionIds: editor.sessions.selectedSessionIds,
     titlePendingSessionIds: editor.sessions.titlePendingSessionIds,
     onToggleNovelExpanded: editor.sessions.toggleNovelExpanded,
     onSelectNovel: (id) => {
@@ -46,25 +48,32 @@ const EditorPage: React.FC = () => {
         editor.sessions.handleNewChat()
       }
     },
-    onStartBatchForNovel: (novelId) => {
-      if (novelId !== editor.activeNovelId) {
-        void editor.selectNovel(novelId).then(() => editor.sessions.startBatchForNovel(novelId))
-      } else {
-        editor.sessions.startBatchForNovel(novelId)
-      }
+    onDeleteNovel: editor.sessions.performDeleteNovel,
+    onUpdateNovel: async (novelId, payload) => {
+      await editor.updateNovel(novelId, payload)
     },
-    onExitBatchMode: editor.sessions.exitBatchMode,
-    onBatchDeleteRequest: editor.sessions.requestBatchDelete,
-    onSelectAllSessions: editor.sessions.selectAllSessionsInBatch,
-    onDeleteNovelRequest: editor.sessions.handleDeleteNovelRequest,
-    onToggleSessionSelected: editor.sessions.toggleSessionSelected,
     onNewNovel: () => editor.setShowCreateNovel(true),
     onSwitchSession: editor.sessions.switchSession,
     onRenameSession: editor.sessions.handleRenameSession,
     onDeleteSession: editor.sessions.handleDeleteSession,
-    onOpenMemory: () => editor.memory.openMemoryModal('world'),
+    onOpenMemory: () => editor.memory.openMemoryModal(),
     onOpenSettings: () => setSettingsOpen(true),
+    onOpenUserProfile: () => setUserModalOpen(true),
+    onOpenAvatarEditor: () => setAvatarModalOpen(true),
     memoryModalOpen: editor.memory.memoryModalOpen,
+    memoryTabs: editor.memory.memoryTabs,
+    storySection: {
+      hasNovel: Boolean(editor.activeNovel),
+      reindexing: editor.reindex.reindexing,
+      reindexProgress: editor.reindex.reindexProgress,
+      onReindex: () => void editor.reindex.handleReindexNovel(),
+      activeChapterId: editor.activeChapterId,
+      activeChapterTitle: editor.activeChapter?.title ?? '',
+      chapterContent: editor.chapterContent,
+      onChapterRestored: () => void editor.refreshActiveChapter(),
+      versionPreview: editor.versionPreview,
+      onVersionPreviewChange: editor.setVersionPreview,
+    },
   }
 
   return (
@@ -98,14 +107,7 @@ const EditorPage: React.FC = () => {
             onHostModeChange={editor.handleHostModeChange}
             onStreamAbort={editor.stream.handleStreamAbort}
             hostBannerText={editor.hostBannerText}
-            hostBannerRecovering={
-              editor.stream.isSseRecovering ||
-              Boolean(
-                editor.hostBannerText &&
-                  (editor.hostBannerText.includes('正在重连 SSE') ||
-                    editor.hostBannerText.includes('状态通道')),
-              )
-            }
+            hostBannerRecovering={editor.stream.isSseRecovering}
             activeStreamMessageId={editor.stream.activeStreamMessageId}
             thinkPanelOpen={editor.stream.thinkPanelOpen}
             onThinkPanelChange={(id, open) =>
@@ -166,9 +168,11 @@ const EditorPage: React.FC = () => {
       <StoryMemoryModal
         open={editor.memory.memoryModalOpen}
         onClose={() => editor.memory.setMemoryModalOpen(false)}
-        memory={editor.memory.storyMemory}
-        activeTab={editor.memory.memoryTab}
-        onTabChange={editor.memory.setMemoryTab}
+        memoryTabs={editor.memory.memoryTabs}
+        memoryTrees={editor.memory.memoryTreeIndex}
+        memoryNodesByScope={editor.memory.memoryNodesByScope}
+        activeScope={editor.memory.activeScope}
+        onScopeChange={editor.memory.setActiveScope}
         updatedAt={editor.memory.memoryUpdatedAt}
       />
 
@@ -177,13 +181,22 @@ const EditorPage: React.FC = () => {
         onClose={() => setSettingsOpen(false)}
         hostModeEnabled={editor.hostModeEnabled}
         onHostModeChange={editor.handleHostModeChange}
+      />
+
+      <EditorUserModal
+        open={userModalOpen}
+        onClose={() => setUserModalOpen(false)}
+        onOpenAvatarEditor={() => setAvatarModalOpen(true)}
         onLogout={() => {
           void logout().finally(() => {
-            setSettingsOpen(false)
+            syncPixelAvatarForUser(null)
+            setUserModalOpen(false)
             navigate('/login')
           })
         }}
       />
+
+      <PixelAvatarModal open={avatarModalOpen} onClose={() => setAvatarModalOpen(false)} />
     </EditorPageWrapper>
   )
 }

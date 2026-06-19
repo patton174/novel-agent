@@ -35,6 +35,7 @@ import {
   sanitizeAssistantMessage,
   sanitizeMessageDeltaChunk,
 } from './sanitizeAgentText'
+import { clearStreamRecoveryBanner } from './agentStreamRecovery'
 
 const TODO_STATUSES = new Set<AgentTodoStatus>([
   'pending',
@@ -568,7 +569,7 @@ export function applyAgentEvent(
   }
 
   if (event.type === 'gateway.connected') {
-    next = { ...next, isThinking: true }
+    next = clearStreamRecoveryBanner({ ...next, isThinking: true })
   }
 
   if (event.type === 'run.heartbeat') {
@@ -1033,6 +1034,12 @@ export function applyAgentEvent(
         detail: toolArgs || undefined,
       }
       const idx = next.stepStates.findIndex((s) => s.stepId === stepId)
+      if (idx >= 0) {
+        const prev = next.stepStates[idx]
+        if (prev.status === 'completed' || prev.status === 'failed') {
+          return next
+        }
+      }
       const stepStates =
         idx >= 0
           ? next.stepStates.map((s, i) => (i === idx ? { ...s, ...pending } : s))
@@ -1217,6 +1224,14 @@ export function applyAgentEvent(
     }
 
     const idx = next.stepStates.findIndex((s) => s.stepId === stepId)
+    if (
+      event.type === 'tool.started' &&
+      idx >= 0 &&
+      (next.stepStates[idx].status === 'completed' ||
+        next.stepStates[idx].status === 'failed')
+    ) {
+      return next
+    }
     let stepStates: AgentStepState[]
     if (idx >= 0) {
       const prev = next.stepStates[idx]

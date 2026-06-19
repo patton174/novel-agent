@@ -52,7 +52,7 @@ export function StreamingRevealContent({
     resetKey: messageKey,
     playing: animate,
     finished: !animate,
-    maxCharsPerFrame: 2,
+    maxCharsPerFrame: 8,
   })
 
   if (!animate) {

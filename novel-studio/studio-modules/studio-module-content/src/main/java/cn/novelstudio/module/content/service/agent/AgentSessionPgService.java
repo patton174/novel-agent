@@ -45,11 +45,42 @@ public class AgentSessionPgService {
         try {
             sessionRepository.saveAndFlush(entity);
         } catch (DataIntegrityViolationException ex) {
-            AgentSessionEntity raced = sessionRepository.findById(sessionId)
-                .orElseThrow(() -> ex);
+            AgentSessionEntity raced = loadSessionAfterInsertRace(sessionId, ex);
             applySessionFields(raced, sessionId, userId, title, novelId);
             sessionRepository.save(raced);
         }
+    }
+
+    private AgentSessionEntity loadSessionAfterInsertRace(String sessionId, DataIntegrityViolationException ex) {
+        for (int attempt = 0; attempt < 6; attempt++) {
+            var found = sessionRepository.findById(sessionId);
+            if (found.isPresent()) {
+                return found.get();
+            }
+            try {
+                Thread.sleep(20L * (attempt + 1));
+            } catch (InterruptedException ie) {
+                Thread.currentThread().interrupt();
+                throw ex;
+            }
+        }
+        throw ex;
+    }
+
+    private AgentMessageEntity loadMessageAfterInsertRace(String messageId, DataIntegrityViolationException ex) {
+        for (int attempt = 0; attempt < 6; attempt++) {
+            var found = messageRepository.findById(messageId);
+            if (found.isPresent()) {
+                return found.get();
+            }
+            try {
+                Thread.sleep(20L * (attempt + 1));
+            } catch (InterruptedException ie) {
+                Thread.currentThread().interrupt();
+                throw ex;
+            }
+        }
+        throw ex;
     }
 
     private static void applySessionFields(
@@ -122,7 +153,7 @@ public class AgentSessionPgService {
         try {
             messageRepository.saveAndFlush(entity);
         } catch (DataIntegrityViolationException ex) {
-            AgentMessageEntity raced = messageRepository.findById(messageId).orElseThrow(() -> ex);
+            AgentMessageEntity raced = loadMessageAfterInsertRace(messageId, ex);
             raced.setSessionId(sessionId);
             raced.setRunId(runId);
             raced.setRole(role);

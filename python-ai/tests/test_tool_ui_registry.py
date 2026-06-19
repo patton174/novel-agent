@@ -4,7 +4,7 @@ from pydantic import BaseModel
 
 from app.agent.harness.tool_ui import (
     default_ui_excerpt_for_name,
-    read_ui_excerpt,
+    read_chapter_ui_excerpt,
 )
 from app.agent.schemas import AgentRunContext
 from app.agent.tools.registry import find_tool_by_name
@@ -31,7 +31,7 @@ def test_registry_covers_api_tools():
     assert default_ui_excerpt_for_name("Agent") is not None
     assert default_ui_excerpt_for_name("ListChapters") is not None
     assert find_tool_by_name("ReadChapter") is not None
-    assert find_tool_by_name("ReadChapter").ui_excerpt is read_ui_excerpt
+    assert find_tool_by_name("ReadChapter").ui_excerpt is read_chapter_ui_excerpt
 
 
 def test_list_chapters_excerpt_from_json():
@@ -43,7 +43,13 @@ def test_list_chapters_excerpt_from_json():
     assert "第二章" in excerpt
 
 
-def test_glob_sse_style_summary():
+def test_list_chapters_excerpt_empty():
+    from app.agent.harness.tool_display import format_list_chapters_excerpt
+
+    assert format_list_chapters_excerpt('{"count": 0, "chapters": []}') == "暂无章节"
+
+
+def test_list_chapters_sse_display_excerpt():
     from app.agent.harness.events import build_tool_completed_sse_payload
 
     payload = build_tool_completed_sse_payload(
@@ -53,4 +59,3 @@ def test_glob_sse_style_summary():
     )
     assert "display_excerpt" in payload
     assert "第一章" in payload["display_excerpt"]
-    assert "output" in payload

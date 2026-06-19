@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef } from 'react'
 import type { EditorMessage } from '../../types/editor'
 
-const SCROLL_DEBOUNCE_MS = 80
+const SCROLL_DEBOUNCE_MS = 120
+const RESIZE_SCROLL_DEBOUNCE_MS = 120
 const PIN_THRESHOLD_PX = 96
 
 export function useEditorScroll(
@@ -14,15 +15,20 @@ export function useEditorScroll(
   const userPinnedScrollRef = useRef(false)
   const scrollDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const scrollRafRef = useRef<number | null>(null)
+  const resizeDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const scrollMessagesToBottom = useCallback((force = false) => {
     if (!force && userPinnedScrollRef.current) {
       return
     }
 
-    const run = () => {
+    const run = (attempt = 0) => {
       const el = messagesAreaRef.current
       if (!el) {
+        if (attempt < 10) {
+          scrollRafRef.current = requestAnimationFrame(() => run(attempt + 1))
+          return
+        }
         messagesEndRef.current?.scrollIntoView({ behavior: 'auto', block: 'end' })
         return
       }
@@ -37,7 +43,7 @@ export function useEditorScroll(
       if (scrollRafRef.current != null) {
         cancelAnimationFrame(scrollRafRef.current)
       }
-      scrollRafRef.current = requestAnimationFrame(run)
+      scrollRafRef.current = requestAnimationFrame(() => run(0))
       return
     }
 
@@ -49,7 +55,7 @@ export function useEditorScroll(
       if (scrollRafRef.current != null) {
         cancelAnimationFrame(scrollRafRef.current)
       }
-      scrollRafRef.current = requestAnimationFrame(run)
+      scrollRafRef.current = requestAnimationFrame(() => run(0))
     }, SCROLL_DEBOUNCE_MS)
   }, [])
 
@@ -84,16 +90,27 @@ export function useEditorScroll(
     }
     const inner = area.firstElementChild
     const onResize = () => {
-      if (!userPinnedScrollRef.current) {
-        scrollMessagesToBottom(isLoading)
+      if (resizeDebounceRef.current) {
+        clearTimeout(resizeDebounceRef.current)
       }
+      resizeDebounceRef.current = setTimeout(() => {
+        resizeDebounceRef.current = null
+        if (!userPinnedScrollRef.current) {
+          scrollMessagesToBottom(isLoading)
+        }
+      }, RESIZE_SCROLL_DEBOUNCE_MS)
     }
     const observer = new ResizeObserver(onResize)
     observer.observe(area)
     if (inner instanceof HTMLElement) {
       observer.observe(inner)
     }
-    return () => observer.disconnect()
+    return () => {
+      observer.disconnect()
+      if (resizeDebounceRef.current) {
+        clearTimeout(resizeDebounceRef.current)
+      }
+    }
   }, [isLoading, activeCenterTab, scrollMessagesToBottom])
 
   useEffect(
@@ -103,6 +120,9 @@ export function useEditorScroll(
       }
       if (scrollRafRef.current != null) {
         cancelAnimationFrame(scrollRafRef.current)
+      }
+      if (resizeDebounceRef.current) {
+        clearTimeout(resizeDebounceRef.current)
       }
     },
     [],

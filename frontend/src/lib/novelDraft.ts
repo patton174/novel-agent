@@ -1,5 +1,7 @@
 /** Fanqie-style create-novel draft fields + assembly for stored description. */
 
+import type { CreateNovelPayload } from '@/types/novel'
+
 export interface NovelDraftForm {
   title: string
   genre: string
@@ -116,5 +118,63 @@ export function buildDraftPayload(form: NovelDraftForm, mode: 'generate' | 'opti
     targetChapterWords: form.targetChapterWords,
     draft: assembleNovelDescription(form) || form.synopsis.trim(),
     mode,
+  }
+}
+
+function extractSection(desc: string, label: string): string {
+  const re = new RegExp(`【${label}】\\s*([\\s\\S]*?)(?=\\n\\n【|$)`)
+  const match = desc.match(re)
+  return match?.[1]?.trim() ?? ''
+}
+
+/** 将已存储小说字段还原为创建/编辑表单 */
+export function novelToDraftForm(novel: {
+  title: string
+  description?: string | null
+  genre?: string | null
+  style?: string | null
+  targetChapterWords?: number
+}): NovelDraftForm {
+  const form = emptyNovelDraftForm()
+  form.title = novel.title
+  form.genre = novel.genre?.trim() ?? ''
+  form.targetChapterWords = novel.targetChapterWords ?? 3000
+
+  const styleRaw = novel.style?.trim() ?? ''
+  if (styleRaw.includes(' · ')) {
+    const [stylePart, ...tagParts] = styleRaw.split(' · ')
+    form.style = stylePart.trim()
+    form.tags = tagParts.join(' · ').trim()
+  } else {
+    form.style = styleRaw
+  }
+
+  const desc = novel.description?.trim() ?? ''
+  if (desc) {
+    form.hook = extractSection(desc, '一句话卖点')
+    form.synopsis = extractSection(desc, '简介')
+    form.worldview = extractSection(desc, '世界观')
+    form.protagonist = extractSection(desc, '主角')
+    form.sellingPoints = extractSection(desc, '卖点')
+    if (!form.synopsis && !form.hook && !form.worldview) {
+      form.synopsis = desc
+    }
+  }
+
+  return form
+}
+
+export function draftFormToPayload(form: NovelDraftForm): CreateNovelPayload {
+  const description =
+    assembleNovelDescription(form) || form.synopsis.trim() || undefined
+  const styleCombined = [form.style.trim(), form.tags.trim()]
+    .filter(Boolean)
+    .join(' · ')
+  return {
+    title: form.title.trim(),
+    description,
+    genre: form.genre.trim() || undefined,
+    style: styleCombined || undefined,
+    targetChapterWords: form.targetChapterWords || 3000,
   }
 }

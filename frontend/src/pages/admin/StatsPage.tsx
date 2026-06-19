@@ -194,7 +194,7 @@ export default function StatsPage() {
             </AdminNativeSelect>
           }
         />
-        <AppShellCardBody className="py-0">
+        <AppShellCardBody className="py-4">
           {loading || agentRunTrend === null ? (
             chartAreaFallback
           ) : (

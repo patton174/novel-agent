@@ -1,4 +1,4 @@
-"""Best-effort durable checkpoint for SSE (non-worker) runs."""
+"""Best-effort durable checkpoint for SSE runs."""
 
 from __future__ import annotations
 
@@ -7,8 +7,9 @@ import logging
 
 from langchain_core.messages import BaseMessage
 
+from app.agent.backend.content_run_client import ContentRunCheckpointClient
 from app.agent.harness.loop_support import RunLoopState
-from app.agent.harness.worker.checkpoint import serialize_worker_state
+from app.agent.harness.run_checkpoint import serialize_run_checkpoint
 from app.config import settings
 
 logger = logging.getLogger(__name__)
@@ -21,11 +22,9 @@ async def persist_sse_checkpoint(state: RunLoopState, messages: list[BaseMessage
     if not run_id:
         return
     try:
-        from app.agent.harness.worker.content_client import ContentRunClient
-
-        client = ContentRunClient()
+        client = ContentRunCheckpointClient()
         try:
-            blob = serialize_worker_state(state, messages=messages)
+            blob = serialize_run_checkpoint(state, messages=messages)
             await client.upsert_checkpoint(
                 run_id,
                 step_index=state.ctx.step_index,
@@ -33,7 +32,7 @@ async def persist_sse_checkpoint(state: RunLoopState, messages: list[BaseMessage
                 context_patch_json=json.dumps(
                     state.ctx.context_patch or {}, ensure_ascii=False
                 ),
-                worker_state_json=blob,
+                checkpoint_state_json=blob,
             )
         finally:
             await client.close()

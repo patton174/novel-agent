@@ -11,7 +11,7 @@ export interface UseTypewriterBufferOptions {
   maxCharsPerFrame?: number
 }
 
-/** 单帧推进量：积压大时略提速，但上限很低以保持逐字感 */
+/** 自适应步进：积压越大越快，但单帧仍受 maxCharsPerFrame 限制 */
 export function computeTypewriterStep(
   cursor: number,
   targetLen: number,
@@ -22,9 +22,9 @@ export function computeTypewriterStep(
     return cursor
   }
   const backlog = targetLen - cursor
-  const baseCps = 18
-  const cps = Math.min(48, baseCps + backlog * 0.08)
-  const byTime = Math.max(1, Math.round((cps * dtMs) / 1000))
+  const frameMs = Math.max(dtMs, 8)
+  const catchUpCps = Math.min(280, Math.max(52, backlog * 16))
+  const byTime = Math.max(1, Math.round((catchUpCps * frameMs) / 1000))
   const step = Math.min(maxCharsPerFrame, byTime)
   return Math.min(targetLen, cursor + step)
 }
@@ -38,29 +38,67 @@ export function sliceTextByRunes(text: string, count: number): string {
 
 /**
  * 可扩容缓冲区：SSE 只追加 target，游标单向播放，不在工具阶段重置。
+ * 播放期间 rAF 持续运行，新 delta 到达时无需重启动画环。
+ *
+ * 性能：runes 按 append-only 增量维护（仅扫描新增片段），visible 字符串按
+ * 游标增量拼接，每帧 O(step) 而非 O(全文)，避免长章节下的卡顿。
  */
 export function useTypewriterBuffer(
   target: string,
-  { resetKey, playing, finished, maxCharsPerFrame = 2 }: UseTypewriterBufferOptions,
+  { resetKey, playing, finished, maxCharsPerFrame = 8 }: UseTypewriterBufferOptions,
 ): { visible: string; isTyping: boolean } {
   const cursorRef = useRef(0)
-  const targetRef = useRef(target)
-  const [visibleCount, setVisibleCount] = useState(0)
+  const runesRef = useRef<string[]>([])
+  const targetLenRef = useRef(0)
+  const prevTargetRef = useRef('')
+  const rebuildRef = useRef(false)
+  const playingRef = useRef(playing)
+  const finishedRef = useRef(finished)
+  const [visible, setVisible] = useState('')
 
-  targetRef.current = target
+  playingRef.current = playing
+  finishedRef.current = finished
+
+  // 增量同步 runes 与 target；append-only 时仅扫描新增后缀。
+  if (target !== prevTargetRef.current) {
+    if (prevTargetRef.current && target.startsWith(prevTargetRef.current)) {
+      const suffix = target.slice(prevTargetRef.current.length)
+      const extra = Array.from(suffix)
+      for (const r of extra) {
+        runesRef.current.push(r)
+      }
+    } else {
+      // 非追加变化（重置/替换）：重建 runes，标记需要重新派生 visible
+      runesRef.current = Array.from(target)
+      if (cursorRef.current > runesRef.current.length) {
+        cursorRef.current = runesRef.current.length
+      }
+      rebuildRef.current = true
+    }
+    targetLenRef.current = runesRef.current.length
+    prevTargetRef.current = target
+  }
 
   useEffect(() => {
     cursorRef.current = 0
-    setVisibleCount(0)
+    setVisible('')
   }, [resetKey])
 
+  // 重建后按当前游标重新派生 visible，避免累积字符串与新 target 不一致
   useEffect(() => {
-    const targetLenNow = () => Array.from(targetRef.current).length
+    if (!rebuildRef.current) {
+      return
+    }
+    rebuildRef.current = false
+    const c = Math.min(cursorRef.current, targetLenRef.current)
+    cursorRef.current = c
+    setVisible(runesRef.current.slice(0, c).join(''))
+  })
 
+  useEffect(() => {
     if (finished) {
-      const len = targetLenNow()
-      cursorRef.current = len
-      setVisibleCount(len)
+      cursorRef.current = targetLenRef.current
+      setVisible(runesRef.current.join(''))
       return undefined
     }
 
@@ -72,21 +110,26 @@ export function useTypewriterBuffer(
     let last = performance.now()
 
     const tick = (now: number) => {
-      const dt = Math.min(now - last, 64)
-      last = now
-      const len = targetLenNow()
-      const next = computeTypewriterStep(
-        cursorRef.current,
-        len,
-        dt,
-        maxCharsPerFrame,
-      )
-      if (next !== cursorRef.current) {
-        cursorRef.current = next
-        setVisibleCount(next)
-      }
-      if (cursorRef.current >= len) {
+      if (finishedRef.current) {
+        cursorRef.current = targetLenRef.current
+        setVisible(runesRef.current.join(''))
         return
+      }
+      if (!playingRef.current) {
+        return
+      }
+
+      const dt = Math.min(now - last, 48)
+      last = now
+      const len = targetLenRef.current
+      const prevCursor = cursorRef.current
+      const next = computeTypewriterStep(prevCursor, len, dt, maxCharsPerFrame)
+      if (next !== prevCursor) {
+        cursorRef.current = next
+        const added = runesRef.current.slice(prevCursor, next).join('')
+        if (added) {
+          setVisible((prev) => prev + added)
+        }
       }
       raf = requestAnimationFrame(tick)
     }
@@ -95,11 +138,9 @@ export function useTypewriterBuffer(
     return () => cancelAnimationFrame(raf)
   }, [playing, finished, resetKey, maxCharsPerFrame])
 
-  const targetLen = Array.from(target).length
-  const visible = sliceTextByRunes(target, visibleCount)
   return {
     visible,
-    isTyping: visibleCount < targetLen,
+    isTyping: cursorRef.current < targetLenRef.current,
   }
 }
 
@@ -109,7 +150,7 @@ export function useTypewriterStream(
   {
     active,
     resetKey,
-    maxCharsPerFrame = 2,
+    maxCharsPerFrame = 8,
   }: {
     active: boolean
     resetKey: string

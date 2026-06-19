@@ -1,0 +1,55 @@
+# 单体 Docker：静态路由 + 关闭客户端 AES/路由混淆（直连 /api）
+server:
+  port: 8080
+
+spring:
+  main:
+    web-application-type: reactive
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: false
+      routes:
+        - id: auth-monolith
+          uri: http://agent-auth:8081
+          predicates:
+            - Path=/api/auth/**
+        - id: pyai-monolith
+          uri: http://agent-pyai:8082
+          predicates:
+            - Path=/api/agent/**
+        - id: content-monolith
+          uri: http://agent-content:8091
+          predicates:
+            - Path=/api/content/**
+        - id: billing-monolith
+          uri: http://agent-billing:8092
+          predicates:
+            - Path=/api/billing/**
+  data:
+    redis:
+      host: ${REDIS_HOST:host.docker.internal}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: ${REDIS_DB:0}
+
+auth:
+  jwt:
+    issuer: novel-agent
+    secret: ${JWT_SECRET:novel-agent-dev-secret-change-in-production-32}
+    access-ttl-seconds: 3600
+  client-security:
+    enabled: false
+    aes-required: false
+    route-obfuscation: false
+    field-encryption: false
+    encrypt-stream: false
+    replay-window-seconds: 120
+    enforce-csrf: false
+    enforce-fingerprint: false
+    enforce-heartbeat: false
+
+logging:
+  level:
+    com.novel.agent: info

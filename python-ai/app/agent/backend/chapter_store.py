@@ -2,10 +2,14 @@
 
 from __future__ import annotations
 
+import json
 import logging
+from collections.abc import AsyncIterator
 from typing import Any
 
 import httpx
+
+from app.agent.backend.chapter_read_stream import collect_chapter_read_text, iter_ndjson_response
 
 from app.agent.backend.chapter_meta import (
     CHAPTER_TITLE_REQUIRED_MSG,
@@ -34,39 +38,294 @@ def _chapter_http_error(resp: httpx.Response) -> str:
 
 
 def normalize_chapter_summary(raw: dict[str, Any]) -> dict[str, Any]:
+    """Normalize ChapterSummaryDTO or ChapterRowDTO from Content API."""
+    chapter_id = str(
+        raw.get("id")
+        or raw.get("chapterId")
+        or raw.get("chapter_id")
+        or ""
+    )
+    list_index = int(raw.get("listIndex") or raw.get("list_index") or raw.get("index") or 0)
     return {
-        "id": str(raw.get("id") or ""),
+        "id": chapter_id,
         "title": str(raw.get("title") or "未命名"),
         "summary": str(raw.get("summary") or ""),
         "sort_order": int(raw.get("sortOrder") or raw.get("sort_order") or 0),
         "word_count": int(raw.get("wordCount") or raw.get("word_count") or 0),
         "volume_id": str(raw.get("volumeId") or raw.get("volume_id") or ""),
         "volume_title": str(raw.get("volumeTitle") or raw.get("volume_title") or ""),
+        "list_index": list_index,
     }
+
+
+def _summaries_from_api_list(body: list[Any]) -> list[dict[str, Any]]:
+    summaries = [
+        normalize_chapter_summary(item)
+        for item in body
+        if isinstance(item, dict) and (item.get("id") or item.get("chapterId"))
+    ]
+    if any(item.get("list_index") for item in summaries):
+        return sorted(summaries, key=lambda item: item.get("list_index") or item.get("sort_order") or 0)
+    return sorted_chapter_summaries(summaries)
+
+
+def _fallback_ctx_chapters(ctx: AgentRunContext) -> list[dict[str, Any]]:
+    return sorted_chapter_summaries(
+        [dict(ch) for ch in (ctx.chapters or []) if isinstance(ch, dict)]
+    )
 
 
 async def fetch_chapter_summaries(ctx: AgentRunContext) -> list[dict[str, Any]]:
     novel_id = str(ctx.novel_id or (ctx.project or {}).get("id") or "").strip()
     if not novel_id or ctx.user_id <= 0:
-        return [dict(ch) for ch in (ctx.chapters or []) if isinstance(ch, dict)]
-    url = content_auth_url(f"/novels/{novel_id}/chapters")
+        return _fallback_ctx_chapters(ctx)
+    for path in ("/chapters/rows", "/chapters"):
+        url = content_auth_url(f"/novels/{novel_id}{path}")
+        try:
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                resp = await client.get(url, headers=user_headers(ctx.user_id))
+                if resp.status_code != 200:
+                    continue
+                body = unwrap_result(resp.json())
+                if not isinstance(body, list):
+                    continue
+                return _summaries_from_api_list(body)
+        except Exception as exc:
+            logger.warning("fetch chapter summaries failed novel=%s path=%s: %s", novel_id, path, exc)
+    return _fallback_ctx_chapters(ctx)
+
+
+async def resolve_chapter_row_api(
+    ctx: AgentRunContext,
+    *,
+    chapter_id: str | None = None,
+    title: str | None = None,
+    index: int | None = None,
+) -> tuple[dict[str, Any] | None, str | None]:
+    """Server-side row resolve (index / chapter_id / title)."""
+    novel_id = str(ctx.novel_id or (ctx.project or {}).get("id") or "").strip()
+    if not novel_id or ctx.user_id <= 0:
+        return None, "missing novel_id or user_id"
+    params: dict[str, str | int] = {}
+    cid = str(chapter_id or "").strip()
+    if cid:
+        params["chapterId"] = cid
+    if index is not None:
+        params["index"] = int(index)
+    want = str(title or "").strip()
+    if want:
+        params["title"] = want
+    if not params:
+        return None, "provide chapterId, title, or index"
+    url = content_auth_url(f"/novels/{novel_id}/chapters/resolve")
     try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            resp = await client.get(url, headers=user_headers(ctx.user_id))
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            resp = await client.get(url, headers=user_headers(ctx.user_id), params=params)
+            if resp.status_code == 400:
+                body = resp.json() if resp.content else {}
+                return None, extract_api_error(body, status_code=400, default="resolve failed")
             if resp.status_code != 200:
-                return [dict(ch) for ch in (ctx.chapters or []) if isinstance(ch, dict)]
+                return None, f"chapter resolve failed HTTP {resp.status_code}"
             body = unwrap_result(resp.json())
-            if not isinstance(body, list):
-                return [dict(ch) for ch in (ctx.chapters or []) if isinstance(ch, dict)]
-            summaries = [
-                normalize_chapter_summary(item)
-                for item in body
-                if isinstance(item, dict) and item.get("id")
-            ]
-            return sorted_chapter_summaries(summaries)
+            if not isinstance(body, dict):
+                return None, "invalid chapter resolve response"
+            row = normalize_chapter_summary(body)
+            if not row.get("id"):
+                return None, "chapter not found"
+            return row, None
     except Exception as exc:
-        logger.warning("fetch chapter summaries failed novel=%s: %s", novel_id, exc)
-    return [dict(ch) for ch in (ctx.chapters or []) if isinstance(ch, dict)]
+        logger.warning("resolve chapter row failed novel=%s: %s", novel_id, exc)
+        return None, str(exc)
+
+
+async def fetch_chapter_read_by_target(
+    ctx: AgentRunContext,
+    *,
+    chapter_id: str | None = None,
+    title: str | None = None,
+    index: int | None = None,
+    offset: int | None = None,
+    limit: int | None = None,
+) -> tuple[str | None, str | None]:
+    """Novel-level read by index / chapter_id / title — single JSON response."""
+    novel_id = str(ctx.novel_id or (ctx.project or {}).get("id") or "").strip()
+    if not novel_id or ctx.user_id <= 0:
+        return None, "missing novel_id or user_id"
+    params: dict[str, int | str] = {}
+    cid = str(chapter_id or "").strip()
+    if cid:
+        params["chapterId"] = cid
+    if index is not None:
+        params["index"] = int(index)
+    want = str(title or "").strip()
+    if want:
+        params["title"] = want
+    if offset is not None:
+        params["offset"] = int(offset)
+    if limit is not None:
+        params["limit"] = int(limit)
+    if not (cid or want or index is not None):
+        return None, "provide chapterId, title, or index"
+    url = content_auth_url(f"/novels/{novel_id}/chapters/read")
+    try:
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            resp = await client.get(
+                url,
+                headers=user_headers(ctx.user_id),
+                params=params or None,
+            )
+        if resp.status_code >= 400:
+            body: Any = None
+            try:
+                if resp.content:
+                    body = resp.json()
+            except Exception:
+                body = None
+            return None, extract_api_error(
+                body,
+                status_code=resp.status_code,
+                default=resp.text[:300] if resp.text else f"HTTP {resp.status_code}",
+            )
+        data = unwrap_result(resp.json())
+        if not isinstance(data, dict):
+            return None, "invalid chapter read response"
+        return str(data.get("text") or ""), None
+    except Exception as exc:
+        logger.warning("chapter read by target failed novel=%s: %s", novel_id, exc)
+        return None, str(exc)
+
+
+async def iter_chapter_read_by_target_stream(
+    ctx: AgentRunContext,
+    *,
+    chapter_id: str | None = None,
+    title: str | None = None,
+    index: int | None = None,
+    offset: int | None = None,
+    limit: int | None = None,
+) -> AsyncIterator[dict[str, Any]]:
+    """Yield NDJSON events from Content API read/stream."""
+    novel_id = str(ctx.novel_id or (ctx.project or {}).get("id") or "").strip()
+    if not novel_id or ctx.user_id <= 0:
+        yield {"type": "error", "message": "missing novel_id or user_id"}
+        return
+    params: dict[str, str | int] = {}
+    cid = str(chapter_id or "").strip()
+    if cid:
+        params["chapterId"] = cid
+    if index is not None:
+        params["index"] = int(index)
+    want = str(title or "").strip()
+    if want:
+        params["title"] = want
+    if offset is not None:
+        params["offset"] = int(offset)
+    if limit is not None:
+        params["limit"] = int(limit)
+    if not (cid or want or index is not None):
+        yield {"type": "error", "message": "provide chapterId, title, or index"}
+        return
+    url = content_auth_url(f"/novels/{novel_id}/chapters/read/stream")
+    try:
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            async with client.stream(
+                "GET",
+                url,
+                headers=user_headers(ctx.user_id),
+                params=params or None,
+            ) as resp:
+                if resp.status_code == 400:
+                    raw = await resp.aread()
+                    try:
+                        parsed = json.loads(raw.decode("utf-8")) if raw else {}
+                    except Exception:
+                        parsed = {}
+                    yield {
+                        "type": "error",
+                        "message": extract_api_error(parsed, status_code=400, default="read failed"),
+                    }
+                    return
+                if resp.status_code == 404:
+                    yield {"type": "error", "message": "chapter not found"}
+                    return
+                if resp.status_code != 200:
+                    yield {
+                        "type": "error",
+                        "message": f"chapter read stream failed HTTP {resp.status_code}",
+                    }
+                    return
+                async for obj in iter_ndjson_response(resp):
+                    yield obj
+    except Exception as exc:
+        logger.warning("chapter read stream by target failed novel=%s: %s", novel_id, exc)
+        yield {"type": "error", "message": str(exc)}
+
+
+async def _fetch_chapter_read_by_target_stream_collect(
+    ctx: AgentRunContext,
+    *,
+    chapter_id: str | None = None,
+    title: str | None = None,
+    index: int | None = None,
+    offset: int | None = None,
+    limit: int | None = None,
+) -> tuple[str | None, str | None]:
+    text, _, err = await collect_chapter_read_text(
+        iter_chapter_read_by_target_stream(
+            ctx,
+            chapter_id=chapter_id,
+            title=title,
+            index=index,
+            offset=offset,
+            limit=limit,
+        )
+    )
+    if err:
+        return None, err
+    return text, None
+
+
+async def iter_chapter_read_slice_stream(
+    ctx: AgentRunContext,
+    chapter_id: str,
+    *,
+    offset: int | None = None,
+    limit: int | None = None,
+) -> AsyncIterator[dict[str, Any]]:
+    if not chapter_id or ctx.user_id <= 0:
+        yield {"type": "error", "message": "missing chapter_id or user_id"}
+        return
+    url = content_auth_url(f"/chapters/{chapter_id}/read/stream")
+    params: dict[str, int] = {}
+    if offset is not None:
+        params["offset"] = int(offset)
+    if limit is not None:
+        params["limit"] = int(limit)
+    try:
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            async with client.stream(
+                "GET",
+                url,
+                headers=user_headers(ctx.user_id),
+                params=params or None,
+            ) as resp:
+                if resp.status_code == 404:
+                    yield {
+                        "type": "error",
+                        "message": f"file not found: /novel/…/chapters/{chapter_id}.md",
+                    }
+                    return
+                if resp.status_code != 200:
+                    yield {
+                        "type": "error",
+                        "message": f"chapter read stream failed HTTP {resp.status_code}",
+                    }
+                    return
+                async for obj in iter_ndjson_response(resp):
+                    yield obj
+    except Exception as exc:
+        logger.warning("chapter read slice stream failed id=%s: %s", chapter_id, exc)
+        yield {"type": "error", "message": str(exc)}
 
 
 async def fetch_chapter_read_slice(
@@ -75,8 +334,9 @@ async def fetch_chapter_read_slice(
     *,
     offset: int | None = None,
     limit: int | None = None,
+    list_index: int | None = None,
 ) -> tuple[str | None, str | None]:
-    """Content API line-based read (1-based offset/limit). Returns (numbered text, error)."""
+    """Content API line-based read (1-based offset/limit). Single JSON response — no NDJSON stream."""
     if not chapter_id or ctx.user_id <= 0:
         return None, "missing chapter_id or user_id"
     url = content_auth_url(f"/chapters/{chapter_id}/read")
@@ -85,23 +345,36 @@ async def fetch_chapter_read_slice(
         params["offset"] = int(offset)
     if limit is not None:
         params["limit"] = int(limit)
+    if list_index is not None and int(list_index) > 0:
+        params["listIndex"] = int(list_index)
     try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
+        async with httpx.AsyncClient(timeout=120.0) as client:
             resp = await client.get(
                 url,
                 headers=user_headers(ctx.user_id),
                 params=params or None,
             )
-            if resp.status_code == 404:
-                return None, f"file not found: /novel/…/chapters/{chapter_id}.md"
-            if resp.status_code != 200:
-                return None, f"chapter read failed HTTP {resp.status_code}"
-            body = unwrap_result(resp.json())
-            if not isinstance(body, dict):
-                return None, "invalid chapter read response"
-            return str(body.get("text") or ""), None
+        if resp.status_code == 404:
+            return None, f"file not found: /novel/…/chapters/{chapter_id}.md"
+        if resp.status_code >= 400:
+            body: Any = None
+            try:
+                if resp.content:
+                    body = resp.json()
+            except Exception:
+                body = None
+            return None, extract_api_error(
+                body,
+                status_code=resp.status_code,
+                default=resp.text[:300] if resp.text else f"HTTP {resp.status_code}",
+            )
+        data = unwrap_result(resp.json())
+        if not isinstance(data, dict):
+            return None, "invalid chapter read response"
+        text = str(data.get("text") or "")
+        return text, None
     except Exception as exc:
-        logger.warning("fetch chapter read slice failed id=%s: %s", chapter_id, exc)
+        logger.warning("chapter read slice failed id=%s: %s", chapter_id, exc)
         return None, str(exc)
 
 
@@ -293,8 +566,13 @@ async def reorder_novel_chapters(
             summaries = [
                 normalize_chapter_summary(item)
                 for item in body
-                if isinstance(item, dict) and item.get("id")
+                if isinstance(item, dict) and (item.get("id") or item.get("chapterId"))
             ]
+            if any(item.get("list_index") for item in summaries):
+                return True, sorted(
+                    summaries,
+                    key=lambda item: item.get("list_index") or item.get("sort_order") or 0,
+                ), ""
             return True, sorted_chapter_summaries(summaries), ""
     except Exception as exc:
         return False, [], str(exc)

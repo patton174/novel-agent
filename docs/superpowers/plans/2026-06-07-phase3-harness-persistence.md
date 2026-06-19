@@ -1,5 +1,7 @@
 # Phase 3 实施计划：Harness 统一 + 持久化加固 + Java 性能/记忆优化
 
+> ⚠️ **历史设计记录**。生产已迁移至 **novel-studio 单体**，现状以 `CLAUDE.md` / `.cursor/rules/project-architecture.mdc` 为准。本文保留作历史参考，**勿据以部署**（旧微服务 agent-gateway/auth/pyai/content/consumer 与 `restart-dev.sh` 均已废弃）。
+
 > 目标：①统一双 Agent/双交互体系；②写作 run 可崩溃恢复（durable checkpoint 含 message history）；③Java reactive 去 block、上下文聚合、事件日志落地化；④Story Memory 字段级增量；⑤上下文精准匹配。
 >
 > 周期：2-3 周 ｜ 依赖：Phase 1 ｜ 可与 Phase 2 并行。

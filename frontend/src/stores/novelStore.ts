@@ -23,6 +23,7 @@ interface NovelStoreState {
   loadNovels: () => Promise<void>
   selectNovel: (novelId: string) => Promise<void>
   createNovel: (payload: CreateNovelPayload) => Promise<Novel>
+  updateNovel: (novelId: string, payload: Partial<CreateNovelPayload>) => Promise<Novel>
   deleteNovel: (novelId: string) => Promise<void>
   loadVolumes: (novelId: string) => Promise<void>
   loadChapters: (novelId: string) => Promise<void>
@@ -97,6 +98,14 @@ export const useNovelStore = create<NovelStoreState>((set, get) => ({
     set((state) => ({ novels: [novel, ...state.novels] }))
     await get().selectNovel(novel.id)
     return novel
+  },
+
+  updateNovel: async (novelId: string, payload: Partial<CreateNovelPayload>) => {
+    const updated = await api.updateNovel(novelId, payload)
+    set((state) => ({
+      novels: state.novels.map((n) => (n.id === novelId ? updated : n)),
+    }))
+    return updated
   },
 
   deleteNovel: async (novelId: string) => {

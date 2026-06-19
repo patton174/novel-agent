@@ -47,11 +47,64 @@ export function formatToolInputFromPayload(
   if (typeof raw.replace_all === 'boolean') {
     lines.push(`全部替换: ${raw.replace_all ? '是' : '否'}`)
   }
-  if (typeof raw.content === 'string' && raw.content.trim()) {
-    const body = raw.content.trim()
+  const bodyText =
+    typeof raw.content === 'string' && raw.content.trim()
+      ? raw.content.trim()
+      : typeof raw.new_content === 'string' && raw.new_content.trim()
+        ? raw.new_content.trim()
+        : typeof raw.payload === 'string' && raw.payload.trim()
+          ? raw.payload.trim()
+          : ''
+  if (bodyText) {
     const preview =
-      body.length > 400 ? `${body.slice(0, 400)}…（共 ${body.length} 字）` : body
+      bodyText.length > 400 ? `${bodyText.slice(0, 400)}…（共 ${bodyText.length} 字）` : bodyText
     lines.push(`正文: ${preview}`)
+  }
+  if (typeof raw.new_title === 'string' && raw.new_title.trim()) {
+    lines.push(`改名为: ${raw.new_title.trim()}`)
+  } else if (typeof raw.title === 'string' && raw.title.trim()) {
+    lines.push(`标题: ${raw.title.trim()}`)
+  }
+  if (typeof raw.query === 'string' && raw.query.trim()) {
+    lines.push(`查询: ${raw.query.trim()}`)
+  }
+  if (typeof raw.scope === 'string' && raw.scope.trim()) {
+    lines.push(`范围: ${raw.scope.trim()}`)
+  }
+  if (typeof raw.memory_id === 'string' && raw.memory_id.trim()) {
+    const mid = raw.memory_id.trim()
+    lines.push(`记忆节点: ${mid.length > 16 ? `${mid.slice(0, 8)}…` : mid}`)
+  }
+  if (typeof raw.parent_id === 'string' && raw.parent_id.trim()) {
+    const pid = raw.parent_id.trim()
+    lines.push(`父节点: ${pid.length > 16 ? `${pid.slice(0, 8)}…` : pid}`)
+  }
+  if (typeof raw.node_type === 'string' && raw.node_type.trim()) {
+    const nt = raw.node_type.trim()
+    lines.push(
+      `节点类型: ${nt === 'root' ? '根节点' : nt === 'child' ? '子节点' : nt}`,
+    )
+  }
+  if (typeof raw.node_kind === 'string' && raw.node_kind.trim()) {
+    lines.push(`节点形态: ${raw.node_kind.trim()}`)
+  }
+  const style = raw.style
+  if (style && typeof style === 'object' && !Array.isArray(style)) {
+    const layout = (style as Record<string, unknown>).layout
+    if (typeof layout === 'string' && layout.trim()) {
+      lines.push(`排版: ${layout.trim()}`)
+    }
+  }
+  if (typeof raw.key === 'string' && raw.key.trim()) {
+    lines.push(`条目: ${raw.key.trim()}`)
+  }
+  if (typeof raw.character === 'string' && raw.character.trim()) {
+    lines.push(`角色: ${raw.character.trim()}`)
+  }
+  if (typeof raw.position === 'number') {
+    lines.push(`移动到第 ${raw.position} 位`)
+  } else if (typeof raw.index === 'number') {
+    lines.push(`序号: 第 ${raw.index} 章`)
   }
   if (typeof raw.old_string === 'string' && raw.old_string) {
     const s = raw.old_string
@@ -62,17 +115,38 @@ export function formatToolInputFromPayload(
     lines.push(`替换后: ${s.length > 120 ? `${s.slice(0, 120)}…` : s}`)
   }
   if (lines.length === 0) {
-    const keys = Object.keys(raw)
-    if (keys.length === 0) {
+    // Never surface raw JSON nor bare ids/UUIDs — render remaining scalar args as text.
+    const scalarLines = Object.entries(raw)
+      .filter(([k, v]) => {
+        if (v == null) {
+          return false
+        }
+        if (typeof v !== 'string' && typeof v !== 'number' && typeof v !== 'boolean') {
+          return false
+        }
+        return !isIdLikeKey(k)
+      })
+      .map(([k, v]) => {
+        const s = String(v).trim()
+        if (!s) {
+          return ''
+        }
+        return `${k}: ${s.length > 120 ? `${s.slice(0, 120)}…` : s}`
+      })
+      .filter(Boolean)
+    if (scalarLines.length === 0) {
       return undefined
     }
-    try {
-      return cap(JSON.stringify(raw, null, 2))
-    } catch {
-      return undefined
-    }
+    return cap(scalarLines.join('\n'))
   }
   return lines.join('\n')
+}
+
+const ID_LIKE_KEY_RE = /(^id$|_id$|uuid|tool_call_id)/i
+
+/** Keys whose values are opaque ids/UUIDs — never worth showing to the user. */
+function isIdLikeKey(key: string): boolean {
+  return ID_LIKE_KEY_RE.test(key)
 }
 
 const LINE_NUM_RE = /^\s*\d+\t/

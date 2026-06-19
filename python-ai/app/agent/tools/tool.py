@@ -43,6 +43,10 @@ class ToolCallResult:
     wait_for: str | None = None
     interaction: dict[str, Any] | None = None
     end_run: bool = False
+    # Structured failure (AGENT_REFACTOR_PLAN P0.2). Populated by tools in
+    # Phase 2 behind ``settings.agent_rf_error_protocol``; ``None`` keeps the
+    # legacy free-form ``content`` error path.
+    error: Any = None  # app.agent.tools.errors.ToolError | None
 
 
 @dataclass
@@ -89,6 +93,9 @@ def build_tool(
         fn = default_ui_excerpt_for_name(name)
         if fn is not None:
             kwargs = {**kwargs, "ui_excerpt": fn}
+    from app.agent.harness.tool_contract import enrich_tool_description
+
+    description = enrich_tool_description(name, description)
     return AgentTool(
         name=name,
         description=description,

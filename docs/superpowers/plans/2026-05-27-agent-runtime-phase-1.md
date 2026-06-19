@@ -1,5 +1,7 @@
 # Agent Runtime Phase 1 Implementation Plan
 
+> ⚠️ **历史设计记录**。生产已迁移至 **novel-studio 单体**，现状以 `CLAUDE.md` / `.cursor/rules/project-architecture.mdc` 为准。本文保留作历史参考，**勿据以部署**（旧微服务 agent-gateway/auth/pyai/content/consumer 与 `restart-dev.sh` 均已废弃）。
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 打通第一条可运行闭环，让前端通过 Java 实时消费 Python 输出的标准 Agent 事件流。
@@ -27,23 +29,23 @@
 
 ### Java
 
-- Modify: `novel-agent/agent-gateway/pom.xml`
+- Modify: `legacy/novel-agent/agent-gateway/pom.xml`
   - 增加 WebFlux 客户端与测试依赖。
-- Create: `novel-agent/agent-gateway/src/main/java/com/novelai/gateway/dto/agent/AgentStreamRequest.java`
+- Create: `legacy/novel-agent/agent-gateway/src/main/java/com/novelai/gateway/dto/agent/AgentStreamRequest.java`
   - 接收前端请求。
-- Create: `novel-agent/agent-gateway/src/main/java/com/novelai/gateway/dto/agent/PythonAgentRequest.java`
+- Create: `legacy/novel-agent/agent-gateway/src/main/java/com/novelai/gateway/dto/agent/PythonAgentRequest.java`
   - 发给 Python 的结构化请求体。
-- Create: `novel-agent/agent-gateway/src/main/java/com/novelai/gateway/dto/agent/AgentStreamEvent.java`
+- Create: `legacy/novel-agent/agent-gateway/src/main/java/com/novelai/gateway/dto/agent/AgentStreamEvent.java`
   - Java 透传的事件载体。
-- Create: `novel-agent/agent-gateway/src/main/java/com/novelai/gateway/service/AgentContextAssembler.java`
+- Create: `legacy/novel-agent/agent-gateway/src/main/java/com/novelai/gateway/service/AgentContextAssembler.java`
   - 组装第一阶段最小上下文。
-- Create: `novel-agent/agent-gateway/src/main/java/com/novelai/gateway/service/PythonAgentClient.java`
+- Create: `legacy/novel-agent/agent-gateway/src/main/java/com/novelai/gateway/service/PythonAgentClient.java`
   - 使用 `WebClient` 调 Python SSE。
-- Create: `novel-agent/agent-gateway/src/main/java/com/novelai/gateway/service/AgentGatewayService.java`
+- Create: `legacy/novel-agent/agent-gateway/src/main/java/com/novelai/gateway/service/AgentGatewayService.java`
   - 负责转发与透传。
-- Create: `novel-agent/agent-gateway/src/main/java/com/novelai/gateway/controller/AgentStreamController.java`
+- Create: `legacy/novel-agent/agent-gateway/src/main/java/com/novelai/gateway/controller/AgentStreamController.java`
   - 提供 `/api/agent/chat/stream`。
-- Test: `novel-agent/agent-gateway/src/test/java/com/novelai/gateway/service/AgentGatewayServiceTest.java`
+- Test: `legacy/novel-agent/agent-gateway/src/test/java/com/novelai/gateway/service/AgentGatewayServiceTest.java`
   - 验证 Java 能把 Python 事件流转成前端 SSE。
 
 ### Frontend
@@ -291,15 +293,15 @@ git commit -m "feat: standardize python agent event stream"
 ### Task 2: Java Gateway Stream Proxy
 
 **Files:**
-- Modify: `novel-agent/agent-gateway/pom.xml`
-- Create: `novel-agent/agent-gateway/src/main/java/com/novelai/gateway/dto/agent/AgentStreamRequest.java`
-- Create: `novel-agent/agent-gateway/src/main/java/com/novelai/gateway/dto/agent/PythonAgentRequest.java`
-- Create: `novel-agent/agent-gateway/src/main/java/com/novelai/gateway/dto/agent/AgentStreamEvent.java`
-- Create: `novel-agent/agent-gateway/src/main/java/com/novelai/gateway/service/AgentContextAssembler.java`
-- Create: `novel-agent/agent-gateway/src/main/java/com/novelai/gateway/service/PythonAgentClient.java`
-- Create: `novel-agent/agent-gateway/src/main/java/com/novelai/gateway/service/AgentGatewayService.java`
-- Create: `novel-agent/agent-gateway/src/main/java/com/novelai/gateway/controller/AgentStreamController.java`
-- Test: `novel-agent/agent-gateway/src/test/java/com/novelai/gateway/service/AgentGatewayServiceTest.java`
+- Modify: `legacy/novel-agent/agent-gateway/pom.xml`
+- Create: `legacy/novel-agent/agent-gateway/src/main/java/com/novelai/gateway/dto/agent/AgentStreamRequest.java`
+- Create: `legacy/novel-agent/agent-gateway/src/main/java/com/novelai/gateway/dto/agent/PythonAgentRequest.java`
+- Create: `legacy/novel-agent/agent-gateway/src/main/java/com/novelai/gateway/dto/agent/AgentStreamEvent.java`
+- Create: `legacy/novel-agent/agent-gateway/src/main/java/com/novelai/gateway/service/AgentContextAssembler.java`
+- Create: `legacy/novel-agent/agent-gateway/src/main/java/com/novelai/gateway/service/PythonAgentClient.java`
+- Create: `legacy/novel-agent/agent-gateway/src/main/java/com/novelai/gateway/service/AgentGatewayService.java`
+- Create: `legacy/novel-agent/agent-gateway/src/main/java/com/novelai/gateway/controller/AgentStreamController.java`
+- Test: `legacy/novel-agent/agent-gateway/src/test/java/com/novelai/gateway/service/AgentGatewayServiceTest.java`
 
 - [ ] **Step 1: Add the failing Java test**
 
@@ -332,13 +334,13 @@ class AgentGatewayServiceTest {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `mvn -pl novel-agent/agent-gateway test -Dtest=AgentGatewayServiceTest`  
+Run: `mvn -pl legacy/novel-agent/agent-gateway test -Dtest=AgentGatewayServiceTest`  
 Expected: FAIL with compilation errors for missing DTOs and services
 
 - [ ] **Step 3: Add Java dependencies required for WebFlux client and tests**
 
 ```xml
-<!-- inside novel-agent/agent-gateway/pom.xml -->
+<!-- inside legacy/novel-agent/agent-gateway/pom.xml -->
 <dependency>
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-webflux</artifactId>
@@ -537,13 +539,13 @@ public class AgentStreamController {
 
 - [ ] **Step 8: Run the Java test to verify it passes**
 
-Run: `mvn -pl novel-agent/agent-gateway test -Dtest=AgentGatewayServiceTest`  
+Run: `mvn -pl legacy/novel-agent/agent-gateway test -Dtest=AgentGatewayServiceTest`  
 Expected: PASS
 
 - [ ] **Step 9: Commit**
 
 ```bash
-git add novel-agent/agent-gateway/pom.xml novel-agent/agent-gateway/src/main/java/com/novelai/gateway/dto/agent/AgentStreamRequest.java novel-agent/agent-gateway/src/main/java/com/novelai/gateway/dto/agent/PythonAgentRequest.java novel-agent/agent-gateway/src/main/java/com/novelai/gateway/dto/agent/AgentStreamEvent.java novel-agent/agent-gateway/src/main/java/com/novelai/gateway/service/AgentContextAssembler.java novel-agent/agent-gateway/src/main/java/com/novelai/gateway/service/PythonAgentClient.java novel-agent/agent-gateway/src/main/java/com/novelai/gateway/service/AgentGatewayService.java novel-agent/agent-gateway/src/main/java/com/novelai/gateway/controller/AgentStreamController.java novel-agent/agent-gateway/src/test/java/com/novelai/gateway/service/AgentGatewayServiceTest.java
+git add legacy/novel-agent/agent-gateway/pom.xml legacy/novel-agent/agent-gateway/src/main/java/com/novelai/gateway/dto/agent/AgentStreamRequest.java legacy/novel-agent/agent-gateway/src/main/java/com/novelai/gateway/dto/agent/PythonAgentRequest.java legacy/novel-agent/agent-gateway/src/main/java/com/novelai/gateway/dto/agent/AgentStreamEvent.java legacy/novel-agent/agent-gateway/src/main/java/com/novelai/gateway/service/AgentContextAssembler.java legacy/novel-agent/agent-gateway/src/main/java/com/novelai/gateway/service/PythonAgentClient.java legacy/novel-agent/agent-gateway/src/main/java/com/novelai/gateway/service/AgentGatewayService.java legacy/novel-agent/agent-gateway/src/main/java/com/novelai/gateway/controller/AgentStreamController.java legacy/novel-agent/agent-gateway/src/test/java/com/novelai/gateway/service/AgentGatewayServiceTest.java
 git commit -m "feat: proxy python agent stream through gateway"
 ```
 
@@ -751,7 +753,7 @@ git commit -m "feat: render agent events in editor stream"
 
 **Files:**
 - Modify: `python-ai/app/api/routes.py`
-- Modify: `novel-agent/agent-gateway/src/main/java/com/novelai/gateway/controller/AgentStreamController.java`
+- Modify: `legacy/novel-agent/agent-gateway/src/main/java/com/novelai/gateway/controller/AgentStreamController.java`
 - Modify: `frontend/src/pages/EditorPage.tsx`
 
 - [ ] **Step 1: Start the Python service**

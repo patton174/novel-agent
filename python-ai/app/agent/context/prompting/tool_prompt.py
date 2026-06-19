@@ -40,7 +40,14 @@ def _background_from_ctx(
 def _append_memory_read_snippet(parts: list[str], last: dict) -> None:
     if not isinstance(last, dict) or not last.get("ok"):
         return
+    memory_id = str(last.get("memory_id") or "").strip()
     scope = str(last.get("scope") or "")
+    if memory_id:
+        line = f"已 ReadMemory memory_id={memory_id}"
+        if scope:
+            line += f" scope={scope}"
+        parts.append(line)
+        return
     if scope == "character":
         ids = last.get("item_ids") or []
         if ids:

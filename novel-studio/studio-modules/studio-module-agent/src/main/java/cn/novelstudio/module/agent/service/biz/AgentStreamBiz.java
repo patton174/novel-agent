@@ -7,9 +7,7 @@ import cn.novelstudio.module.agent.client.ContentInternalClient;
 import cn.novelstudio.module.agent.dto.agent.AgentStreamRequest;
 import cn.novelstudio.module.agent.orchestration.AgentRunEventJournal;
 import cn.novelstudio.module.agent.service.AgentBridgeService;
-import cn.novelstudio.module.agent.service.PgRunResumeStreamService;
-import cn.novelstudio.module.agent.service.QuotaGateService;
-import cn.novelstudio.module.agent.service.QuotaGateResult;
+import cn.novelstudio.module.agent.service.RunProxyResumeService;
 import cn.novelstudio.module.agent.support.AgentStreamSupport;
 import cn.novelstudio.module.content.dto.agent.AgentRunDTO;
 import org.springframework.stereotype.Component;
@@ -19,21 +17,18 @@ import reactor.core.publisher.Flux;
 public class AgentStreamBiz extends BaseBiz {
 
     private final AgentBridgeService agentBridgeService;
-    private final QuotaGateService quotaGateService;
-    private final PgRunResumeStreamService pgRunResumeStreamService;
+    private final RunProxyResumeService runProxyResumeService;
     private final AgentRunEventJournal eventJournal;
     private final ContentInternalClient contentInternalClient;
 
     public AgentStreamBiz(
         AgentBridgeService agentBridgeService,
-        QuotaGateService quotaGateService,
-        PgRunResumeStreamService pgRunResumeStreamService,
+        RunProxyResumeService runProxyResumeService,
         AgentRunEventJournal eventJournal,
         ContentInternalClient contentInternalClient
     ) {
         this.agentBridgeService = agentBridgeService;
-        this.quotaGateService = quotaGateService;
-        this.pgRunResumeStreamService = pgRunResumeStreamService;
+        this.runProxyResumeService = runProxyResumeService;
         this.eventJournal = eventJournal;
         this.contentInternalClient = contentInternalClient;
     }
@@ -49,10 +44,9 @@ public class AgentStreamBiz extends BaseBiz {
         if (request.message() == null || request.message().isBlank()) {
             throw new ValidationException(ResultCode.BAD_REQUEST, "message is required");
         }
-        QuotaGateResult gate = quotaGateService.assertCanStartRun(userId);
         Flux<String> frames = agentBridgeService.stream(userId, request)
             .filter(frame -> !contentOnly || AgentStreamSupport.isContentFrame(frame));
-        return new StreamFrames(AgentStreamSupport.withKeepalive(frames), gate.quotaWarningHeader());
+        return new StreamFrames(AgentStreamSupport.withKeepalive(frames), null);
     }
 
     /**
@@ -79,8 +73,6 @@ public class AgentStreamBiz extends BaseBiz {
     }
 
     public StreamFrames resumeRunStreamFrames(Long userId, String runId, int afterSequence, boolean contentOnly) {
-        Flux<String> frames = pgRunResumeStreamService.resumeStream(userId, runId, afterSequence)
-            .filter(frame -> !contentOnly || AgentStreamSupport.isContentFrame(frame));
-        return new StreamFrames(AgentStreamSupport.withKeepalive(frames), null);
+        return runProxyResumeService.resume(userId, runId, afterSequence, contentOnly);
     }
 }

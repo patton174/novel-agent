@@ -73,7 +73,9 @@ INTERACTION_TOOLS = [
         ),
         input_model=AgentInput,
         call=run_agent,
-        is_concurrency_safe=lambda _i: True,
+        # 子 Agent 会写章/写记忆，与任何工具（含其他 Agent、Read）并行都可能竞态。
+        # 强制串行：每个 Agent 独占一批，只读工具不与 Agent 合批。
+        is_concurrency_safe=lambda _i: False,
         user_facing_name=lambda inp: (
             f"子任务：{(inp.description or '子任务')[:32]}" if inp else "子任务"
         ),

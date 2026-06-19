@@ -1,120 +1,226 @@
-"""Story-memory catalog for RUN_CONTEXT (scope + key, no VFS paths)."""
+"""Memory tree catalog for RUN_CONTEXT — title + memory_id only (no content bodies)."""
 
 from __future__ import annotations
 
+import time
 from typing import Any
-from urllib.parse import quote, unquote
 
-from app.agent.backend.ids import CHAPTER_ID_RE
+from app.agent.backend.memory_node_store import (
+    fetch_all_memory_trees_sync,
+    normalize_tree_summary,
+)
+from app.agent.harness.tool_contract import (
+    MEMORY_ID_FIELD,
+    MEMORY_SCOPE_FIELD,
+    format_memory_tree_line,
+)
 from app.agent.schemas import AgentRunContext
-from app.runtime.story_memory import get_story_memory
+
+SCOPE_LABELS: dict[str, str] = {}
+
+_TREES_CACHE_TTL_SEC = 15.0
+_trees_cache: dict[tuple[int, str], tuple[float, dict[str, dict[str, Any]]]] = {}
 
 
-def memory_path_segment(label: str) -> str:
-    raw = (label or "item").strip() or "item"
-    return quote(raw, safe="")
+def _novel_id(ctx: AgentRunContext) -> str:
+    return str(ctx.novel_id or (ctx.project or {}).get("id") or "").strip()
 
 
-def memory_path_segment_decode(segment: str) -> str:
-    base = (segment or "").removesuffix(".json")
-    return unquote(base)
-
-
-def load_story_memory_tree(ctx: AgentRunContext) -> dict[str, Any]:
-    return get_story_memory(
-        ctx.session_id,
-        user_id=ctx.user_id,
-        novel_id=ctx.novel_id,
-        project=ctx.project if isinstance(ctx.project, dict) else None,
-    )
-
-
-def chapter_memory_catalog_label(
-    ctx: AgentRunContext,
-    chapter_id: str,
-    bucket_entry: Any = None,
-) -> str:
-    """Human-readable catalog line for chapter memory (storage key stays UUID)."""
-    cid = (chapter_id or "").strip()
-    if not cid:
-        return chapter_id
-    list_index = 0
-    catalog_title = ""
-    for ch in ctx.chapters or []:
-        if not isinstance(ch, dict) or str(ch.get("id") or "") != cid:
+def _trees_have_nodes(trees: dict[str, dict[str, Any]]) -> bool:
+    for tree in trees.values():
+        if not isinstance(tree, dict):
             continue
-        catalog_title = str(ch.get("title") or "").strip()
-        try:
-            list_index = int(ch.get("list_index") or 0)
-        except (TypeError, ValueError):
-            list_index = 0
-        break
-    env_title = ""
-    if isinstance(bucket_entry, dict):
-        env_title = str(bucket_entry.get("title") or "").strip()
-    title = catalog_title or env_title
-    if title:
-        pos = f"列表第{list_index}章 · " if list_index > 0 else ""
-        short_id = f"{cid[:8]}…" if len(cid) > 12 else cid
-        return f"{pos}{title}（chapter_id={short_id}）"
-    if CHAPTER_ID_RE.match(cid):
-        return f"章节记忆（chapter_id={cid[:8]}…）"
-    return cid
+        nodes = tree.get("nodes")
+        if isinstance(nodes, list) and nodes:
+            return True
+    return False
 
 
-def format_memory_catalog_db(ctx: AgentRunContext, *, max_lines: int = 48) -> str:
-    """Human-readable memory index for RUN_CONTEXT (API source of truth)."""
-    nid = str(ctx.novel_id or (ctx.project or {}).get("id") or "").strip()
-    if not nid:
-        return "（无 novel_id，无法列举记忆）"
-    tree = load_story_memory_tree(ctx)
-    scope_labels = {
-        "novel": "大纲（创作规划，非逐章记忆）",
-        "world": "世界观",
-        "character": "角色库",
-        "chapter": "章节记忆",
-        "background": "背景设定",
-    }
-    lines = [
-        "【故事记忆 · story-memory API】用 ListMemory / ReadMemory(scope, key) 访问。",
-        "scope 枚举：novel | world | character | chapter | background；key 为原始文本键名。",
-    ]
-    sections: list[tuple[str, str, dict[str, Any]]] = [
-        ("novel", "novel", tree.get("novel") if isinstance(tree.get("novel"), dict) else {}),
-        ("world", "world", tree.get("world") if isinstance(tree.get("world"), dict) else {}),
-        (
-            "character",
-            "characters",
-            tree.get("characters") if isinstance(tree.get("characters"), dict) else {},
-        ),
-        (
-            "chapter",
-            "chapters",
-            tree.get("chapters") if isinstance(tree.get("chapters"), dict) else {},
-        ),
-        (
-            "background",
-            "background",
-            tree.get("background") if isinstance(tree.get("background"), dict) else {},
-        ),
-    ]
-    total = 0
-    for vfs_scope, _bucket_key, bucket in sections:
-        if not bucket:
+def extract_scope_root_ids(trees: dict[str, dict[str, Any]]) -> dict[str, str]:
+    """scope key → scope root memory_id (CreateMemory child parent_id)."""
+    out: dict[str, str] = {}
+    for scope, tree in trees.items():
+        if not isinstance(tree, dict):
             continue
-        label = scope_labels.get(vfs_scope, vfs_scope)
-        lines.append(f"## {label}（{len(bucket)} 条）")
-        for key in sorted(bucket.keys(), key=str):
-            if total >= max_lines:
-                lines.append("…（其余条目请 ListMemory）")
-                return "\n".join(lines)
-            preview = str(bucket[key])[:60].replace("\n", " ")
-            if vfs_scope == "chapter":
-                human = chapter_memory_catalog_label(ctx, str(key), bucket[key])
-                lines.append(f"- scope=chapter key={key!r}  {human}  ({preview})")
-            else:
-                lines.append(f"- scope={vfs_scope} key={key!r}  ({preview})")
-            total += 1
-    if total == 0:
-        lines.append("（当前无记忆条目）")
+        nodes = tree.get("nodes") if isinstance(tree.get("nodes"), list) else []
+        if not nodes:
+            continue
+        root = sorted(nodes, key=lambda n: int(n.get("sort_order") or 0))[0]
+        mid = str(root.get("memory_id") or "").strip()
+        if mid:
+            out[str(scope)] = mid
+    return out
+
+
+def resolve_scope_root_id(ctx: AgentRunContext, scope: str) -> str | None:
+    """Resolve scope tab name → scope root memory_id for CreateMemory(child)."""
+    key = str(scope or "").strip()
+    if not key:
+        return None
+    root_ids = extract_scope_root_ids(load_all_memory_trees(ctx))
+    if key in root_ids:
+        return root_ids[key]
+    key_lower = key.lower()
+    for name, mid in root_ids.items():
+        if name.lower() == key_lower:
+            return mid
+    return None
+
+
+def format_scope_root_ids_hint(ctx: AgentRunContext) -> str:
+    """Human-readable scope→parent_id map for CreateMemory child validation errors."""
+    root_ids = extract_scope_root_ids(load_all_memory_trees(ctx))
+    if not root_ids:
+        return ""
+    lines = ["Available scope_root_ids (copy parent_id UUID into CreateMemory child):"]
+    for scope in sorted(root_ids.keys()):
+        lines.append(f"  scope={scope} → parent_id={root_ids[scope]}")
     return "\n".join(lines)
+
+
+def _trees_from_context_patch(ctx: AgentRunContext) -> dict[str, dict[str, Any]] | None:
+    patch = ctx.context_patch if isinstance(ctx.context_patch, dict) else {}
+    raw = patch.get("memory_tree_index")
+    if not isinstance(raw, dict) or not raw:
+        return None
+    out: dict[str, dict[str, Any]] = {}
+    for scope, tree in raw.items():
+        if isinstance(tree, dict):
+            out[str(scope)] = normalize_tree_summary(tree)
+    return out or None
+
+
+def load_all_memory_trees(ctx: AgentRunContext) -> dict[str, dict[str, Any]]:
+    """Prefer Java-assembled index; else one /tree-index HTTP call; 15s process cache."""
+    preloaded = _trees_from_context_patch(ctx)
+    if preloaded is not None and _trees_have_nodes(preloaded):
+        return preloaded
+
+    nid = _novel_id(ctx)
+    if not nid or ctx.user_id <= 0:
+        return {}
+
+    key = (ctx.user_id, nid)
+    now = time.monotonic()
+    cached = _trees_cache.get(key)
+    if cached and now - cached[0] < _TREES_CACHE_TTL_SEC:
+        return cached[1]
+
+    trees = fetch_all_memory_trees_sync(ctx)
+    _trees_cache[key] = (now, trees)
+    return trees
+
+
+def invalidate_memory_trees_cache(*, user_id: int, novel_id: str) -> None:
+    _trees_cache.pop((user_id, (novel_id or "").strip()), None)
+
+
+def refresh_memory_tree_index_patch(ctx: AgentRunContext) -> dict[str, Any]:
+    """Fetch fresh title-only trees into context_patch after memory mutations."""
+    nid = _novel_id(ctx)
+    if not nid or ctx.user_id <= 0:
+        return {"memory_tree_index": {}}
+    invalidate_memory_trees_cache(user_id=ctx.user_id, novel_id=nid)
+    trees = fetch_all_memory_trees_sync(ctx)
+    return {"memory_tree_index": trees}
+
+
+def _append_tree_lines(
+    lines: list[str],
+    nodes: list[dict[str, Any]],
+    *,
+    indent: int,
+    max_lines: int,
+    counter: list[int],
+) -> None:
+    for node in sorted(nodes, key=lambda n: int(n.get("sort_order") or 0)):
+        if counter[0] >= max_lines:
+            lines.append("…（其余节点请 ListMemory / GetMemoryTree）")
+            return
+        lines.append(
+            format_memory_tree_line(
+                memory_id=str(node.get("memory_id") or ""),
+                title=str(node.get("title") or ""),
+                sort_order=int(node.get("sort_order") or 0),
+                node_kind=str(node.get("node_kind") or "both"),
+                child_count=int(node.get("child_count") or 0),
+                indent=indent,
+            )
+        )
+        counter[0] += 1
+        children = node.get("children") if isinstance(node.get("children"), list) else []
+        if children:
+            _append_tree_lines(
+                lines,
+                children,
+                indent=indent + 1,
+                max_lines=max_lines,
+                counter=counter,
+            )
+        if counter[0] >= max_lines:
+            return
+
+
+def format_memory_index(
+    ctx: AgentRunContext,
+    *,
+    max_lines: int = 56,
+    trees: dict[str, dict[str, Any]] | None = None,
+) -> str:
+    """Title-only memory index for RUN_CONTEXT — ReadMemory(memory_id) for bodies."""
+    nid = _novel_id(ctx)
+    if not nid or ctx.user_id <= 0:
+        return "（无 novel_id，无法列举记忆）"
+
+    scope_trees = trees if trees is not None else load_all_memory_trees(ctx)
+    lines = [
+        "【故事记忆 · 标题索引】",
+        "每行含 memory_id（UUID）；正文请 ReadMemory(memory_id)。",
+        f"{MEMORY_SCOPE_FIELD} = 主分类 Tab（node_type=root，每类一次）。正文放在 node_type=child 子条目，按主题拆分，便于 UI 子菜单浏览。",
+        "CreateMemory(node_type=child) **必填 parent_id**：scope 根 UUID（见 scope_root_ids，逐条复制）。",
+        "禁止在 scope 根节点堆过长正文；多主题/超长内容 → 多个 CreateMemory(child) + UpdateMemoryContent(child)。",
+        "禁止超过两层；scope 已存在时仅 node_type=child，勿重复 root。",
+    ]
+    root_ids = extract_scope_root_ids(scope_trees)
+    if root_ids:
+        lines.append("scope_root_ids（child 的 parent_id 从此复制，勿省略）：")
+        for scope in sorted(root_ids.keys()):
+            lines.append(f"  - scope={scope} → parent_id={root_ids[scope]}")
+    counter = [0]
+    total = 0
+    for scope in scope_trees.keys():
+        tree = scope_trees.get(scope) or {"count": 0, "nodes": []}
+        count = int(tree.get("count") or 0)
+        if count <= 0:
+            continue
+        total += count
+        label = SCOPE_LABELS.get(scope, scope)
+        lines.append(f"## {label}（{count} 节点） scope={scope}")
+        nodes = tree.get("nodes") if isinstance(tree.get("nodes"), list) else []
+        _append_tree_lines(lines, nodes, indent=1, max_lines=max_lines, counter=counter)
+        if counter[0] >= max_lines:
+            break
+
+    if total == 0:
+        lines.append("（当前无记忆根分类 — CreateMemory(node_type=root, title=分类名)，每类仅一次）")
+    return "\n".join(lines)
+
+
+# Legacy aliases — callers/tests may still import these names.
+def format_memory_catalog_db(
+    ctx: AgentRunContext,
+    *,
+    max_lines: int = 48,
+    trees: dict[str, dict[str, Any]] | None = None,
+) -> str:
+    return format_memory_index(ctx, max_lines=max_lines, trees=trees)
+
+
+def format_memory_tree_block(
+    ctx: AgentRunContext,
+    *,
+    max_lines: int = 32,
+    trees: dict[str, dict[str, Any]] | None = None,
+) -> str:
+    _ = max_lines
+    return format_memory_index(ctx, trees=trees)

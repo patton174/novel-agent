@@ -99,7 +99,10 @@ public class UsageCrmBiz extends BaseBiz {
 
     public Result<PlatformUsageOverviewResp> platformOverview() {
         String period = BillingPeriodSupport.currentPeriodYyyyMm();
-        Object[] periodSum = usagePeriodSummaryRepository.sumByPeriod(period);
+        // sumByPeriod 返回元组流 List<Object[]>（与 sumByModelSince 等同类一致）；
+        // 聚合查询恒返回一行，取 get(0) 得到 [tokens, cost]。
+        List<Object[]> periodRows = usagePeriodSummaryRepository.sumByPeriod(period);
+        Object[] periodSum = periodRows.isEmpty() ? new Object[]{0L, 0L} : periodRows.get(0);
         long monthTokens = periodSum[0] == null ? 0L : ((Number) periodSum[0]).longValue();
         long monthCost = periodSum[1] == null ? 0L : ((Number) periodSum[1]).longValue();
 

@@ -79,13 +79,13 @@ const THINK_LINES = [
 
 const ORCH_TOOLS = [
   { name: 'think', args: '续写切入点分析', status: 'success' as const, excerpt: '' },
-  { name: 'memory_read', args: '角色库 · 世界观', status: 'success' as const, excerpt: '命中 Tang_Yun、势力格局' },
+  { name: 'ReadMemory', args: '角色库 · 世界观', status: 'success' as const, excerpt: '命中 Tang_Yun、势力格局' },
   { name: 'plan', args: '第二章结构', status: 'success' as const, excerpt: '首战 → 掉宝 → 钩子' },
-  { name: 'chapter_create', args: 'task: 天赋初验', status: 'loading' as const, excerpt: '' },
+  { name: 'WriteChapter', args: 'task: 天赋初验', status: 'loading' as const, excerpt: '' },
 ]
 
 const SUBAGENT_TOOLS = [
-  { name: 'memory_read', args: '角色卡 Tang_Yun', status: 'success' as const, excerpt: '人设无冲突' },
+  { name: 'ReadMemory', args: '角色卡 Tang_Yun', status: 'success' as const, excerpt: '人设无冲突' },
   { name: 'output', args: '校对摘要', status: 'success' as const, excerpt: '已同步至记忆' },
 ]
 
@@ -181,7 +181,7 @@ function AgentTimeline({ variant }: { variant: MarketingAgentDemoVariant }) {
 
   return (
     <div className={cn(DEMO_STREAM_BLOCK, 'demo-stream-block')}>
-      <span className={DEMO_STREAM_LABEL}>chapter_create · 流式输出</span>
+      <span className={DEMO_STREAM_LABEL}>WriteChapter · 流式输出</span>
       {EDITOR_STREAM.map((line) => (
         <p key={line} className={cn(DEMO_STREAM_LINE, 'demo-stream-line')}>
           {line}
@@ -241,7 +241,7 @@ function EditorContent({ variant }: { variant: MarketingAgentDemoVariant }) {
           </p>
         ) : (
           <p className={cn(DEMO_APP_EDITOR_LINE, DEMO_APP_EDITOR_LINE_MUTED, 'demo-editor-line')}>
-            {variant === 'orchestrate' ? '（等待 chapter_create 写入正文…）' : '（Agent 运行中…）'}
+            {variant === 'orchestrate' ? '（等待 WriteChapter 写入正文…）' : '（Agent 运行中…）'}
           </p>
         )}
       </div>

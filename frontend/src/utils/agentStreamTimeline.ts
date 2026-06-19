@@ -7,6 +7,7 @@ import {
   planningActiveLabel,
   planningPrepTitle,
 } from './agentOrchestration'
+import { formatRunToolStats } from './agentToolStats'
 import { isHiddenUiTool } from './agentHiddenTools'
 import { isAskUserTool } from './agentToolNames'
 import { sanitizeMessageDeltaChunk, sanitizeThinkText } from './sanitizeAgentText'
@@ -66,10 +67,19 @@ function seedPlannedToolBlocks(
   ])
 }
 
-/** 从 timeline 中最近的 planning.completed transition 提取编排概览 */
+/** 从 timeline 中最近的 planning.completed transition 或 step 统计提取编排概览 */
 export function orchestrationOverviewFromTimeline(
   timeline: AgentTimelineBlock[],
+  stepStates?: AgentStepState[],
+  options?: { streamFinished?: boolean },
 ): string | undefined {
+  const stats =
+    options?.streamFinished && stepStates?.length
+      ? formatRunToolStats(stepStates)
+      : null
+  if (stats) {
+    return stats
+  }
   for (let i = timeline.length - 1; i >= 0; i -= 1) {
     const block = timeline[i]
     if (block.kind !== 'transition' || block.status !== 'done') {
@@ -940,6 +950,90 @@ export function formatPlanningHeadline(
   return raw
 }
 
+function headlineForStartedStep(step: AgentStepState): string | null {
+  if (step.status !== 'started') {
+    return null
+  }
+  const tool = step.toolName ?? ''
+  if (tool === 'ReadMemory' || tool === 'ReadChapter' || tool === 'SearchKnowledge') {
+    const title = step.title?.trim()
+    if (title && !PLANNING_GENERIC_TITLES.has(title)) {
+      return title.endsWith('…') ? title : `${title}…`
+    }
+    return planningActiveLabel(tool) ?? planningActiveLabel('Read') ?? '读取中…'
+  }
+  const activeLabel = tool ? planningActiveLabel(tool) : undefined
+  if (activeLabel) {
+    return activeLabel
+  }
+  const title = step.title?.trim()
+  if (title && !PLANNING_GENERIC_TITLES.has(title)) {
+    return title.endsWith('…') ? title : `${title}…`
+  }
+  return null
+}
+
+function deriveActiveToolHeadlineFromRounds(
+  rounds: ThinkRoundPayload[],
+  stepStates: AgentStepState[],
+): string | null {
+  for (let r = rounds.length - 1; r >= 0; r -= 1) {
+    const round = rounds[r]
+    if (!round) {
+      continue
+    }
+    for (let i = round.items.length - 1; i >= 0; i -= 1) {
+      const item = round.items[i]
+      if (!item || item.kind !== 'tools') {
+        continue
+      }
+      for (let b = item.blocks.length - 1; b >= 0; b -= 1) {
+        const block = item.blocks[b]
+        if (!block || block.kind !== 'tool') {
+          continue
+        }
+        const step = findStepState(stepStates, block.stepId)
+        if (!step) {
+          continue
+        }
+        const headline = headlineForStartedStep(step)
+        if (headline) {
+          return headline
+        }
+      }
+    }
+  }
+  return null
+}
+
+function hasActiveInsightBlock(rounds: ThinkRoundPayload[]): boolean {
+  for (let r = rounds.length - 1; r >= 0; r -= 1) {
+    const round = rounds[r]
+    if (!round) {
+      continue
+    }
+    for (let i = round.items.length - 1; i >= 0; i -= 1) {
+      const item = round.items[i]
+      if (!item || item.kind !== 'insight') {
+        continue
+      }
+      for (let b = item.blocks.length - 1; b >= 0; b -= 1) {
+        const block = item.blocks[b]
+        if (!block) {
+          continue
+        }
+        if (
+          (block.kind === 'reasoning' || block.kind === 'think') &&
+          block.status === 'active'
+        ) {
+          return true
+        }
+      }
+    }
+  }
+  return false
+}
+
 /** 编排块标题：进行中时随当前步骤动态切换（思考 / 读记忆 / 写正文等） */
 export function deriveActivePlanningHeadline(
   transition: Extract<AgentTimelineBlock, { kind: 'transition' }>,
@@ -954,6 +1048,19 @@ export function deriveActivePlanningHeadline(
     return formatPlanningHeadline(transition, streamLive, streamFinished)
   }
 
+  for (let i = blocks.length - 1; i >= 0; i -= 1) {
+    const block = blocks[i]
+    if (block.kind === 'tool' && stepStates) {
+      const step = findStepState(stepStates, block.stepId)
+      if (step) {
+        const headline = headlineForStartedStep(step)
+        if (headline) {
+          return headline
+        }
+      }
+    }
+  }
+
   const insight = mergePlanningInsightBlocks(blocks)
   if (insight.isActive) {
     return '思考中…'
@@ -963,28 +1070,6 @@ export function deriveActivePlanningHeadline(
     const block = blocks[i]
     if (block.kind === 'reasoning' && block.status === 'active') {
       return '思考中…'
-    }
-    if (block.kind === 'tool' && stepStates) {
-      const step = findStepState(stepStates, block.stepId)
-      if (step?.status !== 'started') {
-        continue
-      }
-      const tool = step.toolName ?? ''
-      if (tool === 'Read' || tool === 'Grep' || tool === 'memory_read') {
-        const title = step.title?.trim()
-        if (title && !PLANNING_GENERIC_TITLES.has(title)) {
-          return title.endsWith('…') ? title : `${title}…`
-        }
-        return planningActiveLabel(tool) ?? planningActiveLabel('Read') ?? '读取中…'
-      }
-      const activeLabel = tool ? planningActiveLabel(tool) : undefined
-      if (activeLabel) {
-        return activeLabel
-      }
-      const title = step.title?.trim()
-      if (title && !PLANNING_GENERIC_TITLES.has(title)) {
-        return title.endsWith('…') ? title : `${title}…`
-      }
     }
   }
 
@@ -1141,8 +1226,11 @@ export function deriveOrchestrationHeadline(
   completedOverview?: string,
 ): string {
   const streaming = streamLive && !streamFinished
+  const toolsStillRunning = stepStates.some(
+    (step) => step.type === 'tool' && step.status === 'started',
+  )
   if (!streaming) {
-    if (status === 'done') {
+    if (status === 'done' && !toolsStillRunning) {
       const overview = completedOverview?.trim()
       if (overview && !PLANNING_GENERIC_TITLES.has(overview)) {
         return `编排完成 · ${overview}`
@@ -1151,40 +1239,20 @@ export function deriveOrchestrationHeadline(
     }
     return '编排'
   }
+
+  const toolHeadline = deriveActiveToolHeadlineFromRounds(rounds, stepStates)
+  if (toolHeadline) {
+    return toolHeadline
+  }
+
+  if (hasActiveInsightBlock(rounds)) {
+    return '思考中…'
+  }
+
   if (status === 'done') {
     return '成稿中…'
   }
-  const overview = completedOverview?.trim()
-  if (overview && !PLANNING_GENERIC_TITLES.has(overview)) {
-    return `编排完成 · ${overview}`
-  }
-  for (const round of rounds) {
-    for (const item of round.items) {
-      if (item.kind !== 'tools') {
-        if (item.kind === 'insight') {
-          for (const block of item.blocks) {
-            if (block.kind === 'reasoning' && block.status === 'active') {
-              return '编排中…'
-            }
-          }
-        }
-        continue
-      }
-      for (const block of item.blocks) {
-        const step = findStepState(stepStates, block.stepId)
-        if (step?.status === 'started' && step.toolName) {
-          const label = planningActiveLabel(step.toolName)
-          if (label) {
-            return label
-          }
-          const title = step.title?.trim()
-          if (title && !PLANNING_GENERIC_TITLES.has(title)) {
-            return title.endsWith('…') ? title : `${title}…`
-          }
-        }
-      }
-    }
-  }
+
   return '编排中…'
 }
 

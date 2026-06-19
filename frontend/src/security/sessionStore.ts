@@ -72,6 +72,14 @@ export function setAccessToken(token: string | null): void {
 }
 
 export function getAccessToken(): string | null {
+  // sessionStorage 为跨 chunk/HMR 的权威来源；内存 token 可能滞后于 refresh 写入。
+  if (typeof sessionStorage !== 'undefined') {
+    const stored = sessionStorage.getItem(TOKEN_STORAGE_KEY)
+    if (stored !== accessToken) {
+      accessToken = stored
+    }
+    return stored
+  }
   return accessToken
 }
 

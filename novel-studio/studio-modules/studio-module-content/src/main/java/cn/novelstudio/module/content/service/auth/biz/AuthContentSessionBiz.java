@@ -10,7 +10,6 @@ import cn.novelstudio.module.content.dto.SaveRunTraceRequest;
 import cn.novelstudio.module.content.dto.SessionDTO;
 import cn.novelstudio.module.content.dto.UpsertSessionRequest;
 import cn.novelstudio.module.content.service.ContentSessionService;
-import cn.novelstudio.module.content.service.StoryMemoryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -22,7 +21,6 @@ import java.util.Map;
 public class AuthContentSessionBiz extends BaseBiz {
 
     private final ContentSessionService sessionService;
-    private final StoryMemoryService storyMemoryService;
 
     public Result<List<SessionDTO>> list(String userId, int limit) {
         return ok(sessionService.listSessions(userId, limit));
@@ -45,7 +43,6 @@ public class AuthContentSessionBiz extends BaseBiz {
         if (!sessionService.deleteSession(userId, sessionId)) {
             notFound(ResultCode.SESSION_NOT_FOUND, "会话不存在");
         }
-        storyMemoryService.purgeSessionMemory(userId, sessionId);
         return ok(Map.of("ok", true));
     }
 
@@ -53,7 +50,6 @@ public class AuthContentSessionBiz extends BaseBiz {
         int deleted = 0;
         for (String sessionId : request.sessionIds()) {
             if (sessionService.deleteSession(userId, sessionId)) {
-                storyMemoryService.purgeSessionMemory(userId, sessionId);
                 deleted++;
             }
         }

@@ -103,7 +103,7 @@ export function EditorChatPanel({
         className="relative flex min-h-0 flex-1 flex-col overflow-hidden box-border"
         style={{ paddingLeft: editorLayout.mainPaddingX, paddingRight: editorLayout.mainPaddingX }}
       >
-        {hostBannerRecovering && hostBannerText ? (
+        {hostBannerRecovering ? (
           <StreamRecoveryIndicator label={hostBannerText} className="z-[30]" />
         ) : null}
 

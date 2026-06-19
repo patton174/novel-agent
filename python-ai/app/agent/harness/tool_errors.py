@@ -1,4 +1,4 @@
-"""tool_use_error formatting for model-facing tool results."""
+"""tool_use_error formatting — thin layer over :mod:`app.agent.tools.errors`."""
 
 from __future__ import annotations
 
@@ -20,6 +20,18 @@ _STEP_RESULT_TOOL_ALIASES = frozenset({"stepresult", "step_result"})
 _TOOL_USE_ERROR_RE = re.compile(
     r"<tool_use_error>(.*?)</tool_use_error>",
     re.DOTALL | re.IGNORECASE,
+)
+
+_VALIDATION_DETAIL_MARKERS = (
+    "field required",
+    "validation error",
+    "inputvalidationerror",
+    "provide chapter_id",
+    "provide parent_id",
+    "provide chapter_ids",
+    "provide at least one",
+    "provide memory_id",
+    "missing",
 )
 
 
@@ -58,42 +70,52 @@ def format_input_validation_error(detail: str) -> str:
     return format_tool_use_error(f"InputValidationError: {detail}")
 
 
-def humanize_tool_validation_error(
-    tool_name: str,
-    detail: str,
-    *,
-    novel_id: str | None = None,
-) -> str:
-    """Short, actionable tool_use_error body for common schema mistakes."""
-    raw = (detail or "").strip()
-    tool = (tool_name or "").strip()
-    lower = raw.lower()
-    nid = (novel_id or "").strip() or "{novelId}"
-    root = f"/novel/{nid}"
+def _looks_like_schema_validation(detail: str) -> bool:
+    lower = (detail or "").lower()
+    return any(marker in lower for marker in _VALIDATION_DETAIL_MARKERS)
 
-    if tool == "Write" and "file_path" in lower and "required" in lower:
-        return (
-            "Write requires both `file_path` and `content`. "
-            f"Example: file_path=\"{root}/chapters/<chapter-uuid>.md\", "
-            "content=\"# Title\\n\\nBody…\". "
-            "Use RUN_CONTEXT chapter_catalog or Read chapters/index.json for chapter_id; never send content alone."
-        )
-    if tool in ("Read", "Edit", "Delete") and "file_path" in lower and "required" in lower:
-        return (
-            f"{tool} requires `file_path` under {root}/ "
-            "(e.g. chapters/<uuid>.md or memory/<scope>/<key>.json)."
-        )
-    if tool in ("Write", "Edit") and "index.json" in lower and "read-only" in lower:
-        return (
-            "章节目录 chapters/index.json 为只读视图（由作品库生成），不能 Write/Edit。"
-            "调序请用 ReorderChapters(chapter_ids=[按阅读顺序的章节 UUID…])；"
-            "改正文请用 /chapters/<chapter-uuid>.md。"
-        )
-    if tool in ("Write", "Edit") and "必须指定章节名" in raw:
-        return raw.split("\n\n")[0].strip() or raw[:400]
-    if "field required" in lower or "validation error" in lower:
-        return raw.replace("validation error for ", "").replace("ValidationError: ", "")
-    return raw
+
+def schema_validation_error(tool_name: str, detail: str):
+    """Build structured SCHEMA_INVALID for prepare/validation failures."""
+    from app.agent.harness.tool_contract import TOOL_CONTRACTS, validation_repair_hint
+    from app.agent.tools.errors import ToolError, ToolErrorCode
+
+    tool = (tool_name or "").strip()
+    message = (detail or "invalid input").strip()
+    if len(message) > 800:
+        message = message[:800] + "…"
+    hint = validation_repair_hint(tool) if tool in TOOL_CONTRACTS else None
+    suggested: list[str] = []
+    if tool in TOOL_CONTRACTS:
+        suggested.append(tool)
+        list_tool = TOOL_CONTRACTS[tool].list_tool
+        if list_tool and list_tool not in suggested:
+            suggested.append(list_tool)
+    return ToolError(
+        code=ToolErrorCode.SCHEMA_INVALID,
+        message=message,
+        hint=hint,
+        suggested_tools=suggested,
+    )
+
+
+def schema_validation_tool_result(tool_name: str, detail: str):
+    """ToolCallResult for invalid tool input (Pydantic / prepare_tool_input)."""
+    from app.agent.tools.errors import tool_error_result
+
+    return tool_error_result(schema_validation_error(tool_name, detail))
+
+
+def maybe_humanize_tool_error(tool_name: str, detail: str):
+    """Upgrade unstructured error text to ToolError when it looks like schema validation."""
+    from app.agent.tools.errors import ToolError
+
+    text = (detail or "").strip()
+    if not text or "<tool_use_error" in text.lower():
+        return None
+    if not _looks_like_schema_validation(text):
+        return None
+    return schema_validation_error(tool_name, text)
 
 
 def structured_tool_aliases_for(schema_name: str) -> frozenset[str]:

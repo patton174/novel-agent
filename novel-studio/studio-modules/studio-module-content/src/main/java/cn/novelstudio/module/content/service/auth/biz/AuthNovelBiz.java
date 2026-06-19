@@ -3,6 +3,8 @@ package cn.novelstudio.module.content.service.auth.biz;
 import cn.novelstudio.kernel.base.Result;
 import cn.novelstudio.kernel.biz.BaseBiz;
 import cn.novelstudio.module.content.dto.ChapterDTO;
+import cn.novelstudio.module.content.dto.ChapterReadSliceDTO;
+import cn.novelstudio.module.content.dto.ChapterRowDTO;
 import cn.novelstudio.module.content.dto.ChapterSummaryDTO;
 import cn.novelstudio.module.content.dto.CoverPromptResponse;
 import cn.novelstudio.module.content.dto.CreateChapterRequest;
@@ -18,10 +20,14 @@ import cn.novelstudio.module.content.service.ContentSessionService;
 import cn.novelstudio.module.content.service.NovelCoverService;
 import cn.novelstudio.module.content.service.NovelDescriptionClient;
 import cn.novelstudio.module.content.service.NovelExportService;
+import cn.novelstudio.module.content.service.KnowledgeGraphClient;
 import cn.novelstudio.module.content.service.NovelService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.Map;
 
@@ -35,6 +41,7 @@ public class AuthNovelBiz extends BaseBiz {
     private final NovelExportService novelExportService;
     private final ChapterService chapterService;
     private final ContentSessionService sessionService;
+    private final KnowledgeGraphClient knowledgeGraphClient;
 
     public Result<List<NovelDTO>> list(Long userId) {
         return ok(novelService.listNovels(userId));
@@ -83,6 +90,55 @@ public class AuthNovelBiz extends BaseBiz {
         return ok(chapterService.listSummaries(userId, novelId));
     }
 
+    public Result<List<ChapterRowDTO>> listChapterRows(Long userId, String novelId) {
+        return ok(chapterService.listChapterRows(userId, novelId));
+    }
+
+    public Result<ChapterRowDTO> resolveChapterRow(
+        Long userId,
+        String novelId,
+        String chapterId,
+        String title,
+        Integer index
+    ) {
+        return ok(ChapterRowDTO.fromSummary(
+            chapterService.resolveChapterRow(userId, novelId, chapterId, title, index)
+        ));
+    }
+
+    public Result<ChapterReadSliceDTO> readChapterByTarget(
+        Long userId,
+        String novelId,
+        String chapterId,
+        String title,
+        Integer index,
+        Integer offset,
+        Integer limit
+    ) {
+        return ok(chapterService.readChapterSliceByTarget(
+            userId, novelId, chapterId, title, index, offset, limit
+        ));
+    }
+
+    public void readChapterByTargetStream(
+        Long userId,
+        String novelId,
+        String chapterId,
+        String title,
+        Integer index,
+        Integer offset,
+        Integer limit,
+        OutputStream out
+    ) {
+        try {
+            chapterService.streamChapterReadSliceByTarget(
+                userId, novelId, chapterId, title, index, offset, limit, out
+            );
+        } catch (IOException ex) {
+            throw new UncheckedIOException(ex);
+        }
+    }
+
     public Result<ChapterDTO> createChapter(Long userId, String novelId, CreateChapterRequest request) {
         return ok(chapterService.createChapter(userId, novelId, request));
     }
@@ -97,6 +153,11 @@ public class AuthNovelBiz extends BaseBiz {
 
     public Result<ReindexStatusDTO> reindexStatus(Long userId, String novelId) {
         return ok(chapterService.getReindexStatus(userId, novelId));
+    }
+
+    public Result<Map<String, Object>> knowledgeGraph(Long userId, String novelId) {
+        novelService.getNovel(userId, novelId);
+        return ok(knowledgeGraphClient.getNovelGraph(novelId));
     }
 
     public Result<List<SessionDTO>> listSessions(String userId, String novelId, int limit) {

@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from collections.abc import AsyncIterator
-from typing import Any
+from typing import Any, Literal
 from uuid import uuid4
 
 from app.agent.harness.cc_visibility import (
@@ -35,14 +35,112 @@ from app.runtime.streaming import emit_sse_text_chunks
 
 logger = logging.getLogger(__name__)
 
-_MESSAGE_DELTA_INTERVAL = 0.022
+_MESSAGE_DELTA_INTERVAL = 0
 _READ_PROGRESS_TOOLS = frozenset(
     {"ReadChapter", "ListChapters", "ReadMemory", "ListMemory", "SearchKnowledge"}
 )
 _MEMORY_MUTATION_PROGRESS_TOOLS = frozenset(
-    {"WriteMemory", "EditMemory", "DeleteMemory", "ClearMemory"}
+    {"CreateMemory", "UpdateMemoryFields", "UpdateMemoryContent", "UpdateMemoryMeta", "MoveMemory", "DeleteMemory"}
 )
-_EXCERPT_STREAM_INTERVAL = 0.008
+_EXCERPT_STREAM_INTERVAL = 0
+_READ_PULSE_INTERVAL = 0.14
+_READ_PULSE_MAX = 180
+
+
+async def _run_read_chapter_content_stream(
+    inp: dict[str, Any],
+    ctx: AgentRunContext,
+    *,
+    step_id: str,
+    run_id: str,
+    session_id: str,
+    message_id: str,
+    seq: int,
+) -> AsyncIterator[tuple[Literal["event", "result"], Any]]:
+    """ReadChapter: one UI progress (chapter label only); body fetched without content SSE."""
+    from app.agent.tools.prepare_tool_input import prepare_tool_input
+    from app.agent.tools.schemas import ReadChapterInput
+
+    prepared, prep_err = prepare_tool_input("ReadChapter", inp, ctx)
+    if prepared is None:
+        yield (
+            "result",
+            ToolCallResult(
+                content=f"<tool_use_error>{prep_err or 'invalid ReadChapter input'}</tool_use_error>",
+                is_error=True,
+            ),
+        )
+        return
+
+    parsed = prepared.parsed
+    assert isinstance(parsed, ReadChapterInput)
+    if parsed.title:
+        label = f"正在读取《{parsed.title.strip()}》…"
+    elif parsed.index is not None:
+        label = f"正在读取第 {parsed.index} 章…"
+    elif parsed.chapter_id:
+        cid = str(parsed.chapter_id).strip()
+        label = f"正在读取章节 {cid[:8]}…"
+    else:
+        label = "正在读取章节…"
+
+    yield (
+        "event",
+        build_event(
+            event_type="tool.progress",
+            run_id=run_id,
+            session_id=session_id,
+            message_id=message_id,
+            step_id=step_id,
+            sequence=seq,
+            payload={
+                "name": "ReadChapter",
+                "message": label,
+                "live": True,
+            },
+        ),
+    )
+
+    result = await run_tool_use("ReadChapter", inp, ctx, tool_use_id=step_id)
+    yield ("result", result)
+
+
+async def _run_read_tool_with_live_progress(
+    tool: str,
+    inp: dict[str, Any],
+    ctx: AgentRunContext,
+    *,
+    step_id: str,
+    run_id: str,
+    session_id: str,
+    message_id: str,
+    seq: int,
+) -> AsyncIterator[tuple[Literal["event", "result"], Any]]:
+    """HTTP 阻塞期间周期性推送 tool.progress，返回后再流式 excerpt。"""
+    task = asyncio.create_task(run_tool_use(tool, inp, ctx, tool_use_id=step_id))
+    label = read_progress_message(tool, inp)
+    pulse = 0
+    while not task.done():
+        if pulse >= _READ_PULSE_MAX:
+            break
+        msg = label if pulse == 0 else f"{label.rstrip('…')}（读取中）"
+        yield (
+            "event",
+            build_event(
+                event_type="tool.progress",
+                run_id=run_id,
+                session_id=session_id,
+                message_id=message_id,
+                step_id=step_id,
+                sequence=seq,
+                payload={"name": tool, "message": msg, "live": True},
+            ),
+        )
+        seq += 1
+        pulse += 1
+        await asyncio.sleep(_READ_PULSE_INTERVAL)
+    result = await task
+    yield ("result", result)
 
 
 async def _yield_message_deltas(
@@ -113,6 +211,7 @@ async def stream_cc_tool_step(
 
     fp = str(inp.get("file_path") or "")
     stream_chapter = should_stream_chapter_write(tool, inp)
+    live_read_excerpt = False
 
     if should_emit_tool_started(tool):
         fp_early = fp or str(inp.get("path") or "")
@@ -182,20 +281,51 @@ async def stream_cc_tool_step(
             )
             seq += 1
         elif tool in _READ_PROGRESS_TOOLS:
-            yield build_event(
-                event_type="tool.progress",
-                run_id=run_id,
-                session_id=session_id,
-                message_id=message_id,
-                step_id=step_id,
-                sequence=seq,
-                payload={
-                    "name": tool,
-                    "message": read_progress_message(tool, inp),
-                },
-            )
-            seq += 1
             await asyncio.sleep(0)
+            if normalize_tool_name(tool) == "ReadChapter":
+                async for kind, payload in _run_read_chapter_content_stream(
+                    inp,
+                    ctx,
+                    step_id=step_id,
+                    run_id=run_id,
+                    session_id=session_id,
+                    message_id=message_id,
+                    seq=seq,
+                ):
+                    if kind == "event":
+                        yield payload
+                        seq += 1
+                    else:
+                        result = payload
+            else:
+                yield build_event(
+                    event_type="tool.progress",
+                    run_id=run_id,
+                    session_id=session_id,
+                    message_id=message_id,
+                    step_id=step_id,
+                    sequence=seq,
+                    payload={
+                        "name": tool,
+                        "message": read_progress_message(tool, inp),
+                    },
+                )
+                seq += 1
+                async for kind, payload in _run_read_tool_with_live_progress(
+                    tool,
+                    inp,
+                    ctx,
+                    step_id=step_id,
+                    run_id=run_id,
+                    session_id=session_id,
+                    message_id=message_id,
+                    seq=seq,
+                ):
+                    if kind == "event":
+                        yield payload
+                        seq += 1
+                    else:
+                        result = payload
         elif tool in _MEMORY_MUTATION_PROGRESS_TOOLS:
             yield build_event(
                 event_type="tool.progress",
@@ -211,8 +341,9 @@ async def stream_cc_tool_step(
             )
             seq += 1
             await asyncio.sleep(0)
-        result = await run_tool_use(tool, inp, ctx, tool_use_id=step_id)
-        if not result.is_error and tool in _READ_PROGRESS_TOOLS:
+        if tool not in _READ_PROGRESS_TOOLS:
+            result = await run_tool_use(tool, inp, ctx, tool_use_id=step_id)
+        if not result.is_error and tool in _READ_PROGRESS_TOOLS and not live_read_excerpt:
             excerpt = format_tool_display_excerpt(
                 tool, result.content or "", fp, tool_input=inp
             )

@@ -8,12 +8,9 @@ from uuid import uuid4
 
 from app.agent.harness.cc_visibility import (
     is_ask_user_tool,
-    is_chapter_vfs_path,
     is_hidden_ui_tool,
-    is_memory_vfs_path,
     normalize_tool_name,
     should_emit_read_result_labels,
-    vfs_path_from_tool_input,
 )
 from app.agent.harness.cc_visibility import (
     tool_display_name as cc_tool_display_name,
@@ -70,43 +67,11 @@ _CHAPTER_UUID_RE = re.compile(
 )
 
 
-def extract_chapter_memory_read_labels(content: str, file_path: str) -> list[str]:
-    """Human title for Read on /memory/chapter/{uuid}.json (not the UUID key)."""
-    norm = (file_path or "").replace("\\", "/")
-    if "/memory/chapter/" not in norm:
-        return []
-    text = (content or "").strip()
-    title = ""
-    for line in text.split("\n"):
-        stripped = line.strip()
-        if stripped.startswith("- title:"):
-            raw = stripped.split(":", 1)[-1].strip()
-            if raw and not _CHAPTER_UUID_RE.match(raw):
-                title = raw
-                break
-    if not title and "---" in text:
-        body = text.split("---", 1)[-1].strip()
-    else:
-        body = text
-    if not title:
-        m = re.search(r"^#\s*(第\s*\d+\s*章[^#\n]+)", body, re.MULTILINE)
-        if m:
-            title = re.sub(r"\s*摘要\s*$", "", m.group(1).strip())
-    if not title:
-        m = re.search(r"《([^》]+)》", body)
-        if m:
-            title = f"《{m.group(1)}》"
-    if not title:
-        return []
-    return [title]
-
-
-def extract_chapter_read_labels(content: str, file_path: str) -> list[str]:
-    """Chapter title from Read body (Content API markdown), not the .md VFS path."""
+def extract_chapter_read_labels(content: str, file_path: str = "") -> list[str]:
+    """Chapter title from ReadChapter body (Content API markdown)."""
+    _ = file_path
     from app.agent.harness.tool_display import split_frontmatter
 
-    if not is_chapter_vfs_path(file_path):
-        return []
     meta, _body = split_frontmatter(content)
     title = (meta.get("title") or "").strip()
     if not title:
@@ -178,20 +143,12 @@ def _tool_completed_payload(
     if not content:
         return payload
 
-    if should_emit_read_result_labels(name, file_path) or name in (
+    if should_emit_read_result_labels(name) or name in (
         "ReadChapter",
         "ReadMemory",
-        "memory_read",
     ):
-        norm_path = (file_path or "").replace("\\", "/")
-        if (
-            file_path
-            and "/memory/chapter/" in norm_path
-            and name == "ReadMemory"
-        ):
-            labels = extract_chapter_memory_read_labels(content, file_path)
-        elif (file_path and is_chapter_vfs_path(file_path) and name == "ReadChapter") or name == "ReadChapter":
-            labels = extract_chapter_read_labels(content, file_path)
+        if name == "ReadChapter":
+            labels = extract_chapter_read_labels(content)
         else:
             labels = extract_memory_read_labels(content)
             labels = [
@@ -213,22 +170,16 @@ def _tool_completed_payload(
         return payload
 
     canonical = normalize_tool_name(name)
-    is_chapter_io = canonical in ("WriteChapter", "EditChapter", "DeleteChapter") or (
-        canonical in ("Write", "Edit", "Delete")
-        and file_path
-        and is_chapter_vfs_path(file_path)
-    )
+    is_chapter_io = canonical in ("WriteChapter", "EditChapter", "DeleteChapter", "ReorderChapters")
     is_memory_mutation = canonical in (
-        "WriteMemory",
-        "EditMemory",
+        "CreateMemory",
+        "UpdateMemoryFields",
+        "UpdateMemoryContent",
+        "UpdateMemoryMeta",
+        "MoveMemory",
         "DeleteMemory",
-        "ClearMemory",
-    ) or name.startswith("memory_") or name in ("memory_update", "memory_create") or (
-        canonical in ("Write", "Edit", "Delete")
-        and file_path
-        and is_memory_vfs_path(file_path)
     )
-    if is_chapter_io and not failed and canonical in ("WriteChapter", "EditChapter", "Write", "Edit"):
+    if is_chapter_io and not failed and canonical in ("WriteChapter", "EditChapter"):
         _attach_tool_display_excerpt(
             payload, name, content, file_path, tool_input=tool_input
         )
@@ -258,7 +209,7 @@ def _tool_completed_payload(
         return payload
 
     canonical_del = normalize_tool_name(name)
-    if canonical_del in ("DeleteChapter", "DeleteMemory", "ClearMemory", "Delete") and not failed:
+    if canonical_del in ("DeleteChapter", "DeleteMemory") and not failed:
         _attach_tool_display_excerpt(
             payload, name, content, file_path, tool_input=tool_input
         )
@@ -272,18 +223,13 @@ def _tool_completed_payload(
             payload["output_summary"] = _preview_text(content)
         return payload
 
-    if canonical in ("ListChapters", "ListMemory", "SearchKnowledge", "Glob", "Grep") or name == "context_search":
-        from app.agent.harness.tool_display import strip_inventory_headers_for_ui
-
+    if canonical in ("ListChapters", "ListMemory", "SearchKnowledge", "GetMemoryTree"):
         _attach_tool_display_excerpt(
             payload, name, content, file_path, tool_input=tool_input
         )
-        body = strip_inventory_headers_for_ui(content)
-        payload["output"] = body
         excerpt = str(payload.get("display_excerpt") or "")
-        payload["output_summary"] = (
-            excerpt[:200] if excerpt else _preview_text(body, limit=120)
-        )
+        if excerpt:
+            payload["output_summary"] = excerpt[:200]
         return payload
 
     _attach_tool_display_excerpt(
@@ -331,7 +277,16 @@ _SSE_OMIT_BODY_KEYS = frozenset({"content", "old_string", "new_string", "payload
 def _tool_input_for_sse(tool: str, inp: dict[str, Any]) -> dict[str, Any]:
     """SSE tool_input: omit huge chapter bodies (model already has them in the turn)."""
     slim = {k: inp[k] for k in _SSE_TOOL_INPUT_KEYS if k in inp}
-    if normalize_tool_name(tool) in ("WriteChapter", "EditChapter", "WriteMemory", "EditMemory", "Write", "Edit"):
+    if normalize_tool_name(tool) in (
+        "WriteChapter",
+        "EditChapter",
+        "CreateMemory",
+        "UpdateMemoryFields",
+        "UpdateMemoryContent",
+        "UpdateMemoryMeta",
+        "Write",
+        "Edit",
+    ):
         for key in _SSE_OMIT_BODY_KEYS:
             slim.pop(key, None)
     return slim
@@ -367,7 +322,7 @@ def build_tool_completed_sse_payload(
 ) -> dict[str, Any]:
     """SSE tool.completed payload for CC tools (sse_bridge + display emitter)."""
     inp = dict(tool_input or {})
-    file_path = vfs_path_from_tool_input(inp)
+    file_path = str(inp.get("file_path") or "").strip()
     normalized_interaction = _normalize_interaction_for_sse(interaction)
     display = DisplayPayload(
         type="tool",
@@ -392,6 +347,12 @@ def build_tool_completed_sse_payload(
     todos = patch.get("todos")
     if isinstance(todos, list) and todos:
         payload["todos"] = todos
+    if patch.get("memory_async") == "scheduled":
+        payload["memory_async"] = "scheduled"
+    if patch.get("chapter_async") == "scheduled":
+        payload["chapter_async"] = "scheduled"
+    if patch.get("chapter_async") == "streamed":
+        payload["chapter_async"] = "streamed"
     return payload
 
 

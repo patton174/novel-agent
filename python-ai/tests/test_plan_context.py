@@ -2,8 +2,7 @@
 
 import json
 
-from app.agent.context.compact import compact_story_memory_text
-from app.agent.harness.orchestration_contract import build_main_loop_system_prompt
+from app.agent.harness.orchestration_contract import build_main_loop_system_prompt, context_decision_hints
 from app.agent.harness.plan_context import (
     build_plan_context,
     format_plan_context_message,
@@ -26,64 +25,43 @@ def _ctx(**overrides) -> AgentRunContext:
     return AgentRunContext(**base)
 
 
-def test_summarize_memory_read_strips_full_entries():
+def test_summarize_memory_read_memory_id_only():
     raw = {
         "ok": True,
         "scope": "character",
-        "item_ids": ["唐云", "苏夜"],
-        "count": 2,
-        "entries": {
-            "唐云": {"人物卡": "x" * 5000, "身份": "主角"},
-            "苏夜": {"人物卡": "y" * 5000},
-        },
+        "memory_id": "mem-123",
     }
     compact = summarize_memory_read(raw)
-    assert compact["ok"] is True
-    assert compact["item_ids"] == ["唐云", "苏夜"]
-    assert "entries" not in compact
-    assert len(compact["previews"]["唐云"]) <= 520
-    assert compact.get("roster_loaded") is True
-    assert "身份:主角" in compact["previews"]["唐云"]
+    assert compact == {"ok": True, "scope": "character", "memory_id": "mem-123"}
 
 
 def test_has_character_roster_snapshot():
     patch = {
         "character_roster": ["苏夜"],
-        "last_memory_read": {"ok": True, "scope": "character", "roster_loaded": True},
+        "last_memory_read": {"ok": True, "scope": "character", "memory_id": "m1"},
     }
     assert has_character_roster_snapshot(patch) is True
     assert has_character_roster_snapshot({}) is False
-
-
-def test_build_plan_context_story_snapshot_when_set():
-    req = PlanRequest(
-        context=_ctx(story_memory="世界观:\n- 力量体系: 灵气修炼"),
-        context_patch={"character_roster": ["苏夜", "唐云"]},
-    )
-    ctx_json = build_plan_context(req)
-    assert "story_snapshot" in ctx_json["memory"]
-    assert "力量体系" in ctx_json["memory"]["story_snapshot"]
+    assert has_character_roster_snapshot({"memory_catalog": [{"scope": "character", "title": "苏夜"}]}) is True
 
 
 def test_build_plan_context_bounded_slots():
     req = PlanRequest(
         context=_ctx(
             step_index=12,
-            last_tool="memory_delete",
+            last_tool="DeleteMemory",
             last_reason="memory delete",
-            story_memory="世界观设定:\n- 框架: 虚界降临",
             context_patch={
                 "character_roster": ["唐云", "苏夜"],
                 "last_memory_read": summarize_memory_read(
                     {
                         "ok": True,
                         "scope": "character",
-                        "item_ids": ["唐云", "苏夜"],
-                        "count": 2,
+                        "memory_id": "m-char",
                     }
                 ),
                 "memory_ops_log": [
-                    {"tool": "memory_delete", "ok": True, "item_id": "女主", "summary": "ok"},
+                    {"tool": "DeleteMemory", "ok": True, "memory_id": "m-old", "summary": "ok"},
                 ],
                 "think_summary": "清理重复女主",
             },
@@ -96,11 +74,9 @@ def test_build_plan_context_bounded_slots():
     assert ctx_json["intent"]["user_message"] == "优化角色库"
     assert ctx_json["think"] == "x" * 5000
     assert ctx_json["memory"]["character_roster"] == ["唐云", "苏夜"]
-    assert "entries" not in ctx_json["memory"]["last_read"]
+    assert ctx_json["memory"]["last_read"]["memory_id"] == "m-char"
+    assert "story_snapshot" not in ctx_json.get("memory", {})
     assert len(ctx_json["think"]) == 5000
-    assert ctx_json["memory"]["story_snapshot"] == compact_story_memory_text(
-        "世界观设定:\n- 框架: 虚界降临"
-    )
 
 
 def test_build_plan_context_think_pending_confirm_flag():
@@ -119,9 +95,17 @@ def test_build_plan_context_think_pending_confirm_flag():
 
 def test_main_loop_system_prompt_non_empty():
     text = build_main_loop_system_prompt()
-    assert len(text) < 6000
+    assert len(text) < 7500
     assert "ListChapters" in text
     assert "WriteChapter" in text
+
+
+def test_context_decision_hints_memory_child_requires_parent_or_scope():
+    hints = context_decision_hints()
+    memory = hints.get("memory") or ""
+    assert "parent_id" in memory
+    assert "scope" in memory
+    assert "required" in memory.lower() or "必填" in memory or "one required" in memory
 
 
 def test_format_plan_context_message_roundtrip():

@@ -2,13 +2,13 @@ package cn.novelstudio.module.content.service.auth.biz;
 
 import cn.novelstudio.kernel.base.Result;
 import cn.novelstudio.kernel.biz.BaseBiz;
-import cn.novelstudio.kernel.enums.ResultCode;
 import cn.novelstudio.module.content.dto.ChapterDTO;
 import cn.novelstudio.module.content.support.ContentExceptions;
 import cn.novelstudio.module.content.dto.ChapterSummaryDTO;
 import cn.novelstudio.module.content.dto.NovelDTO;
 import cn.novelstudio.module.content.dto.VolumeDTO;
 import cn.novelstudio.module.content.service.ChapterService;
+import cn.novelstudio.module.content.service.MemoryNodeService;
 import cn.novelstudio.module.content.service.NovelService;
 import cn.novelstudio.module.content.service.VolumeService;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +18,7 @@ import org.springframework.stereotype.Component;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 @Slf4j
 @Component
@@ -27,12 +28,30 @@ public class AuthNovelAgentContextBiz extends BaseBiz {
     private final NovelService novelService;
     private final ChapterService chapterService;
     private final VolumeService volumeService;
+    private final MemoryNodeService memoryNodeService;
 
     public Result<Map<String, Object>> buildContext(Long userId, String novelId, String chapterId) {
         NovelDTO novel = resolveNovel(userId, novelId);
 
-        List<VolumeDTO> volumes = safeListVolumes(userId, novelId);
-        List<ChapterSummaryDTO> chapters = safeListChapters(userId, novelId);
+        CompletableFuture<List<VolumeDTO>> volumesFuture = CompletableFuture.supplyAsync(
+            () -> safeListVolumes(userId, novelId)
+        );
+        CompletableFuture<List<ChapterSummaryDTO>> chaptersFuture = CompletableFuture.supplyAsync(
+            () -> safeListChapters(userId, novelId)
+        );
+        CompletableFuture<Map<String, Object>> memoryFuture = CompletableFuture.supplyAsync(
+            () -> safeMemoryTreeIndex(userId, novelId)
+        );
+        CompletableFuture<ChapterSlice> chapterFuture = (chapterId != null && !chapterId.isBlank())
+            ? CompletableFuture.supplyAsync(() -> safeLoadChapter(userId, chapterId))
+            : CompletableFuture.completedFuture(new ChapterSlice(Map.of(), ""));
+
+        CompletableFuture.allOf(volumesFuture, chaptersFuture, memoryFuture, chapterFuture).join();
+
+        List<VolumeDTO> volumes = volumesFuture.join();
+        List<ChapterSummaryDTO> chapters = chaptersFuture.join();
+        Map<String, Object> memoryTreeIndex = memoryFuture.join();
+        ChapterSlice chapterSlice = chapterFuture.join();
 
         Map<String, Object> project = new HashMap<>();
         project.put("id", novel.id());
@@ -60,25 +79,30 @@ public class AuthNovelAgentContextBiz extends BaseBiz {
             item.put("title", ch.title());
             item.put("summary", ch.summary());
             item.put("sort_order", ch.sortOrder());
+            item.put("list_index", ch.listIndex());
             item.put("word_count", ch.wordCount());
             return item;
         }).toList();
-
-        Map<String, Object> chapter = Map.of();
-        String text = "";
-        if (chapterId != null && !chapterId.isBlank()) {
-            ChapterSlice slice = safeLoadChapter(userId, chapterId);
-            chapter = slice.chapter();
-            text = slice.text();
-        }
 
         Map<String, Object> body = new HashMap<>();
         body.put("project", project);
         body.put("volumes", volumeSummaries);
         body.put("chapters", chapterSummaries);
-        body.put("chapter", chapter);
-        body.put("text", text);
+        body.put("chapter", chapterSlice.chapter());
+        body.put("text", chapterSlice.text());
+        if (memoryTreeIndex != null && !memoryTreeIndex.isEmpty()) {
+            body.put("memory_tree_index", memoryTreeIndex);
+        }
         return ok(body);
+    }
+
+    private Map<String, Object> safeMemoryTreeIndex(Long userId, String novelId) {
+        try {
+            return memoryNodeService.buildAllScopesTreeIndex(userId, novelId);
+        } catch (Exception ex) {
+            log.warn("agent-context memory_tree_index skipped novelId={}: {}", novelId, ex.getMessage());
+            return Map.of();
+        }
     }
 
     private List<VolumeDTO> safeListVolumes(Long userId, String novelId) {

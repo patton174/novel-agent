@@ -38,6 +38,8 @@ class Settings(BaseSettings):
     rag_embed_model: str = "text-embedding-3-small"
     rag_embed_api_key: str = ""
     rag_embed_base_url: str = ""
+    rag_embed_group_id: str = ""
+    minimax_group_id: str = ""
     rag_embed_fail_fast: bool = True
 
     # Generic agent tools
@@ -68,9 +70,20 @@ class Settings(BaseSettings):
     agent_subagent_max_depth: int = 1
     agent_durable_checkpoint: bool = False
     agent_relevance_inject: bool = False
+    agent_warmup_enabled: bool = True
+    agent_warmup_content_ping: bool = True
+    agent_warmup_milvus: bool = False
+    agent_warmup_llm_ping: bool = False
     agent_run_session_ttl_sec: int = 3600
-    # 生产分布式：false → 禁止浏览器/ Java 直连 /agent/run/stream（仅 Worker /internal/worker/run/execute）
+    # 生产：false → 禁止浏览器直连 /api/agent/run/stream（owner Java 走 /internal/agent/run/stream）
     agent_allow_direct_stream: bool = True
+
+    # --- Agent refactor (AGENT_REFACTOR_PLAN) feature flags，默认 off = 旧行为，逐 flag 灰度 ---
+    agent_rf_stream_truth: bool = False       # P1.1 流式写章真值（persist 成功才算成功）
+    agent_rf_catalog_version: bool = False    # P1.2 catalog 随写失效 / version
+    agent_rf_agent_serial: bool = False       # P1.3 Agent 串行收敛
+    agent_rf_error_protocol: bool = False     # P2.3 结构化 ToolError 回灌
+    agent_rf_new_timeline: bool = False       # P4 前端新时间线（后端仅透传标记）
 
     crawl_request_delay_ms: int = 800
     crawl_http_proxy: str = ""

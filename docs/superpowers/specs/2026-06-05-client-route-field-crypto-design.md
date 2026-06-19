@@ -1,5 +1,7 @@
 # 客户端路由脱敏 + 字段/值加密 + 密钥轮换
 
+> ⚠️ **历史设计记录**。生产已迁移至 **novel-studio 单体**，现状以 `CLAUDE.md` / `.cursor/rules/project-architecture.mdc` 为准。本文保留作历史参考，**勿据以部署**（旧微服务 agent-gateway/auth/pyai/content/consumer 与 `restart-dev.sh` 均已废弃）。
+
 > 日期：2026-06-05  
 > 状态：**已上线（Phase 0e + Sign v2 + 邮箱验证）**  
 > 依赖：Phase 0c AES 传输层（`RequestCryptoEnvelope`）
@@ -122,8 +124,8 @@ Canonical 串：`METHOD|/api/path?businessQuery|ts|nonce|sha256(bodyBytes)`
 
 ```bash
 # 生成 + 发布 manifest（frontend 部署后执行）
-python novel-agent/scripts/generate_crypto_manifest.py
-python novel-agent/scripts/publish_crypto_manifest.py   # → Redis + Auth internal API
+python legacy/novel-agent/scripts/generate_crypto_manifest.py
+python legacy/novel-agent/scripts/publish_crypto_manifest.py   # → Redis + Auth internal API
 ```
 
 `deploy-fast.sh frontend worker` 末尾自动调用上述脚本。

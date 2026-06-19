@@ -1,5 +1,7 @@
 # Run 状态机 + JWT 客户端安全层 实施计划
 
+> ⚠️ **历史设计记录**。生产已迁移至 **novel-studio 单体**，现状以 `CLAUDE.md` / `.cursor/rules/project-architecture.mdc` 为准。本文保留作历史参考，**勿据以部署**（旧微服务 agent-gateway/auth/pyai/content/consumer 与 `restart-dev.sh` 均已废弃）。
+
 > **For agentic workers:** 按 Phase 顺序执行；每 Phase 结束需 `mvn compile` + 前端 build 验证。  
 > **Spec:** `docs/superpowers/specs/2026-06-04-run-statemachine-jwt-auth-design.md`（用户已确认 2026-06-04）
 

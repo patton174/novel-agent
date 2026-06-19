@@ -29,9 +29,7 @@ def test_extract_chapter_labels_with_line_numbers():
             "---\ntitle: 第5章\nchapter_id: x\nlist_index: 3\n---\n\nbody".split("\n")
         )
     )
-    labels = extract_chapter_read_labels(
-        content, "/novel/n/chapters/c1.md"
-    )
+    labels = extract_chapter_read_labels(content)
     assert labels == ["《第5章》·作品列表第3章"]
 
 
@@ -40,7 +38,7 @@ def test_sse_read_chapter_uses_display_excerpt():
     payload = build_tool_completed_sse_payload(
         "ReadChapter",
         content=content,
-        tool_input={"chapter_id": "u", "file_path": "/novel/n/chapters/u.md"},
+        tool_input={"chapter_id": "u"},
     )
     assert "display_excerpt" in payload
     assert "测试章" in payload["display_excerpt"]

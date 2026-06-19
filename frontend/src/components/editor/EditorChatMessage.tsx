@@ -18,7 +18,8 @@ import { AgentThinkPanel } from '../agent/AgentThinkPanel'
 import { ChatMessageSurfaceBody } from '../agent/ChatMessageSurface'
 import { MessageTodoPanel } from '../agent/timeline/MessageTodoPanel'
 import { TimelineDeliveryBlock } from '../agent/timeline/TimelineDeliveryBlock'
-import { TIMELINE_BODY_DIVIDER, MOBILE_PROCESS_TOGGLE } from '@/lib/timelineClasses'
+import { TimelineBodyDivider } from '../agent/timeline/TimelineBodyDivider'
+import { MOBILE_PROCESS_TOGGLE, TIMELINE_ICON_GUTTER } from '@/lib/timelineClasses'
 import { dedupeTodosById, sortTodosForDisplay } from '../../utils/todoDisplay'
 import { ensureReplayTimeline, hasAgentTrace } from '../../utils/agentMessageReplay'
 import {
@@ -95,7 +96,8 @@ function EditorChatMessageInner({
       block.kind === 'narration' ||
       block.kind === 'tool',
   )
-  const showDeliveryDivider = showDeliveryBody && hasOrchestrationTrace
+  const showDeliveryDivider =
+    showDeliveryBody && (hasOrchestrationTrace || orchestrationStepCount > 0)
   const thinkText = message.agentThinkText ?? message.thinking
   const isMobile = useAppMobile()
   const [processExpanded, setProcessExpanded] = useState(false)
@@ -165,7 +167,8 @@ function EditorChatMessageInner({
         {showAgentTimeline ? (
           <div
             className={cn(
-              'flex w-full max-w-full flex-col',
+              TIMELINE_ICON_GUTTER,
+              'flex flex-col overflow-visible',
               streamActive && 'agent-stream-reveal-shell',
             )}
             data-testid="assistant-stream-shell"
@@ -225,12 +228,7 @@ function EditorChatMessageInner({
                 pinOrchestrationOpen={marketingPinOrchestration}
               />
             ) : null}
-            {showFullTimeline && showDeliveryDivider ? (
-              <div
-                className={TIMELINE_BODY_DIVIDER}
-                data-testid="orchestration-body-divider"
-              />
-            ) : null}
+            {showFullTimeline && showDeliveryDivider ? <TimelineBodyDivider /> : null}
             {showFullTimeline && showDeliveryBody ? (
               <TimelineDeliveryBlock
                 text={message.content}

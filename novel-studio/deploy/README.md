@@ -17,7 +17,7 @@ python-ai ──→ novel-studio:8080 /api/content/auth/*（X-Internal-Service-K
 
 | 主机 | 服务 |
 |------|------|
-| **MW** `107.150.112.140` | entry-nginx、PostgreSQL、Redis、RabbitMQ |
+| **MW** `107.150.112.140` | entry-nginx、PostgreSQL、Redis、RabbitMQ、**Milvus**（RAG） |
 | **Worker** `47.80.80.224` | novel-studio、python-ai、python-lb、frontend |
 
 **已移除**：Nacos、Gateway、Auth/Consumer/Billing/Content/PyAI 六个 Java 微服务、路由混淆 `/g/`、`crypto-runtime.json`。
@@ -46,7 +46,7 @@ cp .env.mw.example .env.mw
 若 `letsencrypt` 仍在旧路径：
 
 ```bash
-ln -sfn /opt/novel-agent/novel-agent/agent-document/docs/deploy/docker/letsencrypt \
+ln -sfn /opt/novel-agent/legacy/novel-agent/agent-document/docs/deploy/docker/letsencrypt \
   /opt/novel-agent/novel-studio/deploy/docker/letsencrypt
 ```
 
@@ -71,7 +71,7 @@ export DEPLOY_SSH_KEY_FILE=~/.ssh/deploy_key
 bash novel-studio/deploy/ci/reset-production.sh --yes-destroy-all
 bash novel-studio/deploy/ci/build-studio.sh
 bash novel-studio/deploy/ci/deploy-studio.sh
-bash novel-agent/agent-document/docs/deploy/ci/build-python-ai.sh
+bash legacy/novel-agent/agent-document/docs/deploy/ci/build-python-ai.sh
 bash novel-studio/deploy/ci/deploy-python-ai.sh
 bash novel-studio/deploy/ci/build-frontend.sh
 bash novel-studio/deploy/ci/deploy-frontend.sh
@@ -109,6 +109,133 @@ Worker compose 注入：
 - `INTERNAL_SERVICE_KEY` 与 `AGENT_INTERNAL_SERVICE_KEY` 一致
 
 **勿再**部署或保留 `agent-content:8091` 容器；若 Worker 上仍有 `novel-agent-worker-agent-content-1`，应停止并改 python-ai 环境变量后重启。
+
+## Milvus（RAG 向量库）
+
+Milvus 部署在 **MW**，Worker 上的 `python-ai` 通过 `MILVUS_HOST` 远程连接。
+
+### 一键部署（需 SSH 密钥）
+
+```bash
+export MW_HOST=107.150.112.140 WORKER_HOST=47.80.80.224
+export DEPLOY_SSH_KEY_FILE=~/.ssh/deploy_key
+bash novel-studio/deploy/ci/deploy-milvus.sh
+```
+
+或 GitHub Actions：**Deploy Milvus (MW)** workflow（`deploy-milvus.yml`）。
+
+脚本会：
+
+1. 在 MW 启动 `docker-compose.milvus.yml`（`milvusdb/milvus:v2.4.15` standalone）
+2. 设置 `vm.max_map_count=262144`
+3. 若 ufw 已启用，仅放行 Worker IP 访问 `19530`
+4. 写入 Worker `/opt/novel-agent/python-ai/.env`：`MILVUS_HOST`、`MILVUS_PORT`、`KG_ENABLED=true`
+5. 重启 `python-ai` 容器
+
+### python-ai 环境变量
+
+```env
+MILVUS_HOST=107.150.112.140
+MILVUS_PORT=19530
+# 向量 embedding（与聊天 LLM 独立）
+RAG_EMBED_API_KEY=<OpenAI 或兼容 embedding API key>
+RAG_EMBED_MODEL=text-embedding-3-small
+KG_ENABLED=true
+```
+
+### 验证
+
+```bash
+# Worker 容器内
+docker exec novel-studio-worker-python-ai-1 python scripts/check_milvus.py
+
+# 线上：编辑器左侧大纲 →「重建向量索引」，Agent 调用 SearchKnowledge 应能命中章节
+```
+
+### 本地开发连远程 Milvus
+
+`scripts/local-remote.env` 增加：
+
+```env
+MILVUS_HOST=107.150.112.140
+MILVUS_PORT=19530
+```
+
+`start-local-dev.ps1 -Remote` 会自动注入到本机 python-ai 进程。
+
+## MW 遗留容器清理（Nacos / Gateway）
+
+**2026-06 审计**：MW `107.150.112.140` 仅 **3.6GB 内存**，仍运行已废弃组件：
+
+| 容器 | 内存 | 状态 | 可否删除 |
+|------|------|------|----------|
+| `nacos-standalone`（1Panel） | **~1.5GB** | 微服务时代注册中心 | **是**，Worker 无 `NACOS_*` |
+| `novel-agent-mw-agent-gateway-1` | ~285MB | 旧 Gateway :8080 | **是**，流量走 entry-nginx → Worker |
+| `novel-studio-mw-entry-nginx-1` | ~4MB | HTTPS 入口 | **保留** |
+| 1Panel PG / Redis / RabbitMQ | ~250MB | 数据面 | **保留**（见迁移） |
+| `novel-studio-milvus*` | ~310MB | RAG | **可迁出 MW** |
+
+当前 nginx 已指向 `47.80.80.224:3000`，**不经过 Gateway/Nacos**。
+
+```bash
+export MW_HOST=107.150.112.140 DEPLOY_SSH_KEY_FILE=~/.ssh/deploy_key
+bash novel-studio/deploy/ci/purge-legacy-mw.sh
+# 然后在 1Panel → 应用 → Nacos → 停止并卸载（防止重启后再拉起）
+```
+
+清理后预计释放 **~1.8GB**，可显著缓解 PG/Redis 连接不稳定。
+
+## 脱离 1Panel：中间件 Docker 化（保留数据卷）
+
+**目标**：卸载 1Panel，PG / Redis / RabbitMQ 改用 `docker-compose.infra.yml`，数据从 1Panel 卷复制到 `infra-data/`。
+
+| 原 1Panel 路径 | 新路径 |
+|----------------|--------|
+| `/opt/1panel/apps/postgresql/postgresql/data` | `deploy/docker/infra-data/postgresql/` |
+| `/opt/1panel/apps/redis/redis/data` + `conf/` | `deploy/docker/infra-data/redis/` |
+| `/opt/1panel/apps/rabbitmq/rabbitmq/data` | `deploy/docker/infra-data/rabbitmq/data/` |
+
+**注意**：`1pctl uninstall` 会删除 `/opt/1panel`，必须先完成 `rsync` 到 `infra-data/`。
+
+```bash
+export MW_HOST=107.150.112.140 WORKER_HOST=47.80.80.224
+export DEPLOY_SSH_KEY_FILE=~/.ssh/deploy_key
+
+# 建议先迁移但不卸载，验收后再卸 1Panel：
+bash novel-studio/deploy/ci/migrate-mw-infra-from-1panel.sh --yes-migrate --skip-uninstall
+
+# Worker 重启应用
+ssh root@$WORKER_HOST 'cd /opt/novel-agent/novel-studio/deploy/docker && \
+  docker compose -f docker-compose.worker.yml --env-file .env.worker up -d --force-recreate novel-studio python-ai'
+
+# 线上 OK 后卸载 1Panel：
+ssh root@$MW_HOST 'UNINSTALL_1PANEL=true WORKER_HOST=47.80.80.224 bash /opt/novel-agent/novel-studio/deploy/ci/migrate-mw-infra-remote.sh'
+# 或一步完成（含卸载）：
+bash novel-studio/deploy/ci/migrate-mw-infra-from-1panel.sh --yes-migrate
+```
+
+迁移后 MW 容器应为：`entry-nginx`、`novel-studio-postgresql`、`novel-studio-redis`、`novel-studio-rabbitmq`、`novel-studio-milvus*`（无 1Panel / Nacos / Gateway）。
+
+本地 dev 凭据：`scripts/pull-local-remote-env.ps1` 会优先读 MW 上 `.env.infra`。
+
+## 中间件拆分建议（不要把所有东西堆在 MW）
+
+| 阶段 | 做法 | 收益 |
+|------|------|------|
+| **P0 立即** | 删 Nacos + 旧 Gateway（上节） | MW 内存从 3.1GB→~1.3GB 用量 |
+| **P1 短期** | **Milvus 迁到 Worker** 或单独 2GB 小机 | MW 再释 ~400MB；RAG 与 python-ai 同网延迟更低 |
+| **P2 中期** | PG 迁到独立实例（或云 RDS） | MW 只留 entry-nginx + Redis + MQ；DB 连接更稳 |
+| **P3 长期** | Redis/MQ 按需独立或托管 | 本地 dev 连公网中间件更可靠 |
+
+**推荐目标拓扑**（MW 只做入口 + 轻量 MQ/Redis，或仅 nginx）：
+
+```
+MW (2–4GB)     entry-nginx + Redis + RabbitMQ（或仅 nginx）
+Data (4GB+)    PostgreSQL
+Worker (2GB+)  novel-studio + python-ai + frontend + Milvus（可选）
+```
+
+Milvus 迁 Worker：在 Worker 部署 `docker-compose.milvus.yml`，改 `python-ai` 的 `MILVUS_HOST=127.0.0.1`，MW 上 `docker compose -f docker-compose.milvus.yml down`。
 
 ## 验收
 

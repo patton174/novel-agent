@@ -81,7 +81,6 @@ class AgentRunContext(BaseModel):
     user_message: str = ""
     chapter_text: str = ""
     history: list[dict[str, str]] = Field(default_factory=list)
-    story_memory: str = ""
     preferences: dict[str, Any] = Field(default_factory=dict)
     project: dict[str, Any] = Field(default_factory=dict)
     chapters: list[dict[str, Any]] = Field(default_factory=list)

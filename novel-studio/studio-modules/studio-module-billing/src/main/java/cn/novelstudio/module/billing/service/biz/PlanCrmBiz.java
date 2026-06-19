@@ -98,6 +98,9 @@ public class PlanCrmBiz extends BaseBiz {
 
     private void replaceFeatures(long planId, List<String> features) {
         planFeatureRepository.deleteByPlanId(planId);
+        // 强制 DELETE 立即落库，避免同事务内 Hibernate flush 顺序（INSERT 先于 DELETE）
+        // 导致同 (plan_id, feature_key) 撞唯一约束 plan_feature_plan_id_feature_key_key。
+        planFeatureRepository.flush();
         if (features == null || features.isEmpty()) {
             return;
         }

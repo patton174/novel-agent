@@ -166,8 +166,8 @@ export function deriveSubagentLiveLines(
   }
 
   const openReasoning = subagent.logs.some((l) => l.phase === 'reasoning' && l.reasoningOpen)
-  if (openReasoning && lines[lines.length - 1] !== '思考中…') {
-    lines.push('思考中…')
+  if (openReasoning && lines[lines.length - 1] !== '编排中…') {
+    lines.push('编排中…')
   }
 
   const deduped: string[] = []

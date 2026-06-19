@@ -1,4 +1,4 @@
-"""Shared old_string matching for EditChapter / EditMemory (Read* line-number tolerant)."""
+"""Shared old_string matching for EditChapter (Read* line-number tolerant)."""
 
 from __future__ import annotations
 
@@ -17,6 +17,15 @@ def strip_read_line_prefixes(text: str) -> str:
 
 def _normalize_newlines(text: str) -> str:
     return (text or "").replace("\r\n", "\n").replace("\r", "\n")
+
+
+def _normalize_match_text(text: str) -> str:
+    """Loosen whitespace / full-width space for fuzzy old_string matching."""
+    normalized = _normalize_newlines(text)
+    normalized = normalized.replace("\u3000", " ")
+    normalized = re.sub(r"[ \t]+\n", "\n", normalized)
+    normalized = re.sub(r"\n{3,}", "\n\n", normalized)
+    return normalized.strip()
 
 
 def build_old_string_candidates(old_string: str) -> list[str]:
@@ -41,6 +50,8 @@ def build_old_string_candidates(old_string: str) -> list[str]:
     # Per-line trim (model often copies trailing spaces from UI)
     line_trimmed = "\n".join(line.rstrip() for line in stripped.split("\n"))
     add(line_trimmed)
+    loose = _normalize_match_text(stripped)
+    add(loose)
     return out
 
 
@@ -49,9 +60,18 @@ def resolve_old_string_match(text: str, old_string: str) -> str | None:
     if not old_string:
         return None
     haystack = _normalize_newlines(text)
+    loose_haystack = _normalize_match_text(haystack)
     for candidate in build_old_string_candidates(old_string):
         if candidate in haystack:
             return candidate
+        loose_candidate = _normalize_match_text(candidate)
+        if loose_candidate and loose_candidate in loose_haystack:
+            idx = loose_haystack.index(loose_candidate)
+            end = idx + len(loose_candidate)
+            if loose_haystack[:idx] == _normalize_match_text(haystack[:idx]) and loose_haystack[end:] == _normalize_match_text(haystack[end:]):
+                return haystack[idx : idx + len(loose_candidate)]
+            if haystack.count(loose_candidate) == 1:
+                return loose_candidate
     # ReadChapter numbered body vs raw stored body: match on de-numbered haystack if unique.
     denumbered = strip_read_line_prefixes(haystack)
     if denumbered != haystack:
@@ -88,3 +108,15 @@ def apply_string_replace(
     if replace_all:
         return body.replace(matched, new_string), None
     return body.replace(matched, new_string, 1), None
+
+
+def should_fallback_full_body_replace(body: str, old_string: str, new_string: str) -> bool:
+    """When old_string cannot match, allow full-body replace for streamed / long rewrites."""
+    snippet = (old_string or "").strip()
+    replacement = (new_string or "").strip()
+    if not snippet or not replacement:
+        return False
+    stored = (body or "").strip()
+    if not stored:
+        return True
+    return len(replacement) >= max(200, int(len(stored) * 0.55))

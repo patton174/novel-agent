@@ -1,5 +1,5 @@
 import type { AgentStreamRequestBody } from '../types/agent'
-import type { StoryMemoryWire } from '../types/storyMemory'
+import type { MemoryNodeDTO, MemoryTreeResponse } from '../types/memoryNode'
 import type {
   Chapter,
   ChapterSummary,
@@ -434,6 +434,15 @@ export const api = {
     return this.request<ReindexJobStatus>(`/content/auth/novels/${novelId}/reindex/status`)
   },
 
+  getKnowledgeGraph(novelId: string) {
+    return this.request<{
+      enabled?: boolean
+      nodes?: Array<{ id: string; name: string; type?: string }>
+      edges?: Array<{ source: string; target: string; rel?: string }>
+      note?: string
+    }>(`/content/auth/novels/${novelId}/knowledge-graph`)
+  },
+
   listNovelSessions(novelId: string, limit = 50) {
     return this.request<Array<{ id: string; title: string; updatedAt: number; novelId?: string }>>(
       `/content/auth/novels/${novelId}/sessions?limit=${limit}`,
@@ -532,88 +541,21 @@ export const api = {
     return response.json() as Promise<{ title: string }>
   },
 
-  async getAgentStoryMemory(novelId: string): Promise<{
-    novel_id: string
-    memory: {
-      novel: Record<string, string>
-      world: Record<string, string>
-      background: Record<string, string>
-      characters: Record<string, Record<string, string>>
-      chapters: Record<string, Record<string, string>>
-    }
-  }> {
-    const response = await secureFetch(
-      `${PYTHON_API_BASE}/agent/memory/novel/${encodeURIComponent(novelId)}`,
-      {
-        method: 'GET',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(DIRECT_PYTHON ? {} : getAuthHeaders()),
-        },
-      },
+  async getMemoryTree(novelId: string, scope: string): Promise<MemoryTreeResponse> {
+    return this.request<MemoryTreeResponse>(
+      `/content/auth/novels/${encodeURIComponent(novelId)}/memory-nodes/tree?scope=${encodeURIComponent(scope)}`,
     )
-    await throwOnErrorResponse(response)
-    return response.json()
   },
 
-  async patchAgentStoryMemory(
-    novelId: string,
-    payload: { scope: string; key: string; value: string; item_id?: string },
-  ): Promise<{ memory: StoryMemoryWire }> {
-    const response = await secureFetch(
-      `${PYTHON_API_BASE}/agent/memory/novel/${encodeURIComponent(novelId)}/patch`,
-      {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(DIRECT_PYTHON ? {} : getAuthHeaders()),
-        },
-        body: JSON.stringify(payload),
-      },
+  async getMemoryTreeIndex(novelId: string): Promise<Record<string, MemoryTreeResponse>> {
+    return this.request<Record<string, MemoryTreeResponse>>(
+      `/content/auth/novels/${encodeURIComponent(novelId)}/memory-nodes/tree-index`,
     )
-    await throwOnErrorResponse(response)
-    return response.json()
   },
 
-  async deleteAgentStoryMemory(
-    novelId: string,
-    payload: { scope: string; key: string; item_id?: string },
-  ): Promise<{ memory: StoryMemoryWire }> {
-    const response = await secureFetch(
-      `${PYTHON_API_BASE}/agent/memory/novel/${encodeURIComponent(novelId)}/delete`,
-      {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(DIRECT_PYTHON ? {} : getAuthHeaders()),
-        },
-        body: JSON.stringify(payload),
-      },
+  async getMemoryNodesFlat(novelId: string, scope: string): Promise<MemoryNodeDTO[]> {
+    return this.request<MemoryNodeDTO[]>(
+      `/content/auth/novels/${encodeURIComponent(novelId)}/memory-nodes/flat?scope=${encodeURIComponent(scope)}`,
     )
-    await throwOnErrorResponse(response)
-    return response.json()
-  },
-
-  async clearAgentStoryMemoryScope(
-    novelId: string,
-    payload: { scope: string },
-  ): Promise<{ memory: StoryMemoryWire }> {
-    const response = await secureFetch(
-      `${PYTHON_API_BASE}/agent/memory/novel/${encodeURIComponent(novelId)}/clear`,
-      {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(DIRECT_PYTHON ? {} : getAuthHeaders()),
-        },
-        body: JSON.stringify(payload),
-      },
-    )
-    await throwOnErrorResponse(response)
-    return response.json()
   },
 }

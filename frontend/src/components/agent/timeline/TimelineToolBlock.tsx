@@ -1,12 +1,17 @@
 import type { ReactNode } from 'react'
-import { useEffect, useState } from 'react'
 import type { AgentStepState } from '../../../types/agent'
 import { chapterWriteProgressHint } from '../../../utils/chapterProgress'
 import {
+  canonicalToolName,
   isAskUserTool,
   isChapterWriteTool,
   isCollapsibleReadTool,
+  isInventoryListTool,
+  isListChaptersTool,
+  isMemoryApiTool,
+  isMemoryListTool,
   isMemoryVfsPath,
+  isMemoryWriteTool,
   isVfsReadTool,
   normalizeToolName,
   vfsPathFromPayload,
@@ -14,8 +19,8 @@ import {
 import { planningActiveLabel } from '../../../utils/agentOrchestration'
 import {
   ccToolArgsSubtitle,
+  ccToolBranchStatus,
   ccToolNameLabel,
-  ccToolResultHint,
   readToolBranchLabels,
 } from '../../../utils/ccToolDisplay'
 import {
@@ -28,13 +33,7 @@ import { SubagentPanel } from './SubagentPanel'
 import { resolveToolVisualStatus } from './TimelineLeadIcon'
 import { TimelineTodoList } from './TimelineTodoList'
 import { ToolDetailPeek } from './ToolDetailPeek'
-import { ShimmerScanText } from '../../loaders/ShimmerScanText'
-import {
-  CC_PROGRESS_HINT,
-  FAIL_TAG,
-  PLANNING_NESTED_HINT,
-  toolDetailClass,
-} from '@/lib/timelineClasses'
+import { PLANNING_NESTED_HINT, toolDetailClass } from '@/lib/timelineClasses'
 
 export function TimelineToolBlock({
   step,
@@ -66,26 +65,28 @@ export function TimelineToolBlock({
   }
   const agentToolEarly = normalizeToolName(step.toolName) === 'Agent'
   if (agentToolEarly) {
-    const phase = toolLoading
-      ? '运行中'
-      : step.status === 'failed'
-        ? '失败'
-        : step.status === 'completed'
-          ? '已完成'
-          : undefined
+    const loading = toolLoading
+    const error = step.status === 'failed'
+    const resolved = step.status === 'completed' && !loading
     return (
       <CcToolRow
         testId={`timeline-tool-${step.stepId}`}
         name={step.title?.trim() || step.detail?.trim() || '子代理'}
-        args={step.toolArgs ?? ''}
-        phase={phase}
-        phaseActive={toolLoading}
+        phaseActive={loading}
+        outcomeBadge={
+          loading ? null : error ? 'error' : resolved ? 'success' : null
+        }
+        branchLine={
+          loading
+            ? planningActiveLabel('Agent') ?? '子代理运行中…'
+            : error
+              ? '子代理失败'
+              : resolved
+                ? '子代理已完成'
+                : null
+        }
         iconName="Agent"
-        iconStatus={resolveToolVisualStatus({
-          loading: toolLoading,
-          error: step.status === 'failed',
-          success: step.status === 'completed',
-        })}
+        iconStatus={resolveToolVisualStatus({ loading, error, success: resolved })}
       />
     )
   }
@@ -131,10 +132,14 @@ export function TimelineToolBlock({
       ? planningActiveLabel(step.toolName ?? '') ??
         (step.title?.trim() && !step.title.includes('…') ? `${step.title}…` : null)
       : null
+  const rawTool = canonicalToolName(step.toolName)
   const todoWriteTool = normalizeToolName(step.toolName) === 'TodoWrite'
-  const vfsInventoryTool =
-    normalizeToolName(step.toolName) === 'Glob' ||
-    normalizeToolName(step.toolName) === 'Grep'
+  const vfsInventoryTool = rawTool === 'Glob' || rawTool === 'Grep'
+  const memoryTreeTool = isMemoryListTool(step.toolName)
+  const memoryWriteTool = isMemoryWriteTool(step.toolName)
+  const memoryApiTool = isMemoryApiTool(step.toolName)
+  const listChaptersTool = isListChaptersTool(step.toolName)
+  const inventoryListTool = isInventoryListTool(step.toolName)
   const hasTodoList = Boolean(step.todos?.length)
   const rawSummary = step.outputSummary || step.detail
   const hideAskNoise =
@@ -194,40 +199,31 @@ export function TimelineToolBlock({
     )
   }
 
-  const rightHint = (text: string) =>
-    toolLoading || showChooseLoading ? (
-      <ShimmerScanText active>{text}</ShimmerScanText>
-    ) : (
-      text
-    )
+  const awaitingUserInput = Boolean(showInteraction)
+  const phase = loading
+    ? '运行中'
+    : error
+      ? '失败'
+      : awaitingUserInput && isAsk
+        ? '等待回答'
+        : resolved
+          ? '已完成'
+          : undefined
 
-  const trailing = (
-    <>
-      {error ? <span className={FAIL_TAG}>失败</span> : null}
-      {showChooseLoading ? (
-        <span className={CC_PROGRESS_HINT}>{rightHint('正在生成选项…')}</span>
-      ) : null}
-      {!suppress && readProgressHint && !chapterProgressHint ? (
-        <span className={CC_PROGRESS_HINT}>{rightHint(readProgressHint)}</span>
-      ) : null}
-      {!suppress &&
-      toolLoading &&
-      step.detail &&
-      !chapterProgressHint &&
-      !readProgressHint ? (
-        <span className={CC_PROGRESS_HINT}>{rightHint(step.detail)}</span>
-      ) : null}
-    </>
-  )
+  const branchLine = ccToolBranchStatus(step, {
+    loading,
+    error,
+    phase,
+    readLabel,
+    chapterProgressHint,
+    readProgressHint,
+    earlyProgressHint,
+    awaitingUserInput,
+    chooseLoading: showChooseLoading,
+  })
 
   const branchInner: ReactNode[] = []
-  if (toolLoading && readLabel) {
-    branchInner.push(
-      <ShimmerScanText key="read-progress" active>
-        {readLabel}
-      </ShimmerScanText>,
-    )
-  } else if (readLabel && readBodyExcerpt) {
+  if (toolLoading && readLabel && readBodyExcerpt) {
     branchInner.push(
       <span key="body" style={{ display: 'block' }}>
         <ToolDetailPeek step={step} mergedCallCount={mergedCallCount} />
@@ -235,6 +231,7 @@ export function TimelineToolBlock({
     )
   } else if (
     vfsInventoryTool &&
+    !inventoryListTool &&
     resolved &&
     toolDetailHasExpandableContent(step)
   ) {
@@ -245,47 +242,25 @@ export function TimelineToolBlock({
         mergedCallCount={mergedCallCount}
       />,
     )
-  } else if (chapterProgressHint) {
+  } else if (chapterProgressHint && toolLoading && step.displayExcerpt?.trim()) {
     branchInner.push(
-      <ShimmerScanText key="chapter-progress" active>
-        {chapterProgressHint}
-      </ShimmerScanText>,
-    )
-    if (toolLoading && step.displayExcerpt?.trim()) {
-      branchInner.push(
-        <span key="chapter-stream" style={{ display: 'block', marginTop: '0.35rem' }}>
-          <ShimmerScanText active>
-            {step.displayExcerpt.trim().slice(-400)}
-          </ShimmerScanText>
-        </span>,
-      )
-    }
-  } else if (todoWriteTool && toolLoading) {
-    branchInner.push(
-      <ShimmerScanText key="todo-progress" active>
-        更新待办…
-      </ShimmerScanText>,
-    )
-  } else if (earlyProgressHint) {
-    branchInner.push(
-      <ShimmerScanText key="early-progress" active>
-        {earlyProgressHint}
-      </ShimmerScanText>,
-    )
-  } else if (toolLoading && step.displayExcerpt?.trim()) {
-    branchInner.push(
-      <ShimmerScanText key="stream-excerpt" active>
+      <span key="chapter-stream" style={{ display: 'block', marginTop: '0.35rem' }}>
         {step.displayExcerpt.trim().slice(-400)}
-      </ShimmerScanText>,
+      </span>,
     )
   } else if (
     toolLoading &&
-    !showInteraction &&
-    !showChooseLoading &&
+    step.displayExcerpt?.trim() &&
     !chapterProgressHint &&
-    !readLabel
+    !readLabel &&
+    !memoryApiTool &&
+    !listChaptersTool
   ) {
-    branchInner.push('…')
+    branchInner.push(
+      <span key="stream-excerpt" style={{ display: 'block' }}>
+        {step.displayExcerpt.trim().slice(-400)}
+      </span>,
+    )
   }
 
   if (chapterWriteTool && resolved && toolDetailHasExpandableContent(step)) {
@@ -303,16 +278,11 @@ export function TimelineToolBlock({
     Boolean(chapterResultSummary) ||
     (chapterWriteTool && resolved && toolDetailHasExpandableContent(step))
 
-  const resultHint = ccToolResultHint(step, {
-    readLabel,
-    deleteSummary,
-    chapterResultSummary,
-    memoryActionLabel,
-    loading,
-  })
-  const summaryLine = summary?.trim() ?? ''
-  const summaryIsJsonLike =
-    summaryLine.startsWith('{') && summaryLine.endsWith('}')
+  const compactBranchSummary = Boolean(
+    resolved &&
+      (step.outputSummary?.trim() || step.resultLabels?.[0]?.trim() || memoryActionLabel),
+  )
+
   const showBodySummary = Boolean(
     !readLabel &&
       !memoryActionLabel &&
@@ -323,10 +293,13 @@ export function TimelineToolBlock({
       !todoWriteTool &&
       !hasTodoList &&
       !isAsk &&
+      !memoryWriteTool &&
+      !memoryTreeTool &&
+      !listChaptersTool &&
+      !compactBranchSummary &&
       resolved &&
       summary &&
-      !showInteraction &&
-      !(summaryIsJsonLike && resultHint),
+      !showInteraction,
   )
 
   const showDetailPeek =
@@ -337,6 +310,10 @@ export function TimelineToolBlock({
     !deleteSummary &&
     !chapterWriteInBranch &&
     !vfsInventoryTool &&
+    !memoryWriteTool &&
+    !memoryTreeTool &&
+    !listChaptersTool &&
+    !compactBranchSummary &&
     !showBodySummary &&
     !(readLabel && readBodyExcerpt) &&
     (step.status === 'completed' ||
@@ -346,24 +323,30 @@ export function TimelineToolBlock({
       ? Boolean(readBodyExcerpt) && !readLabel
       : !readLabel && !memoryActionLabel)
 
-  const awaitingUserInput = Boolean(showInteraction)
-  const phase = loading
-    ? '运行中'
-    : error
-      ? '失败'
-      : awaitingUserInput && isAsk
-        ? '等待回答'
-        : resolved
-          ? '已完成'
-          : undefined
-  const hasExpandableDetail = Boolean(
-    detailBranch ||
-      showVerboseSummary ||
-      showBodySummary ||
-      showDetailPeek ||
-      (hasTodoList && step.todos) ||
-      children,
+  const suppressInventoryDetail = Boolean(
+    (memoryApiTool || listChaptersTool) && (compactBranchSummary || loading),
   )
+
+  const hasExpandableDetail = Boolean(
+    !suppressInventoryDetail &&
+      (detailBranch ||
+        showVerboseSummary ||
+        showBodySummary ||
+        showDetailPeek ||
+        (hasTodoList && step.todos) ||
+        children),
+  )
+
+  const outcomeBadge = loading
+    ? null
+    : error
+      ? 'error'
+      : resolved || awaitingUserInput
+        ? 'success'
+        : null
+
+  const displayBranchLine =
+    loading && args?.trim() ? `${branchLine} · ${args.trim()}` : branchLine
 
   if (
     !nested &&
@@ -371,7 +354,6 @@ export function TimelineToolBlock({
     !showVerboseSummary &&
     !showBodySummary &&
     !detailBranch &&
-    !trailing &&
     !showDetailPeek &&
     !hasTodoList
   ) {
@@ -379,10 +361,9 @@ export function TimelineToolBlock({
       <CcToolRow
         testId={`timeline-tool-${step.stepId}`}
         name={name}
-        args={args}
-        phase={phase}
         phaseActive={loading}
-        resultHint={resultHint}
+        outcomeBadge={outcomeBadge}
+        branchLine={displayBranchLine}
         mergeCount={mergedCallCount}
         iconName={iconName}
         iconStatus={iconStatus}
@@ -397,13 +378,11 @@ export function TimelineToolBlock({
       resolved={resolved}
       awaitingUserInput={awaitingUserInput}
       name={name}
-      args={args}
-      phase={phase}
-      resultHint={resultHint}
+      branchLine={displayBranchLine}
       mergeCount={mergedCallCount}
       iconName={iconName}
       iconStatus={iconStatus}
-      trailing={trailing}
+      outcomeBadge={outcomeBadge}
       branch={detailBranch}
       hasExpandableDetail={hasExpandableDetail}
       showVerboseSummary={showVerboseSummary}
@@ -427,16 +406,13 @@ export function TimelineToolBlock({
 function ExpandableTimelineToolRow({
   stepId,
   loading,
-  resolved,
   awaitingUserInput = false,
   name,
-  args,
-  phase,
-  resultHint,
+  branchLine,
   mergeCount,
   iconName,
   iconStatus,
-  trailing,
+  outcomeBadge,
   branch,
   hasExpandableDetail,
   showVerboseSummary,
@@ -454,13 +430,11 @@ function ExpandableTimelineToolRow({
   resolved: boolean
   awaitingUserInput?: boolean
   name: string
-  args: string
-  phase?: string
-  resultHint: string | null
+  branchLine: string
   mergeCount?: number
   iconName: string
   iconStatus: ReturnType<typeof resolveToolVisualStatus>
-  trailing: ReactNode
+  outcomeBadge: 'success' | 'error' | null
   branch: ReactNode
   hasExpandableDetail: boolean
   showVerboseSummary: boolean
@@ -473,40 +447,20 @@ function ExpandableTimelineToolRow({
   showDetailPeekNode: ReactNode
   children?: ReactNode
 }) {
-  const [bodyExpanded, setBodyExpanded] = useState(false)
-  const expanded = loading || awaitingUserInput || bodyExpanded
-
-  useEffect(() => {
-    if (loading || awaitingUserInput) {
-      setBodyExpanded(true)
-    }
-  }, [loading, awaitingUserInput, stepId])
-
-  useEffect(() => {
-    if (awaitingUserInput) {
-      return
-    }
-    if (!loading && resolved && hasExpandableDetail) {
-      setBodyExpanded(false)
-    }
-  }, [loading, resolved, hasExpandableDetail, awaitingUserInput, stepId])
+  const expanded = loading || awaitingUserInput || hasExpandableDetail
 
   return (
     <CcToolRow
       testId={`timeline-tool-${stepId}`}
       name={name}
-      args={args}
-      phase={phase}
       phaseActive={loading}
-      resultHint={resultHint}
+      outcomeBadge={outcomeBadge}
+      branchLine={branchLine}
       mergeCount={mergeCount}
       iconName={iconName}
       iconStatus={iconStatus}
-      trailing={trailing}
       branch={branch}
-      collapsible={false}
       expanded={expanded}
-      onToggle={undefined}
     >
       {showVerboseSummary ? (
         <CcToolNestedBranch>

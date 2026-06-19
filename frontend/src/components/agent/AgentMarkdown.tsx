@@ -1,19 +1,5 @@
-import ReactMarkdown, { type Components } from 'react-markdown'
-import remarkGfm from 'remark-gfm'
-import { normalizeAgentMarkdown } from '../../utils/normalizeAgentMarkdown'
-import {
-  AGENT_PROSE_TABLE_SCROLL,
-  agentProseClass,
-  type AgentMarkdownVariant,
-} from '@/lib/agentProseClasses'
-
-const markdownComponents: Components = {
-  table: ({ children }) => (
-    <div className={AGENT_PROSE_TABLE_SCROLL}>
-      <table>{children}</table>
-    </div>
-  ),
-}
+import { AgentStreamMarkdown } from './markdown'
+import type { AgentMarkdownVariant } from '@/lib/agentProseClasses'
 
 export type { AgentMarkdownVariant } from '@/lib/agentProseClasses'
 
@@ -21,19 +7,29 @@ export interface AgentMarkdownProps {
   text: string
   className?: string
   variant?: AgentMarkdownVariant
+  /** SSE 流式输出中；启用 Streamdown streaming + remend */
+  streaming?: boolean
+  isAnimating?: boolean
+  animated?: boolean
 }
 
-export function AgentMarkdown({ text, className, variant = 'chat' }: AgentMarkdownProps) {
-  const normalized = normalizeAgentMarkdown(text)
-  if (!normalized.trim()) {
-    return null
-  }
-
+/** @see AgentStreamMarkdown */
+export function AgentMarkdown({
+  text,
+  className,
+  variant = 'chat',
+  streaming = false,
+  isAnimating,
+  animated,
+}: AgentMarkdownProps) {
   return (
-    <div className={agentProseClass(variant, className)} data-variant={variant}>
-      <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
-        {normalized}
-      </ReactMarkdown>
-    </div>
+    <AgentStreamMarkdown
+      text={text}
+      className={className}
+      variant={variant}
+      streaming={streaming}
+      isAnimating={isAnimating}
+      animated={animated}
+    />
   )
 }

@@ -4,17 +4,21 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.agent.backend.memory_catalog import format_memory_catalog_db
+from app.agent.backend.memory_catalog import (
+    extract_scope_root_ids,
+    format_memory_index,
+    load_all_memory_trees,
+)
 from app.agent.context.compact import (
     CHAPTER_INFO_CHAIN_FOR_PROMPT,
-    compact_story_memory_text,
     format_chapter_catalog_db,
     format_chapter_window,
 )
+from app.agent.context.memory_log import memory_ops_for_plan_json
 from app.agent.context.prompting.blocks import json_block
 from app.agent.harness.intent_message import intent_user_message_for_context
 from app.agent.harness.orchestration_contract import MAIN_LOOP_TOOLS
-from app.agent.harness.plan_context import _transcript_has_interaction, think_text_for_plan
+from app.agent.harness.plan_context import _transcript_has_interaction, summarize_memory_patch, think_text_for_plan
 from app.agent.harness.routing import format_dialogue_history, project_summary_from_ctx
 from app.agent.schemas import AgentRunContext, PlanRequest
 from app.agent.tools.todo_helpers import working_todos_from_patch
@@ -86,26 +90,33 @@ def assemble_run_context(
         novel["chapter_list_full"] = list_text[:4500]
 
     memory: dict[str, Any] = {}
-    mem_catalog = format_memory_catalog_db(ctx)
-    if mem_catalog:
-        memory["memory_catalog"] = mem_catalog[:4500]
-    story = compact_story_memory_text(str(ctx.story_memory or ""), max_len=_STORY_SNAPSHOT_MAX)
-    if story:
-        memory["story_snapshot"] = story
+    mem_trees = load_all_memory_trees(ctx) if nid and ctx.user_id > 0 else {}
+    mem_index = format_memory_index(ctx, trees=mem_trees or None)
+    if mem_index:
+        memory["memory_index"] = mem_index[:5000]
+    scope_roots = extract_scope_root_ids(mem_trees) if mem_trees else {}
+    if scope_roots:
+        memory["scope_root_ids"] = scope_roots
     roster = patch.get("character_roster")
     if isinstance(roster, list) and roster:
         memory["character_roster"] = roster[:40]
     last_read = patch.get("last_memory_read")
     if isinstance(last_read, dict) and last_read.get("ok"):
         memory["last_read_scope"] = str(last_read.get("scope") or "")
-    last_vfs = patch.get("last_read")
-    if isinstance(last_vfs, dict) and last_vfs.get("ok"):
-        hint = f"已 Read `{str(last_vfs.get('path') or '')[:120]}`"
-        if last_vfs.get("needs_continue"):
-            hint += f"；需续读 offset={last_vfs.get('next_offset')}"
-        elif last_vfs.get("has_body") is False:
-            hint += "；切片未见 --- 正文，请续读或省略 limit"
-        memory["last_read_hint"] = hint
+        mid = str(last_read.get("memory_id") or "").strip()
+        if mid:
+            memory["last_read_memory_id"] = mid
+    ops = memory_ops_for_plan_json(patch.get("memory_ops_log"))
+    if ops:
+        memory["ops_log"] = ops
+        ok_creates = sum(
+            1 for row in ops if row.get("tool") == "CreateMemory" and row.get("ok")
+        )
+        if ok_creates >= 2:
+            memory["create_memory_ok_count"] = ok_creates
+    last_write = patch.get("last_memory_patch")
+    if isinstance(last_write, dict):
+        memory["last_write"] = summarize_memory_patch(last_write)
 
     working: dict[str, Any] = {}
     if include_think_summary:

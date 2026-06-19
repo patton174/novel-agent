@@ -9,6 +9,8 @@ novel-agent/agent-document/docs/deploy/docker/.env.mw
 novel-agent/agent-document/docs/deploy/docker/.env.worker
 novel-agent/agent-document/docs/deploy/docker/.env.split
 novel-agent/agent-document/docs/deploy/windows/env.bat
+scripts/local-remote.env
+scripts/novel-studio-startup.log
 
 # ========== 构建与依赖 ==========
 **/node_modules/
@@ -41,6 +43,7 @@ frontend/dist/
 
 # ========== 部署生成物（由 envsubst / setup-split-config 生成）==========
 novel-agent/agent-document/docs/deploy/windows.zip
+legacy/novel-agent/agent-document/docs/deploy/windows.zip
 novel-agent/agent-document/docs/deploy/docker/nacos-split-rendered/
 novel-agent/agent-document/docs/deploy/docker/nginx-entry-mw.conf
 novel-agent/agent-document/docs/deploy/docker/nginx-frontend-worker.conf
@@ -61,6 +64,26 @@ novel-agent/agent-document/docs/deploy/docker/nacos-split-rendered-0e/
 novel-agent/agent-document/docs/deploy/docker/nacos-split-rendered-aes/
 .DS_Store
 Thumbs.db
+
+# ========== 代码索引 / 个人草稿（勿入库）==========
+.codegraph/
+_delete-com-report.json
+# TypeScript 增量构建产物
+*.tsbuildinfo
+# 测试运行产物
+frontend/test-results/
+
+# ========== scripts/ 草稿与本地调试（仅保留合法启动/运维脚本）==========
+scripts/_local_dev_check.ps1
+scripts/_run-novel-foreground.ps1
+scripts/boot-novel-studio-log.ps1
+scripts/test2.txt
+scripts/test_redis_local.py
+scripts/pentest_novel_agent.py
+scripts/pentest_report_baseline.json
+scripts/PENTEST_REPORT_BASELINE.md
+scripts/_remote-env.tmp
+scripts/local-cn.env
 
 # ========== 外部参考 clone（勿入库）==========
 claude-code-ref/

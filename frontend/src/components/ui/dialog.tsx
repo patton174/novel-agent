@@ -30,10 +30,10 @@ function DialogClose({
   return <DialogPrimitive.Close data-slot="dialog-close" {...props} />
 }
 
-function DialogOverlay({
-  className,
-  ...props
-}: React.ComponentProps<typeof DialogPrimitive.Overlay>) {
+const DialogOverlay = React.forwardRef<
+  HTMLDivElement,
+  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay>
+>(function DialogOverlay({ className, ...props }, ref) {
   return (
     <DialogPrimitive.Overlay
       data-slot="dialog-overlay"
@@ -41,22 +41,23 @@ function DialogOverlay({
         "fixed inset-0 z-50 bg-black/10 duration-100 supports-backdrop-filter:backdrop-blur-xs data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
         className
       )}
+      ref={ref}
       {...props}
     />
   )
-}
+})
 
-function DialogContent({
-  className,
-  children,
-  showCloseButton = true,
-  mobileFullscreen = true,
-  ...props
-}: React.ComponentProps<typeof DialogPrimitive.Content> & {
-  showCloseButton?: boolean
-  /** @default true — full-screen sheet below md (767px), aligned with editor modals */
-  mobileFullscreen?: boolean
-}) {
+const DialogContent = React.forwardRef<
+  HTMLDivElement,
+  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & {
+    showCloseButton?: boolean
+    /** @default true — full-screen sheet below md (767px), aligned with editor modals */
+    mobileFullscreen?: boolean
+  }
+>(function DialogContent(
+  { className, children, showCloseButton = true, mobileFullscreen = true, ...props },
+  ref
+) {
   return (
     <DialogPortal>
       <DialogOverlay />
@@ -67,6 +68,7 @@ function DialogContent({
           mobileFullscreen && APP_MODAL_MOBILE_FULL,
           className
         )}
+        ref={ref}
         {...props}
       >
         {children}
@@ -81,7 +83,7 @@ function DialogContent({
       </DialogPrimitive.Content>
     </DialogPortal>
   )
-}
+})
 
 function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (

@@ -1,4 +1,5 @@
 import { secureFetch } from '../security/secureFetch'
+import { pixelAvatarFromUserInfo } from './pixelAvatarApi'
 import { parseResultResponse, readApiErrorMessage, resolveErrorMessage } from '../utils/resultApi'
 import type { UserProfile, UserRole } from '../stores/userStore'
 
@@ -8,6 +9,11 @@ interface UserInfoWire {
   email?: string
   role?: string
   emailVerified?: boolean
+  pixelAvatar?: {
+    style?: string
+    presetId?: string
+    customColors?: { primary?: string; accent?: string; highlight?: string }
+  }
 }
 
 function normalizeUserProfile(raw: UserInfoWire): UserProfile {
@@ -26,6 +32,11 @@ export async function fetchUserInfo(): Promise<UserProfile> {
     throw new Error(await readApiErrorMessage(res))
   }
   const raw = await parseResultResponse<UserInfoWire>(res)
+  const avatar = pixelAvatarFromUserInfo(raw.pixelAvatar)
+  if (avatar && raw.userId != null) {
+    const { writeAvatarSelection } = await import('@/lib/pixelAvatar/storage')
+    writeAvatarSelection(String(raw.userId), avatar)
+  }
   return normalizeUserProfile(raw)
 }
 

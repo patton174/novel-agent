@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 
 import jakarta.annotation.PostConstruct;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -29,6 +30,7 @@ public class RunLiveRedisSubscriber implements MessageListener {
     private final AgentRunEventJournal eventJournal;
     private final ObjectMapper objectMapper;
     private final Map<String, LiveSubscription> subscriptions = new ConcurrentHashMap<>();
+    private final Map<String, Set<String>> localEchoPayloads = new ConcurrentHashMap<>();
 
     public RunLiveRedisSubscriber(
         RedisMessageListenerContainer listenerContainer,
@@ -63,6 +65,17 @@ public class RunLiveRedisSubscriber implements MessageListener {
 
     public void unsubscribe(String runId) {
         subscriptions.remove(runId);
+        localEchoPayloads.remove(runId);
+    }
+
+    public void onLocalPayload(String runId, String payload) {
+        if (runId == null || runId.isBlank() || payload == null || payload.isBlank()) {
+            return;
+        }
+        localEchoPayloads
+            .computeIfAbsent(runId, ignored -> ConcurrentHashMap.newKeySet())
+            .add(runLiveSseFanout.payloadKey(payload));
+        handlePayload(runId, payload);
     }
 
     @Override
@@ -74,6 +87,13 @@ public class RunLiveRedisSubscriber implements MessageListener {
         String runId = channel.substring(channel.lastIndexOf(':') + 1);
         String payload = new String(message.getBody());
 
+        if (consumeLocalEcho(runId, payload)) {
+            return;
+        }
+        handlePayload(runId, payload);
+    }
+
+    private void handlePayload(String runId, String payload) {
         Long userId = null;
         String sessionId = null;
         LiveSubscription sub = subscriptions.get(runId);
@@ -91,9 +111,24 @@ public class RunLiveRedisSubscriber implements MessageListener {
             return;
         }
 
+        boolean delivered = runLiveSseFanout.onLivePayload(runId, payload);
+        if (!delivered) {
+            return;
+        }
         eventJournal.append(runId, payload);
         statusHub.publish(userId, sessionId, payload);
-        runLiveSseFanout.onLivePayload(runId, payload);
+    }
+
+    private boolean consumeLocalEcho(String runId, String payload) {
+        Set<String> keys = localEchoPayloads.get(runId);
+        if (keys == null || keys.isEmpty()) {
+            return false;
+        }
+        boolean removed = keys.remove(runLiveSseFanout.payloadKey(payload));
+        if (keys.isEmpty()) {
+            localEchoPayloads.remove(runId, keys);
+        }
+        return removed;
     }
 
     private record LiveSubscription(Long userId, String sessionId) {

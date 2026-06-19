@@ -1,0 +1,38 @@
+# MW 机 Billing（PG/Redis 在 MW）
+server:
+  port: 8092
+
+spring:
+  cloud:
+    nacos:
+      discovery:
+        ip: 107.150.112.140
+    inetutils:
+      ignored-interfaces:
+        - docker0
+      preferred-networks:
+        - 107.150.
+  datasource:
+    url: jdbc:postgresql://107.150.112.140:5432/novel_agent?sslmode=disable
+    username: postgres
+    password: LIxu20021008@
+    driver-class-name: org.postgresql.Driver
+  data:
+    redis:
+      host: 107.150.112.140
+      port: 6379
+      password: LIxu20021008@
+      database: 0
+  rabbitmq:
+    host: 107.150.112.140
+    port: 5672
+    username: novel_agent
+    password: LIxu20021008@
+
+logging:
+  level:
+    com.novel.agent: info
+
+agent:
+  internal:
+    service-key: prod-internal-key-novel-agent

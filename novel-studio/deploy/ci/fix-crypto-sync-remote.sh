@@ -9,7 +9,7 @@ if docker inspect novel-studio-worker-novel-studio-1 >/dev/null 2>&1; then
 fi
 if [[ -z "$KEY" ]]; then
   for f in /opt/novel-agent/novel-studio/deploy/docker/.env.worker \
-           /opt/novel-agent/novel-agent/agent-document/docs/deploy/docker/.env.worker; do
+           /opt/novel-agent/legacy/novel-agent/agent-document/docs/deploy/docker/.env.worker; do
     if [[ -f "$f" ]]; then
       KEY=$(grep -E '^AGENT_INTERNAL_SERVICE_KEY=' "$f" | head -1 | cut -d= -f2- | tr -d '"' || true)
       [[ -n "$KEY" ]] && break

@@ -104,6 +104,20 @@ export function assistantVisibleContent(message: HistoryMessage): string | null 
     return timelineText.trim()
   }
 
+  const narrationText = (message.agentTimeline ?? [])
+    .filter(
+      (block): block is Extract<AgentTimelineBlock, { kind: 'narration' }> =>
+        block.kind === 'narration',
+    )
+    .map((block) => block.content.trim())
+    .filter(Boolean)
+    .join('\n')
+  if (narrationText.trim()) {
+    return narrationText.trim()
+  }
+
+  // Intentionally NOT a fallback: agentThinkText is private reasoning and must
+  // never be replayed as assistant history content (see buildAgentHistory.test).
   const fromSteps = stepHistoryLines(message.agentSteps).join('\n')
   if (fromSteps.trim()) {
     return fromSteps.trim()

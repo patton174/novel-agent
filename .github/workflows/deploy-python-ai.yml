@@ -6,8 +6,8 @@ on:
     paths:
       - 'python-ai/**'
       - 'novel-studio/deploy/ci/deploy-python-ai.sh'
-      - 'novel-agent/agent-document/docs/deploy/docker/Dockerfile.python-ai'
-      - 'novel-agent/agent-document/docs/deploy/ci/build-python-ai.sh'
+      - 'legacy/novel-agent/agent-document/docs/deploy/docker/Dockerfile.python-ai'
+      - 'legacy/novel-agent/agent-document/docs/deploy/ci/build-python-ai.sh'
       - '.github/workflows/deploy-python-ai.yml'
   workflow_dispatch:
 
@@ -37,7 +37,7 @@ jobs:
           ssh-keyscan -H "${{ secrets.WORKER_HOST }}" >> ~/.ssh/known_hosts
 
       - name: Build python-ai image
-        run: bash novel-agent/agent-document/docs/deploy/ci/build-python-ai.sh
+        run: bash legacy/novel-agent/agent-document/docs/deploy/ci/build-python-ai.sh
 
       - name: Deploy python-ai
         env:

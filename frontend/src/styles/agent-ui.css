@@ -192,42 +192,50 @@
   margin: 0.5rem 0 0.65rem;
   font-size: 0.84em;
   line-height: 1.5;
+  border: none;
+  border-top: 2px solid color-mix(in srgb, var(--foreground) 24%, transparent);
+  border-bottom: 2px solid color-mix(in srgb, var(--foreground) 24%, transparent);
 }
 
-.agent-prose thead th {
-  background: hsl(var(--muted) / 0.65);
-  font-weight: 600;
-  color: hsl(var(--foreground) / 0.88);
+.agent-prose thead th,
+.agent-prose tbody > tr:first-child > th {
+  background: transparent;
+  font-weight: 700;
+  color: var(--foreground);
+  border: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--foreground) 16%, transparent);
 }
 
 .agent-prose th,
 .agent-prose td {
-  border: 1px solid hsl(var(--border));
-  padding: 0.4rem 0.55rem;
+  border: none;
+  padding: 0.5rem 0.6rem;
   text-align: left;
   vertical-align: top;
 }
 
-.agent-prose tr:nth-child(even) td {
-  background: hsl(var(--muted) / 0.35);
+.agent-prose tbody tr {
+  background: transparent;
 }
 
-.dark .agent-prose thead th {
-  background: hsl(var(--muted) / 0.55);
-  color: hsl(var(--foreground) / 0.9);
+.agent-prose tr:nth-child(even) td {
+  background: transparent;
+}
+
+.dark .agent-prose thead th,
+.dark .agent-prose tbody > tr:first-child > th {
+  background: transparent;
+  color: var(--foreground);
 }
 
 .dark .agent-prose th,
 .dark .agent-prose td {
-  border-color: hsl(var(--border) / 0.85);
+  border: none;
 }
 
-.dark .agent-prose tr:nth-child(even) td {
-  background: hsl(var(--muted) / 0.28);
-}
-
+.dark .agent-prose tr:nth-child(even) td,
 .dark .agent-prose tr:nth-child(odd) td {
-  background: hsl(var(--background) / 0.35);
+  background: transparent;
 }
 
 .agent-prose-chat {
@@ -395,18 +403,49 @@
 
 .agent-prose-document table {
   font-size: 0.875rem;
-  margin: 0.85rem 0 1rem;
+  margin: 0.85rem 1rem;
+  border: none;
+  border-top: 2px solid color-mix(in srgb, var(--foreground) 24%, transparent);
+  border-bottom: 2px solid color-mix(in srgb, var(--foreground) 24%, transparent);
 }
 
-.agent-prose-document thead th {
-  background: hsl(var(--muted) / 0.55);
+.agent-prose-document thead th,
+.agent-prose-document tbody > tr:first-child > th {
+  background: transparent;
+  font-weight: 700;
+  border: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--foreground) 16%, transparent);
 }
 
 .agent-prose-document th,
 .agent-prose-document td {
   padding: 0.5rem 0.65rem;
+  border: none;
 }
 
 .agent-prose-document tr:nth-child(even) td {
-  background: hsl(var(--muted) / 0.22);
+  background: transparent;
+}
+
+/* 助手流图标 gutter：正文左缘对齐，图标落在左侧槽位 */
+[data-testid='assistant-stream-shell'] .agent-timeline-lead-cell {
+  margin-left: calc(-1.35rem - 0.4rem);
+}
+
+/* 编排 pending 行：消息起始即对齐第一层（与 OrchestrationLayer 头一致），
+   避免思考出现时整行从第二层跳到第一层的视觉抖动 */
+[data-testid='assistant-stream-shell'] .agent-timeline-pending-gutter {
+  margin-left: calc(-1.35rem - 0.4rem);
+}
+
+.agent-prose-three-line-table {
+  border-left: none !important;
+  border-right: none !important;
+}
+
+.agent-prose-three-line-table th,
+.agent-prose-three-line-table td {
+  border-left: none !important;
+  border-right: none !important;
+  box-shadow: none !important;
 }

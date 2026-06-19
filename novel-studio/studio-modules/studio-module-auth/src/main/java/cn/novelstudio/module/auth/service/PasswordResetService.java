@@ -10,6 +10,8 @@ import cn.novelstudio.kernel.exception.ValidationException;
 import cn.novelstudio.platform.mail.sender.MailtrapEmailSender;
 import cn.novelstudio.platform.security.EmailVerifyLinkCodec;
 import cn.novelstudio.platform.security.SecurityRedisKeys;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -18,9 +20,12 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Locale;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 public class PasswordResetService {
+
+    private static final Logger log = LoggerFactory.getLogger(PasswordResetService.class);
 
     private final StringRedisTemplate redisTemplate;
     private final VerificationProperties properties;
@@ -108,8 +113,6 @@ public class PasswordResetService {
             + "&exp=" + expEpochSec
             + "&sig=" + sig;
 
-        mailtrapEmailSender.sendPasswordResetLink(email, resetUrl, ttl, properties.getFrontendBaseUrl());
-
         redisTemplate.opsForValue().set(
             SecurityRedisKeys.PASSWORD_RESET_LINK_PREFIX + token,
             String.valueOf(userId),
@@ -122,10 +125,27 @@ public class PasswordResetService {
         );
         rateLimitService.recordSuccess("forgot-password:email", email, Duration.ofHours(1));
         rateLimitService.recordSuccess("forgot-password:user", String.valueOf(userId), Duration.ofHours(1));
+        CompletableFuture.runAsync(() -> sendResetLinkEmail(email, resetUrl, ttl));
+    }
+
+    private void sendResetLinkEmail(String email, String resetUrl, long ttl) {
+        try {
+            mailtrapEmailSender.sendPasswordResetLink(email, resetUrl, ttl, properties.getFrontendBaseUrl());
+        } catch (Exception ex) {
+            log.warn("password reset mail send failed email={}: {}", maskEmail(email), ex.getMessage());
+        }
     }
 
     private String requireEmailLinkSecret() {
         return emailLinkSecretService.requireSecret();
+    }
+
+    private static String maskEmail(String email) {
+        int at = email == null ? -1 : email.indexOf('@');
+        if (at <= 1) {
+            return "***";
+        }
+        return email.charAt(0) + "***" + email.substring(at);
     }
 
     private static String normalizeEmail(String email) {

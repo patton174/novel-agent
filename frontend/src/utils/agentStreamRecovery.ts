@@ -37,6 +37,17 @@ export function clearStreamRecoveryBanner(
   return { ...state, hostGuardMessage: undefined, streamError: undefined }
 }
 
+/** Message persisted on assistant bubble — strips transient SSE recovery copy. */
+export function resolveAgentHostGuardMessage(
+  state: AgentStreamUiState,
+): string | undefined {
+  const msg = state.hostGuardMessage
+  if (!msg || isStreamRecoveryBanner(msg)) {
+    return undefined
+  }
+  return msg
+}
+
 export function isPeerDroppedStreamError(message: string): boolean {
   return /incomplete chunked read|peer closed connection|ERR_HTTP2_PROTOCOL_ERROR|HTTP2_PROTOCOL_ERROR|net::ERR_|network error|NetworkError when attempting to fetch|Load failed/i.test(
     message,

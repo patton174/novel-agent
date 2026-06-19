@@ -1,5 +1,7 @@
 # Phase 10 实施计划：管理运营、站点与支付
 
+> ⚠️ **历史设计记录**。生产已迁移至 **novel-studio 单体**，现状以 `CLAUDE.md` / `.cursor/rules/project-architecture.mdc` 为准。本文保留作历史参考，**勿据以部署**（旧微服务 agent-gateway/auth/pyai/content/consumer 与 `restart-dev.sh` 均已废弃）。
+
 > **目标**：Admin 运营闭环（套餐管理、成本看板、用户配额 override、站点 CMS、审计日志）；支付订阅与发票雏形。  
 > **周期**：约 4 周  
 > **前置**：Phase 9 计量账本与 usage API 已上线  

@@ -1,0 +1,39 @@
+name: Deploy Milvus (MW)
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-milvus
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate secrets
+        run: |
+          missing=()
+          [[ -n "${{ secrets.DEPLOY_SSH_KEY }}" ]] || missing+=(DEPLOY_SSH_KEY)
+          [[ -n "${{ secrets.MW_HOST }}" ]] || missing+=(MW_HOST)
+          [[ -n "${{ secrets.WORKER_HOST }}" ]] || missing+=(WORKER_HOST)
+          [[ ${#missing[@]} -eq 0 ]] || { echo "::error::缺少 Secrets: ${missing[*]}"; exit 1; }
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "${{ secrets.MW_HOST }}" >> ~/.ssh/known_hosts
+          ssh-keyscan -H "${{ secrets.WORKER_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Deploy Milvus + configure python-ai
+        env:
+          MW_HOST: ${{ secrets.MW_HOST }}
+          WORKER_HOST: ${{ secrets.WORKER_HOST }}
+          DEPLOY_SSH_OPTS: -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes -o ConnectTimeout=60 -o BatchMode=yes
+          DEPLOY_SCP_OPTS: -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes -o ConnectTimeout=60 -o BatchMode=yes
+        run: bash novel-studio/deploy/ci/deploy-milvus.sh

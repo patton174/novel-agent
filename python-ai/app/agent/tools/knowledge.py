@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 
 from app.agent.schemas import AgentRunContext
-from app.agent.tools.schemas import GetCharacterGraphInput, SearchKnowledgeInput, SearchMode
+from app.agent.tools.schemas import GetCharacterGraphInput, SearchKnowledgeInput
 from app.agent.tools.tool import ToolCallResult, build_tool
 from app.config import settings
 from app.kg.query import character_graph
@@ -18,21 +18,25 @@ async def search_knowledge(ctx: AgentRunContext, inp: SearchKnowledgeInput) -> T
         return ToolCallResult(
             content="<tool_use_error>missing novel_id</tool_use_error>", is_error=True
         )
-    if inp.mode == SearchMode.graph:
-        if not settings.kg_enabled:
-            return ToolCallResult(
-                content=json.dumps(
-                    {"hits": [], "note": "知识图谱未启用（KG_ENABLED=false）"},
-                    ensure_ascii=False,
-                ),
-            )
-        graph = character_graph(novel_id, inp.query)
+    # Single hybrid retrieval path — graph is exposed separately via GetCharacterGraph.
+    hits = await search_novel(novel_id, inp.query, top_k=inp.top_k, mode="hybrid")
+    if not hits:
         return ToolCallResult(
-            content=json.dumps({"hits": [], "graph": graph}, ensure_ascii=False),
+            content=json.dumps(
+                {
+                    "hits": [],
+                    "status": "no_match",
+                    "hint": (
+                        "No indexed match. A recently written chapter may still be "
+                        "indexing — retry shortly, or ReadChapter / ListChapters directly."
+                    ),
+                },
+                ensure_ascii=False,
+            ),
         )
-    mode = "vector" if inp.mode == SearchMode.vector else "hybrid"
-    hits = await search_novel(novel_id, inp.query, top_k=inp.top_k, mode=mode)
-    return ToolCallResult(content=json.dumps({"hits": hits}, ensure_ascii=False))
+    return ToolCallResult(
+        content=json.dumps({"hits": hits, "status": "ok"}, ensure_ascii=False)
+    )
 
 
 async def get_character_graph(
