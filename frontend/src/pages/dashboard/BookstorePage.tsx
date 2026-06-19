@@ -7,6 +7,7 @@ import {
   fetchCatalogNovels,
   type CatalogNovel,
 } from '@/api/catalogApi'
+import { collectToMyLibrary } from '@/api/uploadApi'
 import { Button } from '@/components/ui/button'
 import { APP_BTN_FULL_MD, APP_BTN_MD } from '@/lib/appButtonTokens'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -40,6 +41,7 @@ export default function BookstorePage() {
   const [novels, setNovels] = useState<CatalogNovel[] | null>(null)
   const [loadError, setLoadError] = useState(false)
   const [addingId, setAddingId] = useState<string | null>(null)
+  const [collectingId, setCollectingId] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     setLoadError(false)
@@ -66,6 +68,18 @@ export default function BookstorePage() {
       appToast.error(err instanceof Error ? err.message : t('dashboard:bookstore.addFail'))
     } finally {
       setAddingId(null)
+    }
+  }
+
+  const handleCollect = async (catalogNovelId: string) => {
+    setCollectingId(catalogNovelId)
+    try {
+      await collectToMyLibrary(catalogNovelId)
+      appToast.success(t('dashboard:bookstore.collectSuccess'))
+    } catch (err) {
+      appToast.error(err instanceof Error ? err.message : t('dashboard:bookstore.collectFail'))
+    } finally {
+      setCollectingId(null)
     }
   }
 
@@ -153,6 +167,19 @@ export default function BookstorePage() {
                     <Plus className="mr-2 size-4" />
                   )}
                   {t('dashboard:bookstore.addToLibrary')}
+                </Button>
+                <Button
+                  variant="outline"
+                  className={APP_BTN_FULL_MD}
+                  disabled={collectingId === novel.id}
+                  onClick={() => void handleCollect(novel.id)}
+                >
+                  {collectingId === novel.id ? (
+                    <Loader2 className="mr-2 size-4 animate-spin" />
+                  ) : (
+                    <BookMarked className="mr-2 size-4" />
+                  )}
+                  {t('dashboard:bookstore.collectToMyLibrary')}
                 </Button>
               </div>
             </article>

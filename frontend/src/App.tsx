@@ -31,6 +31,7 @@ const EditorPage = lazy(() => import('./pages/EditorPage'))
 const DashboardHomePage = lazy(() => import('./pages/dashboard/DashboardHomePage'))
 const NovelsPage = lazy(() => import('./pages/dashboard/NovelsPage'))
 const BookstorePage = lazy(() => import('./pages/dashboard/BookstorePage'))
+const MyLibraryPage = lazy(() => import('./pages/dashboard/MyLibraryPage'))
 const BillingPage = lazy(() => import('./pages/dashboard/BillingPage'))
 const SettingsPage = lazy(() => import('./pages/dashboard/SettingsPage'))
 const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'))
@@ -92,6 +93,7 @@ function AppRouteTree() {
           <Route index element={<DashboardHomePage />} />
           <Route path="novels" element={<NovelsPage />} />
           <Route path="bookstore" element={<BookstorePage />} />
+          <Route path="my-library" element={<MyLibraryPage />} />
           <Route path="billing" element={<BillingPage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>

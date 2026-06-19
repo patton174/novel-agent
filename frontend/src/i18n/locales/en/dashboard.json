@@ -114,7 +114,31 @@
     "emptyTitle": "No works in bookstore",
     "emptyDesc": "After admins start crawler tasks, collected works will appear here, and you can add them to your personal library to continue writing.",
     "chapterCount": "{{count}} Chapters",
-    "addToLibrary": "Add to my works"
+    "addToLibrary": "Add to my works",
+    "collectToMyLibrary": "Collect to my library",
+    "collectSuccess": "Collected to my library",
+    "collectFail": "Collect failed"
+  },
+  "myLibrary": {
+    "eyebrow": "My Library",
+    "title": "My Library",
+    "description": "Manage your uploaded and collected reference books",
+    "uploadButton": "Upload File",
+    "uploadFail": "Upload failed",
+    "parsing": "Parsing {{progress}}%",
+    "pending": "Waiting to parse",
+    "parseFail": "Parse failed",
+    "parseDone": "Parse complete",
+    "retry": "Retry",
+    "quota": "Used {{used}} / {{limit}}",
+    "quotaUnlimited": "Used {{used}} (unlimited)",
+    "refresh": "Refresh",
+    "empty": "No books yet — upload or collect from the bookstore",
+    "chapterCount": "{{count}} chapters",
+    "addToNovel": "Add to my novel",
+    "loadFail": "Load failed",
+    "collectSuccess": "Collected to my library",
+    "collectFail": "Collect failed"
   },
   "quickActions": {
     "admin": "Admin Panel",

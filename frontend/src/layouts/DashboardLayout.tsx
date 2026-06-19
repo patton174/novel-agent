@@ -21,6 +21,7 @@ export default function DashboardLayout() {
     '/dashboard': { title: t('layout.dashboard.overviewTitle'), description: t('layout.dashboard.overviewDesc') },
     '/dashboard/novels': { title: t('layout.dashboard.novelsTitle'), description: t('layout.dashboard.novelsDesc') },
     '/dashboard/bookstore': { title: t('layout.dashboard.bookstoreTitle'), description: t('layout.dashboard.bookstoreDesc') },
+    '/dashboard/my-library': { title: t('layout.dashboard.myLibraryTitle'), description: t('layout.dashboard.myLibraryDesc') },
     '/dashboard/billing': { title: t('layout.dashboard.billingTitle'), description: t('layout.dashboard.billingDesc') },
     '/dashboard/settings': { title: t('layout.dashboard.settingsTitle'), description: t('layout.dashboard.settingsDesc') },
   }
