@@ -33,4 +33,20 @@ public class EffectiveQuotaSupport {
             : plan.getMonthlyRunQuota() + runBonus;
         return new EffectiveQuota(tokenQuota, runQuota);
     }
+
+    /**
+     * 私人书库上传限额 = plan_feature.limit_value + Σ override.library_upload_bonus；
+     * planFeatureLimit 为 null 表示该套餐不限量，直接返回 null。
+     */
+    public Integer resolveLibraryUploadLimit(long userId, Integer planFeatureLimit) {
+        if (planFeatureLimit == null) {
+            return null;
+        }
+        List<UserQuotaOverrideEntity> overrides = userQuotaOverrideRepository.findActiveByUserId(userId, Instant.now());
+        int bonus = 0;
+        for (UserQuotaOverrideEntity override : overrides) {
+            bonus += override.getLibraryUploadBonus() == null ? 0 : override.getLibraryUploadBonus();
+        }
+        return planFeatureLimit + bonus;
+    }
 }
