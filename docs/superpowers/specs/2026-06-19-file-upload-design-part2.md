@@ -37,12 +37,14 @@ parse/
 
 ### 进度回报（Redis）
 
-解析大文件时按处理单元推进进度：
+python-ai 引入 Redis 依赖（`redis>=5.0`）+ 配置 `REDIS_URL`（默认 `redis://127.0.0.1:6379/0`，复用 CN 开发中间件 118.89.123.201:16379）。新建 `app/core/redis_client.py` 提供 `get_redis()` 单例（同步 `redis.Redis`，`decode_responses=True`）。
+
+解析大文件时按处理单元推进进度，写 `parse:progress:{fileId}` = 百分比整数（0–100），TTL 1h：
 - epub：已处理 XHTML 文件数 / 总数
 - pdf：已处理页数 / 总页数
 - docx/txt/md：已处理字符块 / 估算总块
 
-写 `parse:progress:{fileId}` = 百分比整数（0–100），TTL 1h。Java `GET /upload/files/{fileId}` 读 Redis 返回 `progress` 字段；status=ready 时强制 100。无章节结构的整体解析按已处理字节估算。
+Java 侧 `UploadService.getProgress(fileId)` 读同一 Redis 键（novel-studio 已用 Redis，复用 `StringRedisTemplate`），`GET /upload/files/{fileId}` 返回 `progress` 字段；status=ready 时强制 100。无章节结构的整体解析按已处理字节估算。
 
 ### 依赖
 
