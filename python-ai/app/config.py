@@ -53,6 +53,7 @@ class Settings(BaseSettings):
 
     content_base_url: str = "http://127.0.0.1:8080"
     internal_service_key: str = "dev-internal-key-change-me"
+    redis_url: str = "redis://127.0.0.1:6379/0"
     billing_report_enabled: bool = True
     # Split 栈默认 PyAI :8082；Worker 单体栈 compose 注入 BILLING_REPORT_URL=http://novel-studio:8080
     billing_report_url: str = "http://127.0.0.1:8082"

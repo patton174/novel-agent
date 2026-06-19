@@ -44,6 +44,16 @@ public class CrawlCatalogNovelEntity {
     @Column(name = "chapter_count")
     private Integer chapterCount;
 
+    // --- 上传入库扩展字段（Part 2 解析回写使用；Part 1 合并后对齐迁移） ---
+    @Column(name = "owner_id")
+    private Long ownerId;
+
+    @Column(length = 32)
+    private String source;
+
+    @Column(name = "uploader_file_id", length = 36)
+    private String uploaderFileId;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 

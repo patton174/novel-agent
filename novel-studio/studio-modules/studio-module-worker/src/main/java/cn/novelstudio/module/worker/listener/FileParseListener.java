@@ -1,0 +1,46 @@
+package cn.novelstudio.module.worker.listener;
+
+import cn.novelstudio.module.content.client.PythonParseClient;
+import cn.novelstudio.module.content.service.UploadService;
+import cn.novelstudio.module.worker.support.MqListenerSupport;
+import cn.novelstudio.platform.messaging.upload.FileParseMessage;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.amqp.rabbit.annotation.Queue;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.stereotype.Component;
+
+/**
+ * 消费 file.parse 队列：标记 parsing → 调 python /internal/parse → 回写 catalog + 状态。
+ */
+@Component
+public class FileParseListener {
+
+    private static final Logger log = LoggerFactory.getLogger(FileParseListener.class);
+
+    private final ObjectMapper objectMapper;
+    private final PythonParseClient parseClient;
+    private final UploadService uploadService;
+
+    public FileParseListener(ObjectMapper objectMapper, PythonParseClient parseClient, UploadService uploadService) {
+        this.objectMapper = objectMapper;
+        this.parseClient = parseClient;
+        this.uploadService = uploadService;
+    }
+
+    @RabbitListener(queuesToDeclare = @Queue(name = "agent.file.parse.queue", durable = "true"))
+    public void onParse(String message) {
+        MqListenerSupport.safeHandle(log, message, "file.parse failed", this::handle);
+    }
+
+    private void handle(String message) throws Exception {
+        FileParseMessage payload = objectMapper.readValue(message, FileParseMessage.class);
+        // 标记 parsing
+        uploadService.markParsing(payload.fileId());
+        JsonNode result = parseClient.parse(payload.fileId(), payload.storageKey(),
+            payload.format(), payload.originalName());
+        uploadService.finalizeParse(payload.fileId(), result);
+    }
+}

@@ -10,6 +10,7 @@ from app.agent.harness.owner.router import router as owner_router
 from app.agent.router import router as agent_step_router
 from app.api.crawler_routes import internal_router as crawler_internal_router
 from app.api.crawler_routes import router as crawler_router
+from app.api.parse_routes import internal_router as parse_internal_router
 from app.api.image_routes import router as image_router
 from app.api.kg_routes import router as kg_router
 from app.api.rag_routes import router as rag_router
@@ -51,6 +52,7 @@ app.include_router(crawler_router, prefix="/api", tags=["Crawler"])
 app.include_router(agent_step_router, prefix="/api", tags=["Agent Step"])
 app.include_router(owner_router, prefix="/internal", tags=["Owner Internal"])
 app.include_router(crawler_internal_router, prefix="/internal", tags=["Crawler Internal"])
+app.include_router(parse_internal_router, prefix="/internal", tags=["Parse Internal"])
 
 
 @app.on_event("startup")
