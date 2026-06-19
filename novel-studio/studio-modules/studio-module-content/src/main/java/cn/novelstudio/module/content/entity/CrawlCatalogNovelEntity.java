@@ -50,6 +50,18 @@ public class CrawlCatalogNovelEntity {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
+    /** null=公共书库条目（爬虫）；数值=用户私人书库（上传入库）。 */
+    @Column(name = "owner_id")
+    private Long ownerId;
+
+    /** 来源：crawl（爬虫公共）| upload（用户/管理员上传）。 */
+    @Column(nullable = false, length = 16)
+    private String source = "crawl";
+
+    /** 上传入库时关联的 uploaded_file.id（唯一，仅 upload 来源有值）。 */
+    @Column(name = "uploader_file_id", length = 36)
+    private String uploaderFileId;
+
     @PrePersist
     void onCreate() {
         if (id == null || id.isBlank()) {

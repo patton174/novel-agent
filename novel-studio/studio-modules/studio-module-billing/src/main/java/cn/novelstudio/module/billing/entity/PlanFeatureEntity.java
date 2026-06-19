@@ -20,4 +20,8 @@ public class PlanFeatureEntity {
 
     @Column(nullable = false)
     private Boolean enabled = true;
+
+    /** null=布尔特性/不适用；数值=限额（如 library_upload_limit 的上传本数）。 */
+    @Column(name = "limit_value")
+    private Integer limitValue;
 }

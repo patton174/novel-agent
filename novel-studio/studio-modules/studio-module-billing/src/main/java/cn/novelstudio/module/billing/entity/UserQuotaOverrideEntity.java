@@ -27,6 +27,10 @@ public class UserQuotaOverrideEntity {
     @Column(name = "rate_limit_rpm")
     private Integer rateLimitRpm;
 
+    /** 私人书库上传额度加成（叠加到 plan_feature.library_upload_limit 的 limit_value）。 */
+    @Column(name = "library_upload_bonus")
+    private Integer libraryUploadBonus;
+
     @Column(columnDefinition = "text")
     private String reason;
 
