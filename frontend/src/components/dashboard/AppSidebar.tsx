@@ -5,6 +5,7 @@ import {
   BookOpen,
   CreditCard,
   LayoutDashboard,
+  Library,
   Settings,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -35,6 +36,7 @@ export function AppSidebar({ embedded = false, onNavigate }: AppSidebarProps) {
     { label: t('common:nav.dashboardOverview'), to: '/dashboard', icon: LayoutDashboard, end: true },
     { label: t('common:nav.dashboardNovels'), to: '/dashboard/novels', icon: BookOpen },
     { label: t('common:nav.dashboardBookstore'), to: '/dashboard/bookstore', icon: BookMarked },
+    { label: t('common:nav.dashboardMyLibrary'), to: '/dashboard/my-library', icon: Library },
     { label: t('common:nav.dashboardBilling'), to: '/dashboard/billing', icon: CreditCard },
     { label: t('common:nav.dashboardSettings'), to: '/dashboard/settings', icon: Settings },
   ]

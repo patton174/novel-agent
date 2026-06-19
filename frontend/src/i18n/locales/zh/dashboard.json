@@ -114,7 +114,31 @@
     "emptyTitle": "书库暂无作品",
     "emptyDesc": "管理员启动爬虫任务后，收录的作品会出现在这里，你可以一键加入个人作品库继续创作。",
     "chapterCount": "共 {{count}} 章",
-    "addToLibrary": "加入我的作品"
+    "addToLibrary": "加入我的作品",
+    "collectToMyLibrary": "收藏到我的书库",
+    "collectSuccess": "已收藏到我的书库",
+    "collectFail": "收藏失败"
+  },
+  "myLibrary": {
+    "eyebrow": "个人书库",
+    "title": "我的书库",
+    "description": "管理上传与收藏的参考书目",
+    "uploadButton": "上传文件",
+    "uploadFail": "上传失败",
+    "parsing": "解析中 {{progress}}%",
+    "pending": "等待解析",
+    "parseFail": "解析失败",
+    "parseDone": "解析完成",
+    "retry": "重试",
+    "quota": "已用 {{used}} / {{limit}}",
+    "quotaUnlimited": "已用 {{used}}（无限）",
+    "refresh": "刷新",
+    "empty": "还没有书目，上传或从书库收藏吧",
+    "chapterCount": "{{count}} 章",
+    "addToNovel": "添加到我的小说",
+    "loadFail": "加载失败",
+    "collectSuccess": "已收藏到我的书库",
+    "collectFail": "收藏失败"
   },
   "quickActions": {
     "admin": "管理后台",
