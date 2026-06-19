@@ -11,9 +11,11 @@ import cn.novelstudio.module.content.dto.NovelDTO;
 import cn.novelstudio.module.content.entity.CrawlCatalogChapterEntity;
 import cn.novelstudio.module.content.entity.CrawlCatalogNovelEntity;
 import cn.novelstudio.module.content.entity.CrawlJobEntity;
+import cn.novelstudio.module.content.entity.UserLibraryCollectionEntity;
 import cn.novelstudio.module.content.repository.CrawlCatalogChapterRepository;
 import cn.novelstudio.module.content.repository.CrawlCatalogNovelRepository;
 import cn.novelstudio.module.content.repository.CrawlJobRepository;
+import cn.novelstudio.module.content.repository.UserLibraryCollectionRepository;
 import cn.novelstudio.module.content.service.ChapterService;
 import cn.novelstudio.module.content.service.NovelService;
 import cn.novelstudio.module.content.service.crawl.dto.CatalogChapterDetailDTO;
@@ -32,6 +34,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
 
 @Service
@@ -43,6 +46,7 @@ public class CatalogService {
     private final CrawlCatalogNovelRepository catalogNovelRepository;
     private final CrawlCatalogChapterRepository catalogChapterRepository;
     private final CrawlJobRepository crawlJobRepository;
+    private final UserLibraryCollectionRepository libraryCollectionRepository;
     private final NovelService novelService;
     private final ChapterService chapterService;
     private final ObjectProvider<IMessageProducer> messageProducerProvider;
@@ -52,6 +56,31 @@ public class CatalogService {
         int size = Math.max(1, Math.min(pageSize, 50));
         return catalogNovelRepository.findAllByOrderByUpdatedAtDesc(PageRequest.of(page, size))
             .map(this::toDto);
+    }
+
+    /**
+     * 我的书库：用户上传入库 ∪ 收藏的公共书库条目。
+     */
+    public Page<CatalogNovelDTO> listMyLibrary(Long userId, int pageCurrent, int pageSize) {
+        int page = Math.max(0, pageCurrent - 1);
+        int size = Math.max(1, Math.min(pageSize, 50));
+        return catalogNovelRepository.findMyLibrary(userId, PageRequest.of(page, size))
+            .map(this::toDto);
+    }
+
+    /**
+     * 收藏公共书库条目到我的书库（轻引用，幂等）。
+     */
+    @Transactional
+    public void collect(Long userId, String catalogNovelId) {
+        findCatalog(catalogNovelId); // 校验存在
+        if (!libraryCollectionRepository.existsByUserIdAndCatalogNovelId(userId, catalogNovelId)) {
+            UserLibraryCollectionEntity entity = new UserLibraryCollectionEntity();
+            entity.setUserId(userId);
+            entity.setCatalogNovelId(catalogNovelId);
+            entity.setCollectedAt(Instant.now());
+            libraryCollectionRepository.save(entity);
+        }
     }
 
     public CatalogNovelDTO getCatalog(String catalogNovelId) {

@@ -5,6 +5,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.Optional;
 
@@ -26,4 +27,15 @@ public interface CrawlCatalogNovelRepository extends JpaRepository<CrawlCatalogN
 
     @Query("SELECT n FROM CrawlCatalogNovelEntity n WHERE n.ownerId = :ownerId AND n.uploaderFileId = :fileId")
     Optional<CrawlCatalogNovelEntity> findByOwnerAndUploaderFile(Long ownerId, String fileId);
+
+    /**
+     * 我的书库：用户上传入库（owner_id=userId, source=upload） ∪ 用户收藏（user_library_collection）。
+     */
+    @Query("""
+        SELECT DISTINCT n FROM CrawlCatalogNovelEntity n
+        WHERE (n.ownerId = :userId AND n.source = 'upload')
+           OR n.id IN (SELECT c.catalogNovelId FROM UserLibraryCollectionEntity c WHERE c.userId = :userId)
+        ORDER BY n.updatedAt DESC
+        """)
+    Page<CrawlCatalogNovelEntity> findMyLibrary(@Param("userId") Long userId, Pageable pageable);
 }

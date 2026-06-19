@@ -50,4 +50,21 @@ public class AuthCatalogController extends BaseController {
     ) {
         return biz.addToLibrary(parseUserId(userId), catalogNovelId);
     }
+
+    @GetMapping("/my-library")
+    public Result<Page<CatalogNovelDTO>> myLibrary(
+        @RequestHeader("X-User-Id") String userId,
+        @RequestParam(defaultValue = "1") int pageCurrent,
+        @RequestParam(defaultValue = "50") int pageSize
+    ) {
+        return biz.myLibrary(parseUserId(userId), pageCurrent, pageSize);
+    }
+
+    @PostMapping("/novels/{catalogNovelId}/collect")
+    public Result<Void> collect(
+        @RequestHeader("X-User-Id") String userId,
+        @PathVariable String catalogNovelId
+    ) {
+        return biz.collect(parseUserId(userId), catalogNovelId);
+    }
 }

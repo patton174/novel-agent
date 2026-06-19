@@ -40,4 +40,19 @@ public class AuthCatalogBiz extends BaseBiz {
     public Result<NovelDTO> addToLibrary(Long userId, String catalogNovelId) {
         return ok(catalogService.addToUserLibrary(userId, catalogNovelId));
     }
+
+    public Result<Page<CatalogNovelDTO>> myLibrary(Long userId, int pageCurrent, int pageSize) {
+        PageQuery query = pageQuery(pageCurrent, pageSize);
+        org.springframework.data.domain.Page<CatalogNovelDTO> page = catalogService.listMyLibrary(
+            userId,
+            query.pageCurrent(),
+            query.pageSize()
+        );
+        return ok(SpringPageSupport.map(page, item -> item, query.pageCurrent(), query.pageSize()));
+    }
+
+    public Result<Void> collect(Long userId, String catalogNovelId) {
+        catalogService.collect(userId, catalogNovelId);
+        return ok();
+    }
 }
