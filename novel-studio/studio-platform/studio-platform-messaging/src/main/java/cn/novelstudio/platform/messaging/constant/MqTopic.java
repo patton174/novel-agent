@@ -24,6 +24,9 @@ public enum MqTopic {
 
     USAGE_EVENT("agent.usage.exchange", "usage.report", "agent.usage.queue"),
 
+    // 文件上传异步解析
+    FILE_PARSE("agent.file.parse.exchange", "file.parse", "agent.file.parse.queue"),
+
     ;
 
     private final String exchange;
