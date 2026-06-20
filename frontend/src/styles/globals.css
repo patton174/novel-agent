@@ -45,6 +45,16 @@
   --text-ui: 0.82rem;
   --text-ui-sm: 0.74rem;
   --text-ui-xs: 0.68rem;
+  /* Tabler 设计 token 映射（去 demo 化重构专用，供 pro/ 组件消费） */
+  --tabler-blue: #206bc4;
+  --tabler-azure: #4299e1;
+  --tabler-indigo: #4263eb;
+  --tabler-text-muted: #616877;
+  --tabler-border-color: #e6e8eb;
+  --tabler-bg-surface: #ffffff;
+  --tabler-bg-surface-secondary: #f8f9fa;
+  --tabler-radius: 4px;
+  --tabler-shadow-card: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 @theme inline {
