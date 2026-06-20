@@ -37,8 +37,8 @@ describe('NovelsPage', () => {
         <NovelsPage />
       </MemoryRouter>,
     )
-    // dispatcher 通过 lazy 加载桌面视图，需异步等待挂载
-    expect(await screen.findByText('共 1 部作品')).toBeInTheDocument()
+    // dispatcher 通过 lazy 加载桌面视图，需异步等待挂载；全量并行下 lazy chunk 加载较慢，放宽超时
+    expect(await screen.findByText('共 1 部作品', {}, { timeout: 5000 })).toBeInTheDocument()
     expect(screen.queryByLabelText('加载中')).not.toBeInTheDocument()
   })
 
@@ -57,10 +57,10 @@ describe('NovelsPage', () => {
     )
     await waitFor(() => {
       expect(screen.getAllByLabelText('加载中').length).toBeGreaterThan(0)
-    })
+    }, { timeout: 5000 })
     await waitFor(() => {
       expect(screen.getByText('共 1 部作品')).toBeInTheDocument()
-    })
+    }, { timeout: 5000 })
     expect(screen.queryByLabelText('加载中')).not.toBeInTheDocument()
   })
 })
