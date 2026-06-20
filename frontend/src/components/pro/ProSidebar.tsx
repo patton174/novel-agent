@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { NavLink } from 'react-router-dom'
 import { IconStroke, type TablerIcon } from './IconStroke'
 import { cn } from '@/lib/utils'
@@ -19,9 +20,13 @@ export interface ProSidebarProps {
   embedded?: boolean
   onNavigate?: () => void
   className?: string
+  /** 顶部插槽（如 wordmark）；embedded=false 时与导航同宽 */
+  header?: ReactNode
+  /** 底部插槽（如用户头像/设置入口） */
+  footer?: ReactNode
 }
 
-export function ProSidebar({ groups, embedded = false, onNavigate, className }: ProSidebarProps) {
+export function ProSidebar({ groups, embedded = false, onNavigate, className, header, footer }: ProSidebarProps) {
   return (
     <aside
       className={cn(
@@ -30,6 +35,7 @@ export function ProSidebar({ groups, embedded = false, onNavigate, className }: 
         className,
       )}
     >
+      {header ? <div className="shrink-0">{header}</div> : null}
       <nav className="flex flex-1 flex-col gap-4 overflow-y-auto p-3">
         {groups.map((g, gi) => (
           <div key={gi} className="flex flex-col gap-1">
@@ -60,6 +66,7 @@ export function ProSidebar({ groups, embedded = false, onNavigate, className }: 
           </div>
         ))}
       </nav>
+      {footer ? <div className="shrink-0 border-t border-border/60 p-3">{footer}</div> : null}
     </aside>
   )
 }

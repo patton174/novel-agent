@@ -1,7 +1,16 @@
-import { useEffect, useRef, type ComponentType, type SVGProps } from 'react'
+import { useEffect, useRef, type ForwardRefExoticComponent, type RefAttributes, type SVGProps } from 'react'
 import { cn } from '@/lib/utils'
 
-export type TablerIcon = ComponentType<SVGProps<SVGSVGElement> & { size?: number | string }>
+/** 对齐 @tabler/icons-react 的图标组件类型（ForwardRefExoticComponent，stroke 接受 string|number）。
+ *  tabler 未导出其内部 TablerIcon/IconProps，这里按其 d.ts 精确复刻，避免 propTypes 校验不兼容。 */
+export type TablerIcon = ForwardRefExoticComponent<
+  (Omit<SVGProps<SVGSVGElement>, 'stroke'> & {
+    stroke?: string | number
+    size?: string | number
+    title?: string
+  }) &
+    RefAttributes<SVGSVGElement>
+>
 
 export interface IconStrokeProps {
   /** tabler 图标组件，如 IconHome */
