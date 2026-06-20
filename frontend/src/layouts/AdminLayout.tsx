@@ -12,6 +12,7 @@ import { Avatar, AvatarFallback } from '../components/ui/avatar'
 import { Badge } from '../components/ui/badge'
 import { Button } from '../components/ui/button'
 import { AppShellToolbar } from '../components/layout/AppShellToolbar'
+import { ProBreadcrumb } from '@/components/pro/ProBreadcrumb'
 import { useUserStore } from '../stores/userStore'
 
 export default function AdminLayout() {
@@ -94,6 +95,15 @@ export default function AdminLayout() {
           }
         />
         <AppShellMain>
+          {location.pathname !== '/admin' ? (
+            <ProBreadcrumb
+              className="mb-4"
+              items={[
+                { label: t('common:nav.adminTitle'), to: '/admin' },
+                { label: meta.title },
+              ]}
+            />
+          ) : null}
           <Suspense fallback={<LayoutOutletSkeleton />}>
             <Outlet />
           </Suspense>

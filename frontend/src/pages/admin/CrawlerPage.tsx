@@ -23,7 +23,7 @@ import { CrawlJobRow } from '@/components/admin/CrawlJobRow'
 import { AdminCollapsibleCard } from '@/components/admin/AdminCollapsibleCard'
 import { OrchestratorLogTerminal } from '@/components/admin/OrchestratorLogTerminal'
 import { Button } from '@/components/ui/button'
-import { AdminPagination } from '@/components/layout/AdminPagination'
+import { ProPagination } from '@/components/pro/ProPagination'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   AppPageStack,
@@ -320,7 +320,6 @@ export default function CrawlerPage() {
     setJobPage(1)
   }, [jobFilter])
 
-  const jobTotalPages = Math.max(1, Math.ceil(filteredJobs.length / JOBS_PAGE_SIZE))
 
   const paginatedJobs = useMemo(() => {
     const start = (jobPage - 1) * JOBS_PAGE_SIZE
@@ -406,11 +405,11 @@ export default function CrawlerPage() {
                 />
               ))}
             </div>
-            <AdminPagination
-              pageCurrent={jobPage}
-              totalPages={jobTotalPages}
-              totalCount={filteredJobs.length}
-              loading={jobsLoading}
+            <ProPagination
+              page={jobPage}
+              pageSize={JOBS_PAGE_SIZE}
+              total={filteredJobs.length}
+              disabled={jobsLoading}
               onPageChange={setJobPage}
             />
             {(jobs?.length ?? 0) < jobsTotalCount ? (

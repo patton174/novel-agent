@@ -51,7 +51,12 @@
     "updatedAt": "更新于 {{time}}",
     "regenCover": "重新生成封面",
     "genCover": "AI 生成封面",
-    "continueWriting": "继续写作"
+    "continueWriting": "继续写作",
+    "colTitle": "书名",
+    "colGenre": "分类",
+    "colChapters": "章节数",
+    "colUpdatedAt": "更新时间",
+    "colActions": "操作"
   },
   "billing": {
     "loadFail": "加载账单数据失败",
@@ -144,7 +149,11 @@
     "loadFail": "加载失败",
     "collectSuccess": "已收藏到我的书库",
     "collectFail": "收藏失败",
-    "browseBookstore": "去书库添加更多"
+    "browseBookstore": "去书库添加更多",
+    "colTitle": "书名",
+    "colAuthor": "作者",
+    "colChapters": "章节数",
+    "colAction": "操作"
   },
   "quickActions": {
     "admin": "管理后台",
