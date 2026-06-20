@@ -1366,7 +1366,7 @@ export function ProSidebar({ groups, embedded = false, onNavigate, className }: 
               >
                 {({ isActive }) => (
                   <>
-                    <IconStroke icon={item.icon} label={item.label} active={isActive} size={20} />
+                    <IconStroke icon={item.icon} active={isActive} size={20} />
                     <span>{item.label}</span>
                   </>
                 )}
@@ -1481,7 +1481,7 @@ export function ProTabBar({ items, className }: ProTabBarProps) {
         >
           {({ isActive }) => (
             <>
-              <IconStroke icon={item.icon} label={item.label} active={isActive} size={22} />
+              <IconStroke icon={item.icon} active={isActive} size={22} />
               <span>{item.label}</span>
             </>
           )}
