@@ -90,3 +90,6 @@ claude-code-ref/
 
 # ========== 运行时上传产物（勿入库）==========
 /data/uploads/
+
+# superpowers brainstorming mockups
+/.superpowers/
