@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { CheckCircle2, Loader2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { postDanmaku } from '@/api/billingApi'
@@ -10,7 +10,7 @@ import { useUserStore } from '@/stores/userStore'
 
 const MIN_LEN = 2
 const MAX_LEN = 200
-const STORAGE_PREFIX = 'novelstudio:feedback:submitted:'
+const STORAGE_PREFIX = 'na:feedback:submitted:'
 
 function submittedKey(userId: string | undefined): string | null {
   return userId ? `${STORAGE_PREFIX}${userId}` : null
@@ -21,6 +21,11 @@ function readSubmitted(userId: string | undefined): boolean {
   return key ? localStorage.getItem(key) === '1' : false
 }
 
+function writeSubmitted(userId: string | undefined): void {
+  const key = submittedKey(userId)
+  if (key) localStorage.setItem(key, '1')
+}
+
 export function SettingsFeedbackCard() {
   const { t } = useTranslation(['dashboard'])
   const profile = useUserStore((s) => s.profile)
@@ -28,6 +33,10 @@ export function SettingsFeedbackCard() {
   const [submitted, setSubmitted] = useState<boolean>(() => readSubmitted(userId))
   const [message, setMessage] = useState('')
   const [submitting, setSubmitting] = useState(false)
+
+  useEffect(() => {
+    setSubmitted(readSubmitted(userId))
+  }, [userId])
 
   const handleSubmit = async () => {
     if (submitted) return
@@ -39,8 +48,7 @@ export function SettingsFeedbackCard() {
     setSubmitting(true)
     try {
       await postDanmaku(trimmed.slice(0, MAX_LEN))
-      const key = submittedKey(userId)
-      if (key) localStorage.setItem(key, '1')
+      writeSubmitted(userId)
       setSubmitted(true)
       setMessage('')
       appToast.success(t('dashboard:settings.feedbackSent'))
@@ -48,8 +56,7 @@ export function SettingsFeedbackCard() {
       const msg = err instanceof Error ? err.message : t('dashboard:settings.feedbackError')
       appToast.error(msg)
       if (msg.includes('已评价')) {
-        const key = submittedKey(userId)
-        if (key) localStorage.setItem(key, '1')
+        writeSubmitted(userId)
         setSubmitted(true)
       }
     } finally {
