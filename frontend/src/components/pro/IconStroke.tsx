@@ -56,7 +56,7 @@ export function IconStroke({
     >
       <Icon
         size={size}
-        stroke={1.5}
+        stroke={'1.5'}
         aria-hidden="true"
         focusable="false"
       />
