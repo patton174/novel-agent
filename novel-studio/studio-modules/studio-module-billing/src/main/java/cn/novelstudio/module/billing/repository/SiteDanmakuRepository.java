@@ -14,4 +14,6 @@ public interface SiteDanmakuRepository extends JpaRepository<SiteDanmakuEntity, 
     List<SiteDanmakuEntity> findByOrderByCreatedAtDesc(Pageable pageable);
 
     List<SiteDanmakuEntity> findByIdLessThanOrderByCreatedAtDesc(Long beforeId, Pageable pageable);
+
+    boolean existsByUserId(Long userId);
 }

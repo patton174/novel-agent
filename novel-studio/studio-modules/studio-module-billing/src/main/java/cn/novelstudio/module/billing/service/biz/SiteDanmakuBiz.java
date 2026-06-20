@@ -58,6 +58,10 @@ public class SiteDanmakuBiz extends BaseBiz {
             throw new BizException(ResultCode.BAD_REQUEST, "弹幕太短");
         }
 
+        if (userId != null && userId > 0 && siteDanmakuRepository.existsByUserId(userId)) {
+            throw new BizException(ResultCode.BAD_REQUEST, "已评价过，感谢支持");
+        }
+
         SiteDanmakuEntity entity = new SiteDanmakuEntity();
         entity.setMessage(message);
         entity.setClientIp(clientIp);
