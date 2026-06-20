@@ -30,7 +30,11 @@
     "noNovelsDesc": "Create a new novel project and let the AI assistant help you build the world and chapters.",
     "createNovel": "New Novel",
     "recentlyEdited": "Edited {{time}}",
-    "wordCountWan": "{{value}}0k"
+    "wordCountWan": "{{value}}0k",
+    "tokenTitle": "Token Usage",
+    "tokenDesc": "Last 30 days of token consumption",
+    "tokenEmpty": "No token usage data yet",
+    "tokenTooltip": "Tokens"
   },
   "novels": {
     "coverSuccess": "Cover generated",

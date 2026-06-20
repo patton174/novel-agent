@@ -30,7 +30,11 @@
     "noNovelsDesc": "创建一个新的小说项目，让 AI 助手帮你构建世界观和章节。",
     "createNovel": "新建小说",
     "recentlyEdited": "最近编辑 {{time}}",
-    "wordCountWan": "{{value}} 万"
+    "wordCountWan": "{{value}} 万",
+    "tokenTitle": "Token 消耗",
+    "tokenDesc": "近 30 天 Token 使用量",
+    "tokenEmpty": "暂无 Token 消耗数据",
+    "tokenTooltip": "Tokens"
   },
   "novels": {
     "coverSuccess": "封面已生成",
