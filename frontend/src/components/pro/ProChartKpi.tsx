@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils'
-import { IconTrendingUp, IconTrendingDown } from '@tabler/icons-react'
+import { IconTrendingUp, IconTrendingDown, IconMinus } from '@tabler/icons-react'
 
 export interface ProChartKpiTrend {
   delta: number
@@ -25,7 +25,7 @@ export function ProChartKpi({ label, value, trend, loading, className }: ProChar
   }
   const trendColor =
     trend?.direction === 'up' ? 'text-success' : trend?.direction === 'down' ? 'text-destructive' : 'text-muted-foreground'
-  const TrendIcon = trend?.direction === 'down' ? IconTrendingDown : IconTrendingUp
+  const TrendIcon = trend?.direction === 'down' ? IconTrendingDown : trend?.direction === 'up' ? IconTrendingUp : IconMinus
   return (
     <div className={cn('rounded-2xl border border-border/70 bg-surface px-6 py-5 shadow-soft', className)}>
       <p className="text-[1.75rem] font-bold tabular-nums leading-none tracking-tight text-foreground md:text-[2rem]">{value}</p>
