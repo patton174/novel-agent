@@ -6,6 +6,7 @@
 @import "./pixel-avatars.css";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+@import "./pro.css";
 @import "@fontsource-variable/geist";
 
 @custom-variant dark (&:is(.dark *));
