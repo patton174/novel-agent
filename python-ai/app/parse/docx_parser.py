@@ -5,6 +5,7 @@ from __future__ import annotations
 import io
 import logging
 import zipfile
+from typing import Callable
 from xml.etree import ElementTree as ET
 
 from app.parse.models import ParseResult, ParsedChapter
@@ -15,7 +16,7 @@ logger = logging.getLogger(__name__)
 _W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
 
 
-def parse_docx(raw: bytes, original_name: str) -> ParseResult:
+def parse_docx(raw: bytes, original_name: str, on_progress: Callable[[int], None] | None = None) -> ParseResult:
     title = original_name.rsplit(".", 1)[0]
     try:
         zf = zipfile.ZipFile(io.BytesIO(raw))
@@ -32,6 +33,9 @@ def parse_docx(raw: bytes, original_name: str) -> ParseResult:
             if line:
                 paragraphs.append(line)
         full = "\n".join(paragraphs)
+        # docx 一次性提取，无天然分段循环；解析完置 60 作为中间里程碑。
+        if on_progress is not None:
+            on_progress(60)
         chapters = _split_chapters(full)
         if chapters:
             return ParseResult(

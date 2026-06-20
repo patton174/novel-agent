@@ -5,6 +5,7 @@ from __future__ import annotations
 import io
 import logging
 import zipfile
+from typing import Callable
 from xml.etree import ElementTree as ET
 
 from bs4 import BeautifulSoup
@@ -33,7 +34,7 @@ def _extract_title(html: str) -> str:
     return h1.get_text(strip=True) if h1 else ""
 
 
-def parse_epub(raw: bytes, original_name: str) -> ParseResult:
+def parse_epub(raw: bytes, original_name: str, on_progress: Callable[[int], None] | None = None) -> ParseResult:
     title = original_name.rsplit(".", 1)[0]
     try:
         zf = zipfile.ZipFile(io.BytesIO(raw))
@@ -56,9 +57,11 @@ def parse_epub(raw: bytes, original_name: str) -> ParseResult:
 
         # spine 顺序
         spine = opf.find(".//opf:spine", _NSMAP)
+        itemrefs = spine.findall("opf:itemref", _NSMAP)
+        total = max(1, len(itemrefs))
         chapters = []
         idx = 1
-        for itemref in spine.findall("opf:itemref", _NSMAP):
+        for n, itemref in enumerate(itemrefs):
             href = manifest.get(itemref.get("idref"))
             if not href:
                 continue
@@ -72,6 +75,9 @@ def parse_epub(raw: bytes, original_name: str) -> ParseResult:
             ch_title = _extract_title(html) or f"第{idx}章"
             chapters.append(ParsedChapter(title=ch_title, content=text, sort_order=idx))
             idx += 1
+            if on_progress is not None:
+                # spine 进度映射到 0..100
+                on_progress(int(100 * (n + 1) / total))
 
         if chapters:
             return ParseResult(title=title, chapters=chapters)

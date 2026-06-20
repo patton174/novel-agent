@@ -53,7 +53,21 @@ class Settings(BaseSettings):
 
     content_base_url: str = "http://127.0.0.1:8080"
     internal_service_key: str = "dev-internal-key-change-me"
-    redis_url: str = "redis://127.0.0.1:6379/0"
+    # Redis：优先用完整 redis_url；脚本（start-local-dev.ps1）注入的是分项 REDIS_HOST/PORT/PASSWORD/DB，
+    # 由 redis_url_computed 组装，见下。redis_url 保留为显式覆盖入口。
+    redis_url: str = ""
+    redis_host: str = "127.0.0.1"
+    redis_port: int = 6379
+    redis_password: str = ""
+    redis_db: int = 0
+
+    @property
+    def redis_url_computed(self) -> str:
+        """显式 redis_url 优先；否则从分项 REDIS_HOST/PORT/PASSWORD/DB 组装。"""
+        if self.redis_url:
+            return self.redis_url
+        auth = f":{self.redis_password}@" if self.redis_password else ""
+        return f"redis://{auth}{self.redis_host}:{self.redis_port}/{self.redis_db}"
     billing_report_enabled: bool = True
     # Split 栈默认 PyAI :8082；Worker 单体栈 compose 注入 BILLING_REPORT_URL=http://novel-studio:8080
     billing_report_url: str = "http://127.0.0.1:8082"

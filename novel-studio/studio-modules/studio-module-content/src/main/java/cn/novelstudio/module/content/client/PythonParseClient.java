@@ -2,58 +2,73 @@ package cn.novelstudio.module.content.client;
 
 import cn.novelstudio.module.content.config.ContentRuntimeProperties;
 import cn.novelstudio.module.content.storage.StorageBackend;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.MultipartBodyBuilder;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StreamUtils;
 import org.springframework.web.client.RestClient;
+
+import java.io.InputStream;
 
 /**
  * 调用 python-ai {@code POST /internal/parse}：multipart 传文件字节流 + format/originalName/fileId，
- * 返回 {@code {title, chapters:[{title,content,sort_order}], text, error?}}。
- *
- * <p>Part 1 仅提供可编译的客户端；实际调用由 Part 2 的 FileParseListener 触发。
+ * 触发 python 后台异步解析（立即返回 202）。结果由 python 回调
+ * {@code /internal/upload/{fileId}/finalize} 交付，本客户端不返回解析结果。
  */
 @Component
 public class PythonParseClient {
 
     private final RestClient restClient;
-    private final ObjectMapper objectMapper;
     private final String internalKey;
     private final StorageBackend storage;
 
     public PythonParseClient(
         RestClient pythonRestClient,
-        ObjectMapper objectMapper,
         ContentRuntimeProperties props,
         StorageBackend storage
     ) {
         this.restClient = pythonRestClient;
-        this.objectMapper = objectMapper;
         this.internalKey = props.internalServiceKey();
         this.storage = storage;
     }
 
-    public JsonNode parse(String fileId, String storageKey, String format, String originalName) {
+    /**
+     * 触发 python 异步解析：POST /internal/parse，python 立即返回 202（后台解析）。
+     * 结果由 python 完成后回调 {@code /internal/upload/{fileId}/finalize} 交付，本方法不返回结果。
+     *
+     * <p>文件体用 {@link ByteArrayResource}：JdkClientHttpRequest 会读取 multipart body 两次
+     * （算 Content-Length + 写 body），InputStreamResource 只能读一次会抛
+     * "InputStream has already been read"，故先读入内存。
+     */
+    public void parse(String fileId, String storageKey, String format, String originalName) {
+        byte[] bytes;
+        try (InputStream in = storage.load(storageKey)) {
+            bytes = StreamUtils.copyToByteArray(in);
+        } catch (Exception e) {
+            throw new IllegalStateException("读取上传文件失败: " + storageKey, e);
+        }
+
         MultipartBodyBuilder builder = new MultipartBodyBuilder();
-        builder.part("file", new InputStreamResource(storage.load(storageKey)) {
+        ByteArrayResource fileResource = new ByteArrayResource(bytes) {
             @Override
             public String getFilename() {
                 return originalName;
             }
-        }).filename(originalName).contentType(MediaType.APPLICATION_OCTET_STREAM);
+        };
+        builder.part("file", fileResource)
+            .filename(originalName)
+            .contentType(MediaType.APPLICATION_OCTET_STREAM);
         builder.part("format", format);
         builder.part("originalName", originalName);
         builder.part("fileId", fileId);
 
-        return restClient.post()
+        restClient.post()
             .uri("/internal/parse")
             .header("X-Internal-Service-Key", internalKey)
             .contentType(MediaType.MULTIPART_FORM_DATA)
             .body(builder.build())
             .retrieve()
-            .body(JsonNode.class);
+            .toBodilessEntity();
     }
 }

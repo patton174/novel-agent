@@ -87,3 +87,6 @@ scripts/local-cn.env
 
 # ========== 外部参考 clone（勿入库）==========
 claude-code-ref/
+
+# ========== 运行时上传产物（勿入库）==========
+/data/uploads/

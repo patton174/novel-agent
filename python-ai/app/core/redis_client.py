@@ -16,8 +16,9 @@ _redis: Redis | None = None
 def get_redis() -> Redis:
     global _redis
     if _redis is None:
-        _redis = Redis.from_url(settings.redis_url, decode_responses=True)
-        logger.info("redis connected url=%s", settings.redis_url)
+        url = settings.redis_url_computed
+        _redis = Redis.from_url(url, decode_responses=True)
+        logger.info("redis connected url=%s", url)
     return _redis
 
 

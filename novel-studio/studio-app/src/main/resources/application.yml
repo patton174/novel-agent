@@ -34,6 +34,9 @@ spring:
       hibernate:
         jdbc:
           time_zone: UTC
+          batch_size: ${HIBERNATE_BATCH_SIZE:50}
+        order_inserts: true
+        order_updates: true
   data:
     redis:
       host: ${REDIS_HOST:localhost}

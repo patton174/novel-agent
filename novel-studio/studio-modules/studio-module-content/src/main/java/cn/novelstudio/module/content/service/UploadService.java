@@ -25,6 +25,8 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -187,10 +189,14 @@ public class UploadService {
     @Transactional
     public void finalizeParse(String fileId, JsonNode result) {
         UploadedFileEntity e = fileRepo.findById(fileId).orElseThrow();
-        if (result != null && result.has("error")) {
+        // 注意：pydantic model_dump() 中 error/detail 键总是存在（成功时为 null），
+        // 故需判断非 null，否则成功结果会被误判为 failed。
+        JsonNode errorNode = result == null ? null : result.path("error");
+        if (errorNode != null && !errorNode.isNull() && !errorNode.asText("").isBlank()) {
             e.setStatus("failed");
-            String detail = result.has("detail") ? result.path("detail").asText() : "";
-            e.setParseError(result.path("error").asText() + (detail.isEmpty() ? "" : ": " + detail));
+            JsonNode detailNode = result.path("detail");
+            String detail = (detailNode == null || detailNode.isNull()) ? "" : detailNode.asText("");
+            e.setParseError(errorNode.asText() + (detail.isEmpty() ? "" : ": " + detail));
             fileRepo.save(e);
             return;
         }
@@ -213,6 +219,10 @@ public class UploadService {
         if (result != null && result.has("chapters") && result.path("chapters").isArray()) {
             ArrayNode chapters = (ArrayNode) result.path("chapters");
             if (!chapters.isEmpty()) {
+                // 批量插入：大文件（数千章）逐条 save 会超过 python 回调超时。
+                // 配合 hibernate jdbc.batch_size + order_inserts，每 BATCH 条 flush 一次。
+                final int BATCH = 200;
+                List<CrawlCatalogChapterEntity> buf = new ArrayList<>(BATCH);
                 for (JsonNode ch : chapters) {
                     CrawlCatalogChapterEntity c = new CrawlCatalogChapterEntity();
                     c.setId(IdWorker.nextIdStr());
@@ -220,8 +230,17 @@ public class UploadService {
                     c.setTitle(ch.path("title").asText("第" + idx + "章"));
                     c.setContent(ch.path("content").asText(""));
                     c.setSortOrder(ch.path("sort_order").asInt(idx));
-                    catalogChapterRepo.save(c);
+                    buf.add(c);
                     idx++;
+                    if (buf.size() >= BATCH) {
+                        catalogChapterRepo.saveAll(buf);
+                        catalogChapterRepo.flush();
+                        buf.clear();
+                    }
+                }
+                if (!buf.isEmpty()) {
+                    catalogChapterRepo.saveAll(buf);
+                    catalogChapterRepo.flush();
                 }
                 novel.setChapterCount(idx - 1);
             }
@@ -243,5 +262,35 @@ public class UploadService {
         e.setStatus("ready");
         fileRepo.save(e);
         setProgress(fileId, 100);
+    }
+
+    /** 置 failed（兜底/重试用）。 */
+    @Transactional
+    public void markFailed(String fileId, String error) {
+        fileRepo.findById(fileId).ifPresent(e -> {
+            e.setStatus("failed");
+            e.setParseError(error);
+            fileRepo.save(e);
+        });
+    }
+
+    /**
+     * 兜底回收：将超时仍处于 parsing/pending 的文件置 failed。
+     * 防止 python 回调丢失或后台任务死亡导致文件永久卡在 parsing。
+     *
+     * @param timeoutSeconds 超时阈值（秒）
+     * @return 回收的文件数
+     */
+    @Transactional
+    public int reapStale(long timeoutSeconds) {
+        java.time.Instant before = java.time.Instant.now().minusSeconds(timeoutSeconds);
+        List<UploadedFileEntity> stale = fileRepo.findByStatusInAndUpdatedAtBefore(
+            java.util.List.of("parsing", "pending"), before);
+        for (UploadedFileEntity e : stale) {
+            e.setStatus("failed");
+            e.setParseError("解析超时（" + timeoutSeconds + "s 无进展）");
+            fileRepo.save(e);
+        }
+        return stale.size();
     }
 }

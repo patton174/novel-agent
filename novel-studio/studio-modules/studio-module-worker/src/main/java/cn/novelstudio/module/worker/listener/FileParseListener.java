@@ -4,7 +4,6 @@ import cn.novelstudio.module.content.client.PythonParseClient;
 import cn.novelstudio.module.content.service.UploadService;
 import cn.novelstudio.module.worker.support.MqListenerSupport;
 import cn.novelstudio.platform.messaging.upload.FileParseMessage;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,7 +12,12 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
 /**
- * 消费 file.parse 队列：标记 parsing → 调 python /internal/parse → 回写 catalog + 状态。
+ * 消费 file.parse 队列：标记 parsing → 触发 python 异步解析（立即返回）。
+ *
+ * <p>python 在后台解析并实时写 Redis 进度，完成后回调
+ * {@code /internal/upload/{fileId}/finalize}（InternalUploadFinalizeController）回写 catalog+状态。
+ * 本 listener 不再同步等待解析结果，避免大文件阻塞 MQ consumer。
+ * 兜底：UploadParseReaper 定期将超时的 parsing 置 failed。
  */
 @Component
 public class FileParseListener {
@@ -37,10 +41,10 @@ public class FileParseListener {
 
     private void handle(String message) throws Exception {
         FileParseMessage payload = objectMapper.readValue(message, FileParseMessage.class);
-        // 标记 parsing
+        // 标记 parsing（前端据此进入轮询，进度取自 Redis）
         uploadService.markParsing(payload.fileId());
-        JsonNode result = parseClient.parse(payload.fileId(), payload.storageKey(),
+        // 触发 python 异步解析（立即返回 202，结果由回调交付）
+        parseClient.parse(payload.fileId(), payload.storageKey(),
             payload.format(), payload.originalName());
-        uploadService.finalizeParse(payload.fileId(), result);
     }
 }

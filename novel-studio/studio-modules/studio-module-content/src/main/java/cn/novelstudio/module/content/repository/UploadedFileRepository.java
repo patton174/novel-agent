@@ -6,6 +6,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
+import java.time.Instant;
+import java.util.List;
+
 public interface UploadedFileRepository extends JpaRepository<UploadedFileEntity, String> {
 
     /** 配额计数：用户活跃（pending/parsing/ready）上传数，failed 不占额度。 */
@@ -17,4 +20,7 @@ public interface UploadedFileRepository extends JpaRepository<UploadedFileEntity
     long countActiveByOwner(Long ownerId);
 
     Page<UploadedFileEntity> findByOwnerIdOrderByCreatedAtDesc(Long ownerId, Pageable pageable);
+
+    /** 兜底：找出超时仍处于 parsing/pending 的文件（回调丢失或 python 任务死亡）。 */
+    List<UploadedFileEntity> findByStatusInAndUpdatedAtBefore(List<String> statuses, Instant before);
 }
