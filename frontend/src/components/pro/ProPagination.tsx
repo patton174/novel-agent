@@ -7,14 +7,16 @@ export interface ProPaginationProps {
   total: number
   onPageChange: (page: number) => void
   className?: string
+  /** 整体禁用（如加载中），同时禁用上一页/下一页 */
+  disabled?: boolean
 }
 
-export function ProPagination({ page, pageSize, total, onPageChange, className }: ProPaginationProps) {
+export function ProPagination({ page, pageSize, total, onPageChange, className, disabled }: ProPaginationProps) {
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
   const start = total === 0 ? 0 : (page - 1) * pageSize + 1
   const end = Math.min(page * pageSize, total)
-  const prevDisabled = page <= 1
-  const nextDisabled = page >= totalPages
+  const prevDisabled = page <= 1 || disabled
+  const nextDisabled = page >= totalPages || disabled
   return (
     <div className={cn('flex items-center justify-between gap-4 px-1 py-3 text-sm text-muted-foreground', className)}>
       <span className="tabular-nums">{start}-{end} / {total}</span>

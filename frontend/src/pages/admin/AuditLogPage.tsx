@@ -12,7 +12,7 @@ import {
   AppShellCardHeader,
 } from '@/components/layout/AppPageStack'
 import { AdminNativeSelect } from '@/components/layout/AdminNativeSelect'
-import { AdminPagination } from '@/components/layout/AdminPagination'
+import { ProPagination } from '@/components/pro/ProPagination'
 import { AuditLogDetailModal } from '@/components/admin/AuditLogDetailModal'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -69,8 +69,6 @@ export default function AuditLogPage() {
   useEffect(() => {
     void load(pageCurrent, action, actorIdInput)
   }, [load, pageCurrent, action, actorIdInput])
-
-  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE))
 
   const list = logs ?? []
   const initialLoading = loading && logs === null
@@ -215,11 +213,11 @@ export default function AuditLogPage() {
         renderDesktopEmpty={<p className="py-8 text-center text-muted-foreground">{t('admin:auditLog.empty')}</p>}
       />
 
-      <AdminPagination
-        pageCurrent={pageCurrent}
-        totalPages={totalPages}
-        totalCount={totalCount}
-        loading={loading}
+      <ProPagination
+        page={pageCurrent}
+        pageSize={PAGE_SIZE}
+        total={totalCount}
+        disabled={loading}
         onPageChange={setPageCurrent}
       />
 

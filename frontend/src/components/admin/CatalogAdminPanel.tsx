@@ -23,7 +23,7 @@ import {
   AppShellCardBody,
   AppShellCardHeader,
 } from '@/components/layout/AppPageStack'
-import { AdminPagination } from '@/components/layout/AdminPagination'
+import { ProPagination } from '@/components/pro/ProPagination'
 import { ResponsiveTable } from '@/components/layout/ResponsiveTable'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -82,7 +82,6 @@ export function CatalogAdminPanel({ onOpenJob }: CatalogAdminPanelProps) {
     )
   }, [novels, query])
 
-  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE))
 
   const openNovel = (novel: CatalogNovel) => {
     setSelectedNovel(novel)
@@ -316,11 +315,11 @@ export function CatalogAdminPanel({ onOpenJob }: CatalogAdminPanelProps) {
         />
       )}
 
-      <AdminPagination
-        pageCurrent={page}
-        totalPages={totalPages}
-        totalCount={totalCount}
-        loading={loading}
+      <ProPagination
+        page={page}
+        pageSize={PAGE_SIZE}
+        total={totalCount}
+        disabled={loading}
         onPageChange={setPage}
       />
       </AppShellCardBody>

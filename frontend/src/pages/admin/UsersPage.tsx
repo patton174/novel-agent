@@ -5,7 +5,7 @@ import { fetchUserPage, type AdminUser } from '@/api/adminApi'
 import { UserEditDialog } from '@/components/admin/UserEditDialog'
 import { UserTable } from '@/components/admin/UserTable'
 import { AppPageStack, AppShellCard, AppShellCardBody, AppShellCardHeader } from '@/components/layout/AppPageStack'
-import { AdminPagination } from '@/components/layout/AdminPagination'
+import { ProPagination } from '@/components/pro/ProPagination'
 import { Input } from '@/components/ui/input'
 import { useMarkRouteSeen } from '@/hooks/useMarkRouteSeen'
 import { appToast } from '@/stores/appToastStore'
@@ -61,8 +61,6 @@ export default function UsersPage() {
     return () => window.clearTimeout(timer)
   }, [searchInput])
 
-  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE))
-
   const openEdit = (user: AdminUser) => {
     setEditingUser(user)
     setDialogOpen(true)
@@ -105,11 +103,11 @@ export default function UsersPage() {
         />
       )}
 
-      <AdminPagination
-        pageCurrent={pageCurrent}
-        totalPages={totalPages}
-        totalCount={totalCount}
-        loading={loading}
+      <ProPagination
+        page={pageCurrent}
+        pageSize={PAGE_SIZE}
+        total={totalCount}
+        disabled={loading}
         onPageChange={setPageCurrent}
       />
 
