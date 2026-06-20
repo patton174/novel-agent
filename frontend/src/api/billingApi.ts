@@ -1,5 +1,5 @@
 import { secureFetch } from '../security/secureFetch'
-import { parseResultResponse } from '../utils/resultApi'
+import { parseResultResponse, readApiErrorMessage } from '../utils/resultApi'
 
 export interface PlanPublic {
   code: string
@@ -212,7 +212,7 @@ export async function postDanmaku(message: string): Promise<SiteDanmaku> {
     body: JSON.stringify({ message: message.trim() }),
   })
   if (!res.ok) {
-    throw new Error('发送弹幕失败')
+    throw new Error(await readApiErrorMessage(res))
   }
   return parseResultResponse<SiteDanmaku>(res)
 }
