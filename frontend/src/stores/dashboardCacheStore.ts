@@ -1,4 +1,5 @@
 import type { DashboardActivity, DashboardNovel, DashboardSummary, RecentNovel } from '@/api/dashboardApi'
+import type { UsageTrendPoint } from '@/api/billingApi'
 
 const TTL_MS = 60_000
 
@@ -8,6 +9,7 @@ let novelsCache: CacheEntry<DashboardNovel[]> | null = null
 let summaryCache: CacheEntry<DashboardSummary> | null = null
 let recentCache: CacheEntry<RecentNovel[]> | null = null
 let activityCache: CacheEntry<DashboardActivity> | null = null
+let tokenTrendsCache: CacheEntry<UsageTrendPoint[]> | null = null
 
 function fresh<T>(entry: CacheEntry<T> | null): T | null {
   if (!entry) return null
@@ -40,10 +42,17 @@ export const dashboardCache = {
   setActivity(data: DashboardActivity): void {
     activityCache = { data, at: Date.now() }
   },
+  getTokenTrends(): UsageTrendPoint[] | null {
+    return fresh(tokenTrendsCache)
+  },
+  setTokenTrends(data: UsageTrendPoint[]): void {
+    tokenTrendsCache = { data, at: Date.now() }
+  },
   invalidateAll(): void {
     novelsCache = null
     summaryCache = null
     recentCache = null
     activityCache = null
+    tokenTrendsCache = null
   },
 }
