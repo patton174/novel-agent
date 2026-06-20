@@ -99,7 +99,8 @@
     "feedbackSubmit": "提交评价",
     "feedbackMinLength": "评价至少 2 个字",
     "feedbackSent": "评价已提交，感谢分享",
-    "feedbackError": "提交失败，请稍后再试"
+    "feedbackError": "提交失败，请稍后再试",
+    "feedbackAlreadySubmitted": "已评价"
   },
   "bookstore": {
     "loadFail": "加载书库失败",

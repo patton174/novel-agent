@@ -99,7 +99,8 @@
     "feedbackSubmit": "Submit feedback",
     "feedbackMinLength": "Feedback must be at least 2 characters",
     "feedbackSent": "Feedback submitted — thank you",
-    "feedbackError": "Failed to submit, please try again later"
+    "feedbackError": "Failed to submit, please try again later",
+    "feedbackAlreadySubmitted": "Submitted"
   },
   "bookstore": {
     "loadFail": "Failed to load bookstore",
