@@ -118,9 +118,9 @@ export default function NovelsPage() {
       />
 
       {loading ? (
-        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="min-h-[360px] rounded-2xl" />
+            <Skeleton key={i} className="min-h-[300px] rounded-2xl" />
           ))}
         </div>
       ) : novels!.length === 0 ? (
@@ -147,7 +147,7 @@ export default function NovelsPage() {
           }
         />
       ) : (
-        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {novels!.map((novel, index) => {
             const isGenerating = generatingId === novel.id
             return (
@@ -159,7 +159,7 @@ export default function NovelsPage() {
                   className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary via-violet-500 to-indigo-400 opacity-80"
                   style={{ opacity: 0.35 + (index % 3) * 0.15 }}
                 />
-                <div className="relative aspect-[3/4] w-full overflow-hidden bg-muted">
+                <div className="relative aspect-[4/5] w-full overflow-hidden bg-muted">
                   <AnimatePresence mode="wait">
                     {novel.coverUrl && !isGenerating ? (
                       <motion.img
@@ -180,16 +180,16 @@ export default function NovelsPage() {
                   </AnimatePresence>
                   <CoverImageGeneratingOverlay active={isGenerating} />
                 </div>
-                <div className="flex flex-1 flex-col p-5">
+                <div className="flex flex-1 flex-col p-4">
                   <h3
-                    className="mb-2 line-clamp-2 text-lg font-bold leading-snug text-foreground"
+                    className="mb-1.5 line-clamp-2 text-base font-bold leading-snug text-foreground"
                     title={novel.title}
                   >
                     {novel.title}
                   </h3>
 
                   {novel.genre ? (
-                    <span className="mb-3 inline-flex w-fit rounded-full bg-muted px-2.5 py-0.5 text-ui-sm font-medium text-foreground/70">
+                    <span className="mb-2 inline-flex w-fit rounded-full bg-muted px-2.5 py-0.5 text-ui-sm font-medium text-foreground/70">
                       {novel.genre}
                     </span>
                   ) : null}
@@ -200,7 +200,7 @@ export default function NovelsPage() {
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-2 border-t border-border/80 p-4">
+                <div className="flex flex-col gap-1.5 border-t border-border/80 p-3">
                   <Button
                     type="button"
                     variant="outline"
