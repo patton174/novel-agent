@@ -9,6 +9,7 @@ import { DashboardQuickActions } from '../components/dashboard/DashboardQuickAct
 import { MobileSidebarDrawer } from '../components/dashboard/MobileSidebarDrawer'
 import { AppShellMain } from '../components/layout/AppShellMain'
 import { LayoutOutletSkeleton } from '../components/loading/LayoutOutletSkeleton'
+import { syncPixelAvatarForUser } from '@/stores/pixelAvatarStore'
 import { useUserStore } from '../stores/userStore'
 
 export default function DashboardLayout() {
@@ -35,6 +36,7 @@ export default function DashboardLayout() {
       .then((p) => {
         if (!cancelled) {
           setProfile(p)
+          void syncPixelAvatarForUser(p.userId)
         }
       })
       .catch(() => {
