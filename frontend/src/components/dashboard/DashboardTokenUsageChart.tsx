@@ -31,7 +31,7 @@ export function DashboardTokenUsageChart({ points, loading }: DashboardTokenUsag
   const dateLocale = i18n.language === 'zh' ? 'zh-CN' : 'en-US'
 
   const series = useMemo(
-    () => points.map((p) => ({ date: p.date, tokens: p.tokens, costMicros: p.costMicros })),
+    () => points.map((p) => ({ date: p.date, tokens: p.tokens })),
     [points],
   )
 

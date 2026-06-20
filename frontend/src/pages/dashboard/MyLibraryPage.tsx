@@ -74,7 +74,7 @@ export default function MyLibraryPage() {
       />
 
       {isLoading ? (
-        <div className="divide-y divide-border rounded-2xl border border-border bg-surface shadow-soft">
+        <div className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-surface shadow-soft">
           {Array.from({ length: 6 }).map((_, i) => (
             <Skeleton key={i} className="h-16 w-full" />
           ))}
