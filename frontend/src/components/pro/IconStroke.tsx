@@ -1,13 +1,13 @@
-import type { ComponentType, SVGProps } from 'react'
+import { useEffect, useRef, type ComponentType, type SVGProps } from 'react'
 import { cn } from '@/lib/utils'
 
-type TablerIcon = ComponentType<SVGProps<SVGSVGElement> & { size?: number | string }>
+export type TablerIcon = ComponentType<SVGProps<SVGSVGElement> & { size?: number | string }>
 
 export interface IconStrokeProps {
   /** tabler 图标组件，如 IconHome */
   icon: TablerIcon
-  /** 无障碍标签 */
-  label: string
+  /** 无障碍标签；省略时图标对辅助技术隐藏（适用于图标旁已有可见文字的场景） */
+  label?: string
   /** 是否选中态（触发描边绘制动画） */
   active?: boolean
   /** 用户偏好减少动画（跳过绘制过渡，直接显示） */
@@ -18,11 +18,11 @@ export interface IconStrokeProps {
 
 /**
  * tabler line-icon 描边动画包裹层。
- * - 默认态：淡色（text-muted-foreground）正常显示。
- * - active 态：给 svg 内所有 path/line 设 pathLength=1、stroke-dasharray=1、
- *   stroke-dashoffset 1→0 做 ~400ms ease-out 绘制过渡，完成后常驻描边，indigo 强调。
- * 实现：靠 CSS 类 + 全局 keyframes（见 pro.css，Task 3 注入）作用于
- *   [data-icon-stroke--active] svg path/line。
+ * - 默认态：淡色（currentColor）正常显示。
+ * - active 态：给 svg 内所有可绘子元素设 pathLength=1（SVG 属性，非 CSS——CSS 无法设 pathLength），
+ *   配合 pro.css 的 stroke-dasharray:1 + stroke-dashoffset 1→0 做 ~420ms 绘制过渡，
+ *   完成后常驻描边，indigo 强调。
+ * - label 省略时图标 aria-hidden，由相邻可见文字承载无障碍名称（避免双重播报）。
  */
 export function IconStroke({
   icon: Icon,
@@ -32,12 +32,21 @@ export function IconStroke({
   className,
   size = 20,
 }: IconStrokeProps) {
+  const ref = useRef<HTMLSpanElement>(null)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    el
+      .querySelectorAll('svg path, svg line, svg circle, svg rect, svg polygon, svg polyline')
+      .forEach((n) => n.setAttribute('pathLength', '1'))
+  }, [Icon])
   return (
     <span
+      ref={ref}
       data-icon-stroke=""
-      data-active={active ? 'true' : 'false'}
       aria-label={label}
-      role="img"
+      aria-hidden={label ? undefined : true}
+      role={label ? 'img' : undefined}
       className={cn(
         'inline-flex items-center justify-center',
         active && 'pro-icon-stroke--active',

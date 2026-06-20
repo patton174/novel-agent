@@ -1,9 +1,12 @@
-/* Pro 组件专用样式：图标描边动画等。Editorial 基调，基于现有 @theme token。 */
+/* Pro 组件专用样式：图标描边动画等。Editorial 基调，基于现有 @theme token。
+   pathLength=1 由 IconStroke 通过 SVG 属性设置（非 CSS，CSS 无法设置 pathLength）。 */
 
-/* 让 tabler svg 内的 path/line 可被 dasharray 控制 */
 .pro-icon-stroke--active svg path,
-.pro-icon-stroke--active svg line {
-  pathLength: 1;
+.pro-icon-stroke--active svg line,
+.pro-icon-stroke--active svg circle,
+.pro-icon-stroke--active svg rect,
+.pro-icon-stroke--active svg polygon,
+.pro-icon-stroke--active svg polyline {
   stroke-dasharray: 1;
   stroke-dashoffset: 1;
   animation: pro-icon-draw 420ms cubic-bezier(0.65, 0, 0.35, 1) forwards;
@@ -16,28 +19,34 @@
   }
 }
 
-/* active 后常驻：保持 indigo 描边色（动画 forwards 已 hold 住 dashoffset:0） */
-.pro-icon-stroke--active svg path,
-.pro-icon-stroke--active svg line {
-  stroke: var(--color-primary);
-}
-
 /* 未选中态淡色 */
 [data-icon-stroke]:not(.pro-icon-stroke--active) svg path,
-[data-icon-stroke]:not(.pro-icon-stroke--active) svg line {
+[data-icon-stroke]:not(.pro-icon-stroke--active) svg line,
+[data-icon-stroke]:not(.pro-icon-stroke--active) svg circle,
+[data-icon-stroke]:not(.pro-icon-stroke--active) svg rect,
+[data-icon-stroke]:not(.pro-icon-stroke--active) svg polygon,
+[data-icon-stroke]:not(.pro-icon-stroke--active) svg polyline {
   stroke: currentColor;
 }
 
 /* prefers-reduced-motion：跳过绘制，直接显示 */
 .pro-icon-stroke--reduced.pro-icon-stroke--active svg path,
-.pro-icon-stroke--reduced.pro-icon-stroke--active svg line {
+.pro-icon-stroke--reduced.pro-icon-stroke--active svg line,
+.pro-icon-stroke--reduced.pro-icon-stroke--active svg circle,
+.pro-icon-stroke--reduced.pro-icon-stroke--active svg rect,
+.pro-icon-stroke--reduced.pro-icon-stroke--active svg polygon,
+.pro-icon-stroke--reduced.pro-icon-stroke--active svg polyline {
   animation: none;
   stroke-dashoffset: 0;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .pro-icon-stroke--active svg path,
-  .pro-icon-stroke--active svg line {
+  .pro-icon-stroke--active svg line,
+  .pro-icon-stroke--active svg circle,
+  .pro-icon-stroke--active svg rect,
+  .pro-icon-stroke--active svg polygon,
+  .pro-icon-stroke--active svg polyline {
     animation: none;
     stroke-dashoffset: 0;
   }
