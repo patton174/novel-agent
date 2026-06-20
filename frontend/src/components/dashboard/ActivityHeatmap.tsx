@@ -11,7 +11,7 @@ import i18n from '@/i18n'
 
 export type ActivityMode = 'all' | 'writing' | 'agent'
 
-const RECENT_WEEKS = 3
+const RECENT_WEEKS = 13
 const WEEKDAY_COL_WIDTH = '1.25rem'
 const CELL_SIZE = '0.75rem'
 const GRID_GAP_PX = 4
