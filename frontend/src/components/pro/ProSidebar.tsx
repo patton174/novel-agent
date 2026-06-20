@@ -1,9 +1,6 @@
-import { type ComponentType, type SVGProps } from 'react'
 import { NavLink } from 'react-router-dom'
-import { IconStroke } from './IconStroke'
+import { IconStroke, type TablerIcon } from './IconStroke'
 import { cn } from '@/lib/utils'
-
-type TablerIcon = ComponentType<SVGProps<SVGSVGElement> & { size?: number | string }>
 
 export interface ProSidebarItem {
   label: string

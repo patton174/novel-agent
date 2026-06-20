@@ -14,6 +14,7 @@ const items = [
 describe('ProTabBar', () => {
   it('renders 4 tab links', () => {
     render(<MemoryRouter><ProTabBar items={items} /></MemoryRouter>)
+    expect(screen.getAllByRole('link')).toHaveLength(4)
     expect(screen.getByRole('link', { name: '概览' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: '我的' })).toBeInTheDocument()
   })
