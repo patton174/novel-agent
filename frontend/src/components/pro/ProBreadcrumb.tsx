@@ -25,7 +25,7 @@ export function ProBreadcrumb({ items, className }: ProBreadcrumbProps) {
             ) : (
               <span className={cn(last && 'text-foreground font-medium')}>{item.label}</span>
             )}
-            {!last ? <IconChevronRight size={14} stroke={2} className="text-muted-foreground/60" /> : null}
+            {!last ? <IconChevronRight size={14} stroke={2} className="text-muted-foreground/60" aria-hidden="true" /> : null}
           </Fragment>
         )
       })}

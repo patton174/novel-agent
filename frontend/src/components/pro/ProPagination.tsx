@@ -26,7 +26,7 @@ export function ProPagination({ page, pageSize, total, onPageChange, className }
           onClick={() => onPageChange(page - 1)}
           className={cn('inline-flex size-8 items-center justify-center rounded-lg border border-border/60 text-foreground transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-40')}
         >
-          <IconChevronLeft size={16} stroke={2} />
+          <IconChevronLeft size={16} stroke={2} aria-hidden="true" />
         </button>
         <span className="min-w-[3rem] text-center tabular-nums text-foreground">{page} / {totalPages}</span>
         <button
@@ -36,7 +36,7 @@ export function ProPagination({ page, pageSize, total, onPageChange, className }
           onClick={() => onPageChange(page + 1)}
           className={cn('inline-flex size-8 items-center justify-center rounded-lg border border-border/60 text-foreground transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-40')}
         >
-          <IconChevronRight size={16} stroke={2} />
+          <IconChevronRight size={16} stroke={2} aria-hidden="true" />
         </button>
       </div>
     </div>

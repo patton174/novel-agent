@@ -18,7 +18,7 @@ export function ProNavTabs({ tabs, onClose, className }: ProNavTabsProps) {
   return (
     <div className={cn('flex items-center gap-1 overflow-x-auto border-b border-border/60 px-2', className)}>
       {tabs.map((t) => {
-        const active = pathname === t.to
+        const active = pathname === t.to || pathname.startsWith(t.to + '/')
         return (
           <div
             key={t.to}
@@ -30,7 +30,7 @@ export function ProNavTabs({ tabs, onClose, className }: ProNavTabsProps) {
             <Link to={t.to} className="whitespace-nowrap">{t.label}</Link>
             {onClose ? (
               <button type="button" aria-label={`关闭 ${t.label}`} onClick={() => onClose(t.to)} className="rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:bg-muted group-hover:opacity-100">
-                <IconX size={13} stroke={2} />
+                <IconX size={13} stroke={2} aria-hidden="true" />
               </button>
             ) : null}
           </div>

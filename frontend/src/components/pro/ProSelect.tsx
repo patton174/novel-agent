@@ -30,13 +30,13 @@ export function ProSelect({ value, options, onChange, placeholder = '请选择',
           )}
         >
           <span className={cn(!current && 'text-muted-foreground')}>{current?.label ?? placeholder}</span>
-          <IconChevronDown size={16} stroke={2} className="text-muted-foreground" />
+          <IconChevronDown size={16} stroke={2} className="text-muted-foreground" aria-hidden="true" />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="min-w-[8rem]">
         {options.map((o) => (
           <DropdownMenuItem key={o.value} onClick={() => { onChange(o.value); setOpen(false) }} className="gap-2">
-            <IconCheck size={14} stroke={2} className={cn(o.value === value ? 'opacity-100 text-primary' : 'opacity-0')} />
+            <IconCheck size={14} stroke={2} className={cn(o.value === value ? 'opacity-100 text-primary' : 'opacity-0')} aria-hidden="true" />
             {o.label}
           </DropdownMenuItem>
         ))}
