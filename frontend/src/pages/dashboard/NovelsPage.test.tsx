@@ -25,25 +25,29 @@ const sampleNovel: DashboardNovel = {
 describe('NovelsPage', () => {
   beforeEach(() => {
     dashboardCache.invalidateAll()
+    // 重置 seen-routes，保证 dispatcher 的 Suspense fallback 行为确定
+    sessionStorage.removeItem('na:seen-routes')
     vi.mocked(fetchNovels).mockResolvedValue([sampleNovel])
   })
 
-  it('skips skeleton when dashboard cache is warm', () => {
+  it('skips skeleton when dashboard cache is warm', async () => {
     dashboardCache.setNovels([sampleNovel])
     render(
       <MemoryRouter initialEntries={['/dashboard/novels']}>
         <NovelsPage />
       </MemoryRouter>,
     )
+    // dispatcher 通过 lazy 加载桌面视图，需异步等待挂载
+    expect(await screen.findByText('共 1 部作品')).toBeInTheDocument()
     expect(screen.queryByLabelText('加载中')).not.toBeInTheDocument()
-    expect(screen.getByText('共 1 部作品')).toBeInTheDocument()
   })
 
   it('shows skeleton on cold load then renders data', async () => {
+    // 延迟需大于 waitFor 轮询间隔，确保加载态可被观测到
     vi.mocked(fetchNovels).mockImplementation(
       () =>
         new Promise((resolve) => {
-          setTimeout(() => resolve([sampleNovel]), 30)
+          setTimeout(() => resolve([sampleNovel]), 200)
         }),
     )
     render(
@@ -51,7 +55,9 @@ describe('NovelsPage', () => {
         <NovelsPage />
       </MemoryRouter>,
     )
-    expect(screen.getAllByLabelText('加载中').length).toBeGreaterThan(0)
+    await waitFor(() => {
+      expect(screen.getAllByLabelText('加载中').length).toBeGreaterThan(0)
+    })
     await waitFor(() => {
       expect(screen.getByText('共 1 部作品')).toBeInTheDocument()
     })
