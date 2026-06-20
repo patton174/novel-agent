@@ -22,6 +22,8 @@ import { EDITOR_CREATE_HREF, editorNovelHref } from '@/lib/editorRoutes'
 import { buildDashboardKpis, formatCompactMetric } from '@/utils/dashboardMetrics'
 import { useTranslation } from 'react-i18next'
 import i18n from '@/i18n'
+import { fetchUsageTrends, type UsageTrendPoint } from '@/api/billingApi'
+import { DashboardTokenUsageChart } from '@/components/dashboard/DashboardTokenUsageChart'
 
 export default function DashboardHomePage() {
   const { t } = useTranslation(['common', 'dashboard'])
@@ -47,6 +49,9 @@ export default function DashboardHomePage() {
     dashboardCache.getRecentNovels(),
   )
   const [activity, setActivity] = useState<DashboardActivity | null>(() => dashboardCache.getActivity())
+  const [tokenTrends, setTokenTrends] = useState<UsageTrendPoint[] | null>(() =>
+    dashboardCache.getTokenTrends(),
+  )
   const [loadError, setLoadError] = useState(false)
 
   useEffect(() => {
@@ -82,8 +87,27 @@ export default function DashboardHomePage() {
     }
   }, [])
 
+  useEffect(() => {
+    let cancelled = false
+    void fetchUsageTrends(30)
+      .then((trends) => {
+        if (cancelled) return
+        dashboardCache.setTokenTrends(trends)
+        setTokenTrends(trends)
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setTokenTrends([])
+        }
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   const loading = summary === null || recentNovels === null
   const activityLoading = activity === null
+  const tokenLoading = tokenTrends === null
   const primaryNovelId = recentNovels?.[0]?.novelId
   const editorEntryHref = primaryNovelId
     ? editorNovelHref(primaryNovelId)
@@ -144,6 +168,13 @@ export default function DashboardHomePage() {
           />
         ))}
       </div>
+
+      <AppShellCard className="flex min-h-[320px] flex-col">
+        <DashboardTokenUsageChart
+          points={tokenTrends ?? []}
+          loading={tokenLoading}
+        />
+      </AppShellCard>
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
         <AppShellCard className="flex min-h-[320px] flex-col">

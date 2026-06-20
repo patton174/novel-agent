@@ -30,7 +30,11 @@
     "noNovelsDesc": "创建一个新的小说项目，让 AI 助手帮你构建世界观和章节。",
     "createNovel": "新建小说",
     "recentlyEdited": "最近编辑 {{time}}",
-    "wordCountWan": "{{value}} 万"
+    "wordCountWan": "{{value}} 万",
+    "tokenTitle": "Token 消耗",
+    "tokenDesc": "近 30 天 Token 使用量",
+    "tokenEmpty": "暂无 Token 消耗数据",
+    "tokenTooltip": "Tokens"
   },
   "novels": {
     "coverSuccess": "封面已生成",
@@ -99,7 +103,8 @@
     "feedbackSubmit": "提交评价",
     "feedbackMinLength": "评价至少 2 个字",
     "feedbackSent": "评价已提交，感谢分享",
-    "feedbackError": "提交失败，请稍后再试"
+    "feedbackError": "提交失败，请稍后再试",
+    "feedbackAlreadySubmitted": "已评价"
   },
   "bookstore": {
     "loadFail": "加载书库失败",
@@ -138,7 +143,8 @@
     "addToNovel": "添加到我的小说",
     "loadFail": "加载失败",
     "collectSuccess": "已收藏到我的书库",
-    "collectFail": "收藏失败"
+    "collectFail": "收藏失败",
+    "browseBookstore": "去书库添加更多"
   },
   "quickActions": {
     "admin": "管理后台",

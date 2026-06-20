@@ -30,7 +30,11 @@
     "noNovelsDesc": "Create a new novel project and let the AI assistant help you build the world and chapters.",
     "createNovel": "New Novel",
     "recentlyEdited": "Edited {{time}}",
-    "wordCountWan": "{{value}}0k"
+    "wordCountWan": "{{value}}0k",
+    "tokenTitle": "Token Usage",
+    "tokenDesc": "Last 30 days of token consumption",
+    "tokenEmpty": "No token usage data yet",
+    "tokenTooltip": "Tokens"
   },
   "novels": {
     "coverSuccess": "Cover generated",
@@ -99,7 +103,8 @@
     "feedbackSubmit": "Submit feedback",
     "feedbackMinLength": "Feedback must be at least 2 characters",
     "feedbackSent": "Feedback submitted — thank you",
-    "feedbackError": "Failed to submit, please try again later"
+    "feedbackError": "Failed to submit, please try again later",
+    "feedbackAlreadySubmitted": "Submitted"
   },
   "bookstore": {
     "loadFail": "Failed to load bookstore",
@@ -138,7 +143,8 @@
     "addToNovel": "Add to my novel",
     "loadFail": "Load failed",
     "collectSuccess": "Collected to my library",
-    "collectFail": "Collect failed"
+    "collectFail": "Collect failed",
+    "browseBookstore": "Browse bookstore"
   },
   "quickActions": {
     "admin": "Admin Panel",

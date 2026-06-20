@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { DashboardNovel } from '@/api/dashboardApi'
+import type { UsageTrendPoint } from '@/api/billingApi'
 import { dashboardCache } from './dashboardCacheStore'
 
 const sampleNovel: DashboardNovel = {
@@ -43,5 +44,17 @@ describe('dashboardCache', () => {
     dashboardCache.invalidateAll()
     expect(dashboardCache.getNovels()).toBeNull()
     expect(dashboardCache.getSummary()).toBeNull()
+  })
+
+  it('caches token trends', () => {
+    const trend: UsageTrendPoint[] = [{ date: '2026-06-20', tokens: 1234, costMicros: 500 }]
+    dashboardCache.setTokenTrends(trend)
+    expect(dashboardCache.getTokenTrends()).toEqual(trend)
+  })
+
+  it('invalidateAll clears token trends', () => {
+    dashboardCache.setTokenTrends([{ date: '2026-06-20', tokens: 1, costMicros: 0 }])
+    dashboardCache.invalidateAll()
+    expect(dashboardCache.getTokenTrends()).toBeNull()
   })
 })
