@@ -51,9 +51,11 @@ export interface PixelTextProps {
   cell?: number
   /** 每个点在屏幕上的像素大小（源图恒为 1px/点）。默认 1 = 最细，适合大量使用 */
   dot?: number
-  /** 字形之间的间隔（源像素，即 dot=1 时的 px）。默认 0。
-   *  5×7 字模每字 5 列笔画 + 1 列天然空白 = 6 列宽，glyphGap=0 时字间由字模自带空隙分隔。
-   *  调大可加更多间距，但通常不必要。 */
+  /** 字形之间的间隔（源像素，即 dot=1 时的 px）。默认 0.5（≈ 10% 字符宽）。
+   *  5×7 字模字身严格 5 列；字间距完全由 glyphGap 控制。
+   *  - 0.5 源像素 = 10% 字符宽（终端字距，紧凑）
+   *  - 1 源像素 = 20% 字符宽（宽松）
+   *  - 0 源像素 = 字身紧贴 */
   glyphGap?: number
   /** 单词间距（源像素）。空格字符占据的横向距离。默认 = cell（1 个字符宽度），
    *  应当明显大于 glyphGap 以产生"单词之间有缝、字符之间无缝"的视觉差异 */
@@ -227,17 +229,19 @@ function renderTextImage(
     imageCache.set(key, empty)
     return empty
   }
-  // 计算总宽（空格按 wordGap 推进；非空字之间按 gap 推进）
+  // 字身宽（5×7 字模只有 5 列笔画，1/7 cell 的内置空白由字间距承担）
+  const GLYPH_BODY = 5
+  // 计算总宽（空格按 wordGap 推进；非空字之间按字身 + gap 推进）
   let advance = 0
   chars.forEach((ch, i) => {
     if (ch === ' ') {
       advance += wordGap
       return
     }
-    advance += cell
+    advance += GLYPH_BODY
     if (i < chars.length - 1 && chars[i + 1] !== ' ') advance += gap
   })
-  const w = Math.max(advance, cell)
+  const w = Math.max(advance, GLYPH_BODY)
   const h = cell
   composerCanvas!.width = w
   composerCanvas!.height = h
@@ -251,11 +255,11 @@ function renderTextImage(
     }
     const grid = glyphs[i]!
     for (let y = 0; y < cell; y++) {
-      for (let x = 0; x < cell; x++) {
+      for (let x = 0; x < GLYPH_BODY; x++) {
         if (grid[y * cell + x]) ctx.fillRect(ox + x, y, 1, 1)
       }
     }
-    ox += cell
+    ox += GLYPH_BODY
     // 非末字、且下一字非空格时加 gap
     if (i < chars.length - 1 && chars[i + 1] !== ' ') ox += gap
   })
@@ -287,6 +291,8 @@ export function sampleTextPoints(opts: {
   const { text, cell, weight, fontFamily, threshold, gap, wordGap = cell, noiseSeed = 0 } = opts
   const chars = Array.from(text)
   if (chars.length === 0) return { points: [], w: 0, h: 0 }
+  // 5×7 字模字身宽（严格 5 列，字模内置 1 列空白不计入字身）
+  const GLYPH_BODY = 5
   const points: { x: number; y: number }[] = []
   let ox = 0
   chars.forEach((ch) => {
@@ -296,14 +302,14 @@ export function sampleTextPoints(opts: {
     }
     const grid = sampleGlyph(ch, cell, weight, fontFamily, threshold, noiseSeed)
     for (let y = 0; y < cell; y++) {
-      for (let x = 0; x < cell; x++) {
+      for (let x = 0; x < GLYPH_BODY; x++) {
         if (grid[y * cell + x]) points.push({ x: ox + x, y })
       }
     }
-    ox += cell + gap
+    ox += GLYPH_BODY + gap
   })
   // 总宽 = 末字推进量 - 末尾多余 gap（若有字）
-  const w = points.length > 0 ? Math.max(ox - gap, cell) : 0
+  const w = points.length > 0 ? Math.max(ox - gap, GLYPH_BODY) : 0
   return { points, w, h: cell }
 }
 
@@ -312,7 +318,7 @@ export function PixelText({
   size = 'md',
   cell,
   dot = 1,
-  glyphGap = 0,
+  glyphGap = 0.5,
   wordGap,
   color,
   fontWeight = 800,
