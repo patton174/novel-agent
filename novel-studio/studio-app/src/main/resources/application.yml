@@ -54,6 +54,7 @@ spring:
     locations: classpath:db/migration
     schemas: public
     table: flyway_schema_history_studio
+    out-of-order: true
   servlet:
     multipart:
       max-file-size: ${UPLOAD_MAX_FILE_SIZE:50MB}
