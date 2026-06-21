@@ -238,8 +238,11 @@ function PinnedPixelFooter({
 
     // 速度模型参数
     const FORCE_PER_PIXEL = 0.00018 // wheel deltaY → 冲量（系数越大越跟手）
-    const VEL_DAMP_PER_FRAME = 0.86 // 每帧速度衰减（≈30fps 半衰期 → 阻尼感强）
-    const VEL_MIN = 0.0005          // 速度低于此值时直接归零，停止积分
+    // 移动端：取消阻尼 (1.0 = 跟手) —— 手指停 progress 立即停
+    // 桌面端：阻尼 0.86/帧 → 起步跟手、停手有惯性
+    const VEL_DAMP_PER_FRAME = isMobile ? 1.0 : 0.86
+    // 移动端：VEL_MIN=0 → 永不归零（cancel 触底 clamp 0 兜底，避免 onTouchEnd 后还在动）
+    const VEL_MIN = isMobile ? 0 : 0.0005
 
     let velRefLocal = 0 // 与 progressRef 平行；用 wheel 注入冲量
 
@@ -441,13 +444,14 @@ function PinnedPixelFooter({
                      will-change-transform"
           style={{ transform: 'translateY(100%)' }}
         >
-          <div className="px-5 py-8 md:px-6 md:py-14">
-            <div className="mx-auto grid max-w-6xl gap-6 md:grid-cols-2 md:gap-10 lg:grid-cols-4">
-              <div className="space-y-3 lg:col-span-1">
+          <div className="px-5 py-4 md:px-6 md:py-10">
+            <div className="mx-auto grid max-w-6xl gap-x-6 gap-y-3 md:grid-cols-2 md:gap-y-0 md:gap-x-10 lg:grid-cols-4">
+              <div className="space-y-2 lg:col-span-1">
                 <Link to="/" className="inline-block">
-                  <NovelAiPixelWordmark size="md" cursor={false} className="text-foreground" accent="#1043ff" />
+                  <NovelAiPixelWordmark size="sm" className="text-foreground md:inline-flex" accent="#1043ff" />
                 </Link>
-                <p className="max-w-xs font-mono text-sm leading-relaxed text-muted-foreground">{t('footer.tagline')}</p>
+                {/* tagline 仅桌面端显示，移动端隐藏以省高度 */}
+                <p className="hidden max-w-xs font-mono text-sm leading-relaxed text-muted-foreground md:block">{t('footer.tagline')}</p>
               </div>
 
               <FooterLinkGroup title={t('footer.product')} links={productLinks} />
@@ -455,7 +459,7 @@ function PinnedPixelFooter({
               <FooterLinkGroup title={t('footer.legal')} links={legalLinks} />
             </div>
 
-            <div className="mx-auto mt-6 flex max-w-6xl flex-col items-center justify-between gap-3 border-t-2 border-foreground/15 pt-4 font-mono text-xs text-muted-foreground sm:mt-10 sm:flex-row sm:pt-6">
+            <div className="mx-auto mt-3 flex max-w-6xl flex-col items-center justify-between gap-2 border-t border-foreground/15 pt-2 font-mono text-[10px] text-muted-foreground sm:mt-6 sm:flex-row sm:pt-4 sm:text-xs">
               <p>
                 © {year} {t('brand')} · {t('footer.copyright')}
               </p>
@@ -477,11 +481,11 @@ function FooterLinkGroup({
 }) {
   return (
     <div>
-      <h3 className="mb-2 font-mono text-xs font-bold uppercase tracking-widest text-primary md:mb-4">{title}</h3>
-      <ul className="space-y-1.5 md:space-y-2.5">
+      <h3 className="mb-1.5 font-mono text-[10px] font-bold uppercase tracking-widest text-primary md:mb-2 md:text-xs">{title}</h3>
+      <ul className="space-y-1 md:space-y-1.5">
         {links.map((link) => (
           <li key={link.to}>
-            <Link to={link.to} className="font-mono text-sm font-medium text-muted-foreground transition-colors hover:bg-neon hover:text-ink">
+            <Link to={link.to} className="font-mono text-xs font-medium text-muted-foreground transition-colors hover:bg-neon hover:text-ink md:text-sm">
               {link.label}
             </Link>
           </li>

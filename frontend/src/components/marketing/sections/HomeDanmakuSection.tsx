@@ -26,7 +26,7 @@ export function HomeDanmakuSection() {
 
       {/* 弹幕轨道：与下方像素场同色（墨黑），硬裁切边缘无绿隔离带。
           区域分隔交给像素场顶部的细线（见 HomeFooterSection），此处保持连续暗墙。 */}
-      <div className="relative h-[120px] w-full md:h-[160px]">
+      <div className="relative h-[80px] w-full md:h-[100px]">
         {loading ? (
           <div className="flex h-full items-center justify-center font-mono text-sm text-white/70">
             {t('home.danmaku.loading')}
