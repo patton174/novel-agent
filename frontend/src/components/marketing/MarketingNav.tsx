@@ -2,9 +2,8 @@ import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Menu, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { useAppMobile } from '@/hooks/useMediaQuery'
 import { cn } from '@/lib/utils'
-import { NovelAiWordmark } from './NovelAiWordmark'
+import { NovelAiPixelWordmark } from './pixel/NovelAiPixelWordmark'
 import { MKT_CTA_PRIMARY } from '@/lib/marketingCta'
 import { LocaleToggle } from '@/components/i18n/LocaleToggle'
 import { MarketingThemeToggle } from '@/components/theme/MarketingThemeToggle'
@@ -17,7 +16,6 @@ export function MarketingNav() {
   const [open, setOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const [loggedIn, setLoggedIn] = useState(false)
-  const isMobile = useAppMobile()
   const isHome = location.pathname === '/'
   const authReady = useAuthReady()
 
@@ -39,9 +37,9 @@ export function MarketingNav() {
   }, [])
 
   const linkClass = (path: string) =>
-    `transition-colors hover:text-foreground ${
-      location.pathname === path ? 'text-foreground font-semibold' : 'text-muted-foreground'
-    }`
+    `font-mono text-sm font-bold uppercase tracking-wide transition-colors hover:bg-neon hover:text-foreground ${
+      location.pathname === path ? 'bg-foreground text-background' : 'text-foreground'
+    } px-3 py-1.5`
 
   const navGlass = scrolled || !isHome
 
@@ -64,7 +62,7 @@ export function MarketingNav() {
     <>
       <Link
         to="/login"
-        className="px-3 py-2 text-sm font-medium text-foreground transition-colors hover:text-primary"
+        className="px-3 py-2 font-mono text-sm font-bold uppercase tracking-wide text-foreground transition-colors hover:bg-neon"
       >
         {t('marketing:nav.login')}
       </Link>
@@ -80,7 +78,7 @@ export function MarketingNav() {
     </Link>
   ) : (
     <>
-      <Link to="/login" className="rounded-lg px-3 py-2.5 hover:bg-surface-hover">
+      <Link to="/login" className="px-3 py-2.5 font-mono text-sm font-bold uppercase tracking-wide text-foreground hover:bg-neon">
         {t('marketing:nav.login')}
       </Link>
       <Link to="/register" className={cn(MKT_CTA_PRIMARY, 'mt-1 px-4 py-2.5 text-center text-sm')}>
@@ -92,12 +90,10 @@ export function MarketingNav() {
   return (
     <header
       className={cn(
-        'fixed top-0 left-0 right-0 z-50 transition-all duration-300',
+        'fixed top-0 left-0 right-0 z-50 transition-colors duration-200',
         navGlass
-          ? isMobile
-            ? 'border-b border-border/70 bg-background shadow-[0_8px_32px_-12px_rgba(15,23,42,0.12)]'
-            : 'border-b border-border/70 bg-background/88 shadow-[0_8px_32px_-12px_rgba(15,23,42,0.12)] backdrop-blur-xl'
-          : 'border-b border-transparent bg-transparent',
+          ? 'border-b-2 border-foreground bg-background'
+          : 'border-b-2 border-transparent bg-background',
       )}
     >
       <nav className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6" aria-label="主导航">
@@ -106,11 +102,14 @@ export function MarketingNav() {
           className="flex items-center gap-2 transition-opacity hover:opacity-80"
           aria-label={`${t('marketing:brand')} 首页`}
         >
-          <NovelAiWordmark size="sm" animate={false} />
+          {/* 顶部导航 wordmark：<sm 用 sm 尺寸（紧凑），≥sm 用 md 尺寸。
+              比 size="nav" 小一档，避免顶栏过高 / 移动端挤 */}
+          <NovelAiPixelWordmark size="sm" className="inline-flex sm:hidden" />
+          <NovelAiPixelWordmark size="md" className="hidden sm:inline-flex" />
         </Link>
 
-        <div className="hidden items-center gap-6 md:flex">
-          <div className="flex items-center gap-7 text-sm font-medium">{pageLinks}</div>
+        <div className="hidden items-center gap-4 md:flex">
+          <div className="flex items-center gap-1">{pageLinks}</div>
           <div className="relative z-[2] flex items-center gap-2">
             <MarketingThemeToggle compact />
             <LocaleToggle compact />
@@ -120,7 +119,7 @@ export function MarketingNav() {
 
         <button
           type="button"
-          className="inline-flex size-10 items-center justify-center rounded-lg border border-border/80 bg-surface/80 text-foreground backdrop-blur-sm md:hidden"
+          className="inline-flex size-10 items-center justify-center border-2 border-foreground bg-surface text-foreground md:hidden"
           aria-expanded={open}
           aria-label={open ? t('marketing:nav.close') : t('marketing:nav.menu')}
           onClick={() => setOpen((v) => !v)}
@@ -130,19 +129,19 @@ export function MarketingNav() {
       </nav>
 
       {open ? (
-        <div className="border-t border-border/60 bg-background/95 px-6 py-4 backdrop-blur-xl md:hidden">
-          <div className="flex flex-col gap-1 text-sm font-medium">
+        <div className="border-t-2 border-foreground bg-background px-6 py-4 md:hidden">
+          <div className="flex flex-col gap-1">
             <div className="mb-2 flex items-center justify-end gap-2">
               <MarketingThemeToggle />
               <LocaleToggle />
             </div>
-            <Link to="/pricing" className={`rounded-lg px-3 py-2.5 hover:bg-surface-hover ${linkClass('/pricing')}`}>
+            <Link to="/pricing" className={linkClass('/pricing')}>
               {t('marketing:nav.pricing')}
             </Link>
-            <Link to="/about" className={`rounded-lg px-3 py-2.5 hover:bg-surface-hover ${linkClass('/about')}`}>
+            <Link to="/about" className={linkClass('/about')}>
               {t('marketing:nav.about')}
             </Link>
-            <hr className="my-2 border-border/60" />
+            <div className="my-2 h-0.5 bg-foreground/20" />
             {authLinksMobile}
           </div>
         </div>
