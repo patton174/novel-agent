@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { NovelAiWordmark } from '../marketing/NovelAiWordmark'
+import { NovelAiPixelWordmark } from '../marketing/pixel/NovelAiPixelWordmark'
+import { PixelText } from '../marketing/pixel/PixelText'
 import { cn } from '@/lib/utils'
 import { useTranslation } from 'react-i18next'
 
@@ -35,68 +36,68 @@ export function AuthShell({ title, subtitle, marketing, children, legal, footer,
   const { t } = useTranslation(['auth'])
   return (
     <div className="flex min-h-screen bg-background">
-      <div className="mkt-auth-panel relative hidden w-[42%] flex-col justify-between overflow-hidden p-10 text-white xl:w-[44%] lg:flex">
-        <div className="mkt-starfield pointer-events-none absolute inset-0 opacity-40" />
-        <div className="pointer-events-none absolute inset-0">
-          <div className="absolute -left-[15%] -top-[20%] h-[70%] w-[70%] rounded-full bg-white/12 blur-[100px]" />
-          <div className="absolute -bottom-[10%] -right-[10%] h-[55%] w-[55%] rounded-full bg-violet-400/20 blur-[80px]" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
-        </div>
-        <div className="mkt-grid-bg pointer-events-none absolute inset-0 opacity-[0.12]" style={{ maskImage: 'none' }} />
-
+      {/* 左侧营销面板：墨黑实色 + 2px 黑边 + 硬错位投影，白 logo + 荧光绿点缀，避免与 logo 蓝色撞色 */}
+      <div className="relative hidden w-[42%] flex-col justify-between border-r-2 border-foreground bg-ink p-10 text-white shadow-soft xl:w-[44%] lg:flex">
         <motion.div className="relative z-10" {...fadeUp}>
           <Link to="/" className="inline-block transition-opacity duration-200 hover:opacity-85">
-            <NovelAiWordmark size="md" animate={false} className="text-white" />
+            <NovelAiPixelWordmark size="lg" className="text-white" accent="#ffd166" />
           </Link>
         </motion.div>
 
         <motion.div
-          className="relative z-10 max-w-md space-y-4"
+          className="relative z-10 max-w-md space-y-5"
           {...fadeUp}
           transition={{ ...fadeUp.transition, delay: 0.06 }}
         >
-          <h1 className="text-2xl font-bold leading-tight tracking-tight xl:text-3xl">{marketing.headline}</h1>
-          <p className="text-sm leading-relaxed text-white/80 xl:text-base">{marketing.description}</p>
+          <span className="inline-flex items-center border-2 border-white/30 bg-white/5 px-3 py-1 text-neon">
+            <PixelText
+              text="[ NOVEL AGENT ]"
+              size="sm"
+              fontWeight={800}
+              fill
+              dotRange={[1, 2]}
+            />
+          </span>
+          <h1 className="text-3xl font-black uppercase leading-[0.95] tracking-tighter text-white xl:text-4xl">{marketing.headline}</h1>
+          <p className="font-mono text-sm leading-relaxed text-white/75 xl:text-base">{marketing.description}</p>
           {marketing.footer}
         </motion.div>
 
-        <div className="relative z-10 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-white/50">
+        <div className="relative z-10 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-xs text-white/50">
           <span>© {new Date().getFullYear()} {BRAND_NAME}</span>
-          <Link to="/privacy" className="hover:text-white/80 hover:underline">
+          <Link to="/privacy" className="hover:text-neon hover:underline">
             {t('auth:shell.privacy')}
           </Link>
-          <Link to="/terms" className="hover:text-white/80 hover:underline">
+          <Link to="/terms" className="hover:text-neon hover:underline">
             {t('auth:shell.terms')}
           </Link>
         </div>
       </div>
 
       <div className="relative flex flex-1 flex-col items-center justify-center px-4 py-8 sm:px-6 lg:px-10">
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/[0.04] via-transparent to-violet-500/[0.05] lg:hidden" />
-        <div className="mkt-grid-bg pointer-events-none absolute inset-0 opacity-35 lg:opacity-20" />
-
         <Link to="/" className="relative z-10 mb-6 transition-opacity hover:opacity-85 lg:hidden">
-          <NovelAiWordmark size="sm" animate={false} />
+          <NovelAiPixelWordmark size="sm" />
         </Link>
 
         <motion.div
-          className={cn('relative z-10 w-full max-w-[400px]', className)}
+          className={cn('relative z-10 w-full max-w-[440px]', className)}
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
         >
-          <div className="mkt-form-card rounded-2xl border border-border/70 bg-surface/95 p-6 shadow-[0_16px_48px_-20px_rgba(79,70,229,0.22)] backdrop-blur-md sm:p-7">
-            <div className="mb-5">
-              <h2 className="text-xl font-bold tracking-tight text-foreground">{title}</h2>
-              <p className="mt-1 text-xs text-muted-foreground">{subtitle}</p>
+          {/* 表单卡片：2px 边 + 硬错位投影，直角 */}
+          <div className="border-2 border-foreground bg-surface p-6 shadow-soft sm:p-8">
+            <div className="mb-6 border-b-2 border-foreground pb-4">
+              <h2 className="text-2xl font-black uppercase tracking-tight text-foreground">{title}</h2>
+              <p className="mt-1.5 font-mono text-xs text-muted-foreground">{subtitle}</p>
             </div>
 
             {children}
 
-            {legal ? <div className="mt-5 border-t border-border/60 pt-4">{legal}</div> : null}
+            {legal ? <div className="mt-5 border-t-2 border-foreground/20 pt-4">{legal}</div> : null}
 
             {footer ? (
-              <div className="mt-4 text-center text-xs text-muted-foreground">{footer}</div>
+              <div className="mt-4 text-center font-mono text-xs text-muted-foreground">{footer}</div>
             ) : null}
           </div>
         </motion.div>

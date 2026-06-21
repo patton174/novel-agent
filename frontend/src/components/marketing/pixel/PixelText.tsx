@@ -56,8 +56,8 @@ export interface PixelTextProps {
    *  canvas 采样回退（中文/特殊字符）：字身 cell；总字距 = glyphGap。
    *  - 默认 → 约 14% 字符宽（5×7 路径内置空白）/ 14% 字符宽（中文回退 cell/7 间距） */
   glyphGap?: number
-  /** 单词间距（源像素）。空格字符占据的横向距离。默认 = cell（1 个字符宽度），
-   *  应当明显大于 glyphGap 以产生"单词之间有缝、字符之间无缝"的视觉差异 */
+  /** 单词间距（源像素）。空格字符占据的横向距离。默认 = cell/2（≈ 半个字符宽度），
+   *  明显大于 glyphGap=0 以产生"单词之间有缝"的视觉差异，但不会把单词撑到 1 字符宽那么散 */
   wordGap?: number
   /** 点的颜色；不传则从 className 的 currentColor 解析，随主题翻转 */
   color?: string
@@ -292,7 +292,7 @@ export function sampleTextPoints(opts: {
   /** 噪点 seed（0=无噪点） */
   noiseSeed?: number
 }): { points: { x: number; y: number }[]; w: number; h: number } {
-  const { text, cell, weight, fontFamily, threshold, gap, wordGap = cell, noiseSeed = 0 } = opts
+  const { text, cell, weight, fontFamily, threshold, gap, wordGap = cell / 2, noiseSeed = 0 } = opts
   const chars = Array.from(text)
   if (chars.length === 0) return { points: [], w: 0, h: 0 }
   // 5×7 查表路径字身 ≈ 6/7 cell；canvas 采样回退（中文等）字身 = cell
@@ -336,8 +336,8 @@ export function PixelText({
   dotRange = [1, 6],
 }: PixelTextProps) {
   const cellSize = cell ?? SIZE_PRESET[size].cell
-  // 单词间距默认 = cell（1 个字符宽度），保证与字间 gap 形成明显视觉差
-  const effWordGap = wordGap ?? cellSize
+  // 单词间距默认 = cell/2（半个字符宽度），比字间 gap 大、但不会把单词撑到 1 字符宽那么散
+  const effWordGap = wordGap ?? cellSize / 2
   const spanRef = useRef<HTMLSpanElement>(null)
   // 订阅主题：切换时重新解析 currentColor → 重新生成（命中新颜色的缓存）
   const theme = useThemeStore((s) => s.theme)
