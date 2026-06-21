@@ -12,8 +12,6 @@ import {
   ProIconNovel,
   ProIconPencil,
   ProIconLibrary,
-  ProIconBilling,
-  ProIconAccount,
 } from '@/components/pro/icons/proIcons'
 
 /**

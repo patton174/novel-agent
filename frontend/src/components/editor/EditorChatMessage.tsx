@@ -96,6 +96,10 @@ function EditorChatMessageInner({
       block.kind === 'narration' ||
       block.kind === 'tool',
   )
+  const orchestrationStepCount = useMemo(
+    () => countOrchestrationSteps(message.agentSteps, replayTimeline),
+    [message.agentSteps, replayTimeline],
+  )
   const showDeliveryDivider =
     showDeliveryBody && (hasOrchestrationTrace || orchestrationStepCount > 0)
   const thinkText = message.agentThinkText ?? message.thinking
@@ -105,10 +109,6 @@ function EditorChatMessageInner({
   const deliveryText = useMemo(
     () => extractAssistantDeliveryText(message, replayTimeline),
     [message, replayTimeline],
-  )
-  const orchestrationStepCount = useMemo(
-    () => countOrchestrationSteps(message.agentSteps, replayTimeline),
-    [message.agentSteps, replayTimeline],
   )
   const canCollapseProcess =
     isMobile &&

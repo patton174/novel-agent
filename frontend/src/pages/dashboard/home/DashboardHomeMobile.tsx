@@ -10,7 +10,7 @@ import { useMarkRouteSeen } from '@/hooks/useMarkRouteSeen'
 import { EDITOR_CREATE_HREF, editorNovelHref } from '@/lib/editorRoutes'
 import { formatTokenCount } from '@/api/billingApi'
 import { useDashboardHome } from './useDashboardHome'
-import { ProIconPencil, ProIconLibrary, ProIconArrowRight, ProIconNovel } from '@/components/pro/icons/proIcons'
+import { ProIconPencil, ProIconArrowRight, ProIconNovel } from '@/components/pro/icons/proIcons'
 
 export function DashboardHomeMobile() {
   useMarkRouteSeen()

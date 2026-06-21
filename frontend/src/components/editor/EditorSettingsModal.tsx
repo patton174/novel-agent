@@ -2,7 +2,6 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { ExternalLink } from 'lucide-react'
 import { AppModalShell } from '@/components/ui/AppModalShell'
-import { EditorButton } from '../ui/EditorButton'
 import { Switch } from '../ui/switch'
 import { cn } from '@/lib/utils'
 

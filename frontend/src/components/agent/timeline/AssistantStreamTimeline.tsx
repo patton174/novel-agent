@@ -46,7 +46,6 @@ import {
   TIMELINE_SLOT,
   TIMELINE_THINK_WRAP,
 } from '@/lib/timelineClasses'
-import { cn } from '@/lib/utils'
 import { runeLength, visiblePrefixForBlock } from './timelineUtils'
 
 function TimelineBlockEnter({ children }: { children: ReactNode }) {

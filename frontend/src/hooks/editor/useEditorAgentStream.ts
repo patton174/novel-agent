@@ -34,7 +34,6 @@ import {
 import {
   clearStreamRecoveryBanner,
   isPeerDroppedStreamError,
-  isStreamRecoveryBanner,
   resolveAgentHostGuardMessage,
   shouldAttachStreamRecovery,
   STREAM_RECOVERY_BANNER,
@@ -681,7 +680,6 @@ export function useEditorAgentStream({
             toolName &&
             shouldRefreshStoryMemoryAfterTool(
               toolName,
-              parsed.payload as Record<string, unknown>,
             )
           ) {
             refreshStoryMemory(activeNovelId)

@@ -2,7 +2,6 @@ import { DIRECT_PYTHON } from '../config/runtime'
 import { hasAuthSessionHint, migrateLegacyAuthStorage } from '../utils/auth'
 import { commitLoginSession } from './loginSession'
 import {
-  getSessionCrypto,
   hydrateSessionFromStorage,
 } from './sessionStore'
 import { ensureCryptoRuntime } from './cryptoRuntime'

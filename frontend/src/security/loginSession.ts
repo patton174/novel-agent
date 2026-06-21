@@ -47,7 +47,7 @@ export function commitLoginSession(data: LoginResult | Record<string, unknown>):
       keyId: sessionCrypto.keyId,
       aesKeyB64: sessionCrypto.aesKeyB64,
       keyVersion: sessionCrypto.keyVersion,
-      expiresAt: sessionCrypto.expiresAtEpochMs ?? sessionCrypto.expiresAt ?? 0,
+      expiresAt: sessionCrypto.expiresAtEpochMs ?? 0,
     })
   }
 

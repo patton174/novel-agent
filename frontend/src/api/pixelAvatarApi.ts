@@ -15,10 +15,13 @@ interface PixelAvatarWire {
 
 function wireToSelection(raw: PixelAvatarWire | null | undefined): PixelAvatarSelection | null {
   if (!raw) return null
+  const cc = raw.customColors
   return normalizePixelAvatarSelection({
     style: raw.style as PixelAvatarSelection['style'],
     presetId: raw.presetId,
-    customColors: raw.customColors,
+    customColors: cc
+      ? { primary: cc.primary ?? '', accent: cc.accent ?? '', highlight: cc.highlight ?? '' }
+      : undefined,
   })
 }
 
