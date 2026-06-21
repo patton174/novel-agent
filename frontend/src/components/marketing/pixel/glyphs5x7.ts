@@ -801,6 +801,8 @@ export function getGlyph5x7(ch: string): Glyph5x7 | null {
 /**
  * 把 5×7 字模放大到 cell×cell 网格（cell 必须是 7 的倍数）。
  * 每个原图 1 像素 → 输出 (cell/7) × (cell/7) 屏像素块。
+ * 字身 6 列（5 笔画 + 1 列内置空白）—— 让字模自带 1/7 cell = 14% 字符宽的字距。
+ * 额外字间距由调用方通过 glyphGap 单独控制。
  * 已手画的位图不叠加噪点（保持设计完整性）。
  */
 export function scaleUp5x7(glyph: Glyph5x7, cell: number): Uint8Array {
@@ -809,12 +811,18 @@ export function scaleUp5x7(glyph: Glyph5x7, cell: number): Uint8Array {
   }
   const grid = new Uint8Array(cell * cell)
   const block = cell / 7 // 每个原像素在输出中占 block×block 个像素
+  // 字身宽 = 6 列（5 笔画 + 1 内置空白）—— 强制填满前 6/7 列
   for (let y = 0; y < 7; y++) {
     const row = glyph[y]
-    for (let x = 0; x < 5; x++) {
-      const on = (row >> (4 - x)) & 1 // 高位在左
-      if (!on) continue
-      // 填满 (x*block, y*block) 起的 block×block 块
+    for (let x = 0; x < 6; x++) {
+      // 第 6 列强制视为"内置空白"（即使 row bit 0 不亮也保留）—— 让 glyphGap 不会让字贴
+      // 实际上前 5 列才用 row 数据；第 6 列保持 0（字模内置空白）
+      if (x < 5) {
+        const on = (row >> (4 - x)) & 1
+        if (!on) continue
+      } else {
+        continue // 第 6 列永远空（字模内置字距）
+      }
       for (let dy = 0; dy < block; dy++) {
         for (let dx = 0; dx < block; dx++) {
           const ox = x * block + dx

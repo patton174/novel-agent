@@ -51,11 +51,10 @@ export interface PixelTextProps {
   cell?: number
   /** 每个点在屏幕上的像素大小（源图恒为 1px/点）。默认 1 = 最细，适合大量使用 */
   dot?: number
-  /** 字形之间的间隔（源像素，即 dot=1 时的 px）。默认 0.5（≈ 10% 字符宽）。
-   *  5×7 字模字身严格 5 列；字间距完全由 glyphGap 控制。
-   *  - 0.5 源像素 = 10% 字符宽（终端字距，紧凑）
-   *  - 1 源像素 = 20% 字符宽（宽松）
-   *  - 0 源像素 = 字身紧贴 */
+  /** 字形之间的间隔（源像素，即 dot=1 时的 px）。默认 = cell/7（1 列字模宽度 ≈ 14% 字符宽）。
+   *  5×7 查表路径：字身 5/7 cell + 1/7 cell 内置空白 = 6/7 cell；总字距 = 内置空白 + glyphGap。
+   *  canvas 采样回退（中文/特殊字符）：字身 cell；总字距 = glyphGap。
+   *  - 默认 → 约 14% 字符宽（5×7 路径内置空白）/ 14% 字符宽（中文回退 cell/7 间距） */
   glyphGap?: number
   /** 单词间距（源像素）。空格字符占据的横向距离。默认 = cell（1 个字符宽度），
    *  应当明显大于 glyphGap 以产生"单词之间有缝、字符之间无缝"的视觉差异 */
@@ -229,8 +228,11 @@ function renderTextImage(
     imageCache.set(key, empty)
     return empty
   }
-  // 字身宽（5×7 字模只有 5 列笔画，1/7 cell 的内置空白由字间距承担）
-  const GLYPH_BODY = 5
+  // 字身宽：
+  //   - 5×7 查表命中 = 6 列（5 笔画 + 1 内置空白）
+  //   - canvas 采样回退（中文/特殊字符）= cell 列
+  // 这样英文与中文混排时字符宽度比例合理、字距稳定。
+  const glyph5x7Body = Math.round((cell * 6) / 7) // 5×7 路径字身 ≈ 6/7 cell
   // 计算总宽（空格按 wordGap 推进；非空字之间按字身 + gap 推进）
   let advance = 0
   chars.forEach((ch, i) => {
@@ -238,10 +240,11 @@ function renderTextImage(
       advance += wordGap
       return
     }
-    advance += GLYPH_BODY
+    const body = getGlyph5x7(ch) ? glyph5x7Body : cell
+    advance += body
     if (i < chars.length - 1 && chars[i + 1] !== ' ') advance += gap
   })
-  const w = Math.max(advance, GLYPH_BODY)
+  const w = Math.max(advance, cell)
   const h = cell
   composerCanvas!.width = w
   composerCanvas!.height = h
@@ -254,12 +257,13 @@ function renderTextImage(
       return
     }
     const grid = glyphs[i]!
+    const body = getGlyph5x7(ch) ? glyph5x7Body : cell
     for (let y = 0; y < cell; y++) {
-      for (let x = 0; x < GLYPH_BODY; x++) {
+      for (let x = 0; x < body; x++) {
         if (grid[y * cell + x]) ctx.fillRect(ox + x, y, 1, 1)
       }
     }
-    ox += GLYPH_BODY
+    ox += body
     // 非末字、且下一字非空格时加 gap
     if (i < chars.length - 1 && chars[i + 1] !== ' ') ox += gap
   })
@@ -291,8 +295,8 @@ export function sampleTextPoints(opts: {
   const { text, cell, weight, fontFamily, threshold, gap, wordGap = cell, noiseSeed = 0 } = opts
   const chars = Array.from(text)
   if (chars.length === 0) return { points: [], w: 0, h: 0 }
-  // 5×7 字模字身宽（严格 5 列，字模内置 1 列空白不计入字身）
-  const GLYPH_BODY = 5
+  // 5×7 查表路径字身 ≈ 6/7 cell；canvas 采样回退（中文等）字身 = cell
+  const glyph5x7Body = Math.round((cell * 6) / 7)
   const points: { x: number; y: number }[] = []
   let ox = 0
   chars.forEach((ch) => {
@@ -301,15 +305,16 @@ export function sampleTextPoints(opts: {
       return
     }
     const grid = sampleGlyph(ch, cell, weight, fontFamily, threshold, noiseSeed)
+    const body = getGlyph5x7(ch) ? glyph5x7Body : cell
     for (let y = 0; y < cell; y++) {
-      for (let x = 0; x < GLYPH_BODY; x++) {
+      for (let x = 0; x < body; x++) {
         if (grid[y * cell + x]) points.push({ x: ox + x, y })
       }
     }
-    ox += GLYPH_BODY + gap
+    ox += body + gap
   })
   // 总宽 = 末字推进量 - 末尾多余 gap（若有字）
-  const w = points.length > 0 ? Math.max(ox - gap, GLYPH_BODY) : 0
+  const w = points.length > 0 ? Math.max(ox - gap, cell) : 0
   return { points, w, h: cell }
 }
 
@@ -318,7 +323,7 @@ export function PixelText({
   size = 'md',
   cell,
   dot = 1,
-  glyphGap = 0.5,
+  glyphGap = 0,
   wordGap,
   color,
   fontWeight = 800,
