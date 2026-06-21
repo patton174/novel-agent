@@ -70,6 +70,9 @@ Thumbs.db
 _delete-com-report.json
 # TypeScript 增量构建产物
 *.tsbuildinfo
+# vite.config 编译产物（tsc build 时输出，dev 用 .ts；并存会让 Vite 误读旧版）
+frontend/vite.config.js
+frontend/vite.config.d.ts
 # 测试运行产物
 frontend/test-results/
 

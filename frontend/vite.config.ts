@@ -1,6 +1,7 @@
 import { createRequire } from 'node:module'
 import { defineConfig, loadEnv, type PluginOption } from 'vite'
 import react from '@vitejs/plugin-react'
+import basicSsl from '@vitejs/plugin-basic-ssl'
 import tailwindcss from '@tailwindcss/vite'
 import path from 'path'
 import {
@@ -85,6 +86,18 @@ export default defineConfig(({ mode }) => {
       }
 
   const plugins: PluginOption[] = [react(), tailwindcss()]
+
+  // 本地开发用自签证书：让 IP/局域网访问走 https（避免浏览器 HSTS 强制升级）
+  // dev server 默认启用 https；CI / 生产 build 不受影响
+  const useHttps = process.env.NODE_ENV !== 'production'
+  if (useHttps) {
+    plugins.push(
+      basicSsl({
+        name: 'novel-agent-dev',
+        domains: ['10.9.16.1', 'localhost', '127.0.0.1', '0.0.0.0'],
+      }),
+    )
+  }
   if (process.env.ANALYZE === 'true') {
     try {
       const require = createRequire(import.meta.url)

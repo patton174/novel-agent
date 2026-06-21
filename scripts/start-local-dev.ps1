@@ -287,6 +287,7 @@ if ($want -contains "frontend") {
         $env:VITE_ROUTE_OBFUSCATION = "false"
         $env:VITE_FIELD_ENCRYPTION = "false"
         $env:VITE_SECURITY_ENCRYPT_STREAM = "false"
+        # dev server 默认启用自签证书 HTTPS（vite.config.ts 内部判断 NODE_ENV !== 'production'）
         Start-Process -FilePath "npm" -ArgumentList @("run", "dev", "--", "--host") `
             -WorkingDirectory "$Root\frontend" -WindowStyle Normal
     }
