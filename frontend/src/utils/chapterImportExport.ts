@@ -1,7 +1,8 @@
 export type ChapterExportFormat = 'txt' | 'md' | 'json'
 
 function sanitizeFilename(name: string): string {
-  return name.replace(/[<>:"/\\|?*\x00-\x1f]/g, '_').trim() || 'chapter'
+  // eslint-disable-next-line no-control-regex -- intentionally removing ASCII control chars
+  return name.replace(/[<>:"/\\|?*\x00-\x1f]/gu, '_').trim() || 'chapter'
 }
 
 export function exportChapterContent(
