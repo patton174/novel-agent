@@ -51,7 +51,9 @@ export interface PixelTextProps {
   cell?: number
   /** 每个点在屏幕上的像素大小（源图恒为 1px/点）。默认 1 = 最细，适合大量使用 */
   dot?: number
-  /** 字形之间的间隔（源像素，即 dot=1 时的 px）。默认 1 */
+  /** 字形之间的间隔（源像素，即 dot=1 时的 px）。默认 0。
+   *  5×7 字模每字 5 列笔画 + 1 列天然空白 = 6 列宽，glyphGap=0 时字间由字模自带空隙分隔。
+   *  调大可加更多间距，但通常不必要。 */
   glyphGap?: number
   /** 单词间距（源像素）。空格字符占据的横向距离。默认 = cell（1 个字符宽度），
    *  应当明显大于 glyphGap 以产生"单词之间有缝、字符之间无缝"的视觉差异 */
@@ -310,7 +312,7 @@ export function PixelText({
   size = 'md',
   cell,
   dot = 1,
-  glyphGap = 1,
+  glyphGap = 0,
   wordGap,
   color,
   fontWeight = 800,
