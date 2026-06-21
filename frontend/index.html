@@ -3,7 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/novel-icon.svg" />
-    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests" />
+    <!--
+      注意：不要再加 upgrade-insecure-requests CSP。
+      dev server 现在跑在 https（HMR 通过 ws），CSP 会把子资源/websocket 升级到 https/wss，
+      与 Vite 内部 HMR 端点不一致导致 ERR_EMPTY_RESPONSE。
+      生产 build nginx 会强制 https，dev 无需此保护。
+    -->
     <script>
       ;(() => {
         const storageKey = 'na-theme'
