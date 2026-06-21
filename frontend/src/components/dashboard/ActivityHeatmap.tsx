@@ -1,20 +1,16 @@
-import { Fragment, useMemo, useState } from 'react'
+import { Fragment, useMemo, useState, useRef, useEffect, useCallback } from 'react'
 import { cn } from '@/lib/utils'
 import type { DashboardActivity, DashboardActivityDay } from '@/api/dashboardApi'
 import { Skeleton } from '@/components/ui/skeleton'
-import {
-  activityAsOfLabel,
-  formatCompactMetric,
-} from '@/utils/dashboardMetrics'
 import { useTranslation } from 'react-i18next'
 import i18n from '@/i18n'
 
 export type ActivityMode = 'all' | 'writing' | 'agent'
 
-const RECENT_WEEKS = 13
-const WEEKDAY_COL_WIDTH = '1.25rem'
-const CELL_SIZE = '0.75rem'
-const GRID_GAP_PX = 4
+const MAX_WEEKS = 13
+const MIN_WEEKS = 4
+const WEEKDAY_COL_REM = 1.25
+const GRID_GAP_REM = 0.1875 // 3px in rem
 
 const LEVEL_CLASSES = [
   'bg-muted/50',
@@ -23,10 +19,6 @@ const LEVEL_CLASSES = [
   'bg-indigo-600/95 dark:bg-indigo-600/85',
   'bg-indigo-800 dark:bg-indigo-500/90',
 ]
-
-function heatmapGridColumns(weekCount: number): string {
-  return `${WEEKDAY_COL_WIDTH} repeat(${weekCount}, ${CELL_SIZE})`
-}
 
 function cellClass(cell: HeatCell, level: number): string {
   if (!cell.date) {
@@ -79,7 +71,7 @@ function valueToLevel(value: number, max: number): number {
 function buildRecentWeeksGrid(
   days: DashboardActivityDay[],
   mode: ActivityMode,
-  recentWeeks = RECENT_WEEKS,
+  recentWeeks: number,
 ) {
   const valueByDate = new Map(days.map((d) => [d.date, getDayValue(d, mode)]))
   const now = new Date()
@@ -97,8 +89,9 @@ function buildRecentWeeksGrid(
   let lastMonth = -1
   const cursor = new Date(gridStart)
   let weekIndex = 0
+  let weekCount = 0
 
-  while (cursor <= gridEnd) {
+  while (cursor <= gridEnd && weekCount < recentWeeks) {
     const weekStart = new Date(cursor)
     const week: HeatCell[] = []
 
@@ -120,6 +113,7 @@ function buildRecentWeeksGrid(
 
     weeks.push(week)
     weekIndex++
+    weekCount++
   }
 
   let maxValue = 1
@@ -165,6 +159,38 @@ export function ActivityHeatmap({ activity, loading }: ActivityHeatmapProps) {
   const [mode, setMode] = useState<ActivityMode>('all')
   const days = activity?.days ?? []
   const dateLocale = i18n.language === 'zh' ? 'zh-CN' : 'en-US'
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [containerWidth, setContainerWidth] = useState(0)
+
+  // Calculate how many weeks fit based on container width
+  const calcWeeksAndCellSize = useCallback((width: number) => {
+    const availableWidth = width - WEEKDAY_COL_REM - GRID_GAP_REM
+    const maxWeeks = Math.min(MAX_WEEKS, Math.max(MIN_WEEKS, Math.floor(availableWidth / (0.65 + GRID_GAP_REM))))
+    // Cap cell size so 7 rows + month header stays within ~320px container height
+    const rawCellSize = (availableWidth - maxWeeks * GRID_GAP_REM) / maxWeeks
+    const cellSize = Math.min(1.0, Math.max(0.5, rawCellSize))
+    return { weeks: maxWeeks, cellSize }
+  }, [])
+
+  // Listen to container width changes
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setContainerWidth(entry.contentRect.width)
+      }
+    })
+    observer.observe(el)
+    // Initial measurement
+    setContainerWidth(el.clientWidth)
+    return () => observer.disconnect()
+  }, [])
+
+  const { weeks: visibleWeeks, cellSize } = useMemo(() => {
+    if (containerWidth === 0) return { weeks: MAX_WEEKS, cellSize: 0.65 }
+    return calcWeeksAndCellSize(containerWidth)
+  }, [containerWidth, calcWeeksAndCellSize])
 
   const MODE_OPTIONS: { id: ActivityMode; label: string }[] = useMemo(
     () => [
@@ -184,8 +210,8 @@ export function ActivityHeatmap({ activity, loading }: ActivityHeatmapProps) {
   )
 
   const { weeks, maxValue, monthLabels } = useMemo(
-    () => buildRecentWeeksGrid(days, mode, RECENT_WEEKS),
-    [days, mode],
+    () => buildRecentWeeksGrid(days, mode, visibleWeeks),
+    [days, mode, visibleWeeks],
   )
 
   const monthLabelByWeek = useMemo(
@@ -194,77 +220,43 @@ export function ActivityHeatmap({ activity, loading }: ActivityHeatmapProps) {
   )
 
   const weekCount = weeks.length
-  const gridColumns = heatmapGridColumns(weekCount)
-  const asOf = activityAsOfLabel(days, dateLocale)
-  const visibleCells = useMemo(
-    () => weeks.flat().filter((cell): cell is HeatCell & { date: string } => Boolean(cell.date)),
-    [weeks],
-  )
-
-  const peak = useMemo(
-    () => (visibleCells.length === 0 ? 0 : Math.max(...visibleCells.map((cell) => cell.value), 0)),
-    [visibleCells],
-  )
-
-  const activeDays = useMemo(
-    () => visibleCells.filter((cell) => cell.value > 0).length,
-    [visibleCells],
-  )
+  const cellSizeRem = `${cellSize}rem`
+  const gridColumns = `${WEEKDAY_COL_REM}rem repeat(${weekCount}, ${cellSizeRem})`
 
   return (
     <div className="flex h-full flex-col">
-      <div className="border-b border-border/60 px-6 py-4">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <h2 className="text-base font-semibold text-foreground">
-              {t('dashboard:home.heatmapTitle')}
-            </h2>
-            <div className="mt-2 flex flex-wrap gap-1 rounded-lg bg-muted p-0.5">
-              {MODE_OPTIONS.map((option) => (
-                <button
-                  key={option.id}
-                  type="button"
-                  onClick={() => setMode(option.id)}
-                  className={cn(
-                    'rounded-md px-2 py-0.5 text-[11px] font-medium transition-colors',
-                    mode === option.id
-                      ? 'bg-background text-foreground shadow-sm ring-1 ring-border/60'
-                      : 'text-muted-foreground hover:text-foreground',
-                  )}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-          </div>
-          <p className="shrink-0 text-xs text-muted-foreground">
-            {t('dashboard:home.dataAsOf', { date: asOf })}
-          </p>
-        </div>
-        <div className="mt-4 flex flex-wrap gap-x-8 gap-y-3">
-          <HeaderStat
-            loading={loading}
-            label={t('dashboard:home.sidePeak')}
-            value={formatCompactMetric(peak, dateLocale)}
-          />
-          <HeaderStat
-            loading={loading}
-            label={t('dashboard:home.sideActiveDays')}
-            value={String(activeDays)}
-          />
+      <div className="flex items-start justify-between gap-3 border-b border-border/60 px-6 py-4">
+        <h2 className="text-base font-semibold text-foreground">
+          {t('dashboard:home.heatmapTitle')}
+        </h2>
+        <div className="flex shrink-0 rounded-lg bg-muted p-0.5">
+          {MODE_OPTIONS.map((option) => (
+            <button
+              key={option.id}
+              type="button"
+              onClick={() => setMode(option.id)}
+              className={cn(
+                'rounded-md px-2.5 py-1 text-xs font-medium transition-colors',
+                mode === option.id
+                  ? 'bg-background text-foreground shadow-sm ring-1 ring-border/60'
+                  : 'text-muted-foreground hover:text-foreground',
+              )}
+            >
+              {option.label}
+            </button>
+          ))}
         </div>
       </div>
 
-      <div className="flex flex-1 flex-col px-6 py-4">
-        <div className="min-w-0">
+      <div className="flex flex-1 flex-col px-6 py-4 overflow-hidden">
+        <div className="min-w-0 h-full" ref={containerRef}>
           {loading ? (
-            <Skeleton className="h-[120px] w-full rounded-lg" />
+            <Skeleton className="h-full w-full rounded-lg" />
           ) : (
-            <div className="w-full overflow-x-auto">
-              <div className="inline-block min-w-0">
+            <div className="relative h-full w-full overflow-auto">
               <div
-                className="mb-2 grid"
-                style={{ gridTemplateColumns: gridColumns, gap: GRID_GAP_PX }}
+                className="mb-2 grid min-w-max content-start"
+                style={{ gridTemplateColumns: gridColumns, gap: `${GRID_GAP_REM}rem` }}
               >
                 <div aria-hidden />
                 {weeks.map((_, weekIndex) => (
@@ -279,7 +271,7 @@ export function ActivityHeatmap({ activity, loading }: ActivityHeatmapProps) {
                 ))}
               </div>
 
-              <div className="grid" style={{ gridTemplateColumns: gridColumns, gap: GRID_GAP_PX }}>
+              <div className="grid" style={{ gridTemplateColumns: gridColumns, gap: `${GRID_GAP_REM}rem` }}>
                 {Array.from({ length: 7 }).map((_, rowIndex) => (
                   <Fragment key={rowIndex}>
                     <div className="flex items-center text-[10px] font-medium leading-none text-muted-foreground">
@@ -297,15 +289,15 @@ export function ActivityHeatmap({ activity, loading }: ActivityHeatmapProps) {
                               : undefined
                           }
                           className={cn(
-                            'size-3 shrink-0 rounded-[3px] transition-colors',
+                            'shrink-0 rounded-[3px] transition-colors',
                             cellClass(cell, level),
                           )}
+                          style={{ width: cellSizeRem, height: cellSizeRem }}
                         />
                       )
                     })}
                   </Fragment>
                 ))}
-              </div>
               </div>
             </div>
           )}
@@ -319,32 +311,6 @@ export function ActivityHeatmap({ activity, loading }: ActivityHeatmapProps) {
           </div>
         </div>
       </div>
-    </div>
-  )
-}
-
-function HeaderStat({
-  label,
-  value,
-  loading,
-}: {
-  label: string
-  value: string
-  loading?: boolean
-}) {
-  return (
-    <div className="min-w-[4.5rem]">
-      {loading ? (
-        <>
-          <Skeleton className="h-6 w-14" />
-          <Skeleton className="mt-1 h-3 w-12" />
-        </>
-      ) : (
-        <>
-          <p className="text-lg font-bold tabular-nums leading-none text-foreground">{value}</p>
-          <p className="mt-1 text-xs text-muted-foreground">{label}</p>
-        </>
-      )}
     </div>
   )
 }

@@ -1,8 +1,13 @@
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
-import { IconBook2, IconBooks, IconCreditCard, IconLayoutDashboard } from '@tabler/icons-react'
-import { NovelAiWordmark } from '@/components/marketing/NovelAiWordmark'
+import { NovelAiPixelWordmark } from '@/components/marketing/pixel/NovelAiPixelWordmark'
 import { ProSidebar, type ProSidebarGroup } from '@/components/pro/ProSidebar'
+import {
+  ProIconBilling,
+  ProIconLibrary,
+  ProIconNovel,
+  ProIconOverview,
+} from '@/components/pro/icons/proIcons'
 import { DashboardSidebarFooter } from './DashboardSidebarFooter'
 
 interface AppSidebarProps {
@@ -18,10 +23,10 @@ export function AppSidebar({ embedded = false, onNavigate }: AppSidebarProps) {
     {
       title: t('common:nav.groupCreation'),
       items: [
-        { label: t('common:nav.dashboardOverview'), to: '/dashboard', icon: IconLayoutDashboard, end: true },
-        { label: t('common:nav.dashboardNovels'), to: '/dashboard/novels', icon: IconBook2 },
-        { label: t('common:nav.dashboardMyLibrary'), to: '/dashboard/my-library', icon: IconBooks },
-        { label: t('common:nav.dashboardBilling'), to: '/dashboard/billing', icon: IconCreditCard },
+        { label: t('common:nav.dashboardOverview'), to: '/dashboard', icon: ProIconOverview, end: true },
+        { label: t('common:nav.dashboardNovels'), to: '/dashboard/novels', icon: ProIconNovel },
+        { label: t('common:nav.dashboardMyLibrary'), to: '/dashboard/my-library', icon: ProIconLibrary },
+        { label: t('common:nav.dashboardBilling'), to: '/dashboard/billing', icon: ProIconBilling },
       ],
     },
   ]
@@ -32,9 +37,9 @@ export function AppSidebar({ embedded = false, onNavigate }: AppSidebarProps) {
       embedded={embedded}
       onNavigate={onNavigate}
       header={
-        <div className="flex h-16 items-center border-b border-border/60 px-5">
-          <Link to="/dashboard" className="flex min-w-0 items-center transition-opacity hover:opacity-90">
-            <NovelAiWordmark size="sm" animate={false} />
+        <div className="flex h-12 items-center border-b border-border/60 px-3">
+          <Link to="/dashboard" className="flex min-w-0 items-center overflow-hidden transition-opacity hover:opacity-90">
+            <NovelAiPixelWordmark size="sm" cursor={false} />
           </Link>
         </div>
       }

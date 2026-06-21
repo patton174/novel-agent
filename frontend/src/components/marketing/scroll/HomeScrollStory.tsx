@@ -4,6 +4,7 @@ import { Sparkles } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useAppMobile } from '@/hooks/useMediaQuery'
 import { MarketingChatScene } from '../demo/MarketingChatScene'
+import { PixelText } from '../pixel/PixelText'
 import { useMarketingStoryReveal } from './useMarketingStoryReveal'
 import { CURSOR_LANDING_ROOT } from '@/lib/cursorLandingClasses'
 import { marketingInViewMotion } from '../motion/marketingInViewMotion'
@@ -32,20 +33,27 @@ export function HomeScrollStory() {
 
   return (
     <div id="demo-story" className="scroll-mt-16">
-      <section className="border-t border-border/40 bg-background px-6 py-16 md:py-20">
+      <section className="border-t-2 border-foreground bg-background px-6 py-20 md:py-24">
         <motion.div
           {...introReveal}
           className="relative mx-auto max-w-6xl"
         >
           <div className="mx-auto max-w-2xl text-center">
-            <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-primary/15 bg-primary/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-primary">
-              <Sparkles className="size-3" />
+            <p className="mb-4 inline-flex items-center gap-2 border-2 border-foreground bg-neon px-3 py-1 font-mono text-xs font-bold uppercase tracking-widest text-ink shadow-soft">
+              <Sparkles className="size-3" strokeWidth={2.5} />
               {t('home.story.introEyebrow')}
             </p>
-            <h2 className="mb-2 text-3xl font-bold tracking-tight text-foreground md:text-4xl lg:text-4xl">
-              {t('home.story.introTitle')}
+            <h2 className="mb-3">
+              <PixelText
+                text={t('home.story.introTitle')}
+                cell={20}
+                fill
+                dotRange={[1.5, 3.5]}
+                fontWeight={900}
+                className="text-ink"
+              />
             </h2>
-            <p className="text-sm leading-relaxed text-muted-foreground md:text-base">
+            <p className="font-mono text-sm leading-relaxed text-muted-foreground md:text-base">
               {t('home.story.introSubtitle')}
             </p>
           </div>

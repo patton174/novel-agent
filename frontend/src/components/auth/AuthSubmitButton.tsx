@@ -23,11 +23,11 @@ export function AuthSubmitButton({
       type="submit"
       disabled={disabled || loading}
       className={cn(
-        'mkt-cta-glow relative h-11 w-full rounded-xl bg-primary font-medium text-primary-foreground',
-        'hover:bg-primary-hover',
-        'transition-all duration-200 ease-out',
+        'relative h-12 w-full rounded-none border-2 border-foreground bg-primary font-mono text-sm font-bold uppercase tracking-wider text-white shadow-soft',
+        'hover:bg-neon hover:text-ink',
+        'transition-all duration-150',
         'disabled:opacity-60 disabled:cursor-not-allowed disabled:shadow-none',
-        'active:scale-[0.99]',
+        'active:translate-x-[2px] active:translate-y-[2px] active:shadow-none',
         className,
       )}
       {...rest}

@@ -1,6 +1,6 @@
 import { AlertTriangle, RefreshCw } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { NovelAiWordmark } from '@/components/marketing/NovelAiWordmark'
+import { NovelAiPixelWordmark } from '@/components/marketing/pixel/NovelAiPixelWordmark'
 import { MKT_CTA_PRIMARY, MKT_CTA_SECONDARY } from '@/lib/marketingCta'
 import { MARKETING_BACKGROUND_PATTERN } from '@/lib/marketingShellClasses'
 import { cn } from '@/lib/utils'
@@ -35,7 +35,7 @@ export function RouteErrorFallback({ chunkError, message, onRetry }: RouteErrorF
       />
 
       <div className="relative z-[1] flex w-full max-w-[28rem] flex-col items-center">
-        <NovelAiWordmark size="md" animate={false} className="mb-8" />
+        <NovelAiPixelWordmark size="md" cursor={false} className="mb-8" />
 
         <div
           className={cn(

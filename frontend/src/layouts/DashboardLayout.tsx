@@ -1,16 +1,15 @@
 import { useEffect, Suspense } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Outlet, useLocation } from 'react-router-dom'
-import { IconBook2, IconBooks, IconLayoutDashboard, IconUser } from '@tabler/icons-react'
 import { fetchUserInfo } from '../api/userApi'
 import { AppSidebar } from '../components/dashboard/AppSidebar'
 import { DashboardAnnouncementBanner } from '../components/dashboard/DashboardAnnouncementBanner'
 import { DashboardHeader } from '../components/dashboard/DashboardHeader'
 import { DashboardQuickActions } from '../components/dashboard/DashboardQuickActions'
-import { MobileSidebarDrawer } from '../components/dashboard/MobileSidebarDrawer'
 import { AppShellMain } from '../components/layout/AppShellMain'
 import { LayoutOutletSkeleton } from '../components/loading/LayoutOutletSkeleton'
 import { ProTabBar } from '@/components/pro/ProTabBar'
+import { ProIconAccount, ProIconLibrary, ProIconNovel, ProIconOverview } from '@/components/pro/icons/proIcons'
 import { syncPixelAvatarForUser } from '@/stores/pixelAvatarStore'
 import { useUserStore } from '../stores/userStore'
 
@@ -53,10 +52,10 @@ export default function DashboardLayout() {
 
   // 手机底部 tabbar：概览 / 小说 / 书库 / 我的
   const mobileTabs = [
-    { label: t('common:nav.tabHome'), to: '/dashboard', icon: IconLayoutDashboard, end: true },
-    { label: t('common:nav.tabNovels'), to: '/dashboard/novels', icon: IconBook2 },
-    { label: t('common:nav.tabLibrary'), to: '/dashboard/my-library', icon: IconBooks },
-    { label: t('common:nav.tabMine'), to: '/dashboard/settings', icon: IconUser },
+    { label: t('common:nav.tabHome'), to: '/dashboard', icon: ProIconOverview, end: true },
+    { label: t('common:nav.tabNovels'), to: '/dashboard/novels', icon: ProIconNovel },
+    { label: t('common:nav.tabLibrary'), to: '/dashboard/my-library', icon: ProIconLibrary },
+    { label: t('common:nav.tabMine'), to: '/dashboard/settings', icon: ProIconAccount },
   ]
 
   return (
@@ -68,7 +67,6 @@ export default function DashboardLayout() {
         <DashboardHeader
           title={meta.title}
           description={meta.description}
-          leading={<MobileSidebarDrawer />}
           actions={<DashboardQuickActions />}
         />
         <DashboardAnnouncementBanner />

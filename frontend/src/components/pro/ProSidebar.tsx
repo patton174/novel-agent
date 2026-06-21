@@ -1,12 +1,12 @@
 import type { ReactNode } from 'react'
 import { NavLink } from 'react-router-dom'
-import { IconStroke, type TablerIcon } from './IconStroke'
+import { IconStroke, type ProIconType } from './IconStroke'
 import { cn } from '@/lib/utils'
 
 export interface ProSidebarItem {
   label: string
   to: string
-  icon: TablerIcon
+  icon: ProIconType
   end?: boolean
 }
 
@@ -30,17 +30,17 @@ export function ProSidebar({ groups, embedded = false, onNavigate, className, he
   return (
     <aside
       className={cn(
-        'flex h-full flex-col bg-background text-foreground',
-        embedded ? 'w-full' : 'w-56 shrink-0 border-r border-border/60',
+        'flex h-full flex-col bg-white text-ink',
+        embedded ? 'w-full' : 'w-56 shrink-0 border-r-2 border-black',
         className,
       )}
     >
       {header ? <div className="shrink-0">{header}</div> : null}
-      <nav className="flex flex-1 flex-col gap-4 overflow-y-auto p-3">
+      <nav className="flex flex-1 flex-col gap-6 overflow-y-auto p-3">
         {groups.map((g, gi) => (
           <div key={gi} className="flex flex-col gap-1">
             {g.title ? (
-              <p className="px-3 pb-1 pt-2 text-[0.68rem] font-medium uppercase tracking-wider text-muted-foreground/70">{g.title}</p>
+              <p className="px-2 pb-2 pt-1 font-mono text-[0.66rem] font-bold uppercase tracking-widest text-primary">{g.title}</p>
             ) : null}
             {g.items.map((item) => (
               <NavLink
@@ -50,8 +50,10 @@ export function ProSidebar({ groups, embedded = false, onNavigate, className, he
                 onClick={onNavigate}
                 className={({ isActive }) =>
                   cn(
-                    'group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors',
-                    isActive ? 'bg-primary/5 text-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                    'group flex items-center gap-2.5 border-2 border-transparent py-2.5 pr-3 pl-3 font-mono text-sm font-bold uppercase tracking-wide transition-colors',
+                    isActive
+                      ? 'border-black bg-neon text-ink'
+                      : 'text-ink/70 hover:bg-muted hover:text-ink',
                   )
                 }
               >
@@ -66,7 +68,7 @@ export function ProSidebar({ groups, embedded = false, onNavigate, className, he
           </div>
         ))}
       </nav>
-      {footer ? <div className="shrink-0 border-t border-border/60 p-3">{footer}</div> : null}
+      {footer ? <div className="shrink-0 border-t-2 border-black p-3">{footer}</div> : null}
     </aside>
   )
 }

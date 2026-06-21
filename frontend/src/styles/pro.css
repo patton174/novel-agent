@@ -10,7 +10,7 @@
   stroke-dasharray: 1;
   stroke-dashoffset: 1;
   animation: pro-icon-draw 420ms cubic-bezier(0.65, 0, 0.35, 1) forwards;
-  stroke: var(--color-primary);
+  stroke: var(--color-ink);
 }
 
 @keyframes pro-icon-draw {
@@ -28,6 +28,19 @@
 [data-icon-stroke]:not(.pro-icon-stroke--active) svg polyline {
   stroke: currentColor;
 }
+
+/* ────────── duotone 填充图标（Solar bold-duotone）粗野主义选中态 ──────────
+   描边动画对 fill 无效，选中改用墨黑配色 + 轻微缩放（荧光绿底 + 黑图标 = 高对比撞色）。 */
+.pro-icon-fill--active {
+  color: var(--color-ink);
+  transform: scale(1.1);
+}
+
+.pro-icon-fill--active svg {
+  filter: none;
+}
+
+/* 未选中：随父级 ink/70 自然淡化，无需额外规则 */
 
 /* prefers-reduced-motion：跳过绘制，直接显示 */
 .pro-icon-stroke--reduced.pro-icon-stroke--active svg path,

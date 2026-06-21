@@ -10,6 +10,7 @@ export function PixelAvatarFrame({
   type = 'div',
   title,
   'aria-label': ariaLabel,
+  bordered = true,
 }: {
   size?: number
   className?: string
@@ -18,9 +19,11 @@ export function PixelAvatarFrame({
   type?: 'div' | 'button'
   title?: string
   'aria-label'?: string
+  bordered?: boolean
 }) {
   const frameClass = cn(
-    'flex shrink-0 items-center justify-center rounded-md bg-muted/35 ring-1 ring-border/55',
+    'flex shrink-0 items-center justify-center rounded-md bg-muted/35',
+    bordered && 'ring-1 ring-border/55',
     type === 'button' && 'cursor-pointer border-none p-0 transition-transform hover:scale-[1.03]',
     className,
   )

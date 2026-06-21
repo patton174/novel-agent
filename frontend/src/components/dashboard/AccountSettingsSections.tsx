@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next'
 interface AccountSettingsSectionsProps {
   profile: UserProfile | null
   onVerified?: () => void
+  onOpenAvatarEditor?: () => void
   /** Modal / compact: stack billing link below panel */
   variant?: 'page' | 'embedded'
 }
@@ -17,12 +18,13 @@ interface AccountSettingsSectionsProps {
 export function AccountSettingsSections({
   profile,
   onVerified,
+  onOpenAvatarEditor,
   variant = 'page',
 }: AccountSettingsSectionsProps) {
   const { t } = useTranslation(['dashboard'])
   return (
     <div className={variant === 'embedded' ? 'space-y-4' : 'space-y-6'}>
-      <AccountSettingsPanel profile={profile} onVerified={onVerified} />
+      <AccountSettingsPanel profile={profile} onVerified={onVerified} onOpenAvatarEditor={onOpenAvatarEditor} />
       <div className={variant === 'embedded' ? 'space-y-2 border-t border-border/60 pt-4' : undefined}>
         {variant === 'embedded' ? (
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">

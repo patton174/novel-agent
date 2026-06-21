@@ -1,11 +1,11 @@
 import { NavLink } from 'react-router-dom'
-import { IconStroke, type TablerIcon } from './IconStroke'
+import { IconStroke, type ProIconType } from './IconStroke'
 import { cn } from '@/lib/utils'
 
 export interface ProTabBarItem {
   label: string
   to: string
-  icon: TablerIcon
+  icon: ProIconType
   end?: boolean
 }
 
@@ -18,7 +18,7 @@ export function ProTabBar({ items, className }: ProTabBarProps) {
   return (
     <nav
       className={cn(
-        'fixed inset-x-0 bottom-0 z-40 flex items-stretch justify-around border-t border-border/60 bg-surface/95 backdrop-blur md:hidden',
+        'fixed inset-x-0 bottom-0 z-40 flex items-stretch justify-around border-t-2 border-black bg-white md:hidden',
         className,
       )}
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
@@ -30,8 +30,8 @@ export function ProTabBar({ items, className }: ProTabBarProps) {
           end={item.end}
           className={({ isActive }) =>
             cn(
-              'flex flex-1 flex-col items-center gap-1 py-2 text-[0.68rem] font-medium transition-colors',
-              isActive ? 'text-primary' : 'text-muted-foreground',
+              'flex flex-1 flex-col items-center gap-1 border-r-2 border-black/10 py-2 font-mono text-[0.68rem] font-bold uppercase tracking-wide transition-colors last:border-r-0',
+              isActive ? 'bg-neon text-ink' : 'text-ink/70',
             )
           }
         >

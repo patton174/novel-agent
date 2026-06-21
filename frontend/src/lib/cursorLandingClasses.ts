@@ -223,27 +223,27 @@ export const STORY_ACT_ROW = cn(
 )
 
 export const STORY_ACT_INDEX = cn(
-  'inline-flex h-8 min-w-8 items-center justify-center rounded-[10px] border border-primary/20 bg-primary/10 px-[0.45rem] font-mono text-[0.72rem] font-bold tracking-[0.06em] text-primary',
+  'inline-flex h-8 min-w-8 items-center justify-center border-2 border-black bg-neon px-[0.45rem] text-ink',
 )
 
 export const STORY_ACT_LABEL = cn(
-  'text-[0.72rem] font-bold uppercase tracking-[0.14em] text-muted-foreground',
+  'font-mono text-[0.72rem] font-bold uppercase tracking-[0.14em] text-muted-foreground',
 )
 
 export const STORY_TITLE = cn(
-  'mkt-font-display m-0 mb-[0.85rem] text-[clamp(1.75rem,3.4vw,2.45rem)] font-[650] leading-[1.12] tracking-[-0.035em] text-foreground',
+  'mkt-font-display m-0 mb-[0.85rem] text-[clamp(1.75rem,3.4vw,2.45rem)] font-black leading-[1.05] tracking-[-0.04em] text-ink',
 )
 
 export const STORY_TITLE_ACCENT = cn(
-  'mt-[0.15rem] block bg-gradient-to-br from-primary from-0% via-[#6366f1] via-[45%] to-[#818cf8] to-100% bg-clip-text text-transparent',
+  'mt-[0.15rem] block text-primary',
 )
 
 export const STORY_LEAD = cn(
-  'm-0 mb-[1.35rem] text-[1.02rem] leading-[1.68] text-muted-foreground',
+  'm-0 mb-[1.35rem] font-mono text-[1.02rem] leading-[1.68] text-muted-foreground',
 )
 
 export const STORY_POINT_ITEM = cn(
-  'relative pl-4 text-[0.88rem] leading-[1.55] text-foreground/90',
-  'before:absolute before:left-0 before:top-[0.58em] before:size-[5px] before:rounded-full before:bg-primary before:shadow-[0_0_0_3px_rgba(79,70,229,0.12)]',
-  '[&_strong]:font-[650] [&_strong]:text-foreground',
+  'relative pl-4 font-mono text-[0.88rem] leading-[1.55] text-ink/90',
+  'before:absolute before:left-0 before:top-[0.58em] before:size-[6px] before:bg-primary',
+  '[&_strong]:font-bold [&_strong]:text-ink',
 )

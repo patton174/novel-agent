@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom'
-import { ArrowRight, BookOpen, PenLine } from 'lucide-react'
 import { ActivityHeatmap } from '@/components/dashboard/ActivityHeatmap'
 import { DashboardActivityTrendChart } from '@/components/dashboard/DashboardActivityTrendChart'
 import { ProChartKpi } from '@/components/pro/ProChartKpi'
@@ -11,6 +10,7 @@ import { useMarkRouteSeen } from '@/hooks/useMarkRouteSeen'
 import { EDITOR_CREATE_HREF, editorNovelHref } from '@/lib/editorRoutes'
 import { formatTokenCount } from '@/api/billingApi'
 import { useDashboardHome } from './useDashboardHome'
+import { ProIconPencil, ProIconLibrary, ProIconArrowRight, ProIconNovel } from '@/components/pro/icons/proIcons'
 
 export function DashboardHomeMobile() {
   useMarkRouteSeen()
@@ -47,7 +47,7 @@ export function DashboardHomeMobile() {
         <div className="flex flex-wrap gap-2">
           <Button asChild className={APP_BTN_MD}>
             <Link to={editorEntryHref}>
-              <PenLine className="mr-2 size-4" />
+              <ProIconPencil size={16} className="mr-2" />
               {primaryNovelId ? t('dashboard:home.continueWriting') : t('dashboard:home.enterEditor')}
             </Link>
           </Button>
@@ -113,7 +113,7 @@ export function DashboardHomeMobile() {
           <Button asChild variant="ghost" size="sm" className="h-7 gap-1 px-2 text-xs text-primary">
             <Link to="/dashboard/novels">
               {t('dashboard:home.viewAll')}
-              <ArrowRight className="size-3.5" />
+              <ProIconArrowRight size={14} />
             </Link>
           </Button>
         </div>
@@ -134,7 +134,7 @@ export function DashboardHomeMobile() {
         ) : recentNovels!.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-10 text-center">
             <div className="mb-3 flex size-12 items-center justify-center rounded-full bg-muted">
-              <BookOpen className="size-6 text-muted-foreground" />
+              <ProIconNovel size={24} className="text-muted-foreground" />
             </div>
             <h3 className="text-sm font-semibold text-foreground">
               {loadError ? t('dashboard:home.loadFail') : t('dashboard:home.noNovels')}
@@ -164,7 +164,7 @@ export function DashboardHomeMobile() {
                   />
                 ) : (
                   <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary ring-1 ring-border">
-                    <BookOpen className="size-4" />
+                    <ProIconNovel size={16} />
                   </div>
                 )}
                 <div className="min-w-0 flex-1">

@@ -1,29 +1,29 @@
 import { cva } from 'class-variance-authority'
 
 export const marketingCtaVariants = cva(
-  'inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-all',
+  'inline-flex items-center justify-center gap-2 rounded-none border-2 border-foreground font-mono font-bold uppercase tracking-wider shadow-soft transition-all active:translate-x-[2px] active:translate-y-[2px] active:shadow-none',
   {
     variants: {
       variant: {
-        primary: 'mkt-cta-glow bg-primary text-primary-foreground hover:bg-primary-hover',
-        secondary: 'border border-border/80 bg-surface/80 text-foreground shadow-sm backdrop-blur-sm hover:border-primary/25 hover:bg-surface hover:shadow-md',
-        tierHighlight: 'bg-primary text-primary-foreground shadow-lg shadow-primary/25 hover:bg-primary-hover hover:shadow-xl hover:shadow-primary/30',
-        tierOutline: 'border border-border bg-surface text-foreground hover:border-primary/40 hover:bg-surface-hover',
-        auth: 'mkt-cta-glow bg-primary text-primary-foreground hover:bg-primary-hover font-medium',
-        authOutline: 'border border-border text-foreground hover:bg-muted/50 font-medium',
-        inline: 'mkt-cta-glow bg-primary text-primary-foreground hover:bg-primary-hover disabled:opacity-50',
-        onDark: 'border border-white/15 text-white hover:bg-white/10',
-        footerPrimary: 'bg-surface text-primary shadow-lg shadow-black/20 hover:bg-surface-hover hover:shadow-xl',
-        footerSecondary: 'border border-white/35 bg-white/10 text-white backdrop-blur-sm hover:bg-white/20'
+        primary: 'bg-primary text-white hover:bg-neon hover:text-ink',
+        secondary: 'bg-surface text-foreground hover:bg-neon',
+        tierHighlight: 'bg-primary text-white hover:bg-neon hover:text-ink',
+        tierOutline: 'bg-surface text-foreground hover:bg-neon',
+        auth: 'bg-primary text-white hover:bg-neon hover:text-ink',
+        authOutline: 'bg-surface text-foreground hover:bg-neon',
+        inline: 'bg-primary text-white hover:bg-neon hover:text-ink disabled:opacity-50',
+        onDark: 'bg-surface text-foreground hover:bg-neon',
+        footerPrimary: 'bg-surface text-foreground hover:bg-neon',
+        footerSecondary: 'bg-primary text-white hover:bg-neon hover:text-ink'
       },
       size: {
-        default: 'px-6 py-3 text-sm transition-transform hover:-translate-y-0.5',
-        lg: 'px-8 py-3.5 text-base transition-transform hover:-translate-y-0.5',
-        tier: 'h-12 w-full text-base duration-300',
-        auth: 'h-11 w-full text-sm',
+        default: 'px-6 py-3 text-sm',
+        lg: 'px-8 py-4 text-base',
+        tier: 'h-12 w-full text-base',
+        auth: 'h-12 w-full text-sm',
         inline: 'px-5 py-3 text-sm',
         sm: 'px-4 py-1.5 text-xs',
-        footer: 'px-7 py-3.5 text-sm transition-transform hover:-translate-y-0.5',
+        footer: 'px-7 py-3.5 text-sm',
       }
     },
     defaultVariants: {

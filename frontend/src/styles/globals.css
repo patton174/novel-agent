@@ -15,23 +15,30 @@
 @source "../../node_modules/@streamdown/cjk/dist/*.js";
 
 @theme {
-  --color-background: #f8fafc;
-  --color-foreground: #0f172a;
-  --color-primary: #4f46e5;
+  --color-background: #ededed;
+  --color-foreground: #1a1a1a;
+  --color-primary: #1043ff;
   --color-primary-foreground: #ffffff;
-  --color-primary-hover: #4338ca;
+  --color-primary-hover: #0a33cc;
+  /* 新粗野主义高光色：荧光冷绿，用于选中/悬浮色块（配墨黑字） */
+  --color-neon: #99ff00;
+  --color-ink: #1a1a1a;
+  /* 像素朋克撞色：红/落日黄，用于 LIVE、高亮、警示等点睛色（静态，明暗同色） */
+  --color-punk-red: #ff4500;
+  --color-punk-yellow: #ffd166;
   --color-surface: var(--surface);
   --color-surface-hover: var(--surface-hover);
-  --color-muted: #f1f5f9;
-  --color-muted-foreground: #64748b;
-  --color-border: #e2e8f0;
+  --color-muted: #e3e3e3;
+  --color-muted-foreground: #666666;
+  --color-border: #000000;
   --color-success: #10b981;
   --color-warning: #f59e0b;
   --color-danger: #ef4444;
   --color-marketing-dark: #070a14;
-  --radius: 0.5rem;
-  --shadow-soft: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
-  --shadow-hover: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+  --radius: 0px;
+  /* 新粗野主义硬核无模糊黑边错位投影 */
+  --shadow-soft: 4px 4px 0px 0px #000000;
+  --shadow-hover: 6px 6px 0px 0px #000000;
   --text-display: clamp(2.25rem, 5vw, 3.5rem);
   --text-h1: 2.2rem;
   --text-h2: 2rem;
@@ -46,16 +53,16 @@
   --text-ui: 0.82rem;
   --text-ui-sm: 0.74rem;
   --text-ui-xs: 0.68rem;
-  /* Tabler 设计 token 映射（去 demo 化重构专用，供 pro/ 组件消费） */
-  --tabler-blue: #206bc4;
-  --tabler-azure: #4299e1;
-  --tabler-indigo: #4263eb;
-  --tabler-text-muted: #616877;
-  --tabler-border-color: #e6e8eb;
+  /* Tabler 设计 token 映射（供 pro/ 组件消费，对齐新粗野主义） */
+  --tabler-blue: #1043ff;
+  --tabler-azure: #1043ff;
+  --tabler-indigo: #1043ff;
+  --tabler-text-muted: #666666;
+  --tabler-border-color: #000000;
   --tabler-bg-surface: #ffffff;
-  --tabler-bg-surface-secondary: #f8f9fa;
-  --tabler-radius: 4px;
-  --tabler-shadow-card: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --tabler-bg-surface-secondary: #e3e3e3;
+  --tabler-radius: 0px;
+  --tabler-shadow-card: 4px 4px 0px 0px #000000;
 }
 
 @theme inline {
@@ -105,79 +112,83 @@
 }
 
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  --background: #ededed;
+  --foreground: #1a1a1a;
   --surface: #ffffff;
-  --surface-hover: #f1f5f9;
+  --surface-hover: #e3e3e3;
   --card: #ffffff;
-  --card-foreground: #0f172a;
+  --card-foreground: #1a1a1a;
   --popover: #ffffff;
-  --popover-foreground: #0f172a;
-  --primary: #4f46e5;
+  --popover-foreground: #1a1a1a;
+  --primary: #1043ff;
   --primary-foreground: #ffffff;
-  --secondary: #f1f5f9;
-  --secondary-foreground: #0f172a;
-  --muted: #f1f5f9;
-  --muted-foreground: #64748b;
-  --accent: #f1f5f9;
-  --accent-foreground: #0f172a;
+  --neon: #99ff00;
+  --ink: #1a1a1a;
+  --secondary: #e3e3e3;
+  --secondary-foreground: #1a1a1a;
+  --muted: #e3e3e3;
+  --muted-foreground: #666666;
+  --accent: #99ff00;
+  --accent-foreground: #1a1a1a;
   --destructive: oklch(0.577 0.245 27.325);
-  --border: #e2e8f0;
-  --input: #e2e8f0;
-  --ring: #94a3b8;
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.5rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --border: #000000;
+  --input: #000000;
+  --ring: #1043ff;
+  --chart-1: #1043ff;
+  --chart-2: #99ff00;
+  --chart-3: #1a1a1a;
+  --chart-4: #666666;
+  --chart-5: #c0c0c0;
+  --radius: 0px;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #1a1a1a;
+  --sidebar-primary: #1a1a1a;
+  --sidebar-primary-foreground: #99ff00;
+  --sidebar-accent: #99ff00;
+  --sidebar-accent-foreground: #1a1a1a;
+  --sidebar-border: #000000;
+  --sidebar-ring: #1043ff;
 }
 
 .dark {
-  --background: #0b1120;
-  --foreground: #e5e7eb;
-  --surface: #111827;
-  --surface-hover: #1f2937;
-  --card: #111827;
-  --card-foreground: #e5e7eb;
-  --popover: #111827;
-  --popover-foreground: #e5e7eb;
-  --primary: #6366f1;
-  --primary-foreground: #eef2ff;
-  --secondary: #1f2937;
-  --secondary-foreground: #e5e7eb;
-  --muted: #1f2937;
-  --muted-foreground: #94a3b8;
-  --accent: #1f2937;
-  --accent-foreground: #e5e7eb;
+  --background: #0e0e0e;
+  --foreground: #ededed;
+  --surface: #1a1a1a;
+  --surface-hover: #262626;
+  --card: #1a1a1a;
+  --card-foreground: #ededed;
+  --popover: #1a1a1a;
+  --popover-foreground: #ededed;
+  --primary: #3b6bff;
+  --primary-foreground: #ffffff;
+  --neon: #99ff00;
+  --ink: #ededed;
+  --secondary: #262626;
+  --secondary-foreground: #ededed;
+  --muted: #262626;
+  --muted-foreground: #9a9a9a;
+  --accent: #99ff00;
+  --accent-foreground: #0e0e0e;
   --destructive: oklch(0.704 0.191 22.216);
-  --border: #334155;
-  --input: #1f2937;
-  --ring: #818cf8;
-  --chart-1: #a5b4fc;
-  --chart-2: #818cf8;
-  --chart-3: #6366f1;
-  --chart-4: #4f46e5;
-  --chart-5: #4338ca;
-  --sidebar: #0f172a;
-  --sidebar-foreground: #e5e7eb;
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: #eef2ff;
-  --sidebar-accent: #1e293b;
-  --sidebar-accent-foreground: #e5e7eb;
-  --sidebar-border: #334155;
-  --sidebar-ring: #818cf8;
+  --border: #ffffff;
+  --input: #ffffff;
+  --ring: #3b6bff;
+  --chart-1: #3b6bff;
+  --chart-2: #99ff00;
+  --chart-3: #ededed;
+  --chart-4: #9a9a9a;
+  --chart-5: #4a4a4a;
+  --sidebar: #1a1a1a;
+  --sidebar-foreground: #ededed;
+  --sidebar-primary: #ededed;
+  --sidebar-primary-foreground: #99ff00;
+  --sidebar-accent: #99ff00;
+  --sidebar-accent-foreground: #0e0e0e;
+  --sidebar-border: #ffffff;
+  --sidebar-ring: #3b6bff;
   --color-marketing-dark: #030712;
-  --shadow-soft: 0 8px 24px -6px rgba(2, 6, 23, 0.6);
-  --shadow-hover: 0 14px 30px -8px rgba(2, 6, 23, 0.7);
+  --shadow-soft: 4px 4px 0px 0px #ffffff;
+  --shadow-hover: 6px 6px 0px 0px #ffffff;
 }
 
 @layer base {

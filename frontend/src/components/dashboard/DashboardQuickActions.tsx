@@ -1,10 +1,10 @@
-import { Shield, PenLine } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { useUserStore } from '@/stores/userStore'
 import { Button } from '@/components/ui/button'
 import { AppShellToolbar } from '@/components/layout/AppShellToolbar'
 import { APP_BTN_SM } from '@/lib/appButtonTokens'
 import { useTranslation } from 'react-i18next'
+import { ProIconAdminSystem, ProIconOverview } from '@/components/pro/icons/proIcons'
 
 export function DashboardQuickActions() {
   const { t } = useTranslation(['dashboard'])
@@ -24,7 +24,7 @@ export function DashboardQuickActions() {
           className={`hidden h-9 gap-1.5 border-border/80 bg-background/80 px-3 text-xs font-medium sm:inline-flex ${APP_BTN_SM}`}
         >
           <Link to="/admin">
-            <Shield className="size-3.5" />
+            <ProIconAdminSystem size={14} />
             {t('dashboard:quickActions.admin')}
           </Link>
         </Button>
@@ -32,7 +32,7 @@ export function DashboardQuickActions() {
       {!hideEditorCta ? (
         <Button asChild size="sm" className={`h-9 gap-1.5 px-4 text-xs font-semibold ${APP_BTN_SM}`}>
           <Link to="/editor">
-            <PenLine className="size-3.5" />
+            <ProIconOverview size={14} />
             {t('dashboard:quickActions.editor')}
           </Link>
         </Button>

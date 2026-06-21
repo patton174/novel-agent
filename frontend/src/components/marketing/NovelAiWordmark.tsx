@@ -1,6 +1,6 @@
-import { useId, useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
+import { useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
 import { cn } from '@/lib/utils'
-import { font, palette } from '../../styles/theme'
+import { font } from '../../styles/theme'
 import { BRAND_NAME } from '@/lib/brand'
 
 export type NovelAiWordmarkSize = 'sm' | 'md' | 'lg' | 'hero'
@@ -30,7 +30,6 @@ export function NovelAiWordmark({
   className,
   label = BRAND_NAME,
 }: NovelAiWordmarkProps) {
-  const uid = useId().replace(/:/g, '')
   const novelStrokeRef = useRef<SVGTextElement>(null)
   const aiStrokeRef = useRef<SVGTextElement>(null)
   const [novelLen, setNovelLen] = useState(320)
@@ -71,29 +70,7 @@ export function NovelAiWordmark({
       width={dims.width}
       height={dims.height}
     >
-      <defs>
-        <linearGradient id={`${uid}-ai-fill`} x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#818cf8" />
-          <stop offset="45%" stopColor={palette.accent} />
-          <stop offset="100%" stopColor="#3730a3" />
-        </linearGradient>
-        <linearGradient id={`${uid}-novel-fill`} x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="#2a2a2a" />
-          <stop offset="100%" stopColor={palette.ink} />
-        </linearGradient>
-      </defs>
-
-      <path
-        className="mkt-wordmark-underline"
-        d={`M ${novelX} ${baseline + 6} Q ${dims.width * 0.35} ${baseline + 14} ${aiX + dims.aiSize * 0.9} ${baseline + 5}`}
-        fill="none"
-        stroke={palette.accent}
-        strokeWidth="2.5"
-        strokeLinecap="round"
-        pathLength={120}
-        strokeDasharray={120}
-        opacity={0.55}
-      />
+      <defs />
 
       <text
         ref={novelStrokeRef}
@@ -101,9 +78,8 @@ export function NovelAiWordmark({
         x={novelX}
         y={baseline}
         fontSize={dims.novelSize}
-        fontFamily={font.display}
-        fontWeight={700}
-        fontStyle="italic"
+        fontFamily={font.body}
+        fontWeight={900}
         letterSpacing="-0.04em"
       >
         Novel
@@ -113,11 +89,10 @@ export function NovelAiWordmark({
         x={novelX}
         y={baseline}
         fontSize={dims.novelSize}
-        fontFamily={font.display}
-        fontWeight={700}
-        fontStyle="italic"
+        fontFamily={font.body}
+        fontWeight={900}
         letterSpacing="-0.04em"
-        fill={`url(#${uid}-novel-fill)`}
+        fill="currentColor"
       >
         Novel
       </text>
@@ -129,8 +104,8 @@ export function NovelAiWordmark({
         y={baseline}
         fontSize={dims.aiSize}
         fontFamily={font.body}
-        fontWeight={800}
-        letterSpacing="0.04em"
+        fontWeight={900}
+        letterSpacing="-0.02em"
       >
         Agent
       </text>
@@ -140,9 +115,9 @@ export function NovelAiWordmark({
         y={baseline}
         fontSize={dims.aiSize}
         fontFamily={font.body}
-        fontWeight={800}
-        letterSpacing="0.04em"
-        fill={`url(#${uid}-ai-fill)`}
+        fontWeight={900}
+        letterSpacing="-0.02em"
+        fill="currentColor"
       >
         Agent
       </text>

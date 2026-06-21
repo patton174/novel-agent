@@ -89,7 +89,7 @@ const LoginPage: React.FC = () => {
             {[t('auth:login.featureStream'), t('auth:login.featureMemory'), t('auth:login.featureTransparent')].map((text) => (
               <span
                 key={text}
-                className="rounded-xl border border-white/20 bg-white/10 px-2.5 py-0.5 text-[11px] font-medium text-white/90"
+                className="border-2 border-white/40 bg-white/10 px-2.5 py-1 font-mono text-[11px] font-bold uppercase tracking-wide text-white"
               >
                 {text}
               </span>
@@ -101,18 +101,18 @@ const LoginPage: React.FC = () => {
       footer={
         <>
           {t('auth:login.noAccount')}{' '}
-          <Link to="/register" className="font-medium text-primary hover:underline">
+          <Link to="/register" className="font-bold text-primary hover:underline">
             {t('common:cta.registerFree')}
           </Link>
         </>
       }
     >
       {sessionHint ? (
-        <p className="mb-3 rounded-lg border border-sky-200/80 bg-sky-50/90 px-3 py-2 text-xs text-sky-900 dark:border-sky-800/50 dark:bg-sky-950/40 dark:text-sky-100">
+        <p className="mb-4 border-2 border-foreground bg-neon px-3 py-2 font-mono text-xs font-bold text-ink">
           {sessionHint}
         </p>
       ) : null}
-      <form onSubmit={handleSubmit} className="space-y-3">
+      <form onSubmit={handleSubmit} className="space-y-4">
         <AuthField
           id="login-username"
           name="username"

@@ -3,7 +3,7 @@ import { MarketingNav } from '../components/marketing/MarketingNav'
 import { HomeFeasibilitySection } from '../components/marketing/sections/HomeFeasibilitySection'
 import { HomeScrollStory } from '../components/marketing/scroll/HomeScrollStory'
 import { HomeDanmakuSection } from '../components/marketing/sections/HomeDanmakuSection'
-import { HomeFooterSection } from '../components/marketing/sections/HomeFooterSection'
+import { HomeFooterSection, HomeCtaBand } from '../components/marketing/sections/HomeFooterSection'
 import { HomeHeroSection } from '../components/marketing/sections/HomeHeroSection'
 import { MARKETING_MAIN } from '@/lib/marketingShellClasses'
 import { useEffect } from 'react'
@@ -25,6 +25,7 @@ export default function HomePage() {
         <HomeHeroSection />
         <HomeFeasibilitySection />
         <HomeScrollStory />
+        <HomeCtaBand />
         <HomeDanmakuSection />
       </main>
       <HomeFooterSection />

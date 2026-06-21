@@ -1,6 +1,7 @@
 import { motion, useReducedMotion } from 'framer-motion'
 import { useAppMobile } from '@/hooks/useMediaQuery'
 import { cn } from '@/lib/utils'
+import { PixelText } from '../pixel/PixelText'
 import { marketingInViewMotion } from '../motion/marketingInViewMotion'
 import {
   STORY_ACT_INDEX,
@@ -55,7 +56,9 @@ export function MarketingStoryCopy({
   const inner = (
     <div className={cn(STORY_COPY_BLOCK, 'story-copy-block')}>
       <div className={STORY_ACT_ROW}>
-        <span className={STORY_ACT_INDEX}>{act}</span>
+        <span className={STORY_ACT_INDEX}>
+          <PixelText text={act} size="sm" fontWeight={800} presentational />
+        </span>
         <span className={STORY_ACT_LABEL}>{label}</span>
       </div>
       <h3 className={STORY_TITLE}>

@@ -8,13 +8,17 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { appToast } from '@/stores/appToastStore'
 import type { UserProfile } from '@/stores/userStore'
 import { useTranslation } from 'react-i18next'
+import { UserPixelAvatar } from '@/components/avatars/PixelAvatar'
+import { PixelAvatarFrame } from '@/components/avatars/PixelAvatarFrame'
+import { cn } from '@/lib/utils'
 
 interface AccountSettingsPanelProps {
   profile: UserProfile | null
   onVerified?: () => void
+  onOpenAvatarEditor?: () => void
 }
 
-export function AccountSettingsPanel({ profile, onVerified }: AccountSettingsPanelProps) {
+export function AccountSettingsPanel({ profile, onVerified, onOpenAvatarEditor }: AccountSettingsPanelProps) {
   const { t } = useTranslation(['dashboard'])
   const [sending, setSending] = useState(false)
   const [cooldown, setCooldown] = useState(0)
@@ -66,6 +70,25 @@ export function AccountSettingsPanel({ profile, onVerified }: AccountSettingsPan
 
   return (
     <div className="space-y-4">
+      {/* Avatar display above username form */}
+      {onOpenAvatarEditor && (
+        <button
+          type="button"
+          className={cn(
+            'flex w-full items-center gap-3 rounded-xl border border-border/60 bg-muted/20 px-3 py-2.5 text-left',
+            'transition-colors hover:border-border hover:bg-muted/35',
+          )}
+          onClick={onOpenAvatarEditor}
+        >
+          <PixelAvatarFrame size={48} bordered={false}>
+            <UserPixelAvatar size={44} animated />
+          </PixelAvatarFrame>
+          <div className="min-w-0 flex-1">
+            <p className="text-[12px] font-semibold text-foreground">{t('editor:avatar.sectionTitle', '头像')}</p>
+            <p className="mt-0.5 text-[10px] text-muted-foreground">{t('editor:avatar.entryHint', '点击更换头像')}</p>
+          </div>
+        </button>
+      )}
       {unverified ? (
         <div className="rounded-xl border border-sky-300/80 bg-sky-50 px-4 py-3.5 dark:border-sky-700/60 dark:bg-sky-950/40">
           <div className="flex gap-3">

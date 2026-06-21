@@ -1,4 +1,4 @@
-import { useId, useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
+import { useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
 import { useReducedMotion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { font } from '@/styles/fonts'
@@ -6,10 +6,10 @@ import { font } from '@/styles/fonts'
 export type MarketingStrokeTitleSize = 'hero' | 'subpage' | 'section' | 'cta'
 
 const SIZE_CLASS: Record<MarketingStrokeTitleSize, string> = {
-  hero: 'text-[clamp(2rem,5.5vw,4.25rem)] leading-[1.1]',
-  subpage: 'text-[clamp(1.75rem,4vw,3rem)] leading-tight',
-  section: 'text-[clamp(1.5rem,3.2vw,2.25rem)] leading-tight',
-  cta: 'text-[clamp(1.35rem,2.8vw,2.25rem)] leading-tight',
+  hero: 'text-[clamp(2rem,5.5vw,4.25rem)] leading-[0.95] uppercase',
+  subpage: 'text-[clamp(1.75rem,4vw,3rem)] leading-[0.95] uppercase',
+  section: 'text-[clamp(1.5rem,3.2vw,2.25rem)] leading-[0.95] uppercase',
+  cta: 'text-[clamp(1.35rem,2.8vw,2.25rem)] leading-[0.95] uppercase',
 }
 
 const FONT_SIZE: Record<MarketingStrokeTitleSize, number> = {
@@ -35,7 +35,6 @@ export function MarketingStrokeTitle({
   /** 独占一行（用于多行主标题） */
   block?: boolean
 }) {
-  const uid = useId().replace(/:/g, '')
   const strokeRef = useRef<SVGTextElement>(null)
   const [strokeLen, setStrokeLen] = useState(480)
   const reduced = useReducedMotion()
@@ -58,17 +57,17 @@ export function MarketingStrokeTitle({
 
   const strokeColor =
     variant === 'onDark'
-      ? 'rgba(199, 210, 254, 0.95)'
+      ? 'rgba(255, 255, 255, 0.95)'
       : variant === 'accent'
-        ? '#6366f1'
+        ? '#1043ff'
         : 'currentColor'
 
-  const fillId =
-    variant === 'accent'
-      ? `${uid}-accent-fill`
-      : variant === 'onDark'
-        ? `${uid}-ondark-fill`
-        : `${uid}-default-fill`
+  const fillColor =
+    variant === 'onDark'
+      ? '#ffffff'
+      : variant === 'accent'
+        ? '#1043ff'
+        : 'currentColor'
 
   const svgStyle = {
     '--mkt-stroke-len': strokeLen,
@@ -80,7 +79,9 @@ export function MarketingStrokeTitle({
         'mkt-stroke-title',
         SIZE_CLASS[size],
         block ? 'block w-full' : 'inline-block max-w-full',
-        variant === 'default' && 'text-foreground',
+        'font-black tracking-tighter',
+        variant === 'default' && 'text-ink',
+        variant === 'accent' && 'text-primary',
         variant === 'onDark' && 'text-white',
         className,
       )}
@@ -97,27 +98,6 @@ export function MarketingStrokeTitle({
         preserveAspectRatio="xMidYMid meet"
         aria-hidden
       >
-        <defs>
-          {variant === 'accent' ? (
-            <linearGradient id={fillId} x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#4338ca" />
-              <stop offset="35%" stopColor="#6366f1" />
-              <stop offset="65%" stopColor="#a78bfa" />
-              <stop offset="100%" stopColor="#4f46e5" />
-            </linearGradient>
-          ) : variant === 'onDark' ? (
-            <linearGradient id={fillId} x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#f8fafc" />
-              <stop offset="100%" stopColor="#e2e8f0" />
-            </linearGradient>
-          ) : (
-            <linearGradient id={fillId} x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="var(--foreground)" />
-              <stop offset="100%" stopColor="var(--foreground)" />
-            </linearGradient>
-          )}
-        </defs>
-
         <text
           ref={strokeRef}
           className="mkt-stroke-title-stroke"
@@ -125,12 +105,12 @@ export function MarketingStrokeTitle({
           y={baseline}
           textAnchor="middle"
           fontSize={fontSize}
-          fontFamily={variant === 'accent' ? font.display : font.body}
-          fontWeight={700}
-          letterSpacing="-0.02em"
+          fontFamily={font.body}
+          fontWeight={900}
+          letterSpacing="-0.04em"
           fill="none"
           stroke={strokeColor}
-          strokeWidth={variant === 'accent' ? 2.2 : 1.8}
+          strokeWidth={1.6}
           strokeLinejoin="round"
           strokeLinecap="round"
         >
@@ -142,10 +122,10 @@ export function MarketingStrokeTitle({
           y={baseline}
           textAnchor="middle"
           fontSize={fontSize}
-          fontFamily={variant === 'accent' ? font.display : font.body}
-          fontWeight={700}
-          letterSpacing="-0.02em"
-          fill={`url(#${fillId})`}
+          fontFamily={font.body}
+          fontWeight={900}
+          letterSpacing="-0.04em"
+          fill={fillColor}
         >
           {text}
         </text>

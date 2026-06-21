@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import { Settings } from 'lucide-react'
 import { AccountSettingsSections } from '@/components/dashboard/AccountSettingsSections'
 import { SettingsFeedbackCard } from '@/components/dashboard/SettingsFeedbackCard'
+import { PixelAvatarModal } from '@/components/avatars/PixelAvatarModal'
 import {
   AppPageIntro,
   AppPageStack,
@@ -18,6 +20,7 @@ import { useSettings } from './useSettings'
 export function SettingsDesktop() {
   const { t } = useTranslation(['dashboard'])
   const { profile, loading, onVerified } = useSettings()
+  const [avatarModalOpen, setAvatarModalOpen] = useState(false)
 
   return (
     <AppPageStack>
@@ -46,7 +49,12 @@ export function SettingsDesktop() {
               <Skeleton className="h-10 w-full rounded-lg" />
             </div>
           ) : (
-            <AccountSettingsSections profile={profile} onVerified={onVerified} variant="page" />
+            <AccountSettingsSections
+              profile={profile}
+              onVerified={onVerified}
+              onOpenAvatarEditor={() => setAvatarModalOpen(true)}
+              variant="page"
+            />
           )}
         </AppShellCardBody>
       </AppShellCard>
@@ -78,6 +86,8 @@ export function SettingsDesktop() {
           </AppShellCardBody>
         </AppShellCard>
       </div>
+
+      <PixelAvatarModal open={avatarModalOpen} onClose={() => setAvatarModalOpen(false)} />
     </AppPageStack>
   )
 }

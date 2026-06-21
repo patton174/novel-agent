@@ -1,18 +1,8 @@
 /* 营销页视觉特效 — 配合 prefers-reduced-motion 降级 */
 
-/* 营销 shell 背景渐变（原 MarketingBackgroundPattern） */
+/* 营销 shell 背景：新粗野主义——纯画布冷灰，无渐变（由 --background 统一） */
 .mkt-shell-bg-pattern {
-  background:
-    radial-gradient(ellipse 120% 70% at 50% -15%, rgba(79, 70, 229, 0.1), transparent 58%),
-    radial-gradient(ellipse 60% 50% at 100% 20%, rgba(129, 140, 248, 0.06), transparent 50%),
-    linear-gradient(180deg, #f8fafc 0%, #f7f7f4 45%, #f8fafc 100%);
-}
-
-.dark .mkt-shell-bg-pattern {
-  background:
-    radial-gradient(ellipse 120% 70% at 50% -15%, rgba(99, 102, 241, 0.16), transparent 58%),
-    radial-gradient(ellipse 60% 50% at 100% 20%, rgba(129, 140, 248, 0.08), transparent 50%),
-    linear-gradient(180deg, #0b1120 0%, #0f172a 45%, #0b1120 100%);
+  background: var(--background);
 }
 
 @keyframes mkt-gradient-shift {
@@ -89,29 +79,16 @@
 }
 
 .mkt-gradient-text {
-  background: linear-gradient(
-    105deg,
-    #4338ca 0%,
-    #6366f1 22%,
-    #a78bfa 45%,
-    #818cf8 68%,
-    #4f46e5 100%
-  );
-  background-size: 200% auto;
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  animation: mkt-text-shine 7s linear infinite;
+  /* 新粗野主义：不用渐变文字，回退为墨黑 */
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  color: var(--color-ink);
 }
 
+/* 新粗野主义：CTA 无辉光无扫光，仅由 Tailwind 的 border-2 + shadow-soft 表达 */
 .mkt-cta-glow {
   position: relative;
-  overflow: hidden;
-  isolation: isolate;
-  box-shadow:
-    0 0 0 1px rgba(79, 70, 229, 0.25),
-    0 6px 20px rgba(79, 70, 229, 0.35),
-    0 20px 50px -12px rgba(79, 70, 229, 0.28);
 }
 
 .mkt-cta-glow > * {
@@ -120,102 +97,65 @@
 }
 
 .mkt-cta-glow::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background: linear-gradient(
-    105deg,
-    transparent 35%,
-    rgba(255, 255, 255, 0.28) 50%,
-    transparent 65%
-  );
-  animation: mkt-shimmer 4s ease-in-out infinite;
-}
-
-/* 桌面端：hover 扫光（不依赖 prefers-reduced-motion 下的无限动画） */
-@media (hover: hover) and (pointer: fine) {
-  .mkt-cta-glow::after {
-    animation: none;
-    transform: translateX(-120%);
-    transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
-  }
-
-  .mkt-cta-glow:hover::after {
-    transform: translateX(120%);
-  }
+  content: none;
 }
 
 .mkt-glass-pill {
-  background: rgba(255, 255, 255, 0.78);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.9);
-  box-shadow: 0 2px 12px rgba(15, 23, 42, 0.06);
+  background: var(--color-surface);
+  border: 2px solid var(--color-ink);
+  box-shadow: 4px 4px 0px 0px var(--color-ink);
 }
 
 .dark .mkt-glass-pill {
-  background: rgba(17, 24, 39, 0.72);
-  border-color: rgba(148, 163, 184, 0.18);
-  box-shadow: 0 2px 12px rgba(2, 6, 23, 0.35);
+  background: var(--color-surface);
+  border-color: var(--color-ink);
+  box-shadow: 4px 4px 0px 0px var(--color-ink);
 }
 
 .mkt-grid-bg {
   background-image:
-    linear-gradient(rgba(79, 70, 229, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(79, 70, 229, 0.04) 1px, transparent 1px);
+    linear-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
   background-size: 56px 56px;
   mask-image: radial-gradient(ellipse 85% 75% at 50% 35%, black 15%, transparent 72%);
 }
 
+.dark .mkt-grid-bg {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+}
+
+/* 新粗野主义：禁用模糊光球（反模糊原则）——保留类名占位以兼容引用 */
 .mkt-orb {
-  position: absolute;
-  border-radius: 9999px;
-  filter: blur(72px);
-  pointer-events: none;
-  will-change: transform;
+  display: none;
 }
 
-.mkt-orb--slow {
-  animation: mkt-float-slow 20s ease-in-out infinite;
-}
-
+.mkt-orb--slow,
 .mkt-orb--slower {
-  animation: mkt-float-slower 26s ease-in-out infinite;
+  animation: none;
 }
 
 .mkt-card-lift {
   transition:
-    transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
-    box-shadow 0.45s cubic-bezier(0.22, 1, 0.36, 1),
-    border-color 0.35s;
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 @media (hover: hover) and (pointer: fine) {
   .mkt-card-lift:hover {
-    transform: translateY(-8px);
-    box-shadow:
-      0 28px 56px -16px rgba(79, 70, 229, 0.22),
-      0 12px 24px -8px rgba(15, 23, 42, 0.08);
-    border-color: rgba(79, 70, 229, 0.28);
+    transform: translate(-3px, -3px);
+    box-shadow: 7px 7px 0px 0px var(--color-ink);
+    border-color: var(--color-ink);
   }
 }
 
 .mkt-hero-demo-glow {
-  box-shadow:
-    0 0 0 1px rgba(79, 70, 229, 0.12),
-    0 32px 80px -28px rgba(79, 70, 229, 0.55),
-    0 16px 40px -20px rgba(15, 23, 42, 0.12);
+  box-shadow: 4px 4px 0px 0px var(--color-ink);
 }
 
 .mkt-footer-cta-band {
-  background: linear-gradient(
-    180deg,
-    #4338ca 0%,
-    #4f46e5 38%,
-    #6366f1 62%,
-    #4f46e5 100%
-  );
+  background: var(--color-primary);
 }
 
 .mkt-starfield {
@@ -229,25 +169,15 @@
 }
 
 .mkt-auth-panel {
-  background: linear-gradient(
-    145deg,
-    #1e1b4b 0%,
-    #312e81 35%,
-    #4338ca 65%,
-    #4f46e5 100%
-  );
-  background-size: 200% 200%;
-  animation: mkt-footer-gradient 18s ease infinite;
+  background: var(--color-primary);
 }
 
 .mkt-form-card {
-  transition: box-shadow 0.35s ease;
+  transition: box-shadow 0.2s ease;
 }
 
 .mkt-form-card:focus-within {
-  box-shadow:
-    0 0 0 1px rgba(79, 70, 229, 0.15),
-    0 24px 64px -20px rgba(79, 70, 229, 0.28);
+  box-shadow: 6px 6px 0px 0px var(--color-ink);
 }
 
 /* 营销 demo 动效（编辑器 mock / Agent trace） */
@@ -463,18 +393,20 @@
 }
 
 .mkt-wordmark-novel-stroke {
-  stroke: #0f172a;
-  stroke-width: 1.35;
+  stroke: currentColor;
+  stroke-width: 1.1;
   stroke-dasharray: var(--wordmark-novel-len);
   stroke-dashoffset: var(--wordmark-novel-len);
   transition: stroke-dashoffset 0.05s;
+  opacity: 0.55;
 }
 
 .mkt-wordmark-ai-stroke {
-  stroke: #312e81;
-  stroke-width: 1.6;
+  stroke: currentColor;
+  stroke-width: 1.2;
   stroke-dasharray: var(--wordmark-ai-len);
   stroke-dashoffset: var(--wordmark-ai-len);
+  opacity: 0.55;
 }
 
 .mkt-wordmark-svg--animate .mkt-wordmark-novel-stroke {
@@ -558,9 +490,7 @@
 }
 
 .mkt-wordmark-svg--animate .mkt-wordmark-ai-stroke + .mkt-wordmark-fill {
-  animation:
-    mkt-wordmark-fill-reveal 0.65s cubic-bezier(0.22, 1, 0.36, 1) 1.15s forwards,
-    mkt-wordmark-ai-glow 3s ease-in-out 2s infinite;
+  animation: mkt-wordmark-fill-reveal 0.65s cubic-bezier(0.22, 1, 0.36, 1) 1.15s forwards;
 }
 
 .mkt-wordmark-underline {
@@ -608,5 +538,84 @@
   .mkt-wordmark-svg--animate .mkt-wordmark-fill {
     animation: none !important;
     opacity: 1;
+  }
+}
+
+/* ============================================================
+   像素朋克（Pixel Punk）层 —— 叠加在新粗野主义基底之上
+   ============================================================ */
+
+/* 像素光标闪烁：阶梯式（step）切换，非平滑渐变，呼应 8-bit 帧 */
+@keyframes pixel-cursor-blink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.pixel-cursor-blink {
+  animation: pixel-cursor-blink 1s steps(1, end) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pixel-cursor-blink {
+    animation: none;
+    opacity: 1;
+  }
+}
+
+/* 像素网格底纹：纯色块拼接的方格，无渐变。用作 section 背景肌理。
+   用 --foreground（明暗翻转）做线色，暗色下也能看到网格。 */
+.pixel-grid-bg {
+  background-image:
+    linear-gradient(to right, var(--foreground) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--foreground) 1px, transparent 1px);
+  background-size: 16px 16px;
+  background-position: -1px -1px;
+}
+
+/* 弱化版像素网格（更细、更淡，适合大面积铺底不抢戏） */
+.pixel-grid-bg-faint {
+  background-image:
+    linear-gradient(to right, color-mix(in srgb, var(--foreground) 14%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--foreground) 14%, transparent) 1px, transparent 1px);
+  background-size: 12px 12px;
+}
+
+/* 像素化图像：禁止浏览器双线性插值，保留颗粒感 */
+.pixelated-img {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+/* 像素阶梯入场：用 steps() 做逐帧显现，替代平滑淡入 */
+@keyframes pixel-step-in {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.pixel-step-in {
+  animation: pixel-step-in 0.4s steps(3, end) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pixel-step-in {
+    animation: none;
+    opacity: 1;
+    transform: none;
   }
 }
