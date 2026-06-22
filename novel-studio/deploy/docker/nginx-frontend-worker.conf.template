@@ -44,12 +44,6 @@ server {
         gzip off;
     }
 
-    location = /crypto-runtime.json {
-        default_type application/json;
-        add_header Cache-Control "no-store";
-        try_files /crypto-runtime.json =404;
-    }
-
     location = /index.html {
         add_header Cache-Control "no-store, no-cache, must-revalidate";
         try_files /index.html =404;

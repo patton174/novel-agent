@@ -59,3 +59,39 @@ Sign / AES / 路由脱敏仍生效，配置在 **novel-studio** 与前端 env，
 
 - 线上：https://www.novel-agent.cn
 - `deploy-novel-studio` + `deploy-python-ai` + `deploy-frontend` 绿即 Worker 栈成功
+
+## 本地开发（CN）
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\_restart-dev-stack.ps1
+```
+
+- 中间件：`118.89.123.201`（`scripts\local-cn.env`，勿提交）
+- 详见 `.cursor/rules/dev-restart.mdc`
+
+## 客户端 crypto bootstrap（2026-06 起）
+
+- Worker `register-frontend-crypto.sh` → `POST /internal/crypto/register-frontend-server` → **Redis**
+- 浏览器只读 **`GET /api/auth/crypto-config`**（不经静态 `crypto-runtime.json`）
+- `emailLinkSecret` **不得**出现在 bootstrap JSON 响应中
+
+## 前端生产构建
+
+- `VITE_CODE_OBFUSCATION=true`（默认）：`src/security/**` 强混淆，其余业务 chunk 轻混淆，产物 `assets/[hash].js` 无页面名
+- 生产安全开关：`VITE_SECURITY_AES`、`VITE_ROUTE_OBFUSCATION`、`VITE_FIELD_ENCRYPTION=true`
+
+## 排查速查
+
+| 现象 | 检查 |
+|------|------|
+| CI 红 | `gh run list --workflow=deploy-<svc>.yml` → `gh run view <id> --log-failed` |
+| 登录 401「未登录」且走 `/g/` | MW nginx 是否将 `/g/` 与 `/api/` 同走 Worker frontend（勿 WireGuard 旁路 novel-studio） |
+| 登录 400 REPLAY_WINDOW | 签名时间窗；`scripts/test_login_crypto.py --mode compare` |
+| `crypto-config` 404 | Worker 跑 `register-frontend-crypto.sh` 或等 deploy-frontend 注册步骤 |
+| Agent 无响应 | 勿本地 Consumer 抢生产 MQ；查 Worker `python-ai` / `novel-studio` 日志 |
+| MW nginx 单独失败 | `deploy-mw-nginx.yml`（与 app deploy 分离） |
+
+```powershell
+& "C:\Program Files\GitHub CLI\gh.exe" run list --workflow=deploy-frontend.yml --limit 3
+python scripts/test_login_crypto.py --base https://novel-agent.cn --mode compare
+```

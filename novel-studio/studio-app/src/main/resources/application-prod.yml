@@ -1,4 +1,4 @@
-# 生产：客户端安全（与前端 VITE_* / crypto-runtime.json 对齐）
+# 生产：客户端安全（与前端 VITE_* / GET /api/auth/crypto-config 对齐）
 spring:
   mvc:
     async:

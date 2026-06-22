@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Worker 上执行：重新注册 crypto 并同步 frontend crypto-runtime.json
+# Worker 上执行：重新注册 crypto bootstrap（Redis）并校验 /api/auth/crypto-config
 set -euo pipefail
 
 KEY=""
@@ -22,31 +22,23 @@ if [[ -z "$KEY" ]]; then
 fi
 
 echo "[fix-crypto] registering bootstrap..."
-HTTP=$(curl -sS -o /tmp/crypto-runtime.json -w "%{http_code}" -X POST \
+HTTP=$(curl -sS -o /tmp/crypto-register-out.json -w "%{http_code}" -X POST \
   "http://127.0.0.1:8080/internal/crypto/register-frontend-server" \
   -H "Content-Type: application/json" \
   -H "X-Internal-Service-Key: ${KEY}" \
   -d '{"host":"worker","ttlSec":172800}')
 if [[ "$HTTP" != "200" ]]; then
   echo "ERROR: register HTTP $HTTP"
-  cat /tmp/crypto-runtime.json || true
+  cat /tmp/crypto-register-out.json || true
   exit 1
 fi
-chmod 644 /tmp/crypto-runtime.json
+rm -f /tmp/crypto-register-out.json
 
 CID=$(docker ps -qf 'name=frontend' | head -1)
-if [[ -z "$CID" ]]; then
-  echo "ERROR: frontend container not found"
-  exit 1
+if [[ -n "$CID" ]]; then
+  docker exec "$CID" rm -f /usr/share/nginx/html/crypto-runtime.json /usr/share/nginx/html/crypto-manifest.json 2>/dev/null || true
 fi
 
-docker cp /tmp/crypto-runtime.json "${CID}:/usr/share/nginx/html/crypto-runtime.json"
-docker exec "$CID" chmod 644 /usr/share/nginx/html/crypto-runtime.json
-docker exec "$CID" rm -f /usr/share/nginx/html/crypto-manifest.json 2>/dev/null || true
-
-echo "[fix-crypto] frontend runtime:"
-docker exec "$CID" cat /usr/share/nginx/html/crypto-runtime.json
-echo
 echo "[fix-crypto] backend crypto-config:"
 curl -sS http://127.0.0.1:8080/api/auth/crypto-config
 echo

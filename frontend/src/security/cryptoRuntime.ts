@@ -101,31 +101,28 @@ async function fetchRuntime(force: boolean): Promise<CryptoRuntimeConfig | null>
     }
   }
 
-  // 主路径：Worker nginx 静态文件（不经 Gateway 验签）；失败再兜底 Auth API
+  // 浏览器从 novel-studio 公开接口拉取 bootstrap（Worker 注册后写入 Redis）
   const cacheBust = force ? `?v=${Date.now()}` : ''
-  const sources = [`/crypto-runtime.json${cacheBust}`, '/api/auth/crypto-config']
-  for (const url of sources) {
-    try {
-      const response = await fetch(url, {
-        credentials: 'include',
-        cache: force ? 'no-store' : 'default',
-      })
-      if (!response.ok) {
-        continue
-      }
+  const url = `/api/auth/crypto-config${cacheBust}`
+  try {
+    const response = await fetch(url, {
+      credentials: 'include',
+      cache: force ? 'no-store' : 'default',
+    })
+    if (response.ok) {
       const data = (await response.json()) as CryptoRuntimeConfig
       if (data?.keyId && data?.aesKeyB64) {
         persistRuntime(data)
         return runtime
       }
-    } catch {
-      // try next source
     }
+  } catch {
+    /* network / parse */
   }
   return runtime
 }
 
-/** Worker 每日注册后写入的 bootstrap 密钥；浏览器启动/失效时热更新 */
+/** Worker 注册后由 novel-studio 写入 Redis；浏览器经 /api/auth/crypto-config 热更新 */
 export async function ensureCryptoRuntime(force = false): Promise<CryptoRuntimeConfig | null> {
   if (!force) {
     if (runtime && !isExpired(runtime)) {

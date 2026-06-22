@@ -1,4 +1,9 @@
 import type { ObfuscatorOptions } from 'javascript-obfuscator';
-import type { Plugin } from 'vite';
-/** 在 Rollup renderChunk 阶段对产物做 javascript-obfuscator 混淆 */
-export declare function viteObfuscatorPlugin(options: ObfuscatorOptions): Plugin;
+import type { Plugin, RenderedChunk } from 'vite';
+export type ObfuscatorTier = 'heavy' | 'light' | 'skip';
+export declare function resolveObfuscatorTier(chunk: RenderedChunk, code: string): ObfuscatorTier;
+export interface TieredObfuscatorOptions {
+    heavy: ObfuscatorOptions;
+    light: ObfuscatorOptions;
+}
+export declare function viteObfuscatorPlugin(options: TieredObfuscatorOptions): Plugin;

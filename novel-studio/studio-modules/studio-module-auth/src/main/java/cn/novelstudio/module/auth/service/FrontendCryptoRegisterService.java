@@ -49,7 +49,7 @@ public class FrontendCryptoRegisterService {
             Duration.ofSeconds(ttl)
         );
 
-        // 邮箱链接 HMAC 仅存 Redis（EMAIL_LINK_SECRET_KEY），不得写入 bootstrap / crypto-runtime.json
+        // 邮箱链接 HMAC 仅存 Redis（EMAIL_LINK_SECRET_KEY），不得写入 bootstrap JSON
         emailLinkSecretService.ensureSecret();
 
         CryptoRuntimeView runtime = new CryptoRuntimeView(

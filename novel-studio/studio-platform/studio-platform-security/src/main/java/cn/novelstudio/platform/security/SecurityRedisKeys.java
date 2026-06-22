@@ -7,7 +7,7 @@ public final class SecurityRedisKeys {
     public static final String WS_TICKET_PREFIX = "auth:ws-ticket:";
     public static final String DEVICE_PREFIX = "auth:device:";
     public static final String CRYPTO_MANIFEST_KEY = "crypto:manifest:current";
-    /** 当前 bootstrap 元数据（与 Worker crypto-runtime.json 对齐） */
+    /** 当前 bootstrap 元数据（浏览器经 /api/auth/crypto-config 读取） */
     public static final String CRYPTO_BOOTSTRAP_KEY = "crypto:bootstrap:current";
     /** 邮箱验证链接 HMAC 密钥（部署时 internal register 写入，持久化） */
     public static final String EMAIL_LINK_SECRET_KEY = "auth:email:link-secret:current";

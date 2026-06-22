@@ -60,7 +60,7 @@ ln -sfn /opt/novel-agent/legacy/novel-agent/agent-document/docs/deploy/docker/le
 
 2. **Deploy novel-studio** → 上传单体 JAR  
 3. **Deploy python-ai** → `CONTENT_BASE_URL=http://novel-studio:8080`（经单体服务间鉴权，勿再连遗留 agent-content）  
-4. **Deploy frontend** → 关闭 AES/路由混淆构建
+4. **Deploy frontend** → 生产开启 AES/路由混淆/代码混淆；末尾 `register-frontend-crypto.sh` 注册 bootstrap
 
 或 push 到 `main` 后各 workflow 按 path 自动触发。
 
@@ -96,14 +96,34 @@ bash novel-studio/deploy/ci/deploy-frontend.sh
 
 ## 前端开发
 
-`frontend/.env.local`：
+`frontend/.env.local`（本地 CN / 单体）：
 
 ```env
 VITE_MONOLITH=true
 VITE_LOCAL_MONOLITH=http://127.0.0.1:8080
+VITE_SECURITY_BYPASS=true
+VITE_SECURITY_AES=false
+VITE_ROUTE_OBFUSCATION=false
 ```
 
-本地只跑 `novel-studio` + `npm run dev`，所有 `/api` 走 8080。
+本地 CN 全栈：`powershell -ExecutionPolicy Bypass -File scripts\_restart-dev-stack.ps1`（见 `.cursor/rules/dev-restart.mdc`）。
+
+**生产构建**（CI `build-frontend.sh`）：`VITE_SECURITY_AES=true`、`VITE_ROUTE_OBFUSCATION=true`、`VITE_CODE_OBFUSCATION=true`。  
+Crypto bootstrap：浏览器 **`GET /api/auth/crypto-config`**（Redis，无静态 `crypto-runtime.json`）。  
+产物 JS/CSS 均为 `assets/[hash].*`，`src/security/**` 强混淆。
+
+## 排查
+
+| 问题 | 处理 |
+|------|------|
+| `deploy-*` CI 失败 | `gh run view <id> --log-failed`；MW nginx 见 `deploy-mw-nginx.yml` |
+| 登录 `/g/` 401 | MW `entry-nginx` 须 proxy 到 Worker frontend:3000，与 `/api/` 一致 |
+| crypto 失效 | Worker：`bash novel-studio/deploy/ci/register-frontend-crypto.sh` |
+| 本地端口占用 | `netstat -ano` + `taskkill`；或 `_restart-dev-stack.ps1` 先停端口 |
+
+```bash
+python scripts/test_login_crypto.py --base https://novel-agent.cn --mode compare
+```
 
 ## python-ai
 

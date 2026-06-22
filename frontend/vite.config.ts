@@ -6,7 +6,9 @@ import tailwindcss from '@tailwindcss/vite'
 import path from 'path'
 import {
   isCodeObfuscationEnabled,
-  javascriptObfuscatorOptions,
+  javascriptObfuscatorHeavyOptions,
+  javascriptObfuscatorLightOptions,
+  SECURITY_CHUNK_NAME,
   terserMinifyOptions,
 } from './config/obfuscator'
 import { viteObfuscatorPlugin } from './config/viteObfuscatorPlugin'
@@ -115,7 +117,12 @@ export default defineConfig(({ mode }) => {
     }
   }
   if (codeObfuscation) {
-    plugins.push(viteObfuscatorPlugin(javascriptObfuscatorOptions()))
+    plugins.push(
+      viteObfuscatorPlugin({
+        heavy: javascriptObfuscatorHeavyOptions(),
+        light: javascriptObfuscatorLightOptions(),
+      }),
+    )
   }
 
   return {
@@ -127,14 +134,16 @@ export default defineConfig(({ mode }) => {
       chunkSizeWarningLimit: codeObfuscation ? 1200 : 500,
       rollupOptions: {
         output: {
-          chunkFileNames(chunkInfo) {
-            if (chunkInfo.facadeModuleId?.includes('RouteFallbackShell')) {
-              return 'assets/route-shells-[hash].js'
-            }
-            return 'assets/[name]-[hash].js'
-          },
+          // 产物文件名仅 content-hash，不暴露模块/页面名
+          entryFileNames: 'assets/[hash].js',
+          chunkFileNames: 'assets/[hash].js',
+          assetFileNames: 'assets/[hash][extname]',
           manualChunks(id) {
-            if (!id.includes('node_modules')) return
+            const norm = id.replace(/\\/g, '/')
+            if (norm.includes('/src/security/')) {
+              return SECURITY_CHUNK_NAME
+            }
+            if (!norm.includes('node_modules')) return
             if (id.includes('recharts') || id.includes('d3-')) return 'recharts'
             if (id.includes('framer-motion')) return 'motion'
             if (id.includes('/gsap')) return 'gsap'
@@ -163,7 +172,7 @@ export default defineConfig(({ mode }) => {
       globals: false,
       environment: 'jsdom',
       setupFiles: ['./src/test/setup.ts'],
-      include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
+      include: ['src/**/*.test.ts', 'src/**/*.test.tsx', 'config/**/*.test.ts'],
     },
     resolve: {
       alias: {

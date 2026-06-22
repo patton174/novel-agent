@@ -148,7 +148,7 @@ Canonical：`METHOD|/api/path?businessQuery|ts|nonce|sha256(body)`
 `deploy-frontend.yml` 部署末尾会调用 `register-frontend-crypto.sh`：
 
 - 向 Auth 注册 bootstrap 密钥与 `apiPathPrefix`（如 `g/55fa17a3`）
-- 写入 Worker `crypto-runtime.json`（浏览器同源读取）
+- 密钥写入 Redis；浏览器 **`GET /api/auth/crypto-config`**（无静态 `crypto-runtime.json`）
 - 生成 manifest 发布至 Redis
 
 Worker 每日 cron（可选）：`install-crypto-register-cron.sh`

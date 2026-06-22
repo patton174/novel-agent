@@ -52,6 +52,8 @@ C:\Users\JZJ\.cursor\projects\d-Users-JZJ-Desktop-agent\claude-code-ref\src\
 
 若仅需改前端 UI，可单独 `cd frontend && npm run dev`，**不要**启动 Consumer 或连生产 RabbitMQ。
 
+**CN 全栈本地开发**：`powershell -ExecutionPolicy Bypass -File scripts\_restart-dev-stack.ps1`（见 `.cursor/rules/dev-restart.mdc`）。
+
 ## 何时必须重启（修改代码后）
 
 | 改动范围 | 是否重启 | 说明 |

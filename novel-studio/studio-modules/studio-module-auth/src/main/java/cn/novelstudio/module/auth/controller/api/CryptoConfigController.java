@@ -16,7 +16,7 @@ public class CryptoConfigController extends BaseController {
 
     private final CryptoConfigBiz biz;
 
-    /** 浏览器热更新兜底：与 Worker 上 crypto-runtime.json 内容一致 */
+    /** 浏览器 bootstrap：Worker 注册后由 novel-studio 从 Redis 下发（无静态文件） */
     @GetMapping("/crypto-config")
     public ResponseEntity<FrontendCryptoRegisterService.CryptoRuntimeView> config() {
         return biz.currentRuntime()

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Worker 向 novel-studio 注册 bootstrap 密钥 → crypto-runtime.json（路由前缀 + AES key）
+# Worker 向 novel-studio 注册 bootstrap 密钥（路由前缀 + AES key）→ Redis；浏览器经 /api/auth/crypto-config 读取
 #
 # 每日 cron（Worker 上）：
 #   0 3 * * * cd /opt/novel-agent && bash novel-studio/deploy/ci/register-frontend-crypto.sh >> /var/log/crypto-register.log 2>&1
@@ -27,7 +27,7 @@ remote_env_get() {
 
 security_enabled="$(remote_env_get "$ENV_FILE" CLIENT_SECURITY_ENABLED)"
 if [[ "${security_enabled,,}" != "true" ]]; then
-  echo "[crypto-register] CLIENT_SECURITY_ENABLED!=true，跳过 crypto-runtime 注册"
+  echo "[crypto-register] CLIENT_SECURITY_ENABLED!=true，跳过 crypto bootstrap 注册"
   exit 0
 fi
 
@@ -210,12 +210,10 @@ VERSION="$(python_read_json "$RUNTIME_TMP" version)"
 EXPIRES="$(python_read_json "$RUNTIME_TMP" expiresAtEpochMs)"
 API_PREFIX="$(python_read_json "$RUNTIME_TMP" apiPathPrefix)"
 
-echo "[crypto-register] 2/2 更新 Worker env + crypto-runtime.json ..."
-deploy_scp "$RUNTIME_TMP" "$REMOTE:/tmp/crypto-runtime.json"
+echo "[crypto-register] 2/2 更新 Worker env 并校验 crypto-config API ..."
 deploy_ssh "$REMOTE" bash -s <<EOF
 set -euo pipefail
 ENV_FILE='$ENV_FILE'
-COMPOSE_FILE='$COMPOSE_FILE'
 mkdir -p "\$(dirname "\$ENV_FILE")"
 touch "\$ENV_FILE"
 upsert_env() {
@@ -232,22 +230,24 @@ upsert_env FRONTEND_CRYPTO_VERSION '$VERSION'
 upsert_env FRONTEND_CRYPTO_EXPIRES_AT '$EXPIRES'
 upsert_env FRONTEND_API_PATH_PREFIX '$API_PREFIX'
 
-chmod 644 /tmp/crypto-runtime.json
-if [[ ! -s /tmp/crypto-runtime.json ]]; then
-  echo "[crypto-register] ERROR: crypto-runtime.json 写入失败" >&2
-  exit 1
-fi
-
+# 移除历史静态文件（若曾 docker cp 进 frontend 镜像目录）
 COMPOSE="docker compose"
 if ! docker compose version >/dev/null 2>&1; then COMPOSE="docker-compose"; fi
+COMPOSE_FILE='$COMPOSE_FILE'
 CID=\$(\$COMPOSE -f "\$COMPOSE_FILE" --env-file "\$ENV_FILE" ps -q frontend 2>/dev/null || true)
 if [[ -n "\$CID" ]]; then
-  docker cp /tmp/crypto-runtime.json "\$CID:/usr/share/nginx/html/crypto-runtime.json"
-  docker exec "\$CID" chmod 644 /usr/share/nginx/html/crypto-runtime.json
-  docker exec "\$CID" rm -f /usr/share/nginx/html/crypto-manifest.json 2>/dev/null || true
+  docker exec "\$CID" rm -f /usr/share/nginx/html/crypto-runtime.json /usr/share/nginx/html/crypto-manifest.json 2>/dev/null || true
 fi
-rm -f /tmp/crypto-runtime.json
-echo "[crypto-register] Worker env + runtime.json 已更新"
+
+code=\$(curl -s -o /tmp/crypto-config-check.json -w "%{http_code}" http://127.0.0.1:8080/api/auth/crypto-config || echo "000")
+if [[ "\$code" != "200" ]]; then
+  echo "[crypto-register] ERROR: crypto-config HTTP \$code" >&2
+  head -c 500 /tmp/crypto-config-check.json >&2 || true
+  rm -f /tmp/crypto-config-check.json
+  exit 1
+fi
+rm -f /tmp/crypto-config-check.json
+echo "[crypto-register] Worker env 已更新；crypto-config 可用"
 EOF
 
 echo "[crypto-register] 完成 kid=$KEY_ID prefix=$API_PREFIX version=$VERSION"

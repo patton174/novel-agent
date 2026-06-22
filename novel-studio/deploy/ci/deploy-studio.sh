@@ -82,7 +82,7 @@ echo "[deploy-studio] done"
 \$COMPOSE -f "\$COMPOSE_FILE" --env-file "\$ENV_FILE" ps novel-studio
 EOF
 
-echo "[deploy-studio] 刷新 crypto-runtime.json（可选）..."
+echo "[deploy-studio] 刷新 crypto bootstrap（可选）..."
 if ! bash "$CI_DIR/register-frontend-crypto.sh"; then
   echo "[deploy-studio] WARN: crypto 注册失败，novel-studio 已部署；可稍后执行 register-frontend-crypto.sh"
 fi

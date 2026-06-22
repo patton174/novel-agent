@@ -17,21 +17,21 @@
 
 **非目标**：替代 HTTPS；防不住完全逆向的前端（仍抬高爬虫/脚本成本）。
 
-## 2. 密钥模型（你的方案）
+## 2. 密钥模型（历史 — 2026-06 已改）
 
-> Worker **每日脚本**向后端注册 → 密钥写入 **Worker 本机 `.env.worker`** + `crypto-runtime.json` → 浏览器读 runtime、**失败/失效热更并静默重试**。
+> **现行**：Worker `register-frontend-crypto.sh` → Redis；浏览器 **仅** `GET /api/auth/crypto-config`（无静态 `crypto-runtime.json`）。`emailLinkSecret` 不进 bootstrap 响应。见 `novel-studio/deploy/README.md`。
+
+~~Worker **每日脚本**向后端注册 → 密钥写入 **Worker 本机 `.env.worker`** + `crypto-runtime.json`~~（已废弃）
 
 ```
-Worker cron / deploy
+Worker deploy / cron
   register-frontend-crypto.sh
-    → POST MW Auth /internal/crypto/register-frontend-server
-    → 更新 Worker .env.worker (FRONTEND_CRYPTO_KEY_*)
-    → docker cp crypto-runtime.json → nginx 静态目录
+    → POST novel-studio /internal/crypto/register-frontend-server
+    → Redis + Worker .env.worker
 
 Browser
-  GET /crypto-runtime.json（同源，Worker 刚更新的文件）
-  失败 / kid 失效 → invalidateCryptoRuntime() → 静默重试 1 次
-  兜底 GET /api/auth/crypto-config
+  GET /api/auth/crypto-config
+  失败 / kid 失效 → invalidateCryptoRuntime() → 静默重试
 ```
 
 | 步骤 | 执行者 | 动作 |
@@ -83,7 +83,7 @@ Manifest 示例：
 ### 3.3 豁免（仍走 TLS）
 
 - `/actuator/health` — 探活
-- `/api/auth/crypto-manifest`、`/crypto-runtime.json` — 引导配置（GET / 静态，无业务 body）
+- `/api/auth/crypto-manifest`、`GET /api/auth/crypto-config` — 引导配置（公开 GET，无业务 body）
 - SSE stream — 默认不字段加密（与 Phase 0c 一致）
 
 **Phase 0e-b**：`/api/auth/login|register|refresh` 已改为 **bootstrap AES 加密**（Worker 注册的 `bf_*` 密钥），DevTools 不再见明文 password。

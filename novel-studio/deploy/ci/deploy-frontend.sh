@@ -57,7 +57,7 @@ curl -sf --connect-timeout 5 --max-time 10 "http://127.0.0.1:\${FRONTEND_PORT:-3
 }
 EOF
 
-echo "[deploy-frontend] 注册 crypto-runtime.json（可选）..."
+echo "[deploy-frontend] 注册 crypto bootstrap（可选）..."
 if ! bash "$CI_DIR/register-frontend-crypto.sh"; then
   echo "[deploy-frontend] WARN: crypto 注册失败，前端已部署；可稍后执行 register-frontend-crypto.sh"
 fi

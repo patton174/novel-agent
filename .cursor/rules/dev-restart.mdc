@@ -1,32 +1,60 @@
 ---
-description: 本地开发栈已废弃；验收走线上 deploy
+description: 本地开发栈（CN 中间件 + 单体）；禁止连生产 MQ 的旧 Consumer
 alwaysApply: true
 ---
 
-# 本地开发栈（已废弃）
+# 本地开发栈
 
-> **`restart-dev.sh` / `start-dev*.bat` 已于 2026-06-05 废弃。**
-> 原因：`env.bat` 连生产 Nacos/MQ 时，本地 Consumer :8090 会与 Worker 抢 `agent.run.dispatch.queue`，导致线上 Agent 卡住。
+> **`restart-dev.sh` / `start-dev*.bat` 已废弃**（会连生产 MQ 抢 `agent.run.dispatch.queue`）。  
+> **当前推荐**：CN 独立中间件 + 本机 `novel-studio` / `python-ai` / `frontend`。
 
-## 当前工作方式
+## 模式对照
 
-| 场景 | 做法 |
+| 模式 | 命令 | 中间件 | 用途 |
+|------|------|--------|------|
+| **CN 开发（推荐）** | `scripts\_restart-dev-stack.ps1` 或 `start-local-dev.ps1 -Cn` | `118.89.123.201` PG/Redis/MQ/Milvus | 日常功能开发；**不抢生产队列** |
+| 本机 infra | `start-local-dev.ps1` | `infra/docker compose` 本机 5432/6379/5672 | 无 CN 节点时 |
+| 远程 MW（慎用） | `start-local-dev.ps1 -Remote` | `107.150.112.140` 生产 MW | 仅拉 env 调试；勿启 Consumer |
+
+## CN 栈一键启动
+
+```powershell
+# 需 scripts\local-cn.env（gitignore，从团队模板复制）
+powershell -ExecutionPolicy Bypass -File scripts\_restart-dev-stack.ps1
+```
+
+等价于：停 8080/8000/3000 → `start-local-dev.ps1 -Cn -Services novel,pyai,frontend`。
+
+| 服务 | 地址 |
 |------|------|
-| 功能验收 | 直接访问 https://www.novel-agent.cn |
-| 代码部署 | CI 或 `novel-agent/agent-document/docs/deploy/scripts/deploy-fast.sh` |
-| 前端 UI 小改 | `cd frontend && npm run dev`（勿启 Consumer / 勿连生产 MQ） |
+| Frontend | https://127.0.0.1:3000（dev 自签 HTTPS） |
+| novel-studio | http://127.0.0.1:8080 |
+| python-ai | http://127.0.0.1:8000 |
 
-## 架构与部署（详见记忆规则）
+前置：`frontend\.env.local`、`python-ai\.env`（LLM key）、`scripts\local-cn.env`。
 
-- `.cursor/rules/project-architecture.mdc` — 拓扑、链路、爬虫编排
-- `.cursor/rules/deploy-ops.mdc` — CI、脚本、MW/Worker 主机、安全对齐
+## 仅前端
 
-## 禁止事项
+```powershell
+cd frontend; npm run dev -- --host
+```
+
+`VITE_MONOLITH=true`，`/api` → 本机 8080 或线上一体机（见 `.env.local`）。
+
+## 禁止
 
 - **不要**运行 `restart-dev.sh`、`start-dev.bat`、`start-dev-all.bat`
-- **不要**在本机启动 Consumer 并连接生产 RabbitMQ（`107.150.112.140:5672`）
-- AI 助手**不要**建议或执行上述废弃脚本
+- **不要**本机启 Consumer 连生产 RabbitMQ（`107.150.112.140:5672`）
+- **不要**在未隔离环境下连生产 MQ 做 Agent 全链路测试
 
-## 若本机仍有残留进程
+## 端口冲突
 
-手动释放端口：`3000 / 8000 / 8082 / 8090 / 8091`（Windows：`netstat -ano` + `taskkill /F /PID …`）
+```powershell
+netstat -ano | findstr :8080
+taskkill /F /PID <pid>
+```
+
+## 更多
+
+- 部署与 CI：`novel-studio/deploy/README.md`、`.cursor/rules/deploy-ops.mdc`
+- 架构：`.cursor/rules/project-architecture.mdc`

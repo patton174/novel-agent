@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test'
 const PROD_URL = process.env.NOVEL_AGENT_E2E_URL ?? 'https://www.novel-agent.cn'
 
 function isProtectedRequest(url: string): boolean {
-  if (url.includes('/crypto-runtime.json') || url.includes('/api/auth/crypto-config')) {
+  if (url.includes('/api/auth/crypto-config')) {
     return false
   }
   if (/\.(js|css|png|jpe?g|svg|webp|woff2?|ico|map)(\?|$)/i.test(url)) {

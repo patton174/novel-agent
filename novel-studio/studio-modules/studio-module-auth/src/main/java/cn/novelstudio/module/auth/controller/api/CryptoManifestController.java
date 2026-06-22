@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/** 路由映射表不再对浏览器公开；路径加密见 Worker crypto-runtime.json */
+/** 路由映射表不再对浏览器公开；路径加密 bootstrap 见 GET /api/auth/crypto-config */
 @RestController
 @RequestMapping("/api/auth")
 public class CryptoManifestController extends BaseController {
