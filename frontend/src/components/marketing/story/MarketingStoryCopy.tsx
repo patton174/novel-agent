@@ -46,7 +46,6 @@ export function MarketingStoryCopy({
   titleAccent,
   lead,
   points,
-  alignEnd: _alignEnd,
   className,
   scene,
   scrollProgress,
@@ -156,14 +155,14 @@ export function MarketingStoryCopy({
 
   if (scrollSync) {
     return (
-      <div className={cn(storyCopyRootClass(alignEnd), className)}>
+      <div className={cn(storyCopyRootClass(), className)}>
         {inner}
       </div>
     )
   }
 
   return (
-    <div className={cn(storyCopyRootClass(alignEnd), className)}>
+    <div className={cn(storyCopyRootClass(), className)}>
       <motion.div {...copyReveal}>{inner}</motion.div>
     </div>
   )
