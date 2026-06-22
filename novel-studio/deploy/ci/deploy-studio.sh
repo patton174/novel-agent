@@ -79,6 +79,16 @@ if [[ "\$ready" -ne 1 ]]; then
   exit 1
 fi
 echo "[deploy-studio] done"
+CID=\$(docker ps -q --filter "name=novel-studio-worker-novel-studio" | head -1)
+if [[ -n "\$CID" ]]; then
+  MT_LEN=\$(docker exec "\$CID" sh -c 'printf %s "\$MAILTRAP_TOKEN" | wc -c' 2>/dev/null | tr -d ' ' || echo 0)
+  if [[ "\${MT_LEN:-0}" -lt 8 ]]; then
+    echo "[deploy-studio] ERROR: novel-studio container MAILTRAP_TOKEN empty (len=\${MT_LEN:-0})"
+    docker logs --tail 80 "\$CID" 2>&1 || true
+    exit 1
+  fi
+  echo "[deploy-studio] MAILTRAP_TOKEN present in container (len=\$MT_LEN)"
+fi
 \$COMPOSE -f "\$COMPOSE_FILE" --env-file "\$ENV_FILE" ps novel-studio
 EOF
 

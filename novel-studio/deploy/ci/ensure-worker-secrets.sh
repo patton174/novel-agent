@@ -111,10 +111,21 @@ sync_key_optional() {
   echo "[ensure-secrets] WARN: $key missing on worker (email features disabled until set)"
 }
 
+# CI 有值时优先写入 Worker（避免 .env.worker 里残留过期 token）
+sync_key_prefer_ci() {
+  local key="$1" min_len="${2:-8}" ci_val="${3:-}"
+  if [[ -n "$ci_val" && ${#ci_val} -ge "$min_len" ]]; then
+    patch_env_remote "$REMOTE" "$ENV_REL" "$key" "$ci_val"
+    echo "[ensure-secrets] $key from CI env (${#ci_val} chars)"
+    return 0
+  fi
+  sync_key_optional "$key" "$min_len" ""
+}
+
 echo "[ensure-secrets] checking $ENV_REL on worker..."
 ensure_key JWT_SECRET 32 "${JWT_SECRET:-}"
 ensure_key AGENT_INTERNAL_SERVICE_KEY 8 "${AGENT_INTERNAL_SERVICE_KEY:-}"
-sync_key_optional MAILTRAP_TOKEN 8 "${MAILTRAP_TOKEN:-}"
+sync_key_prefer_ci MAILTRAP_TOKEN 8 "${MAILTRAP_TOKEN:-}"
 sync_key_optional AUTH_EMAIL_LINK_SECRET 16 "${AUTH_EMAIL_LINK_SECRET:-}"
 
 ensure_turnstile() {
