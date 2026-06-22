@@ -21,16 +21,24 @@ bash "$CI_DIR/ensure-mw-https-cert.sh"
 REMOTE="$(ci_remote mw)"
 RDIR="$(ci_remote_dir mw)"
 
-deploy_ssh "$REMOTE" bash -s <<EOF
+NOVEL_STUDIO_WG_HOST="${NOVEL_STUDIO_WG_HOST:-10.66.0.3}"
+
+deploy_ssh "$REMOTE" bash -s <<'EOFKV'
 set -euo pipefail
-ENV='$RDIR/$DOCKER_REL/.env.mw'
-touch "\$ENV"
-if grep -q '^WORKER_HOST=' "\$ENV"; then
-  sed -i 's|^WORKER_HOST=.*|WORKER_HOST=$WORKER_HOST|' "\$ENV"
-else
-  echo 'WORKER_HOST=$WORKER_HOST' >> "\$ENV"
-fi
-EOF
+ENV="$RDIR/$DOCKER_REL/.env.mw"
+touch "$ENV"
+for kv in \
+  "WORKER_HOST=$WORKER_HOST" \
+  "NOVEL_STUDIO_WG_HOST=$NOVEL_STUDIO_WG_HOST"; do
+  key="${kv%%=*}"
+  val="${kv#*=}"
+  if grep -q "^${key}=" "$ENV"; then
+    sed -i "s|^${key}=.*|${key}=${val}|" "$ENV"
+  else
+    echo "${key}=${val}" >> "$ENV"
+  fi
+done
+EOFKV
 
 REMOTE_SSL="$CI_DIR/remote-apply-mw-ssl-nginx.sh"
 deploy_scp "$REMOTE_SSL" "$REMOTE:/tmp/remote-apply-mw-ssl-nginx.sh"
@@ -38,20 +46,20 @@ deploy_ssh "$REMOTE" "chmod +x /tmp/remote-apply-mw-ssl-nginx.sh && bash /tmp/re
 
 WORKER_REMOTE="$(ci_remote worker)"
 WORKER_RDIR="$(ci_remote_dir worker)"
-deploy_ssh "$WORKER_REMOTE" bash -s <<EOF
+deploy_ssh "$WORKER_REMOTE" bash -s <<'EOF'
 set -euo pipefail
-ENV_FILE='$WORKER_RDIR/$DOCKER_REL/.env.worker'
-if [[ -f "\$ENV_FILE" ]]; then
-  if grep -q '^AUTH_FRONTEND_BASE_URL=' "\$ENV_FILE"; then
-    sed -i 's|^AUTH_FRONTEND_BASE_URL=.*|AUTH_FRONTEND_BASE_URL=https://$DOMAIN|' "\$ENV_FILE"
+ENV_FILE="$WORKER_RDIR/$DOCKER_REL/.env.worker"
+if [[ -f "$ENV_FILE" ]]; then
+  if grep -q '^AUTH_FRONTEND_BASE_URL=' "$ENV_FILE"; then
+    sed -i "s|^AUTH_FRONTEND_BASE_URL=.*|AUTH_FRONTEND_BASE_URL=https://$DOMAIN|" "$ENV_FILE"
   else
-    echo 'AUTH_FRONTEND_BASE_URL=https://$DOMAIN' >> "\$ENV_FILE"
+    echo "AUTH_FRONTEND_BASE_URL=https://$DOMAIN" >> "$ENV_FILE"
   fi
 fi
-cd '$WORKER_RDIR/$DOCKER_REL'
+cd "$WORKER_RDIR/$DOCKER_REL"
 COMPOSE="docker compose"
 if ! docker compose version >/dev/null 2>&1; then COMPOSE="docker-compose"; fi
-\$COMPOSE -f docker-compose.worker.yml --env-file .env.worker up -d --no-deps --no-build frontend
+$COMPOSE -f docker-compose.worker.yml --env-file .env.worker up -d --no-deps --no-build frontend
 EOF
 
 echo "[deploy-mw-nginx] 完成 → https://$DOMAIN"
