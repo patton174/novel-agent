@@ -15,7 +15,7 @@ on:
 
 concurrency:
   group: deploy-frontend-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   deploy:

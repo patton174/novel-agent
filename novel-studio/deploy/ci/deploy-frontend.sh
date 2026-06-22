@@ -57,10 +57,9 @@ curl -sf --connect-timeout 5 --max-time 10 "http://127.0.0.1:\${FRONTEND_PORT:-3
 }
 EOF
 
-echo "[deploy-frontend] 注册 crypto-runtime.json ..."
+echo "[deploy-frontend] 注册 crypto-runtime.json（可选）..."
 if ! bash "$CI_DIR/register-frontend-crypto.sh"; then
-  echo "[deploy-frontend] 警告: crypto 注册失败，请检查 novel-studio /internal API 或 AGENT_INTERNAL_SERVICE_KEY"
-  exit 1
+  echo "[deploy-frontend] WARN: crypto 注册失败，前端已部署；可稍后执行 register-frontend-crypto.sh"
 fi
 
 echo "[deploy-frontend] 完成"

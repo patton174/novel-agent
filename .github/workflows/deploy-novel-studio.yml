@@ -10,7 +10,7 @@ on:
 
 concurrency:
   group: deploy-novel-studio-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   deploy:
@@ -48,9 +48,6 @@ jobs:
         env:
           WORKER_HOST: ${{ secrets.WORKER_HOST }}
           MW_HOST: ${{ secrets.MW_HOST }}
-          AGENT_INTERNAL_SERVICE_KEY: ${{ secrets.AGENT_INTERNAL_SERVICE_KEY }}
-          MAILTRAP_TOKEN: ${{ secrets.MAILTRAP_TOKEN }}
-          AUTH_EMAIL_LINK_SECRET: ${{ secrets.AUTH_EMAIL_LINK_SECRET }}
           DEPLOY_SSH_OPTS: -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes -o ConnectTimeout=60 -o BatchMode=yes
           DEPLOY_SCP_OPTS: -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes -o ConnectTimeout=60 -o BatchMode=yes
         run: bash novel-studio/deploy/ci/deploy-studio.sh

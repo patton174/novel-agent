@@ -16,8 +16,7 @@ export ACME_EMAIL="${ACME_EMAIL:-hello@noreply.novel-agent.cn}"
 REMOTE="$(ci_remote mw)"
 RDIR="$(ci_remote_dir mw)"
 
-bash "$CI_DIR/sync-compose.sh" mw
-
+# 调用方（deploy-mw-nginx.sh）应已 sync-compose；此处不重复上传
 REMOTE_SCRIPT="$CI_DIR/remote-ensure-mw-https-cert.sh"
 deploy_scp "$REMOTE_SCRIPT" "$REMOTE:/tmp/remote-ensure-mw-https-cert.sh"
 deploy_ssh "$REMOTE" "chmod +x /tmp/remote-ensure-mw-https-cert.sh && bash /tmp/remote-ensure-mw-https-cert.sh '$DOMAIN' '$DOMAIN_ALIASES' '$CERT_NAME' '$ACME_EMAIL' '$RDIR' '$DOCKER_REL'"

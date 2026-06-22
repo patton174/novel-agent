@@ -8,6 +8,7 @@
 浏览器 → MW entry-nginx:443
            └→ Worker frontend:3000
                  ├ /api/* → novel-studio:8080（单体 JVM）
+                 ├ /g/*   → novel-studio:8080（路由脱敏，与 /api 同链路）
                  └ 静态资源
 
 novel-studio (Worker) ──→ PostgreSQL / Redis / RabbitMQ (MW)
@@ -20,7 +21,8 @@ python-ai ──→ novel-studio:8080 /api/content/auth/*（X-Internal-Service-K
 | **MW** `107.150.112.140` | entry-nginx、PostgreSQL、Redis、RabbitMQ、**Milvus**（RAG） |
 | **Worker** `47.80.80.224` | novel-studio、python-ai、python-lb、frontend |
 
-**已移除**：Nacos、Gateway、Auth/Consumer/Billing/Content/PyAI 六个 Java 微服务、路由混淆 `/g/`、`crypto-runtime.json`。
+**已移除**：Nacos、Gateway、Auth/Consumer/Billing/Content/PyAI 六个 Java 微服务。  
+**注意**：MW 入口不得将 `/g/` 直连 novel-studio（WireGuard 旁路）；须与 `/api/` 一并经 Worker frontend 反代，否则路由脱敏无法还原、登录 401。
 
 ## 首次迁移（删库重建）
 
@@ -79,15 +81,18 @@ bash novel-studio/deploy/ci/deploy-frontend.sh
 
 ## CI Workflows
 
-| Workflow | 说明 |
-|----------|------|
-| `deploy-novel-studio.yml` | Maven 编译 + Worker 部署 |
-| `deploy-python-ai.yml` | Python AI 镜像 |
-| `deploy-frontend.yml` | 前端（VITE_MONOLITH=true） |
-| `deploy-reset-stack.yml` | 破坏性重建（手动） |
-| `ci.yml` | PR 编译 novel-studio |
+| Workflow | 触发 | 说明 |
+|----------|------|------|
+| `deploy-novel-studio.yml` | `novel-studio/**` push | 仅编译 JAR + Worker 上 `compose up novel-studio`（**不含** MW nginx） |
+| `deploy-frontend.yml` | `frontend/**` push | 构建 dist + Worker frontend |
+| `deploy-python-ai.yml` | `python-ai/**` push | 镜像导出 + Worker python-ai |
+| `deploy-mw-nginx.yml` | nginx 模板 / 手动 | MW entry-nginx + TLS（改路由/证书时用） |
+| `deploy-reset-stack.yml` | 手动 | 破坏性重建 |
+| `ci.yml` | PR | 编译 novel-studio |
 
-**已删除**：`deploy-gateway/auth/consumer/billing/content/pyai.yml`
+**职责拆分**：应用部署与 MW 入口 nginx 分离，避免每次推 Java 代码都重建 MW nginx（此前易导致 CI 红但 Worker 已更新）。
+
+**已删除**：`deploy-gateway.yml`、`deploy-content.yml` 及旧微服务 workflow
 
 ## 前端开发
 

@@ -31,7 +31,6 @@ for kv in \
 done
 
 : "${WORKER_HOST:?WORKER_HOST missing in .env.mw}"
-: "${NOVEL_STUDIO_WG_HOST:?NOVEL_STUDIO_WG_HOST missing in .env.mw}"
 
 FULLCHAIN="letsencrypt/live/${CERT_NAME}/fullchain.pem"
 PRIVKEY="letsencrypt/live/${CERT_NAME}/privkey.pem"
@@ -77,7 +76,6 @@ sed -e "s|\${WORKER_HOST}|${WORKER_HOST}|g" \
     -e "s|\${DOMAIN}|${DOMAIN}|g" \
     -e "s|\${DOMAIN_ALIASES}|${DOMAIN_ALIASES}|g" \
     -e "s|\${CERT_NAME}|${CERT_NAME}|g" \
-    -e "s|\${NOVEL_STUDIO_WG_HOST}|${NOVEL_STUDIO_WG_HOST}|g" \
     nginx-entry-mw-ssl.conf.template > nginx-entry-mw.conf
 
 echo "[apply-ssl] nginx-entry-mw.conf head:"
@@ -91,10 +89,10 @@ echo "[apply-ssl] published ports:"
 docker port "$($COMPOSE -f "$COMPOSE_FILE" --env-file "$ENV_FILE" ps -q entry-nginx)" || true
 
 echo "[apply-ssl] probe HTTP (expect 301)"
-curl -sI "http://127.0.0.1/" -H "Host: ${DOMAIN}" | head -5
+curl -sI "http://127.0.0.1/" -H "Host: ${DOMAIN}" | head -5 || echo "[apply-ssl] WARN: HTTP probe failed"
 
 echo "[apply-ssl] probe HTTPS (expect 200)"
-curl -skI "https://127.0.0.1/" -H "Host: ${DOMAIN}" | head -8
+curl -skI "https://127.0.0.1/" -H "Host: ${DOMAIN}" | head -8 || echo "[apply-ssl] WARN: HTTPS probe failed"
 
 openssl x509 -in "$FULLCHAIN" -noout -subject -issuer -dates
 echo "[apply-ssl] cert chain certs: $(grep -c 'BEGIN CERTIFICATE' "$FULLCHAIN" || echo 0)"

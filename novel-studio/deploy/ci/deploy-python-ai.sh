@@ -33,9 +33,7 @@ set -euo pipefail
 RDIR='$RDIR'
 DOCKER_REL='$DOCKER_REL'
 IMAGE='$IMAGE'
-echo "[deploy-python-ai] 清理 Worker 磁盘..."
-docker system prune -af 2>/dev/null || true
-docker builder prune -af 2>/dev/null || true
+echo "[deploy-python-ai] 加载镜像..."
 gunzip -c /tmp/python-ai-deploy.tar.gz | docker load
 rm -f /tmp/python-ai-deploy.tar.gz
 cd "\$RDIR/\$DOCKER_REL"

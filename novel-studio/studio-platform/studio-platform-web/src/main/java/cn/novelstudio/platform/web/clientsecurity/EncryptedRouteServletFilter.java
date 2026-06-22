@@ -20,7 +20,7 @@ import java.net.URI;
 
 @Slf4j
 @Component
-@Order(Ordered.HIGHEST_PRECEDENCE + 40)
+@Order(Ordered.HIGHEST_PRECEDENCE + 30)
 @RequiredArgsConstructor
 public class EncryptedRouteServletFilter extends OncePerRequestFilter {
 

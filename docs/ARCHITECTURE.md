@@ -62,7 +62,7 @@ agent/                          # monorepo 根
 |------|------|------|
 | **MW** | `107.150.112.140` | entry-nginx、PostgreSQL、Redis、RabbitMQ |
 | **Worker** | `47.80.80.224` | **novel-studio :8080**（单体 JVM）、python-ai :8000、python-lb、frontend |
-| **域名** | https://www.novel-agent.cn | 浏览器 → MW Nginx → Worker frontend → `/api/*` → novel-studio |
+| **域名** | https://www.novel-agent.cn | 浏览器 → MW Nginx → Worker frontend → `/api/*`、`/g/*` → novel-studio |
 
 ```
 Frontend :3000 → novel-studio :8080（Auth / Content / Agent / Billing 模块）
