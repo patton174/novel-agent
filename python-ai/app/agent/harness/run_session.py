@@ -24,7 +24,26 @@ class RunSession:
         self.run_id = run_id
         self._event = asyncio.Event()
         self._interaction: dict[str, Any] | None = None
+        self._resume_gate = asyncio.Event()
+        self._resume_gate.set()
         self.aborted = False
+        self.paused = False
+
+    def is_paused(self) -> bool:
+        return self.paused
+
+    def pause(self) -> None:
+        self.paused = True
+        self._resume_gate.clear()
+
+    def resume(self) -> None:
+        self.paused = False
+        self._resume_gate.set()
+
+    async def await_running(self) -> None:
+        if self.aborted:
+            return
+        await self._resume_gate.wait()
 
     async def wait_interaction(self) -> dict[str, Any]:
         self._event.clear()
@@ -41,6 +60,8 @@ class RunSession:
 
     def abort(self) -> None:
         self.aborted = True
+        self.paused = False
+        self._resume_gate.set()
         self._interaction = {}
         self._event.set()
 
@@ -74,3 +95,19 @@ def abort_run_session(run_id: str) -> None:
     entry = _sessions.get(run_id)
     if entry is not None:
         entry.session.abort()
+
+
+def pause_run_session(run_id: str) -> bool:
+    entry = _sessions.get(run_id)
+    if entry is None:
+        return False
+    entry.session.pause()
+    return True
+
+
+def resume_run_session(run_id: str) -> bool:
+    entry = _sessions.get(run_id)
+    if entry is None:
+        return False
+    entry.session.resume()
+    return True

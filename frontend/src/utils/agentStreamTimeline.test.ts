@@ -13,6 +13,7 @@ import {
   normalizeTimelineBlockIds,
   orchestrationOverviewFromTimeline,
   pruneEmptyThinkBlocks,
+  promoteTrailingNarrationToDelivery,
   shouldRenderThinkBlock,
   shouldShowOrchestrationResumeGap,
   splitPlanningReasoningTailNarration,
@@ -645,7 +646,7 @@ describe('agentStreamTimeline', () => {
     }
   })
 
-  it('keeps orchestration narration inside orchestration when text follows tools', () => {
+  it('promotes trailing narration after last tool outside orchestration when stream finished', () => {
     let timeline = applyTimelineEvent([], {
       type: 'tool.started',
       step_id: 'step-mem',
@@ -658,6 +659,11 @@ describe('agentStreamTimeline', () => {
     })
     const units = groupTimelineUnits(timeline, undefined, { streamFinished: true })
     const orch = units.find((u) => u.kind === 'orchestration')
+    const delivery = units.find(
+      (u) =>
+        u.kind === 'segment' &&
+        u.blocks.some((b) => b.kind === 'narration' && b.content.includes('章节正文')),
+    )
     expect(orch?.kind).toBe('orchestration')
     if (orch?.kind === 'orchestration') {
       expect(orch.status).toBe('done')
@@ -666,9 +672,85 @@ describe('agentStreamTimeline', () => {
           .filter((item) => item.kind === 'narration')
           .flatMap((item) => item.blocks),
       )
-      expect(narrBlocks.some((b) => b.content.includes('章节正文'))).toBe(true)
+      expect(narrBlocks.some((b) => b.content.includes('章节正文'))).toBe(false)
+    }
+    expect(delivery?.kind).toBe('segment')
+  })
+
+  it('keeps trailing text inside orchestration while stream is still live', () => {
+    let timeline = applyTimelineEvent([], {
+      type: 'tool.started',
+      step_id: 'step-mem',
+      payload: { name: 'Glob' },
+    })
+    timeline = applyTimelineEvent(timeline, {
+      type: 'message.delta',
+      step_id: 'step-out',
+      payload: { text: '流式正文' },
+    })
+    const units = groupTimelineUnits(timeline, undefined, { streamFinished: false })
+    const orch = units.find((u) => u.kind === 'orchestration')
+    expect(orch?.kind).toBe('orchestration')
+    if (orch?.kind === 'orchestration') {
+      const textBlocks = orch.rounds.flatMap((round) =>
+        round.items
+          .filter((item) => item.kind === 'text')
+          .flatMap((item) => item.blocks),
+      )
+      expect(textBlocks.some((b) => b.content.includes('流式正文'))).toBe(true)
     }
     expect(units.some((u) => u.kind === 'segment')).toBe(false)
+  })
+
+  it('coalesces mid-flow narrations into one orchestration when stream finished', () => {
+    let timeline = applyTimelineEvent([], {
+      type: 'tool.started',
+      step_id: 'step-1',
+      payload: { name: 'ReadMemory' },
+    })
+    timeline = applyTimelineEvent(timeline, {
+      type: 'narration.delta',
+      step_id: 'step-n1',
+      payload: { text: '继续优化章节规划部分的记忆节点' },
+    })
+    timeline = applyTimelineEvent(timeline, {
+      type: 'planning.next_step',
+      step_id: 'step-plan-2',
+      payload: { title: '编排中' },
+    })
+    timeline = applyTimelineEvent(timeline, {
+      type: 'narration.delta',
+      step_id: 'step-n2',
+      payload: { text: '继续更新剩余的记忆节点' },
+    })
+    timeline = applyTimelineEvent(timeline, {
+      type: 'tool.started',
+      step_id: 'step-2',
+      payload: { name: 'UpdateMemory' },
+    })
+    timeline = applyTimelineEvent(timeline, {
+      type: 'narration.delta',
+      step_id: 'step-n3',
+      payload: { text: '记忆条目优化已完成' },
+    })
+    const units = groupTimelineUnits(timeline, undefined, { streamFinished: true })
+    const orchUnits = units.filter((u) => u.kind === 'orchestration')
+    expect(orchUnits).toHaveLength(1)
+    const delivery = units.find(
+      (u) =>
+        u.kind === 'segment' &&
+        u.blocks.some((b) => b.kind === 'narration' && b.content.includes('记忆条目优化已完成')),
+    )
+    expect(delivery?.kind).toBe('segment')
+    if (orchUnits[0]?.kind === 'orchestration') {
+      const narrBlocks = orchUnits[0].rounds.flatMap((round) =>
+        round.items
+          .filter((item) => item.kind === 'narration')
+          .flatMap((item) => item.blocks),
+      )
+      expect(narrBlocks.some((b) => b.content.includes('继续优化章节规划'))).toBe(true)
+      expect(narrBlocks.some((b) => b.content.includes('记忆条目优化已完成'))).toBe(false)
+    }
   })
 
   it('merges think and reasoning inside planning insight', () => {
@@ -716,16 +798,78 @@ describe('agentStreamTimeline', () => {
     expect(timeline).toEqual([])
   })
 
-  it('does not append message.delta to timeline (delivery uses messageContent)', () => {
+  it('promoteTrailingNarrationToDelivery moves tail narration after last tool to messageContent', () => {
+    let timeline = applyTimelineEvent([], {
+      type: 'narration.delta',
+      step_id: 'step-a',
+      payload: { text: '先说明进度。' },
+    })
+    timeline = applyTimelineEvent(timeline, {
+      type: 'tool.completed',
+      step_id: 'tool-1',
+      payload: { name: 'ReadMemory' },
+    })
+    timeline = applyTimelineEvent(timeline, {
+      type: 'narration.delta',
+      step_id: 'step-b',
+      payload: { text: '最终答复。' },
+    })
+
+    const promoted = promoteTrailingNarrationToDelivery(timeline, '')
+    expect(promoted.messageContent).toBe('最终答复。')
+    expect(promoted.timeline.some((b) => b.kind === 'narration' && b.content.includes('先说明'))).toBe(
+      true,
+    )
+    expect(promoted.timeline.some((b) => b.kind === 'narration' && b.content.includes('最终'))).toBe(
+      false,
+    )
+  })
+
+  it('promoteTrailingNarrationToDelivery skips when messageContent already set', () => {
+    const timeline = applyTimelineEvent([], {
+      type: 'narration.delta',
+      step_id: 'step-out',
+      payload: { text: '不应覆盖' },
+    })
+    const promoted = promoteTrailingNarrationToDelivery(timeline, '[交付] 已有正文')
+    expect(promoted.messageContent).toBe('[交付] 已有正文')
+    expect(promoted.timeline).toEqual(timeline)
+  })
+
+  it('appends message.delta to timeline for chronological interleaving', () => {
     const timeline = applyTimelineEvent([], {
       type: 'message.delta',
       step_id: 'step-out',
       payload: { text: '最终回复' },
     })
-    expect(timeline).toEqual([])
+    expect(timeline).toEqual([
+      expect.objectContaining({ kind: 'text', content: '最终回复' }),
+    ])
   })
 
-  it('does not append message.delta during orchestration timeline', () => {
+  it('interleaves message.delta with tools on timeline', () => {
+    let timeline = applyTimelineEvent([], {
+      type: 'message.delta',
+      step_id: 'step-out',
+      payload: { text: '编排说明' },
+    })
+    timeline = applyTimelineEvent(timeline, {
+      type: 'tool.started',
+      step_id: 'step-read',
+      payload: { name: 'ReadChapter' },
+    })
+    expect(timeline.map((b) => b.kind)).toEqual(['text', 'tool'])
+    expect(timeline[0].kind === 'text' && timeline[0].frozen).toBe(true)
+    timeline = applyTimelineEvent(timeline, {
+      type: 'message.delta',
+      step_id: 'step-out',
+      payload: { text: '交付正文' },
+    })
+    expect(timeline.map((b) => b.kind)).toEqual(['text', 'tool', 'text'])
+    expect(timeline[2].kind === 'text' && timeline[2].content).toBe('交付正文')
+  })
+
+  it('appends message.delta after planning transition on timeline', () => {
     let timeline = applyTimelineEvent([], {
       type: 'planning.next_step',
       step_id: 'step-plan',
@@ -734,9 +878,9 @@ describe('agentStreamTimeline', () => {
     timeline = applyTimelineEvent(timeline, {
       type: 'message.delta',
       step_id: 'step-out',
-      payload: { text: '最终回复' },
+      payload: { text: '可见正文' },
     })
-    expect(timeline.map((b) => b.kind)).toEqual(['transition'])
+    expect(timeline.map((b) => b.kind)).toEqual(['transition', 'text'])
   })
 
   it('extracts legacy delivery text from planning children as top-level segment', () => {
@@ -772,7 +916,7 @@ describe('agentStreamTimeline', () => {
     expect(textUnit?.kind).toBe('segment')
   })
 
-  it('keeps orchestration narration inside orchestration after tool execution', () => {
+  it('promotes trailing narration outside orchestration after tool execution when finished', () => {
     let timeline = applyTimelineEvent([], {
       type: 'planning.next_step',
       step_id: 'step-plan',
@@ -789,19 +933,13 @@ describe('agentStreamTimeline', () => {
       payload: { text: '角色库优化建议' },
     })
     const units = groupTimelineUnits(timeline, undefined, { streamFinished: true })
-    expect(units).toHaveLength(1)
-    expect(units[0].kind).toBe('orchestration')
-    if (units[0].kind === 'orchestration') {
-      const tools = units[0].rounds.flatMap((r) => thinkRoundToolBlocks(r))
-      expect(tools.map((b) => b.kind)).toEqual(['tool'])
-      const narrBlocks = units[0].rounds.flatMap((round) =>
-        round.items
-          .filter((item) => item.kind === 'narration')
-          .flatMap((item) => item.blocks),
-      )
-      expect(narrBlocks.some((b) => b.content.includes('角色库优化建议'))).toBe(true)
-      expect(units[0].status).toBe('done')
-    }
+    expect(units.some((u) => u.kind === 'orchestration')).toBe(true)
+    const delivery = units.find(
+      (u) =>
+        u.kind === 'segment' &&
+        u.blocks.some((b) => b.kind === 'narration' && b.content.includes('角色库优化建议')),
+    )
+    expect(delivery?.kind).toBe('segment')
   })
 
   it('keeps ask_user interaction outside planning unit', () => {

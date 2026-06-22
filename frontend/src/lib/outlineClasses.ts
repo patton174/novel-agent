@@ -1,20 +1,26 @@
 import { cn } from '@/lib/utils'
+import {
+  editorPixelOutlineItemClass,
+  editorPixelVolumeBlockClass,
+  EDITOR_PIXEL_DIVIDER,
+} from '@/lib/editorPixelClasses'
 
 export const OUTLINE_CHAPTER_LIST_INNER =
-  'flex flex-col gap-[0.35rem] overflow-hidden'
+  'flex min-h-0 flex-col gap-[0.35rem] overflow-hidden'
 
-export const OUTLINE_DRAG_HINT =
-  'mb-2 rounded-md border border-border/60 bg-muted/25 px-2 py-1.5 text-[0.68rem] font-medium leading-snug text-muted-foreground'
+export const OUTLINE_DRAG_HINT = cn(
+  'mb-2 border-2 border-foreground bg-muted/30 px-2 py-1.5 font-mono text-[0.68rem] font-bold uppercase leading-snug text-muted-foreground',
+)
 
 export const OUTLINE_SECTION_LABEL =
-  'mb-1.5 px-0.5 text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground/80'
+  'mb-1.5 px-0.5 font-mono text-[0.65rem] font-bold uppercase tracking-widest text-muted-foreground'
 
-export const OUTLINE_SECTION_DIVIDER = 'my-3 border-t border-border/70'
+export const OUTLINE_SECTION_DIVIDER = EDITOR_PIXEL_DIVIDER
 
 export const OUTLINE_HINT =
-  'px-[0.15rem] py-2 text-[0.74rem] font-medium leading-snug text-muted-foreground'
+  'px-[0.15rem] py-2 font-mono text-[0.74rem] font-medium leading-snug text-muted-foreground'
 
-export const OUTLINE_LIST = 'flex flex-1 flex-col gap-[0.65rem] overflow-y-auto'
+export const OUTLINE_LIST = 'flex flex-col gap-[0.65rem]'
 
 export function outlineChapterListCollapsibleClass(open: boolean) {
   return cn(
@@ -24,20 +30,14 @@ export function outlineChapterListCollapsibleClass(open: boolean) {
 }
 
 export function outlineVolumeBlockClass(dragOver?: boolean) {
-  return cn(
-    'flex flex-col gap-1 rounded-xl border p-2 shadow-sm',
-    'transition-[background,border-color,box-shadow] duration-150',
-    dragOver
-      ? 'border-primary/40 bg-primary/10 shadow-md'
-      : 'border-border/70 bg-muted/20',
-  )
+  return editorPixelVolumeBlockClass(dragOver)
 }
 
 export const OUTLINE_VOLUME_HEADER = 'flex items-center gap-1'
 
 export const OUTLINE_DRAG_HANDLE = cn(
   'inline-flex w-[1.1rem] shrink-0 cursor-grab select-none items-center justify-center',
-  'text-[0.68rem] font-medium tracking-tighter text-muted-foreground/70 active:cursor-grabbing',
+  'font-mono text-[0.68rem] font-bold tracking-tighter text-muted-foreground active:cursor-grabbing',
 )
 
 export function outlineChevronWrapClass(open: boolean) {
@@ -50,8 +50,8 @@ export function outlineChevronWrapClass(open: boolean) {
 
 export function outlineChapterDropZoneClass(dragOver?: boolean) {
   return cn(
-    'rounded-lg border border-dashed p-[0.65rem] text-center text-[0.74rem] font-medium text-muted-foreground',
-    dragOver ? 'border-primary bg-primary/5' : 'border-border bg-transparent',
+    'border-2 border-dashed p-[0.65rem] text-center font-mono text-[0.74rem] font-medium text-muted-foreground',
+    dragOver ? 'border-foreground bg-neon/25' : 'border-foreground/40 bg-transparent',
   )
 }
 
@@ -62,19 +62,13 @@ export function outlineItemClass(opts?: {
 }) {
   const { active, inProgress, dragOver } = opts ?? {}
   return cn(
-    'rounded-lg border border-transparent transition-[border-color] duration-150',
-    dragOver && 'border-primary/30 bg-primary/10',
-    !dragOver && active && 'border-l-2 border-l-primary bg-transparent',
-    !dragOver &&
-      !active &&
-      inProgress &&
-      'border-border/50 bg-muted/25',
-    !dragOver && !active && !inProgress && 'bg-transparent',
+    editorPixelOutlineItemClass({ active, dragOver }),
+    !dragOver && !active && inProgress && 'border-foreground/30 bg-muted/25',
   )
 }
 
 export const OUTLINE_CHAPTER_ACTIVE_GRADIENT =
-  'pointer-events-none absolute inset-y-0 right-0 z-[1] w-[5.5rem] rounded-r-lg bg-gradient-to-l from-background from-35% via-background/80 to-transparent'
+  'pointer-events-none absolute inset-y-0 right-0 z-[1] w-[5.5rem] bg-gradient-to-l from-neon/30 from-35% via-neon/10 to-transparent'
 
 export function outlineChapterActionsClass(active?: boolean) {
   return cn(
@@ -85,11 +79,14 @@ export function outlineChapterActionsClass(active?: boolean) {
   )
 }
 
-export const OUTLINE_CHAPTER_ACTION_BTN =
-  'size-7 shrink-0 rounded-lg border border-border/70 bg-background/95 text-muted-foreground shadow-sm backdrop-blur-sm hover:border-primary/25 hover:bg-primary/8 hover:text-foreground'
+export const OUTLINE_CHAPTER_ACTION_BTN = cn(
+  'size-7 shrink-0 border-2 border-foreground bg-background font-mono text-muted-foreground shadow-soft',
+  'hover:bg-neon/30 hover:text-foreground',
+)
 
-export const OUTLINE_CHAPTER_ACTION_BTN_DANGER =
-  'size-7 shrink-0 rounded-lg border border-border/70 bg-background/95 text-muted-foreground shadow-sm backdrop-blur-sm hover:border-destructive/30 hover:bg-destructive/10 hover:text-destructive'
-
+export const OUTLINE_CHAPTER_ACTION_BTN_DANGER = cn(
+  'size-7 shrink-0 border-2 border-foreground bg-background font-mono text-muted-foreground shadow-soft',
+  'hover:border-destructive hover:bg-destructive/10 hover:text-destructive',
+)
 
 export const OUTLINE_CHAPTER_ROW = 'flex items-stretch gap-[0.2rem]'

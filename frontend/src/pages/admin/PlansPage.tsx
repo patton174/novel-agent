@@ -1,6 +1,5 @@
 import { useTranslation } from 'react-i18next'
 import { useCallback, useEffect, useState } from 'react'
-import { CreditCard, Pencil, Plus, Star } from 'lucide-react'
 import {
   createAdminPlan,
   deactivateAdminPlan,
@@ -12,7 +11,6 @@ import {
   type AdminPlan,
   type AdminPlanUpsertPayload,
 } from '@/api/billingAdminApi'
-import { Badge } from '@/components/ui/badge'
 import { AppModalShell } from '@/components/ui/AppModalShell'
 import { Button } from '@/components/ui/button'
 import {
@@ -20,10 +18,6 @@ import {
   AppShellCard,
   AppShellCardHeader,
 } from '@/components/layout/AppPageStack'
-import {
-  ResponsiveTable,
-  type ResponsiveTableColumn,
-} from '@/components/layout/ResponsiveTable'
 import { DialogFooter } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -31,6 +25,7 @@ import { useMarkRouteSeen } from '@/hooks/useMarkRouteSeen'
 import { appToast } from '@/stores/appToastStore'
 import { confirmAction } from '@/stores/appDialog'
 import { cn } from '@/lib/utils'
+import { ProIconAdminPlan, ProIconPencil } from '@/components/pro/icons/proIcons'
 
 const emptyForm = (): AdminPlanUpsertPayload => ({
   code: '',
@@ -45,6 +40,91 @@ const emptyForm = (): AdminPlanUpsertPayload => ({
   sortOrder: 1,
   features: ['basic_editor'],
 })
+
+function PlanAdminCard({
+  plan,
+  onEdit,
+  onDeactivate,
+}: {
+  plan: AdminPlan
+  onEdit: (plan: AdminPlan) => void
+  onDeactivate: (plan: AdminPlan) => void
+}) {
+  const { t } = useTranslation(['admin'])
+
+  return (
+    <article className="flex flex-col border-2 border-black bg-white shadow-soft">
+      <div className="flex items-start justify-between gap-3 border-b-2 border-black px-4 py-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <h3 className="truncate text-lg font-black uppercase tracking-tight text-ink">{plan.name}</h3>
+            {plan.isFeatured ? (
+              <span className="shrink-0 border border-black bg-neon px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase text-ink">
+                ★
+              </span>
+            ) : null}
+          </div>
+          <p className="mt-0.5 truncate font-mono text-xs text-muted-foreground">{plan.code}</p>
+        </div>
+        <span
+          className={cn(
+            'shrink-0 border-2 border-black px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wide',
+            plan.isActive ? 'bg-neon text-ink' : 'bg-muted text-muted-foreground',
+          )}
+        >
+          {plan.isActive ? t('admin:plans.statusActive') : t('admin:plans.statusInactive')}
+        </span>
+      </div>
+
+      <dl className="grid flex-1 grid-cols-2 gap-x-4 gap-y-3 px-4 py-4">
+        <div>
+          <dt className="font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+            {t('admin:plans.colPrice')}
+          </dt>
+          <dd className="mt-1 text-sm font-bold tabular-nums text-ink">{formatPlanPrice(plan.priceCents)}</dd>
+        </div>
+        <div>
+          <dt className="font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Token</dt>
+          <dd className="mt-1 text-sm font-bold tabular-nums text-ink">{formatTokenQuota(plan.monthlyTokenQuota)}</dd>
+        </div>
+        <div>
+          <dt className="font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Run</dt>
+          <dd className="mt-1 text-sm font-bold tabular-nums text-ink">
+            {plan.monthlyRunQuota == null ? t('admin:plans.unlimited') : plan.monthlyRunQuota}
+          </dd>
+        </div>
+        <div>
+          <dt className="font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground">RPM</dt>
+          <dd className="mt-1 text-sm font-bold tabular-nums text-ink">{plan.rateLimitRpm}</dd>
+        </div>
+      </dl>
+
+      <div className="flex gap-2 border-t-2 border-black p-3">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="h-9 flex-1 border-2 border-black bg-white font-mono text-xs font-bold uppercase shadow-soft hover:bg-neon"
+          onClick={() => onEdit(plan)}
+        >
+          <ProIconPencil size={14} className="mr-1.5" />
+          {t('admin:plans.edit')}
+        </Button>
+        {plan.isActive ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-9 shrink-0 border-2 border-black bg-white px-3 font-mono text-xs font-bold uppercase text-destructive shadow-soft hover:bg-destructive/10"
+            onClick={() => void onDeactivate(plan)}
+          >
+            {t('admin:plans.deactivateBtn')}
+          </Button>
+        ) : null}
+      </div>
+    </article>
+  )
+}
 
 export default function PlansPage() {
   const { t } = useTranslation(['admin'])
@@ -150,95 +230,15 @@ export default function PlansPage() {
   }
 
   const list = plans ?? []
-  const columns: ResponsiveTableColumn<AdminPlan>[] = [
-    {
-      key: 'plan',
-      header: t('admin:plans.colPlan'),
-      cellClassName: 'px-4 py-3',
-      renderCell: (plan) => (
-        <div className="flex items-center gap-2">
-          <CreditCard className="size-4 text-muted-foreground" />
-          <div>
-            <div className="flex items-center gap-2 font-medium">
-              {plan.name}
-              {plan.isFeatured ? (
-                <Star className="size-3.5 fill-amber-400 text-amber-400" />
-              ) : null}
-            </div>
-            <div className="font-mono text-xs text-muted-foreground">{plan.code}</div>
-          </div>
-        </div>
-      ),
-    },
-    {
-      key: 'price',
-      header: t('admin:plans.colPrice'),
-      cellClassName: 'px-4 py-3 tabular-nums',
-      renderCell: (plan) => formatPlanPrice(plan.priceCents),
-    },
-    {
-      key: 'tokenQuota',
-      header: t('admin:plans.colTokenQuota'),
-      cellClassName: 'px-4 py-3 tabular-nums',
-      renderCell: (plan) => formatTokenQuota(plan.monthlyTokenQuota),
-    },
-    {
-      key: 'runQuota',
-      header: t('admin:plans.colRunQuota'),
-      cellClassName: 'px-4 py-3 tabular-nums',
-      renderCell: (plan) => (plan.monthlyRunQuota == null ? t('admin:plans.unlimited') : plan.monthlyRunQuota),
-    },
-    {
-      key: 'rpm',
-      header: t('admin:plans.colRpm'),
-      cellClassName: 'px-4 py-3 tabular-nums',
-      renderCell: (plan) => plan.rateLimitRpm,
-    },
-    {
-      key: 'status',
-      header: t('admin:plans.colStatus'),
-      cellClassName: 'px-4 py-3',
-      renderCell: (plan) => (
-        <Badge variant={plan.isActive ? 'secondary' : 'outline'}>
-          {plan.isActive ? t('admin:plans.statusActive') : t('admin:plans.statusInactive')}
-        </Badge>
-      ),
-    },
-    {
-      key: 'actions',
-      header: t('admin:plans.colActions'),
-      headerClassName: 'px-4 py-3 font-medium text-right',
-      cellClassName: 'px-4 py-3 text-right',
-      renderCell: (plan) => (
-        <div className="flex justify-end gap-2">
-          <Button type="button" variant="ghost" size="sm" onClick={() => openEdit(plan)}>
-            <Pencil className="mr-1 size-3.5" />
-            {t('admin:plans.edit')}
-          </Button>
-          {plan.isActive ? (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="text-destructive"
-              onClick={() => void handleDeactivate(plan)}
-            >
-              {t('admin:plans.deactivateBtn')}
-            </Button>
-          ) : null}
-        </div>
-      ),
-    },
-  ]
 
   if (loading) {
     return (
       <AppPageStack>
         <AppShellCard>
           <AppShellCardHeader title={t('admin:plans.title')} description={t('admin:plans.loading')} />
-          <div className="space-y-3 px-4 pb-4">
+          <div className="grid gap-4 p-4 sm:grid-cols-2 sm:p-6 xl:grid-cols-3">
             {Array.from({ length: 3 }).map((_, i) => (
-              <Skeleton key={i} className="h-36 w-full rounded-xl" />
+              <Skeleton key={i} className="h-56 w-full border-2 border-black" />
             ))}
           </div>
         </AppShellCard>
@@ -253,80 +253,32 @@ export default function PlansPage() {
           title={t('admin:plans.title')}
           description={t('admin:plans.desc')}
           action={
-            <Button type="button" variant="outline" size="sm" onClick={openCreate}>
-              <Plus className="mr-1.5 size-4" />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-9 w-full border-2 border-black bg-white font-mono text-xs font-bold uppercase shadow-soft hover:bg-neon sm:w-auto"
+              onClick={openCreate}
+            >
+              <ProIconAdminPlan size={14} className="mr-1.5" />
               {t('admin:plans.createBtn')}
             </Button>
           }
         />
-        <ResponsiveTable
-          columns={columns}
-          rows={list}
-          loading={false}
-          getRowKey={(plan) => plan.id}
-          wrapDesktopInCard={false}
-          tableClassName="w-full min-w-[880px] text-sm"
-          tableHeaderClassName="bg-muted/40 text-left text-xs text-muted-foreground"
-          tableBodyClassName="divide-y divide-border"
-          renderMobileCard={(plan) => (
-            <article className="rounded-xl border border-border/70 bg-surface p-4 shadow-sm">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 font-medium">
-                    {plan.name}
-                    {plan.isFeatured ? (
-                      <Star className="size-3.5 fill-amber-400 text-amber-400" />
-                    ) : null}
-                  </div>
-                  <p className="font-mono text-xs text-muted-foreground">{plan.code}</p>
-                </div>
-                <Badge variant={plan.isActive ? 'secondary' : 'outline'}>
-                  {plan.isActive ? t('admin:plans.statusActive') : t('admin:plans.statusInactive')}
-                </Badge>
-              </div>
-              <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
-                <div>
-                  <dt className="text-muted-foreground">{t('admin:plans.colPrice')}</dt>
-                  <dd className="tabular-nums font-medium">{formatPlanPrice(plan.priceCents)}</dd>
-                </div>
-                <div>
-                  <dt className="text-muted-foreground">Token</dt>
-                  <dd className="tabular-nums">{formatTokenQuota(plan.monthlyTokenQuota)}</dd>
-                </div>
-                <div>
-                  <dt className="text-muted-foreground">Run</dt>
-                  <dd className="tabular-nums">
-                    {plan.monthlyRunQuota == null ? t('admin:plans.unlimited') : plan.monthlyRunQuota}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-muted-foreground">RPM</dt>
-                  <dd className="tabular-nums">{plan.rateLimitRpm}</dd>
-                </div>
-              </dl>
-              <div className="mt-3 flex gap-2">
-                <Button type="button" variant="outline" size="sm" className="flex-1" onClick={() => openEdit(plan)}>
-                  <Pencil className="mr-1 size-3.5" />
-                  {t('admin:plans.edit')}
-                </Button>
-                {plan.isActive ? (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="text-destructive"
-                    onClick={() => void handleDeactivate(plan)}
-                  >
-                    {t('admin:plans.deactivateBtn')}
-                  </Button>
-                ) : null}
-              </div>
-            </article>
-          )}
-          mobileListClassName="px-4 pb-4"
-          renderMobileEmpty={<p className="py-6 text-center text-sm text-muted-foreground">{t('admin:plans.empty')}</p>}
-          renderDesktopEmpty={<p className="px-4 py-10 text-center text-sm text-muted-foreground">{t('admin:plans.empty')}</p>}
-        />
+        {list.length === 0 ? (
+          <p className="px-6 py-12 text-center font-mono text-sm text-muted-foreground">{t('admin:plans.empty')}</p>
+        ) : (
+          <div className="grid gap-4 p-4 sm:grid-cols-2 sm:p-6 xl:grid-cols-3">
+            {list.map((plan) => (
+              <PlanAdminCard
+                key={plan.id}
+                plan={plan}
+                onEdit={openEdit}
+                onDeactivate={handleDeactivate}
+              />
+            ))}
+          </div>
+        )}
       </AppShellCard>
 
       <AppModalShell

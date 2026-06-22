@@ -3,51 +3,53 @@
     <mj-title>__productName__ 验证码</mj-title>
     <mj-preview>您的验证码是 __code__，__ttlLabel__ 内有效。</mj-preview>
     <mj-attributes>
-      <mj-all font-family="'Segoe UI', 'PingFang SC', 'Microsoft YaHei', Helvetica, Arial, sans-serif" />
-      <mj-text color="__brandText__" font-size="16px" line-height="26px" />
+      <mj-all font-family="'Courier New', Courier, 'Lucida Console', monospace" />
+      <mj-text color="__brandText__" font-size="15px" line-height="24px" />
     </mj-attributes>
     <mj-style inline="inline">
+      .pixel-card { border: 2px solid __brandBorder__ !important; }
       .otp-box {
-        letter-spacing: 8px !important;
+        letter-spacing: 10px !important;
         font-weight: 700 !important;
-        font-size: 32px !important;
+        font-size: 30px !important;
         color: __brandPrimary__ !important;
+        font-family: 'Courier New', Courier, monospace !important;
       }
       @media only screen and (max-width: 480px) {
-        .mobile-pad { padding-left: 16px !important; padding-right: 16px !important; }
-        .otp-box { font-size: 28px !important; letter-spacing: 6px !important; }
+        .mobile-pad { padding-left: 12px !important; padding-right: 12px !important; }
+        .otp-box { font-size: 26px !important; letter-spacing: 8px !important; }
       }
     </mj-style>
   </mj-head>
   <mj-body background-color="__brandBackground__" width="600px">
-    <mj-wrapper padding="24px 12px" css-class="mobile-pad">
+    <mj-wrapper padding="20px 12px" css-class="mobile-pad">
       <mj-include path="../partials/header.mjml" />
 
-      <mj-section background-color="__brandSurface__" padding="8px 32px 0" border-radius="16px 16px 0 0">
+      <mj-section background-color="__brandSurface__" padding="16px 24px 0" border-left="2px solid __brandBorder__" border-right="2px solid __brandBorder__">
         <mj-column>
-          <mj-text font-size="22px" font-weight="700" color="__brandText__" padding="0 0 8px">
+          <mj-text font-size="20px" font-weight="700" color="__brandText__" padding="0 0 8px" letter-spacing="0.04em">
             邮箱验证码
           </mj-text>
-          <mj-text color="__brandMuted__" padding="0 0 16px">
+          <mj-text color="__brandMuted__" padding="0 0 12px" font-size="14px">
             您正在 __productName__ 进行邮箱验证，请在页面中输入以下验证码：
           </mj-text>
         </mj-column>
       </mj-section>
 
-      <mj-section background-color="__brandSurface__" padding="8px 32px 24px">
-        <mj-column background-color="#f8fafc" border-radius="16px" border="1px solid __brandBorder__">
-          <mj-text align="center" css-class="otp-box" padding="24px 16px">
+      <mj-section background-color="__brandSurface__" padding="8px 24px 20px" border-left="2px solid __brandBorder__" border-right="2px solid __brandBorder__">
+        <mj-column background-color="__brandSurface__" border="2px solid __brandBorder__" css-class="pixel-card">
+          <mj-text align="center" css-class="otp-box" padding="22px 12px">
             __code__
           </mj-text>
         </mj-column>
       </mj-section>
 
-      <mj-section background-color="__brandSurface__" padding="0 32px 16px">
+      <mj-section background-color="__brandSurface__" padding="0 24px 12px" border-left="2px solid __brandBorder__" border-right="2px solid __brandBorder__">
         <mj-column>
-          <mj-text font-size="13px" color="__brandMuted__" align="center" padding="0 0 8px">
+          <mj-text font-size="12px" color="__brandMuted__" padding="0 0 6px">
             验证码 __ttlLabel__ 内有效，请勿泄露给他人。
           </mj-text>
-          <mj-text font-size="13px" color="__brandMuted__" padding="0">
+          <mj-text font-size="12px" color="__brandMuted__" padding="0">
             如非本人操作，请忽略此邮件。
           </mj-text>
         </mj-column>

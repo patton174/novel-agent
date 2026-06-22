@@ -1,7 +1,7 @@
 import { useLayoutEffect, useState, type RefObject } from 'react'
 
-const EXTRA_GAP_PX = 20
-const FALLBACK_INSET_PX = 152
+const EXTRA_GAP_PX = 4
+const FALLBACK_INSET_PX = 96
 
 /** 悬浮输入框实际高度 → 消息列表底部留白（避免被遮挡） */
 export function useComposerSafeInset(

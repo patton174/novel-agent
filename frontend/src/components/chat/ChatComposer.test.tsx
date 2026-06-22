@@ -22,7 +22,27 @@ describe('ChatComposer', () => {
     expect(onSend).toHaveBeenCalled()
   })
 
-  it('morphs send into stop while streaming and calls abort', () => {
+  it('morphs send into pause while streaming and calls pause handler', () => {
+    const onStreamPause = vi.fn()
+
+    render(
+      <ChatComposer
+        value=""
+        onChange={vi.fn()}
+        onSend={vi.fn()}
+        isLoading
+        streamActive
+        onStreamPause={onStreamPause}
+        hostModeEnabled={false}
+        onHostModeChange={vi.fn()}
+      />,
+    )
+
+    fireEvent.click(screen.getByTestId('stream-pause-btn'))
+    expect(onStreamPause).toHaveBeenCalled()
+  })
+
+  it('falls back to abort when pause handler is missing', () => {
     const onStreamAbort = vi.fn()
 
     render(
@@ -38,7 +58,7 @@ describe('ChatComposer', () => {
       />,
     )
 
-    fireEvent.click(screen.getByTestId('stream-stop-btn'))
+    fireEvent.click(screen.getByTestId('stream-pause-btn'))
     expect(onStreamAbort).toHaveBeenCalled()
   })
 })

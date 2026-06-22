@@ -12,7 +12,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, '..');
 const srcDir = path.join(root, 'src', 'emails');
 const partialsDir = path.join(root, 'src', 'partials');
-const outDir = path.join(root, '..', 'src', 'main', 'resources', 'mail');
+const outDirs = [
+  path.join(root, '..', 'src', 'main', 'resources', 'mail'),
+  path.join(root, '..', '..', '..', '..', '..', 'novel-studio', 'studio-platform', 'studio-platform-mail', 'src', 'main', 'resources', 'mail'),
+];
 
 function listMjmlEmails() {
   return fs
@@ -38,17 +41,21 @@ function compileOne(name) {
     }
   }
 
-  fs.mkdirSync(outDir, { recursive: true });
-  fs.writeFileSync(path.join(outDir, `${name}.html`), html, 'utf8');
+  for (const outDir of outDirs) {
+    fs.mkdirSync(outDir, { recursive: true });
+    fs.writeFileSync(path.join(outDir, `${name}.html`), html, 'utf8');
 
-  if (fs.existsSync(txtPath)) {
-    fs.copyFileSync(txtPath, path.join(outDir, `${name}.txt`));
+    if (fs.existsSync(txtPath)) {
+      fs.copyFileSync(txtPath, path.join(outDir, `${name}.txt`));
+    }
+
+    console.log(`[mjml] ${name} → ${path.relative(root, outDir)}/${name}.html`);
   }
-
-  console.log(`[mjml] ${name} → ${path.relative(root, outDir)}/${name}.html`);
 }
 
-fs.mkdirSync(outDir, { recursive: true });
+for (const outDir of outDirs) {
+  fs.mkdirSync(outDir, { recursive: true });
+}
 
 if (!fs.existsSync(partialsDir)) {
   fs.mkdirSync(partialsDir, { recursive: true });

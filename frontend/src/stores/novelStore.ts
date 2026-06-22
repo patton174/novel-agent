@@ -26,7 +26,7 @@ interface NovelStoreState {
   updateNovel: (novelId: string, payload: Partial<CreateNovelPayload>) => Promise<Novel>
   deleteNovel: (novelId: string) => Promise<void>
   loadVolumes: (novelId: string) => Promise<void>
-  loadChapters: (novelId: string) => Promise<void>
+  loadChapters: (novelId: string, options?: { listOnly?: boolean }) => Promise<void>
   selectChapter: (chapterId: string, options?: { preserveDiff?: boolean }) => Promise<void>
   updateChapterContent: (content: string) => void
   saveActiveChapter: () => Promise<void>
@@ -147,11 +147,14 @@ export const useNovelStore = create<NovelStoreState>((set, get) => ({
     }
   },
 
-  loadChapters: async (novelId: string) => {
+  loadChapters: async (novelId: string, options?: { listOnly?: boolean }) => {
     set({ loadingChapters: true })
     try {
       const chapters = await api.listChapters(novelId)
       set({ chapters })
+      if (options?.listOnly) {
+        return
+      }
       const { activeChapterId } = get()
       if (chapters.length === 0) {
         set({ activeChapterId: null, chapterContent: '', chapterDirty: false })

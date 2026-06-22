@@ -1,5 +1,6 @@
 import { Moon, Sun, Monitor } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { editorPixelIconButtonClass } from '@/lib/editorPixelClasses'
 import { cn } from '@/lib/utils'
 import { useThemeStore, type ThemeMode } from '@/stores/themeStore'
 
@@ -42,8 +43,8 @@ export function ThemeToggle({ compact = false, className }: ThemeToggleProps) {
       aria-label={t('common:theme.label', { mode: label })}
       title={t('common:theme.label', { mode: label })}
       className={cn(
-        'inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg border border-border bg-background text-foreground shadow-xs transition-all hover:bg-muted hover:shadow-sm active:scale-[0.97]',
-        compact ? 'size-8' : 'h-9 px-3 text-sm font-medium',
+        editorPixelIconButtonClass(),
+        compact ? 'size-8' : 'h-9 px-3 text-sm font-medium normal-case',
         className,
       )}
     >

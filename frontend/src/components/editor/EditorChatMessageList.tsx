@@ -3,6 +3,7 @@ import type { AgentChoiceOption, AgentInteractionPayload, AskUserAnswers } from 
 import type { EditorMessage } from '../../types/editor'
 import { editorLayout } from '../../styles/theme'
 import { EditorChatMessage } from './EditorChatMessage'
+import { useAppMobile } from '@/hooks/useMediaQuery'
 
 export interface EditorChatMessageListProps {
   messages: EditorMessage[]
@@ -24,6 +25,7 @@ export interface EditorChatMessageListProps {
   messagesEndRef: React.Ref<HTMLDivElement>
   composerBottomInset?: number
   onEditUserMessage?: (content: string) => void
+  onStreamResume?: (messageId: string) => void
   marketingScrubPlaying?: boolean
   marketingPinOrchestration?: boolean
 }
@@ -42,7 +44,9 @@ export function EditorChatMessageList({
   onEditUserMessage,
   marketingScrubPlaying = false,
   marketingPinOrchestration = false,
+  onStreamResume,
 }: EditorChatMessageListProps) {
+  const isMobile = useAppMobile()
   const activeId = activeStreamMessageId
   const loadingState = isLoading
   const scrubPlaying = marketingScrubPlaying
@@ -106,13 +110,13 @@ export function EditorChatMessageList({
     >
       <div
         className="relative mx-auto w-full"
-        style={{ maxWidth: editorLayout.contentMaxWidth }}
+        style={isMobile ? undefined : { maxWidth: editorLayout.contentMaxWidth }}
       >
         <div className="relative w-full">
           {safeMessages.map((message, index) => (
             <div
               key={message.id}
-              className={index < safeMessages.length - 1 ? 'pb-5 max-md:pb-3.5' : undefined}
+              className={index < safeMessages.length - 1 ? 'pb-5' : undefined}
             >
               <EditorChatMessage
                 message={message}
@@ -131,6 +135,7 @@ export function EditorChatMessageList({
                 onSelectChoice={onSelectChoice}
                 onSubmitInteraction={onSubmitInteraction}
                 onEditUserMessage={onEditUserMessage}
+                onStreamResume={onStreamResume}
               />
             </div>
           ))}

@@ -17,17 +17,31 @@ export function DashboardQuickActions() {
     <div className="flex shrink-0 items-center gap-2">
       <AppShellToolbar />
       {isAdmin ? (
-        <Button
-          asChild
-          variant="outline"
-          size="sm"
-          className={`hidden h-9 gap-1.5 border-border/80 bg-background/80 px-3 text-xs font-medium sm:inline-flex ${APP_BTN_SM}`}
-        >
-          <Link to="/admin">
-            <ProIconAdminSystem size={14} />
-            {t('dashboard:quickActions.admin')}
-          </Link>
-        </Button>
+        <>
+          <Button
+            asChild
+            variant="outline"
+            size="icon"
+            className={`size-9 border-border/80 bg-background/80 sm:hidden ${APP_BTN_SM}`}
+            aria-label={t('dashboard:quickActions.admin')}
+            title={t('dashboard:quickActions.admin')}
+          >
+            <Link to="/admin">
+              <ProIconAdminSystem size={16} />
+            </Link>
+          </Button>
+          <Button
+            asChild
+            variant="outline"
+            size="sm"
+            className={`hidden h-9 gap-1.5 border-border/80 bg-background/80 px-3 text-xs font-medium sm:inline-flex ${APP_BTN_SM}`}
+          >
+            <Link to="/admin">
+              <ProIconAdminSystem size={14} />
+              {t('dashboard:quickActions.admin')}
+            </Link>
+          </Button>
+        </>
       ) : null}
       {!hideEditorCta ? (
         <Button asChild size="sm" className={`h-9 gap-1.5 px-4 text-xs font-semibold ${APP_BTN_SM}`}>

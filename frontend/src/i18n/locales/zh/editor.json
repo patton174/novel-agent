@@ -30,7 +30,9 @@
     "copy": "复制",
     "save": "保存",
     "import": "导入章节",
-    "export": "导出章节"
+    "export": "导出章节",
+    "importLabel": "导入",
+    "exportLabel": "导出"
   },
     "settings": {
       "title": "设置",
@@ -42,12 +44,22 @@
       "fullSettings": "完整设置",
       "logout": "退出登录"
     },
+    "profile": {
+      "memory": "故事记忆",
+      "eyebrow": "账户",
+      "workspaceTitle": "创作工作区",
+      "workspaceDesc": "编辑器偏好与故事记忆",
+      "sidebarDashboardHint": "管理作品、账户与订阅",
+      "sidebarGuestHint": "登录后可查看账户信息"
+    },
     "chat": {
       "placeholder": "给 AI 发送消息...",
       "hostModeHint": "AI 持续盯防，可后台长时运行",
       "hostModeOffHint": "关闭时为单次对话",
       "stop": "停止",
+      "pause": "暂停",
       "send": "发送",
+      "continueGenerate": "继续生成",
       "aiWarning": "内容由 AI 生成，请谨慎参考",
       "preparing": "正在准备创作…",
       "creating": "AI 正在创作…",
@@ -114,7 +126,9 @@
     "tabs": {
       "chat": "聊天",
       "story": "章节",
-      "ariaLabel": "编辑区标签"
+      "mine": "我的",
+      "ariaLabel": "编辑区标签",
+      "mobileBarAria": "编辑区底部导航"
     },
     "chrome": {
       "backToDashboard": "返回创作台"
@@ -184,6 +198,9 @@
     },
     "mobileNav": {
       "openSidebar": "打开编辑器侧栏",
+      "openSessions": "打开会话列表",
+      "openChapters": "打开章节目录",
+      "openProfile": "打开个人菜单",
       "title": "编辑器导航"
     },
     "sessionGroups": {
@@ -202,6 +219,7 @@
       "orchestration": "编排",
       "orchestrationActive": "编排中…",
       "orchestrationDone": "编排完成",
+      "deliveryPendingHint": "等待编排完成后开始流式输出正文",
       "drafting": "成稿中…",
       "thinking": "思考",
       "thinkingActive": "思考中…",
@@ -224,7 +242,9 @@
         "deleteChapters": "删除 {{count}} 章",
         "deleteMemory": "删除记忆 {{count}} 次",
         "searchKnowledge": "检索 {{count}} 次",
-        "reorderChapters": "排序 {{count}} 次"
+        "reorderChapters": "排序 {{count}} 次",
+        "readTotal": "读取 {{count}} 次",
+        "editTotal": "编辑 {{count}} 次"
       },
       "knowledgeGraph": {
         "title": "知识图谱",
@@ -365,7 +385,12 @@
       "emptyRoots": "还没有记忆分类。可在编辑器对话中请助手帮你整理世界观、角色设定等。",
       "emptyScope": "该分类下还没有条目。",
       "emptyContentTitle": "暂无内容",
-      "emptyContentDescription": "可在对话中请助手在此分类下创建条目并写入正文。"
+      "emptyContentDescription": "可在对话中请助手在此分类下创建条目并写入正文。",
+      "loadFailed": "记忆加载失败，请稍后重试。",
+      "loadFailedTree": "无法加载记忆分类，请检查网络后重试。",
+      "loadFailedFlat": "记忆正文加载失败，分类可见但内容为空。",
+      "loadFailedPartial": "部分分类正文加载失败：{{scopes}}",
+      "retry": "重试"
     },
     "user": {
       "guest": "访客",

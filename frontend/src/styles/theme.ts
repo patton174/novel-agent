@@ -176,6 +176,8 @@ export const editorLayout = {
   sidebarWidthPx: 284,
   chromeMinHeight: '52px',
   contentMaxWidth: '768px',
+  /** 移动端底部 TabBar 内容区高度（不含 safe-area） */
+  mobileTabBarHeightPx: 56,
 } as const
 
 /** 弹层 / 浮层表面（与 StoryMemoryModal 一致） */

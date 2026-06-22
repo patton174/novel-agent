@@ -1,16 +1,14 @@
 import { cn } from '@/lib/utils'
+import { EDITOR_PIXEL_MODAL_HEADER, EDITOR_PIXEL_MODAL_PANEL } from '@/lib/editorPixelClasses'
 
 export type EditorModalSize = 'confirm' | 'form' | 'settings' | 'todo' | 'detail' | 'memory'
 
 export const EDITOR_MODAL_OVERLAY = cn(
-  'fixed inset-0 z-[1200] flex items-center justify-center bg-black/40 p-5 backdrop-blur-sm',
+  'fixed inset-0 z-[1200] flex items-center justify-center bg-black/40 p-5',
   'max-md:items-stretch max-md:p-0',
 )
 
-export const EDITOR_MODAL_PANEL = cn(
-  'flex flex-col overflow-hidden rounded-2xl border border-border/80 bg-background shadow-xl',
-  'max-md:h-full max-md:max-h-none max-md:w-full max-md:min-h-0 max-md:rounded-none',
-)
+export const EDITOR_MODAL_PANEL = EDITOR_PIXEL_MODAL_PANEL
 
 export const EDITOR_MODAL_SIZE: Record<EditorModalSize, string> = {
   confirm: 'w-full max-w-[420px] max-h-[90vh]',
@@ -25,14 +23,11 @@ export const EDITOR_MODAL_SIZE: Record<EditorModalSize, string> = {
   ),
 }
 
-export const EDITOR_MODAL_HEADER = cn(
-  'flex shrink-0 items-start justify-between gap-4 border-b border-border/60',
-  'px-[1.15rem] pb-[0.85rem] pt-4 max-md:gap-2.5 max-md:px-[0.9rem] max-md:pb-3 max-md:pt-[0.85rem]',
-)
+export const EDITOR_MODAL_HEADER = EDITOR_PIXEL_MODAL_HEADER
 
 export const EDITOR_MODAL_BODY = cn(
   'min-h-0 flex-1 overflow-y-auto',
-  '[&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded [&::-webkit-scrollbar-thumb]:bg-border',
+  '[&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-border',
 )
 
 export const EDITOR_MODAL_INSET = cn(

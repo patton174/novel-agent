@@ -25,6 +25,7 @@ import {
 } from '../../../utils/agentTimelineToolCollapse'
 import { isHiddenUiTool } from '../../../utils/agentHiddenTools'
 import { isAskUserTool } from '../../../utils/agentToolNames'
+import { isToolErrorLikeText } from '../../../utils/toolErrorText'
 import { AskUserForm } from '../AskUserForm'
 import { EditorButton } from '../../ui/EditorButton'
 import { SelectedChoiceSummary } from './SelectedChoiceSummary'
@@ -47,6 +48,7 @@ import {
   TIMELINE_THINK_WRAP,
 } from '@/lib/timelineClasses'
 import { runeLength, visiblePrefixForBlock } from './timelineUtils'
+import { useAppMobile } from '@/hooks/useMediaQuery'
 
 function TimelineBlockEnter({ children }: { children: ReactNode }) {
   return <div className="agent-stream-timeline-block-enter">{children}</div>
@@ -65,6 +67,7 @@ export function AssistantStreamTimeline({
   onSubmitInteraction,
   pinOrchestrationOpen = false,
 }: AssistantStreamTimelineProps) {
+  const isMobile = useAppMobile()
   const [multiSelectDrafts, setMultiSelectDrafts] = useState<Record<string, AgentChoiceOption[]>>({})
   const [singleSelectDrafts, setSingleSelectDrafts] = useState<Record<string, AgentChoiceOption | undefined>>({})
   const [customDrafts, setCustomDrafts] = useState<Record<string, string>>({})
@@ -119,8 +122,9 @@ export function AssistantStreamTimeline({
     () =>
       orchestrationOverviewFromTimeline(effectiveTimeline, stepStates, {
         streamFinished,
+        compact: isMobile,
       }),
-    [effectiveTimeline, stepStates, streamFinished],
+    [effectiveTimeline, stepStates, streamFinished, isMobile],
   )
 
   const stepByTimelineBlockId = useMemo(() => {
@@ -364,6 +368,9 @@ export function AssistantStreamTimeline({
 
     if (block.kind === 'text') {
       const content = block.content
+      if (isToolErrorLikeText(content)) {
+        return null
+      }
       const blockLen = runeLength(content)
       const blockStart = textOffset
       const visible = visiblePrefixForBlock(
@@ -620,6 +627,8 @@ export function AssistantStreamTimeline({
           thinkExpanded={thinkExpanded}
           onThinkExpandedChange={onThinkExpandedChange}
           orchestrationActive={streamLive && !streamFinished}
+          flatAlign
+          railContext={{ showThinkRail: false }}
           renderTool={(block, blockKey) => {
             const exposure = isSiblingExposureBlock(block, stepStates)
             return renderToolBlock(block, blockKey, !exposure)
@@ -672,7 +681,7 @@ export function AssistantStreamTimeline({
       data-testid="agent-stream-timeline"
     >
       <div className={TIMELINE_SLOT}>
-        {showOrchestrationPending ? <OrchestrationPendingRow alignToGutter /> : null}
+        {showOrchestrationPending ? <OrchestrationPendingRow /> : null}
         {timelineUnits.map((unit, unitIndex) => (
           <Fragment key={`unit:${unitIndex}`}>
             {renderTimelineUnit(unit, String(unitIndex))}

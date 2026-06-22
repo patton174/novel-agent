@@ -125,6 +125,40 @@ export function formatRunToolStats(stepStates: AgentStepState[] | undefined): st
   return parts.length > 0 ? parts.join(' · ') : null
 }
 
+/** 移动端编排统计：合并读取 / 编辑（含写入、列举、删除等变更类操作） */
+export function formatRunToolStatsCompact(stepStates: AgentStepState[] | undefined): string | null {
+  if (!stepStates?.length) {
+    return null
+  }
+  const counts = emptyCounts()
+  for (const step of stepStates) {
+    bumpCompletedStep(counts, step)
+  }
+  const readTotal =
+    counts.readChapters +
+    counts.readMemory +
+    counts.listChapters +
+    counts.listMemory +
+    counts.searchKnowledge +
+    counts.characterGraph
+  const editTotal =
+    counts.writeChapters +
+    counts.writeMemory +
+    counts.editChapters +
+    counts.editMemory +
+    counts.deleteChapters +
+    counts.deleteMemory +
+    counts.reorderChapters
+
+  const t = (key: string, params?: Record<string, unknown>) =>
+    i18n.t(`editor:timeline.toolStats.${key}`, params ?? {})
+
+  const parts: string[] = []
+  if (readTotal > 0) parts.push(String(t('readTotal', { count: readTotal })))
+  if (editTotal > 0) parts.push(String(t('editTotal', { count: editTotal })))
+  return parts.length > 0 ? parts.join(' · ') : null
+}
+
 export function hasActiveOrchestrationSteps(stepStates: AgentStepState[]): boolean {
   return stepStates.some((step) => step.type === 'tool' && step.status === 'started')
 }

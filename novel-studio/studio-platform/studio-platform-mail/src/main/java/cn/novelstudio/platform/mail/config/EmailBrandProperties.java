@@ -14,14 +14,14 @@ import java.util.Map;
 @ConfigurationProperties(prefix = "mail.brand")
 public class EmailBrandProperties {
 
-    private String primary = "#4f46e5";
-    private String primaryDark = "#4338ca";
-    private String gradientEnd = "#6366f1";
-    private String background = "#f1f5f9";
+    private String primary = "#1043ff";
+    private String primaryDark = "#0a33cc";
+    private String gradientEnd = "#1043ff";
+    private String background = "#ededed";
     private String surface = "#ffffff";
-    private String text = "#0f172a";
-    private String muted = "#64748b";
-    private String border = "#e2e8f0";
+    private String text = "#1a1a1a";
+    private String muted = "#666666";
+    private String border = "#000000";
     private String productName = "Novel Agent";
     private String tagline = "理解你的笔触与灵感";
     private String logoUrl = "https://www.novel-agent.cn/favicon.svg";

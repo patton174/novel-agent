@@ -70,7 +70,7 @@ export function EditorUserModal({ open, onClose, onLogout, onOpenAvatarEditor }:
       <button
         type="button"
         className={cn(
-          'flex w-full items-center gap-3 rounded-xl border border-border/60 bg-muted/20 px-3 py-2.5 text-left',
+          'flex w-full items-center gap-3 border-2 border-foreground bg-muted/20 px-3 py-2.5 text-left shadow-soft',
           'transition-colors hover:border-border hover:bg-muted/35',
         )}
         onClick={() => {
@@ -78,7 +78,7 @@ export function EditorUserModal({ open, onClose, onLogout, onOpenAvatarEditor }:
           onOpenAvatarEditor()
         }}
       >
-        <PixelAvatarFrame size={48}>
+        <PixelAvatarFrame size={48} bordered={false}>
           <UserPixelAvatar size={44} animated />
         </PixelAvatarFrame>
         <div className="min-w-0 flex-1">

@@ -9,6 +9,7 @@ import {
   type SessionDateGroup,
 } from '../../utils/groupSessionsByDate'
 import { EDITOR_SESSION_LOAD_MORE } from '@/lib/editorButtonClasses'
+import { editorPixelSessionItemClass } from '@/lib/editorPixelClasses'
 import {
   SIDEBAR_ICON_CELL,
   SIDEBAR_META,
@@ -130,10 +131,8 @@ export function NovelSessionList({
                 title={isRunning ? t('editor:sessionList.running') : title}
                 className={cn(
                   SIDEBAR_ROW,
-                  'group/session cursor-pointer rounded-md border border-transparent py-1',
-                  isActive
-                    ? 'border-border/60 bg-muted/50 text-foreground'
-                    : 'text-muted-foreground hover:bg-muted/35 hover:text-foreground',
+                  'group/session cursor-pointer py-1',
+                  editorPixelSessionItemClass(isActive),
                 )}
                 onClick={() => onSwitchSession(session.id)}
               >

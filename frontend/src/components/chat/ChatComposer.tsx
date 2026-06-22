@@ -6,6 +6,11 @@ import { Switch } from '../ui/switch'
 import { EditorButton, EditorSendIconLayer } from '../ui/EditorButton'
 import { ComposerStatusBar } from './ComposerStatusBar'
 import { cn } from '@/lib/utils'
+import {
+  EDITOR_PIXEL_COMPOSER_TEXT,
+  EDITOR_PIXEL_COMPOSER_WRAP,
+  EDITOR_PIXEL_HOST_MODE,
+} from '@/lib/editorPixelClasses'
 
 /** 约 4 行正文高度，避免悬浮区过高 */
 const COMPOSER_TEXT_MIN_PX = 40
@@ -19,8 +24,8 @@ const Icons = {
     </svg>
   ),
   Stop: () => (
-    <svg viewBox="0 0 24 24" fill="currentColor" className="size-3.5">
-      <rect x="6" y="6" width="12" height="12" rx="1.5" />
+    <svg viewBox="0 0 24 24" fill="currentColor" className="size-4">
+      <rect x="7" y="7" width="10" height="10" rx="1" />
     </svg>
   ),
 }
@@ -34,6 +39,7 @@ export interface ChatComposerProps {
   onHostModeChange: (enabled: boolean) => void
   streamActive?: boolean
   spinnerMode?: ComposerSpinnerMode
+  onStreamPause?: () => void
   onStreamAbort?: () => void
   contextUsage?: AgentContextUsage | null
 }
@@ -47,6 +53,7 @@ export function ChatComposer({
   onHostModeChange,
   streamActive = false,
   spinnerMode = 'idle',
+  onStreamPause,
   onStreamAbort,
   contextUsage,
 }: ChatComposerProps) {
@@ -72,7 +79,11 @@ export function ChatComposer({
 
   const handleActionClick = () => {
     if (streaming) {
-      onStreamAbort?.()
+      if (onStreamPause) {
+        onStreamPause()
+      } else {
+        onStreamAbort?.()
+      }
       return
     }
     if (value.trim() && !isLoading) {
@@ -82,13 +93,7 @@ export function ChatComposer({
 
   return (
     <footer data-testid="chat-composer" className="w-full min-w-0">
-      <div
-        className={cn(
-          'flex w-full min-w-0 flex-col gap-1.5 rounded-lg border border-border bg-background',
-          'px-2.5 py-2 shadow-sm',
-          'max-md:gap-1 max-md:px-2 max-md:py-1.5',
-        )}
-      >
+      <div className={cn(EDITOR_PIXEL_COMPOSER_WRAP, 'flex w-full min-w-0 flex-col gap-1.5')}>
         <textarea
           ref={textareaRef}
           value={value}
@@ -100,8 +105,8 @@ export function ChatComposer({
           aria-label={t('editor:chat.placeholder')}
           style={{ minHeight: COMPOSER_TEXT_MIN_PX, maxHeight: COMPOSER_TEXT_MAX_PX }}
           className={cn(
-            'w-full resize-none border-none bg-transparent px-0.5 py-0.5',
-            'text-sm leading-snug text-foreground outline-none',
+            EDITOR_PIXEL_COMPOSER_TEXT,
+            'w-full resize-none border-none bg-transparent outline-none',
             'placeholder:text-muted-foreground',
             'disabled:cursor-not-allowed disabled:opacity-65',
           )}
@@ -111,11 +116,9 @@ export function ChatComposer({
           <div
             data-testid="host-mode-control"
             title={hostModeEnabled ? t('editor:chat.hostModeHint') : t('editor:chat.hostModeOffHint')}
-            className="inline-flex h-7 shrink-0 items-center gap-1.5"
+            className={cn(EDITOR_PIXEL_HOST_MODE, 'inline-flex h-7 shrink-0 items-center')}
           >
-            <span className="hidden text-[11px] font-medium text-muted-foreground md:inline">
-              {t('common:glossary.hostMode')}
-            </span>
+            <span className="hidden md:inline">{t('common:glossary.hostMode')}</span>
             <Switch
               checked={hostModeEnabled}
               onCheckedChange={onHostModeChange}
@@ -128,8 +131,8 @@ export function ChatComposer({
             streaming={streaming}
             onClick={handleActionClick}
             disabled={!streaming && (!value.trim() || isLoading)}
-            aria-label={streaming ? t('editor:chat.stop') : t('editor:chat.send')}
-            data-testid={streaming ? 'stream-stop-btn' : 'send-btn'}
+            aria-label={streaming ? t('editor:chat.pause') : t('editor:chat.send')}
+            data-testid={streaming ? 'stream-pause-btn' : 'send-btn'}
           >
             <EditorSendIconLayer visible={!streaming} aria-hidden={streaming}>
               <Icons.ArrowUp />
@@ -140,7 +143,7 @@ export function ChatComposer({
           </EditorButton>
         </div>
 
-        <div className="hidden border-t border-border/50 pt-1.5 md:block">
+        <div className="hidden border-t-2 border-foreground/20 pt-1.5 md:block">
           <ComposerStatusBar
             contextUsage={contextUsage}
             pending={streamActive && !contextUsage}

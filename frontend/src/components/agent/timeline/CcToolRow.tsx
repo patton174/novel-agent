@@ -1,15 +1,16 @@
 import type { ReactNode } from 'react'
 import { ShimmerScanText } from '../../loaders/ShimmerScanText'
-import { translateToolDisplayName, translateToolOutcome } from '../../../utils/orchestrationI18n'
+import { translateToolDisplayName, translateToolOutcome, translateToolPhase } from '../../../utils/orchestrationI18n'
+import { EDITOR_PIXEL_TOOL_ROW } from '@/lib/editorPixelClasses'
 import {
-  CC_TOOL_ARGS,
   CC_TOOL_HEADLINE_BUTTON,
   CC_TOOL_MERGE,
   CC_TOOL_NAME,
+  ORCH_STEP_META,
   TOOL_HEADLINE_STATIC,
-  TOOL_TITLE_ROW,
   TOOL_OUTCOME_ERROR,
   TOOL_OUTCOME_SUCCESS,
+  TOOL_TITLE_ROW,
 } from '@/lib/timelineClasses'
 import { TimelineBranchRow, TimelineToolRowShell } from './layout'
 import { resolveToolVisualStatus, TimelineLeadIcon, type ToolVisualStatus } from './TimelineLeadIcon'
@@ -18,7 +19,7 @@ export function CcToolRow({
   name,
   phaseActive = false,
   outcomeBadge,
-  branchLine,
+  branchLine: _branchLine,
   mergeCount,
   branch,
   children,
@@ -28,6 +29,7 @@ export function CcToolRow({
   onToggle,
   iconName,
   iconStatus,
+  inlineResult,
 }: {
   name: string
   phaseActive?: boolean
@@ -42,14 +44,43 @@ export function CcToolRow({
   onToggle?: () => void
   iconName?: string
   iconStatus?: ToolVisualStatus
+  /** 标题行内联结果（产出摘要），与工具名、状态同一行展示 */
+  inlineResult?: string | null
 }) {
   const interactive = collapsible && Boolean(onToggle)
   const displayName = translateToolDisplayName(name)
-  const showBranchArea = Boolean(branchLine?.trim() || branch || children)
+  const trimmedInline = inlineResult?.trim() || ''
+  const hasDetailBranch = Boolean(branch || children)
+  const showBranchArea = Boolean(hasDetailBranch)
   const showOptionalDetail = Boolean(expanded && (branch || children))
 
+  const metaLine = phaseActive ? (
+    <span className={ORCH_STEP_META} data-testid={testId ? `${testId}-meta` : undefined}>
+      {' · '}
+      <ShimmerScanText active>{translateToolPhase('进行中') ?? '进行中'}</ShimmerScanText>
+      {trimmedInline ? <> · {trimmedInline}</> : null}
+    </span>
+  ) : outcomeBadge ? (
+    <span className={ORCH_STEP_META} data-testid={testId ? `${testId}-meta` : undefined}>
+      {' · '}
+      <span
+        className={
+          outcomeBadge === 'success' ? TOOL_OUTCOME_SUCCESS : TOOL_OUTCOME_ERROR
+        }
+      >
+        {translateToolOutcome(outcomeBadge)}
+      </span>
+      {trimmedInline ? <> · {trimmedInline}</> : null}
+    </span>
+  ) : trimmedInline ? (
+    <span className={ORCH_STEP_META} data-testid={testId ? `${testId}-meta` : undefined}>
+      {' · '}
+      {trimmedInline}
+    </span>
+  ) : null
+
   const titleLine = (
-    <div className={TOOL_TITLE_ROW} data-timeline-tool-title-row>
+    <div className={showBranchArea ? TOOL_TITLE_ROW : EDITOR_PIXEL_TOOL_ROW} data-timeline-tool-title-row>
       <span className={CC_TOOL_NAME}>
         {phaseActive ? (
           <ShimmerScanText active>{displayName}</ShimmerScanText>
@@ -60,18 +91,7 @@ export function CcToolRow({
       {mergeCount && mergeCount > 1 ? (
         <span className={CC_TOOL_MERGE}> ×{mergeCount}</span>
       ) : null}
-      {!phaseActive && outcomeBadge ? (
-        <span className={CC_TOOL_ARGS} data-testid={testId ? `${testId}-outcome` : undefined}>
-          {' · '}
-          <span
-            className={
-              outcomeBadge === 'success' ? TOOL_OUTCOME_SUCCESS : TOOL_OUTCOME_ERROR
-            }
-          >
-            {translateToolOutcome(outcomeBadge)}
-          </span>
-        </span>
-      ) : null}
+      {metaLine}
     </div>
   )
 
@@ -91,7 +111,6 @@ export function CcToolRow({
 
   const branchBody = showBranchArea ? (
     <>
-      {branchLine?.trim() ? <div>{branchLine}</div> : null}
       {showOptionalDetail ? (
         <>
           {branch}

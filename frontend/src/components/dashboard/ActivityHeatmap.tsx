@@ -165,10 +165,10 @@ export function ActivityHeatmap({ activity, loading }: ActivityHeatmapProps) {
   // Calculate how many weeks fit based on container width
   const calcWeeksAndCellSize = useCallback((width: number) => {
     const availableWidth = width - WEEKDAY_COL_REM - GRID_GAP_REM
-    const maxWeeks = Math.min(MAX_WEEKS, Math.max(MIN_WEEKS, Math.floor(availableWidth / (0.65 + GRID_GAP_REM))))
-    // Cap cell size so 7 rows + month header stays within ~320px container height
+    const minCellRem = 0.55
+    const maxWeeks = Math.min(MAX_WEEKS, Math.max(MIN_WEEKS, Math.floor(availableWidth / (minCellRem + GRID_GAP_REM))))
     const rawCellSize = (availableWidth - maxWeeks * GRID_GAP_REM) / maxWeeks
-    const cellSize = Math.min(1.0, Math.max(0.5, rawCellSize))
+    const cellSize = Math.min(1.2, Math.max(minCellRem, rawCellSize))
     return { weeks: maxWeeks, cellSize }
   }, [])
 
@@ -225,10 +225,19 @@ export function ActivityHeatmap({ activity, loading }: ActivityHeatmapProps) {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-start justify-between gap-3 border-b border-border/60 px-6 py-4">
-        <h2 className="text-base font-semibold text-foreground">
-          {t('dashboard:home.heatmapTitle')}
-        </h2>
+      <div className="flex items-start justify-between gap-3 border-b border-border/60 px-4 py-3">
+        <div className="flex min-w-0 flex-col gap-2">
+          <h2 className="text-base font-semibold text-foreground">
+            {t('dashboard:home.heatmapTitle')}
+          </h2>
+          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+            <span>{t('dashboard:heatmap.less')}</span>
+            {LEVEL_CLASSES.map((cls, i) => (
+              <div key={i} className={cn('size-3 rounded-[2px]', cls)} />
+            ))}
+            <span>{t('dashboard:heatmap.more')}</span>
+          </div>
+        </div>
         <div className="flex shrink-0 rounded-lg bg-muted p-0.5">
           {MODE_OPTIONS.map((option) => (
             <button
@@ -248,21 +257,22 @@ export function ActivityHeatmap({ activity, loading }: ActivityHeatmapProps) {
         </div>
       </div>
 
-      <div className="flex flex-1 flex-col px-6 py-4 overflow-hidden">
-        <div className="min-w-0 h-full" ref={containerRef}>
+      <div className="flex flex-1 flex-col overflow-hidden px-4 py-3">
+        <div className="min-h-0 h-full w-full" ref={containerRef}>
           {loading ? (
-            <Skeleton className="h-full w-full rounded-lg" />
+            <Skeleton className="h-full min-h-[200px] w-full rounded-lg" />
           ) : (
-            <div className="relative h-full w-full overflow-auto">
+            <div className="flex h-full w-full flex-col justify-center">
               <div
-                className="mb-2 grid min-w-max content-start"
+                className="mb-1.5 grid w-full content-start"
                 style={{ gridTemplateColumns: gridColumns, gap: `${GRID_GAP_REM}rem` }}
               >
                 <div aria-hidden />
                 {weeks.map((_, weekIndex) => (
                   <div
                     key={weekIndex}
-                    className="truncate text-[10px] font-medium leading-none text-muted-foreground"
+                    className="text-center text-[9px] font-medium leading-none text-muted-foreground"
+                    style={{ width: cellSizeRem }}
                   >
                     {monthLabelByWeek.get(weekIndex)
                       ? t('dashboard:heatmap.monthAxis', { month: monthLabelByWeek.get(weekIndex) })
@@ -271,7 +281,7 @@ export function ActivityHeatmap({ activity, loading }: ActivityHeatmapProps) {
                 ))}
               </div>
 
-              <div className="grid" style={{ gridTemplateColumns: gridColumns, gap: `${GRID_GAP_REM}rem` }}>
+              <div className="grid w-full" style={{ gridTemplateColumns: gridColumns, gap: `${GRID_GAP_REM}rem` }}>
                 {Array.from({ length: 7 }).map((_, rowIndex) => (
                   <Fragment key={rowIndex}>
                     <div className="flex items-center text-[10px] font-medium leading-none text-muted-foreground">
@@ -289,7 +299,7 @@ export function ActivityHeatmap({ activity, loading }: ActivityHeatmapProps) {
                               : undefined
                           }
                           className={cn(
-                            'shrink-0 rounded-[3px] transition-colors',
+                            'rounded-[3px] transition-colors',
                             cellClass(cell, level),
                           )}
                           style={{ width: cellSizeRem, height: cellSizeRem }}
@@ -301,14 +311,6 @@ export function ActivityHeatmap({ activity, loading }: ActivityHeatmapProps) {
               </div>
             </div>
           )}
-
-          <div className="mt-4 flex items-center justify-end gap-1.5 text-[10px] text-muted-foreground">
-            <span>{t('dashboard:heatmap.less')}</span>
-            {LEVEL_CLASSES.map((cls, i) => (
-              <div key={i} className={cn('size-3 rounded-[2px]', cls)} />
-            ))}
-            <span>{t('dashboard:heatmap.more')}</span>
-          </div>
         </div>
       </div>
     </div>

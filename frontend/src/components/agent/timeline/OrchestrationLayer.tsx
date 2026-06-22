@@ -1,29 +1,26 @@
-import { useEffect, useRef, useState, useMemo, type ReactNode } from 'react'
-import { useAppMobile } from '../../../hooks/useMediaQuery'
-import { cn } from '@/lib/utils'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { AgentStepState } from '../../../types/agent'
 import {
   deriveOrchestrationHeadline,
   type ThinkRoundPayload,
 } from '../../../utils/agentStreamTimeline'
 import { hasActiveOrchestrationSteps } from '../../../utils/agentToolStats'
-import { OrchestrationPendingRow } from './OrchestrationPendingRow'
 import { ThinkRoundGroup } from './ThinkRoundGroup'
 import { translateOrchestrationHeadline } from '../../../utils/orchestrationI18n'
 import { ShimmerScanText } from '../../loaders/ShimmerScanText'
 import {
-  CC_TOOL_NAME,
-  PLANNING_HEADER,
-  PLANNING_HEADER_MAIN,
-  THINK_HEADLINE_ROW,
+  EDITOR_PIXEL_ORCH_STATUS_LINE,
+  EDITOR_PIXEL_ORCH_TIMELINE_GAP,
+} from '@/lib/editorPixelClasses'
+import {
+  CC_TOOL_HEADLINE_BUTTON,
+  planningChevronClass,
   TIMELINE_PENDING_IN,
-  planningStackBodyClass,
-  planningStackWrapClass,
-  thinkLeadCellClass,
 } from '@/lib/timelineClasses'
+import { cn } from '@/lib/utils'
 import { resolveToolVisualStatus, TimelineLeadIcon } from './TimelineLeadIcon'
 
-/** 外层编排：思考 + 编排正文 + 工具；问答与其同级，编排结束后整层收起 */
+/** 外层编排：平铺时间线；点击标题收起/展开内部步骤 */
 export function OrchestrationLayer({
   rounds,
   status,
@@ -65,29 +62,27 @@ export function OrchestrationLayer({
     Boolean(orchestrationOverview?.trim()) &&
     !toolsStillRunning &&
     (!streamLive || streamFinished)
-  const showHeaderShimmer = isActive && !planningComplete
-  const isMobile = useAppMobile()
+  const orchestrationRunning = status === 'active' && !planningComplete
+  const showHeaderShimmer = orchestrationRunning && streamLive && !streamFinished
   const userToggledRef = useRef(false)
-  const [expanded, setExpanded] = useState(() => !isMobile)
+  const [expanded, setExpanded] = useState(true)
+
+  const mergedItems = useMemo(() => rounds.flatMap((round) => round.items), [rounds])
+  const hasBody = mergedItems.length > 0
 
   useEffect(() => {
     if (pinExpanded) {
       setExpanded(true)
       return
     }
-    if (status === 'done' && !userToggledRef.current) {
+    if (streamFinished && !userToggledRef.current) {
       setExpanded(false)
       return
     }
-    if (isActive && !userToggledRef.current) {
+    if (orchestrationRunning && !userToggledRef.current) {
       setExpanded(true)
     }
-  }, [status, isActive, pinExpanded])
-
-  useEffect(() => {
-    userToggledRef.current = false
-    setExpanded(!isMobile)
-  }, [messageKey, isMobile])
+  }, [pinExpanded, streamFinished, orchestrationRunning])
 
   const headline = deriveOrchestrationHeadline(
     rounds,
@@ -98,78 +93,69 @@ export function OrchestrationLayer({
     orchestrationOverview,
   )
   const headlineText = translateOrchestrationHeadline(headline)
+  const statusLabel = headlineText
+  const showBody = hasBody && (pinExpanded || expanded)
 
-  const mergedItems = useMemo(() => rounds.flatMap((round) => round.items), [rounds])
-  const thinkRailBlocks = useMemo(
-    () =>
-      mergedItems
-        .filter((item): item is Extract<(typeof mergedItems)[number], { kind: 'insight' }> => item.kind === 'insight')
-        .flatMap((item) => item.blocks)
-        .filter((block) => block.kind === 'think' || block.kind === 'reasoning'),
-    [mergedItems],
-  )
-  const showThinkRail = thinkRailBlocks.length >= 2
+  const handleToggle = () => {
+    if (!hasBody || pinExpanded) {
+      return
+    }
+    userToggledRef.current = true
+    setExpanded((open) => !open)
+  }
+
+  if (!hasBody && !isActive && streamFinished) {
+    return null
+  }
 
   return (
     <div
       data-testid="timeline-orchestration-layer"
-      className={planningStackWrapClass({
-        expanded,
-        active: isActive,
-        flat: true,
-      })}
+      className={cn(EDITOR_PIXEL_ORCH_TIMELINE_GAP, TIMELINE_PENDING_IN)}
     >
       <button
         type="button"
-        className={PLANNING_HEADER}
-        aria-expanded={expanded}
-        onClick={() => {
-          userToggledRef.current = true
-          setExpanded((open) => !open)
-        }}
+        className={cn(CC_TOOL_HEADLINE_BUTTON, EDITOR_PIXEL_ORCH_STATUS_LINE, 'w-full text-left')}
+        aria-expanded={hasBody ? showBody : undefined}
+        disabled={!hasBody || pinExpanded}
+        onClick={handleToggle}
+        data-testid="timeline-orchestration-status"
       >
-        <div className={THINK_HEADLINE_ROW}>
-          <div className={thinkLeadCellClass()} aria-hidden>
-            <TimelineLeadIcon
-              iconName="reasoning"
-              status={resolveToolVisualStatus({
-                loading: isActive,
-                success: !isActive && status === 'done',
-              })}
-            />
-          </div>
-          <div className={PLANNING_HEADER_MAIN}>
-            <span className={CC_TOOL_NAME}>
-              {showHeaderShimmer ? (
-                <ShimmerScanText active>{headlineText}</ShimmerScanText>
-              ) : (
-                headlineText
-              )}
-            </span>
-          </div>
-        </div>
-      </button>
-      {expanded ? (
-        <div className={cn(planningStackBodyClass({ branchIndent: true }), TIMELINE_PENDING_IN)}>
-          {mergedItems.length === 0 ? (
-            isActive ? <OrchestrationPendingRow /> : null
+        <TimelineLeadIcon
+          iconName="reasoning"
+          status={resolveToolVisualStatus({
+            loading: orchestrationRunning,
+            success: status === 'done' || planningComplete,
+          })}
+        />
+        <span className="min-w-0 flex-1 text-foreground">
+          {showHeaderShimmer ? (
+            <ShimmerScanText active>{statusLabel}</ShimmerScanText>
           ) : (
-            <ThinkRoundGroup
-              items={mergedItems}
-              stepStates={stepStates}
-              streamLive={streamLive}
-              streamFinished={streamFinished}
-              messageKey={messageKey}
-              thinkExpanded={thinkExpanded}
-              onThinkExpandedChange={onThinkExpandedChange}
-              orchestrationActive={isActive}
-              layoutRemeasureKey={expanded ? 'open' : 'closed'}
-              renderTool={renderTool}
-              renderText={renderText}
-              railContext={{ showThinkRail }}
-            />
+            statusLabel
           )}
-        </div>
+        </span>
+        {hasBody ? (
+          <span className={planningChevronClass(showBody)} aria-hidden />
+        ) : null}
+      </button>
+
+      {showBody ? (
+        <ThinkRoundGroup
+          items={mergedItems}
+          stepStates={stepStates}
+          streamLive={streamLive}
+          streamFinished={streamFinished}
+          messageKey={messageKey}
+          thinkExpanded={thinkExpanded}
+          onThinkExpandedChange={onThinkExpandedChange}
+          orchestrationActive={isActive}
+          layoutRemeasureKey="flat"
+          flatAlign
+          renderTool={renderTool}
+          renderText={renderText}
+          railContext={{ showThinkRail: false }}
+        />
       ) : null}
     </div>
   )

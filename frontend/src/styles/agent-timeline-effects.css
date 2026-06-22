@@ -61,11 +61,11 @@
 
 .agent-timeline-stream-cursor {
   display: inline-block;
-  width: 2px;
+  width: 0.55em;
   height: 0.95em;
   margin-left: 2px;
   vertical-align: text-bottom;
-  background: var(--primary);
+  background: var(--foreground);
   animation: agent-timeline-blink 1s step-end infinite;
 }
 
@@ -192,4 +192,44 @@
 .agent-todo-stroke-pulse rect,
 .agent-todo-stroke-pulse circle {
   animation: agent-todo-stroke-pulse 1.35s ease-in-out infinite;
+}
+
+/* 编辑页编排区 — 对齐营销 ORCH_DEMO 扁平时间线 */
+.editor-pixel [data-testid='think-rail-overlay'] {
+  display: none;
+}
+
+.editor-pixel .agent-timeline-branch-glyph {
+  display: none;
+}
+
+.editor-pixel [data-timeline-branch-variant] {
+  margin-left: 0 !important;
+  padding-left: 0 !important;
+  gap: 0.25rem;
+}
+
+.editor-pixel [data-timeline-layout-tier='insight'] [data-timeline-branch-variant] > div:last-child {
+  max-width: 92%;
+}
+
+.editor-pixel [data-timeline-layout-tier='tool-root'] [data-timeline-branch-variant='tool-grid'] {
+  flex: 0 0 100%;
+  padding-left: 0 !important;
+  max-width: 100%;
+}
+
+.editor-pixel [data-testid='assistant-stream-shell'] {
+  width: 100%;
+  overflow: visible;
+}
+
+.editor-pixel [data-testid='agent-stream-timeline'],
+.editor-pixel [data-testid='timeline-orchestration-layer'],
+.editor-pixel [data-testid='timeline-think-round'] {
+  overflow: visible;
+}
+
+.editor-pixel [data-testid='assistant-delivery-body'] {
+  width: 100%;
 }

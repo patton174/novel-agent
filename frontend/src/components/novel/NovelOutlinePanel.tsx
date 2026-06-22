@@ -15,6 +15,8 @@ import { readDragPayload, writeDragPayload } from './outline/outlineDrag'
 import { PlusIcon } from './outline/outlineIcons'
 import { OUTLINE_DRAG_HINT, OUTLINE_HINT, OUTLINE_LIST, OUTLINE_SECTION_LABEL } from '@/lib/outlineClasses'
 import type { DragPayload, DropTarget } from './outline/outlineTypes'
+import { OUTLINE_FLAT_VOLUME_ID } from './outline/outlineTypes'
+import type { Volume } from '../../types/novel'
 
 export interface NovelOutlinePanelProps {
   reindexing: boolean
@@ -39,20 +41,65 @@ export function NovelOutlinePanel({
   const addVolume = useNovelStore((s) => s.addVolume)
   const reorderVolumes = useNovelStore((s) => s.reorderVolumes)
   const applyChapterReorderPlans = useNovelStore((s) => s.applyChapterReorderPlans)
+  const loadChapters = useNovelStore((s) => s.loadChapters)
+  const loadVolumes = useNovelStore((s) => s.loadVolumes)
 
   const [expandedVolumeIds, setExpandedVolumeIds] = useState<Record<string, boolean>>({})
   const [dropTarget, setDropTarget] = useState<DropTarget | null>(null)
   const [dragging, setDragging] = useState<DragPayload | null>(null)
   const [busy, setBusy] = useState(false)
 
-  const volumeGroups = useMemo(
-    () =>
-      volumes.map((volume) => ({
-        volume,
-        chapters: sortChapters(chapters.filter((chapter) => chapter.volumeId === volume.id)),
-      })),
-    [volumes, chapters],
-  )
+  const volumeGroups = useMemo(() => {
+    const sortedChapters = sortChapters(chapters)
+
+    if (volumes.length === 0) {
+      if (sortedChapters.length === 0) return []
+      const flatVolume: Volume = {
+        id: OUTLINE_FLAT_VOLUME_ID,
+        title: '',
+        sortOrder: 0,
+        novelId: activeNovelId ?? '',
+        chapterCount: sortedChapters.length,
+        createdAt: 0,
+        updatedAt: 0,
+      }
+      return [{ volume: flatVolume, chapters: sortedChapters }]
+    }
+
+    const groups = volumes.map((volume) => ({
+      volume,
+      chapters: sortChapters(sortedChapters.filter((chapter) => chapter.volumeId === volume.id)),
+    }))
+
+    const assignedIds = new Set(groups.flatMap((group) => group.chapters.map((chapter) => chapter.id)))
+    const orphanChapters = sortedChapters.filter((chapter) => !assignedIds.has(chapter.id))
+    if (orphanChapters.length > 0) {
+      groups.push({
+        volume: {
+          id: OUTLINE_FLAT_VOLUME_ID,
+          title: '',
+          sortOrder: groups.length,
+          novelId: activeNovelId ?? '',
+          chapterCount: orphanChapters.length,
+          createdAt: 0,
+          updatedAt: 0,
+        },
+        chapters: orphanChapters,
+      })
+    }
+
+    return groups
+  }, [activeNovelId, volumes, chapters])
+
+  useEffect(() => {
+    if (!activeNovelId) return
+    const missingActive =
+      activeChapterId != null && !chapters.some((chapter) => chapter.id === activeChapterId)
+    if (chapters.length === 0 || missingActive) {
+      void loadVolumes(activeNovelId)
+      void loadChapters(activeNovelId, { listOnly: true })
+    }
+  }, [activeChapterId, activeNovelId, chapters, loadChapters, loadVolumes])
 
   useEffect(() => {
     if (volumes.length === 0) return
@@ -299,7 +346,7 @@ export function NovelOutlinePanel({
         type="button"
         onClick={onReindex}
         disabled={!activeNovelId || reindexing || busy}
-        className="mt-2 h-8 gap-1.5 border-border/70 text-[0.74rem] font-medium"
+        className="mt-2 h-8 gap-1.5"
       >
         {!reindexing ? <EditorIcons.Refresh /> : null}
         <span>

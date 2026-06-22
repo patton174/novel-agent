@@ -263,6 +263,35 @@
   margin: 0 0 0.65rem;
 }
 
+.agent-prose-pixel {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  font-size: 0.86rem;
+  line-height: 1.72;
+  letter-spacing: 0;
+  color: hsl(var(--foreground));
+}
+
+.agent-prose-pixel h1,
+.agent-prose-pixel h2,
+.agent-prose-pixel h3,
+.agent-prose-pixel h4 {
+  font-family: inherit;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.agent-prose-pixel p {
+  margin: 0 0 0.65rem;
+}
+
+.agent-prose-pixel code,
+.agent-prose-pixel pre {
+  font-family: inherit;
+  border: 2px solid hsl(var(--foreground));
+  box-shadow: 2px 2px 0 0 hsl(var(--foreground));
+}
+
 .agent-prose-memory {
   font-family: 'Geist Variable', ui-sans-serif, system-ui, sans-serif;
   font-size: 0.8rem;
@@ -427,9 +456,14 @@
   background: transparent;
 }
 
-/* 助手流图标 gutter：正文左缘对齐，图标落在左侧槽位 */
+/* 助手流图标 gutter：正文左缘对齐，图标落在左侧槽位（像素皮肤内不偏移，避免左边框被裁切） */
 [data-testid='assistant-stream-shell'] .agent-timeline-lead-cell {
   margin-left: calc(-1.35rem - 0.4rem);
+}
+
+.editor-pixel [data-testid='assistant-stream-shell'] .agent-timeline-lead-cell,
+.editor-pixel [data-testid='assistant-stream-shell'] .agent-timeline-pending-gutter {
+  margin-left: 0;
 }
 
 /* 编排 pending 行：消息起始即对齐第一层（与 OrchestrationLayer 头一致），

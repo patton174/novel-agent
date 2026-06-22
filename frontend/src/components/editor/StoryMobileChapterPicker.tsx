@@ -396,7 +396,7 @@ export function StoryMobileChapterPicker() {
                             <li
                               key={chapter.id}
                               className={cn(
-                                'flex items-center gap-0.5 rounded-xl border px-1 py-1',
+                                'flex items-center gap-0.5 border-2 border-foreground px-1 py-1',
                                 active
                                   ? 'border-primary/45 bg-primary/10'
                                   : 'border-border/60 bg-background/90',
@@ -494,7 +494,7 @@ export function StoryMobileChapterPicker() {
                             type="button"
                             onClick={() => void selectChapter(row.chapterId)}
                             className={cn(
-                              'flex w-full items-center gap-2 rounded-xl border px-2.5 py-2 text-left transition-colors',
+                              'flex w-full items-center gap-2 border-2 border-foreground px-2.5 py-2 text-left font-mono transition-colors',
                               row.chapterId === activeChapterId
                                 ? 'border-primary/45 bg-primary/10 shadow-sm'
                                 : 'border-border/60 bg-background/90 active:bg-muted/60',

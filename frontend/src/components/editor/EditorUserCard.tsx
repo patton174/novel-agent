@@ -1,8 +1,7 @@
 import { useCallback, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Settings } from 'lucide-react'
-
 import { fetchUserInfo } from '@/api/userApi'
+import { ProIconSettings } from '@/components/pro/icons/proIcons'
 import { UserPixelAvatar } from '@/components/avatars/PixelAvatar'
 import { PixelAvatarFrame } from '@/components/avatars/PixelAvatarFrame'
 import { syncPixelAvatarForUser } from '@/stores/pixelAvatarStore'
@@ -11,6 +10,7 @@ import { isLoggedIn } from '@/utils/auth'
 import { DIRECT_PYTHON } from '@/config/runtime'
 import { EditorButton } from '../ui/EditorButton'
 import { cn } from '@/lib/utils'
+import { EDITOR_PIXEL_CARD } from '@/lib/editorPixelClasses'
 
 export interface EditorUserCardProps {
   onOpenProfile: () => void
@@ -60,14 +60,14 @@ export function EditorUserCard({ onOpenProfile, onOpenSettings, onOpenAvatarEdit
         }
       }}
       className={cn(
-        'group flex min-w-0 cursor-pointer items-center gap-2.5 rounded-xl px-2 py-2',
-        'bg-gradient-to-r from-muted/50 via-muted/30 to-transparent',
-        'ring-1 ring-border/40 transition-colors hover:from-muted/65 hover:via-muted/40',
+        EDITOR_PIXEL_CARD,
+        'group flex min-w-0 cursor-pointer items-center gap-2.5 px-2 py-2 transition-colors hover:bg-neon/20',
       )}
     >
       <PixelAvatarFrame
         type="button"
         size={40}
+        bordered={false}
         aria-label={t('editor:avatar.openEditor')}
         title={t('editor:avatar.openEditor')}
         onClick={(e) => {
@@ -96,7 +96,7 @@ export function EditorUserCard({ onOpenProfile, onOpenSettings, onOpenAvatarEdit
           onOpenSettings()
         }}
       >
-        <Settings className="size-3.5" />
+        <ProIconSettings size={14} />
       </EditorButton>
     </div>
   )

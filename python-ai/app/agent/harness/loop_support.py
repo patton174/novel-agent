@@ -452,6 +452,58 @@ def block_run_end_for_open_todos(
     return True
 
 
+async def yield_pause_checkpoint(
+    state: RunLoopState,
+    session: RunSession,
+    *,
+    pause_announced: list[bool],
+) -> AsyncIterator[dict[str, Any]]:
+    """Block while run is paused; emit run.paused / run.resumed once per transition."""
+    if session.aborted:
+        return
+    if not session.is_paused():
+        if pause_announced[0]:
+            pause_announced[0] = False
+            yield build_event(
+                event_type="run.resumed",
+                run_id=state.ctx.run_id,
+                session_id=state.ctx.session_id,
+                message_id=state.ctx.message_id,
+                step_id=f"step_{uuid4().hex[:8]}",
+                sequence=state.sequence,
+                payload={"reason": "user resume"},
+            )
+            state.sequence += 1
+        return
+    if not pause_announced[0]:
+        pause_announced[0] = True
+        yield build_event(
+            event_type="run.paused",
+            run_id=state.ctx.run_id,
+            session_id=state.ctx.session_id,
+            message_id=state.ctx.message_id,
+            step_id=f"step_{uuid4().hex[:8]}",
+            sequence=state.sequence,
+            payload={"reason": "user pause"},
+        )
+        state.sequence += 1
+    await session.await_running()
+    if session.aborted:
+        return
+    if pause_announced[0]:
+        pause_announced[0] = False
+        yield build_event(
+            event_type="run.resumed",
+            run_id=state.ctx.run_id,
+            session_id=state.ctx.session_id,
+            message_id=state.ctx.message_id,
+            step_id=f"step_{uuid4().hex[:8]}",
+            sequence=state.sequence,
+            payload={"reason": "user resume"},
+        )
+        state.sequence += 1
+
+
 async def wait_for_user_interaction(
     state: RunLoopState,
     session: RunSession,

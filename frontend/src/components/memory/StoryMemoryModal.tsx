@@ -3,8 +3,11 @@ import { useTranslation } from 'react-i18next'
 
 import { MotionPane } from '../motion/MotionPane'
 import { AppModalShell } from '@/components/ui/AppModalShell'
+import { Button } from '@/components/ui/button'
 import { DialogTitle } from '@/components/ui/dialog'
+import { Skeleton } from '@/components/ui/skeleton'
 import { NavAccordion, type NavAccordionItem } from '@/components/ui/NavAccordion'
+import type { MemoryLoadErrorKind } from '../../hooks/editor/useEditorStoryMemory'
 import type { MemoryNodeDTO, MemoryRootTab, MemoryScope, MemoryTreeResponse } from '../../types/memoryNode'
 import { MemoryNodeIcon } from './memoryNodeIcons'
 import { MemoryContentPanel } from './MemoryContentPanel'
@@ -18,6 +21,10 @@ export interface StoryMemoryModalProps {
   activeScope: MemoryScope | null
   onScopeChange: (scope: MemoryScope) => void
   updatedAt: Date | null
+  loading?: boolean
+  loadError?: MemoryLoadErrorKind
+  loadDetail?: string | null
+  onRetry?: () => void
 }
 
 export function StoryMemoryModal({
@@ -29,6 +36,10 @@ export function StoryMemoryModal({
   activeScope,
   onScopeChange,
   updatedAt,
+  loading = false,
+  loadError = null,
+  loadDetail = null,
+  onRetry,
 }: StoryMemoryModalProps) {
   const { t } = useTranslation(['editor'])
   const [expandedScope, setExpandedScope] = useState<string | null>(activeScope)
@@ -108,6 +119,13 @@ export function StoryMemoryModal({
     setActiveMemoryId(leafId)
   }
 
+  const loadErrorMessage = useMemo(() => {
+    if (!loadError) return null
+    if (loadError === 'tree') return t('editor:memory.loadFailedTree')
+    if (loadError === 'flat_all') return t('editor:memory.loadFailedFlat')
+    return t('editor:memory.loadFailedPartial', { scopes: loadDetail ?? '' })
+  }, [loadDetail, loadError, t])
+
   return (
     <AppModalShell
       open={open}
@@ -127,8 +145,29 @@ export function StoryMemoryModal({
       }
       bodyClassName="grid min-h-0 grid-cols-1 overflow-hidden p-0 max-md:grid-rows-[auto_minmax(200px,1fr)] min-[721px]:grid-cols-[minmax(200px,240px)_1fr]"
     >
+      {loadErrorMessage ? (
+        <div className="col-span-full flex flex-wrap items-center justify-between gap-2 border-b border-destructive/30 bg-destructive/5 px-4 py-2.5 text-[12px] text-destructive">
+          <div className="min-w-0">
+            <p className="font-medium">{loadErrorMessage}</p>
+            {loadDetail && loadError !== 'flat_partial' ? (
+              <p className="mt-0.5 truncate text-[11px] opacity-80">{loadDetail}</p>
+            ) : null}
+          </div>
+          {onRetry ? (
+            <Button type="button" variant="outline" size="sm" className="h-8 shrink-0" onClick={onRetry}>
+              {t('editor:memory.retry')}
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
       <div className="min-h-0 overflow-y-auto border-border/60 bg-sidebar/30 p-3 max-md:border-b min-[721px]:border-r">
-        {accordionItems.length > 0 ? (
+        {loading ? (
+          <div className="space-y-2">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-8 w-full rounded-lg" />
+            ))}
+          </div>
+        ) : accordionItems.length > 0 ? (
           <NavAccordion
             items={accordionItems}
             expandedId={expandedScope ?? resolvedScope}
@@ -137,6 +176,8 @@ export function StoryMemoryModal({
             onLeafSelect={handleLeafSelect}
             aria-label={t('editor:memory.navAria')}
           />
+        ) : loadError === 'tree' ? (
+          <p className="px-1 text-[12px] text-muted-foreground">{t('editor:memory.loadFailed')}</p>
         ) : (
           <p className="px-1 text-[12px] text-muted-foreground">{t('editor:memory.emptyRoots')}</p>
         )}
@@ -145,7 +186,12 @@ export function StoryMemoryModal({
       <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         <MotionPane paneKey={activeMemoryId ?? resolvedScope ?? 'empty'}>
           <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-3 pb-4 pt-3.5 sm:px-4">
-            {activeDetail ? (
+            {loading ? (
+              <div className="space-y-3">
+                <Skeleton className="h-5 w-40" />
+                <Skeleton className="h-32 w-full" />
+              </div>
+            ) : activeDetail ? (
               <MemoryContentPanel
                 detail={activeDetail}
                 scope={resolvedScope ?? undefined}

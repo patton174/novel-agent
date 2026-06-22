@@ -548,6 +548,71 @@ export function ccToolResultHint(
   return null
 }
 
+/** 工具标题行内联结果：只展示产出/摘要，不含「已读取」等动作文案 */
+export function ccToolInlineResult(
+  step: AgentStepState,
+  options: {
+    loading: boolean
+    error: boolean
+    readLabel?: string | null
+    chapterProgressHint?: string | null
+    readProgressHint?: string | null
+    earlyProgressHint?: string | null
+    awaitingUserInput?: boolean
+    chooseLoading?: boolean
+    toolErrorText?: string | null
+  },
+): string | null {
+  if (options.chooseLoading) {
+    return null
+  }
+
+  if (options.loading) {
+    const progress =
+      options.chapterProgressHint?.trim() ||
+      options.readProgressHint?.trim() ||
+      options.readLabel?.trim() ||
+      options.earlyProgressHint?.trim() ||
+      ''
+    return progress || null
+  }
+
+  if (options.error) {
+    const err = options.toolErrorText?.trim() || step.outputSummary?.trim() || ''
+    if (!err || err.startsWith('{') || /tool_use_error|upstream_/i.test(err)) {
+      return null
+    }
+    return err.length > 96 ? `${err.slice(0, 96)}…` : err
+  }
+
+  if (options.awaitingUserInput) {
+    return null
+  }
+
+  const compact =
+    step.outputSummary?.trim() ||
+    step.resultLabels?.[0]?.trim() ||
+    ''
+  if (
+    compact &&
+    !compact.startsWith('{') &&
+    !/tool_use_error|upstream_/i.test(compact)
+  ) {
+    return compact.length > 96 ? `${compact.slice(0, 96)}…` : compact
+  }
+
+  if (options.loading) {
+    return null
+  }
+
+  const idleLabel = options.readLabel?.trim() || ''
+  if (idleLabel) {
+    return idleLabel.length > 96 ? `${idleLabel.slice(0, 96)}…` : idleLabel
+  }
+
+  return null
+}
+
 /** 工具行树状分支文案：运行中「正在…」/ 完成后「已…」 */
 export function ccToolBranchStatus(
   step: AgentStepState,

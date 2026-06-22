@@ -76,13 +76,6 @@ def extract_chapter_read_labels(content: str, file_path: str = "") -> list[str]:
     title = (meta.get("title") or "").strip()
     if not title:
         return ["章节正文"]
-    li_raw = meta.get("list_index", "")
-    try:
-        idx = int(li_raw)
-    except (TypeError, ValueError):
-        idx = 0
-    if idx > 0:
-        return [f"《{title}》·作品列表第{idx}章"]
     return [f"《{title}》"]
 
 

@@ -1,10 +1,10 @@
 import { useTranslation } from 'react-i18next'
 import { NavLink } from 'react-router-dom'
-import { IconArrowLeft } from '@tabler/icons-react'
 import { cn } from '@/lib/utils'
 import { ProSidebar, type ProSidebarGroup, type ProSidebarItem } from '@/components/pro/ProSidebar'
 import { IconStroke, type ProIconType } from '@/components/pro/IconStroke'
 import { NovelAiPixelWordmark } from '@/components/marketing/pixel/NovelAiPixelWordmark'
+import { DashboardSidebarFooter } from '@/components/dashboard/DashboardSidebarFooter'
 import {
   ProIconAdminAudit,
   ProIconAdminContent,
@@ -16,6 +16,7 @@ import {
   ProIconAdminStats,
   ProIconAdminSystem,
   ProIconAdminUsers,
+  ProIconArrowLeft,
 } from '@/components/pro/icons/proIcons'
 
 interface AdminSidebarProps {
@@ -23,7 +24,7 @@ interface AdminSidebarProps {
   onNavigate?: () => void
 }
 
-/** 管理后台侧栏：ProSidebar 四分组（概览/运营/内容/系统）+ 底部「返回用户端」。 */
+/** 管理后台侧栏：ProSidebar 四分组 + 顶部返回 + 底部用户卡。 */
 export function AdminSidebar({ embedded = false, onNavigate }: AdminSidebarProps) {
   const { t } = useTranslation(['common'])
 
@@ -71,30 +72,32 @@ export function AdminSidebar({ embedded = false, onNavigate }: AdminSidebarProps
       embedded={embedded}
       onNavigate={onNavigate}
       header={
-        <div className="flex h-16 items-center justify-between gap-2 border-b border-border/60 px-4">
-          <NovelAiPixelWordmark size="nav" cursor={false} />
-          <span className="border-2 border-foreground bg-neon px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-widest text-ink">
-            ADMIN
-          </span>
+        <div
+          className={cn(
+            'flex h-12 items-center gap-2 border-b border-border/60 px-3',
+            embedded && 'pr-3',
+          )}
+        >
+          <NavLink
+            to="/dashboard"
+            onClick={onNavigate}
+            className="flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            aria-label={t('common:nav.backToUser')}
+            title={t('common:nav.backToUser')}
+          >
+            <IconStroke icon={ProIconArrowLeft} size={18} />
+          </NavLink>
+          <div className="min-w-0 flex-1 overflow-hidden">
+            <NovelAiPixelWordmark size="sm" cursor={false} />
+          </div>
+          {!embedded ? (
+            <span className="shrink-0 border-2 border-foreground bg-neon px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-widest text-ink">
+              ADMIN
+            </span>
+          ) : null}
         </div>
       }
-      footer={
-        <NavLink
-          to="/dashboard"
-          onClick={onNavigate}
-          className={({ isActive }) =>
-            cn(
-              'flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors',
-              isActive
-                ? 'bg-primary/5 text-foreground'
-                : 'text-muted-foreground hover:bg-muted hover:text-foreground',
-            )
-          }
-        >
-          <IconStroke icon={IconArrowLeft} size={20} />
-          <span>{t('common:nav.backToUser')}</span>
-        </NavLink>
-      }
+      footer={<DashboardSidebarFooter onNavigate={onNavigate} />}
     />
   )
 }

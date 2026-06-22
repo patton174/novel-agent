@@ -1,6 +1,7 @@
 import { useEffect, useRef, type RefObject } from 'react'
 import { useTypewriterBuffer } from '../../hooks/useTypewriterStream'
 import { cn } from '@/lib/utils'
+import { EDITOR_PIXEL_MONO_WRAP } from '@/lib/editorPixelClasses'
 
 export interface ChapterStreamViewerProps {
   content: string
@@ -70,7 +71,8 @@ export function ChapterStreamViewer({
       >
         <pre
           className={cn(
-            'm-0 whitespace-pre-wrap border-none bg-transparent font-serif leading-loose tracking-wide text-foreground outline-none',
+            'm-0 whitespace-pre-wrap border-none bg-transparent text-[0.9rem] leading-[1.72] text-foreground outline-none',
+            EDITOR_PIXEL_MONO_WRAP,
             'agent-stream-reveal-text',
             streaming && 'agent-stream-reveal-text--active',
           )}

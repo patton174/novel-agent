@@ -4,6 +4,7 @@ import { ExternalLink } from 'lucide-react'
 import { AppModalShell } from '@/components/ui/AppModalShell'
 import { Switch } from '../ui/switch'
 import { cn } from '@/lib/utils'
+import { EDITOR_PIXEL_CARD } from '@/lib/editorPixelClasses'
 
 interface EditorSettingsModalProps {
   open: boolean
@@ -34,7 +35,8 @@ export function EditorSettingsModal({
       <section className="flex flex-col gap-3">
         <div
           className={cn(
-            'flex items-center justify-between gap-4 rounded-xl border border-border bg-muted/30 p-3',
+            EDITOR_PIXEL_CARD,
+            'flex items-center justify-between gap-4 p-3 font-mono',
             'max-md:flex-col max-md:items-stretch max-md:gap-2.5',
           )}
         >

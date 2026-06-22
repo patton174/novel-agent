@@ -1,6 +1,8 @@
+import { cn } from '@/lib/utils'
 import { ToolIcon } from '../../../utils/toolIcons'
 import { normalizeToolName } from '../../../utils/agentToolNames'
-import { toolIconSlotClass, type ToolVisualStatus } from '@/lib/timelineClasses'
+import { editorPixelStatusIconClass } from '@/lib/editorPixelClasses'
+import type { ToolVisualStatus } from '@/lib/timelineClasses'
 
 export type { ToolVisualStatus } from '@/lib/timelineClasses'
 
@@ -21,6 +23,20 @@ export function resolveToolVisualStatus(opts: {
   return 'idle'
 }
 
+function pixelIconStatus(status: ToolVisualStatus): 'loading' | 'success' | 'error' | 'idle' {
+  if (status === 'loading') {
+    return 'loading'
+  }
+  if (status === 'error') {
+    return 'error'
+  }
+  if (status === 'success') {
+    return 'success'
+  }
+  return 'idle'
+}
+
+/** 编排/工具/思考图标：方框包裹；进行中灰底，完成蓝底 */
 export function TimelineLeadIcon({
   iconName,
   status,
@@ -33,11 +49,14 @@ export function TimelineLeadIcon({
   nested?: boolean
 }) {
   const key = normalizeToolName(iconName) || iconName
-  const px = nested ? Math.max(13, size - 1) : size
+  const px = nested ? Math.max(12, size - 2) : size
 
   return (
     <span
-      className={toolIconSlotClass(status)}
+      className={cn(
+        editorPixelStatusIconClass(pixelIconStatus(status)),
+        nested && 'size-[1.15rem]',
+      )}
       data-testid="timeline-lead-icon"
       data-status={status}
     >

@@ -42,7 +42,7 @@ export function readEditorSessionId(search: string): string | null {
 
 export function readEditorTab(search: string): EditorCenterTab | null {
   const raw = new URLSearchParams(search.replace(/^\?/, '')).get(EDITOR_QUERY.TAB)?.trim()
-  if (raw === 'chat' || raw === 'story') {
+  if (raw === 'chat' || raw === 'story' || raw === 'mine') {
     return raw
   }
   return null

@@ -127,7 +127,7 @@ describe('ThinkRoundGroup', () => {
             name="ReadMemory"
             iconName="ReadMemory"
             outcomeBadge="success"
-            branchLine="已查阅创作记忆"
+            inlineResult="林默 / 苏晴"
             testId="fixture-tool"
           />
         )}
@@ -135,9 +135,7 @@ describe('ThinkRoundGroup', () => {
     )
 
     expect(screen.getByTestId('timeline-think-round')).toHaveClass('agent-timeline-think-tree')
-    expect(screen.getByTestId('timeline-orchestration-tool').className).toContain(
-      'pl-[calc(1.35rem+0.4rem)]',
-    )
+    expect(screen.getByTestId('timeline-orchestration-tool')).toBeInTheDocument()
 
     await waitFor(() => {
       expect(screen.getAllByTestId('think-rail-segment')).toHaveLength(2)

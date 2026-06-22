@@ -1,5 +1,4 @@
-import { memo, useEffect, useMemo, useState } from 'react'
-import { ChevronDown } from 'lucide-react'
+import { memo, useMemo } from 'react'
 import type {
   AgentAssistantStreamPhase,
   AgentChoiceOption,
@@ -12,22 +11,18 @@ import type { EditorMessage } from '../../types/editor'
 import { AssistantStreamTimeline } from '../agent/AssistantStreamTimeline'
 import { AssistantMessageAgentTrace } from '../agent/AssistantMessageAgentTrace'
 import { AgentMarkdown } from '../agent/AgentMarkdown'
-import { ShimmerScanText } from '../loaders/ShimmerScanText'
 import { UserChatBubble } from '../chat/UserChatBubble'
 import { AgentThinkPanel } from '../agent/AgentThinkPanel'
 import { ChatMessageSurfaceBody } from '../agent/ChatMessageSurface'
 import { MessageTodoPanel } from '../agent/timeline/MessageTodoPanel'
 import { TimelineDeliveryBlock } from '../agent/timeline/TimelineDeliveryBlock'
-import { TimelineBodyDivider } from '../agent/timeline/TimelineBodyDivider'
-import { MOBILE_PROCESS_TOGGLE, TIMELINE_ICON_GUTTER } from '@/lib/timelineClasses'
+import { TIMELINE_ICON_GUTTER } from '@/lib/timelineClasses'
 import { dedupeTodosById, sortTodosForDisplay } from '../../utils/todoDisplay'
-import { ensureReplayTimeline, hasAgentTrace } from '../../utils/agentMessageReplay'
-import {
-  countOrchestrationSteps,
-  extractAssistantDeliveryText,
-} from '../../utils/agentMessageMobileSummary'
+import { ensureReplayTimeline } from '../../utils/agentMessageReplay'
+import { extractPostTimelineDeliveryText } from '../../utils/agentMessageMobileSummary'
+import { isToolErrorLikeText } from '../../utils/toolErrorText'
 import { sanitizeAgentStreamError } from '../../utils/sanitizeAgentStreamError'
-import { useAppMobile } from '@/hooks/useMediaQuery'
+import { EditorButton } from '../ui/EditorButton'
 import { EditorIcons } from './icons'
 import { cn } from '@/lib/utils'
 
@@ -50,6 +45,7 @@ export interface EditorChatMessageProps {
     },
   ) => void
   onEditUserMessage?: (content: string) => void
+  onStreamResume?: (messageId: string) => void
   marketingScrubPlaying?: boolean
   marketingPinOrchestration?: boolean
 }
@@ -63,6 +59,7 @@ function EditorChatMessageInner({
   onSelectChoice,
   onSubmitInteraction,
   onEditUserMessage,
+  onStreamResume,
   marketingScrubPlaying = false,
   marketingPinOrchestration = false,
 }: EditorChatMessageProps) {
@@ -71,8 +68,14 @@ function EditorChatMessageInner({
     message.agentStreamPhase ?? (isActiveStream ? 'connecting' : 'completed')
   const hasChoiceSteps = Boolean(message.agentSteps?.some((s) => (s.choices?.length ?? 0) > 0))
   const replayTimeline = ensureReplayTimeline(message)
-  const hasTimeline = replayTimeline.length > 0
-  const hasTrace = hasAgentTrace(message)
+  const displayTimeline = replayTimeline
+  const hasOrchestrationChrome = displayTimeline.some(
+    (b) =>
+      b.kind === 'tool' ||
+      b.kind === 'think' ||
+      b.kind === 'reasoning' ||
+      b.kind === 'transition',
+  )
   const streamActive = marketingScrubPlaying
     ? Boolean(isActiveStream)
     : isActiveStream && isLoading
@@ -83,47 +86,33 @@ function EditorChatMessageInner({
       phase === 'waiting' ||
       !isActiveStream ||
       !isLoading
-  const showAgentTimeline = hasTimeline || hasTrace || streamActive
-  const timelineShowsContent = replayTimeline.some(
-    (block) => block.kind === 'text' && block.content.trim().length > 0,
-  )
-  const showDeliveryBody = !timelineShowsContent && Boolean(message.content?.trim())
-  const hasOrchestrationTrace = replayTimeline.some(
-    (block) =>
-      block.kind === 'transition' ||
-      block.kind === 'reasoning' ||
-      block.kind === 'think' ||
-      block.kind === 'narration' ||
-      block.kind === 'tool',
-  )
-  const orchestrationStepCount = useMemo(
-    () => countOrchestrationSteps(message.agentSteps, replayTimeline),
-    [message.agentSteps, replayTimeline],
-  )
-  const showDeliveryDivider =
-    showDeliveryBody && (hasOrchestrationTrace || orchestrationStepCount > 0)
-  const thinkText = message.agentThinkText ?? message.thinking
-  const isMobile = useAppMobile()
-  const [processExpanded, setProcessExpanded] = useState(false)
-
   const deliveryText = useMemo(
-    () => extractAssistantDeliveryText(message, replayTimeline),
-    [message, replayTimeline],
+    () =>
+      extractPostTimelineDeliveryText(
+        message,
+        replayTimeline,
+        message.agentSteps,
+        streamFinished,
+      ),
+    [message, replayTimeline, streamFinished],
   )
-  const canCollapseProcess =
-    isMobile &&
-    !message.agentAwaitingInteraction &&
-    hasOrchestrationTrace &&
-    orchestrationStepCount > 0
-
-  const processCollapsed = canCollapseProcess && !processExpanded
-  const showProcessToggle = canCollapseProcess && (streamFinished || streamActive)
-
-  useEffect(() => {
-    setProcessExpanded(false)
-  }, [message.id])
-
-  const showFullTimeline = showAgentTimeline && !processCollapsed
+  const showPostTimelineDelivery = Boolean(deliveryText.trim())
+  const showAgentTimeline =
+    hasOrchestrationChrome || (streamActive && !deliveryText.trim())
+  const thinkText = message.agentThinkText ?? message.thinking
+  const errorAlreadyInToolResults = useMemo(
+    () =>
+      Boolean(
+        message.agentSteps?.some(
+          (step) =>
+            step.status === 'failed' &&
+            (isToolErrorLikeText(step.outputSummary) ||
+              isToolErrorLikeText(step.detail) ||
+              Boolean(step.outputSummary?.trim())),
+        ),
+      ),
+    [message.agentSteps],
+  )
 
   if (message.role === 'user') {
     return (
@@ -155,15 +144,18 @@ function EditorChatMessageInner({
 
   return (
     <div className="flex w-full flex-col items-start">
-      <div className="flex w-full max-w-full flex-col gap-2 text-[15px] leading-relaxed text-foreground">
-        {message.agentStreamError && phase === 'error' && (
+      <div className="flex w-full max-w-full flex-col gap-2 font-mono text-[0.82rem] leading-relaxed text-foreground">
+        {message.agentStreamError &&
+        phase === 'error' &&
+        !errorAlreadyInToolResults &&
+        !isToolErrorLikeText(message.content ?? '') ? (
           <div
-            className="mb-2.5 rounded-lg border border-destructive/25 bg-destructive/10 px-2.5 py-2 text-xs leading-snug text-destructive"
+            className="mb-2.5 border-2 border-destructive bg-destructive/10 px-2.5 py-2 font-mono text-xs font-bold uppercase leading-snug text-destructive"
             role="alert"
           >
             {sanitizeAgentStreamError(message.agentStreamError)}
           </div>
-        )}
+        ) : null}
         {showAgentTimeline ? (
           <div
             className={cn(
@@ -173,65 +165,23 @@ function EditorChatMessageInner({
             )}
             data-testid="assistant-stream-shell"
           >
-            {processCollapsed && streamActive && !deliveryText ? (
-              <ChatMessageSurfaceBody className="flex min-h-7 items-center py-1" aria-live="polite">
-                <ShimmerScanText active>{t('editor:chat.creating')}</ShimmerScanText>
-              </ChatMessageSurfaceBody>
-            ) : null}
-            {processCollapsed && deliveryText ? (
+            <AssistantStreamTimeline
+              timeline={displayTimeline}
+              stepStates={message.agentSteps ?? []}
+              streamLive={streamActive}
+              streamFinished={streamFinished}
+              messageKey={message.id}
+              thinkExpanded={thinkExpanded}
+              fallbackThinkText={thinkText}
+              awaitingInteraction={Boolean(message.agentAwaitingInteraction)}
+              onThinkExpandedChange={onThinkExpandedChange}
+              onSelectChoice={onSelectChoice}
+              onSubmitInteraction={onSubmitInteraction}
+              pinOrchestrationOpen={marketingPinOrchestration}
+            />
+            {showPostTimelineDelivery ? (
               <TimelineDeliveryBlock
                 text={deliveryText}
-                streamLive={false}
-                testId="assistant-delivery-collapsed"
-              />
-            ) : null}
-            {showProcessToggle ? (
-              <button
-                type="button"
-                className={MOBILE_PROCESS_TOGGLE}
-                aria-expanded={processExpanded}
-                aria-label={
-                  processExpanded
-                    ? t('editor:chat.collapseProcess')
-                    : t('editor:chat.expandProcessCount', { count: orchestrationStepCount })
-                }
-                onClick={() => setProcessExpanded((open) => !open)}
-                data-testid="mobile-process-toggle"
-              >
-                <span>
-                  {processExpanded
-                    ? t('editor:chat.collapseProcess')
-                    : streamActive
-                      ? t('editor:chat.processCreatingCount', { count: orchestrationStepCount })
-                      : processCollapsed && !deliveryText
-                        ? t('editor:chat.processExpandCount', { count: orchestrationStepCount })
-                        : t('editor:chat.processViewCount', { count: orchestrationStepCount })}
-                </span>
-                <ChevronDown
-                  className={`size-4 shrink-0 transition-transform ${processExpanded ? 'rotate-180' : ''}`}
-                />
-              </button>
-            ) : null}
-            {showFullTimeline ? (
-              <AssistantStreamTimeline
-                timeline={replayTimeline}
-                stepStates={message.agentSteps ?? []}
-                streamLive={streamActive}
-                streamFinished={streamFinished}
-                messageKey={message.id}
-                thinkExpanded={thinkExpanded}
-                fallbackThinkText={thinkText}
-                awaitingInteraction={Boolean(message.agentAwaitingInteraction)}
-                onThinkExpandedChange={onThinkExpandedChange}
-                onSelectChoice={onSelectChoice}
-                onSubmitInteraction={onSubmitInteraction}
-                pinOrchestrationOpen={marketingPinOrchestration}
-              />
-            ) : null}
-            {showFullTimeline && showDeliveryDivider ? <TimelineBodyDivider /> : null}
-            {showFullTimeline && showDeliveryBody ? (
-              <TimelineDeliveryBlock
-                text={message.content}
                 streamLive={streamActive && !streamFinished}
               />
             ) : null}
@@ -265,7 +215,12 @@ function EditorChatMessageInner({
               onSubmitInteraction={onSubmitInteraction}
             />
           </>
-        ) : message.content?.trim() ? (
+        ) : showPostTimelineDelivery ? (
+          <TimelineDeliveryBlock
+            text={deliveryText}
+            streamLive={streamActive && !streamFinished}
+          />
+        ) : message.content?.trim() && !isToolErrorLikeText(message.content) ? (
           <div className="flex w-full max-w-full flex-col gap-1.5 px-0 py-0.5">
             <AgentMarkdown text={message.content} variant="chat" />
           </div>
@@ -277,7 +232,7 @@ function EditorChatMessageInner({
               <span>{message.writing.status === 'writing' ? t('editor:chat.writing') : t('editor:chat.writingDone')}</span>
             </div>
             {message.writing.content && (
-              <div className="rounded-lg border border-primary/10 bg-background/80 px-3 py-2 text-ui leading-relaxed text-foreground">
+              <div className="border-2 border-foreground bg-background px-3 py-2 font-mono text-[0.82rem] leading-[1.72] text-foreground shadow-[1px_1px_0_0_var(--foreground)]">
                 {message.writing.content}
               </div>
             )}
@@ -292,7 +247,7 @@ function EditorChatMessageInner({
             {message.toolCalls.map((tool, i) => (
               <div
                 key={i}
-                className="mb-1 flex items-center gap-2 rounded-md bg-muted/40 px-2 py-1 text-xs text-muted-foreground last:mb-0"
+                className="mb-1 flex items-center gap-2 border-2 border-foreground/20 bg-muted/40 px-2 py-1 font-mono text-xs text-muted-foreground last:mb-0"
               >
                 <span className="size-1.5 shrink-0 rounded-full bg-emerald-500" />
                 <span>{tool.name}</span>
@@ -325,6 +280,18 @@ function EditorChatMessageInner({
         {showMessageTodoPanel ? (
           <MessageTodoPanel todos={todoItems} streamLive={streamActive} />
         ) : null}
+        {message.agentStreamPaused && onStreamResume ? (
+          <div className="mt-1.5 flex w-full justify-end">
+            <EditorButton
+              variant="secondary"
+              size="sm"
+              onClick={() => onStreamResume(message.id)}
+              data-testid="stream-resume-btn"
+            >
+              {t('editor:chat.continueGenerate')}
+            </EditorButton>
+          </div>
+        ) : null}
       </div>
     </div>
   )
@@ -341,6 +308,7 @@ function areMessagesEqual(prev: EditorChatMessageProps, next: EditorChatMessageP
   if (prev.onSelectChoice !== next.onSelectChoice) return false
   if (prev.onSubmitInteraction !== next.onSubmitInteraction) return false
   if (prev.onEditUserMessage !== next.onEditUserMessage) return false
+  if (prev.onStreamResume !== next.onStreamResume) return false
 
   const prevMsg = prev.message
   const nextMsg = next.message

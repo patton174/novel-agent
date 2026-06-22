@@ -1,81 +1,12 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { AgentTimelineBlock } from '../../../types/agent'
 import { shouldRenderThinkBlock } from '../../../utils/agentStreamTimeline'
-import {
-  extractOrchestrationSummary,
-  formatThinkDisplayText,
-  formatThinkStreamingDisplay,
-  thinkBodyExcludingSummary,
-} from '../../../utils/thinkDisplayText'
-import { useTypewriterBuffer } from '../../../hooks/useTypewriterStream'
+import { formatThinkDisplayText, formatThinkStreamingDisplay } from '../../../utils/thinkDisplayText'
 import { AgentThinkPanel } from '../AgentThinkPanel'
-import { AgentMarkdown } from '../AgentMarkdown'
 import { useTimelineBlockStreamText } from './useTimelineBlockStreamText'
-import {
-  ORCHESTRATION_NARRATION,
-  ORCHESTRATION_SUMMARY_REVEAL,
-  TIMELINE_STREAM_CURSOR,
-} from '@/lib/timelineClasses'
-import { OrchestrationFlatSlot } from './layout'
-import { cn } from '@/lib/utils'
 
 export type ThinkTimelineBlock = Extract<AgentTimelineBlock, { kind: 'think' }>
 export type ReasoningTimelineBlock = Extract<AgentTimelineBlock, { kind: 'reasoning' }>
-
-function OrchestrationSummaryReveal({
-  text,
-  blockId,
-  animate,
-}: {
-  text: string
-  blockId: string
-  animate: boolean
-}) {
-  const { visible, isTyping } = useTypewriterBuffer(text, {
-    resetKey: `insight-summary:${blockId}`,
-    playing: animate,
-    finished: !animate,
-    maxCharsPerFrame: 8,
-  })
-  const displayText = animate ? visible : text
-
-  return (
-    <div className={ORCHESTRATION_NARRATION}>
-      <AgentMarkdown
-        text={displayText}
-        variant="chat"
-        streaming={animate && isTyping}
-        isAnimating={animate && isTyping}
-      />
-      {animate && isTyping ? <span className={TIMELINE_STREAM_CURSOR} aria-hidden /> : null}
-    </div>
-  )
-}
-
-function InsightOrchestrationSummary({
-  summary,
-  blockId,
-  isThinking,
-  animate,
-}: {
-  summary: string
-  blockId: string
-  isThinking: boolean
-  animate: boolean
-}) {
-  if (isThinking || !summary.trim()) {
-    return null
-  }
-  return (
-    <OrchestrationFlatSlot
-      kind="text"
-      className={cn(animate && ORCHESTRATION_SUMMARY_REVEAL)}
-      testId="timeline-orchestration-insight-summary"
-    >
-      <OrchestrationSummaryReveal text={summary} blockId={blockId} animate={animate} />
-    </OrchestrationFlatSlot>
-  )
-}
 
 function useInsightExpandState(
   messageKey: string,
@@ -104,27 +35,12 @@ function useInsightExpandState(
   return { panelExpanded, isPanelExpanded, handleExpandedChange, controlledExpand, pinnedOpen }
 }
 
-function useThinkInsightPresentation(
+function useThinkPanelPresentation(
   rawText: string,
   isThinking: boolean,
   isPanelExpanded: boolean,
   maxLines: number,
 ) {
-  const wasThinkingRef = useRef(isThinking)
-  const [animateSummary, setAnimateSummary] = useState(false)
-
-  useEffect(() => {
-    if (wasThinkingRef.current && !isThinking) {
-      setAnimateSummary(true)
-    }
-    wasThinkingRef.current = isThinking
-  }, [isThinking])
-
-  const summary = useMemo(() => extractOrchestrationSummary(rawText), [rawText])
-  const panelSourceText = useMemo(
-    () => (isThinking ? rawText : thinkBodyExcludingSummary(rawText)),
-    [rawText, isThinking],
-  )
   const displayText = useMemo(
     () =>
       isThinking
@@ -133,7 +49,77 @@ function useThinkInsightPresentation(
     [rawText, isThinking, isPanelExpanded, maxLines],
   )
 
-  return { summary, panelSourceText, displayText, animateSummary }
+  return { displayText }
+}
+
+function InsightThinkRound({
+  block,
+  messageKey,
+  streamLive,
+  streamFinished,
+  thinkExpanded,
+  onThinkExpandedChange,
+  isolateExpand = false,
+  inThinkRound = false,
+  orchestrationActive = false,
+  onLeadRef,
+  visibleGate,
+}: {
+  block: ThinkTimelineBlock | ReasoningTimelineBlock
+  messageKey: string
+  streamLive: boolean
+  streamFinished: boolean
+  thinkExpanded?: boolean
+  onThinkExpandedChange?: (open: boolean) => void
+  isolateExpand?: boolean
+  inThinkRound?: boolean
+  orchestrationActive?: boolean
+  onLeadRef?: (el: HTMLElement | null) => void
+  visibleGate?: boolean
+}) {
+  const { displayText: rawText, isThinking } = useTimelineBlockStreamText(
+    block,
+    messageKey,
+    streamLive,
+    streamFinished,
+    8,
+  )
+  const { panelExpanded, isPanelExpanded, handleExpandedChange, controlledExpand, pinnedOpen } =
+    useInsightExpandState(
+      messageKey,
+      block.id,
+      thinkExpanded,
+      isolateExpand,
+      onThinkExpandedChange,
+    )
+
+  const { displayText } = useThinkPanelPresentation(rawText, isThinking, isPanelExpanded, 0)
+
+  if (visibleGate === false && !rawText.trim() && !isThinking) {
+    return null
+  }
+  if (!isThinking && !rawText.trim()) {
+    return null
+  }
+
+  return (
+    <AgentThinkPanel
+      text={rawText}
+      displayText={displayText}
+      isThinking={isThinking}
+      expanded={panelExpanded}
+      onExpandedChange={handleExpandedChange}
+      markdown
+      showCursor={false}
+      nested={isolateExpand}
+      autoCollapseWhenDone={controlledExpand === undefined && pinnedOpen === null}
+      inThinkRound={inThinkRound}
+      onLeadRef={onLeadRef}
+      leadId={block.id}
+      orchestrationActive={orchestrationActive}
+      streamScrollWindow={isThinking && !isPanelExpanded}
+    />
+  )
 }
 
 export function PlanReasoningBlock({
@@ -157,53 +143,18 @@ export function PlanReasoningBlock({
   orchestrationActive?: boolean
   onLeadRef?: (el: HTMLElement | null) => void
 }) {
-  const { displayText: rawText, isThinking } = useTimelineBlockStreamText(
-    block,
-    messageKey,
-    streamLive,
-    streamFinished,
-    8,
-  )
-  const { panelExpanded, isPanelExpanded, handleExpandedChange, controlledExpand, pinnedOpen } =
-    useInsightExpandState(messageKey, block.id, thinkExpanded, false, onThinkExpandedChange)
-
-  const { summary, panelSourceText, displayText, animateSummary } = useThinkInsightPresentation(
-    rawText,
-    isThinking,
-    isPanelExpanded,
-    3,
-  )
-
-  if (!isThinking && !summary.trim() && !rawText.trim()) {
-    return null
-  }
-
   return (
-    <>
-      <AgentThinkPanel
-        text={panelSourceText}
-        displayText={displayText}
-        isThinking={isThinking}
-        expanded={panelExpanded}
-        onExpandedChange={handleExpandedChange}
-        markdown
-        showCursor={false}
-        autoCollapseWhenDone={
-          !orchestrationActive && controlledExpand === undefined && pinnedOpen === null
-        }
-        inThinkRound={inThinkRound}
-        onLeadRef={onLeadRef}
-        leadId={block.id}
-        orchestrationActive={orchestrationActive}
-        streamScrollWindow={isThinking && !isPanelExpanded}
-      />
-      <InsightOrchestrationSummary
-        summary={summary}
-        blockId={block.id}
-        isThinking={isThinking}
-        animate={animateSummary}
-      />
-    </>
+    <InsightThinkRound
+      block={block}
+      messageKey={messageKey}
+      streamLive={streamLive}
+      streamFinished={streamFinished}
+      thinkExpanded={thinkExpanded}
+      onThinkExpandedChange={onThinkExpandedChange}
+      inThinkRound={inThinkRound}
+      orchestrationActive={orchestrationActive}
+      onLeadRef={onLeadRef}
+    />
   )
 }
 
@@ -231,60 +182,20 @@ export function ThinkBlock({
   onLeadRef?: (el: HTMLElement | null) => void
 }) {
   const visible = shouldRenderThinkBlock(block, { streamLive, streamFinished })
-  const { displayText: rawText, isThinking } = useTimelineBlockStreamText(
-    block,
-    messageKey,
-    streamLive,
-    streamFinished,
-    8,
-  )
-
-  const { panelExpanded, isPanelExpanded, handleExpandedChange, controlledExpand, pinnedOpen } =
-    useInsightExpandState(
-      messageKey,
-      block.id,
-      thinkExpanded,
-      isolateExpand,
-      onThinkExpandedChange,
-    )
-
-  const { summary, panelSourceText, displayText, animateSummary } = useThinkInsightPresentation(
-    rawText,
-    isThinking,
-    isPanelExpanded,
-    3,
-  )
-
-  if (!visible && !rawText.trim() && !isThinking) {
-    return null
-  }
 
   return (
-    <>
-      <AgentThinkPanel
-        text={panelSourceText}
-        displayText={displayText}
-        isThinking={isThinking}
-        expanded={panelExpanded}
-        onExpandedChange={handleExpandedChange}
-        markdown
-        showCursor={false}
-        nested={isolateExpand}
-        autoCollapseWhenDone={
-          !orchestrationActive && controlledExpand === undefined && pinnedOpen === null
-        }
-        inThinkRound={inThinkRound}
-        onLeadRef={onLeadRef}
-        leadId={block.id}
-        orchestrationActive={orchestrationActive}
-        streamScrollWindow={isThinking && !isPanelExpanded}
-      />
-      <InsightOrchestrationSummary
-        summary={summary}
-        blockId={block.id}
-        isThinking={isThinking}
-        animate={animateSummary}
-      />
-    </>
+    <InsightThinkRound
+      block={block}
+      messageKey={messageKey}
+      streamLive={streamLive}
+      streamFinished={streamFinished}
+      thinkExpanded={thinkExpanded}
+      onThinkExpandedChange={onThinkExpandedChange}
+      isolateExpand={isolateExpand}
+      inThinkRound={inThinkRound}
+      orchestrationActive={orchestrationActive}
+      onLeadRef={onLeadRef}
+      visibleGate={visible}
+    />
   )
 }

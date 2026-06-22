@@ -7,10 +7,11 @@ import {
   planningActiveLabel,
   planningPrepTitle,
 } from './agentOrchestration'
-import { formatRunToolStats } from './agentToolStats'
+import { formatRunToolStats, formatRunToolStatsCompact } from './agentToolStats'
 import { isHiddenUiTool } from './agentHiddenTools'
 import { isAskUserTool } from './agentToolNames'
 import { sanitizeMessageDeltaChunk, sanitizeThinkText } from './sanitizeAgentText'
+import { isToolErrorLikeText } from './toolErrorText'
 
 export { PLANNING_GENERIC_TITLES } from './agentOrchestration'
 
@@ -71,11 +72,13 @@ function seedPlannedToolBlocks(
 export function orchestrationOverviewFromTimeline(
   timeline: AgentTimelineBlock[],
   stepStates?: AgentStepState[],
-  options?: { streamFinished?: boolean },
+  options?: { streamFinished?: boolean; compact?: boolean },
 ): string | undefined {
   const stats =
     options?.streamFinished && stepStates?.length
-      ? formatRunToolStats(stepStates)
+      ? options.compact
+        ? formatRunToolStatsCompact(stepStates)
+        : formatRunToolStats(stepStates)
       : null
   if (stats) {
     return stats
@@ -187,6 +190,50 @@ export function appendTextDelta(timeline: AgentTimelineBlock[], delta: string): 
       frozen: false,
     },
   ]
+}
+
+/**
+ * 终轮无 tool_use 时：最后一个 tool 之后的 narration/text 视为交付正文，
+ * 从编排时间线剥离并写入 messageContent（仅当尚无 [交付] message.delta 时）。
+ */
+export function promoteTrailingNarrationToDelivery(
+  timeline: AgentTimelineBlock[],
+  messageContent: string,
+): { timeline: AgentTimelineBlock[]; messageContent: string } {
+  if (messageContent.trim()) {
+    return { timeline, messageContent }
+  }
+
+  const lastToolIdx = findLastIndex(timeline, (b) => b.kind === 'tool')
+  const tailStart = lastToolIdx + 1
+  if (tailStart >= timeline.length) {
+    return { timeline, messageContent }
+  }
+
+  const removeIdx = new Set<number>()
+  let promotedText = ''
+
+  for (let idx = tailStart; idx < timeline.length; idx += 1) {
+    const block = timeline[idx]
+    if (block.kind === 'narration' || block.kind === 'text') {
+      if (block.content.trim()) {
+        promotedText += block.content
+        removeIdx.add(idx)
+      }
+      continue
+    }
+    break
+  }
+
+  const trimmed = promotedText.trim()
+  if (!trimmed) {
+    return { timeline, messageContent }
+  }
+
+  return {
+    timeline: timeline.filter((_, idx) => !removeIdx.has(idx)),
+    messageContent: trimmed,
+  }
 }
 
 /** 编排叙述：与工具同级展示，区别于 output 交付正文 */
@@ -726,8 +773,19 @@ export function applyTimelineEvent(
   }
 
   if (type === 'message.delta') {
-    // Delivery text streams via messageContent only; not orchestration timeline.
-    return timeline
+    const raw = typeof event.payload.text === 'string' ? event.payload.text : ''
+    const text = sanitizeMessageDeltaChunk(raw)
+    if (!text) {
+      return timeline
+    }
+    const chapterLeak =
+      /^title:\s/m.test(text) ||
+      /^---\s*$/m.test(text) ||
+      (text.includes('已写入《') && text.length > 120)
+    if (chapterLeak) {
+      return timeline
+    }
+    return appendTextDelta(timeline, text)
   }
 
   return dedupeToolTimelineBlocks(timeline)
@@ -1083,19 +1141,114 @@ function segmentShouldWrapAsPlanning(
   return false
 }
 
-/** 正文块应作为顶层消息展示，不应收进编排子树 */
-function splitTextSuffix(blocks: AgentTimelineBlock[]): {
-  prefix: AgentTimelineBlock[]
-  textSuffix: AgentTimelineBlock[]
-} {
-  const firstTextIdx = blocks.findIndex((b) => b.kind === 'text')
-  if (firstTextIdx < 0) {
-    return { prefix: blocks, textSuffix: [] }
+/** 流结束后：全时间线最后一个工具之后的正文留在编排层外，不被折叠 */
+function collectGlobalDeliveryBlockIds(
+  timeline: AgentTimelineBlock[],
+  streamFinished?: boolean,
+): Set<string> {
+  if (!streamFinished || timeline.length === 0) {
+    return new Set()
   }
-  return {
-    prefix: blocks.slice(0, firstTextIdx),
-    textSuffix: blocks.slice(firstTextIdx),
+  const ids = new Set<string>()
+  const lastToolIdx = findLastIndex(timeline, (b) => b.kind === 'tool')
+  if (lastToolIdx < 0) {
+    for (const block of timeline) {
+      if (
+        (block.kind === 'text' || block.kind === 'narration') &&
+        block.content.trim() &&
+        !isToolErrorLikeText(block.content)
+      ) {
+        ids.add(block.id)
+      }
+    }
+    return ids
   }
+  for (let idx = lastToolIdx + 1; idx < timeline.length; idx += 1) {
+    const block = timeline[idx]
+    if (block.kind === 'text' || block.kind === 'narration') {
+      if (block.content.trim() && !isToolErrorLikeText(block.content)) {
+        ids.add(block.id)
+      }
+      continue
+    }
+    break
+  }
+  return ids
+}
+
+function stripDeliveryBlocksFromThinkRoundItems(
+  items: ThinkRoundItem[],
+  deliveryIds: Set<string>,
+): ThinkRoundItem[] {
+  const out: ThinkRoundItem[] = []
+  for (const item of items) {
+    if (item.kind !== 'narration' && item.kind !== 'text') {
+      out.push(item)
+      continue
+    }
+    const kept = item.blocks.filter((block) => !deliveryIds.has(block.id))
+    if (kept.length > 0) {
+      pushThinkRoundItem(out, { kind: item.kind, blocks: kept } as ThinkRoundItem)
+    }
+  }
+  return out
+}
+
+function stripDeliveryBlocksFromUnits(
+  units: TimelineRenderUnit[],
+  deliveryIds: Set<string>,
+): TimelineRenderUnit[] {
+  const out: TimelineRenderUnit[] = []
+  for (const unit of units) {
+    if (unit.kind === 'orchestration') {
+      const rounds = unit.rounds
+        .map((round) => ({
+          items: stripDeliveryBlocksFromThinkRoundItems(round.items, deliveryIds),
+        }))
+        .filter((round) => round.items.length > 0)
+      if (rounds.length > 0) {
+        out.push({ ...unit, rounds })
+      }
+      continue
+    }
+    if (unit.kind === 'think_round') {
+      const items = stripDeliveryBlocksFromThinkRoundItems(unit.items, deliveryIds)
+      if (items.length > 0) {
+        out.push({ kind: 'think_round', items })
+      }
+      continue
+    }
+    if (unit.kind === 'segment') {
+      const blocks = unit.blocks.filter((block) => !deliveryIds.has(block.id))
+      if (blocks.length > 0) {
+        out.push({ kind: 'segment', blocks })
+      }
+      continue
+    }
+    if (unit.kind === 'planning') {
+      const blocks = unit.blocks.filter((block) => !deliveryIds.has(block.id))
+      if (blocks.length > 0) {
+        out.push({ ...unit, blocks })
+      }
+      continue
+    }
+    out.push(unit)
+  }
+  return out
+}
+
+function promoteGlobalTrailingDelivery(
+  units: TimelineRenderUnit[],
+  timeline: AgentTimelineBlock[],
+  streamFinished?: boolean,
+): TimelineRenderUnit[] {
+  const deliveryIds = collectGlobalDeliveryBlockIds(timeline, streamFinished)
+  if (deliveryIds.size === 0) {
+    return units
+  }
+  const deliveryBlocks = timeline.filter((block) => deliveryIds.has(block.id))
+  const stripped = stripDeliveryBlocksFromUnits(units, deliveryIds)
+  return [...stripped, { kind: 'segment', blocks: deliveryBlocks }]
 }
 
 /** 待用户点选/填写的工具块应放在编排外，与正文同级 */
@@ -1183,6 +1336,23 @@ function isOrchestrationTerminalUnit(
   return unit.blocks.some((block) => isSiblingExposureBlock(block, stepStates))
 }
 
+function isOrchestrationClosingUnit(
+  unit: TimelineRenderUnit,
+  stepStates?: AgentStepState[],
+  streamFinished?: boolean,
+): boolean {
+  if (isOrchestrationTerminalUnit(unit, stepStates)) {
+    return true
+  }
+  if (!streamFinished || unit.kind !== 'segment') {
+    return false
+  }
+  return (
+    unit.blocks.length > 0 &&
+    unit.blocks.every((block) => block.kind === 'text' || block.kind === 'narration')
+  )
+}
+
 /** 连续 think_round 合并为可折叠编排层；遇正文/问答/待办则标记完成 */
 export function coalesceOrchestrationUnits(
   units: TimelineRenderUnit[],
@@ -1210,7 +1380,7 @@ export function coalesceOrchestrationUnits(
       rounds.push({ items: unit.items })
       continue
     }
-    flush(isOrchestrationTerminalUnit(unit, stepStates))
+    flush(isOrchestrationClosingUnit(unit, stepStates, streamFinished))
     out.push(unit)
   }
   flush(Boolean(streamFinished))
@@ -1374,7 +1544,7 @@ function pushSegmentUnits(
     units.push({ kind: 'segment', blocks: exposureSuffix })
     return
   }
-  pushInterleavedMetaAndTextUnits(units, exposureSuffix)
+  pushInterleavedMetaAndTextUnits(units, exposureSuffix, stepStates)
 }
 
 /** 正文与思考/工具同段时一并归入 think_round，不再拆成顶层 segment */
@@ -1632,13 +1802,7 @@ export function groupTimelineUnits(
         i += 1
       }
       if (children.length > 0) {
-        const { prefix, textSuffix } = splitTextSuffix(children)
-        if (prefix.length > 0) {
-          units.push(...groupBodyIntoThinkRounds(prefix, stepStates))
-        }
-        if (textSuffix.length > 0) {
-          units.push({ kind: 'segment', blocks: textSuffix })
-        }
+        units.push(...groupBodyIntoThinkRounds(children, stepStates))
       }
       continue
     }
@@ -1663,14 +1827,18 @@ export function groupTimelineUnits(
       },
     ]
   })
-  return coalesceOrchestrationUnits(
-    finalizeOrchestrationBeforeInteraction(
-      absorbLeadingReasoningIntoPlanning(wrapped).flatMap((unit) =>
-        promoteInteractionExposureFromUnit(unit, stepStates),
+  return promoteGlobalTrailingDelivery(
+    coalesceOrchestrationUnits(
+      finalizeOrchestrationBeforeInteraction(
+        absorbLeadingReasoningIntoPlanning(wrapped).flatMap((unit) =>
+          promoteInteractionExposureFromUnit(unit, stepStates),
+        ),
+        stepStates,
       ),
       stepStates,
+      options?.streamFinished,
     ),
-    stepStates,
+    timeline,
     options?.streamFinished,
   )
 }

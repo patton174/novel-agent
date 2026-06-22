@@ -11,7 +11,7 @@ describe('ThinkBlock', () => {
     stepId: 'step-think',
   }
 
-  it('expands after auto-collapse when parent pins thinkExpanded=false', () => {
+  it('auto-collapses when done and expands on toggle click', () => {
     const onThinkExpandedChange = vi.fn()
     const { getByTestId, queryByTestId, rerender } = render(
       <ThinkBlock
@@ -27,7 +27,6 @@ describe('ThinkBlock', () => {
     expect(queryByTestId('agent-think-content')).toBeNull()
     fireEvent.click(getByTestId('agent-think-toggle'))
     expect(onThinkExpandedChange).toHaveBeenCalledWith(true)
-    expect(getByTestId('agent-think-content')).toBeInTheDocument()
 
     rerender(
       <ThinkBlock

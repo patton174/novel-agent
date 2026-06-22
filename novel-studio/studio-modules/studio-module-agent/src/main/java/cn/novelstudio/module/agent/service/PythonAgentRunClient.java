@@ -10,4 +10,8 @@ public interface PythonAgentRunClient {
     void submitInteraction(String runId, java.util.Map<String, Object> payload);
 
     void abortRun(String runId);
+
+    void pauseRun(String runId);
+
+    void resumeRun(String runId);
 }

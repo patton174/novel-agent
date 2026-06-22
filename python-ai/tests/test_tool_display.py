@@ -30,7 +30,7 @@ def test_extract_chapter_labels_with_line_numbers():
         )
     )
     labels = extract_chapter_read_labels(content)
-    assert labels == ["《第5章》·作品列表第3章"]
+    assert labels == ["《第5章》"]
 
 
 def test_sse_read_chapter_uses_display_excerpt():
@@ -41,6 +41,6 @@ def test_sse_read_chapter_uses_display_excerpt():
         tool_input={"chapter_id": "u"},
     )
     assert "display_excerpt" in payload
-    assert "测试章" in payload["display_excerpt"]
-    assert "正文" in payload["display_excerpt"]
-    assert "chapter_id" not in payload["display_excerpt"]
+    assert payload["display_excerpt"] == "《测试章》"
+    assert "正文" not in payload["display_excerpt"]
+    assert payload["output_summary"] == "《测试章》"

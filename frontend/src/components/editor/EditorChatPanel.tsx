@@ -16,6 +16,7 @@ import { editorLayout } from '../../styles/theme'
 import { EditorChatMessageList } from './EditorChatMessageList'
 import { StreamRecoveryIndicator } from '../chat/StreamRecoveryIndicator'
 import { cn } from '@/lib/utils'
+import { useAppMobile } from '@/hooks/useMediaQuery'
 
 export interface EditorChatPanelProps {
   sessionTitle: string
@@ -27,6 +28,8 @@ export interface EditorChatPanelProps {
   isLoading: boolean
   hostModeEnabled: boolean
   onHostModeChange: (enabled: boolean) => void
+  onStreamPause: () => void
+  onStreamResume: (messageId: string) => void
   onStreamAbort: () => void
   hostBannerText?: string
   hostBannerRecovering?: boolean
@@ -51,6 +54,8 @@ export interface EditorChatPanelProps {
   marketingScrubPlaying?: boolean
   marketingPinOrchestration?: boolean
   hideComposer?: boolean
+  /** 移动端底部 TabBar 占位（px） */
+  mobileBottomInset?: number
 }
 
 export function EditorChatPanel({
@@ -63,6 +68,8 @@ export function EditorChatPanel({
   isLoading,
   hostModeEnabled,
   onHostModeChange,
+  onStreamPause,
+  onStreamResume,
   onStreamAbort,
   hostBannerText,
   hostBannerRecovering,
@@ -79,12 +86,17 @@ export function EditorChatPanel({
   marketingScrubPlaying = false,
   marketingPinOrchestration = false,
   hideComposer = false,
+  mobileBottomInset = 0,
 }: EditorChatPanelProps) {
   const { t } = useTranslation(['editor'])
   const isInitial = isInitialChatView(messages, activeNovel)
   const visibleMessages = filterVisibleChatMessages(messages ?? [], activeNovel)
   const composerRef = useRef<HTMLDivElement>(null)
+  const isMobile = useAppMobile()
   const composerBottomInset = useComposerSafeInset(composerRef, !isInitial)
+  const composerPadBottom = isMobile
+    ? `${mobileBottomInset}px`
+    : `calc(0.65rem + ${mobileBottomInset}px)`
 
   return (
     <section className="flex min-h-0 flex-1 flex-col bg-background">
@@ -100,8 +112,15 @@ export function EditorChatPanel({
       ) : null}
 
       <div
-        className="relative flex min-h-0 flex-1 flex-col overflow-hidden box-border"
-        style={{ paddingLeft: editorLayout.mainPaddingX, paddingRight: editorLayout.mainPaddingX }}
+        className={cn(
+          'relative flex min-h-0 flex-1 flex-col overflow-x-visible overflow-y-hidden box-border',
+          isMobile ? 'px-2' : '',
+        )}
+        style={
+          isMobile
+            ? undefined
+            : { paddingLeft: editorLayout.mainPaddingX, paddingRight: editorLayout.mainPaddingX }
+        }
       >
         {hostBannerRecovering ? (
           <StreamRecoveryIndicator label={hostBannerText} className="z-[30]" />
@@ -110,8 +129,8 @@ export function EditorChatPanel({
         {!isInitial && hostBannerText && !hostBannerRecovering ? (
           <div
             data-testid="host-mode-banner"
-            className="z-[2] mb-1.5 w-full shrink-0 rounded-[10px] border border-primary/30 bg-primary/10 px-3.5 py-2 text-center text-xs font-medium text-primary"
-            style={{ maxWidth: editorLayout.contentMaxWidth }}
+            className="z-[2] mb-1.5 w-full shrink-0 border-2 border-foreground bg-neon/20 px-3.5 py-2 text-center font-mono text-xs font-bold uppercase text-foreground shadow-soft"
+            style={isMobile ? undefined : { maxWidth: editorLayout.contentMaxWidth }}
           >
             {hostBannerText}
           </div>
@@ -119,8 +138,11 @@ export function EditorChatPanel({
 
         {!isInitial ? (
           <div
-            className="relative mx-auto flex min-h-0 w-full flex-1 flex-col overflow-hidden"
-            style={{ maxWidth: editorLayout.contentMaxWidth }}
+            className={cn(
+              'relative flex min-h-0 w-full flex-1 flex-col overflow-x-visible overflow-y-hidden',
+              !isMobile && 'mx-auto',
+            )}
+            style={isMobile ? undefined : { maxWidth: editorLayout.contentMaxWidth }}
           >
             <EditorChatMessageList
               messages={visibleMessages}
@@ -132,8 +154,9 @@ export function EditorChatPanel({
               onSubmitInteraction={onSubmitInteraction}
               messagesAreaRef={messagesAreaRef}
               messagesEndRef={messagesEndRef}
-              composerBottomInset={composerBottomInset}
+              composerBottomInset={composerBottomInset + mobileBottomInset}
               onEditUserMessage={onEditUserMessage}
+              onStreamResume={onStreamResume}
               marketingScrubPlaying={marketingScrubPlaying}
               marketingPinOrchestration={marketingPinOrchestration}
             />
@@ -142,9 +165,11 @@ export function EditorChatPanel({
                 ref={composerRef}
                 className={cn(
                   'absolute inset-x-0 bottom-0 z-[12] box-border w-full pointer-events-none [&>*]:pointer-events-auto',
-                  'bg-gradient-to-t from-background from-[12%] via-background/95 via-[42%] to-transparent',
+                  isMobile
+                    ? 'bg-background'
+                    : 'bg-gradient-to-t from-background from-[12%] via-background/95 via-[42%] to-transparent',
                 )}
-                style={{ paddingBottom: '0.65rem' }}
+                style={{ paddingBottom: composerPadBottom }}
               >
                 <ChatComposer
                   value={inputValue}
@@ -155,6 +180,7 @@ export function EditorChatPanel({
                   onHostModeChange={onHostModeChange}
                   streamActive={isLoading}
                   spinnerMode={spinnerMode}
+                  onStreamPause={onStreamPause}
                   onStreamAbort={onStreamAbort}
                   contextUsage={contextUsage}
                 />
@@ -181,7 +207,7 @@ export function EditorChatPanel({
             )}
             style={{
               maxWidth: editorLayout.contentMaxWidth,
-              paddingBottom: '0.65rem',
+              paddingBottom: composerPadBottom,
             }}
           >
             <div className="mx-auto w-full">
@@ -194,6 +220,7 @@ export function EditorChatPanel({
                 onHostModeChange={onHostModeChange}
                 streamActive={isLoading}
                 spinnerMode={spinnerMode}
+                onStreamPause={onStreamPause}
                 onStreamAbort={onStreamAbort}
                 contextUsage={contextUsage}
               />

@@ -1,7 +1,8 @@
 import { useTranslation } from 'react-i18next'
 import { ShimmerScanText } from '../../loaders/ShimmerScanText'
 import { TimelineToolRowShell } from './layout'
-import { CC_TOOL_NAME, TOOL_TITLE_ROW } from '@/lib/timelineClasses'
+import { EDITOR_PIXEL_TOOL_ROW } from '@/lib/editorPixelClasses'
+import { ORCH_HEADLINE } from '@/lib/timelineClasses'
 import { resolveToolVisualStatus, TimelineLeadIcon } from './TimelineLeadIcon'
 
 /** CC-style idle row until the first visible tool row replaces this slot. */
@@ -19,8 +20,8 @@ export function OrchestrationPendingRow({ alignToGutter = false }: { alignToGutt
         />
       }
       headline={
-        <div className={TOOL_TITLE_ROW} data-timeline-tool-title-row>
-          <span className={CC_TOOL_NAME}>
+        <div className={EDITOR_PIXEL_TOOL_ROW} data-timeline-tool-title-row>
+          <span className={ORCH_HEADLINE}>
             <ShimmerScanText active>{title}</ShimmerScanText>
           </span>
         </div>

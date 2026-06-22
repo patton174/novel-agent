@@ -33,7 +33,7 @@ export function DashboardSidebarFooter({ onNavigate }: DashboardSidebarFooterPro
       title={t('common:nav.dashboardSettings')}
     >
       <div className="relative shrink-0">
-        <PixelAvatarFrame size={40}>
+        <PixelAvatarFrame size={40} bordered={false}>
           <UserPixelAvatar size={36} animated />
         </PixelAvatarFrame>
         {unverified ? (

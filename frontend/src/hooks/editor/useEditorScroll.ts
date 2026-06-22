@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react'
 import type { EditorMessage } from '../../types/editor'
+import type { EditorCenterTab } from '../../components/editor/EditorCenterTabs.types'
 
 const SCROLL_DEBOUNCE_MS = 120
 const RESIZE_SCROLL_DEBOUNCE_MS = 120
@@ -8,7 +9,7 @@ const PIN_THRESHOLD_PX = 96
 export function useEditorScroll(
   messages: EditorMessage[],
   isLoading: boolean,
-  activeCenterTab: 'chat' | 'story',
+  activeCenterTab: EditorCenterTab,
 ) {
   const messagesEndRef = useRef<HTMLDivElement | null>(null)
   const messagesAreaRef = useRef<HTMLDivElement | null>(null)

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Menu } from 'lucide-react'
+import { ProIconMenu } from '@/components/pro/icons/proIcons'
 import { AdminSidebar } from '@/components/admin/AdminSidebar'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
@@ -18,10 +18,10 @@ export function MobileAdminDrawer() {
           className="md:hidden"
           aria-label="打开管理菜单"
         >
-          <Menu className="size-5" />
+          <ProIconMenu size={20} />
         </Button>
       </SheetTrigger>
-      <SheetContent side="left" className={`gap-0 p-0 ${MOBILE_DRAWER_SHEET_CLASS}`}>
+      <SheetContent side="left" showCloseButton={false} className={`gap-0 p-0 ${MOBILE_DRAWER_SHEET_CLASS}`}>
         <SheetTitle className="sr-only">管理后台导航</SheetTitle>
         <AdminSidebar embedded onNavigate={() => setOpen(false)} />
       </SheetContent>

@@ -9,7 +9,7 @@ from fastapi.responses import StreamingResponse
 
 from app.agent.context.enrich import enrich_context as _enrich_context
 from app.agent.harness.owner.run_stream import build_run_stream_response
-from app.agent.harness.run_session import abort_run_session, get_run_session
+from app.agent.harness.run_session import abort_run_session, get_run_session, pause_run_session, resume_run_session
 from app.agent.harness.session_title import (
     SessionTitleRequest,
     SessionTitleResponse,
@@ -130,5 +130,19 @@ async def agent_run_abort(run_id: str):
     if session is None:
         return {"ok": False, "reason": "not found"}
     abort_run_session(run_id)
+    return {"ok": True}
+
+
+@router.post("/agent/run/{run_id}/pause")
+async def agent_run_pause(run_id: str):
+    if not pause_run_session(run_id):
+        return {"ok": False, "reason": "not found"}
+    return {"ok": True}
+
+
+@router.post("/agent/run/{run_id}/resume")
+async def agent_run_resume(run_id: str):
+    if not resume_run_session(run_id):
+        return {"ok": False, "reason": "not found"}
     return {"ok": True}
 

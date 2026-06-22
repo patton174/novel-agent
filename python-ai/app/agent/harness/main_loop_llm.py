@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import logging
 from collections.abc import AsyncIterator
-from dataclasses import dataclass, field
-from typing import Any, Literal
+from dataclasses import dataclass
+from typing import Any
 from uuid import uuid4
 
 from langchain_core.messages import AIMessage, AIMessageChunk
@@ -14,22 +14,15 @@ from app.agent.harness.llm_trace import extract_cache_usage, log_llm_exchange
 from app.agent.harness.tool_call_chunk_accumulator import ToolCallChunkAccumulator
 from app.agent.harness.tool_use_ready import build_validated_tool_use_events
 from app.agent.harness.visible_text_channel import (
-    VisibleChannel,
     classify_visible_channel_prefix,
-    could_be_delivery_prefix,
-    extract_channel_body_from_text,
-    extract_delivery_body_from_text,
     polish_visible_text,
     prefix_scan_state,
 )
 from app.agent.schemas import AgentRunContext
 from app.core.llm_chunk_split import LlmChunkSplitter
-from app.core.llm_content import extract_llm_text
 from app.runtime.events import build_event
 
 logger = logging.getLogger(__name__)
-
-VisibleRouteMode = Literal["pending", "delivery"]
 
 
 @dataclass
@@ -44,277 +37,43 @@ class MainLoopLlmStreamState:
 
 
 @dataclass
-class _VisibleTextRouter:
-    """Route visible LLM text by channel prefix.
+class _VisibleTextForwarder:
+    """Stream visible assistant text as message.delta (no orchestration/delivery split)."""
 
-    - `[交付]` / aliases → delivery (message.delta).
-    - Unprefixed or `[编排]` aliases → reasoning.delta (UI think + last-line summary).
-    """
+    _hold: str = ""
+    _lead_done: bool = False
 
-    delivery_step_id: str
-    delivery_open: list[bool]
-    mode: VisibleRouteMode = "pending"
-    pending_parts: list[str] = field(default_factory=list)
-    prefix_scan_active: bool = True
-    prefix_hold: str = ""
-    route_locked_by_prefix: bool = False
-    delivery_emitted: bool = False
-
-    @property
-    def pending_text(self) -> str:
-        return "".join(self.pending_parts)
-
-    def lock_mode(self, mode: VisibleRouteMode) -> None:
-        self.mode = mode
-
-    def _try_lock_piece(self, piece: str) -> tuple[VisibleChannel | None, str]:
-        channel, body, matched = self._classify_with_match(piece)
-        if matched and channel == "delivery":
-            self.route_locked_by_prefix = True
-            self.lock_mode("delivery")
-            return channel, body
-        if matched and channel == "orchestration":
-            return channel, body
-
-        inline_delivery = extract_channel_body_from_text(piece, "delivery")
-        if inline_delivery:
-            self.route_locked_by_prefix = True
-            self.lock_mode("delivery")
-            return "delivery", inline_delivery
-        inline_orch = extract_channel_body_from_text(piece, "orchestration")
-        if inline_orch:
-            return "orchestration", inline_orch
-        return None, ""
-
-    def _discard_unprefixed(self) -> None:
-        self.pending_parts.clear()
-
-    def _resolve_prefix_hold(self) -> str | None:
-        """Finalize prefix scan; return text to route or None if still partial."""
-        if not self.prefix_scan_active:
-            return None
-
-        held = self.prefix_hold
-        self.prefix_hold = ""
-        self.prefix_scan_active = False
-
-        if not held:
+    def _polish(self, text: str) -> str:
+        raw = (text or "").replace("\ufffd", "")
+        if not raw:
             return ""
+        if not self._lead_done:
+            _, body = classify_visible_channel_prefix(raw)
+            raw = body
+            self._lead_done = True
+        return polish_visible_text(raw)
 
-        channel, body, matched = self._classify_with_match(held)
-        if matched and channel == "delivery":
-            self.route_locked_by_prefix = True
-            self.lock_mode("delivery")
-            return body
-        if matched and channel == "orchestration":
-            return body
-
-        scan = prefix_scan_state(held)
-        if scan == "partial":
-            self.prefix_scan_active = True
-            self.prefix_hold = held
-            return None
-
-        return held
-
-    @staticmethod
-    def _classify_with_match(text: str) -> tuple[VisibleChannel | None, str, bool]:
-        channel, body = classify_visible_channel_prefix(text)
-        if channel is not None:
-            return channel, body, True
-        return None, text, False
-
-    def _ingest_through_prefix_scan(self, text: str) -> list[str]:
+    def feed(self, text: str) -> list[str]:
         if not text:
             return []
-
-        if not self.prefix_scan_active:
-            return [text]
-
-        self.prefix_hold += text
-        channel, body, matched = self._classify_with_match(self.prefix_hold)
-        if matched and channel == "delivery":
-            self.prefix_scan_active = False
-            self.prefix_hold = ""
-            self.route_locked_by_prefix = True
-            self.lock_mode("delivery")
-            return [body] if body else []
-        if matched and channel == "orchestration":
-            self.prefix_scan_active = False
-            self.prefix_hold = ""
-            return [body] if body else []
-
-        if prefix_scan_state(self.prefix_hold) == "partial":
+        if self._lead_done:
+            piece = polish_visible_text(text.replace("\ufffd", ""))
+            return [piece] if piece else []
+        self._hold += text
+        if prefix_scan_state(self._hold) == "partial":
             return []
+        chunk = self._hold
+        self._hold = ""
+        piece = self._polish(chunk)
+        return [piece] if piece else []
 
-        held = self.prefix_hold
-        self.prefix_hold = ""
-        self.prefix_scan_active = False
-        return [held] if held else []
-
-    async def _emit_reasoning(
-        self,
-        stream_state: MainLoopLlmStreamState,
-        text: str,
-    ) -> AsyncIterator[dict[str, Any]]:
-        piece = polish_visible_text((text or "").replace("\ufffd", ""))
-        if not piece:
-            return
-        async for ev in _emit_reasoning_delta(stream_state, piece):
-            yield ev
-
-    async def _emit_delivery(
-        self,
-        stream_state: MainLoopLlmStreamState,
-        text: str,
-    ) -> AsyncIterator[dict[str, Any]]:
-        piece = polish_visible_text((text or "").replace("\ufffd", ""))
-        if not piece:
-            return
-        self.delivery_emitted = True
-        async for ev in _emit_delivery_message_delta(
-            stream_state,
-            piece,
-            delivery_step_id=self.delivery_step_id,
-            delivery_open=self.delivery_open,
-        ):
-            yield ev
-
-    def _strip_orchestration_prefix(self, piece: str) -> str:
-        channel, body, matched = self._classify_with_match(piece)
-        if matched and channel == "orchestration":
-            return body
-        inline = extract_channel_body_from_text(piece, "orchestration")
-        if inline:
-            return inline
-        return piece
-
-    def _awaiting_delivery_prefix(self) -> bool:
-        if not self.prefix_scan_active:
-            return False
-        return could_be_delivery_prefix(self.prefix_hold)
-
-    def _should_buffer_pending(self, piece: str) -> bool:
-        if self.prefix_scan_active:
-            return True
-        if self.prefix_hold:
-            return could_be_delivery_prefix(self.prefix_hold)
-        if not piece:
-            return False
-        normalized = piece.lstrip("\ufeff")
-        if not normalized.startswith("["):
-            return False
-        return could_be_delivery_prefix(normalized)
-
-    async def _route_pieces(
-        self,
-        stream_state: MainLoopLlmStreamState,
-        pieces: list[str],
-        *,
-        tool_signal: bool,
-    ) -> AsyncIterator[dict[str, Any]]:
-        del tool_signal
-        for piece in pieces:
-            if not piece:
-                continue
-
-            if self.mode == "delivery" and self.route_locked_by_prefix:
-                async for ev in self._emit_delivery(stream_state, piece):
-                    yield ev
-                continue
-
-            channel, body = self._try_lock_piece(piece)
-            if channel == "delivery" and body:
-                async for ev in self._emit_delivery(stream_state, body):
-                    yield ev
-                continue
-
-            inline_delivery = extract_channel_body_from_text(piece, "delivery")
-            if inline_delivery:
-                self.route_locked_by_prefix = True
-                self.lock_mode("delivery")
-                async for ev in self._emit_delivery(stream_state, inline_delivery):
-                    yield ev
-                continue
-
-            reasoning_text = body if channel == "orchestration" and body else self._strip_orchestration_prefix(piece)
-            async for ev in self._emit_reasoning(stream_state, reasoning_text):
-                yield ev
-
-    async def feed(
-        self,
-        stream_state: MainLoopLlmStreamState,
-        text: str,
-        *,
-        tool_signal: bool,
-    ) -> AsyncIterator[dict[str, Any]]:
-        del tool_signal
-        if not text:
-            return
-
-        pieces = self._ingest_through_prefix_scan(text)
-        async for ev in self._route_pieces(
-            stream_state, pieces, tool_signal=False
-        ):
-            yield ev
-
-    async def finish(
-        self,
-        stream_state: MainLoopLlmStreamState,
-        *,
-        has_tool_calls: bool,
-        full_visible: str,
-    ) -> AsyncIterator[dict[str, Any]]:
-        trailing = self._resolve_prefix_hold()
-        if trailing is not None and trailing:
-            async for ev in self._route_pieces(
-                stream_state,
-                [trailing],
-                tool_signal=False,
-            ):
-                yield ev
-
-        visible = (full_visible or "").replace("\ufffd", "").strip()
-
-        if self.mode == "delivery" and self.route_locked_by_prefix:
-            self.pending_parts.clear()
-            if not self.delivery_emitted:
-                _, stripped_visible = classify_visible_channel_prefix(visible)
-                stripped_visible = polish_visible_text(stripped_visible)
-                if stripped_visible:
-                    async for ev in self._emit_delivery(stream_state, stripped_visible):
-                        yield ev
-            return
-
-        self.pending_parts.clear()
-        if has_tool_calls:
-            return
-
-        if not self.delivery_emitted:
-            delivery_body = extract_delivery_body_from_text(visible)
-            if delivery_body:
-                async for ev in self._emit_delivery(stream_state, delivery_body):
-                    yield ev
-
-
-async def _emit_planning_narration_delta(
-    state: MainLoopLlmStreamState,
-    text: str,
-) -> AsyncIterator[dict[str, Any]]:
-    """Orchestration narration (distinct from output tool message.delta delivery)."""
-    piece = (text or "").replace("\ufffd", "")
-    if not piece:
-        return
-    yield build_event(
-        event_type="narration.delta",
-        run_id=state.run_id,
-        session_id=state.session_id,
-        message_id=state.message_id,
-        step_id=state.step_id,
-        sequence=state.sequence,
-        payload={"text": piece},
-    )
-    state.sequence += 1
+    def flush(self) -> list[str]:
+        if self._lead_done or not self._hold:
+            return []
+        chunk = self._hold
+        self._hold = ""
+        piece = self._polish(chunk)
+        return [piece] if piece else []
 
 
 async def _emit_reasoning_completed(
@@ -389,25 +148,25 @@ async def _emit_reasoning_delta(
     state.sequence += 1
 
 
-async def _emit_delivery_message_delta(
+async def _emit_visible_message_delta(
     state: MainLoopLlmStreamState,
     text: str,
     *,
-    delivery_step_id: str,
-    delivery_open: list[bool],
+    message_step_id: str,
+    message_open: list[bool],
 ) -> AsyncIterator[dict[str, Any]]:
-    """Final user-visible reply when the turn has no tool_use (not orchestration narration)."""
+    """Forward visible assistant text to the client as message.delta."""
     piece = (text or "").replace("\ufffd", "")
     if not piece:
         return
-    if not delivery_open[0]:
-        delivery_open[0] = True
+    if not message_open[0]:
+        message_open[0] = True
         yield build_event(
             event_type="message.started",
             run_id=state.run_id,
             session_id=state.session_id,
             message_id=state.message_id,
-            step_id=delivery_step_id,
+            step_id=message_step_id,
             sequence=state.sequence,
             payload={"role": "assistant"},
         )
@@ -417,19 +176,11 @@ async def _emit_delivery_message_delta(
         run_id=state.run_id,
         session_id=state.session_id,
         message_id=state.message_id,
-        step_id=delivery_step_id,
+        step_id=message_step_id,
         sequence=state.sequence,
         payload={"text": piece},
     )
     state.sequence += 1
-
-
-def _chunk_signals_tool_use(chunk: AIMessageChunk) -> bool:
-    tcc = getattr(chunk, "tool_call_chunks", None) or []
-    if tcc:
-        return True
-    tc = getattr(chunk, "tool_calls", None) or []
-    return bool(tc)
 
 
 def _gathered_has_tool_calls(gathered: AIMessageChunk | AIMessage | None) -> bool:
@@ -458,12 +209,9 @@ async def stream_bind_tools_turn(
     splitter = LlmChunkSplitter(emit_reasoning=True)
     gathered: AIMessageChunk | None = None
     tool_accumulator = ToolCallChunkAccumulator()
-    delivery_step_id = f"step_msg_{uuid4().hex[:8]}"
-    delivery_open = [False]
-    router = _VisibleTextRouter(
-        delivery_step_id=delivery_step_id,
-        delivery_open=delivery_open,
-    )
+    message_step_id = f"step_msg_{uuid4().hex[:8]}"
+    message_open = [False]
+    forwarder = _VisibleTextForwarder()
 
     try:
         async for chunk in llm.astream(messages):
@@ -471,10 +219,6 @@ async def stream_bind_tools_turn(
                 gathered = chunk
             else:
                 gathered = gathered + chunk
-
-            tool_signal = _chunk_signals_tool_use(chunk) or _gathered_has_tool_calls(
-                gathered
-            )
 
             for ready in tool_accumulator.feed(chunk):
                 async for ev in _yield_validated_tool_use_events(
@@ -491,36 +235,36 @@ async def stream_bind_tools_turn(
                     async for ev in _emit_reasoning_delta(stream_state, text):
                         yield ev
                 elif kind == "text":
-                    async for ev in router.feed(
-                        stream_state, text, tool_signal=tool_signal
-                    ):
-                        yield ev
+                    for piece in forwarder.feed(text):
+                        async for ev in _emit_visible_message_delta(
+                            stream_state,
+                            piece,
+                            message_step_id=message_step_id,
+                            message_open=message_open,
+                        ):
+                            yield ev
 
         async for ev in _emit_reasoning_completed(stream_state):
             yield ev
 
+        for piece in forwarder.flush():
+            async for ev in _emit_visible_message_delta(
+                stream_state,
+                piece,
+                message_step_id=message_step_id,
+                message_open=message_open,
+            ):
+                yield ev
+
         has_tool_calls = _gathered_has_tool_calls(gathered)
-        full_visible = ""
-        if gathered is not None:
-            full_visible = extract_llm_text(
-                getattr(gathered, "content", gathered),
-                include_thinking=False,
-            )
 
-        async for ev in router.finish(
-            stream_state,
-            has_tool_calls=has_tool_calls,
-            full_visible=full_visible,
-        ):
-            yield ev
-
-        if delivery_open[0] and not has_tool_calls:
+        if message_open[0] and not has_tool_calls:
             yield build_event(
                 event_type="message.completed",
                 run_id=ctx.run_id,
                 session_id=ctx.session_id,
                 message_id=ctx.message_id,
-                step_id=delivery_step_id,
+                step_id=message_step_id,
                 sequence=stream_state.sequence,
                 payload={"role": "assistant"},
             )
@@ -548,7 +292,6 @@ async def stream_bind_tools_turn(
             extra={
                 "planning_step_id": planning_step_id,
                 "has_tool_calls": has_tool_calls,
-                "visible_route_mode": router.mode,
             },
         )
 

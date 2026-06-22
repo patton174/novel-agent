@@ -5,7 +5,7 @@ import {
 } from '../../../utils/thinkRailGeometry'
 
 const RAIL_CLASS =
-  'absolute w-[2px] -translate-x-1/2 rounded-sm bg-[color-mix(in_srgb,var(--primary)_50%,transparent)] dark:bg-[color-mix(in_srgb,var(--primary)_62%,transparent)]'
+  'absolute w-[2px] -translate-x-1/2 bg-foreground/35'
 
 const REMEASURE_DELAYS_MS = [50, 120, 240, 380, 520] as const
 

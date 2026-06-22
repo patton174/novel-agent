@@ -127,11 +127,11 @@ export function DashboardHomeDesktop() {
       {/* 活跃趋势（左大）+ 热图（右） */}
       <section className="flex flex-col gap-4">
         <SectionLabel>{t('dashboard:home.activitySection')}</SectionLabel>
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(300px,1fr)]">
           <div className="min-h-[320px] border-2 border-black bg-white shadow-soft">
             <DashboardActivityTrendChart days={activity?.days ?? []} loading={activityLoading} />
           </div>
-          <div className="min-h-[320px] border-2 border-black bg-white shadow-soft">
+          <div className="min-h-[360px] border-2 border-black bg-white shadow-soft">
             <ActivityHeatmap activity={activity} loading={activityLoading} />
           </div>
         </div>

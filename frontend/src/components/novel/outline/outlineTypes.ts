@@ -12,3 +12,6 @@ export interface DropTarget {
 }
 
 export const OUTLINE_DRAG_MIME = 'application/x-novel-outline'
+
+/** 无卷时用于平铺展示章节的虚拟卷 id */
+export const OUTLINE_FLAT_VOLUME_ID = '__outline_flat__'

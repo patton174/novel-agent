@@ -62,6 +62,34 @@ def _truncate(text: str, limit: int = 220) -> str:
     return t[: limit - 1].rstrip() + "…"
 
 
+_LIST_PREVIEW_MAX = 3
+
+
+def _format_title_label(title: str) -> str:
+    t = (title or "").strip()
+    if not t:
+        return ""
+    if t.startswith("《") and t.endswith("》"):
+        return t
+    return f"《{t}》"
+
+
+def _join_preview_items(titles: list[str], *, limit: int = _LIST_PREVIEW_MAX) -> str:
+    cleaned = [t.strip() for t in titles if t and t.strip()]
+    if not cleaned:
+        return ""
+    head = cleaned[:limit]
+    out = "、".join(head)
+    if len(cleaned) > limit:
+        out += "…"
+    return out
+
+
+def format_chapter_title_only(content: str) -> str:
+    meta, _ = split_frontmatter(content)
+    return _format_title_label(meta.get("title") or "")
+
+
 def format_chapter_read_excerpt(content: str, *, body_limit: int = 220) -> str:
     meta, body = split_frontmatter(content)
     title = meta.get("title") or ""
@@ -107,12 +135,8 @@ def format_list_chapters_excerpt(content: str, *, limit: int = 280) -> str:
                 ]
                 titles = [t for t in titles if t]
                 if titles:
-                    head = titles[:6]
-                    out = "、".join(head)
-                    more = len(titles) - len(head)
-                    if more > 0:
-                        out += f" 等 {len(titles)} 章"
-                    return _truncate(out, limit)
+                    out = _join_preview_items(titles)
+                    return _truncate(out, limit) if out else "暂无章节"
                 return "暂无章节"
     except (json.JSONDecodeError, TypeError):
         pass
@@ -132,11 +156,8 @@ def format_list_json_excerpt(content: str, *, limit: int = 280) -> str:
                 ]
                 titles = [t for t in titles if t]
                 if titles:
-                    head = titles[:6]
-                    out = "、".join(head)
-                    if len(titles) > len(head):
-                        out += f" 等 {len(titles)} 项"
-                    return _truncate(out, limit)
+                    out = _join_preview_items(titles)
+                    return _truncate(out, limit) if out else "暂无记忆项"
                 return "暂无记忆项"
             if isinstance(entries, list) and not entries:
                 return "暂无记忆项"
@@ -150,10 +171,10 @@ def format_list_json_excerpt(content: str, *, limit: int = 280) -> str:
     ]
     if not kept:
         return "（无匹配）"
-    return _truncate("、".join(kept[:6]), limit)
+    return _truncate("、".join(kept[:_LIST_PREVIEW_MAX]) + ("…" if len(kept) > _LIST_PREVIEW_MAX else ""), limit)
 
 
-def _memory_tree_node_titles(nodes: list[Any], *, limit: int = 6) -> list[str]:
+def _memory_tree_node_titles(nodes: list[Any], *, limit: int = _LIST_PREVIEW_MAX) -> list[str]:
     titles: list[str] = []
     for row in nodes:
         if not isinstance(row, dict):
@@ -181,27 +202,17 @@ def format_memory_tree_excerpt(content: str, *, limit: int = 220) -> str:
     count = int(data.get("count") or len(nodes) or 0)
     titles = _memory_tree_node_titles(nodes)
 
-    if scope and titles:
-        head = "、".join(titles[:6])
-        if len(titles) > 6:
-            head += f" 等 {len(titles)} 项"
-        label = f"{scope}：{head}" if head else scope
-        return _truncate(label, limit)
-
     if titles:
-        head = "、".join(titles[:6])
-        if len(titles) > 6:
-            head += f" 等 {len(titles)} 项"
-        return _truncate(head, limit)
+        return _truncate(_join_preview_items(titles), limit)
 
     if scope:
         if count <= 0:
             return f"{scope}（空）"
-        return f"{scope}（{count} 个节点）"
+        return f"{count} 项"
 
     if count <= 0:
         return "（无节点）"
-    return f"{count} 个节点"
+    return f"{count} 项"
 
 
 def format_tool_display_excerpt(

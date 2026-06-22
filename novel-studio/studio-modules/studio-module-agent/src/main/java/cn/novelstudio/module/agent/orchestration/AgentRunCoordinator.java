@@ -214,10 +214,20 @@ public class AgentRunCoordinator {
 
     public void pause() {
         state.pause();
+        runClient.pauseRun(state.getRunId());
+        Consumer<String> emit = emitter;
+        if (emit != null) {
+            emit.accept(buildRunPaused());
+        }
     }
 
     public void resume() {
         state.resume();
+        runClient.resumeRun(state.getRunId());
+        Consumer<String> emit = emitter;
+        if (emit != null) {
+            emit.accept(buildRunResumed());
+        }
     }
 
     public void abort() {
@@ -394,6 +404,28 @@ public class AgentRunCoordinator {
         ObjectNode event = state.baseEvent(objectMapper, "run.failed", "step_" + state.getRunId());
         ObjectNode payload = objectMapper.createObjectNode();
         payload.put("error", error);
+        event.set("payload", payload);
+        return SseEventCodec.encode(
+            objectMapper,
+            SseEventCodec.slimForClient(event, event.path("sequence").asInt())
+        );
+    }
+
+    private String buildRunPaused() {
+        ObjectNode event = state.baseEvent(objectMapper, "run.paused", "step_" + state.getRunId());
+        ObjectNode payload = objectMapper.createObjectNode();
+        payload.put("reason", "user pause");
+        event.set("payload", payload);
+        return SseEventCodec.encode(
+            objectMapper,
+            SseEventCodec.slimForClient(event, event.path("sequence").asInt())
+        );
+    }
+
+    private String buildRunResumed() {
+        ObjectNode event = state.baseEvent(objectMapper, "run.resumed", "step_" + state.getRunId());
+        ObjectNode payload = objectMapper.createObjectNode();
+        payload.put("reason", "user resume");
         event.set("payload", payload);
         return SseEventCodec.encode(
             objectMapper,

@@ -14,7 +14,7 @@ import {
   AppShellCardBody,
   AppShellCardHeader,
 } from '@/components/layout/AppPageStack'
-import { AdminNativeSelect } from '@/components/layout/AdminNativeSelect'
+import { ProSelect } from '@/components/pro/ProSelect'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -149,21 +149,20 @@ export default function SiteContentPage() {
 
         <div className="min-w-0 flex-1">
           <div className="mb-4 lg:hidden">
-            <label htmlFor="site-content-key" className="mb-1.5 block text-xs font-medium text-muted-foreground">
+            <label htmlFor="site-content-key" className="mb-1.5 block font-mono text-xs font-bold uppercase tracking-widest text-muted-foreground">
               {t('admin:siteContent.editLabel')}
             </label>
-            <AdminNativeSelect
+            <ProSelect
               id="site-content-key"
+              variant="pixel"
               value={selectedKey}
               className="w-full"
-              onChange={(e) => selectKey(e.target.value)}
-            >
-              {SITE_CONTENT_KEYS.map((item) => (
-                <option key={item.key} value={item.key}>
-                  {item.label}
-                </option>
-              ))}
-            </AdminNativeSelect>
+              onChange={selectKey}
+              options={SITE_CONTENT_KEYS.map((item) => ({
+                value: item.key,
+                label: item.label,
+              }))}
+            />
           </div>
           <AppShellCard>
             <AppShellCardHeader

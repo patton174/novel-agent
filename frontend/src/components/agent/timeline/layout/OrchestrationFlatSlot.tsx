@@ -13,6 +13,7 @@ export interface OrchestrationFlatSlotProps {
   children: ReactNode
   className?: string
   testId?: string
+  flatAlign?: boolean
 }
 
 /**
@@ -24,10 +25,11 @@ export function OrchestrationFlatSlot({
   children,
   className,
   testId,
+  flatAlign = false,
 }: OrchestrationFlatSlotProps) {
   return (
     <div
-      className={cn(ORCHESTRATION_FLAT_ROW, className)}
+      className={cn(ORCHESTRATION_FLAT_ROW, flatAlign && 'pl-0', className)}
       data-testid={testId ?? FLAT_TEST_ID[kind]}
       data-timeline-layout-tier={kind === 'tool' ? 'flat-tool' : 'flat-text'}
     >

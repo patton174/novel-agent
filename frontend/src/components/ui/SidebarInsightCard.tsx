@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 
+import { EDITOR_PIXEL_CARD } from '@/lib/editorPixelClasses'
 import { cn } from '@/lib/utils'
 
 export interface SidebarInsightCardProps {
@@ -43,18 +44,21 @@ export function SidebarInsightCard({
           : undefined
       }
       className={cn(
-        'flex min-w-0 items-center gap-2 rounded-md border px-2 py-2 transition-colors',
-        interactive && 'cursor-pointer hover:bg-muted/40',
-        active ? 'border-primary/35 bg-primary/5' : 'border-border/60 bg-muted/25',
+        EDITOR_PIXEL_CARD,
+        'flex min-w-0 items-center gap-2 px-2 py-2 transition-colors',
+        interactive && 'cursor-pointer hover:bg-neon/20',
+        active && 'bg-neon/25',
         className,
       )}
     >
-      <div className="flex size-9 shrink-0 items-center justify-center rounded-md border border-border/70 bg-muted/30 text-foreground [&_svg]:size-4">
+      <div className="flex size-9 shrink-0 items-center justify-center border-2 border-foreground bg-background text-foreground shadow-[1px_1px_0_0_var(--foreground)] [&_svg]:size-4">
         {icon}
       </div>
       <div className="min-w-0 flex-1">
-        <div className="truncate text-[10px] font-medium text-foreground/85">{title}</div>
-        <div className="truncate text-[10px] text-muted-foreground">{subtitle}</div>
+        <div className="truncate font-mono text-[10px] font-bold uppercase tracking-wide text-foreground">
+          {title}
+        </div>
+        <div className="truncate font-mono text-[10px] text-muted-foreground">{subtitle}</div>
       </div>
       {trailing ? <div className="shrink-0">{trailing}</div> : null}
     </div>

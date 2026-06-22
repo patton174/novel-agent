@@ -1,5 +1,6 @@
 import { EditorIcons } from '../editor/icons'
 import { copyToClipboard } from '../../utils/copyToClipboard'
+import { cn } from '@/lib/utils'
 import {
   USER_CHAT_ACTION_BTN,
   USER_CHAT_ACTIONS,
@@ -18,30 +19,13 @@ export function UserChatBubble({ content, onEdit, className }: UserChatBubblePro
     void copyToClipboard(content, '消息已复制')
   }
 
-  const paragraphs = content ? content.split(/\n{2,}/) : ['']
+  const singleLine = !content.includes('\n')
 
   return (
     <div className={[USER_CHAT_COLUMN, className].filter(Boolean).join(' ')}>
-      <div className={USER_CHAT_BUBBLE}>
-        {paragraphs.map((para, pIdx) => {
-          const paraLines = para.split('\n')
-          const isSingleEmpty = paraLines.length === 1 && paraLines[0] === ''
-          return (
-            <p key={pIdx}>
-              {isSingleEmpty ? (
-                <br />
-              ) : (
-                paraLines.map((line, lIdx) => (
-                  <span key={lIdx}>
-                    {line}
-                    {lIdx < paraLines.length - 1 ? <br /> : null}
-                  </span>
-                ))
-              )}
-            </p>
-          )
-        })}
-      </div>
+      <span className={cn(USER_CHAT_BUBBLE, singleLine && 'whitespace-nowrap')}>
+        {content || '\u00a0'}
+      </span>
       <div className={USER_CHAT_ACTIONS}>
         <button
           type="button"

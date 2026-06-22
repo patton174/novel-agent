@@ -1,16 +1,12 @@
 import { useEffect, Suspense } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link, Outlet, useLocation } from 'react-router-dom'
-import { ArrowLeft } from 'lucide-react'
+import { Outlet, useLocation } from 'react-router-dom'
 import { fetchUserInfo } from '../api/userApi'
 import { AdminSidebar } from '../components/admin/AdminSidebar'
 import { MobileAdminDrawer } from '../components/admin/MobileAdminDrawer'
 import { AppShellHeader } from '../components/layout/AppShellHeader'
 import { AppShellMain } from '../components/layout/AppShellMain'
 import { LayoutOutletSkeleton } from '../components/loading/LayoutOutletSkeleton'
-import { Avatar, AvatarFallback } from '../components/ui/avatar'
-import { Badge } from '../components/ui/badge'
-import { Button } from '../components/ui/button'
 import { AppShellToolbar } from '../components/layout/AppShellToolbar'
 import { ProBreadcrumb } from '@/components/pro/ProBreadcrumb'
 import { useUserStore } from '../stores/userStore'
@@ -54,7 +50,6 @@ export default function AdminLayout() {
   }, [profile, setProfile])
 
   const meta = PAGE_META[location.pathname] ?? { title: t('layout.admin.defaultTitle') }
-  const initials = profile?.username?.slice(0, 2).toUpperCase() || '?'
 
   return (
     <div className="flex h-screen overflow-hidden bg-background text-foreground">
@@ -66,33 +61,7 @@ export default function AdminLayout() {
           title={meta.title}
           description={meta.description}
           leading={<MobileAdminDrawer />}
-          actions={
-            <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-              <AppShellToolbar />
-              <Button asChild variant="outline" size="icon" className="size-9 sm:hidden" aria-label={t('nav.backToUser')}>
-                <Link to="/dashboard">
-                  <ArrowLeft className="size-4" />
-                </Link>
-              </Button>
-              <Button asChild variant="outline" size="sm" className="hidden h-9 sm:inline-flex">
-                <Link to="/dashboard">
-                  <ArrowLeft className="size-4" />
-                  {t('nav.backToUser')}
-                </Link>
-              </Button>
-              <Badge variant="secondary" className="hidden sm:inline-flex">
-                {t('layout.admin.adminBadge')}
-              </Badge>
-              <div className="flex items-center gap-2">
-                <span className="hidden max-w-[8rem] truncate text-sm text-muted-foreground md:inline">
-                  {profile?.username || t('layout.admin.adminBadge')}
-                </span>
-                <Avatar size="sm">
-                  <AvatarFallback>{initials}</AvatarFallback>
-                </Avatar>
-              </div>
-            </div>
-          }
+          actions={<AppShellToolbar />}
         />
         <AppShellMain>
           {location.pathname !== '/admin' ? (

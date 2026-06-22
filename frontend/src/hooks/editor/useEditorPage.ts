@@ -106,6 +106,7 @@ export function useEditorPage() {
   const agentChapterStreamPhase = useNovelStore((s) => s.agentChapterStreamPhase)
   const selectChapterAfterAgentWrite = useNovelStore((s) => s.selectChapterAfterAgentWrite)
   const loadChapters = useNovelStore((s) => s.loadChapters)
+  const loadVolumes = useNovelStore((s) => s.loadVolumes)
   const selectChapter = useNovelStore((s) => s.selectChapter)
   const chapterDiffActive = useNovelStore((s) => s.chapterDiffActive)
   const chapterDiffBaseline = useNovelStore((s) => s.chapterDiffBaseline)
@@ -295,6 +296,15 @@ export function useEditorPage() {
     searchParams,
     sessions.activeSession,
   ])
+
+  /** 进入章节 Tab 时确保目录数据已加载（桌面 + 移动） */
+  useEffect(() => {
+    if (activeCenterTab !== 'story') return
+    if (!activeNovelId) return
+    if (chapters.length > 0) return
+    void loadVolumes(activeNovelId)
+    void loadChapters(activeNovelId, { listOnly: true })
+  }, [activeCenterTab, activeNovelId, chapters.length, loadVolumes, loadChapters])
 
   /** 移动分屏：进入章节编辑且已有章节时，默认选中第一章（一步开写） */
   useEffect(() => {

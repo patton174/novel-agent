@@ -24,6 +24,7 @@ import {
   appendChoiceSelected,
   finalizeTimeline,
   normalizeTimelineBlockIds,
+  promoteTrailingNarrationToDelivery,
 } from './agentStreamTimeline'
 import { applySubagentStepEvent } from './subagentStream'
 import {
@@ -626,6 +627,7 @@ export function applyAgentEvent(
   if (event.type === 'run.completed') {
     const pendingInteraction =
       next.awaitingInteraction || hasPendingUserInteraction(next.stepStates)
+    const promoted = promoteTrailingNarrationToDelivery(next.timeline, next.messageContent)
     next = {
       ...next,
       hostGuardMessage: undefined,
@@ -635,6 +637,8 @@ export function applyAgentEvent(
       isStreamEnded: !pendingInteraction,
       streamError: undefined,
       awaitingInteraction: pendingInteraction,
+      timeline: next.timeline,
+      messageContent: promoted.messageContent,
     }
   }
 
@@ -1339,14 +1343,18 @@ export function applyAgentEvent(
 
 function mergeAssistantTextFromTimeline(state: AgentStreamUiState): string {
   const fromTimeline = state.timeline
-    .filter((b): b is Extract<AgentTimelineBlock, { kind: 'text' }> => b.kind === 'text')
+    .filter(
+      (b): b is Extract<AgentTimelineBlock, { kind: 'text' | 'narration' }> =>
+        b.kind === 'text' || b.kind === 'narration',
+    )
     .map((b) => b.content)
     .filter((chunk) => chunk.trim())
     .join('\n\n')
   if (fromTimeline.trim()) {
     return sanitizeAssistantMessage(fromTimeline)
   }
-  return sanitizeAssistantMessage(state.messageContent)
+  const promoted = promoteTrailingNarrationToDelivery(state.timeline, state.messageContent)
+  return sanitizeAssistantMessage(promoted.messageContent)
 }
 
 export function finalizeAgentMessageContent(state: AgentStreamUiState): string {

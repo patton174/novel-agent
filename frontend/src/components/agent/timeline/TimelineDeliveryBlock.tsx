@@ -47,7 +47,7 @@ export function TimelineDeliveryBlock({
             'max-h-[calc(6*1.55em)] overflow-hidden max-md:max-h-[calc(6*1.45em)]',
         )}
       >
-        <AgentMarkdown text={trimmed} variant="chat" streaming={streamLive} isAnimating={streamLive} />
+        <AgentMarkdown text={trimmed} variant="pixel" streaming={streamLive} isAnimating={streamLive} />
         {collapsed ? (
           <div
             className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-background via-background/90 to-transparent"

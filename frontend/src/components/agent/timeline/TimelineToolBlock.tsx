@@ -20,6 +20,7 @@ import { planningActiveLabel } from '../../../utils/agentOrchestration'
 import {
   ccToolArgsSubtitle,
   ccToolBranchStatus,
+  ccToolInlineResult,
   ccToolNameLabel,
   readToolBranchLabels,
 } from '../../../utils/ccToolDisplay'
@@ -68,6 +69,11 @@ export function TimelineToolBlock({
     const loading = toolLoading
     const error = step.status === 'failed'
     const resolved = step.status === 'completed' && !loading
+    const inlineResult = ccToolInlineResult(step, {
+      loading,
+      error,
+      toolErrorText: error ? step.outputSummary?.trim() : undefined,
+    })
     return (
       <CcToolRow
         testId={`timeline-tool-${step.stepId}`}
@@ -76,14 +82,15 @@ export function TimelineToolBlock({
         outcomeBadge={
           loading ? null : error ? 'error' : resolved ? 'success' : null
         }
-        branchLine={
-          loading
-            ? planningActiveLabel('Agent') ?? '子代理运行中…'
+        inlineResult={
+          inlineResult ??
+          (loading
+            ? '子代理运行中…'
             : error
               ? '子代理失败'
               : resolved
-                ? '子代理已完成'
-                : null
+                ? step.outputSummary?.trim() || null
+                : null)
         }
         iconName="Agent"
         iconStatus={resolveToolVisualStatus({ loading, error, success: resolved })}
@@ -222,6 +229,27 @@ export function TimelineToolBlock({
     chooseLoading: showChooseLoading,
   })
 
+  const inlineResult = ccToolInlineResult(step, {
+    loading,
+    error,
+    readLabel,
+    chapterProgressHint,
+    readProgressHint,
+    earlyProgressHint,
+    awaitingUserInput,
+    chooseLoading: showChooseLoading,
+    toolErrorText,
+  })
+
+  const resultSnippet = (step.resultLabels?.[0] || step.outputSummary || '').trim()
+  const effectiveInlineResult =
+    inlineResult ||
+    (resolved && resultSnippet && !containsToolUseError(resultSnippet)
+      ? resultSnippet.length > 96
+        ? `${resultSnippet.slice(0, 96)}…`
+        : resultSnippet
+      : null)
+
   const branchInner: ReactNode[] = []
   if (toolLoading && readLabel && readBodyExcerpt) {
     branchInner.push(
@@ -270,6 +298,23 @@ export function TimelineToolBlock({
         step={step}
         mergedCallCount={mergedCallCount}
       />,
+    )
+  } else if (
+    (memoryApiTool || memoryTreeTool || listChaptersTool || inventoryListTool) &&
+    resolved &&
+    !error &&
+    toolDetailHasExpandableContent(step)
+  ) {
+    branchInner.push(
+      <ToolDetailPeek
+        key="memory-list-detail"
+        step={step}
+        mergedCallCount={mergedCallCount}
+      />,
+    )
+  } else if (readTool && resolved && !error && readBodyExcerpt && toolDetailHasExpandableContent(step)) {
+    branchInner.push(
+      <ToolDetailPeek step={step} mergedCallCount={mergedCallCount} key="read-detail" />,
     )
   }
 
@@ -346,16 +391,35 @@ export function TimelineToolBlock({
         : null
 
   const displayBranchLine =
-    loading && args?.trim() ? `${branchLine} · ${args.trim()}` : branchLine
+    hasExpandableDetail && loading && args?.trim()
+      ? `${branchLine} · ${args.trim()}`
+      : hasExpandableDetail
+        ? branchLine
+        : null
 
-  if (
+  const forceCompactRow =
     !nested &&
     !children &&
+    !loading &&
+    resolved &&
+    !error &&
+    !showInteraction &&
+    !hasTodoList &&
     !showVerboseSummary &&
-    !showBodySummary &&
     !detailBranch &&
-    !showDetailPeek &&
-    !hasTodoList
+    !effectiveInlineResult &&
+    (readTool || listChaptersTool || memoryTreeTool || memoryApiTool || inventoryListTool)
+
+  if (
+    forceCompactRow ||
+    (!nested &&
+      !children &&
+      !showVerboseSummary &&
+      !showBodySummary &&
+      !detailBranch &&
+      !showDetailPeek &&
+      !hasTodoList &&
+      !hasExpandableDetail)
   ) {
     return (
       <CcToolRow
@@ -363,7 +427,7 @@ export function TimelineToolBlock({
         name={name}
         phaseActive={loading}
         outcomeBadge={outcomeBadge}
-        branchLine={displayBranchLine}
+        inlineResult={effectiveInlineResult}
         mergeCount={mergedCallCount}
         iconName={iconName}
         iconStatus={iconStatus}
@@ -379,6 +443,7 @@ export function TimelineToolBlock({
       awaitingUserInput={awaitingUserInput}
       name={name}
       branchLine={displayBranchLine}
+      inlineResult={effectiveInlineResult}
       mergeCount={mergedCallCount}
       iconName={iconName}
       iconStatus={iconStatus}
@@ -409,6 +474,7 @@ function ExpandableTimelineToolRow({
   awaitingUserInput = false,
   name,
   branchLine,
+  inlineResult,
   mergeCount,
   iconName,
   iconStatus,
@@ -430,7 +496,8 @@ function ExpandableTimelineToolRow({
   resolved: boolean
   awaitingUserInput?: boolean
   name: string
-  branchLine: string
+  branchLine: string | null | undefined
+  inlineResult?: string | null
   mergeCount?: number
   iconName: string
   iconStatus: ReturnType<typeof resolveToolVisualStatus>
@@ -456,6 +523,7 @@ function ExpandableTimelineToolRow({
       phaseActive={loading}
       outcomeBadge={outcomeBadge}
       branchLine={branchLine}
+      inlineResult={inlineResult}
       mergeCount={mergeCount}
       iconName={iconName}
       iconStatus={iconStatus}

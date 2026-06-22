@@ -57,11 +57,11 @@ export function ChapterInlineDiff({
           <div className="text-[13px] text-muted-foreground/80">
             {t('editor:diff.stats', { insert: stats.insert, delete: stats.delete, equal: stats.equal })}
           </div>
-          <div className="flex-1 whitespace-pre-wrap break-words font-serif text-[17px] leading-loose tracking-wide">
+          <div className="flex-1 whitespace-pre-wrap break-words font-mono text-[0.9rem] leading-[1.72]">
             {diff.map((line, index) => (
               <div
                 key={`${line.type}-${index}`}
-                className={cn('flex gap-2 rounded px-1.5 py-0.5', diffLineClass(line.type))}
+                className={cn('flex gap-2 border-l-2 px-1.5 py-0.5', diffLineClass(line.type))}
               >
                 <span className="w-4 shrink-0 select-none font-mono text-[13px] opacity-55">
                   {line.type === 'insert' ? '+' : line.type === 'delete' ? '−' : ' '}

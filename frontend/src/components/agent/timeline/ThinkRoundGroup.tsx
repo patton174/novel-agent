@@ -74,6 +74,7 @@ export function ThinkRoundGroup({
   renderTool,
   renderText,
   railContext,
+  flatAlign = false,
 }: {
   items: ThinkRoundItem[]
   stepStates: AgentStepState[]
@@ -87,6 +88,7 @@ export function ThinkRoundGroup({
   renderTool: (block: Extract<AgentTimelineBlock, { kind: 'tool' }>, key: string) => ReactNode
   renderText?: (block: OrchestrationBodyBlock, key: string) => ReactNode
   railContext?: { showThinkRail: boolean; lastThinkRailId?: string }
+  flatAlign?: boolean
 }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const leadRefs = useRef<Map<string, HTMLElement>>(new Map())
@@ -142,7 +144,7 @@ export function ThinkRoundGroup({
   }
 
   const renderBodyText = (block: OrchestrationBodyBlock, key: string) => (
-    <OrchestrationFlatSlot key={key} kind="text">
+    <OrchestrationFlatSlot key={key} kind="text" flatAlign={flatAlign}>
       {renderText?.(block, key) ?? (
         <OrchestrationStreamBody
           block={block}
@@ -157,7 +159,7 @@ export function ThinkRoundGroup({
     block: Extract<AgentTimelineBlock, { kind: 'tool' }>,
     key: string,
   ) => (
-    <OrchestrationFlatSlot key={key} kind="tool">
+    <OrchestrationFlatSlot key={key} kind="tool" flatAlign={flatAlign}>
       {renderTool(block, key)}
     </OrchestrationFlatSlot>
   )

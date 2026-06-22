@@ -75,4 +75,26 @@ public class WebClientPythonAgentRunClient implements PythonAgentRunClient {
             .onErrorComplete()
             .block();
     }
+
+    @Override
+    public void pauseRun(String runId) {
+        webClient.post()
+            .uri("/api/agent/run/{runId}/pause", runId)
+            .retrieve()
+            .bodyToMono(Void.class)
+            .timeout(Duration.ofSeconds(10))
+            .onErrorComplete()
+            .block();
+    }
+
+    @Override
+    public void resumeRun(String runId) {
+        webClient.post()
+            .uri("/api/agent/run/{runId}/resume", runId)
+            .retrieve()
+            .bodyToMono(Void.class)
+            .timeout(Duration.ofSeconds(10))
+            .onErrorComplete()
+            .block();
+    }
 }

@@ -3,12 +3,13 @@ import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 import { createDebouncedScrollToBottom } from '@/utils/debouncedScroll'
 import { AgentMarkdown } from './AgentMarkdown'
+import { editorPixelThinkBlockClass, EDITOR_PIXEL_ORCH_THINK_BODY } from '@/lib/editorPixelClasses'
 import {
-  CC_TOOL_ARGS,
   CC_TOOL_HEADLINE,
   CC_TOOL_HEADLINE_BUTTON,
   CC_TOOL_NAME,
   HEADLINE_CLUSTER,
+  ORCH_STEP_META,
   TIMELINE_PENDING_IN,
 } from '@/lib/timelineClasses'
 import { TimelineInsightRow } from './timeline/layout'
@@ -105,8 +106,9 @@ function useThinkDuration(isThinking: boolean, enabled: boolean): number | undef
 
 function thinkBodyClass(nested?: boolean) {
   return cn(
-    nested ? 'text-[0.78rem]' : 'text-[0.82rem]',
-    'leading-[1.55] text-muted-foreground [&_p:last-child]:mb-0 [&_p]:mb-[0.35rem]',
+    EDITOR_PIXEL_ORCH_THINK_BODY,
+    nested && 'text-[0.76rem]',
+    '[&_p:last-child]:mb-0 [&_p]:mb-[0.35rem]',
   )
 }
 
@@ -172,17 +174,14 @@ export function AgentThinkPanel({
     if (expandedProp !== undefined) {
       return
     }
-    if (isThinking || orchestrationActive) {
+    if (isThinking) {
       enteredThinkingRef.current = true
       setInternalExpanded(true)
     }
-  }, [isThinking, orchestrationActive, expandedProp])
+  }, [isThinking, expandedProp])
 
   useEffect(() => {
     if (expandedProp !== undefined) {
-      return
-    }
-    if (orchestrationActive) {
       return
     }
     if (isThinking || !enteredThinkingRef.current) {
@@ -192,7 +191,7 @@ export function AgentThinkPanel({
       setInternalExpanded(false)
       enteredThinkingRef.current = false
     }
-  }, [isThinking, orchestrationActive, expandedProp, autoCollapseWhenDone])
+  }, [isThinking, expandedProp, autoCollapseWhenDone])
 
   useEffect(() => {
     if (!streamScrollWindow || !isThinking) {
@@ -219,8 +218,6 @@ export function AgentThinkPanel({
   const { phase, duration } = formatThinkStatus(isThinking, durationSec, t)
   const holdExpandedInRound = inThinkRound && orchestrationActive && isThinking
   const canToggle = hasBody && !isThinking && !holdExpandedInRound
-  // 仅当有可见正文时才渲染分支行，避免思考完成后 displayText 收空、
-  // 面板仍被 orchestrationActive 持续展开时残留空树状符号（└）
   const hasVisibleBody = bodyText.trim().length > 0
   const showBody =
     hasVisibleBody && (hideHeader || isThinking || expanded || holdExpandedInRound)
@@ -233,11 +230,11 @@ export function AgentThinkPanel({
       className={cn(
         thinkBodyClass(nested),
         streamScrollWindow &&
-          'max-h-[4.65em] overflow-y-auto overflow-x-hidden [scrollbar-width:none] [-ms-overflow-style:none] [-webkit-overflow-scrolling:touch] [&::-webkit-scrollbar]:hidden',
+          'max-h-[10.5em] overflow-y-auto overflow-x-hidden [scrollbar-width:none] [-ms-overflow-style:none] [-webkit-overflow-scrolling:touch] [&::-webkit-scrollbar]:hidden',
       )}
     >
       {markdown ? (
-        <AgentMarkdown text={bodyText} variant="think" streaming={isThinking} isAnimating={isThinking} />
+        <AgentMarkdown text={bodyText} variant="pixel" streaming={isThinking} isAnimating={isThinking} />
       ) : (
         bodyText.split('\n').filter(Boolean).map((line, i) => <p key={i}>{line}</p>)
       )}
@@ -247,6 +244,7 @@ export function AgentThinkPanel({
   return (
     <TimelineInsightRow
       className={cn(nested ? 'opacity-[0.92]' : 'opacity-100', TIMELINE_PENDING_IN, className)}
+      shellClassName={editorPixelThinkBlockClass(Boolean(isThinking || expanded))}
       testId={testId}
       inThinkRound={inThinkRound}
       railRow={inThinkRound}
@@ -274,7 +272,7 @@ export function AgentThinkPanel({
             <div className={CC_TOOL_HEADLINE}>
               <span className={HEADLINE_CLUSTER}>
                 <span className={CC_TOOL_NAME}>{label}</span>
-                <span className={CC_TOOL_ARGS}>
+                <span className={ORCH_STEP_META}>
                   {isThinking ? (
                     <ShimmerScanText active>{`${phase}${duration ? ` · ${duration}` : ''}`}</ShimmerScanText>
                   ) : (

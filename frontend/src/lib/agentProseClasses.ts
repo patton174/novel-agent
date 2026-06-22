@@ -1,4 +1,4 @@
-export type AgentMarkdownVariant = 'chat' | 'memory' | 'think' | 'novel' | 'document'
+export type AgentMarkdownVariant = 'chat' | 'memory' | 'think' | 'novel' | 'document' | 'pixel'
 
 const VARIANT_CLASS: Record<AgentMarkdownVariant, string> = {
   chat: 'agent-prose agent-prose-chat',
@@ -6,6 +6,7 @@ const VARIANT_CLASS: Record<AgentMarkdownVariant, string> = {
   think: 'agent-prose agent-prose-think',
   novel: 'agent-prose agent-prose-novel',
   document: 'agent-prose agent-prose-document',
+  pixel: 'agent-prose agent-prose-pixel',
 }
 
 export function agentProseClass(variant: AgentMarkdownVariant, className?: string) {

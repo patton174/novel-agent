@@ -1,20 +1,27 @@
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
+import { Eye, EyeOff, RotateCcw } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { EditorButton } from '../ui/EditorButton'
 import { api } from '../../utils/api'
 import type { ChapterVersion } from '../../types/novel'
 import { confirmAction } from '../../stores/appDialog'
 import { PanelLoadingSkeleton } from '@/components/loading/PageSkeletons'
+import { cn } from '@/lib/utils'
+import { chapterVersionExcerpt } from '../../utils/chapterVersionExcerpt'
 import {
   CHAPTER_VERSION_ACTIONS,
   CHAPTER_VERSION_BODY,
-  CHAPTER_VERSION_CONNECTOR,
+  CHAPTER_VERSION_EXCERPT,
   CHAPTER_VERSION_HEADING,
+  CHAPTER_VERSION_HEADER_ROW,
   CHAPTER_VERSION_HINT,
+  CHAPTER_VERSION_ICON_BTN,
+  CHAPTER_VERSION_INDENT,
   CHAPTER_VERSION_ITEM,
   CHAPTER_VERSION_META,
   CHAPTER_VERSION_PANEL,
-  CHAPTER_VERSION_RAIL,
+  CHAPTER_VERSION_STEM_ABOVE,
+  CHAPTER_VERSION_STEM_BELOW,
   CHAPTER_VERSION_TIMELINE,
   CHAPTER_VERSION_TITLE,
   chapterVersionDotClass,
@@ -33,28 +40,64 @@ interface ChapterVersionPanelProps {
 function VersionTimelineRow({
   current,
   active,
-  showConnector,
+  connectorAbove,
+  connectorBelow,
   meta,
   title,
+  excerpt,
   actions,
 }: {
   current?: boolean
   active?: boolean
-  showConnector?: boolean
+  connectorAbove?: boolean
+  connectorBelow?: boolean
   meta: React.ReactNode
   title: React.ReactNode
+  excerpt?: string
   actions?: React.ReactNode
 }) {
+  const headerRef = useRef<HTMLDivElement>(null)
+  const [dotCenterY, setDotCenterY] = useState<number | null>(null)
+
+  useEffect(() => {
+    const header = headerRef.current
+    if (!header) return
+
+    const measure = () => {
+      setDotCenterY(header.offsetHeight / 2)
+    }
+
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(header)
+    return () => observer.disconnect()
+  }, [title, actions, excerpt])
+
+  const stemStyle =
+    dotCenterY != null
+      ? ({ '--version-dot-center-y': `${dotCenterY}px` } as React.CSSProperties)
+      : undefined
+
   return (
-    <div className={CHAPTER_VERSION_ITEM}>
-      <div className={CHAPTER_VERSION_RAIL}>
-        <span className={chapterVersionDotClass({ current, active })} aria-hidden />
-        {showConnector ? <span className={CHAPTER_VERSION_CONNECTOR} aria-hidden /> : null}
-      </div>
+    <div className={CHAPTER_VERSION_ITEM} style={stemStyle}>
+      {connectorAbove && dotCenterY != null ? (
+        <span className={CHAPTER_VERSION_STEM_ABOVE} aria-hidden />
+      ) : null}
+      {connectorBelow && dotCenterY != null ? (
+        <span className={CHAPTER_VERSION_STEM_BELOW} aria-hidden />
+      ) : null}
       <div className={CHAPTER_VERSION_BODY}>
-        <div className={CHAPTER_VERSION_META}>{meta}</div>
-        <div className={CHAPTER_VERSION_TITLE}>{title}</div>
-        {actions ? <div className={CHAPTER_VERSION_ACTIONS}>{actions}</div> : null}
+        <div ref={headerRef} className={CHAPTER_VERSION_HEADER_ROW}>
+          <span className={chapterVersionDotClass({ current, active })} aria-hidden />
+          <div className={CHAPTER_VERSION_TITLE}>{title}</div>
+          {actions ? <div className={CHAPTER_VERSION_ACTIONS}>{actions}</div> : null}
+        </div>
+        {excerpt ? (
+          <div className={cn(CHAPTER_VERSION_INDENT, CHAPTER_VERSION_EXCERPT)}>{excerpt}</div>
+        ) : null}
+        {meta ? (
+          <div className={cn(CHAPTER_VERSION_INDENT, CHAPTER_VERSION_META)}>{meta}</div>
+        ) : null}
       </div>
     </div>
   )
@@ -63,6 +106,7 @@ function VersionTimelineRow({
 export const ChapterVersionPanel: React.FC<ChapterVersionPanelProps> = ({
   chapterId,
   currentTitle,
+  currentContent,
   onRestored,
   previewVersionId,
   onPreviewVersion,
@@ -121,6 +165,8 @@ export const ChapterVersionPanel: React.FC<ChapterVersionPanelProps> = ({
     }
   }
 
+  const currentExcerpt = chapterVersionExcerpt(currentContent)
+
   return (
     <div className={CHAPTER_VERSION_PANEL}>
       <div className={CHAPTER_VERSION_HEADING}>{t('editor:versions.title')}</div>
@@ -132,61 +178,88 @@ export const ChapterVersionPanel: React.FC<ChapterVersionPanelProps> = ({
         <div className={CHAPTER_VERSION_TIMELINE}>
           <VersionTimelineRow
             current
-            showConnector={versions.length > 0}
-            meta={<span className="time">{t('editor:versions.currentDraft')}</span>}
+            connectorBelow={versions.length > 0}
             title={currentTitle || t('editor:versions.untitled')}
+            excerpt={currentExcerpt || undefined}
+            meta={<span className="badge">{t('editor:versions.currentDraft')}</span>}
           />
 
           {versions.length === 0 ? (
             <div className={CHAPTER_VERSION_HINT}>{t('editor:versions.empty')}</div>
           ) : (
-            versions.map((v, index) => (
-              <VersionTimelineRow
-                key={v.id}
-                active={previewVersionId === v.id}
-                showConnector={index < versions.length - 1}
-                meta={
-                  <>
-                    <span className="time">
-                      {new Date(v.createdAt).toLocaleString(dateLocale)}
-                    </span>
-                    <span className="badge">{sourceLabel(v.source)}</span>
-                    <span className="words">
-                      {t('editor:versions.wordCount', { count: v.wordCount })}
-                    </span>
-                  </>
-                }
-                title={v.title}
-                actions={
-                  <>
-                    <EditorButton
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      active={previewVersionId === v.id}
-                      onClick={() =>
-                        onPreviewVersion(previewVersionId === v.id ? null : v)
-                      }
-                    >
-                      {previewVersionId === v.id
-                        ? t('editor:versions.closePreview')
-                        : t('editor:versions.preview')}
-                    </EditorButton>
-                    <EditorButton
-                      type="button"
-                      variant="primary"
-                      size="sm"
-                      disabled={restoringId === v.id}
-                      onClick={() => void handleRestore(v.id)}
-                    >
-                      {restoringId === v.id
-                        ? t('editor:versions.restoring')
-                        : t('editor:versions.restore')}
-                    </EditorButton>
-                  </>
-                }
-              />
-            ))
+            versions.map((v, index) => {
+              const previewActive = previewVersionId === v.id
+              const excerpt = chapterVersionExcerpt(v.content)
+              return (
+                <VersionTimelineRow
+                  key={v.id}
+                  active={previewActive}
+                  connectorAbove
+                  connectorBelow={index < versions.length - 1}
+                  title={v.title || t('editor:versions.untitled')}
+                  excerpt={excerpt || undefined}
+                  meta={
+                    <>
+                      <span className="time">
+                        {new Date(v.createdAt).toLocaleString(dateLocale)}
+                      </span>
+                      <span className="badge">{sourceLabel(v.source)}</span>
+                      <span className="words">
+                        {t('editor:versions.wordCount', { count: v.wordCount })}
+                      </span>
+                    </>
+                  }
+                  actions={
+                    <>
+                      <EditorButton
+                        type="button"
+                        variant="icon"
+                        size="sm"
+                        active={previewActive}
+                        className={CHAPTER_VERSION_ICON_BTN}
+                        title={
+                          previewActive
+                            ? t('editor:versions.closePreview')
+                            : t('editor:versions.preview')
+                        }
+                        aria-label={
+                          previewActive
+                            ? t('editor:versions.closePreview')
+                            : t('editor:versions.preview')
+                        }
+                        onClick={() => onPreviewVersion(previewActive ? null : v)}
+                      >
+                        {previewActive ? (
+                          <EyeOff className="size-3.5" />
+                        ) : (
+                          <Eye className="size-3.5" />
+                        )}
+                      </EditorButton>
+                      <EditorButton
+                        type="button"
+                        variant="icon"
+                        size="sm"
+                        disabled={restoringId === v.id}
+                        className={CHAPTER_VERSION_ICON_BTN}
+                        title={
+                          restoringId === v.id
+                            ? t('editor:versions.restoring')
+                            : t('editor:versions.restore')
+                        }
+                        aria-label={
+                          restoringId === v.id
+                            ? t('editor:versions.restoring')
+                            : t('editor:versions.restore')
+                        }
+                        onClick={() => void handleRestore(v.id)}
+                      >
+                        <RotateCcw className="size-3.5" />
+                      </EditorButton>
+                    </>
+                  }
+                />
+              )
+            })
           )}
         </div>
       )}

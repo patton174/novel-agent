@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils'
+import { EDITOR_PIXEL_TAB_TRACK, editorPixelTabClass } from '@/lib/editorPixelClasses'
 
 export const KEBAB_ROOT = 'inline-flex shrink-0'
 
@@ -83,21 +84,12 @@ export function dropdownMenuOptionClass(active?: boolean) {
   )
 }
 
-export const MOTION_TAB_TRACK =
-  'relative inline-flex items-center gap-1.5'
+export const MOTION_TAB_TRACK = EDITOR_PIXEL_TAB_TRACK
 
-export const MOTION_TAB_INDICATOR =
-  'absolute z-0 rounded-lg border border-primary/30 bg-primary/10 pointer-events-none'
+export const MOTION_TAB_INDICATOR = 'hidden'
 
 export function motionTabButtonClass(active?: boolean) {
-  return cn(
-    'relative z-[1] inline-flex h-8 items-center gap-1.5 rounded-lg border bg-background px-2.5',
-    'font-[inherit] text-xs font-medium cursor-pointer shadow-xs transition-colors',
-    active
-      ? 'border-primary/35 text-foreground'
-      : 'border-border text-muted-foreground',
-    'hover:bg-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-45',
-  )
+  return editorPixelTabClass(active)
 }
 
 export function motionTabIconClass(active?: boolean) {

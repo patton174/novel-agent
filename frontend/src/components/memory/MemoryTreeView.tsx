@@ -27,7 +27,7 @@ function MemoryEmptyContent({
 }) {
   return (
     <div className="flex min-h-[min(280px,45vh)] flex-1 flex-col items-center justify-center px-6 py-10 text-center">
-      <div className="mb-4 flex size-12 items-center justify-center rounded-2xl bg-muted/50 text-muted-foreground">
+      <div className="mb-4 flex size-12 items-center justify-center border-2 border-foreground bg-muted/50 text-muted-foreground shadow-[2px_2px_0_0_var(--foreground)]">
         <FileText className="size-6 opacity-70" aria-hidden />
       </div>
       <p className="text-[14px] font-semibold text-foreground">{title}</p>
@@ -54,8 +54,8 @@ function MemoryContentPanel({
     )
   }
   return (
-    <div className="rounded-lg border border-border/50 bg-card/40 px-3 py-2.5 text-[13px] leading-relaxed">
-      <AgentMarkdown text={content} variant="memory" />
+    <div className="border-2 border-foreground bg-background px-3 py-2.5 font-mono text-[13px] leading-relaxed shadow-[2px_2px_0_0_var(--foreground)]">
+      <AgentMarkdown text={content} variant="pixel" />
     </div>
   )
 }

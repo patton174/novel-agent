@@ -63,7 +63,6 @@ export function MarketingAuthFlipCta({
 
   if (variant === 'icon') {
     const label = showRegister ? registerLabel : loginLabel
-    const Icon = showRegister ? UserPlus : LogIn
     return (
       <div
         className={cn('mkt-auth-flip-icon relative size-9 overflow-hidden border-2 border-foreground shadow-soft', className)}

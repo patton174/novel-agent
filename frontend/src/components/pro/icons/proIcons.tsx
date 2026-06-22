@@ -267,3 +267,33 @@ export function ProIconArrowRight(props: ProIconProps) {
     </Svg>
   )
 }
+
+/** 箭头向左：返回、后退。 */
+export function ProIconArrowLeft(props: ProIconProps) {
+  return (
+    <Svg {...props}>
+      <path fill="currentColor" d="M18.625 12a.625.625 0 0 0 .445-.183l4.5-4.625a.625.625 0 0 0 0-.859l-4.5-4.625a.625.625 0 0 0-.89.859L21.854 11.5H13a.625.625 0 0 0 0 1.25h8.854l-3.674 3.824a.625.625 0 0 0 .445 1.001" opacity=".5" />
+      <path fill="currentColor" d="M7.5 12a.625.625 0 0 0 .445-.183l4.5-4.625a.625.625 0 0 0 0-.859l-4.5-4.625a.625.625 0 0 0-.89.859L10.729 11.5H3a.625.625 0 0 0 0 1.25h7.729l-3.674 3.824a.625.625 0 0 0 .445 1.001" />
+    </Svg>
+  )
+}
+
+/** 菜单/汉堡：移动端抽屉触发。 */
+export function ProIconMenu(props: ProIconProps) {
+  return (
+    <Svg {...props}>
+      <path fill="currentColor" d="M4 7.25A.75.75 0 0 1 4.75 6.5h14.5a.75.75 0 0 1 0 1.5H4.75A.75.75 0 0 1 4 7.25" opacity=".5" />
+      <path fill="currentColor" d="M4 12a.75.75 0 0 1 .75-.75h14.5a.75.75 0 0 1 0 1.5H4.75A.75.75 0 0 1 4 12m0 4.75a.75.75 0 0 1 .75-.75h14.5a.75.75 0 0 1 0 1.5H4.75a.75.75 0 0 1-.75-.75" />
+    </Svg>
+  )
+}
+
+/** 下拉箭头。 */
+export function ProIconChevronDown(props: ProIconProps) {
+  return (
+    <Svg {...props}>
+      <path fill="currentColor" d="M5.17 8.47a.75.75 0 0 1 1.06 0L12 14.24l5.77-6.77a.75.75 0 1 1 1.14.97l-6.34 7.44a.75.75 0 0 1-1.14 0L5.17 9.44a.75.75 0 0 1 0-1.06" opacity=".5" />
+      <path fill="currentColor" d="M6.25 9.25a.75.75 0 0 1 1.06 0L12 14.19l4.69-4.94a.75.75 0 1 1 1.08 1.04l-5.23 5.5a.75.75 0 0 1-1.08 0l-5.23-5.5a.75.75 0 0 1 0-1.04" />
+    </Svg>
+  )
+}

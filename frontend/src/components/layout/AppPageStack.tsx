@@ -200,9 +200,9 @@ export function AppStatCard({
 }) {
   return (
     <div className="flex flex-col justify-center gap-3 border-2 border-black bg-white px-5 py-6 shadow-soft">
-      <p className="text-[2.5rem] font-black leading-none tabular-nums tracking-tighter text-ink sm:text-[3rem]">
+      <div className="text-[2.5rem] font-black leading-none tabular-nums tracking-tighter text-ink sm:text-[3rem]">
         {loading ? <Skeleton className="h-9 w-16" /> : value}
-      </p>
+      </div>
       <p className="truncate font-mono text-xs font-bold uppercase tracking-widest text-muted-foreground">{label}</p>
     </div>
   )

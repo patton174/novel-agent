@@ -378,7 +378,9 @@ export function useEditorAgentStream({
 
   const handleSend = async (overrideText?: string) => {
     const rawText = overrideText ?? inputValue
-    if (!rawText.trim() || isLoading || sendInFlightRef.current) return
+    const paused = activeStreamStateRef.current.streamPaused
+    if (!rawText.trim() || sendInFlightRef.current) return
+    if (isLoading && !paused) return
 
     sendInFlightRef.current = true
     const userText = rawText.trim()
@@ -406,6 +408,19 @@ export function useEditorAgentStream({
     })
     if (!overrideText) {
       setInputValue('')
+    }
+    const pausedMessageId = activeStreamMessageId
+    if (pausedMessageId) {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === pausedMessageId ? { ...m, agentStreamPaused: false } : m,
+        ),
+      )
+    }
+    const ws = runWsRef.current
+    const priorRunId = activeStreamStateRef.current.runId
+    if (ws && priorRunId) {
+      sendAgentRunAbort(ws, priorRunId)
     }
     abortActiveStream()
     endRunLiveFollow()
@@ -683,6 +698,13 @@ export function useEditorAgentStream({
             )
           ) {
             refreshStoryMemory(activeNovelId)
+          }
+          if (parsed.type === 'run.paused') {
+            batcher.flushNow()
+            setIsLoading(false)
+          }
+          if (parsed.type === 'run.resumed') {
+            setIsLoading(true)
           }
           if (parsed.type === 'run.completed') {
             finishAgentChapterStream()
@@ -1016,6 +1038,17 @@ export function useEditorAgentStream({
       sendAgentRunResume(ws, runId)
     }
   }, [])
+
+  const handleStreamResumeForMessage = useCallback(
+    (messageId: string) => {
+      if (activeStreamMessageId !== messageId) {
+        return
+      }
+      handleStreamResume()
+      setIsLoading(true)
+    },
+    [activeStreamMessageId, handleStreamResume],
+  )
 
   const handleStreamAbort = useCallback(() => {
     const ws = runWsRef.current
@@ -1374,6 +1407,7 @@ export function useEditorAgentStream({
     handleSend,
     handleStreamPause,
     handleStreamResume,
+    handleStreamResumeForMessage,
     handleStreamAbort,
     handleChoiceSelect,
     handleInteractionSubmit,

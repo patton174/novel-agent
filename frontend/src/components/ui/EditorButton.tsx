@@ -15,6 +15,10 @@ import {
   editorToggleButtonClass,
   editorVolumeButtonClass,
 } from '@/lib/editorButtonClasses'
+import {
+  editorPrimaryButtonClass,
+  editorSecondaryButtonClass,
+} from '@/lib/editorPixelClasses'
 
 export type EditorButtonVariant =
   | 'primary'
@@ -104,7 +108,15 @@ function shadcnEditorClass(
 ) {
   return cn(
     fullWidth && variant !== 'nav' && variant !== 'panel' && variant !== 'dashed' && 'w-full',
+    'rounded-none',
     variant === 'close' && 'size-8 shrink-0 text-lg font-normal leading-none',
+    variant === 'primary' && editorPrimaryButtonClass(),
+    variant === 'accent' && editorPrimaryButtonClass(),
+    variant === 'secondary' && editorSecondaryButtonClass(),
+    variant === 'danger' &&
+      'border-2 border-foreground bg-destructive text-destructive-foreground shadow-[2px_2px_0_0_var(--foreground)] hover:bg-destructive/90',
+    variant === 'ghost' && 'border-2 border-transparent bg-transparent shadow-none hover:bg-muted/40',
+    variant === 'tool' && editorSecondaryButtonClass('h-auto px-2.5 py-1.5 normal-case'),
     variant === 'icon' && editorIconButtonClass(),
     variant === 'nav' && editorNavButtonClass(active),
     variant === 'tab' && editorTabButtonClass(active),
@@ -115,6 +127,8 @@ function shadcnEditorClass(
     variant === 'chapter' && editorChapterButtonClass(active),
     variant === 'volume' && editorVolumeButtonClass(),
     variant === 'segment' && editorSegmentButtonClass(active),
+    variant === 'chapter' &&
+      'rounded-none shadow-none focus-visible:border-transparent focus-visible:ring-0',
     className,
   )
 }

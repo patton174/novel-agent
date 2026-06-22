@@ -50,6 +50,7 @@ from app.agent.harness.loop_support import (
     stream_tool_step,
     tool_batch_end_run,
     wait_for_user_interaction,
+    yield_pause_checkpoint,
     yield_visible_assistant_message,
 )
 from app.agent.harness.main_loop_llm import stream_bind_tools_turn
@@ -348,8 +349,15 @@ async def run_query_loop(
     )
 
     turn_limit = _max_turns_for_ctx(state.ctx)
+    pause_announced = [False]
     try:
         while state.turn < turn_limit and not state.terminal:
+            async for ev in yield_pause_checkpoint(state, session, pause_announced=pause_announced):
+                yield ev
+            if session.aborted:
+                state.terminal = True
+                break
+
             state.turn += 1
             state.turns_since_todo_write += 1
             step_id = f"step_turn_{uuid4().hex[:8]}"

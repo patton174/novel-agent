@@ -32,12 +32,12 @@ export function NovelSidebarCard({
     <div
       className={cn(
         SIDEBAR_ROW,
-        'group/novel rounded-lg border border-transparent py-1.5 transition-colors',
-        isActive ? 'border-border/70 bg-muted/45' : 'hover:bg-muted/30',
+        'group/novel border-2 border-transparent py-1.5 transition-colors',
+        isActive ? 'border-foreground bg-neon/25 shadow-[2px_2px_0_0_var(--foreground)]' : 'hover:border-foreground/30 hover:bg-muted/30',
         'focus-within:border-border/60 focus-within:bg-muted/40',
       )}
     >
-      <div className={cn(SIDEBAR_ICON_CELL, 'overflow-hidden rounded-md bg-muted/50')}>
+      <div className={cn(SIDEBAR_ICON_CELL, 'overflow-hidden border-2 border-foreground bg-muted/50')}>
         {novel.coverUrl ? (
           <img src={novel.coverUrl} alt="" className="size-full object-cover" />
         ) : (
@@ -50,7 +50,7 @@ export function NovelSidebarCard({
       <button
         type="button"
         className={cn(
-          'flex min-w-0 flex-1 items-baseline rounded-md border-none bg-transparent py-0.5 text-left font-[inherit] transition-shadow',
+          'flex min-w-0 flex-1 items-baseline border-none bg-transparent py-0.5 text-left font-[inherit] transition-shadow',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-1 focus-visible:ring-offset-background',
         )}
         onClick={(e) => {
@@ -71,7 +71,7 @@ export function NovelSidebarCard({
           aria-expanded={isExpanded}
           aria-label={isExpanded ? '收起对话' : '展开对话'}
           className={cn(
-            'inline-flex size-7 shrink-0 items-center justify-center rounded-md border-none bg-transparent text-muted-foreground/70',
+            'inline-flex size-7 shrink-0 items-center justify-center border-none bg-transparent text-muted-foreground/70',
             'opacity-0 transition-all duration-200 group-hover/novel:opacity-100 group-focus-within/novel:opacity-100',
             'hover:bg-muted/50 hover:text-foreground',
             'focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/35',

@@ -31,7 +31,7 @@ public class SubscriptionBiz extends BaseBiz {
     @Transactional
     public UserSubscriptionEntity ensureDefaultSubscription(long userId) {
         return userSubscriptionRepository.findByUserId(userId)
-            .orElseGet(() -> createSubscription(userId, "free"));
+            .orElseGet(() -> createSubscription(userId, "hobby"));
     }
 
     @Transactional
