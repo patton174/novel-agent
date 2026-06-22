@@ -64,6 +64,8 @@ public class AuthUserIdInjectFilter extends OncePerRequestFilter {
         "/api/auth/api/refresh",
         "/api/auth/crypto-config",
         "/api/auth/api/captcha",
+        "/g/api/auth/api/captcha",
+        "/g/api/auth/api/captcha",
         "/api/auth/api/send-email-code",
         "/api/auth/api/confirm-email-verify",
         "/api/auth/api/forgot-password",
