@@ -30,9 +30,7 @@ for kv in \
   fi
 done
 
-WORKER_HOST="$(grep -E '^WORKER_HOST=' "$ENV_FILE" | cut -d= -f2-)"
 : "${WORKER_HOST:?WORKER_HOST missing in .env.mw}"
-NOVEL_STUDIO_WG_HOST="$(grep -E '^NOVEL_STUDIO_WG_HOST=' "$ENV_FILE" | cut -d= -f2-)"
 : "${NOVEL_STUDIO_WG_HOST:?NOVEL_STUDIO_WG_HOST missing in .env.mw}"
 
 FULLCHAIN="letsencrypt/live/${CERT_NAME}/fullchain.pem"
@@ -70,11 +68,16 @@ for legacy_dir in \
   fi
 done
 
-sed -e "s/\${WORKER_HOST}/${WORKER_HOST}/g" \
-    -e "s/\${DOMAIN}/${DOMAIN}/g" \
-    -e "s/\${DOMAIN_ALIASES}/${DOMAIN_ALIASES}/g" \
-    -e "s/\${CERT_NAME}/${CERT_NAME}/g" \
-    -e "s/\${NOVEL_STUDIO_WG_HOST}/${NOVEL_STUDIO_WG_HOST}/g" \
+set -a
+# shellcheck source=/dev/null
+source "$ENV_FILE"
+set +a
+
+sed -e "s|\${WORKER_HOST}|${WORKER_HOST}|g" \
+    -e "s|\${DOMAIN}|${DOMAIN}|g" \
+    -e "s|\${DOMAIN_ALIASES}|${DOMAIN_ALIASES}|g" \
+    -e "s|\${CERT_NAME}|${CERT_NAME}|g" \
+    -e "s|\${NOVEL_STUDIO_WG_HOST}|${NOVEL_STUDIO_WG_HOST}|g" \
     nginx-entry-mw-ssl.conf.template > nginx-entry-mw.conf
 
 echo "[apply-ssl] nginx-entry-mw.conf head:"
