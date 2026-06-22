@@ -30,8 +30,6 @@ for kv in \
   fi
 done
 
-: "${WORKER_HOST:?WORKER_HOST missing in .env.mw}"
-
 FULLCHAIN="letsencrypt/live/${CERT_NAME}/fullchain.pem"
 PRIVKEY="letsencrypt/live/${CERT_NAME}/privkey.pem"
 if [[ ! -f "$FULLCHAIN" || ! -f "$PRIVKEY" ]]; then
@@ -71,6 +69,7 @@ set -a
 # shellcheck source=/dev/null
 source "$ENV_FILE"
 set +a
+: "${WORKER_HOST:?WORKER_HOST missing in .env.mw}"
 
 sed -e "s|\${WORKER_HOST}|${WORKER_HOST}|g" \
     -e "s|\${DOMAIN}|${DOMAIN}|g" \

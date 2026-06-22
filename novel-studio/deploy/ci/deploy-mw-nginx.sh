@@ -19,7 +19,6 @@ RDIR="$(ci_remote_dir mw)"
 
 echo "[deploy-mw-nginx] DOMAIN=$DOMAIN ALIASES=$DOMAIN_ALIASES CERT=$CERT_NAME"
 bash "$CI_DIR/sync-compose.sh" mw
-bash "$CI_DIR/ensure-mw-https-cert.sh"
 
 deploy_ssh "$REMOTE" bash -s <<EOF
 set -euo pipefail
@@ -31,6 +30,8 @@ else
   echo "WORKER_HOST=$WORKER_HOST" >> "\$ENV"
 fi
 EOF
+
+bash "$CI_DIR/ensure-mw-https-cert.sh"
 
 REMOTE_SSL="$CI_DIR/remote-apply-mw-ssl-nginx.sh"
 deploy_scp "$REMOTE_SSL" "$REMOTE:/tmp/remote-apply-mw-ssl-nginx.sh"
