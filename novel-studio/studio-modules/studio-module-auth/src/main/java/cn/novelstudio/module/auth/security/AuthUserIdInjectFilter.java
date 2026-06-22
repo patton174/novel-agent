@@ -44,7 +44,7 @@ import java.util.Map;
  * 本过滤器对 WS 路径放行，不强制 JWT，避免本地 client-security 关闭时 WS 被阻断。
  */
 @Component
-@Order(Ordered.HIGHEST_PRECEDENCE + 40)
+@Order(Ordered.HIGHEST_PRECEDENCE + 50)
 public class AuthUserIdInjectFilter extends OncePerRequestFilter {
 
     private static final Logger log = LoggerFactory.getLogger(AuthUserIdInjectFilter.class);
