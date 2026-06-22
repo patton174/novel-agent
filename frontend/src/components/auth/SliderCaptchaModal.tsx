@@ -4,12 +4,12 @@ import { RefreshCw, X } from 'lucide-react'
 import { fetchSliderCaptcha, verifySliderCaptcha } from '../../utils/authApi'
 import type { SliderCaptchaChallenge } from '../../utils/authApi'
 import { appToast } from '@/stores/appToastStore'
-import { AuthLegalNotice } from './AuthLegalNotice'
 import { AppSpinner } from '@/components/loading/AppSpinner'
 import { cn } from '@/lib/utils'
 import { useTranslation } from 'react-i18next'
 
-const SLIDER_HEIGHT = 140
+/** 与后端 VerificationProperties 保持一致 */
+const SLIDER_HEIGHT = 150
 const PUZZLE_SIZE = 44
 const THUMB_SIZE = 36
 
@@ -33,23 +33,35 @@ function preloadImage(base64: string, errorMsg: string): Promise<void> {
 export const SliderCaptchaModal: React.FC<Props> = ({ open, onClose, onVerified }) => {
   const { t } = useTranslation(['auth'])
   const [challenge, setChallenge] = useState<SliderCaptchaChallenge | null>(null)
-  const [offsetX, setOffsetX] = useState(0)
+  const [trackOffset, setTrackOffset] = useState(0)
+  const [serverOffset, setServerOffset] = useState(0)
   const [phase, setPhase] = useState<Phase>('loading')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const dragging = useRef(false)
   const trackRef = useRef<HTMLDivElement>(null)
   const loadSeq = useRef(0)
 
-  const maxOffset = challenge ? Math.max(0, challenge.sliderWidth - PUZZLE_SIZE - 4) : 0
+  const maxServerX = challenge ? Math.max(0, challenge.sliderWidth - PUZZLE_SIZE) : 0
   const interactable = phase === 'ready'
   const showOverlay = phase === 'verifying' || phase === 'success' || phase === 'sending'
 
   const resetLocal = () => {
     setChallenge(null)
-    setOffsetX(0)
+    setTrackOffset(0)
+    setServerOffset(0)
     dragging.current = false
     setErrorMessage(null)
   }
+
+  const mapTrackToServer = useCallback(
+    (thumbX: number, trackWidth: number) => {
+      const trackMax = Math.max(0, trackWidth - THUMB_SIZE)
+      const clamped = Math.min(trackMax, Math.max(0, thumbX))
+      const serverX = trackMax > 0 ? (clamped / trackMax) * maxServerX : 0
+      return { trackOffset: clamped, serverOffset: serverX }
+    },
+    [maxServerX],
+  )
 
   const loadChallenge = useCallback(async () => {
     const seq = ++loadSeq.current
@@ -58,7 +70,10 @@ export const SliderCaptchaModal: React.FC<Props> = ({ open, onClose, onVerified 
     try {
       const data = await fetchSliderCaptcha()
       if (seq !== loadSeq.current) return
-      await Promise.all([preloadImage(data.backgroundImage, t('auth:captcha.imgLoadFail')), preloadImage(data.puzzleImage, t('auth:captcha.imgLoadFail'))])
+      await Promise.all([
+        preloadImage(data.backgroundImage, t('auth:captcha.imgLoadFail')),
+        preloadImage(data.puzzleImage, t('auth:captcha.imgLoadFail')),
+      ])
       if (seq !== loadSeq.current) return
       setChallenge(data)
       setPhase('ready')
@@ -84,8 +99,10 @@ export const SliderCaptchaModal: React.FC<Props> = ({ open, onClose, onVerified 
     const track = trackRef.current
     if (!track) return
     const rect = track.getBoundingClientRect()
-    const x = clientX - rect.left - THUMB_SIZE / 2
-    setOffsetX(Math.min(maxOffset, Math.max(0, x)))
+    const thumbX = clientX - rect.left - THUMB_SIZE / 2
+    const mapped = mapTrackToServer(thumbX, rect.width)
+    setTrackOffset(mapped.trackOffset)
+    setServerOffset(mapped.serverOffset)
   }
 
   const finishDrag = async () => {
@@ -93,7 +110,7 @@ export const SliderCaptchaModal: React.FC<Props> = ({ open, onClose, onVerified 
     dragging.current = false
     setPhase('verifying')
     try {
-      const token = await verifySliderCaptcha(challenge.captchaId, Math.round(offsetX))
+      const token = await verifySliderCaptcha(challenge.captchaId, Math.round(serverOffset))
       setPhase('success')
       await new Promise((r) => setTimeout(r, 320))
       setPhase('sending')
@@ -102,7 +119,8 @@ export const SliderCaptchaModal: React.FC<Props> = ({ open, onClose, onVerified 
     } catch (err) {
       const msg = err instanceof Error ? err.message : t('auth:captcha.verifyFail')
       appToast.error(msg)
-      setOffsetX(0)
+      setTrackOffset(0)
+      setServerOffset(0)
       void loadChallenge()
     }
   }
@@ -124,6 +142,16 @@ export const SliderCaptchaModal: React.FC<Props> = ({ open, onClose, onVerified 
     }
   }
 
+  const puzzleStyle =
+    challenge && maxServerX >= 0
+      ? {
+          left: `${(serverOffset / challenge.sliderWidth) * 100}%`,
+          top: `${(challenge.puzzleY / SLIDER_HEIGHT) * 100}%`,
+          width: `${(PUZZLE_SIZE / challenge.sliderWidth) * 100}%`,
+          height: `${(PUZZLE_SIZE / SLIDER_HEIGHT) * 100}%`,
+        }
+      : undefined
+
   return (
     <AnimatePresence>
       {open ? (
@@ -137,7 +165,7 @@ export const SliderCaptchaModal: React.FC<Props> = ({ open, onClose, onVerified 
           <motion.button
             type="button"
             aria-label="关闭验证"
-            className="absolute inset-0 bg-slate-900/45 backdrop-blur-[4px]"
+            className="absolute inset-0 bg-ink/50 backdrop-blur-[2px]"
             onClick={onClose}
           />
 
@@ -146,46 +174,44 @@ export const SliderCaptchaModal: React.FC<Props> = ({ open, onClose, onVerified 
             aria-modal="true"
             aria-labelledby="captcha-title"
             aria-busy={phase === 'loading' || phase === 'verifying' || phase === 'sending'}
-            className="relative w-full max-w-[380px] overflow-hidden rounded-2xl border border-border/80 bg-background shadow-2xl shadow-primary/10"
+            className="relative w-full max-w-[360px] overflow-hidden border-2 border-foreground bg-background shadow-[6px_6px_0_0_hsl(var(--foreground))]"
             initial={{ opacity: 0, y: 24, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 16, scale: 0.98 }}
             transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="h-0.5 bg-gradient-to-r from-primary via-indigo-400 to-violet-400" />
-
-            <div className="p-4 sm:p-5">
-              <div className="mb-3 flex items-start justify-between gap-2">
+            <div className="border-b-2 border-foreground bg-neon px-4 py-2">
+              <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <h3 id="captcha-title" className="text-sm font-semibold text-foreground">
+                  <h3 id="captcha-title" className="font-mono text-sm font-bold uppercase tracking-wide text-ink">
                     {t('auth:captcha.title')}
                   </h3>
-                  <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">{statusLabel()}</p>
+                  <p className="mt-0.5 font-mono text-[11px] text-ink/70">{statusLabel()}</p>
                 </div>
                 <button
                   type="button"
                   onClick={onClose}
-                  className="flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+                  className="flex size-8 shrink-0 items-center justify-center border-2 border-foreground bg-surface text-foreground shadow-soft transition-colors hover:bg-muted"
                   aria-label="关闭"
                 >
                   <X className="size-4" />
                 </button>
               </div>
+            </div>
 
+            <div className="p-4">
               <div
-                className="relative mx-auto mb-3 overflow-hidden rounded-xl border border-border bg-muted/25"
+                className="relative mx-auto mb-3 w-full overflow-hidden border-2 border-foreground bg-muted"
                 style={{
-                  width: challenge?.sliderWidth ?? '100%',
-                  maxWidth: '100%',
-                  height: SLIDER_HEIGHT,
+                  maxWidth: challenge?.sliderWidth ?? 300,
+                  aspectRatio: challenge ? `${challenge.sliderWidth}/${SLIDER_HEIGHT}` : '2/1',
                 }}
               >
                 {phase === 'loading' ? (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-muted/40">
-                    <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-muted/80 via-muted/40 to-muted/70" />
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-muted">
                     <AppSpinner size="sm" />
-                    <p className="relative z-10 text-[11px] font-medium text-muted-foreground">
+                    <p className="font-mono text-[11px] font-medium text-muted-foreground">
                       {t('auth:captcha.generating')}
                     </p>
                   </div>
@@ -193,11 +219,11 @@ export const SliderCaptchaModal: React.FC<Props> = ({ open, onClose, onVerified 
 
                 {phase === 'error' ? (
                   <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-4 text-center">
-                    <p className="text-xs text-muted-foreground">{errorMessage}</p>
+                    <p className="font-mono text-xs text-muted-foreground">{errorMessage}</p>
                     <button
                       type="button"
                       onClick={() => void loadChallenge()}
-                      className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground"
+                      className="inline-flex items-center gap-1.5 border-2 border-foreground bg-primary px-3 py-1.5 font-mono text-xs font-bold uppercase text-white shadow-soft"
                     >
                       <RefreshCw className="size-3.5" />
                       {t('auth:captcha.reload')}
@@ -211,34 +237,35 @@ export const SliderCaptchaModal: React.FC<Props> = ({ open, onClose, onVerified 
                       src={`data:image/png;base64,${challenge.backgroundImage}`}
                       alt=""
                       draggable={false}
-                      className="h-full w-full select-none object-cover"
+                      className="absolute inset-0 h-full w-full select-none"
+                      style={{ imageRendering: 'pixelated' }}
                     />
                     <img
                       src={`data:image/png;base64,${challenge.puzzleImage}`}
                       alt=""
                       draggable={false}
-                      className="pointer-events-none absolute size-11 select-none drop-shadow-md"
-                      style={{ left: offsetX, top: challenge.puzzleY }}
+                      className="pointer-events-none absolute select-none drop-shadow-[2px_2px_0_rgba(0,0,0,0.45)]"
+                      style={{ ...puzzleStyle, imageRendering: 'pixelated' }}
                     />
                   </>
                 ) : null}
 
                 {showOverlay ? (
                   <motion.div
-                    className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-[2px]"
+                    className="absolute inset-0 flex items-center justify-center bg-background/55 backdrop-blur-[1px]"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                   >
                     {phase === 'success' ? (
                       <motion.span
-                        className="flex size-10 items-center justify-center rounded-full bg-emerald-500/15 text-lg font-bold text-emerald-600"
+                        className="flex size-10 items-center justify-center border-2 border-foreground bg-neon font-mono text-lg font-bold text-ink shadow-soft"
                         initial={{ scale: 0.6, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                       >
                         ✓
                       </motion.span>
                     ) : (
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-2 font-mono text-xs text-muted-foreground">
                         <AppSpinner size="sm" />
                         {phase === 'sending' ? t('auth:captcha.overlaySending') : t('auth:captcha.overlayVerifying')}
                       </div>
@@ -247,12 +274,10 @@ export const SliderCaptchaModal: React.FC<Props> = ({ open, onClose, onVerified 
                 ) : null}
               </div>
 
-              <AuthLegalNotice variant="captcha" className="mb-3" />
-
               <div
                 ref={trackRef}
                 className={cn(
-                  'relative h-10 rounded-full border border-border bg-muted/35',
+                  'relative h-10 border-2 border-foreground bg-muted shadow-soft',
                   !interactable && 'pointer-events-none opacity-55',
                 )}
                 onPointerDown={(e) => {
@@ -270,21 +295,23 @@ export const SliderCaptchaModal: React.FC<Props> = ({ open, onClose, onVerified 
                 }}
               >
                 <div className="pointer-events-none absolute inset-y-0 left-10 right-3 flex items-center">
-                  <span className="truncate text-[11px] text-muted-foreground">{t('auth:captcha.dragHint')}</span>
+                  <span className="truncate font-mono text-[11px] text-muted-foreground">
+                    {t('auth:captcha.dragHint')}
+                  </span>
                 </div>
                 <div
-                  className="absolute top-0.5 flex size-9 cursor-grab items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md active:cursor-grabbing"
-                  style={{ left: offsetX }}
+                  className="absolute top-0.5 flex size-9 cursor-grab items-center justify-center border-2 border-foreground bg-primary font-mono text-xs font-bold text-white shadow-soft active:cursor-grabbing"
+                  style={{ left: trackOffset }}
                 >
-                  <span className="text-xs font-bold">››</span>
+                  ››
                 </div>
               </div>
 
-              <div className="mt-3 flex justify-end gap-1 pb-[max(0px,env(safe-area-inset-bottom))]">
+              <div className="mt-3 flex justify-end gap-2 pb-[max(0px,env(safe-area-inset-bottom))]">
                 <button
                   type="button"
                   onClick={onClose}
-                  className="h-8 rounded-lg px-3 text-xs text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+                  className="h-9 border-2 border-foreground bg-surface px-3 font-mono text-xs font-bold uppercase text-muted-foreground shadow-soft transition-colors hover:bg-muted"
                 >
                   {t('auth:captcha.cancel')}
                 </button>
@@ -292,7 +319,7 @@ export const SliderCaptchaModal: React.FC<Props> = ({ open, onClose, onVerified 
                   type="button"
                   onClick={() => void loadChallenge()}
                   disabled={phase === 'loading' || phase === 'verifying' || phase === 'sending'}
-                  className="inline-flex h-8 items-center gap-1 rounded-lg px-3 text-xs font-medium text-primary transition-colors hover:bg-primary/8 disabled:opacity-50"
+                  className="inline-flex h-9 items-center gap-1 border-2 border-foreground bg-surface px-3 font-mono text-xs font-bold uppercase text-primary shadow-soft transition-colors hover:bg-primary/10 disabled:opacity-50"
                 >
                   <RefreshCw className={cn('size-3.5', phase === 'loading' && 'animate-spin')} />
                   {t('auth:captcha.change')}

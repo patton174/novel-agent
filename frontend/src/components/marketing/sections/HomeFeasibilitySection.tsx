@@ -3,6 +3,7 @@ import { motion, useReducedMotion } from 'framer-motion'
 import { ArrowRight, BookMarked, PenTool, Sparkles, Users } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useAppMobile } from '@/hooks/useMediaQuery'
+import { cn } from '@/lib/utils'
 import { MarketingAmbient } from '../MarketingAmbient'
 import { PixelText } from '../pixel/PixelText'
 import { MKT_CTA_PRIMARY, MKT_CTA_SECONDARY } from '@/lib/marketingCta'
@@ -34,7 +35,7 @@ export function HomeFeasibilitySection() {
   return (
     <section
       id="feasibility"
-      className="relative scroll-mt-16 overflow-hidden border-t-2 border-foreground bg-background px-6 py-24 md:py-32"
+      className="relative scroll-mt-16 overflow-hidden border-t-0 bg-background px-6 py-24 md:border-t-2 md:border-foreground md:py-32"
     >
       <MarketingAmbient variant="subtle" />
 
@@ -149,13 +150,13 @@ export function HomeFeasibilitySection() {
           </div>
         </motion.div>
 
-        <motion.div {...fade(0.12)} className="flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <Link to="/guide" className={MKT_CTA_PRIMARY}>
-            {t('home.feasibility.ctaGuide')}
-            <ArrowRight className="size-4" strokeWidth={2.5} />
+        <motion.div {...fade(0.12)} className="grid w-full max-w-md grid-cols-2 gap-2 sm:mx-auto sm:flex sm:max-w-none sm:justify-center sm:gap-3">
+          <Link to="/guide" className={cn(MKT_CTA_PRIMARY, 'min-h-11 px-3 py-2.5 text-xs sm:min-h-0 sm:px-6 sm:py-3 sm:text-sm')}>
+            <span className="line-clamp-2 text-center leading-tight">{t('home.feasibility.ctaGuide')}</span>
+            <ArrowRight className="size-4 shrink-0" strokeWidth={2.5} />
           </Link>
-          <Link to="/pricing" className={MKT_CTA_SECONDARY}>
-            {t('home.feasibility.ctaPricing')}
+          <Link to="/pricing" className={cn(MKT_CTA_SECONDARY, 'min-h-11 px-3 py-2.5 text-xs sm:min-h-0 sm:px-6 sm:py-3 sm:text-sm')}>
+            <span className="line-clamp-2 text-center leading-tight">{t('home.feasibility.ctaPricing')}</span>
           </Link>
         </motion.div>
       </div>

@@ -4,6 +4,7 @@ import { fetchSiteContent } from '@/api/billingApi'
 import { SiteMarkdown } from '@/components/content/SiteMarkdown'
 import { MarketingPageLayout } from '@/components/marketing/MarketingPageLayout'
 import { MarketingSubpageHero } from '@/components/marketing/MarketingSubpageHero'
+import { MKT_SECTION_WRAP, MKT_SURFACE_CARD_PAD } from '@/lib/marketingSubpageClasses'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 
@@ -44,24 +45,17 @@ export default function GenericContentPage({ contentKey, fallbackTitle }: Generi
     contentKey === 'contact' ? t('generic.subtitleContact') : t('generic.subtitleLegal')
 
   return (
-    <MarketingPageLayout>
+    <MarketingPageLayout subpageCta>
       <MarketingSubpageHero
-        variant="soft"
+        variant="light"
         eyebrow={eyebrow}
         title={title}
         subtitle={subtitle}
       />
 
-      <section className="relative px-6 pb-24">
-        <div className="relative z-10 mx-auto max-w-3xl pt-4 md:pt-6">
-          <div
-            className={cn(
-              'overflow-hidden rounded-2xl border border-border/70 bg-surface shadow-soft',
-              'ring-1 ring-black/[0.03] dark:ring-white/[0.04]',
-            )}
-          >
-            <div className="h-0.5 bg-gradient-to-r from-primary/0 via-primary/60 to-violet-500/60" />
-            <div className="px-6 py-8 md:px-10 md:py-12">
+      <section className={cn(MKT_SECTION_WRAP, 'pb-24')}>
+        <div className="relative z-10 mx-auto max-w-3xl">
+          <div className={cn(MKT_SURFACE_CARD_PAD, 'overflow-hidden')}>
               {loading ? (
                 <div className="space-y-3">
                   <Skeleton className="h-4 w-full" />
@@ -73,12 +67,11 @@ export default function GenericContentPage({ contentKey, fallbackTitle }: Generi
               ) : bodyMd?.trim() ? (
                 <SiteMarkdown text={bodyMd} />
               ) : (
-                <div className="py-8 text-center">
-                  <p className="text-base font-medium text-foreground">{t('generic.emptyTitle')}</p>
-                  <p className="mt-2 text-sm text-muted-foreground">{t('generic.emptyDesc')}</p>
+                <div className="py-4 text-center">
+                  <p className="font-mono text-base font-bold text-foreground">{t('generic.emptyTitle')}</p>
+                  <p className="mt-2 font-mono text-sm text-muted-foreground">{t('generic.emptyDesc')}</p>
                 </div>
               )}
-            </div>
           </div>
         </div>
       </section>

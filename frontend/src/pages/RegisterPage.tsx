@@ -7,11 +7,12 @@ import SliderCaptchaModal from '../components/auth/SliderCaptchaModal'
 import { AuthShell } from '../components/auth/AuthShell'
 import { AuthCodeField } from '../components/auth/AuthCodeField'
 import { AuthField } from '../components/auth/AuthField'
+import { authFieldClass, authCodeButtonClass } from '../components/auth/authFieldClass'
 import { AuthLegalNotice } from '../components/auth/AuthLegalNotice'
 import { AuthSubmitButton } from '../components/auth/AuthSubmitButton'
 import { AppSpinner } from '@/components/loading/AppSpinner'
 import { appToast } from '@/stores/appToastStore'
-import { MKT_CTA_AUTH_OUTLINE } from '@/lib/marketingCta'
+import { useAppMobile } from '@/hooks/useMediaQuery'
 import { PixelText } from '@/components/marketing/pixel/PixelText'
 import { useFormDraft } from '../hooks/useJourneyTracker'
 import { cn } from '@/lib/utils'
@@ -58,6 +59,7 @@ const RegisterPage: React.FC = () => {
   const [cooldown, setCooldown] = useState(0)
   const [registrationClosed, setRegistrationClosed] = useState(false)
   const [fieldErrors, setFieldErrors] = useState<RegisterErrors>({})
+  const isMobile = useAppMobile()
 
   useEffect(() => {
     let cancelled = false
@@ -201,8 +203,26 @@ const RegisterPage: React.FC = () => {
   const sendCodeLabel = () => {
     if (sendingCode) return t('auth:register.sending')
     if (cooldown > 0) return `${cooldown}s`
-    return codeSent ? t('auth:register.resend') : t('auth:register.getCode')
+    if (codeSent) return t('auth:register.resend')
+    return isMobile
+      ? t('auth:register.getCodeShort', { defaultValue: t('auth:register.getCode') })
+      : t('auth:register.getCode')
   }
+
+  const sendCodeButton = (
+    <button
+      type="button"
+      onClick={handleSendCodeClick}
+      disabled={sendingCode || cooldown > 0 || captchaOpen}
+      className={cn(authCodeButtonClass, 'disabled:cursor-not-allowed disabled:opacity-50')}
+    >
+      {sendingCode ? (
+        <AppSpinner size="sm" />
+      ) : (
+        <span className="text-center leading-tight">{sendCodeLabel()}</span>
+      )}
+    </button>
+  )
 
   const stepMeta = [
     { title: t('auth:register.stepAccountTitle'), desc: t('auth:register.stepAccountDesc') },
@@ -293,40 +313,34 @@ const RegisterPage: React.FC = () => {
                 error={fieldErrors.username}
                 onChange={(e) => handleChange('username', e.target.value)}
               />
-              <AuthField
-                id="reg-email"
-                name="email"
-                type="email"
-                label={t('auth:register.emailLabel')}
-                autoComplete="email"
-                placeholder={t('auth:register.emailPlaceholder')}
-                value={formData.email}
-                error={fieldErrors.email}
-                onChange={(e) => handleChange('email', e.target.value)}
-              />
-              <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
-                <button
-                  type="button"
-                  onClick={handleSendCodeClick}
-                  disabled={sendingCode || cooldown > 0 || captchaOpen}
-                  className={cn(
-                    MKT_CTA_AUTH_OUTLINE,
-                    'h-11 w-auto shrink-0 px-4 text-xs',
-                    'disabled:cursor-not-allowed disabled:opacity-50',
-                  )}
-                >
-                  {sendingCode ? (
-                    <span className="flex items-center gap-1">
-                      <AppSpinner size="sm" />
-                      {t('auth:register.sending')}
-                    </span>
-                  ) : (
-                    sendCodeLabel()
-                  )}
-                </button>
-                <span className="font-mono text-[11px] text-muted-foreground">
-                  {t('auth:register.stepIndicator', { current: step, total: 3 })}
-                </span>
+              <div className="space-y-1">
+                <label htmlFor="reg-email" className="text-xs font-medium text-foreground">
+                  {t('auth:register.emailLabel')}
+                </label>
+                <div className="flex items-stretch gap-2">
+                  <input
+                    id="reg-email"
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    placeholder={t('auth:register.emailPlaceholder')}
+                    value={formData.email}
+                    aria-invalid={fieldErrors.email ? true : undefined}
+                    aria-describedby={fieldErrors.email ? 'reg-email-error' : undefined}
+                    onChange={(e) => handleChange('email', e.target.value)}
+                    className={cn(
+                      authFieldClass,
+                      'min-w-0 flex-1 basis-0 !w-auto',
+                      fieldErrors.email && 'border-destructive/60 focus:border-destructive/60',
+                    )}
+                  />
+                  {sendCodeButton}
+                </div>
+                {fieldErrors.email ? (
+                  <p id="reg-email-error" className="text-ui-sm leading-snug text-destructive">
+                    {fieldErrors.email}
+                  </p>
+                ) : null}
               </div>
               <AuthSubmitButton type="button" onClick={goNext}>
                 {t('auth:register.stepNext')}
@@ -348,27 +362,7 @@ const RegisterPage: React.FC = () => {
                 error={fieldErrors.emailCode}
                 hint={codeSent && !fieldErrors.emailCode ? t('auth:register.emailCodeHint') : undefined}
                 onChange={(e) => handleChange('emailCode', e.target.value.replace(/\D/g, '').slice(0, 6))}
-                action={
-                  <button
-                    type="button"
-                    onClick={handleSendCodeClick}
-                    disabled={sendingCode || cooldown > 0 || captchaOpen}
-                    className={cn(
-                      MKT_CTA_AUTH_OUTLINE,
-                      'h-12 w-auto shrink-0 px-3 text-xs',
-                      'disabled:cursor-not-allowed disabled:opacity-50',
-                    )}
-                  >
-                    {sendingCode ? (
-                      <span className="flex items-center gap-1">
-                        <AppSpinner size="sm" />
-                        {t('auth:register.sending')}
-                      </span>
-                    ) : (
-                      sendCodeLabel()
-                    )}
-                  </button>
-                }
+                action={sendCodeButton}
               />
               <div className="flex items-center gap-3 pt-1">
                 <button

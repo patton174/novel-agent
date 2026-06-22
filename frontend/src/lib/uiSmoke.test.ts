@@ -15,10 +15,10 @@ describe('ui smoke', () => {
     expect(APP_MOBILE_MEDIA).toBe('(max-width: 767px)')
   })
 
-  it('marketing CTAs use neo-brutalist geometry (sharp corners, black border, hard shadow)', () => {
+  it('marketing CTAs use neo-brutalist geometry (sharp corners, theme border, hard shadow)', () => {
     expect(MKT_CTA_PRIMARY).toContain('rounded-none')
     expect(MKT_CTA_PRIMARY).toContain('border-2')
-    expect(MKT_CTA_PRIMARY).toContain('border-black')
+    expect(MKT_CTA_PRIMARY).toContain('border-foreground')
     expect(MKT_CTA_PRIMARY).toContain('shadow-soft')
     expect(MKT_CTA_AUTH).toContain('rounded-none')
     expect(MKT_CTA_PRIMARY).not.toContain('rounded-xl')

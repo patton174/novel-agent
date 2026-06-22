@@ -21,7 +21,6 @@ export function HomeScrollStory() {
   const isMobile = useAppMobile()
   const rootRef = useRef<HTMLDivElement>(null)
   useMarketingStoryReveal(rootRef)
-  const acts = isMobile ? ACTS.slice(0, 1) : ACTS
   const introReveal = marketingInViewMotion({
     isMobile,
     reduced: Boolean(reduced),
@@ -44,14 +43,17 @@ export function HomeScrollStory() {
               {t('home.story.introEyebrow')}
             </p>
             <h2 className="mb-3">
-              <PixelText
-                text={t('home.story.introTitle')}
-                cell={20}
-                fill
-                dotRange={[1.5, 3.5]}
-                fontWeight={900}
-                className="text-ink"
-              />
+              <div className="mx-auto w-full max-w-2xl">
+                <PixelText
+                  text={t('home.story.introTitle')}
+                  cell={18}
+                  fill
+                  fillFit
+                  dotRange={[1.4, 2.8]}
+                  fontWeight={900}
+                  className="text-ink"
+                />
+              </div>
             </h2>
             <p className="font-mono text-sm leading-relaxed text-muted-foreground md:text-base">
               {t('home.story.introSubtitle')}
@@ -61,7 +63,7 @@ export function HomeScrollStory() {
       </section>
 
       <div ref={rootRef} className={CURSOR_LANDING_ROOT} data-scroll-story>
-        {acts.map(({ id, scene, layout, act, key }) => {
+        {ACTS.map(({ id, scene, layout, act, key }) => {
           const prefix = `home.story.acts.${key}`
           const points = [1, 2, 3].map((n) => ({
             highlight: t(`${prefix}.points.${n}.highlight`),

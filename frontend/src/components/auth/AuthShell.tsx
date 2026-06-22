@@ -74,17 +74,17 @@ export function AuthShell({ title, subtitle, marketing, children, legal, footer,
         </div>
       </div>
 
-      <div className="relative flex flex-1 flex-col items-center justify-center px-4 py-8 sm:px-6 lg:px-10">
-        <Link to="/" className="relative z-10 mb-6 transition-opacity hover:opacity-85 lg:hidden">
-          <NovelAiPixelWordmark size="sm" />
-        </Link>
-
+      <div className="relative flex flex-1 flex-col items-center justify-center px-4 py-6 sm:px-6 sm:py-8 lg:px-10">
         <motion.div
           className={cn('relative z-10 w-full max-w-[440px]', className)}
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
         >
+          <Link to="/" className="mb-6 inline-block transition-opacity hover:opacity-85 lg:hidden">
+            <NovelAiPixelWordmark size="sm" />
+          </Link>
+
           {/* 表单卡片：2px 边 + 硬错位投影，直角 */}
           <div className="border-2 border-foreground bg-surface p-6 shadow-soft sm:p-8">
             <div className="mb-6 border-b-2 border-foreground pb-4">

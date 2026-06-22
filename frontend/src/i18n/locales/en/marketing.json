@@ -87,8 +87,14 @@
       "title": "Built specifically for long-form serialization,",
       "titleAccent": "An Orchestratable Writing Assistant",
       "subtitle": "World-building memory, transparent orchestration, streaming generation, and hosted continuation—from feasibility assessment to daily output, all in one place.",
+      "subtitleMobile": "Memory, orchestration & streaming—in one workflow.",
+      "titleAccentMobile": "Orchestratable Assistant",
+      "mobileKicker": "Built for long-form serialization",
+      "ctaOrbLabel": "Start writing for free",
       "ctaPrimary": "Start Writing for Free",
+      "ctaPrimaryShort": "Start Free",
       "ctaSecondary": "View Use Cases First",
+      "ctaSecondaryShort": "Use Cases",
       "ctaLogin": "Log in to Account",
       "trustFree": "Start for Free",
       "trustZh": "Multilingual Support",
@@ -175,6 +181,72 @@
             "2": { "highlight": "Intervene Anytime", "text": "Pause, follow up, and rewrite all on the same screen" },
             "3": { "highlight": "Auto-Save", "text": "Chapters and memory sync automatically" }
           }
+        }
+      },
+      "demo": {
+        "labels": {
+          "orchestrating": "Orchestrating…",
+          "thinking": "Thinking",
+          "thinkingActive": "In progress · 4s",
+          "thinkingDone": "Done · 4s",
+          "thinkingFallback": "Reviewing chapter context…",
+          "outputFallback": "Starting output…",
+          "emptyBeforePrompt": "Enter a prompt to start the Agent",
+          "emptyAfterPrompt": "Waiting for orchestration before streaming output",
+          "composerPlaceholder": "Message the AI…",
+          "composerDisclaimer": "AI-generated content — use with care",
+          "hostMode": "Host",
+          "inProgress": "In progress",
+          "done": "Done",
+          "subagentTitle": "Sub-agent · Character check",
+          "subagentRunning": "Running · 12 turns",
+          "subagentDone": "Done · Character check",
+          "subagentThink": "Check character cards against chapter tone",
+          "subagentMemory": "Read character card",
+          "subagentMemoryActive": "In progress",
+          "subagentMemoryDone": "Done · Tang Yun profile OK",
+          "subagentOutput": "Proofread summary",
+          "subagentOutputActive": "In progress",
+          "subagentOutputDone": "Done · Synced to memory",
+          "subagentSummary": "Character check complete — safe to continue Chapter 2."
+        },
+        "think": {
+          "title": "Plan · Chapter 2 structure",
+          "prompt": "Help me plan Chapter 2 — nail pacing and payoff beats before drafting.",
+          "think": "Chapter 2: Silver Moon Forest opener validates loot drops, then trigger the server-unique enhancement stone; end on a cliffhanger.",
+          "firstTool": "Generate writing plan",
+          "planMetaActive": "In progress",
+          "planMetaDone": "Done · Opener → loot → hook",
+          "output": "Structure set: warm-up skirmish, then payoff spike — ready to draft."
+        },
+        "orchestrate": {
+          "title": "Continue · Chapter 2",
+          "prompt": "Continue Chapter 2 — align memory and the end of Chapter 1 first.",
+          "think": "Before continuing, pull character memory and read the end of Chapter 1 for tone and foreshadowing.",
+          "firstTool": "Read memory",
+          "secondTool": "Read chapter",
+          "memoryMetaActive": "In progress",
+          "memoryMetaDone": "Done · Content loaded",
+          "chapterMetaActive": "In progress",
+          "chapterMetaDone": "Done · Ch.1 · Awakening",
+          "output": "Rain slid from his hair, each drop a bell on his heart. He breathed deep, fists tight — the first battle in Silver Moon Forest starts now."
+        },
+        "subagent": {
+          "title": "Sub-agent · Character check",
+          "prompt": "Run a sub-agent to verify character consistency, then continue the draft.",
+          "think": "Keep the main session lean — delegate character proofreading to a sub-agent.",
+          "firstTool": "Read character card",
+          "secondTool": "Merge proofread summary",
+          "output": "Character check done — memory synced. Ready to draft Chapter 2."
+        },
+        "stream": {
+          "title": "Continue · Chapter 2",
+          "prompt": "Following the plan, draft the second half of Chapter 2 — focus on obtaining the enhancement stone.",
+          "think": "Pick up from the fight — describe the blue glow and system alert, highlight the server-unique payoff.",
+          "firstTool": "Write chapter",
+          "writeMetaActive": "In progress · Streaming",
+          "writeMetaDone": "Done · Chapter 2 opening",
+          "output": "As the stone burst into blinding blue light, runes crawled across his plain short sword. A system chime rang: [Server-unique mythic weapon acquired: Grip of Winter]"
         }
       }
     },

@@ -4,6 +4,8 @@ import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import { MarketingPageLayout } from '@/components/marketing/MarketingPageLayout'
 import { MarketingSubpageHero } from '@/components/marketing/MarketingSubpageHero'
+import { MKT_SECTION_WRAP, MKT_SURFACE_CARD_PAD } from '@/lib/marketingSubpageClasses'
+import { cn } from '@/lib/utils'
 import { MKT_CTA_SECONDARY } from '@/lib/marketingCta'
 
 const VALUE_ICONS = [Brain, Eye, Shield] as const
@@ -18,24 +20,26 @@ export default function AboutPage() {
   ]
 
   return (
-    <MarketingPageLayout>
+    <MarketingPageLayout subpageCta>
       <MarketingSubpageHero
-        variant="dark"
+        variant="light"
         eyebrow={t('about.eyebrow')}
         title={t('about.title')}
         subtitle={t('about.subtitle')}
       >
-        <dl className="mx-auto flex max-w-2xl flex-wrap justify-center gap-8 border-t border-white/10 pt-8 sm:gap-10">
+        <dl className="mx-auto flex max-w-2xl flex-wrap justify-center gap-6 border-t-2 border-foreground/25 pt-6 sm:gap-8">
           {metrics.map((m) => (
             <div key={m.label} className="min-w-[7rem] text-center sm:text-left">
-              <dt className="text-xs uppercase tracking-wider text-slate-500">{m.label}</dt>
-              <dd className="mt-1 text-2xl font-bold tabular-nums text-indigo-300 md:text-3xl">{m.value}</dd>
+              <dt className="font-mono text-[0.65rem] font-bold uppercase tracking-wider text-muted-foreground">
+                {m.label}
+              </dt>
+              <dd className="mt-1 font-mono text-2xl font-bold tabular-nums text-primary md:text-3xl">{m.value}</dd>
             </div>
           ))}
         </dl>
       </MarketingSubpageHero>
 
-      <section className="mx-auto max-w-6xl px-6 py-16 md:py-20">
+      <section className={MKT_SECTION_WRAP}>
         <div className="grid gap-5 lg:grid-cols-3 lg:gap-6">
           {values.map((n, index) => {
             const Icon = VALUE_ICONS[index]
@@ -46,10 +50,10 @@ export default function AboutPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: '-10% 0px' }}
                 transition={{ duration: 0.4, delay: index * 0.06 }}
-                className="mkt-card-lift flex h-full flex-col rounded-2xl border border-border/60 bg-surface/80 p-6 shadow-sm backdrop-blur-sm md:p-7"
+                className={cn(MKT_SURFACE_CARD_PAD, 'flex h-full flex-col')}
               >
-                <div className="mb-4 flex size-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary/15 to-violet-500/5 ring-1 ring-primary/15">
-                  <Icon className="size-5 text-primary" strokeWidth={1.75} />
+                <div className="mb-4 flex size-12 items-center justify-center border-2 border-foreground bg-primary text-white">
+                  <Icon className="size-5" strokeWidth={1.75} />
                 </div>
                 <h2 className="mb-2 text-lg font-semibold text-foreground md:text-xl">
                   {t(`about.values.${n}.title`)}
@@ -62,7 +66,7 @@ export default function AboutPage() {
           })}
         </div>
 
-        <div className="mt-12 flex justify-center border-t border-border/60 pt-10">
+        <div className="mt-12 flex justify-center border-t-2 border-foreground/20 pt-10">
           <Link to="/pricing" className={MKT_CTA_SECONDARY}>
             {t('nav.pricing')}
           </Link>

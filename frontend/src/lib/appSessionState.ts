@@ -149,6 +149,18 @@ export function canRestorePath(pathname: string): boolean {
   return true
 }
 
+/** 从 `/` 进入时仅恢复工作台类路径，营销页（定价/指南等）不自动跳转 */
+export function canRestoreFromRoot(pathname: string): boolean {
+  if (pathname === '/') {
+    return false
+  }
+  return (
+    pathname.startsWith('/dashboard') ||
+    pathname.startsWith('/editor') ||
+    pathname.startsWith('/admin')
+  ) && canRestorePath(pathname)
+}
+
 export function buildRestoreLocation(state: PersistedAppState): string {
   const businessSearch = stripSessionQuery(state.search)
   const search = buildSearchWithSessionPrefs(businessSearch, state.locale, state.theme)

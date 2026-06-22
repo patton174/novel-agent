@@ -3,9 +3,11 @@ import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
 import { ArrowIcon } from '../icons'
+import { PixelText } from '../pixel/PixelText'
 import { NovelAiPixelWordmark } from '../pixel/NovelAiPixelWordmark'
 import { PixelField } from '../pixel/PixelField'
 import { MKT_CTA_FOOTER_PRIMARY, MKT_CTA_FOOTER_SECONDARY } from '@/lib/marketingCta'
+import { cn } from '@/lib/utils'
 import { useAppMobile } from '@/hooks/useMediaQuery'
 
 type FooterVariant = 'full' | 'linksOnly'
@@ -17,21 +19,30 @@ type FooterVariant = 'full' | 'linksOnly'
 export function HomeCtaBand() {
   const { t } = useTranslation(['marketing', 'common'])
   return (
-    <section className="border-t-2 border-foreground bg-background px-6 py-20 text-center md:py-24">
-      <div className="mx-auto flex max-w-2xl flex-col items-center gap-6">
-        <h2 className="text-2xl font-black uppercase leading-[0.95] tracking-tighter text-foreground md:text-4xl">
-          {t('footer.ctaTitle')}
-        </h2>
+    <section className="pixel-grid-bg-faint border-t-2 border-foreground bg-background px-4 py-16 text-center sm:px-6 md:py-20">
+      <div className="mx-auto flex max-w-2xl flex-col items-center gap-5">
+        <h2 className="sr-only">{t('footer.ctaTitle')}</h2>
+        <div className="w-full max-w-xl">
+          <PixelText
+            text={t('footer.ctaTitle')}
+            cell={16}
+            fill
+            fillFit
+            dotRange={[1.1, 2.4]}
+            fontWeight={900}
+            className="text-ink"
+          />
+        </div>
         <p className="max-w-xl font-mono text-sm leading-relaxed text-muted-foreground md:text-base">
           {t('footer.ctaDesc')}
         </p>
-        <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <Link to="/register" className={MKT_CTA_FOOTER_PRIMARY}>
-            {t('common:cta.registerFree')}
+        <div className="grid w-full max-w-sm grid-cols-2 gap-2 sm:mx-auto sm:flex sm:max-w-none sm:justify-center sm:gap-3">
+          <Link to="/register" className={cn(MKT_CTA_FOOTER_PRIMARY, 'min-h-11 px-3 py-2.5 text-xs sm:min-h-0 sm:px-7 sm:py-3.5 sm:text-sm')}>
+            <span className="line-clamp-2 text-center leading-tight">{t('common:cta.registerFree')}</span>
             <ArrowIcon />
           </Link>
-          <Link to="/login" className={MKT_CTA_FOOTER_SECONDARY}>
-            {t('common:cta.login')}
+          <Link to="/login" className={cn(MKT_CTA_FOOTER_SECONDARY, 'min-h-11 px-3 py-2.5 text-xs sm:min-h-0 sm:px-7 sm:py-3.5 sm:text-sm')}>
+            <span className="line-clamp-2 text-center leading-tight">{t('common:cta.login')}</span>
           </Link>
         </div>
       </div>

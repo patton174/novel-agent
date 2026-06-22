@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type RefObject } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { MarketingSceneId } from '../../../utils/marketing/buildMarketingSceneDemo'
 import {
   MARKETING_CHAT_DEMO_FRAME_HERO,
@@ -36,6 +37,8 @@ import {
   orchDemoThinkBlockClass,
   orchDemoTimelineIconClass,
 } from '@/lib/marketingOrchestrationDemoClasses'
+import { scrollProgressToElapsed } from '@/lib/marketingStoryScroll'
+import { useOrchestrationTimelineAutoscroll } from '@/hooks/marketing/useOrchestrationTimelineAutoscroll'
 import { ToolIcon } from '../../../utils/toolIcons'
 
 const SCENE_TIMING: Record<
@@ -83,67 +86,25 @@ const SCENE_TIMING: Record<
   },
 }
 
-const SCENE_COPY: Record<
-  MarketingSceneId,
-  {
-    title: string
-    prompt: string
-    think: string
-    firstTool: string
-    secondTool: string
-    output: string
-  }
-> = {
-  think: {
-    title: '规划 · 第二章结构',
-    prompt: '帮我规划第二章结构，先想清楚节奏和爽点再动笔。',
-    think: '第二章建议：银月森林首战验证掉宝，再触发全服唯一强化石，章末留悬念。',
-    firstTool: '生成写作计划',
-    secondTool: '',
-    output: '结构已定：先小战热身，再集中爆发爽点，可以开始写正文。',
-  },
-  orchestrate: {
-    title: '续写 · 第二章',
-    prompt: '继续写第二章，先对齐记忆和第一章结尾。',
-    think: '续写前先拉取角色记忆，并阅读第一章结尾以对齐语气与伏笔。',
-    firstTool: '查阅记忆',
-    secondTool: '阅读章节',
-    output:
-      '雨水顺着他的发梢滑落，每一滴都像是敲打在心上的钟声。他深吸一口气，握紧了拳头——银月森林的首战，从现在开始。',
-  },
-  subagent: {
-    title: '子代理 · 角色校对',
-    prompt: '启动子代理校对角色一致性，再进入正文续写。',
-    think: '主会话保持简洁，角色校对交给子代理并行处理。',
-    firstTool: '读取角色卡',
-    secondTool: '合并校对摘要',
-    output: '角色校对完成，记忆已同步。可以开始续写第二章正文。',
-  },
-  stream: {
-    title: '续写 · 第二章',
-    prompt: '按刚才的结构，续写第二章后半段，重点刻画获得强化石的场景。',
-    think: '承接前面的战斗，详细描写蓝光与系统提示，突出『全服唯一』的爽点。',
-    firstTool: '写入章节',
-    secondTool: '',
-    output:
-      '随着强化石爆发出耀眼的蓝光，原本普通的短剑瞬间布满繁复的符文。系统提示音在耳边响起：【恭喜获得全服唯一神话级武器『凛冬之握』】',
-  },
-}
-
 export interface MarketingChatOrchestrationDemoProps {
   scene: MarketingSceneId
   /** hero 区紧凑卡片；分镜区全高 */
   variant?: 'hero' | 'story'
   /** 分镜区传入 section ref 以控制进入视口后播放 */
   sectionRef?: RefObject<HTMLElement | null>
+  /** 滚动进度 0–1；传入时替代纯 timer 循环（story 分镜） */
+  scrollProgress?: number
+  /** 移动端：进入视口后自动循环播放 */
+  autoPlayInView?: boolean
 }
 
 function clamp01(value: number) {
   return Math.max(0, Math.min(1, value))
 }
 
-function revealText(text: string, startedAt: number, elapsed: number, duration: number) {
-  const progress = clamp01((elapsed - startedAt) / duration)
+function revealText(text: string | undefined, startedAt: number, at: number, duration: number) {
+  if (!text) return ''
+  const progress = clamp01((at - startedAt) / duration)
   const chars = Array.from(text)
   return chars.slice(0, Math.round(chars.length * progress)).join('')
 }
@@ -183,6 +144,7 @@ function useVisiblePlayback(
   ref: RefObject<HTMLElement | null>,
   autoPlay: boolean,
   loopMs: number,
+  inViewAutoplay?: boolean,
 ) {
   const [elapsed, setElapsed] = useState(0)
   const [visible, setVisible] = useState(autoPlay)
@@ -190,6 +152,10 @@ function useVisiblePlayback(
   useEffect(() => {
     if (autoPlay) {
       setVisible(true)
+      return
+    }
+    if (!inViewAutoplay) {
+      setVisible(false)
       return
     }
     let io: IntersectionObserver | null = null
@@ -217,7 +183,7 @@ function useVisiblePlayback(
       cancelAnimationFrame(retryRaf)
       io?.disconnect()
     }
-  }, [autoPlay, ref])
+  }, [autoPlay, ref, inViewAutoplay])
 
   useEffect(() => {
     if (!visible) {
@@ -242,12 +208,45 @@ export function MarketingChatOrchestrationDemo({
   scene,
   variant = 'story',
   sectionRef,
+  scrollProgress,
+  autoPlayInView = false,
 }: MarketingChatOrchestrationDemoProps) {
+  const { t } = useTranslation('marketing')
   const fallbackRef = useRef<HTMLDivElement>(null)
+  const timelineRef = useRef<HTMLDivElement>(null)
   const rootRef = sectionRef ?? fallbackRef
   const timing = SCENE_TIMING[scene]
-  const elapsed = useVisiblePlayback(rootRef, variant === 'hero', timing.loopMs)
-  const copy = SCENE_COPY[scene]
+  const useScroll = scrollProgress !== undefined && variant === 'story'
+  const timerElapsed = useVisiblePlayback(
+    rootRef,
+    variant === 'hero',
+    timing.loopMs,
+    autoPlayInView && variant === 'story',
+  )
+
+  const elapsed = useMemo(() => {
+    if (useScroll && scrollProgress !== undefined) {
+      return scrollProgressToElapsed(scrollProgress, timing)
+    }
+    return timerElapsed
+  }, [useScroll, scrollProgress, timing, timerElapsed])
+  const labels = t('home.story.demo.labels', { returnObjects: true }) as Record<string, string>
+  const copy = t(`home.story.demo.${scene}`, { returnObjects: true }) as {
+    title: string
+    prompt: string
+    think: string
+    firstTool: string
+    secondTool?: string
+    output: string
+    planMetaActive?: string
+    planMetaDone?: string
+    memoryMetaActive?: string
+    memoryMetaDone?: string
+    chapterMetaActive?: string
+    chapterMetaDone?: string
+    writeMetaActive?: string
+    writeMetaDone?: string
+  }
   const frameClass =
     variant === 'hero' ? MARKETING_CHAT_DEMO_FRAME_HERO : MARKETING_CHAT_DEMO_FRAME_STORY
 
@@ -325,6 +324,22 @@ export function MarketingChatOrchestrationDemo({
     }
   }, [copy, elapsed, scene, timing])
 
+  const timelineTick =
+    Number(state.promptVisible) +
+    Number(state.orchestrationVisible) +
+    Number(state.thinkVisible) +
+    Number(state.thinkExpanded) +
+    Number(state.planVisible) +
+    Number(state.memoryVisible) +
+    Number(state.chapterVisible) +
+    Number(state.writeVisible) +
+    Number(state.subagentVisible) +
+    Number(state.outputVisible) +
+    state.thinkText.length +
+    state.outputText.length
+
+  useOrchestrationTimelineAutoscroll(timelineRef, timelineTick, variant === 'story')
+
   return (
     <div ref={sectionRef ? undefined : fallbackRef}>
       <div className={`${frameClass} demo-agent-console`}>
@@ -335,13 +350,13 @@ export function MarketingChatOrchestrationDemo({
               <div className={ORCH_DEMO_PROMPT_BUBBLE}>{copy.prompt}</div>
             ) : null}
 
-            <div className={ORCH_DEMO_TIMELINE}>
+            <div ref={timelineRef} className={ORCH_DEMO_TIMELINE}>
               {state.orchestrationVisible ? (
                 <div className={ORCH_DEMO_STATUS_LINE}>
                   <span className={orchDemoTimelineIconClass('loading')}>
                     <ToolIcon name="reasoning" size={14} animate />
                   </span>
-                  <strong>编排中…</strong>
+                  <strong>{labels.orchestrating}</strong>
                 </div>
               ) : null}
 
@@ -353,14 +368,14 @@ export function MarketingChatOrchestrationDemo({
                     >
                       <ToolIcon name="think" size={14} animate={state.thinkActive} />
                     </span>
-                    <span>思考</span>
+                    <span>{labels.thinking}</span>
                     <span className={ORCH_DEMO_STEP_META}>
-                      {state.thinkActive ? '进行中 · 4 秒' : '已完成 · 4 秒'}
+                      {state.thinkActive ? labels.thinkingActive : labels.thinkingDone}
                     </span>
                   </div>
                   {state.thinkExpanded ? (
                     <div className={ORCH_DEMO_THINK_BODY}>
-                      {state.thinkText || '正在梳理章节上下文…'}
+                      {state.thinkText || labels.thinkingFallback}
                     </div>
                   ) : null}
                 </div>
@@ -369,6 +384,7 @@ export function MarketingChatOrchestrationDemo({
               {scene === 'subagent' ? (
                 state.subagentVisible ? (
                   <SubagentDemoPanel
+                    labels={labels}
                     active={Boolean(state.subagentActive)}
                     thinkVisible={Boolean(state.subagentThinkVisible)}
                     memoryVisible={Boolean(state.subagentMemoryVisible)}
@@ -379,37 +395,37 @@ export function MarketingChatOrchestrationDemo({
                   />
                 ) : null
               ) : scene === 'think' ? (
-                <>
-                  {state.planVisible ? (
-                    <div className={ORCH_DEMO_TOOL_ROW}>
-                      <span
-                        className={orchDemoTimelineIconClass(state.planActive ? 'loading' : 'success')}
-                      >
-                        <ToolIcon name="TodoWrite" size={14} animate={Boolean(state.planActive)} />
-                      </span>
-                      <span>{copy.firstTool}</span>
-                      <span className={ORCH_DEMO_STEP_META}>
-                        {state.planActive ? '进行中' : '已完成 · 首战 → 掉宝 → 钩子'}
-                      </span>
-                    </div>
-                  ) : null}
-                </>
+                state.planVisible ? (
+                  <div className={ORCH_DEMO_TOOL_ROW}>
+                    <span
+                      className={orchDemoTimelineIconClass(state.planActive ? 'loading' : 'success')}
+                    >
+                      <ToolIcon name="TodoWrite" size={14} animate={Boolean(state.planActive)} />
+                    </span>
+                    <span>{copy.firstTool}</span>
+                    <span className={ORCH_DEMO_STEP_META}>
+                      {state.planActive
+                        ? copy.planMetaActive ?? labels.inProgress
+                        : copy.planMetaDone ?? labels.done}
+                    </span>
+                  </div>
+                ) : null
               ) : scene === 'stream' ? (
-                <>
-                  {state.writeVisible ? (
-                    <div className={ORCH_DEMO_TOOL_ROW}>
-                      <span
-                        className={orchDemoTimelineIconClass(state.writeActive ? 'loading' : 'success')}
-                      >
-                        <ToolIcon name="Write" size={14} animate={Boolean(state.writeActive)} />
-                      </span>
-                      <span>{copy.firstTool}</span>
-                      <span className={ORCH_DEMO_STEP_META}>
-                        {state.writeActive ? '进行中 · 流式写入' : '已完成 · 第二章开头'}
-                      </span>
-                    </div>
-                  ) : null}
-                </>
+                state.writeVisible ? (
+                  <div className={ORCH_DEMO_TOOL_ROW}>
+                    <span
+                      className={orchDemoTimelineIconClass(state.writeActive ? 'loading' : 'success')}
+                    >
+                      <ToolIcon name="Write" size={14} animate={Boolean(state.writeActive)} />
+                    </span>
+                    <span>{copy.firstTool}</span>
+                    <span className={ORCH_DEMO_STEP_META}>
+                      {state.writeActive
+                        ? copy.writeMetaActive ?? labels.inProgress
+                        : copy.writeMetaDone ?? labels.done}
+                    </span>
+                  </div>
+                ) : null
               ) : (
                 <>
                   {state.memoryVisible ? (
@@ -421,7 +437,9 @@ export function MarketingChatOrchestrationDemo({
                       </span>
                       <span>{copy.firstTool}</span>
                       <span className={ORCH_DEMO_STEP_META}>
-                        {state.memoryActive ? '进行中' : '已完成 · 读取内容'}
+                        {state.memoryActive
+                          ? copy.memoryMetaActive ?? labels.inProgress
+                          : copy.memoryMetaDone ?? labels.done}
                       </span>
                     </div>
                   ) : null}
@@ -435,7 +453,9 @@ export function MarketingChatOrchestrationDemo({
                       </span>
                       <span>{copy.secondTool}</span>
                       <span className={ORCH_DEMO_STEP_META}>
-                        {state.chapterActive ? '进行中' : '已完成 · 第一章 · 天赋觉醒'}
+                        {state.chapterActive
+                          ? copy.chapterMetaActive ?? labels.inProgress
+                          : copy.chapterMetaDone ?? labels.done}
                       </span>
                     </div>
                   ) : null}
@@ -444,13 +464,13 @@ export function MarketingChatOrchestrationDemo({
             </div>
 
             {state.outputVisible ? (
-              <p className={ORCH_DEMO_OUTPUT_TEXT}>{state.outputText || '开始输出正文…'}</p>
+              <p className={ORCH_DEMO_OUTPUT_TEXT}>{state.outputText || labels.outputFallback}</p>
             ) : (
               <div className={ORCH_DEMO_EMPTY_HINT}>
                 <span className={orchDemoTimelineIconClass('idle')}>
                   <ToolIcon name="Agent" size={14} />
                 </span>
-                {state.promptVisible ? '等待编排完成后开始流式输出正文' : '输入指令后启动 Agent'}
+                {state.promptVisible ? labels.emptyAfterPrompt : labels.emptyBeforePrompt}
               </div>
             )}
           </div>
@@ -460,12 +480,14 @@ export function MarketingChatOrchestrationDemo({
               <div className={ORCH_DEMO_COMPOSER_TEXT}>
                 {state.composerText ||
                   (state.showComposerPlaceholder ? (
-                    <span className={ORCH_DEMO_COMPOSER_PLACEHOLDER}>给 AI 发送消息...</span>
+                    <span className={ORCH_DEMO_COMPOSER_PLACEHOLDER}>
+                      {labels.composerPlaceholder}
+                    </span>
                   ) : null)}
               </div>
               <div className={ORCH_DEMO_COMPOSER_ACTION_ROW}>
                 <div className={ORCH_DEMO_HOST_MODE}>
-                  <span>托管</span>
+                  <span>{labels.hostMode}</span>
                   <span className={ORCH_DEMO_SWITCH_MOCK} />
                 </div>
                 <span className={orchDemoSendButtonClass(state.sending, state.runActive)}>
@@ -473,7 +495,7 @@ export function MarketingChatOrchestrationDemo({
                 </span>
               </div>
             </div>
-            <p className={ORCH_DEMO_COMPOSER_DISCLAIMER}>内容由 AI 生成，请谨慎参考</p>
+            <p className={ORCH_DEMO_COMPOSER_DISCLAIMER}>{labels.composerDisclaimer}</p>
           </div>
         </div>
       </div>
@@ -482,6 +504,7 @@ export function MarketingChatOrchestrationDemo({
 }
 
 function SubagentDemoPanel({
+  labels,
   active,
   thinkVisible,
   memoryVisible,
@@ -490,6 +513,7 @@ function SubagentDemoPanel({
   outputActive,
   complete,
 }: {
+  labels: Record<string, string>
   active: boolean
   thinkVisible: boolean
   memoryVisible: boolean
@@ -504,9 +528,9 @@ function SubagentDemoPanel({
         <span className={orchDemoTimelineIconClass(active ? 'loading' : 'success')}>
           <ToolIcon name="Agent" size={14} animate={active} />
         </span>
-        <span className={ORCH_DEMO_SUBAGENT_TITLE}>子代理 · 角色校对</span>
+        <span className={ORCH_DEMO_SUBAGENT_TITLE}>{labels.subagentTitle}</span>
         <span className={ORCH_DEMO_STEP_META}>
-          {active ? '运行中 · 12 turns' : '已完成 · 角色校对'}
+          {active ? labels.subagentRunning : labels.subagentDone}
         </span>
       </div>
 
@@ -514,29 +538,29 @@ function SubagentDemoPanel({
         {thinkVisible ? (
           <div className={ORCH_DEMO_SUBAGENT_LINE}>
             <span className={orchDemoSubagentDotClass(active && !memoryVisible)} />
-            <span>校对角色卡与当前章节语气</span>
+            <span>{labels.subagentThink}</span>
           </div>
         ) : null}
         {memoryVisible ? (
           <div className={ORCH_DEMO_SUBAGENT_LINE}>
             <span className={orchDemoSubagentDotClass(memoryActive)} />
-            <span>读取角色卡</span>
+            <span>{labels.subagentMemory}</span>
             <span className={ORCH_DEMO_STEP_META}>
-              {memoryActive ? '进行中' : '已完成 · Tang Yun 人设无冲突'}
+              {memoryActive ? labels.subagentMemoryActive : labels.subagentMemoryDone}
             </span>
           </div>
         ) : null}
         {outputVisible ? (
           <div className={ORCH_DEMO_SUBAGENT_LINE}>
             <span className={orchDemoSubagentDotClass(outputActive)} />
-            <span>校对摘要</span>
+            <span>{labels.subagentOutput}</span>
             <span className={ORCH_DEMO_STEP_META}>
-              {outputActive ? '进行中' : '已完成 · 已同步至记忆'}
+              {outputActive ? labels.subagentOutputActive : labels.subagentOutputDone}
             </span>
           </div>
         ) : null}
         {complete ? (
-          <div className={ORCH_DEMO_SUBAGENT_SUMMARY}>角色校对完成，可安全续写第二章。</div>
+          <div className={ORCH_DEMO_SUBAGENT_SUMMARY}>{labels.subagentSummary}</div>
         ) : null}
       </div>
     </div>
@@ -555,7 +579,7 @@ function ArrowUpIcon() {
 function StopIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor">
-      <rect x="6" y="6" width="12" height="12" rx="2" />
+      <rect x="6" y="6" width="12" height="12" />
     </svg>
   )
 }

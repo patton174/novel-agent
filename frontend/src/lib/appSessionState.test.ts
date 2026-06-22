@@ -3,6 +3,7 @@ import {
   APP_STATE_STORAGE_KEY,
   buildRestoreLocation,
   buildSearchWithSessionPrefs,
+  canRestoreFromRoot,
   readLocaleFromSearch,
   readThemeFromSearch,
   stripSessionQuery,
@@ -34,5 +35,12 @@ describe('appSessionState', () => {
 
   it('exports stable storage key', () => {
     expect(APP_STATE_STORAGE_KEY).toBe('na-app-state')
+  })
+
+  it('does not restore marketing pages when entering root', () => {
+    expect(canRestoreFromRoot('/pricing')).toBe(false)
+    expect(canRestoreFromRoot('/guide')).toBe(false)
+    expect(canRestoreFromRoot('/about')).toBe(false)
+    expect(canRestoreFromRoot('/')).toBe(false)
   })
 })

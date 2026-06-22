@@ -5,7 +5,7 @@ import {
   applySessionPrefsFromSearch,
   buildRestoreLocation,
   buildSearchWithSessionPrefs,
-  canRestorePath,
+  canRestoreFromRoot,
   currentAppLocale,
   isEphemeralPath,
   readPersistedAppState,
@@ -37,7 +37,7 @@ export function useAppSessionRestore() {
 
     if (shouldRestoreOnRootEntry(location.pathname)) {
       const saved = readPersistedAppState()
-      if (saved && saved.pathname !== '/' && canRestorePath(saved.pathname)) {
+      if (saved && saved.pathname !== '/' && canRestoreFromRoot(saved.pathname)) {
         bootstrapDoneRef.current = true
         navigate(buildRestoreLocation(saved), { replace: true })
         return

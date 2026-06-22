@@ -4,6 +4,8 @@ import { Check, ChevronDown } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { fetchPlans, formatTokenCount, type PlanPublic } from '@/api/billingApi'
 import { MKT_CTA_TIER_HIGHLIGHT, MKT_CTA_TIER_OUTLINE } from '@/lib/marketingCta'
+import { MKT_SECTION_WRAP, MKT_SURFACE_CARD, MKT_SURFACE_CARD_PAD } from '@/lib/marketingSubpageClasses'
+import { cn } from '@/lib/utils'
 import { Skeleton } from '@/components/ui/skeleton'
 import { MarketingPageLayout } from '@/components/marketing/MarketingPageLayout'
 import { MarketingSubpageHero } from '@/components/marketing/MarketingSubpageHero'
@@ -35,7 +37,7 @@ export default function PricingPage() {
   }, [t])
 
   return (
-    <MarketingPageLayout>
+    <MarketingPageLayout subpageCta>
       <MarketingSubpageHero
         variant="light"
         eyebrow={t('nav.pricing')}
@@ -53,34 +55,30 @@ export default function PricingPage() {
         }
       />
 
-      <div className="relative bg-background px-6 pb-24">
-        <div className="relative mx-auto max-w-6xl space-y-16 pt-12">
+      <div className={cn(MKT_SECTION_WRAP, 'pb-24')}>
+        <div className="relative space-y-16 pt-4 md:pt-8">
           {error ? <p className="text-center text-sm text-destructive">{error}</p> : null}
 
           <div className="mx-auto grid max-w-5xl gap-8 md:grid-cols-3">
             {plans === null
               ? Array.from({ length: 3 }).map((_, i) => (
-                  <Skeleton key={i} className="min-h-[380px] rounded-2xl" />
+                  <Skeleton key={i} className={cn(MKT_SURFACE_CARD, 'min-h-[380px]')} />
                 ))
               : plans.map((tier) => (
                   <div
                     key={tier.code}
-                    className={`group relative flex flex-col rounded-2xl border bg-surface/80 p-8 backdrop-blur-sm transition-all duration-500 hover:-translate-y-1.5 ${
+                    className={cn(
+                      MKT_SURFACE_CARD_PAD,
+                      'group relative flex flex-col transition-transform duration-300 hover:-translate-y-1',
                       tier.highlight
-                        ? 'z-10 border-primary/50 shadow-[0_24px_70px_-20px_rgba(79,70,229,0.55)] ring-2 ring-primary/20 md:-my-3 md:scale-[1.03]'
-                        : 'border-border/80 shadow-soft hover:border-primary/25 hover:shadow-[0_20px_50px_-20px_rgba(79,70,229,0.2)]'
-                    }`}
+                        ? 'z-10 border-primary bg-primary/5 shadow-[4px_4px_0_0_hsl(var(--primary))] md:-my-2 md:scale-[1.02]'
+                        : 'hover:border-primary/60',
+                    )}
                   >
                     {tier.highlight ? (
-                      <>
-                        <div
-                          aria-hidden
-                          className="pointer-events-none absolute -inset-px rounded-2xl bg-gradient-to-b from-primary/20 via-transparent to-violet-500/10 opacity-80"
-                        />
-                        <div className="absolute -top-5 left-1/2 -translate-x-1/2">
-                          <BreathingHotBadge label={t('pricing.hotBadge')} />
-                        </div>
-                      </>
+                      <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+                        <BreathingHotBadge label={t('pricing.hotBadge')} />
+                      </div>
                     ) : null}
 
                     <div className="relative mb-6 pt-2">
@@ -145,15 +143,17 @@ export default function PricingPage() {
           </div>
 
           <div className="mx-auto max-w-2xl">
-            <h2 className="mb-6 text-center text-xl font-semibold text-foreground">{t('pricing.faqTitle')}</h2>
-            <div className="divide-y divide-border/60 overflow-hidden rounded-2xl border border-border/70 bg-surface/80 shadow-[0_12px_40px_-16px_rgba(79,70,229,0.12)] backdrop-blur-sm">
+            <h2 className="mb-6 text-center font-mono text-lg font-bold uppercase tracking-wide text-foreground md:text-xl">
+              {t('pricing.faqTitle')}
+            </h2>
+            <div className={cn(MKT_SURFACE_CARD, 'divide-y-2 divide-foreground/20 overflow-hidden')}>
               {FAQ_KEYS.map((key) => {
                 const open = openFaq === key
                 return (
                   <div key={key}>
                     <button
                       type="button"
-                      className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left text-sm font-medium text-foreground hover:bg-surface-hover"
+                      className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left font-mono text-sm font-bold text-foreground transition-colors hover:bg-muted/50"
                       aria-expanded={open}
                       onClick={() => setOpenFaq(open ? null : key)}
                     >

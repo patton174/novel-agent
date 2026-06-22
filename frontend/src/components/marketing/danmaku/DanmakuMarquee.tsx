@@ -12,7 +12,7 @@ const MOBILE_MIN_GAP = 360
 const MIN_SPEED = 44
 const MAX_SPEED = 68
 const ITEM_CLASS =
-  'pointer-events-none absolute top-0 flex items-center whitespace-nowrap border-2 border-black bg-white px-3 py-1 font-mono text-xs shadow-[2px_2px_0px_0px_#000000]'
+  'pointer-events-none absolute top-0 flex items-center whitespace-nowrap border-2 border-foreground bg-card px-3 py-1 font-mono text-xs text-foreground shadow-soft'
 
 interface FlyItem {
   uid: string

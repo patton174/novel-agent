@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 import { NovelAiPixelWordmark } from './pixel/NovelAiPixelWordmark'
 import { MKT_CTA_PRIMARY } from '@/lib/marketingCta'
+import { MarketingAuthFlipCta } from './MarketingAuthFlipCta'
 import { LocaleToggle } from '@/components/i18n/LocaleToggle'
 import { MarketingThemeToggle } from '@/components/theme/MarketingThemeToggle'
 import { isLoggedIn } from '@/utils/auth'
@@ -54,37 +55,20 @@ export function MarketingNav() {
     </>
   )
 
-  const authLinksDesktop = loggedIn ? (
+  const authCtaDesktop = loggedIn ? (
     <Link to="/dashboard" className={cn(MKT_CTA_PRIMARY, 'px-4 py-2 text-sm')}>
       {t('common:cta.dashboard')}
     </Link>
   ) : (
-    <>
-      <Link
-        to="/login"
-        className="px-3 py-2 font-mono text-sm font-bold uppercase tracking-wide text-foreground transition-colors hover:bg-neon"
-      >
-        {t('marketing:nav.login')}
-      </Link>
-      <Link to="/register" className={cn(MKT_CTA_PRIMARY, 'px-4 py-2 text-sm')}>
-        {t('common:cta.registerFree')}
-      </Link>
-    </>
+    <MarketingAuthFlipCta size="md" />
   )
 
-  const authLinksMobile = loggedIn ? (
+  const authCtaMobileMenu = loggedIn ? (
     <Link to="/dashboard" className={cn(MKT_CTA_PRIMARY, 'mt-1 px-4 py-2.5 text-center text-sm')}>
       {t('common:cta.dashboard')}
     </Link>
   ) : (
-    <>
-      <Link to="/login" className="px-3 py-2.5 font-mono text-sm font-bold uppercase tracking-wide text-foreground hover:bg-neon">
-        {t('marketing:nav.login')}
-      </Link>
-      <Link to="/register" className={cn(MKT_CTA_PRIMARY, 'mt-1 px-4 py-2.5 text-center text-sm')}>
-        {t('common:cta.registerFree')}
-      </Link>
-    </>
+    <MarketingAuthFlipCta size="md" fullWidth className="mt-1" />
   )
 
   return (
@@ -96,14 +80,12 @@ export function MarketingNav() {
           : 'border-b-2 border-transparent bg-background',
       )}
     >
-      <nav className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6" aria-label="主导航">
+      <nav className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4 sm:px-6" aria-label="主导航">
         <Link
           to="/"
-          className="flex items-center gap-2 transition-opacity hover:opacity-80"
+          className="flex shrink-0 items-center gap-2 transition-opacity hover:opacity-80"
           aria-label={`${t('marketing:brand')} 首页`}
         >
-          {/* 顶部导航 wordmark：<sm 用 sm 尺寸（紧凑），≥sm 用 md 尺寸。
-              比 size="nav" 小一档，避免顶栏过高 / 移动端挤 */}
           <NovelAiPixelWordmark size="sm" className="inline-flex sm:hidden" />
           <NovelAiPixelWordmark size="md" className="hidden sm:inline-flex" />
         </Link>
@@ -113,36 +95,50 @@ export function MarketingNav() {
           <div className="relative z-[2] flex items-center gap-2">
             <MarketingThemeToggle compact />
             <LocaleToggle compact />
-            {authLinksDesktop}
+            {authCtaDesktop}
           </div>
         </div>
 
-        <button
-          type="button"
-          className="inline-flex size-10 items-center justify-center border-2 border-foreground bg-surface text-foreground md:hidden"
-          aria-expanded={open}
-          aria-label={open ? t('marketing:nav.close') : t('marketing:nav.menu')}
-          onClick={() => setOpen((v) => !v)}
-        >
-          {open ? <X className="size-5" /> : <Menu className="size-5" />}
-        </button>
+        <div className="flex items-center gap-1.5 md:hidden">
+          <MarketingThemeToggle compact />
+          <LocaleToggle compact />
+          {loggedIn ? (
+            <Link
+              to="/dashboard"
+              className={cn(MKT_CTA_PRIMARY, 'px-3 py-2 text-[0.68rem] uppercase')}
+            >
+              {t('common:cta.dashboard')}
+            </Link>
+          ) : (
+            <MarketingAuthFlipCta variant="icon" size="sm" />
+          )}
+          <button
+            type="button"
+            className="inline-flex size-9 shrink-0 items-center justify-center border-2 border-foreground bg-surface text-foreground"
+            aria-expanded={open}
+            aria-label={open ? t('marketing:nav.close') : t('marketing:nav.menu')}
+            onClick={() => setOpen((v) => !v)}
+          >
+            {open ? <X className="size-4" /> : <Menu className="size-4" />}
+          </button>
+        </div>
       </nav>
 
       {open ? (
-        <div className="border-t-2 border-foreground bg-background px-6 py-4 md:hidden">
+        <div className="border-t-2 border-foreground bg-background px-4 py-4 sm:px-6 md:hidden">
           <div className="flex flex-col gap-1">
-            <div className="mb-2 flex items-center justify-end gap-2">
-              <MarketingThemeToggle />
-              <LocaleToggle />
-            </div>
             <Link to="/pricing" className={linkClass('/pricing')}>
               {t('marketing:nav.pricing')}
             </Link>
             <Link to="/about" className={linkClass('/about')}>
               {t('marketing:nav.about')}
             </Link>
-            <div className="my-2 h-0.5 bg-foreground/20" />
-            {authLinksMobile}
+            {loggedIn ? (
+              <>
+                <div className="my-2 h-0.5 bg-foreground/20" />
+                {authCtaMobileMenu}
+              </>
+            ) : null}
           </div>
         </div>
       ) : null}

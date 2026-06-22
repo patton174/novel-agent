@@ -42,12 +42,12 @@ export const CURSOR_FEATURE_INNER = cn('mx-auto w-full max-w-[1120px]')
 
 export function cursorFeatureGridClass(flip?: boolean) {
   return cn(
-    'grid items-center gap-8',
-    'md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] md:gap-x-12 md:gap-y-10',
+    'grid items-stretch gap-6',
+    'md:grid-cols-[minmax(0,0.85fr)_auto_minmax(0,1.1fr)] md:gap-x-8 md:gap-y-10',
     flip &&
-      'md:[&_.story-copy]:order-2 md:[&_.demo-app-mock]:order-1',
-    'max-md:grid-cols-1 max-md:gap-8',
-    'max-md:[&_.story-copy]:order-[unset] max-md:[&_.demo-app-mock]:order-[unset]',
+      'md:[&_.story-copy]:order-3 md:[&_.story-timeline]:order-2 md:[&_.demo-app-mock]:order-1',
+    'max-md:grid-cols-1 max-md:gap-5',
+    'max-md:[&_.story-copy]:order-1 max-md:[&_.demo-app-mock]:order-2',
   )
 }
 
@@ -83,8 +83,8 @@ export const CURSOR_FEATURE_PIN = cn(
 )
 
 export const CURSOR_FEATURE_CARD = cn(
-  'relative min-h-[420px] w-full overflow-hidden rounded-[14px] border border-[#e2e8f0] bg-white',
-  'shadow-[0_4px_20px_-2px_rgba(0,0,0,0.05)]',
+  'relative min-h-[420px] w-full overflow-hidden border-2 border-border bg-card',
+  'shadow-soft',
 )
 
 export const CURSOR_HERO_STACK_WRAP = cn(
@@ -102,18 +102,18 @@ export function cursorHeroLayerClass(layer: 'back' | 'mid' | 'front') {
 }
 
 export const CURSOR_WIN = cn(
-  'absolute flex flex-col overflow-hidden rounded-xl border border-[#e2e8f0] bg-white',
-  'shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05),0_10px_15px_-3px_rgba(0,0,0,0.1)]',
+  'absolute flex flex-col overflow-hidden border-2 border-border bg-card',
+  'shadow-soft',
   'max-md:relative max-md:!left-[4%] max-md:mb-4 max-md:!w-[92%] max-md:!transform-none max-md:last:mb-0',
 )
 
 export const CURSOR_WIN_BAR = cn(
-  'flex shrink-0 items-center gap-2 border-b border-[#e2e8f0] bg-gradient-to-b from-[#fafaf8] to-[#f4f4f1] px-3 py-2',
+  'flex shrink-0 items-center gap-2 border-b-2 border-border bg-muted px-3 py-2',
   '[&_.dots]:flex [&_.dots]:gap-[5px]',
-  '[&_.dot]:size-[9px] [&_.dot]:rounded-full',
-  '[&_.dot.r]:bg-[#ff5f56] [&_.dot.y]:bg-[#ffbd2e] [&_.dot.g]:bg-[#27c93f]',
-  '[&_.title]:flex-1 [&_.title]:text-center [&_.title]:text-[0.68rem] [&_.title]:font-semibold [&_.title]:tracking-[0.02em] [&_.title]:text-[#64748b]',
-  '[&_.url]:rounded [&_.url]:border [&_.url]:border-[#e2e8f0] [&_.url]:bg-[#f8fafc] [&_.url]:px-[0.45rem] [&_.url]:py-[0.15rem] [&_.url]:text-[0.62rem] [&_.url]:text-[#94a3b8]',
+  '[&_.dot]:size-[9px]',
+  '[&_.dot.r]:bg-punk-red [&_.dot.y]:bg-punk-yellow [&_.dot.g]:bg-success]',
+  '[&_.title]:flex-1 [&_.title]:text-center [&_.title]:text-[0.68rem] [&_.title]:font-semibold [&_.title]:tracking-[0.02em] [&_.title]:text-muted-foreground',
+  '[&_.url]:border [&_.url]:border-border [&_.url]:bg-background [&_.url]:px-[0.45rem] [&_.url]:py-[0.15rem] [&_.url]:text-[0.62rem] [&_.url]:text-muted-foreground',
 )
 
 export const CURSOR_WIN_BODY = cn('flex min-h-0 flex-1 overflow-hidden')
@@ -206,7 +206,16 @@ export const CURSOR_SUMMARY_CARD = cn(
 
 export const STORY_COPY_BLOCK = cn('w-full max-w-[21rem] text-left')
 
-export const STORY_POINT_LIST = cn('m-0 flex list-none flex-col gap-[0.55rem] p-0')
+export const STORY_POINT_LIST = cn('m-0 flex list-none flex-col gap-2 p-0')
+
+export const STORY_POINT_HIGHLIGHT = cn(
+  'inline-flex shrink-0 items-center border-2 border-foreground bg-neon/40 px-1.5 py-0.5 font-mono text-[0.72rem] font-bold leading-tight text-ink',
+  'sm:text-[0.78rem]',
+)
+
+export const STORY_POINT_ITEM = cn(
+  'flex flex-wrap items-baseline gap-x-1.5 gap-y-1 font-mono text-[0.86rem] leading-[1.55] text-foreground/90 sm:text-[0.88rem]',
+)
 
 export function storyCopyRootClass(alignEnd?: boolean) {
   return cn(
@@ -223,27 +232,22 @@ export const STORY_ACT_ROW = cn(
 )
 
 export const STORY_ACT_INDEX = cn(
-  'inline-flex h-8 min-w-8 items-center justify-center border-2 border-black bg-neon px-[0.45rem] text-ink',
+  'inline-flex h-8 min-w-8 items-center justify-center border-2 border-foreground bg-neon px-[0.45rem] text-ink',
 )
 
 export const STORY_ACT_LABEL = cn(
   'font-mono text-[0.72rem] font-bold uppercase tracking-[0.14em] text-muted-foreground',
 )
 
+/** PixelText 标题容器（衬线 STORY_TITLE 已废弃，保留 spacing wrapper） */
 export const STORY_TITLE = cn(
-  'mkt-font-display m-0 mb-[0.85rem] text-[clamp(1.75rem,3.4vw,2.45rem)] font-black leading-[1.05] tracking-[-0.04em] text-ink',
+  'm-0 mb-[0.85rem] flex flex-col gap-1 leading-none',
 )
 
 export const STORY_TITLE_ACCENT = cn(
-  'mt-[0.15rem] block text-primary',
+  'mt-0.5',
 )
 
 export const STORY_LEAD = cn(
-  'm-0 mb-[1.35rem] font-mono text-[1.02rem] leading-[1.68] text-muted-foreground',
-)
-
-export const STORY_POINT_ITEM = cn(
-  'relative pl-4 font-mono text-[0.88rem] leading-[1.55] text-ink/90',
-  'before:absolute before:left-0 before:top-[0.58em] before:size-[6px] before:bg-primary',
-  '[&_strong]:font-bold [&_strong]:text-ink',
+  'm-0 mb-[1.35rem] font-mono text-[0.95rem] leading-[1.68] text-muted-foreground sm:text-[1.02rem]',
 )

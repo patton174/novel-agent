@@ -76,6 +76,10 @@ export interface PixelTextProps {
   fill?: boolean
   /** fill 模式下 dot 的上下限，避免极值。默认 [1, 6] */
   dotRange?: [number, number]
+  /** fill 时水平对齐。默认 center */
+  fillAlign?: 'left' | 'center' | 'right'
+  /** fill 时优先完整显示文字：允许 dot 低于 dotRange[0] 以免裁切。默认 false */
+  fillFit?: boolean
 }
 
 // ── 工具：mulberry32 风格的确定性随机（按 seed 输出 0-1 序列） ─────────
@@ -334,6 +338,8 @@ export function PixelText({
   presentational = false,
   fill = false,
   dotRange = [1, 6],
+  fillAlign = 'center',
+  fillFit = false,
 }: PixelTextProps) {
   const cellSize = cell ?? SIZE_PRESET[size].cell
   // 单词间距默认 = cell/2（半个字符宽度），比字间 gap 大、但不会把单词撑到 1 字符宽那么散
@@ -364,7 +370,7 @@ export function PixelText({
     [text, cellSize, fontWeight, fontFamily, threshold, glyphGap, effWordGap, resolvedColor, noiseSeed],
   )
 
-  // fill 模式：测量父级宽度，按比例算 dot（保持点为正方形），随窗口变化重算
+  // fill 模式：测量自身可用宽度（扣除父级 padding），按比例算 dot
   const [fillDot, setFillDot] = useState(dot)
   useLayoutEffect(() => {
     if (!fill) {
@@ -373,24 +379,38 @@ export function PixelText({
     }
     const el = spanRef.current
     if (!el) return
-    const parent = el.parentElement
-    if (!parent) return
     const compute = () => {
-      const pw = parent.clientWidth
+      let pw = el.getBoundingClientRect().width
+      if (pw <= 0 && el.parentElement) {
+        const parent = el.parentElement
+        const st = getComputedStyle(parent)
+        pw =
+          parent.clientWidth -
+          (parseFloat(st.paddingLeft) || 0) -
+          (parseFloat(st.paddingRight) || 0)
+      }
       if (pw > 0 && img && img.w > 0) {
         const d = pw / img.w
-        setFillDot(Math.min(dotRange[1], Math.max(dotRange[0], d)))
+        const fitted = fillFit
+          ? Math.min(dotRange[1], d)
+          : Math.min(dotRange[1], Math.max(dotRange[0], d))
+        setFillDot(fitted)
       }
     }
     compute()
     const ro = new ResizeObserver(compute)
-    ro.observe(parent)
+    ro.observe(el)
+    if (el.parentElement) ro.observe(el.parentElement)
     return () => ro.disconnect()
-  }, [fill, dot, img, dotRange])
+  }, [fill, dot, img, dotRange, fillFit])
 
   const effDot = fill ? fillDot : dot
   const dispW = img ? img.w * effDot : 0
   const dispH = img ? img.h * effDot : 0
+  const bgW = img ? img.w * effDot : 0
+  const bgH = img ? img.h * effDot : 0
+  const bgPos =
+    fillAlign === 'left' ? 'left top' : fillAlign === 'right' ? 'right top' : 'center top'
 
   return (
     <span
@@ -402,7 +422,8 @@ export function PixelText({
               width: fill ? '100%' : `${dispW}px`,
               height: `${dispH}px`,
               backgroundImage: `url(${img.url})`,
-              backgroundSize: fill ? '100% 100%' : `${dispW}px ${dispH}px`,
+              backgroundSize: `${bgW}px ${bgH}px`,
+              backgroundPosition: bgPos,
               backgroundRepeat: 'no-repeat',
               imageRendering: 'pixelated',
             }

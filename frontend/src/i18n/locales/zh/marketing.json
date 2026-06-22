@@ -87,8 +87,14 @@
       "title": "专为长篇连载打造的",
       "titleAccent": "可编排创作助手",
       "subtitle": "世界观记忆、透明编排、流式成稿与托管续跑——从可行性评估到日更产出，一站完成。",
+      "subtitleMobile": "记忆·编排·流式成稿，一站完成。",
+      "titleAccentMobile": "可编排创作助手",
+      "mobileKicker": "专为长篇连载打造",
+      "ctaOrbLabel": "免费开始创作",
       "ctaPrimary": "免费开始创作",
+      "ctaPrimaryShort": "免费开始",
       "ctaSecondary": "先看适用场景",
+      "ctaSecondaryShort": "适用场景",
       "ctaLogin": "登录账号",
       "trustFree": "免费起步",
       "trustZh": "中文界面",
@@ -175,6 +181,72 @@
             "2": { "highlight": "随时可介入", "text": "暂停、追问、改写都在同屏完成" },
             "3": { "highlight": "成稿即入库", "text": "章节与记忆同步更新" }
           }
+        }
+      },
+      "demo": {
+        "labels": {
+          "orchestrating": "编排中…",
+          "thinking": "思考",
+          "thinkingActive": "进行中 · 4 秒",
+          "thinkingDone": "已完成 · 4 秒",
+          "thinkingFallback": "正在梳理章节上下文…",
+          "outputFallback": "开始输出正文…",
+          "emptyBeforePrompt": "输入指令后启动 Agent",
+          "emptyAfterPrompt": "等待编排完成后开始流式输出正文",
+          "composerPlaceholder": "给 AI 发送消息...",
+          "composerDisclaimer": "内容由 AI 生成，请谨慎参考",
+          "hostMode": "托管",
+          "inProgress": "进行中",
+          "done": "已完成",
+          "subagentTitle": "子代理 · 角色校对",
+          "subagentRunning": "运行中 · 12 turns",
+          "subagentDone": "已完成 · 角色校对",
+          "subagentThink": "校对角色卡与当前章节语气",
+          "subagentMemory": "读取角色卡",
+          "subagentMemoryActive": "进行中",
+          "subagentMemoryDone": "已完成 · Tang Yun 人设无冲突",
+          "subagentOutput": "校对摘要",
+          "subagentOutputActive": "进行中",
+          "subagentOutputDone": "已完成 · 已同步至记忆",
+          "subagentSummary": "角色校对完成，可安全续写第二章。"
+        },
+        "think": {
+          "title": "规划 · 第二章结构",
+          "prompt": "帮我规划第二章结构，先想清楚节奏和爽点再动笔。",
+          "think": "第二章建议：银月森林首战验证掉宝，再触发全服唯一强化石，章末留悬念。",
+          "firstTool": "生成写作计划",
+          "planMetaActive": "进行中",
+          "planMetaDone": "已完成 · 首战 → 掉宝 → 钩子",
+          "output": "结构已定：先小战热身，再集中爆发爽点，可以开始写正文。"
+        },
+        "orchestrate": {
+          "title": "续写 · 第二章",
+          "prompt": "继续写第二章，先对齐记忆和第一章结尾。",
+          "think": "续写前先拉取角色记忆，并阅读第一章结尾以对齐语气与伏笔。",
+          "firstTool": "查阅记忆",
+          "secondTool": "阅读章节",
+          "memoryMetaActive": "进行中",
+          "memoryMetaDone": "已完成 · 读取内容",
+          "chapterMetaActive": "进行中",
+          "chapterMetaDone": "已完成 · 第一章 · 天赋觉醒",
+          "output": "雨水顺着他的发梢滑落，每一滴都像是敲打在心上的钟声。他深吸一口气，握紧了拳头——银月森林的首战，从现在开始。"
+        },
+        "subagent": {
+          "title": "子代理 · 角色校对",
+          "prompt": "启动子代理校对角色一致性，再进入正文续写。",
+          "think": "主会话保持简洁，角色校对交给子代理并行处理。",
+          "firstTool": "读取角色卡",
+          "secondTool": "合并校对摘要",
+          "output": "角色校对完成，记忆已同步。可以开始续写第二章正文。"
+        },
+        "stream": {
+          "title": "续写 · 第二章",
+          "prompt": "按刚才的结构，续写第二章后半段，重点刻画获得强化石的场景。",
+          "think": "承接前面的战斗，详细描写蓝光与系统提示，突出『全服唯一』的爽点。",
+          "firstTool": "写入章节",
+          "writeMetaActive": "进行中 · 流式写入",
+          "writeMetaDone": "已完成 · 第二章开头",
+          "output": "随着强化石爆发出耀眼的蓝光，原本普通的短剑瞬间布满繁复的符文。系统提示音在耳边响起：【恭喜获得全服唯一神话级武器『凛冬之握』】"
         }
       }
     },

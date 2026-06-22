@@ -14,7 +14,9 @@ export function useMarketingStoryReveal(rootRef: RefObject<HTMLElement | null>) 
 
     if (isReduced || isMobile) {
       root
-        .querySelectorAll<HTMLElement>('.story-copy, .demo-app-mock, .demo-agent-console')
+        .querySelectorAll<HTMLElement>(
+          '.story-copy, .story-timeline, .demo-app-mock, .demo-agent-console',
+        )
         .forEach((el) => gsap.set(el, { opacity: 1, clearProps: isReduced ? 'all' : 'filter,transform' }))
       return
     }

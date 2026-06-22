@@ -1,7 +1,11 @@
-import { useRef } from 'react'
+import { useRef, useState, useEffect } from 'react'
+import { useScroll, useMotionValueEvent, useReducedMotion } from 'framer-motion'
+import { useAppMobile } from '@/hooks/useMediaQuery'
 import { MarketingChatOrchestrationDemo } from './MarketingChatOrchestrationDemo'
 import type { MarketingSceneId } from '../../../utils/marketing/buildMarketingSceneDemo'
 import { MarketingStoryCopy, type StoryPoint } from '../story/MarketingStoryCopy'
+import { MarketingStoryTimeline } from '../story/MarketingStoryTimeline'
+import { easeInOutCubic } from '@/lib/marketingStoryScroll'
 import {
   CURSOR_FEATURE_INNER,
   cursorFeatureGridClass,
@@ -34,11 +38,49 @@ export function MarketingChatScene({
   points,
 }: MarketingChatSceneProps) {
   const sectionRef = useRef<HTMLElement>(null)
+  const demoRef = useRef<HTMLDivElement>(null)
   const flip = layout === 'copy-right'
+  const reduced = useReducedMotion()
+  const isMobile = useAppMobile()
+  const useScrollSync = !isMobile && !reduced
+  const [progress, setProgress] = useState(reduced ? 1 : 0)
 
-  const demo = (
-    <MarketingChatOrchestrationDemo scene={scene} variant="story" sectionRef={sectionRef} />
-  )
+  const { scrollYProgress: demoScroll } = useScroll({
+    target: demoRef,
+    offset: ['start 0.9', 'end 0.12'],
+  })
+
+  const { scrollYProgress: sectionScroll } = useScroll({
+    target: sectionRef,
+    offset: ['start end', 'end start'],
+  })
+
+  useMotionValueEvent(demoScroll, 'change', (demoV) => {
+    if (!useScrollSync) return
+    const raw = Math.min(demoV, sectionScroll.get())
+    setProgress(easeInOutCubic(raw))
+  })
+
+  useMotionValueEvent(sectionScroll, 'change', (sectionV) => {
+    if (!useScrollSync) return
+    const raw = Math.min(demoScroll.get(), sectionV)
+    setProgress(easeInOutCubic(raw))
+  })
+
+  useEffect(() => {
+    if (!useScrollSync) {
+      setProgress(0)
+      return
+    }
+    if (reduced) {
+      setProgress(1)
+      return
+    }
+    const raw = Math.min(demoScroll.get(), sectionScroll.get())
+    setProgress(easeInOutCubic(raw))
+  }, [useScrollSync, reduced, demoScroll, sectionScroll])
+
+  const scrollProgress = useScrollSync ? (reduced ? 1 : progress) : undefined
 
   return (
     <section
@@ -58,9 +100,25 @@ export function MarketingChatScene({
             titleAccent={titleAccent}
             lead={lead}
             points={points}
+            scene={scene}
+            scrollProgress={scrollProgress}
           />
 
-          <div className="demo-app-mock w-full">{demo}</div>
+          <MarketingStoryTimeline
+            scene={scene}
+            progress={scrollProgress ?? 0}
+            className="story-timeline max-md:hidden"
+          />
+
+          <div ref={demoRef} className="demo-app-mock w-full">
+            <MarketingChatOrchestrationDemo
+              scene={scene}
+              variant="story"
+              sectionRef={sectionRef}
+              scrollProgress={scrollProgress}
+              autoPlayInView={isMobile && !reduced}
+            />
+          </div>
         </div>
       </div>
     </section>

@@ -113,17 +113,11 @@
 }
 
 .mkt-grid-bg {
-  background-image:
-    linear-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
-  background-size: 56px 56px;
-  mask-image: radial-gradient(ellipse 85% 75% at 50% 35%, black 15%, transparent 72%);
+  /* 网格底纹已移除，保留类名兼容旧引用 */
 }
 
 .dark .mkt-grid-bg {
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  /* 网格底纹已移除 */
 }
 
 /* 新粗野主义：禁用模糊光球（反模糊原则）——保留类名占位以兼容引用 */
@@ -197,38 +191,15 @@
   animation: mkt-demo-fade-up 0.22s ease-out;
 }
 
-.mkt-demo-think-block-expanded::before {
-  content: '';
-  position: absolute;
-  left: 0.62rem;
-  top: 1.45rem;
-  bottom: 0.05rem;
-  width: 2px;
-  border-radius: 1px;
-  background: var(--border);
-}
-
-.mkt-demo-subagent-branch::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0.15rem;
-  width: 1.5px;
-  border-radius: 1px;
-  background: var(--border);
-}
-
 .mkt-demo-switch-mock::after {
   content: '';
   position: absolute;
-  top: 3px;
-  left: 4px;
-  width: 12px;
-  height: 12px;
-  border-radius: 999px;
-  background: #fff;
-  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.22);
+  top: 2px;
+  left: 3px;
+  width: 10px;
+  height: 10px;
+  background: var(--foreground);
+  box-shadow: 1px 1px 0 0 var(--border);
 }
 
 @keyframes mkt-url-shimmer {
@@ -568,22 +539,146 @@
   }
 }
 
-/* 像素网格底纹：纯色块拼接的方格，无渐变。用作 section 背景肌理。
-   用 --foreground（明暗翻转）做线色，暗色下也能看到网格。 */
-.pixel-grid-bg {
-  background-image:
-    linear-gradient(to right, var(--foreground) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--foreground) 1px, transparent 1px);
-  background-size: 16px 16px;
-  background-position: -1px -1px;
+/* ── 手机 Hero：圆形像素主按钮 ── */
+.hero-orb-cta {
+  width: 5.75rem;
+  height: 5.75rem;
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
 }
 
-/* 弱化版像素网格（更细、更淡，适合大面积铺底不抢戏） */
+.hero-orb-cta__orbit {
+  position: absolute;
+  inset: -0.55rem;
+  border: 2px dashed color-mix(in srgb, var(--foreground) 45%, transparent);
+  border-radius: 50%;
+  animation: hero-orb-spin 16s linear infinite;
+}
+
+.hero-orb-cta__orbit--static {
+  animation: none;
+}
+
+.hero-orb-cta__halo {
+  position: absolute;
+  inset: -0.2rem;
+  border: 2px solid color-mix(in srgb, var(--neon) 70%, var(--foreground));
+  border-radius: 50%;
+  animation: hero-orb-pulse 2.4s steps(4) infinite;
+}
+
+.hero-orb-cta__halo--static {
+  animation: none;
+}
+
+.hero-orb-cta__core {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  border: 3px solid var(--foreground);
+  border-radius: 50%;
+  background: var(--primary);
+  color: #fff;
+  box-shadow: 5px 5px 0 0 var(--foreground);
+  transition:
+    transform 0.15s steps(2),
+    box-shadow 0.15s steps(2);
+}
+
+.hero-orb-cta:active .hero-orb-cta__core {
+  transform: translate(3px, 3px);
+  box-shadow: 2px 2px 0 0 var(--foreground);
+}
+
+.hero-orb-cta__arrow {
+  display: inline-flex;
+  filter: drop-shadow(1px 1px 0 rgba(0, 0, 0, 0.35));
+  animation: hero-arrow-nudge 1s steps(4) infinite;
+}
+
+.hero-orb-cta__arrow--static {
+  animation: none;
+}
+
+.hero-pixel-arrow {
+  width: 1.65rem;
+  height: 1.65rem;
+  image-rendering: pixelated;
+}
+
+@keyframes hero-arrow-nudge {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(4px);
+  }
+}
+
+@keyframes hero-orb-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes hero-orb-pulse {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.04);
+  }
+}
+
+.hero-mobile-scroll-hint {
+  animation: hero-scroll-hint 1.6s steps(3) infinite;
+}
+
+@keyframes hero-scroll-hint {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.55;
+  }
+  50% {
+    transform: translateY(5px);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-orb-cta__orbit,
+  .hero-orb-cta__halo,
+  .hero-orb-cta__arrow,
+  .hero-mobile-scroll-hint {
+    animation: none !important;
+  }
+}
+
+/* 像素网格底纹：已全局禁用网格线，类名保留供布局引用 */
+.pixel-grid-bg,
 .pixel-grid-bg-faint {
-  background-image:
-    linear-gradient(to right, color-mix(in srgb, var(--foreground) 14%, transparent) 1px, transparent 1px),
-    linear-gradient(to bottom, color-mix(in srgb, var(--foreground) 14%, transparent) 1px, transparent 1px);
-  background-size: 12px 12px;
+  background-image: none;
+}
+
+/* Hero / 子页顶区：纯色底，动态粒子由 MarketingPixelParticles 负责 */
+.pixel-hero-bg {
+  background-color: var(--background);
+  background-image: none;
+}
+
+.dark .pixel-hero-bg {
+  background-image: none;
 }
 
 /* 像素化图像：禁止浏览器双线性插值，保留颗粒感 */
@@ -618,4 +713,40 @@
     opacity: 1;
     transform: none;
   }
+}
+
+.story-point-active {
+  color: var(--foreground);
+}
+
+.story-point-active .story-point-highlight {
+  opacity: 1;
+}
+
+.story-point-done {
+  opacity: 0.72;
+}
+
+/* 顶栏登录 / 注册上下翻转 */
+.mkt-auth-flip-track {
+  transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mkt-auth-flip-track {
+    transition: none;
+  }
+}
+
+/* 营销故事中间滚动时间线 */
+.marketing-timeline-rail {
+  background: color-mix(in srgb, var(--border) 35%, transparent);
+}
+
+.dark .marketing-timeline-rail {
+  background: color-mix(in srgb, var(--border) 25%, transparent);
+}
+
+.marketing-timeline-rail-fill {
+  box-shadow: 0 0 8px color-mix(in srgb, var(--primary) 40%, transparent);
 }
