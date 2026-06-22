@@ -17,7 +17,7 @@ public class VerificationProperties {
     /** 密码重置链接有效期（秒） */
     private int passwordResetLinkTtlSeconds = 3600;
     /** 前端站点根 URL，用于拼接验证链接 */
-    private String frontendBaseUrl = "https://www.novel-agent.cn";
+    private String frontendBaseUrl = "https://novel-agent.cn";
     /** 邮箱验证链接 HMAC 密钥（环境变量 AUTH_EMAIL_LINK_SECRET） */
     private String emailLinkSecret = "";
     private int captchaChallengeTtlSeconds = 300;
