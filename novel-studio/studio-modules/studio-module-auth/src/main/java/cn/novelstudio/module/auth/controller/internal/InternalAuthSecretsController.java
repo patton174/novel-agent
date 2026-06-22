@@ -16,10 +16,11 @@ public class InternalAuthSecretsController extends BaseController {
 
     /** 部署脚本调用：确保 Redis 中存在邮箱验证链接密钥（幂等，不轮换 bootstrap）。 */
     @PostMapping("/ensure-email-link-secret")
-    public EmailLinkSecretView ensureEmailLinkSecret() {
-        return new EmailLinkSecretView(emailLinkSecretService.ensureSecret());
+    public OkView ensureEmailLinkSecret() {
+        emailLinkSecretService.ensureSecret();
+        return new OkView(true);
     }
 
-    public record EmailLinkSecretView(String emailLinkSecret) {
+    public record OkView(boolean ok) {
     }
 }

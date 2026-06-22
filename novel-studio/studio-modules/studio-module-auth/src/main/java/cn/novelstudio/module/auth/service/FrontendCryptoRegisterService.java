@@ -49,14 +49,16 @@ public class FrontendCryptoRegisterService {
             Duration.ofSeconds(ttl)
         );
 
+        // 邮箱链接 HMAC 仅存 Redis（EMAIL_LINK_SECRET_KEY），不得写入 bootstrap / crypto-runtime.json
+        emailLinkSecretService.ensureSecret();
+
         CryptoRuntimeView runtime = new CryptoRuntimeView(
             kid,
             aesKeyB64,
             version,
             expiresAt,
             apiPathPrefix,
-            hostLabel == null ? "worker" : hostLabel,
-            emailLinkSecretService.ensureSecret()
+            hostLabel == null ? "worker" : hostLabel
         );
 
         try {
@@ -92,8 +94,7 @@ public class FrontendCryptoRegisterService {
         long version,
         long expiresAtEpochMs,
         String apiPathPrefix,
-        String registeredBy,
-        String emailLinkSecret
+        String registeredBy
     ) {
     }
 }
