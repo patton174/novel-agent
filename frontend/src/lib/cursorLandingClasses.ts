@@ -204,7 +204,7 @@ export const CURSOR_SUMMARY_CARD = cn(
 
 /* ── Story copy (MarketingStoryCopy) ── */
 
-export const STORY_COPY_BLOCK = cn('w-full max-w-[21rem] text-left')
+export const STORY_COPY_BLOCK = cn('w-full max-w-[21rem] overflow-visible text-left md:max-w-[28rem]')
 
 export const STORY_POINT_LIST = cn('m-0 flex list-none flex-col gap-2 p-0')
 
@@ -217,11 +217,9 @@ export const STORY_POINT_ITEM = cn(
   'flex flex-wrap items-baseline gap-x-1.5 gap-y-1 font-mono text-[0.86rem] leading-[1.55] text-foreground/90 sm:text-[0.88rem]',
 )
 
-export function storyCopyRootClass(alignEnd?: boolean) {
+export function storyCopyRootClass(_alignEnd?: boolean) {
   return cn(
     'w-full pt-5',
-    alignEnd &&
-      'md:flex md:flex-col md:items-end',
     'max-md:flex max-md:flex-col max-md:items-center max-md:pt-0',
     'max-md:[&_.story-copy-block]:max-w-[20rem]',
   )

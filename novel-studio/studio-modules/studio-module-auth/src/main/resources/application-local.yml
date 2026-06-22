@@ -62,9 +62,10 @@ auth:
     email-verify-link-ttl-seconds: 86400
     frontend-base-url: ${AUTH_FRONTEND_BASE_URL:http://localhost:5173}
     email-link-secret: ${AUTH_EMAIL_LINK_SECRET:dev-email-link-secret-change-me}
-    captcha-challenge-ttl-seconds: 300
     captcha-token-ttl-seconds: 600
-    captcha-tolerance-px: 6
+    turnstile-enabled: false
+    turnstile-site-key: ${TURNSTILE_SITE_KEY:}
+    turnstile-secret-key: ${TURNSTILE_SECRET_KEY:}
 
 mailtrap:
   token: ${MAILTRAP_TOKEN:}

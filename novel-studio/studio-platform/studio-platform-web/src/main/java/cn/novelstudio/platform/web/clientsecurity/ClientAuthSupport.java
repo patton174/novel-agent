@@ -45,6 +45,7 @@ public class ClientAuthSupport {
     private static final List<String> CRYPTO_EXEMPT = Arrays.asList(
         "/actuator/health",
         "/api/auth/crypto-config",
+        "/api/auth/api/captcha/config",
         "/api/agent/run/ws",
         "/api/agent/chat/status/ws",
         "/internal/"

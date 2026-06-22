@@ -60,19 +60,17 @@ export function buildLoginHref(options?: { reason?: string; returnPath?: string 
   return `/login?${buildLoginSearch(options)}`
 }
 
-/** 登录成功后跳转：保留 returnTo 里的业务参数，并确保 lang/theme 在 URL 上 */
+/** 登录成功后跳转：保留 returnTo 里的业务参数，并确保 lang/theme 在 URL 上；无 returnTo 时进入控制台 */
 export function buildPostLoginHref(
   returnTo: string | null | undefined,
   locale?: string,
   theme?: string,
 ): string {
   const safe = resolveSafeReturnTo(returnTo)
-  if (!safe) {
-    return '/'
-  }
-  const hashIndex = safe.indexOf('#')
-  const hash = hashIndex >= 0 ? safe.slice(hashIndex) : ''
-  const pathAndQuery = hashIndex >= 0 ? safe.slice(0, hashIndex) : safe
+  const destination = safe ?? '/dashboard'
+  const hashIndex = destination.indexOf('#')
+  const hash = hashIndex >= 0 ? destination.slice(hashIndex) : ''
+  const pathAndQuery = hashIndex >= 0 ? destination.slice(0, hashIndex) : destination
   const queryIndex = pathAndQuery.indexOf('?')
   const pathname = queryIndex >= 0 ? pathAndQuery.slice(0, queryIndex) : pathAndQuery
   const search = queryIndex >= 0 ? pathAndQuery.slice(queryIndex) : ''

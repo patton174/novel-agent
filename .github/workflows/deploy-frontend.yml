@@ -58,6 +58,9 @@ jobs:
           WORKER_HOST: ${{ secrets.WORKER_HOST }}
           MW_HOST: ${{ secrets.MW_HOST }}
           AGENT_INTERNAL_SERVICE_KEY: ${{ secrets.AGENT_INTERNAL_SERVICE_KEY }}
+          TURNSTILE_ENABLED: ${{ secrets.TURNSTILE_ENABLED }}
+          TURNSTILE_SITE_KEY: ${{ secrets.TURNSTILE_SITE_KEY }}
+          TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
           DEPLOY_SSH_OPTS: -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes -o ConnectTimeout=30 -o BatchMode=yes
           DEPLOY_SCP_OPTS: -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes -o ConnectTimeout=30 -o BatchMode=yes
         run: bash novel-studio/deploy/ci/deploy-frontend.sh

@@ -18,6 +18,10 @@ public final class SecurityRedisKeys {
     public static final String PASSWORD_RESET_LINK_PREFIX = "auth:email:password-reset:";
     public static final String CAPTCHA_CHALLENGE_PREFIX = "auth:captcha:challenge:";
     public static final String CAPTCHA_TOKEN_PREFIX = "auth:captcha:token:";
+    public static final String CAPTCHA_PRESIGN_PREFIX = "auth:captcha:presign:";
+    public static final String CAPTCHA_POOL_ITEMS_KEY = "auth:captcha:pool:items";
+    public static final String CAPTCHA_POOL_USAGE_KEY = "auth:captcha:pool:usage";
+    public static final String CAPTCHA_POOL_BATCH_KEY = "auth:captcha:pool:batch";
     public static final String RATE_LIMIT_PREFIX = "auth:ratelimit:";
     public static final String USER_ROLE_PREFIX = "user:role:";
 

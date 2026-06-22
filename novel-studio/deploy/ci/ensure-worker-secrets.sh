@@ -117,6 +117,20 @@ ensure_key AGENT_INTERNAL_SERVICE_KEY 8 "${AGENT_INTERNAL_SERVICE_KEY:-}"
 sync_key_optional MAILTRAP_TOKEN 8 "${MAILTRAP_TOKEN:-}"
 sync_key_optional AUTH_EMAIL_LINK_SECRET 16 "${AUTH_EMAIL_LINK_SECRET:-}"
 
+ensure_turnstile() {
+  local enabled="${TURNSTILE_ENABLED:-true}"
+  if [[ "${enabled,,}" != "true" ]]; then
+    echo "[ensure-secrets] TURNSTILE_ENABLED=$enabled，跳过 Turnstile"
+    return 0
+  fi
+  patch_env_remote "$REMOTE" "$ENV_REL" "TURNSTILE_ENABLED" "true"
+  ensure_key TURNSTILE_SITE_KEY 10 "${TURNSTILE_SITE_KEY:-}"
+  ensure_key TURNSTILE_SECRET_KEY 10 "${TURNSTILE_SECRET_KEY:-}"
+  echo "[ensure-secrets] Turnstile enabled on worker"
+}
+
+ensure_turnstile
+
 enable_client_security() {
   local want="${CLIENT_SECURITY_ENABLED:-true}"
   if [[ "${want,,}" != "true" ]]; then

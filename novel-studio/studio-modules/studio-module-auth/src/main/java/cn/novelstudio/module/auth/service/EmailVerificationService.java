@@ -27,7 +27,7 @@ public class EmailVerificationService {
     private final VerificationProperties properties;
     private final MailtrapEmailSender mailtrapEmailSender;
     private final AuthUserRepository authUserRepository;
-    private final SliderCaptchaService sliderCaptchaService;
+    private final HumanVerificationService humanVerificationService;
     private final RateLimitService rateLimitService;
     private final EmailLinkSecretService emailLinkSecretService;
     private final SecureRandom random = new SecureRandom();
@@ -37,7 +37,7 @@ public class EmailVerificationService {
         VerificationProperties properties,
         MailtrapEmailSender mailtrapEmailSender,
         AuthUserRepository authUserRepository,
-        SliderCaptchaService sliderCaptchaService,
+        HumanVerificationService humanVerificationService,
         RateLimitService rateLimitService,
         EmailLinkSecretService emailLinkSecretService
     ) {
@@ -45,7 +45,7 @@ public class EmailVerificationService {
         this.properties = properties;
         this.mailtrapEmailSender = mailtrapEmailSender;
         this.authUserRepository = authUserRepository;
-        this.sliderCaptchaService = sliderCaptchaService;
+        this.humanVerificationService = humanVerificationService;
         this.rateLimitService = rateLimitService;
         this.emailLinkSecretService = emailLinkSecretService;
     }
@@ -55,14 +55,14 @@ public class EmailVerificationService {
         if (authUserRepository.existsByEmail(normalized)) {
             throw BizException.of(ResultCode.AUTH_EMAIL_EXISTS);
         }
-        sliderCaptchaService.consumeCaptchaToken(captchaToken);
-
         assertSendEmailCodeAllowed(normalized, ip, fingerprint);
 
         String cooldownKey = SecurityRedisKeys.EMAIL_COOLDOWN_PREFIX + normalized;
         if (Boolean.TRUE.equals(redisTemplate.hasKey(cooldownKey))) {
             throw new TooManyRequestsException(ResultCode.EMAIL_SEND_TOO_FREQUENT, "发送过于频繁，请稍后再试");
         }
+
+        humanVerificationService.consumeVerificationToken(captchaToken, normalized);
 
         String code = String.format("%06d", random.nextInt(1_000_000));
         mailtrapEmailSender.sendVerificationCode(normalized, code, properties.getEmailCodeTtlSeconds());

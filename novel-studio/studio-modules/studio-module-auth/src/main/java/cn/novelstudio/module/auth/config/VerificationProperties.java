@@ -20,10 +20,8 @@ public class VerificationProperties {
     private String frontendBaseUrl = "https://novel-agent.cn";
     /** 邮箱验证链接 HMAC 密钥（环境变量 AUTH_EMAIL_LINK_SECRET） */
     private String emailLinkSecret = "";
-    private int captchaChallengeTtlSeconds = 300;
     private int captchaTokenTtlSeconds = 600;
-    private int captchaTolerancePx = 6;
-    private int sliderWidth = 300;
-    private int sliderHeight = 150;
-    private int puzzleSize = 44;
+    private boolean turnstileEnabled = false;
+    private String turnstileSiteKey = "";
+    private String turnstileSecretKey = "";
 }

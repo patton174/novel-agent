@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { fetchPublicSiteSettings } from '@/api/billingApi'
 import { register, sendEmailCode } from '../utils/authApi'
+import TurnstileModal from '../components/auth/TurnstileModal'
 import { getFingerprint } from '../security/fingerprint'
-import SliderCaptchaModal from '../components/auth/SliderCaptchaModal'
 import { AuthShell } from '../components/auth/AuthShell'
 import { AuthCodeField } from '../components/auth/AuthCodeField'
 import { AuthField } from '../components/auth/AuthField'
@@ -17,6 +17,7 @@ import { PixelText } from '@/components/marketing/pixel/PixelText'
 import { useFormDraft } from '../hooks/useJourneyTracker'
 import { cn } from '@/lib/utils'
 import { useTranslation } from 'react-i18next'
+import { remainingEmailCooldownSec, writeEmailCooldown } from '../utils/registerEmailCooldown'
 
 type RegisterField = 'username' | 'email' | 'password' | 'confirmPassword' | 'emailCode'
 type RegisterErrors = Partial<Record<RegisterField, string>>
@@ -73,6 +74,24 @@ const RegisterPage: React.FC = () => {
     }
   }, [])
 
+  useEffect(() => {
+    const email = formData.email.trim()
+    if (!email) {
+      setCooldown(0)
+      return
+    }
+    const syncCooldown = () => {
+      const left = remainingEmailCooldownSec(email)
+      setCooldown(left)
+      if (left > 0) {
+        setCodeSent(true)
+      }
+    }
+    syncCooldown()
+    const timer = window.setInterval(syncCooldown, 1000)
+    return () => window.clearInterval(timer)
+  }, [formData.email])
+
   const handleChange = (name: RegisterField, value: string) => {
     setFormData({ ...formData, [name]: value })
     setFieldErrors((prev) => ({ ...prev, [name]: undefined }))
@@ -114,20 +133,13 @@ const RegisterPage: React.FC = () => {
     return Object.keys(next).length === 0
   }
 
-  const startCooldown = () => {
+  const startCooldown = (email: string) => {
+    writeEmailCooldown(email, 60)
+    setCodeSent(true)
     setCooldown(60)
-    const timer = setInterval(() => {
-      setCooldown((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer)
-          return 0
-        }
-        return prev - 1
-      })
-    }, 1000)
   }
 
-  const handleSendCodeClick = () => {
+  const handleSendCodeClick = async () => {
     const email = formData.email.trim()
     const emailErr = validateEmail(email)
     if (emailErr) {
@@ -139,16 +151,13 @@ const RegisterPage: React.FC = () => {
   }
 
   const handleCaptchaVerified = async (captchaToken: string) => {
+    const email = formData.email.trim()
     setSendingCode(true)
     try {
       const fingerprint = await getFingerprint()
-      await sendEmailCode(formData.email.trim(), captchaToken, fingerprint)
-      setCodeSent(true)
-      startCooldown()
+      await sendEmailCode(email, captchaToken, fingerprint)
+      startCooldown(email)
       appToast.success(t('auth:register.codeSentSuccess'))
-    } catch (err) {
-      appToast.error(err instanceof Error ? err.message : t('auth:register.codeSentFail'))
-      throw err
     } finally {
       setSendingCode(false)
     }
@@ -421,11 +430,10 @@ const RegisterPage: React.FC = () => {
         </form>
       )}
 
-      <SliderCaptchaModal
+      <TurnstileModal
         open={captchaOpen}
-        onClose={() => {
-          if (!sendingCode) setCaptchaOpen(false)
-        }}
+        email={formData.email}
+        onClose={() => setCaptchaOpen(false)}
         onVerified={handleCaptchaVerified}
       />
     </AuthShell>

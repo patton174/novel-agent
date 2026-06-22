@@ -15,7 +15,7 @@ public class PasswordResetBiz extends BaseBiz {
     private final PasswordResetService passwordResetService;
 
     public Result<Void> forgotPassword(ForgotPasswordRequest request) {
-        passwordResetService.requestPasswordReset(request.getEmail());
+        passwordResetService.requestPasswordReset(request.getEmail(), request.getCaptchaToken());
         return ok(null);
     }
 

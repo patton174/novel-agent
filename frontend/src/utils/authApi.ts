@@ -118,48 +118,13 @@ export async function refreshSessionInternal(): Promise<boolean> {
 
 
 
-export interface SliderCaptchaChallenge {
-
-  captchaId: string
-
-  backgroundImage: string
-
-  puzzleImage: string
-
-  puzzleY: number
-
-  sliderWidth: number
-
-}
-
-
-
-export async function fetchSliderCaptcha(): Promise<SliderCaptchaChallenge> {
+export async function verifyTurnstile(email: string, turnstileToken: string): Promise<string> {
   await ensureCryptoRuntime(true)
 
-  const response = await secureFetch('/api/auth/api/captcha/slider', { method: 'POST' })
-
-  if (!response.ok) {
-    throw new Error(await readApiErrorMessage(response))
-  }
-
-  return parseResultResponse<SliderCaptchaChallenge>(response)
-
-}
-
-
-
-export async function verifySliderCaptcha(captchaId: string, offsetX: number): Promise<string> {
-  await ensureCryptoRuntime(true)
-
-  const response = await secureFetch('/api/auth/api/captcha/slider/verify', {
-
+  const response = await secureFetch('/api/auth/api/captcha/turnstile/verify', {
     method: 'POST',
-
     headers: { 'Content-Type': 'application/json' },
-
-    body: JSON.stringify({ captchaId, offsetX }),
-
+    body: JSON.stringify({ email, turnstileToken, website: '' }),
   })
 
   if (!response.ok) {
@@ -167,9 +132,7 @@ export async function verifySliderCaptcha(captchaId: string, offsetX: number): P
   }
 
   const data = await parseResultResponse<{ captchaToken: string }>(response)
-
   return data.captchaToken
-
 }
 
 

@@ -56,19 +56,23 @@ class PasswordResetServiceTest {
             return null;
         }).when(mailtrapEmailSender).sendPasswordResetLink(any(), any(), anyLong(), any());
 
+        HumanVerificationService humanVerificationService = mock(HumanVerificationService.class);
+
         PasswordResetService service = new PasswordResetService(
             redisTemplate,
             properties,
             mailtrapEmailSender,
             authUserRepository,
             new RateLimitService(redisTemplate),
-            new EmailLinkSecretService(redisTemplate, properties)
+            new EmailLinkSecretService(redisTemplate, properties),
+            humanVerificationService
         );
 
         assertTimeoutPreemptively(Duration.ofMillis(300), () ->
-            service.requestPasswordReset(" Writer@Example.com ")
+            service.requestPasswordReset(" Writer@Example.com ", "captcha-token-abc")
         );
 
+        verify(humanVerificationService).consumeVerificationToken("captcha-token-abc", "writer@example.com");
         verify(valueOperations).set(
             startsWith(SecurityRedisKeys.PASSWORD_RESET_LINK_PREFIX),
             eq("42"),

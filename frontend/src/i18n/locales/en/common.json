@@ -22,6 +22,7 @@
   },
   "nav": {
     "home": "Home",
+    "backToHome": "Back to homepage",
     "dashboard": "Dashboard",
     "editor": "Editor",
     "admin": "Admin",

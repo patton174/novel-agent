@@ -54,11 +54,11 @@ export async function sendEmailVerifyLink(): Promise<void> {
   await parseResultResponse<null>(res)
 }
 
-export async function requestPasswordReset(email: string): Promise<void> {
+export async function requestPasswordReset(email: string, captchaToken: string): Promise<void> {
   const res = await secureFetch('/api/auth/api/forgot-password', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: email.trim() }),
+    body: JSON.stringify({ email: email.trim(), captchaToken }),
   })
   if (!res.ok) {
     let json: unknown = null

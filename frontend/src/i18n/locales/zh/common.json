@@ -22,6 +22,7 @@
   },
   "nav": {
     "home": "首页",
+    "backToHome": "返回首页",
     "dashboard": "工作台",
     "editor": "写作",
     "admin": "管理后台",

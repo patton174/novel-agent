@@ -46,7 +46,7 @@ export function MarketingStoryCopy({
   titleAccent,
   lead,
   points,
-  alignEnd,
+  alignEnd: _alignEnd,
   className,
   scene,
   scrollProgress,
@@ -64,13 +64,10 @@ export function MarketingStoryCopy({
     transition: { duration: 0.45, ease: [0.22, 1, 0.36, 1] },
   })
 
-  const pixelAlign = alignEnd ? 'ml-auto' : ''
-  const fillAlign = alignEnd ? 'right' : 'left'
-
   const titleCell = isMobile ? 12 : 16
-  const accentCell = isMobile ? 15 : 22
-  const titleDot = isMobile ? ([0.85, 1.55] as const) : ([1.3, 2.6] as const)
-  const accentDot = isMobile ? ([0.9, 1.7] as const) : ([1.5, 3] as const)
+  const accentCell = isMobile ? 12 : 16
+  const accentDot = isMobile ? 1.15 : 1.45
+  const titleDot: [number, number] = isMobile ? [0.85, 1.55] : [1.3, 2.6]
 
   const pointStates = useMemo(() => {
     if (!scene || scrollProgress === undefined) return points.map(() => 'pending' as const)
@@ -88,7 +85,7 @@ export function MarketingStoryCopy({
   const leadStyle = scrollSync ? scrollRevealStyle(scrollProgress, 0.16, 0.32) : undefined
 
   const inner = (
-    <div className={cn(STORY_COPY_BLOCK, 'story-copy-block', alignEnd && 'md:ml-auto')}>
+    <div className={cn(STORY_COPY_BLOCK, 'story-copy-block')}>
       <div className={STORY_ACT_ROW} style={actStyle}>
         <span className={STORY_ACT_INDEX}>
           <PixelText text={act} size="sm" fontWeight={800} presentational />
@@ -96,18 +93,18 @@ export function MarketingStoryCopy({
         <span className={STORY_ACT_LABEL}>{label}</span>
       </div>
 
-      <h3 className={cn(STORY_TITLE, alignEnd && 'md:items-end')}>
+      <h3 className={STORY_TITLE}>
         <div className="w-full" style={titleStyle}>
           <PixelText
             text={title}
             cell={titleCell}
             fill
             fillFit
-            fillAlign={fillAlign}
+            fillAlign="left"
             dotRange={titleDot}
             glyphGap={1}
             fontWeight={800}
-            className={cn('text-muted-foreground', pixelAlign)}
+            className="text-muted-foreground"
             presentational
           />
         </div>
@@ -116,13 +113,10 @@ export function MarketingStoryCopy({
             <PixelText
               text={titleAccent}
               cell={accentCell}
-              fill
-              fillFit
-              fillAlign={fillAlign}
-              dotRange={accentDot}
+              dot={accentDot}
               glyphGap={1}
               fontWeight={900}
-              className={cn('text-primary', pixelAlign)}
+              className="text-primary"
               presentational
             />
           </div>

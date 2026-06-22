@@ -99,6 +99,9 @@ auth:
   verification:
     frontend-base-url: ${AUTH_FRONTEND_BASE_URL:https://novel-agent.cn}
     email-link-secret: ${AUTH_EMAIL_LINK_SECRET:}
+    turnstile-enabled: ${TURNSTILE_ENABLED:false}
+    turnstile-site-key: ${TURNSTILE_SITE_KEY:}
+    turnstile-secret-key: ${TURNSTILE_SECRET_KEY:}
   client-security:
     enabled: ${CLIENT_SECURITY_ENABLED:false}
     aes-required: ${CLIENT_SECURITY_AES_REQUIRED:false}

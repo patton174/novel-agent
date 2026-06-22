@@ -74,7 +74,7 @@ export function MarketingAuthFlipCta({
           style={{ transform: showRegister ? 'translateY(-50%)' : 'translateY(0%)' }}
         >
           <Link
-            to="/login"
+            to="/login?returnTo=%2Fdashboard"
             className="flex h-9 w-9 items-center justify-center bg-surface text-foreground hover:bg-neon"
             aria-label={loginLabel}
             tabIndex={showRegister ? -1 : 0}
@@ -117,7 +117,7 @@ export function MarketingAuthFlipCta({
         style={{ transform: showRegister ? 'translateY(-50%)' : 'translateY(0%)' }}
       >
         <Link
-          to="/login"
+          to="/login?returnTo=%2Fdashboard"
           className={cn(itemClass, 'bg-surface text-foreground hover:bg-neon')}
           tabIndex={showRegister ? -1 : 0}
           aria-hidden={showRegister}

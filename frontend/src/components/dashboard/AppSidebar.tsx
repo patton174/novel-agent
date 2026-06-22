@@ -38,7 +38,7 @@ export function AppSidebar({ embedded = false, onNavigate }: AppSidebarProps) {
       onNavigate={onNavigate}
       header={
         <div className="flex h-12 items-center border-b border-border/60 px-3">
-          <Link to="/dashboard" className="flex min-w-0 items-center overflow-hidden transition-opacity hover:opacity-90">
+          <Link to="/" className="flex min-w-0 items-center overflow-hidden transition-opacity hover:opacity-90" aria-label={t('common:nav.backToHome')}>
             <NovelAiPixelWordmark size="sm" cursor={false} />
           </Link>
         </div>

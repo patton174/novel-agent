@@ -33,6 +33,7 @@ public class PasswordResetService {
     private final AuthUserRepository authUserRepository;
     private final RateLimitService rateLimitService;
     private final EmailLinkSecretService emailLinkSecretService;
+    private final HumanVerificationService humanVerificationService;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder(12);
 
     public PasswordResetService(
@@ -41,7 +42,8 @@ public class PasswordResetService {
         MailtrapEmailSender mailtrapEmailSender,
         AuthUserRepository authUserRepository,
         RateLimitService rateLimitService,
-        EmailLinkSecretService emailLinkSecretService
+        EmailLinkSecretService emailLinkSecretService,
+        HumanVerificationService humanVerificationService
     ) {
         this.redisTemplate = redisTemplate;
         this.properties = properties;
@@ -49,14 +51,30 @@ public class PasswordResetService {
         this.authUserRepository = authUserRepository;
         this.rateLimitService = rateLimitService;
         this.emailLinkSecretService = emailLinkSecretService;
+        this.humanVerificationService = humanVerificationService;
     }
 
     /** 无论邮箱是否存在均静默成功，避免用户枚举 */
-    public void requestPasswordReset(String email) {
+    public void requestPasswordReset(String email, String captchaToken) {
         String normalized = normalizeEmail(email);
         if (normalized.isBlank()) {
             return;
         }
+        rateLimitService.assertUnderLimit("forgot-password:email", normalized, 5, Duration.ofHours(1));
+
+        String cooldownProbeKey = SecurityRedisKeys.EMAIL_COOLDOWN_PREFIX + "reset-probe:" + normalized;
+        if (Boolean.TRUE.equals(redisTemplate.hasKey(cooldownProbeKey))) {
+            throw new TooManyRequestsException(ResultCode.EMAIL_SEND_TOO_FREQUENT, "发送过于频繁，请稍后再试");
+        }
+
+        humanVerificationService.consumeVerificationToken(captchaToken, normalized);
+        rateLimitService.recordSuccess("forgot-password:email", normalized, Duration.ofHours(1));
+        redisTemplate.opsForValue().set(
+            cooldownProbeKey,
+            "1",
+            Duration.ofSeconds(properties.getEmailCooldownSeconds())
+        );
+
         authUserRepository.findByEmail(normalized).ifPresent(user -> sendResetLink(user, normalized));
     }
 
@@ -93,7 +111,6 @@ public class PasswordResetService {
 
     private void sendResetLink(AuthUser user, String email) {
         Long userId = user.getId();
-        rateLimitService.assertUnderLimit("forgot-password:email", email, 5, Duration.ofHours(1));
         rateLimitService.assertUnderLimit("forgot-password:user", String.valueOf(userId), 5, Duration.ofHours(1));
 
         String cooldownKey = SecurityRedisKeys.EMAIL_COOLDOWN_PREFIX + "reset:" + userId;
@@ -123,7 +140,6 @@ public class PasswordResetService {
             "1",
             Duration.ofSeconds(properties.getEmailCooldownSeconds())
         );
-        rateLimitService.recordSuccess("forgot-password:email", email, Duration.ofHours(1));
         rateLimitService.recordSuccess("forgot-password:user", String.valueOf(userId), Duration.ofHours(1));
         CompletableFuture.runAsync(() -> sendResetLinkEmail(email, resetUrl, ttl));
     }
