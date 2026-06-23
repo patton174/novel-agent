@@ -21,6 +21,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 @Service
@@ -99,7 +101,9 @@ public class MemoryNodeService {
 
     /** Dynamic scopes: each outermost root node's title is the scope key. */
     public Map<String, Object> buildAllScopesTreeIndex(Long userId, String novelId) {
-        List<String> scopeKeys = repository.findScopeKeysByNovel(userId, novelId);
+        LinkedHashSet<String> scopeKeys = new LinkedHashSet<>();
+        scopeKeys.addAll(repository.findAllDistinctScopesByNovel(userId, novelId));
+        scopeKeys.addAll(repository.findScopeKeysByNovel(userId, novelId));
         if (scopeKeys.isEmpty()) {
             return Map.of();
         }
@@ -123,13 +127,39 @@ public class MemoryNodeService {
                 );
             }
         }
+        if (index.isEmpty()) {
+            long total = repository.countByUserIdAndNovelId(userId, novelId);
+            if (total > 0) {
+                log.warn(
+                    "memory tree-index empty despite {} nodes novelId={} scopes={}",
+                    total,
+                    novelId,
+                    scopeKeys
+                );
+            }
+        }
         return index;
     }
 
     private Map<String, Object> buildTreeSummaryForSummaryRows(String scopeNorm, List<Object[]> rows) {
         Map<String, Integer> childCounts = childCountsForSummaryRows(rows);
         Map<String, List<Object[]>> byParent = groupSummaryRowsByParent(rows);
+        Set<String> ids = new HashSet<>();
+        for (Object[] row : rows) {
+            String memoryId = stringAt(row, 0);
+            if (memoryId != null && !memoryId.isBlank()) {
+                ids.add(memoryId.trim());
+            }
+        }
         List<Map<String, Object>> roots = buildSummaryTreeLevel(byParent, "", childCounts, 0, MAX_TREE_DEPTH);
+        if (roots.isEmpty()) {
+            for (Object[] row : rows) {
+                String parentId = stringAt(row, 3);
+                if (parentId == null || parentId.isBlank() || !ids.contains(parentId.trim())) {
+                    roots.add(summaryRowToTreeItem(row, byParent, childCounts, 0, MAX_TREE_DEPTH));
+                }
+            }
+        }
         Map<String, Object> out = new LinkedHashMap<>();
         out.put("scope", scopeNorm);
         out.put("nodes", roots);
@@ -157,22 +187,32 @@ public class MemoryNodeService {
         List<Object[]> level = byParent.getOrDefault(parentKey, List.of());
         List<Map<String, Object>> out = new ArrayList<>();
         for (Object[] row : level) {
-            String memoryId = stringAt(row, 0);
-            Map<String, Object> item = new LinkedHashMap<>();
-            item.put("memory_id", memoryId);
-            item.put("title", stringAt(row, 5));
-            item.put("sort_order", intAt(row, 4));
-            item.put("node_kind", stringAt(row, 6));
-            item.put("child_count", childCounts.getOrDefault(memoryId, 0));
-            if (depth + 1 < maxDepth) {
-                item.put(
-                    "children",
-                    buildSummaryTreeLevel(byParent, memoryId, childCounts, depth + 1, maxDepth)
-                );
-            }
-            out.add(item);
+            out.add(summaryRowToTreeItem(row, byParent, childCounts, depth, maxDepth));
         }
         return out;
+    }
+
+    private Map<String, Object> summaryRowToTreeItem(
+        Object[] row,
+        Map<String, List<Object[]>> byParent,
+        Map<String, Integer> childCounts,
+        int depth,
+        int maxDepth
+    ) {
+        String memoryId = stringAt(row, 0);
+        Map<String, Object> item = new LinkedHashMap<>();
+        item.put("memory_id", memoryId);
+        item.put("title", stringAt(row, 5));
+        item.put("sort_order", intAt(row, 4));
+        item.put("node_kind", stringAt(row, 6));
+        item.put("child_count", childCounts.getOrDefault(memoryId, 0));
+        if (depth + 1 < maxDepth) {
+            item.put(
+                "children",
+                buildSummaryTreeLevel(byParent, memoryId, childCounts, depth + 1, maxDepth)
+            );
+        }
+        return item;
     }
 
     private Map<String, Object> buildTreeSummaryForScope(String scopeNorm, List<MemoryNodeEntity> all) {

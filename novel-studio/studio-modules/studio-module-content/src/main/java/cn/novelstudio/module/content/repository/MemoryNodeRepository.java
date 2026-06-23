@@ -61,6 +61,8 @@ public interface MemoryNodeRepository extends JpaRepository<MemoryNodeEntity, Me
         String scope
     );
 
+    long countByUserIdAndNovelId(Long userId, String novelId);
+
     /** Flat list for UI: omit TEXT content column to avoid OOM on large memory bodies. */
     @Query(
         value = """
@@ -90,4 +92,15 @@ public interface MemoryNodeRepository extends JpaRepository<MemoryNodeEntity, Me
         nativeQuery = true
     )
     List<String> findScopeKeysByNovel(@Param("userId") Long userId, @Param("novelId") String novelId);
+
+    @Query(
+        value = """
+            SELECT DISTINCT scope
+            FROM memory_node
+            WHERE user_id = :userId AND novel_id = :novelId
+            ORDER BY scope ASC
+            """,
+        nativeQuery = true
+    )
+    List<String> findAllDistinctScopesByNovel(@Param("userId") Long userId, @Param("novelId") String novelId);
 }
