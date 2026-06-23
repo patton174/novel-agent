@@ -25,6 +25,7 @@ export interface StoryMemoryModalProps {
   loadError?: MemoryLoadErrorKind
   loadDetail?: string | null
   onRetry?: () => void
+  onLoadNodeDetail?: (memoryId: string, scope: MemoryScope) => void
 }
 
 export function StoryMemoryModal({
@@ -40,6 +41,7 @@ export function StoryMemoryModal({
   loadError = null,
   loadDetail = null,
   onRetry,
+  onLoadNodeDetail,
 }: StoryMemoryModalProps) {
   const { t } = useTranslation(['editor'])
   const [expandedScope, setExpandedScope] = useState<string | null>(activeScope)
@@ -107,6 +109,13 @@ export function StoryMemoryModal({
       return firstId
     })
   }, [open, resolvedScope, memoryTrees, memoryNodesByScope])
+
+  useEffect(() => {
+    if (!open || !activeMemoryId || !resolvedScope || !onLoadNodeDetail) return
+    const cached = memoryNodesByScope[resolvedScope]?.[activeMemoryId]
+    if (cached?.content?.trim()) return
+    onLoadNodeDetail(activeMemoryId, resolvedScope)
+  }, [open, activeMemoryId, resolvedScope, memoryNodesByScope, onLoadNodeDetail])
 
   const activeDetail = useMemo(() => {
     if (!activeMemoryId || !resolvedScope) return undefined

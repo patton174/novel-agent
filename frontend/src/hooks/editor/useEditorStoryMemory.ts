@@ -141,6 +141,35 @@ export function useEditorStoryMemory() {
     [memoryTreeIndex],
   )
 
+  const loadMemoryNodeDetail = useCallback(
+    (memoryId: string, scope?: MemoryScope | null) => {
+      const targetNovelId = useNovelStore.getState().activeNovelId
+      const targetScope = scope ?? activeScope
+      if (!targetNovelId || !memoryId || !targetScope) return
+
+      void (async () => {
+        try {
+          const node = await api.getMemoryNode(targetNovelId, memoryId)
+          setMemoryNodesByScope((prev) => ({
+            ...prev,
+            [targetScope]: {
+              ...(prev[targetScope] ?? {}),
+              [memoryId]: node,
+            },
+          }))
+        } catch (err) {
+          console.error('[memory] node load failed', {
+            novelId: targetNovelId,
+            scope: targetScope,
+            memoryId,
+            err,
+          })
+        }
+      })()
+    },
+    [activeScope],
+  )
+
   return {
     memoryTreeIndex,
     memoryNodesByScope,
@@ -158,5 +187,6 @@ export function useEditorStoryMemory() {
     openMemoryModal,
     resetStoryMemory,
     countScopeEntries,
+    loadMemoryNodeDetail,
   }
 }

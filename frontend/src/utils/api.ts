@@ -558,4 +558,10 @@ export const api = {
       `/content/auth/novels/${encodeURIComponent(novelId)}/memory-nodes/flat?scope=${encodeURIComponent(scope)}`,
     )
   },
+
+  async getMemoryNode(novelId: string, memoryId: string): Promise<MemoryNodeDTO> {
+    return this.request<MemoryNodeDTO>(
+      `/content/auth/novels/${encodeURIComponent(novelId)}/memory-nodes/${encodeURIComponent(memoryId)}`,
+    )
+  },
 }

@@ -239,6 +239,7 @@ const EditorPage: React.FC = () => {
         loadError={editor.memory.memoryLoadError}
         loadDetail={editor.memory.memoryLoadDetail}
         onRetry={() => editor.memory.refreshStoryMemory()}
+        onLoadNodeDetail={editor.memory.loadMemoryNodeDetail}
       />
 
       <EditorSettingsModal

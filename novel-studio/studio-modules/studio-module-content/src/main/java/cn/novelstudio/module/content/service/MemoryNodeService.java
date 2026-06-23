@@ -77,12 +77,12 @@ public class MemoryNodeService {
         }
         Map<String, Object> index = new LinkedHashMap<>();
         for (MemoryNodeEntity root : roots) {
-            String scope = root.getScope();
+            String scopeKey = normalizeScope(root.getScope());
             List<MemoryNodeEntity> scopeNodes = repository.findByUserIdAndNovelIdAndScopeOrderBySortOrderAsc(
-                userId, novelId, scope
+                userId, novelId, scopeKey
             );
             if (!scopeNodes.isEmpty()) {
-                index.put(scope, buildTreeSummaryForScope(scope, scopeNodes));
+                index.put(scopeKey, buildTreeSummaryForScope(scopeKey, scopeNodes));
             }
         }
         return index;

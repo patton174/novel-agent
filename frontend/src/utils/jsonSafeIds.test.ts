@@ -24,4 +24,13 @@ describe('jsonSafeIds', () => {
     expect(parsed.data.list[0]?.id).toBe('2064977478497079297')
     expect(parsed.data.list[0]?.userId).toBe('2064977478497079297')
   })
+
+  it('stringifies memory_id in nested result', () => {
+    const raw =
+      '{"code":200,"data":[{"memory_id":2067838624580762660865,"title":"角色设定"}]}'
+    const parsed = parseJsonWithSafeIds(raw) as {
+      data: Array<{ memory_id: string; title: string }>
+    }
+    expect(parsed.data[0]?.memory_id).toBe('2067838624580762660865')
+  })
 })

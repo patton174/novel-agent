@@ -1,5 +1,6 @@
 /** Snowflake id 字段：JSON number 超过 MAX_SAFE_INTEGER 会在 parse 时丢精度 */
-const SAFE_ID_FIELD = /^(id|userId|actorId|targetId|ownerId|createdBy|sub)$/
+const SAFE_ID_FIELD =
+  /^(id|userId|actorId|targetId|ownerId|createdBy|sub|memory_id|memoryId|parent_id|parentId|novel_id|novelId)$/
 
 /**
  * 在 JSON.parse 之前把超长整型 id 字段改成字符串，避免 2064977478497079297 → …9300。

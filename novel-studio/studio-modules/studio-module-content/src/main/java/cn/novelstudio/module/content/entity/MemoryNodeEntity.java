@@ -37,7 +37,7 @@ public class MemoryNodeEntity {
     @Column(name = "id", nullable = false, length = 64)
     private String id;
 
-    @Column(name = "scope", nullable = false, length = 32)
+    @Column(name = "scope", nullable = false, length = 128)
     private String scope;
 
     @Column(name = "parent_id", length = 64)
