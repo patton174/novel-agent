@@ -63,17 +63,25 @@ public interface MemoryNodeRepository extends JpaRepository<MemoryNodeEntity, Me
 
     long countByUserIdAndNovelId(Long userId, String novelId);
 
-    /** Flat list for UI: omit TEXT content column to avoid OOM on large memory bodies. */
     @Query(
-        value = """
-            SELECT id, novel_id, scope, parent_id, sort_order, title, node_kind,
-                   style::text AS style_json, meta::text AS meta_json
-            FROM memory_node
-            WHERE user_id = :userId AND novel_id = :novelId
-              AND LOWER(TRIM(scope)) = LOWER(TRIM(:scope))
-            ORDER BY sort_order ASC
-            """,
-        nativeQuery = true
+        """
+            SELECT DISTINCT m.scope
+            FROM MemoryNodeEntity m
+            WHERE m.userId = :userId AND m.novelId = :novelId
+            ORDER BY m.scope ASC
+            """
+    )
+    List<String> findDistinctScopesByNovel(@Param("userId") Long userId, @Param("novelId") String novelId);
+
+    /** Flat/tree summary without loading TEXT content (JPQL partial select). */
+    @Query(
+        """
+            SELECT m.id, m.novelId, m.scope, m.parentId, m.sortOrder, m.title, m.nodeKind, m.style, m.meta
+            FROM MemoryNodeEntity m
+            WHERE m.userId = :userId AND m.novelId = :novelId
+              AND lower(m.scope) = lower(:scope)
+            ORDER BY m.sortOrder ASC
+            """
     )
     List<Object[]> findSummaryRowsByScope(
         @Param("userId") Long userId,
@@ -82,25 +90,12 @@ public interface MemoryNodeRepository extends JpaRepository<MemoryNodeEntity, Me
     );
 
     @Query(
-        value = """
-            SELECT DISTINCT scope
-            FROM memory_node
-            WHERE user_id = :userId AND novel_id = :novelId
-              AND (parent_id IS NULL OR parent_id = '')
-            ORDER BY scope ASC
-            """,
-        nativeQuery = true
+        """
+            SELECT m.id, m.novelId, m.scope, m.parentId, m.sortOrder, m.title, m.nodeKind, m.style, m.meta
+            FROM MemoryNodeEntity m
+            WHERE m.userId = :userId AND m.novelId = :novelId
+            ORDER BY m.scope ASC, m.sortOrder ASC
+            """
     )
-    List<String> findScopeKeysByNovel(@Param("userId") Long userId, @Param("novelId") String novelId);
-
-    @Query(
-        value = """
-            SELECT DISTINCT scope
-            FROM memory_node
-            WHERE user_id = :userId AND novel_id = :novelId
-            ORDER BY scope ASC
-            """,
-        nativeQuery = true
-    )
-    List<String> findAllDistinctScopesByNovel(@Param("userId") Long userId, @Param("novelId") String novelId);
+    List<Object[]> findAllSummaryRowsByNovel(@Param("userId") Long userId, @Param("novelId") String novelId);
 }

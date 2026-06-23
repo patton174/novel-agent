@@ -66,6 +66,8 @@ export function useEditorStoryMemory() {
         })
 
         if (scopes.length === 0) {
+          console.warn('[memory] tree-index empty', { novelId: targetNovelId, index })
+          setMemoryLoadDetail(`novelId=${targetNovelId}`)
           setMemoryNodesByScope({})
           setMemoryUpdatedAt(new Date())
           return

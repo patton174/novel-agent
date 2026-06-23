@@ -101,9 +101,7 @@ public class MemoryNodeService {
 
     /** Dynamic scopes: each outermost root node's title is the scope key. */
     public Map<String, Object> buildAllScopesTreeIndex(Long userId, String novelId) {
-        LinkedHashSet<String> scopeKeys = new LinkedHashSet<>();
-        scopeKeys.addAll(repository.findAllDistinctScopesByNovel(userId, novelId));
-        scopeKeys.addAll(repository.findScopeKeysByNovel(userId, novelId));
+        LinkedHashSet<String> scopeKeys = new LinkedHashSet<>(repository.findDistinctScopesByNovel(userId, novelId));
         if (scopeKeys.isEmpty()) {
             return Map.of();
         }
@@ -114,7 +112,10 @@ public class MemoryNodeService {
             }
             try {
                 String scopeKey = normalizeScope(scopeRaw);
-                List<Object[]> summaryRows = repository.findSummaryRowsByScope(userId, novelId, scopeKey);
+                List<Object[]> summaryRows = repository.findSummaryRowsByScope(userId, novelId, scopeRaw.trim());
+                if (summaryRows.isEmpty()) {
+                    summaryRows = repository.findSummaryRowsByScope(userId, novelId, scopeKey);
+                }
                 if (!summaryRows.isEmpty()) {
                     index.put(scopeKey, buildTreeSummaryForSummaryRows(scopeKey, summaryRows));
                 }
@@ -131,12 +132,35 @@ public class MemoryNodeService {
             long total = repository.countByUserIdAndNovelId(userId, novelId);
             if (total > 0) {
                 log.warn(
-                    "memory tree-index empty despite {} nodes novelId={} scopes={}",
+                    "memory tree-index empty despite {} nodes novelId={} userId={} scopes={}",
                     total,
                     novelId,
+                    userId,
                     scopeKeys
                 );
+                index = buildTreeIndexFromAllSummaryRows(userId, novelId);
             }
+        }
+        return index;
+    }
+
+    private Map<String, Object> buildTreeIndexFromAllSummaryRows(Long userId, String novelId) {
+        List<Object[]> allRows = repository.findAllSummaryRowsByNovel(userId, novelId);
+        if (allRows.isEmpty()) {
+            return Map.of();
+        }
+        Map<String, List<Object[]>> byScope = new LinkedHashMap<>();
+        for (Object[] row : allRows) {
+            String scopeRaw = stringAt(row, 2);
+            if (scopeRaw == null || scopeRaw.isBlank()) {
+                continue;
+            }
+            String scopeKey = normalizeScope(scopeRaw);
+            byScope.computeIfAbsent(scopeKey, key -> new ArrayList<>()).add(row);
+        }
+        Map<String, Object> index = new LinkedHashMap<>();
+        for (Map.Entry<String, List<Object[]>> entry : byScope.entrySet()) {
+            index.put(entry.getKey(), buildTreeSummaryForSummaryRows(entry.getKey(), entry.getValue()));
         }
         return index;
     }
@@ -510,10 +534,22 @@ public class MemoryNodeService {
             stringAt(row, 5),
             stringAt(row, 6),
             null,
-            MemoryNodeJsonSupport.parseJsonMap(stringAt(row, 7)),
-            MemoryNodeJsonSupport.parseJsonMap(stringAt(row, 8)),
+            mapAt(row, 7),
+            mapAt(row, 8),
             childCounts.getOrDefault(memoryId, 0)
         );
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> mapAt(Object[] row, int index) {
+        if (row == null || index >= row.length || row[index] == null) {
+            return null;
+        }
+        Object value = row[index];
+        if (value instanceof Map<?, ?> map) {
+            return (Map<String, Object>) map;
+        }
+        return MemoryNodeJsonSupport.parseJsonMap(String.valueOf(value));
     }
 
     private static String stringAt(Object[] row, int index) {
