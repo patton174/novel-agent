@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
   applyAgentEvent,
+  applyChoiceSelection,
   createInitialAgentStreamUiState,
   finalizeAgentMessageContent,
+  hasPendingUserInteraction,
 } from './agentStreamState'
 import { deriveAssistantStreamPhase } from './agentStreamPhase'
 import { parseSseFrame, splitSseBuffer } from './sse'
@@ -183,6 +185,35 @@ describe('applyAgentEvent', () => {
     expect(deriveAssistantStreamPhase(state)).toBe('waiting')
   })
 
+  it('hasPendingUserInteraction ignores answered AskUser steps', () => {
+    let state = createInitialAgentStreamUiState()
+    state = applyAgentEvent(
+      state,
+      'agent-event',
+      JSON.stringify({
+        type: 'tool.completed',
+        step_id: 'step-ask',
+        payload: {
+          name: 'AskUser',
+          interaction: {
+            type: 'ask_user',
+            questions: [{ id: 'q1', prompt: '续写方向？', type: 'user_input' }],
+          },
+        },
+      }),
+    )
+    expect(hasPendingUserInteraction(state.stepStates, state.timeline)).toBe(true)
+    state = applyChoiceSelection(
+      state,
+      { id: 'ans', title: '悬疑线', description: '' },
+      'step-ask',
+    )
+    expect(hasPendingUserInteraction(state.stepStates, state.timeline)).toBe(false)
+    expect(state.isStreamEnded).toBe(false)
+    expect(state.runTerminalAck).toBe(false)
+    expect(state.isThinking).toBe(true)
+  })
+
   it('appends message.delta to assistant content', () => {
     let state = createInitialAgentStreamUiState()
 
@@ -204,6 +235,46 @@ describe('applyAgentEvent', () => {
     )
 
     expect(state.messageContent).toBe('雨夜重逢')
+  })
+
+  it('finalizeAgentMessageContent keeps only trailing delivery, not orchestration narrations', () => {
+    let state = createInitialAgentStreamUiState()
+    state = applyAgentEvent(
+      state,
+      'agent-event',
+      JSON.stringify({
+        type: 'tool.started',
+        step_id: 'step-1',
+        payload: { name: 'ReadMemory' },
+      }),
+    )
+    state = applyAgentEvent(
+      state,
+      'agent-event',
+      JSON.stringify({
+        type: 'narration.delta',
+        step_id: 'step-n1',
+        payload: { text: '查阅记忆并整理节点。' },
+      }),
+    )
+    state = applyAgentEvent(
+      state,
+      'agent-event',
+      JSON.stringify({
+        type: 'tool.started',
+        step_id: 'step-2',
+        payload: { name: 'UpdateMemory' },
+      }),
+    )
+    state = applyAgentEvent(
+      state,
+      'agent-event',
+      JSON.stringify({
+        type: 'message.delta',
+        payload: { text: '最终汇总表格如下。' },
+      }),
+    )
+    expect(finalizeAgentMessageContent(state)).toBe('最终汇总表格如下。')
   })
 
   it('strips duplicate choose options from message when tool.completed has choices', () => {

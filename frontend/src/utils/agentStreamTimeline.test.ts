@@ -6,6 +6,7 @@ import {
   deriveOrchestrationHeadline,
   formatPlanningHeadline,
   deriveActivePlanningHeadline,
+  extractTrailingDeliveryProseFromTimeline,
   finalizeTimeline,
   groupTimelineUnits,
   groupTimelineDisplayGroups,
@@ -796,6 +797,30 @@ describe('agentStreamTimeline', () => {
       payload: { reason: 'terminal_delivery' },
     })
     expect(timeline).toEqual([])
+  })
+
+  it('extractTrailingDeliveryProseFromTimeline ignores mid-orchestration narration', () => {
+    let timeline = applyTimelineEvent([], {
+      type: 'tool.started',
+      step_id: 'step-1',
+      payload: { name: 'ReadMemory' },
+    })
+    timeline = applyTimelineEvent(timeline, {
+      type: 'narration.delta',
+      step_id: 'step-n1',
+      payload: { text: '继续优化记忆节点' },
+    })
+    timeline = applyTimelineEvent(timeline, {
+      type: 'tool.started',
+      step_id: 'step-2',
+      payload: { name: 'UpdateMemory' },
+    })
+    timeline = applyTimelineEvent(timeline, {
+      type: 'narration.delta',
+      step_id: 'step-n2',
+      payload: { text: '记忆优化完成，详见下表。' },
+    })
+    expect(extractTrailingDeliveryProseFromTimeline(timeline)).toBe('记忆优化完成，详见下表。')
   })
 
   it('promoteTrailingNarrationToDelivery moves tail narration after last tool to messageContent', () => {

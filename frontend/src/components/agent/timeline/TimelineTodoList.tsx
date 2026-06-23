@@ -6,6 +6,7 @@ import {
   TIMELINE_TODO_LIST,
   TIMELINE_TODO_META,
   TIMELINE_TODO_WRAP,
+  TIMELINE_TODO_WRAP_BORDERED,
   timelineTodoRowClass,
   timelineTodoTextClass,
 } from '@/lib/timelineClasses'
@@ -25,7 +26,10 @@ export function TimelineTodoList({
   const done = todos.filter((t) => t.status === 'completed').length
 
   const list = (
-    <div data-testid="timeline-todo-list" className={TIMELINE_TODO_WRAP}>
+    <div
+      data-testid="timeline-todo-list"
+      className={embedded ? TIMELINE_TODO_WRAP : TIMELINE_TODO_WRAP_BORDERED}
+    >
       {!embedded ? (
         <div className={TIMELINE_TODO_META}>
           {done}/{todos.length} 已完成

@@ -22,6 +22,8 @@ import { ccToolHumanSubtitle, ccToolHumanSubtitleFromPayload } from './ccToolDis
 import {
   applyTimelineEvent,
   appendChoiceSelected,
+  extractTrailingDeliveryProseFromTimeline,
+  findChoiceSelectedForStep,
   finalizeTimeline,
   normalizeTimelineBlockIds,
   promoteTrailingNarrationToDelivery,
@@ -348,9 +350,15 @@ function choiceOptionsFromRaw(raw: unknown, prefix: string): AgentChoiceOption[]
     .filter((item) => item.title)
 }
 
-export function hasPendingUserInteraction(stepStates: AgentStepState[]): boolean {
+export function hasPendingUserInteraction(
+  stepStates: AgentStepState[],
+  timeline: AgentTimelineBlock[] = [],
+): boolean {
   return stepStates.some((step) => {
     if (step.status !== 'completed' || step.type !== 'tool') {
+      return false
+    }
+    if (step.stepId && findChoiceSelectedForStep(timeline, step.stepId)) {
       return false
     }
     if (isAskUserTool(step.toolName) || step.interaction?.type === 'ask_user') {
@@ -626,7 +634,7 @@ export function applyAgentEvent(
 
   if (event.type === 'run.completed') {
     const pendingInteraction =
-      next.awaitingInteraction || hasPendingUserInteraction(next.stepStates)
+      next.awaitingInteraction || hasPendingUserInteraction(next.stepStates, next.timeline)
     const promoted = promoteTrailingNarrationToDelivery(next.timeline, next.messageContent)
     next = {
       ...next,
@@ -637,7 +645,7 @@ export function applyAgentEvent(
       isStreamEnded: !pendingInteraction,
       streamError: undefined,
       awaitingInteraction: pendingInteraction,
-      timeline: next.timeline,
+      timeline: promoted.timeline,
       messageContent: promoted.messageContent,
     }
   }
@@ -645,7 +653,7 @@ export function applyAgentEvent(
   if (event.type === 'run.failed') {
     const err = event.payload.error
     const pendingInteraction =
-      next.awaitingInteraction || hasPendingUserInteraction(next.stepStates)
+      next.awaitingInteraction || hasPendingUserInteraction(next.stepStates, next.timeline)
     next = {
       ...next,
       hostGuardMessage: undefined,
@@ -733,7 +741,7 @@ export function applyAgentEvent(
         ? event.payload.error
         : '规划失败'
     const pendingInteraction =
-      next.awaitingInteraction || hasPendingUserInteraction(next.stepStates)
+      next.awaitingInteraction || hasPendingUserInteraction(next.stepStates, next.timeline)
     next = {
       ...next,
       isThinking: false,
@@ -773,10 +781,6 @@ export function applyAgentEvent(
 
   if (event.type === 'run.paused') {
     next = { ...next, isThinking: false, streamPaused: true }
-  }
-
-  if (event.type === 'run.resumed') {
-    next = { ...next, isThinking: true, streamPaused: false }
   }
 
   if (event.type === 'think.delta') {
@@ -1342,19 +1346,14 @@ export function applyAgentEvent(
 }
 
 function mergeAssistantTextFromTimeline(state: AgentStreamUiState): string {
-  const fromTimeline = state.timeline
-    .filter(
-      (b): b is Extract<AgentTimelineBlock, { kind: 'text' | 'narration' }> =>
-        b.kind === 'text' || b.kind === 'narration',
-    )
-    .map((b) => b.content)
-    .filter((chunk) => chunk.trim())
-    .join('\n\n')
-  if (fromTimeline.trim()) {
-    return sanitizeAssistantMessage(fromTimeline)
+  if (state.messageContent.trim()) {
+    return sanitizeAssistantMessage(state.messageContent)
   }
-  const promoted = promoteTrailingNarrationToDelivery(state.timeline, state.messageContent)
-  return sanitizeAssistantMessage(promoted.messageContent)
+  const trailing = extractTrailingDeliveryProseFromTimeline(state.timeline)
+  if (trailing.trim()) {
+    return sanitizeAssistantMessage(trailing)
+  }
+  return ''
 }
 
 export function finalizeAgentMessageContent(state: AgentStreamUiState): string {
@@ -1422,6 +1421,10 @@ export function applyChoiceSelection(
   return {
     ...state,
     awaitingInteraction: false,
+    isStreamEnded: false,
+    runTerminalAck: false,
+    isThinking: true,
+    streamPaused: false,
     timeline: appendChoiceSelected(state.timeline, choice, resolvedStepId),
   }
 }

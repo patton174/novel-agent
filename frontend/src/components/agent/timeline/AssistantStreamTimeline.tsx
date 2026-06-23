@@ -6,6 +6,7 @@ import type {
 } from '../../../types/agent'
 import { useTypewriterBuffer } from '../../../hooks/useTypewriterStream'
 import {
+  collectTrailingDeliveryBlockIds,
   findChoiceSelectedForStep,
   findStepState,
   groupTimelineUnits,
@@ -245,6 +246,11 @@ export function AssistantStreamTimeline({
     [timelineUnits],
   )
 
+  const trailingDeliveryBlockIds = useMemo(
+    () => collectTrailingDeliveryBlockIds(displayTimeline),
+    [displayTimeline],
+  )
+
   const hasVisibleTool = useMemo(() => {
     if (
       stepStates.some(
@@ -366,9 +372,19 @@ export function AssistantStreamTimeline({
       )
     }
 
-    if (block.kind === 'text') {
+    if (block.kind === 'text' || block.kind === 'narration') {
+      if (hasOrchestrationLayer && !streamFinished) {
+        return null
+      }
       const content = block.content
       if (isToolErrorLikeText(content)) {
+        return null
+      }
+      if (
+        hasOrchestrationLayer &&
+        streamFinished &&
+        !trailingDeliveryBlockIds.has(block.id)
+      ) {
         return null
       }
       const blockLen = runeLength(content)
@@ -659,17 +675,39 @@ export function AssistantStreamTimeline({
       )
     }
     if (unit.kind === 'segment') {
-      return unit.blocks.map((block, index) =>
-        renderBlock(
-          block,
-          `${unitKey}:${index}:${block.kind}:${block.id}`,
-          block.kind === 'tool' ? 'nested' : 'primary',
-          block.kind === 'tool'
-            ? {
-                toolNested: !isSiblingExposureBlock(block, stepStates),
-              }
-            : undefined,
-        ),
+      const proseBlocks = unit.blocks.filter(
+        (block): block is Extract<AgentTimelineBlock, { kind: 'text' | 'narration' }> =>
+          block.kind === 'text' || block.kind === 'narration',
+      )
+      const restBlocks = unit.blocks.filter(
+        (block) => block.kind !== 'text' && block.kind !== 'narration',
+      )
+      const proseNodes =
+        proseBlocks.length > 0 && !(hasOrchestrationLayer && !streamFinished)
+          ? proseBlocks.map((block, index) =>
+              renderBlock(
+                block,
+                `${unitKey}:prose:${index}:${block.kind}:${block.id}`,
+                'primary',
+              ),
+            )
+          : []
+      return (
+        <>
+          {restBlocks.map((block, index) =>
+            renderBlock(
+              block,
+              `${unitKey}:${index}:${block.kind}:${block.id}`,
+              block.kind === 'tool' ? 'nested' : 'primary',
+              block.kind === 'tool'
+                ? {
+                    toolNested: !isSiblingExposureBlock(block, stepStates),
+                  }
+                : undefined,
+            ),
+          )}
+          {proseNodes}
+        </>
       )
     }
     return null

@@ -1,11 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { EditorButton } from '../ui/EditorButton'
-import { editorFieldClass } from '@/lib/editorFieldClasses'
-import {
-  AGENT_CHOICE_DESC,
-  AGENT_CHOICE_TITLE,
-  agentChoiceButtonClass,
-} from '@/lib/agentFormClasses'
+import { EDITOR_PIXEL_INPUT } from '@/lib/editorPixelClasses'
+import { ASK_USER_FORM_WRAP, ccChoiceButtonClass } from '@/lib/timelineClasses'
 import type {
   AgentChoiceOption,
   AgentInteractionPayload,
@@ -96,30 +92,34 @@ export function AskUserForm({ interaction, onSubmit }: AskUserFormProps) {
   const progressRatio = (stepIndex + 1) / total
 
   return (
-    <div className="mt-0.5 flex flex-col gap-2 max-md:gap-1.5">
+    <div className={ASK_USER_FORM_WRAP} data-testid="ask-user-form">
       {interaction.prompt && stepIndex === 0 ? (
-        <p className="m-0 text-sm leading-snug text-muted-foreground">{interaction.prompt}</p>
+        <p className="m-0 font-mono text-[0.74rem] leading-snug text-muted-foreground">
+          {interaction.prompt}
+        </p>
       ) : null}
 
       <div className="flex flex-col gap-1.5">
-        <div className="text-[11px] font-semibold text-muted-foreground">
+        <div className="font-mono text-[0.68rem] font-bold uppercase tracking-wide text-muted-foreground">
           第 {stepIndex + 1} / {total} 题
         </div>
-        <div className="h-0.5 overflow-hidden rounded-full bg-border" aria-hidden>
+        <div className="h-1 overflow-hidden border border-foreground bg-background" aria-hidden>
           <div
-            className="h-full rounded-full bg-primary transition-[width] duration-200 ease-out"
+            className="h-full bg-neon transition-[width] duration-200 ease-out"
             style={{ width: `${Math.min(100, Math.max(0, progressRatio * 100))}%` }}
           />
         </div>
       </div>
 
       <div className="flex flex-col gap-1.5 py-0.5 max-md:gap-1">
-        <div className="text-sm font-semibold leading-snug text-foreground">{current.prompt}</div>
+        <div className="font-mono text-[0.78rem] font-bold leading-snug text-foreground">
+          {current.prompt}
+        </div>
 
         {effectiveType === 'user_input' ? (
           <>
             <input
-              className={editorFieldClass}
+              className={EDITOR_PIXEL_INPUT}
               value={answers[current.id]?.input ?? ''}
               placeholder={current.free_text_hint ?? interaction.free_text_hint ?? '请输入…'}
               autoFocus
@@ -143,11 +143,15 @@ export function AskUserForm({ interaction, onSubmit }: AskUserFormProps) {
               <button
                 key={opt.id}
                 type="button"
-                className={agentChoiceButtonClass(answers[current.id]?.choice?.id === opt.id)}
+                className={ccChoiceButtonClass(answers[current.id]?.choice?.id === opt.id)}
                 onClick={() => pickSingle(current, opt)}
               >
-                <div className={AGENT_CHOICE_TITLE}>{opt.title}</div>
-                {opt.description ? <div className={AGENT_CHOICE_DESC}>{opt.description}</div> : null}
+                <div className="font-mono text-[0.78rem] font-bold text-foreground">{opt.title}</div>
+                {opt.description ? (
+                  <div className="font-mono text-[0.68rem] leading-snug text-muted-foreground">
+                    {opt.description}
+                  </div>
+                ) : null}
               </button>
             ))
           : null}
@@ -171,12 +175,14 @@ export function AskUserForm({ interaction, onSubmit }: AskUserFormProps) {
                 <button
                   key={opt.id}
                   type="button"
-                  className={agentChoiceButtonClass(selected)}
+                  className={ccChoiceButtonClass(selected)}
                   onClick={() => toggleMulti(current, opt)}
                 >
-                  <div className={AGENT_CHOICE_TITLE}>{opt.title}</div>
+                  <div className="font-mono text-[0.78rem] font-bold text-foreground">{opt.title}</div>
                   {opt.description ? (
-                    <div className={AGENT_CHOICE_DESC}>{opt.description}</div>
+                    <div className="font-mono text-[0.68rem] leading-snug text-muted-foreground">
+                      {opt.description}
+                    </div>
                   ) : null}
                 </button>
               )

@@ -1,6 +1,8 @@
 import type { CSSProperties } from 'react'
 import { cn } from '@/lib/utils'
 import {
+  EDITOR_PIXEL_DASHED_PANEL,
+  EDITOR_PIXEL_DASHED_PANEL_INSET,
   EDITOR_PIXEL_INPUT,
   EDITOR_PIXEL_ORCH_HEADLINE,
   EDITOR_PIXEL_ORCH_STEP_META,
@@ -312,17 +314,21 @@ export function toolDetailPreClass(error?: boolean) {
   )
 }
 
-export const SELECTED_CHOICE_ROW =
-  'mx-0 my-0 flex flex-col gap-[0.18rem] border-none bg-transparent px-0 py-[0.2rem] pb-[0.28rem]'
+export const SELECTED_CHOICE_ROW = cn(
+  EDITOR_PIXEL_DASHED_PANEL_INSET,
+  'mx-0 my-[0.15rem] flex flex-col gap-[0.22rem]',
+)
 
 export const SELECTED_BADGE =
-  'text-[0.68rem] font-semibold leading-[1.4] text-[#64748b]'
+  'font-mono text-[0.68rem] font-bold uppercase tracking-wide text-muted-foreground'
 
 export const SELECTED_TITLE =
-  'text-[0.74rem] font-semibold leading-[1.45] text-foreground'
+  'font-mono text-[0.74rem] font-semibold leading-[1.45] text-foreground'
 
 export const SELECTED_DESC =
-  'text-[0.68rem] leading-[1.4] text-[#64748b]'
+  'font-mono text-[0.68rem] leading-[1.4] text-muted-foreground'
+
+export const ASK_USER_FORM_WRAP = cn(EDITOR_PIXEL_DASHED_PANEL, 'mt-1 flex flex-col gap-2')
 
 export const CHOICE_LIST =
   'mt-[0.1rem] flex w-full flex-col gap-[0.28rem] p-0'
@@ -401,11 +407,19 @@ export const TIMELINE_PENDING_IN = 'agent-timeline-pending-in'
 
 export const TIMELINE_STREAM_CURSOR = 'agent-timeline-stream-cursor'
 
-export const SUBAGENT_PANEL_ROOT = 'mx-0 my-[0.04rem] mb-[0.1rem] w-full'
+export function subagentPanelRootClass(active?: boolean) {
+  return cn('mx-0 my-[0.04rem] mb-[0.1rem] w-full', editorPixelSubagentWrapClass(active))
+}
 
 /* ── Todo list / message todo / tool excerpt / subagent modal ── */
 
 export const TIMELINE_TODO_WRAP = 'flex w-full flex-col gap-[0.35rem]'
+
+/** 工具行内嵌待办（无外层 MessageTodoPanel 时单独虚线框） */
+export const TIMELINE_TODO_WRAP_BORDERED = cn(
+  EDITOR_PIXEL_DASHED_PANEL_INSET,
+  TIMELINE_TODO_WRAP,
+)
 
 export const TIMELINE_TODO_META =
   'text-[0.68rem] font-medium leading-[1.4] text-muted-foreground'
@@ -427,13 +441,16 @@ export function timelineTodoTextClass(opts: { done?: boolean; executing?: boolea
   )
 }
 
-export const MESSAGE_TODO_WRAP = 'mx-0 mb-0 mt-[0.35rem] w-full p-0'
+export const MESSAGE_TODO_WRAP = cn(
+  EDITOR_PIXEL_DASHED_PANEL,
+  'mx-0 mb-0 mt-[0.35rem] w-full',
+)
 
 export const MESSAGE_TODO_TITLE =
-  'text-[0.74rem] font-semibold leading-[1.45] text-foreground'
+  'font-mono text-[0.74rem] font-bold uppercase tracking-wide text-foreground'
 
 export const MESSAGE_TODO_META =
-  'whitespace-nowrap text-[0.68rem] font-normal leading-[1.4] text-muted-foreground'
+  'whitespace-nowrap font-mono text-[0.68rem] font-normal leading-[1.4] text-muted-foreground'
 
 export const MESSAGE_TODO_HEADER =
   'group mb-[0.2rem] inline-flex w-full cursor-pointer flex-wrap items-baseline gap-x-2 gap-y-[0.35rem] border-none bg-transparent p-0 text-left disabled:cursor-default focus-visible:rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary/45 hover:enabled:[&_.msg-todo-meta]:text-muted-foreground'
@@ -449,7 +466,7 @@ export function toolExcerptClass(lineCount: number, mono?: boolean, maxLines = 2
   )
 }
 
-export const SUBAGENT_TIMELINE_WRAP = 'w-full px-[0.1rem] py-[0.05rem] pb-[0.15rem]'
+export const SUBAGENT_TIMELINE_WRAP = cn(TIMELINE_COLUMN, 'w-full px-1 py-1')
 
 export const SUBAGENT_TURN_META = 'mt-[0.2rem] text-[0.72rem] text-muted-foreground'
 
@@ -482,12 +499,15 @@ export function toolStatusDotGlyphClass(opts: {
 
 export function todoRowIconSlotClass(active?: boolean) {
   return cn(
-    'mt-[0.14rem] inline-flex size-[0.95rem] shrink-0 items-center justify-center',
-    active ? 'text-primary drop-shadow-[0_0_4px_rgba(79,70,229,0.35)]' : 'text-muted-foreground',
+    'mt-[0.1rem] inline-flex size-[14px] shrink-0 items-center justify-center text-foreground',
+    active && 'text-neon',
   )
 }
 
 export function todoRowIconSvgClass(animate?: boolean) {
-  return cn('block', animate && 'agent-todo-stroke-pulse [&_path]:[stroke-dasharray:40] [&_rect]:[stroke-dasharray:40] [&_circle]:[stroke-dasharray:40]')
+  return cn(
+    'block',
+    animate && 'agent-todo-stroke-pulse [&_path]:[stroke-dasharray:40] [&_rect]:[stroke-dasharray:40]',
+  )
 }
 

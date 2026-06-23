@@ -3,6 +3,8 @@ import type { AgentSubagentState } from '../../../types/agent'
 import { deriveSubagentDisplayMeta } from '../../../utils/subagentDisplayMeta'
 import { AppModalShell } from '@/components/ui/AppModalShell'
 import { DialogTitle } from '@/components/ui/dialog'
+import { cn } from '@/lib/utils'
+import { EDITOR_PIXEL_ORCH_STATUS_LINE } from '@/lib/editorPixelClasses'
 import { SubagentTimelineContent } from './SubagentTimelineContent'
 import { subagentStatusChipClass } from '@/lib/timelineClasses'
 
@@ -49,7 +51,7 @@ export function SubagentDetailModal({
         <div className="flex items-start justify-between gap-3 pr-8">
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <DialogTitle className="m-0 text-[15px] font-bold text-foreground">
+              <DialogTitle className={cn('m-0', EDITOR_PIXEL_ORCH_STATUS_LINE, 'text-foreground normal-case')}>
                 {meta.name}
               </DialogTitle>
               <span className={subagentStatusChipClass(meta.statusKind)}>

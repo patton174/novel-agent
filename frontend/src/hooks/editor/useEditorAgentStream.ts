@@ -349,7 +349,7 @@ export function useEditorAgentStream({
           setIsLoading(false)
           const stillAwaiting =
             live.state.awaitingInteraction ||
-            hasPendingUserInteraction(live.state.stepStates)
+            hasPendingUserInteraction(live.state.stepStates, live.state.timeline)
           if (!stillAwaiting) {
             setActiveStreamMessageId((current) => (current === live.messageId ? null : current))
             liveStreamRef.current = null
@@ -562,7 +562,7 @@ export function useEditorAgentStream({
         refreshStoryMemory(activeNovelId)
         const pendingInteraction =
           liveBox.state.awaitingInteraction ||
-          hasPendingUserInteraction(liveBox.state.stepStates)
+          hasPendingUserInteraction(liveBox.state.stepStates, liveBox.state.timeline)
         if (!pendingInteraction) {
           runWsRef.current?.close()
           runWsRef.current = null
@@ -733,7 +733,7 @@ export function useEditorAgentStream({
             setIsLoading(false)
             const stillAwaiting =
               liveBox.state.awaitingInteraction ||
-              hasPendingUserInteraction(liveBox.state.stepStates)
+              hasPendingUserInteraction(liveBox.state.stepStates, liveBox.state.timeline)
             if (!stillAwaiting && activeStreamMessageId === assistantMessageId) {
               setActiveStreamMessageId(null)
               liveStreamRef.current = null
@@ -849,7 +849,7 @@ export function useEditorAgentStream({
         setIsLoading(false)
         const stillAwaiting =
           liveBox.state.awaitingInteraction ||
-          hasPendingUserInteraction(liveBox.state.stepStates)
+          hasPendingUserInteraction(liveBox.state.stepStates, liveBox.state.timeline)
         if (!stillAwaiting && activeStreamMessageId === assistantMessageId) {
           setActiveStreamMessageId(null)
           liveStreamRef.current = null
@@ -1013,7 +1013,7 @@ export function useEditorAgentStream({
         setIsLoading(false)
         const stillAwaiting =
           liveBox.state.awaitingInteraction ||
-          hasPendingUserInteraction(liveBox.state.stepStates)
+          hasPendingUserInteraction(liveBox.state.stepStates, liveBox.state.timeline)
         if (!stillAwaiting) {
           setActiveStreamMessageId(null)
           liveStreamRef.current = null
@@ -1046,6 +1046,10 @@ export function useEditorAgentStream({
       }
       handleStreamResume()
       setIsLoading(true)
+      const runId = activeStreamStateRef.current.runId
+      if (runId && shouldOpenRecoverySse(streamAbortRef.current)) {
+        attachRecoveryRef.current(undefined, true)
+      }
     },
     [activeStreamMessageId, handleStreamResume],
   )
@@ -1067,7 +1071,7 @@ export function useEditorAgentStream({
     const ws = runWsRef.current
     const pendingInteraction =
       live?.state.awaitingInteraction ||
-      hasPendingUserInteraction(live?.state.stepStates ?? [])
+      hasPendingUserInteraction(live?.state.stepStates ?? [], live?.state.timeline ?? [])
     if (
       !live ||
       activeStreamMessageId !== live.messageId ||
@@ -1118,6 +1122,7 @@ export function useEditorAgentStream({
         }],
       })
     ) {
+      setIsLoading(true)
       return
     }
     if (isLoading) return
@@ -1150,6 +1155,7 @@ export function useEditorAgentStream({
       })
       const text = lines.length > 0 ? lines.join('\n') : ''
       if (text && submitLiveInteraction({ id: 'ask_user', title: text, description: '' }, { type: 'user_input', input: text })) {
+        setIsLoading(true)
         return
       }
       return
@@ -1171,6 +1177,7 @@ export function useEditorAgentStream({
           }],
         })
       ) {
+        setIsLoading(true)
         return
       }
       if (isLoading) return
@@ -1194,6 +1201,7 @@ export function useEditorAgentStream({
           })),
         })
       ) {
+        setIsLoading(true)
         return
       }
       if (isLoading) return
@@ -1214,6 +1222,7 @@ export function useEditorAgentStream({
           input: customText,
         })
       ) {
+        setIsLoading(true)
         return
       }
       if (isLoading) return

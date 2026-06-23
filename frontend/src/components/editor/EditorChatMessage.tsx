@@ -78,14 +78,10 @@ function EditorChatMessageInner({
   )
   const streamActive = marketingScrubPlaying
     ? Boolean(isActiveStream)
-    : isActiveStream && isLoading
-  const streamFinished = marketingScrubPlaying
-    ? false
-    : phase === 'completed' ||
-      phase === 'error' ||
-      phase === 'waiting' ||
-      !isActiveStream ||
-      !isLoading
+    : isActiveStream && isLoading && !message.agentStreamPaused
+  const phaseTerminal = phase === 'completed' || phase === 'error'
+  const runOpen = Boolean(isActiveStream) && !phaseTerminal
+  const streamFinished = marketingScrubPlaying ? false : !runOpen
   const deliveryText = useMemo(
     () =>
       extractPostTimelineDeliveryText(

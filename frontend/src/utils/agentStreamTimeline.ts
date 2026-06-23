@@ -1141,12 +1141,11 @@ function segmentShouldWrapAsPlanning(
   return false
 }
 
-/** 流结束后：全时间线最后一个工具之后的正文留在编排层外，不被折叠 */
-function collectGlobalDeliveryBlockIds(
+/** 最后一个工具之后连续的 text/narration（终轮交付正文，不含编排过程叙述） */
+export function collectTrailingDeliveryBlockIds(
   timeline: AgentTimelineBlock[],
-  streamFinished?: boolean,
 ): Set<string> {
-  if (!streamFinished || timeline.length === 0) {
+  if (timeline.length === 0) {
     return new Set()
   }
   const ids = new Set<string>()
@@ -1174,6 +1173,34 @@ function collectGlobalDeliveryBlockIds(
     break
   }
   return ids
+}
+
+export function extractTrailingDeliveryProseFromTimeline(
+  timeline: AgentTimelineBlock[],
+): string {
+  const ids = collectTrailingDeliveryBlockIds(timeline)
+  if (ids.size === 0) {
+    return ''
+  }
+  return timeline
+    .filter(
+      (block): block is Extract<AgentTimelineBlock, { kind: 'text' | 'narration' }> =>
+        (block.kind === 'text' || block.kind === 'narration') && ids.has(block.id),
+    )
+    .map((block) => block.content)
+    .join('')
+    .trim()
+}
+
+/** 流结束后：全时间线最后一个工具之后的正文留在编排层外，不被折叠 */
+function collectGlobalDeliveryBlockIds(
+  timeline: AgentTimelineBlock[],
+  streamFinished?: boolean,
+): Set<string> {
+  if (!streamFinished) {
+    return new Set()
+  }
+  return collectTrailingDeliveryBlockIds(timeline)
 }
 
 function stripDeliveryBlocksFromThinkRoundItems(

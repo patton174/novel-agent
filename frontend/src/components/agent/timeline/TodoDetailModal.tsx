@@ -3,6 +3,8 @@ import type { AgentTodoItem } from '../../../types/agent'
 import { formatTodoProgress } from '../../../utils/todoDisplay'
 import { AppModalShell } from '@/components/ui/AppModalShell'
 import { DialogTitle } from '@/components/ui/dialog'
+import { EDITOR_PIXEL_ORCH_STATUS_LINE } from '@/lib/editorPixelClasses'
+import { cn } from '@/lib/utils'
 import { TimelineTodoList } from './TimelineTodoList'
 
 export function TodoDetailModal({
@@ -26,10 +28,10 @@ export function TodoDetailModal({
         <div className="flex items-start justify-between gap-3 pr-8">
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-              <DialogTitle className="m-0 text-sm font-semibold text-foreground">
+              <DialogTitle className={cn('m-0', EDITOR_PIXEL_ORCH_STATUS_LINE, 'text-foreground normal-case')}>
                 {t('editor:todo.title')}
               </DialogTitle>
-              <span className="whitespace-nowrap text-[11px] font-normal text-muted-foreground">
+              <span className="whitespace-nowrap font-mono text-[0.68rem] font-normal text-muted-foreground">
                 {formatTodoProgress(todos, t)}
               </span>
             </div>

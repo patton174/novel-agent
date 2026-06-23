@@ -12,7 +12,7 @@ import {
   CC_TOOL_ARGS,
   CC_TOOL_HEADLINE_BUTTON,
   CC_TOOL_NAME,
-  SUBAGENT_PANEL_ROOT,
+  subagentPanelRootClass,
   TOOL_OUTCOME_ERROR,
   TOOL_OUTCOME_SUCCESS,
   TOOL_TITLE_ROW,
@@ -101,7 +101,7 @@ export function SubagentPanel({
 
   return (
     <>
-      <div className={SUBAGENT_PANEL_ROOT} data-testid="subagent-panel">
+      <div className={subagentPanelRootClass(runActive)} data-testid="subagent-panel">
         <TimelineToolRowShell
           testId="subagent-tool-row"
           leadIcon={<TimelineLeadIcon iconName="Agent" status={iconStatus} />}

@@ -193,6 +193,13 @@ export function editorPixelSubagentWrapClass(active?: boolean) {
   )
 }
 
+/** 询问 / 待办 / 子代理等编排附属块 — 虚线框 */
+export const EDITOR_PIXEL_DASHED_PANEL = cn(
+  'border-2 border-dashed border-foreground bg-muted/20 p-2',
+)
+
+export const EDITOR_PIXEL_DASHED_PANEL_INSET = cn(EDITOR_PIXEL_DASHED_PANEL, 'px-2.5 py-2')
+
 export function editorPixelChoiceButtonClass(active?: boolean, className?: string) {
   return cn(
     'm-0 flex w-full cursor-pointer flex-col items-start gap-[0.12rem] border-2 border-foreground p-2 text-left font-mono transition-colors',
