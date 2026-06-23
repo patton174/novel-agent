@@ -34,9 +34,10 @@ public class AuthMemoryNodeController extends BaseController {
     public Result<List<MemoryNodeDTO>> listAllInScope(
         @RequestHeader(name = "X-User-Id") String userId,
         @PathVariable(name = "novelId") String novelId,
-        @RequestParam(name = "scope") String scope
+        @RequestParam(name = "scope") String scope,
+        @RequestParam(name = "includeContent", defaultValue = "true") boolean includeContent
     ) {
-        return biz.listAllInScope(parseUserId(userId), novelId, scope);
+        return biz.listAllInScope(parseUserId(userId), novelId, scope, includeContent);
     }
 
     @GetMapping

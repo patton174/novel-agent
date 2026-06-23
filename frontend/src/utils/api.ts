@@ -554,8 +554,12 @@ export const api = {
   },
 
   async getMemoryNodesFlat(novelId: string, scope: string): Promise<MemoryNodeDTO[]> {
+    const qs = new URLSearchParams({
+      scope,
+      includeContent: 'false',
+    })
     return this.request<MemoryNodeDTO[]>(
-      `/content/auth/novels/${encodeURIComponent(novelId)}/memory-nodes/flat?scope=${encodeURIComponent(scope)}`,
+      `/content/auth/novels/${encodeURIComponent(novelId)}/memory-nodes/flat?${qs.toString()}`,
     )
   },
 

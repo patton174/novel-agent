@@ -31,11 +31,14 @@ public class MemoryNodeService {
 
     private final MemoryNodeRepository repository;
 
-    public List<MemoryNodeDTO> listAllInScope(Long userId, String novelId, String scope) {
+    public List<MemoryNodeDTO> listAllInScope(Long userId, String novelId, String scope, boolean includeContent) {
         String scopeNorm = normalizeScope(scope);
-        return repository.findByUserIdAndNovelIdAndScopeOrderBySortOrderAsc(userId, novelId, scopeNorm)
-            .stream()
-            .map(row -> toDto(row, userId, novelId))
+        List<MemoryNodeEntity> rows = repository.findByUserIdAndNovelIdAndScopeOrderBySortOrderAsc(
+            userId, novelId, scopeNorm
+        );
+        Map<String, Integer> childCounts = childCountsFor(rows);
+        return rows.stream()
+            .map(row -> toDto(row, childCounts.getOrDefault(row.getId(), 0), includeContent))
             .toList();
     }
 
@@ -341,6 +344,10 @@ public class MemoryNodeService {
         int childCount = (int) repository.countByUserIdAndNovelIdAndParentId(
             userId, novelId, row.getId()
         );
+        return toDto(row, childCount, true);
+    }
+
+    private MemoryNodeDTO toDto(MemoryNodeEntity row, int childCount, boolean includeContent) {
         return new MemoryNodeDTO(
             row.getId(),
             row.getNovelId(),
@@ -349,7 +356,7 @@ public class MemoryNodeService {
             row.getSortOrder() != null ? row.getSortOrder() : 0,
             row.getTitle(),
             row.getNodeKind(),
-            row.getContent(),
+            includeContent ? row.getContent() : null,
             row.getStyle(),
             row.getMeta(),
             childCount

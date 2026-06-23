@@ -10,7 +10,11 @@ server {
     index index.html;
 
     gzip on;
-    gzip_types text/plain text/css application/json application/javascript text/xml;
+    gzip_vary on;
+    gzip_proxied any;
+    gzip_min_length 256;
+    gzip_comp_level 5;
+    gzip_types text/plain text/css application/json application/javascript text/xml application/xml;
 
     location /api/ {
         proxy_pass http://novel-studio:8080;
@@ -26,7 +30,6 @@ server {
         proxy_buffering off;
         proxy_request_buffering off;
         proxy_cache off;
-        gzip off;
     }
 
     location /g/ {
@@ -41,7 +44,6 @@ server {
         proxy_buffering off;
         proxy_request_buffering off;
         proxy_cache off;
-        gzip off;
     }
 
     location = /index.html {

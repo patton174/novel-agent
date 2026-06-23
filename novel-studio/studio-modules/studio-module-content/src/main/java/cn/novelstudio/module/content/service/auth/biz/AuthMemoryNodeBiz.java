@@ -19,8 +19,13 @@ public class AuthMemoryNodeBiz extends BaseBiz {
 
     private final MemoryNodeService memoryNodeService;
 
-    public Result<List<MemoryNodeDTO>> listAllInScope(Long userId, String novelId, String scope) {
-        return ok(memoryNodeService.listAllInScope(userId, novelId, scope));
+    public Result<List<MemoryNodeDTO>> listAllInScope(
+        Long userId,
+        String novelId,
+        String scope,
+        boolean includeContent
+    ) {
+        return ok(memoryNodeService.listAllInScope(userId, novelId, scope, includeContent));
     }
 
     public Result<List<MemoryNodeDTO>> listNodes(
