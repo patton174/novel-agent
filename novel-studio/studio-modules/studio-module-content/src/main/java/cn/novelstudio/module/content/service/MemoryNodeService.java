@@ -9,7 +9,10 @@ import cn.novelstudio.module.content.dto.MoveMemoryNodeRequest;
 import cn.novelstudio.module.content.dto.UpdateMemoryNodeRequest;
 import cn.novelstudio.module.content.entity.MemoryNodeEntity;
 import cn.novelstudio.module.content.repository.MemoryNodeRepository;
+import cn.novelstudio.module.content.support.MemoryNodeJsonSupport;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +27,8 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class MemoryNodeService {
 
+    private static final Logger log = LoggerFactory.getLogger(MemoryNodeService.class);
+
     private static final int MAX_SCOPE_LEN = 128;
     /** Scope root (depth 0) → content node (depth 1) only. */
     private static final int MAX_TREE_DEPTH = 2;
@@ -33,13 +38,35 @@ public class MemoryNodeService {
 
     public List<MemoryNodeDTO> listAllInScope(Long userId, String novelId, String scope, boolean includeContent) {
         String scopeNorm = normalizeScope(scope);
+        if (!includeContent) {
+            return listSummariesInScope(userId, novelId, scopeNorm);
+        }
         List<MemoryNodeEntity> rows = repository.findByUserIdAndNovelIdAndScopeOrderBySortOrderAsc(
             userId, novelId, scopeNorm
         );
         Map<String, Integer> childCounts = childCountsFor(rows);
         return rows.stream()
-            .map(row -> toDto(row, childCounts.getOrDefault(row.getId(), 0), includeContent))
+            .map(row -> toDto(row, childCounts.getOrDefault(row.getId(), 0), true))
             .toList();
+    }
+
+    private List<MemoryNodeDTO> listSummariesInScope(Long userId, String novelId, String scopeNorm) {
+        List<Object[]> rows = repository.findSummaryRowsByScope(userId, novelId, scopeNorm);
+        Map<String, Integer> childCounts = childCountsForSummaryRows(rows);
+        List<MemoryNodeDTO> out = new ArrayList<>();
+        for (Object[] row : rows) {
+            try {
+                out.add(summaryRowToDto(row, childCounts));
+            } catch (Exception ex) {
+                log.warn(
+                    "memory flat skip summary row novelId={} scope={}: {}",
+                    novelId,
+                    scopeNorm,
+                    ex.getMessage()
+                );
+            }
+        }
+        return out;
     }
 
     public List<MemoryNodeDTO> listChildren(
@@ -72,23 +99,80 @@ public class MemoryNodeService {
 
     /** Dynamic scopes: each outermost root node's title is the scope key. */
     public Map<String, Object> buildAllScopesTreeIndex(Long userId, String novelId) {
-        List<MemoryNodeEntity> roots = repository.findByUserIdAndNovelIdAndParentIdIsNullOrderBySortOrderAsc(
-            userId, novelId
-        );
-        if (roots.isEmpty()) {
+        List<String> scopeKeys = repository.findScopeKeysByNovel(userId, novelId);
+        if (scopeKeys.isEmpty()) {
             return Map.of();
         }
         Map<String, Object> index = new LinkedHashMap<>();
-        for (MemoryNodeEntity root : roots) {
-            String scopeKey = normalizeScope(root.getScope());
-            List<MemoryNodeEntity> scopeNodes = repository.findByUserIdAndNovelIdAndScopeOrderBySortOrderAsc(
-                userId, novelId, scopeKey
-            );
-            if (!scopeNodes.isEmpty()) {
-                index.put(scopeKey, buildTreeSummaryForScope(scopeKey, scopeNodes));
+        for (String scopeRaw : scopeKeys) {
+            if (scopeRaw == null || scopeRaw.isBlank()) {
+                continue;
+            }
+            try {
+                String scopeKey = normalizeScope(scopeRaw);
+                List<Object[]> summaryRows = repository.findSummaryRowsByScope(userId, novelId, scopeKey);
+                if (!summaryRows.isEmpty()) {
+                    index.put(scopeKey, buildTreeSummaryForSummaryRows(scopeKey, summaryRows));
+                }
+            } catch (Exception ex) {
+                log.warn(
+                    "memory tree-index skip scope novelId={} scope={}: {}",
+                    novelId,
+                    scopeRaw,
+                    ex.getMessage()
+                );
             }
         }
         return index;
+    }
+
+    private Map<String, Object> buildTreeSummaryForSummaryRows(String scopeNorm, List<Object[]> rows) {
+        Map<String, Integer> childCounts = childCountsForSummaryRows(rows);
+        Map<String, List<Object[]>> byParent = groupSummaryRowsByParent(rows);
+        List<Map<String, Object>> roots = buildSummaryTreeLevel(byParent, "", childCounts, 0, MAX_TREE_DEPTH);
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("scope", scopeNorm);
+        out.put("nodes", roots);
+        out.put("count", rows.size());
+        return out;
+    }
+
+    private static Map<String, List<Object[]>> groupSummaryRowsByParent(List<Object[]> rows) {
+        Map<String, List<Object[]>> byParent = new LinkedHashMap<>();
+        for (Object[] row : rows) {
+            String pid = stringAt(row, 3);
+            String parentKey = pid == null || pid.isBlank() ? "" : pid;
+            byParent.computeIfAbsent(parentKey, key -> new ArrayList<>()).add(row);
+        }
+        return byParent;
+    }
+
+    private List<Map<String, Object>> buildSummaryTreeLevel(
+        Map<String, List<Object[]>> byParent,
+        String parentKey,
+        Map<String, Integer> childCounts,
+        int depth,
+        int maxDepth
+    ) {
+        List<Object[]> level = byParent.getOrDefault(parentKey, List.of());
+        List<Map<String, Object>> out = new ArrayList<>();
+        for (Object[] row : level) {
+            String memoryId = stringAt(row, 0);
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("memory_id", memoryId);
+            item.put("title", stringAt(row, 5));
+            item.put("sort_order", intAt(row, 4));
+            item.put("node_kind", stringAt(row, 6));
+            item.put("child_count", childCounts.getOrDefault(memoryId, 0));
+            if (depth + 1 < maxDepth) {
+                item.put(
+                    "children",
+                    buildSummaryTreeLevel(byParent, memoryId, childCounts, depth + 1, maxDepth)
+                );
+            }
+            out.add(item);
+        }
+        return out;
     }
 
     private Map<String, Object> buildTreeSummaryForScope(String scopeNorm, List<MemoryNodeEntity> all) {
@@ -106,6 +190,18 @@ public class MemoryNodeService {
         Map<String, Integer> counts = new LinkedHashMap<>();
         for (MemoryNodeEntity node : nodes) {
             String parentId = node.getParentId();
+            if (parentId == null || parentId.isBlank()) {
+                continue;
+            }
+            counts.merge(parentId.trim(), 1, Integer::sum);
+        }
+        return counts;
+    }
+
+    private static Map<String, Integer> childCountsForSummaryRows(List<Object[]> rows) {
+        Map<String, Integer> counts = new LinkedHashMap<>();
+        for (Object[] row : rows) {
+            String parentId = stringAt(row, 3);
             if (parentId == null || parentId.isBlank()) {
                 continue;
             }
@@ -356,11 +452,49 @@ public class MemoryNodeService {
             row.getSortOrder() != null ? row.getSortOrder() : 0,
             row.getTitle(),
             row.getNodeKind(),
-            includeContent ? row.getContent() : null,
+            includeContent ? MemoryNodeJsonSupport.sanitizeContent(row.getContent()) : null,
             row.getStyle(),
             row.getMeta(),
             childCount
         );
+    }
+
+    private static MemoryNodeDTO summaryRowToDto(Object[] row, Map<String, Integer> childCounts) {
+        String memoryId = stringAt(row, 0);
+        return new MemoryNodeDTO(
+            memoryId,
+            stringAt(row, 1),
+            stringAt(row, 2),
+            stringAt(row, 3),
+            intAt(row, 4),
+            stringAt(row, 5),
+            stringAt(row, 6),
+            null,
+            MemoryNodeJsonSupport.parseJsonMap(stringAt(row, 7)),
+            MemoryNodeJsonSupport.parseJsonMap(stringAt(row, 8)),
+            childCounts.getOrDefault(memoryId, 0)
+        );
+    }
+
+    private static String stringAt(Object[] row, int index) {
+        if (row == null || index >= row.length || row[index] == null) {
+            return null;
+        }
+        return String.valueOf(row[index]);
+    }
+
+    private static int intAt(Object[] row, int index) {
+        if (row == null || index >= row.length || row[index] == null) {
+            return 0;
+        }
+        if (row[index] instanceof Number number) {
+            return number.intValue();
+        }
+        try {
+            return Integer.parseInt(String.valueOf(row[index]).trim());
+        } catch (NumberFormatException ex) {
+            return 0;
+        }
     }
 
     /** Outermost root title is the scope identifier (case-insensitive storage). */
