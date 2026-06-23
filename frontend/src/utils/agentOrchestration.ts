@@ -1,6 +1,6 @@
 /**
  * 编排展示与 python-ai CC 工具集对齐。
- * SSE 事件名仍用 planning.*（表示一轮 bind_tools 编排）。
+ * SSE 事件名仍用 planning.*（表示一轮 bind_tools 执行）。
  */
 
 import { toolDisplayName } from './agentLabels'
@@ -29,7 +29,7 @@ export function isHiddenTimelineToolName(name: string): boolean {
   return HIDDEN_UI_TOOLS.has(name) || LEGACY_HIDDEN_TOOLS.has(name)
 }
 
-/** 编排轮 transition 标题（与 python-ai planning_title / tool_display_name 对齐） */
+/** 执行轮 transition 标题（与 python-ai planning_title / tool_display_name 对齐） */
 export const PLANNING_PREP_TITLES: Record<string, string> = {
   Read: '读取',
   Write: '写入',
@@ -65,6 +65,18 @@ export const PLANNING_GENERIC_TITLES = new Set([
   '',
   '规划中…',
   '规划中',
+  '执行中…',
+  '执行中',
+  '执行完成',
+  '正在调用模型…',
+  '正在调用模型',
+  '正在执行…',
+  '正在执行',
+  '工具执行',
+  '后续步骤',
+  '模型选择工具…',
+  '调用模型…',
+  // legacy SSE / persisted timelines
   '编排中…',
   '编排中',
   '编排完成',
@@ -72,9 +84,6 @@ export const PLANNING_GENERIC_TITLES = new Set([
   '正在调用编排模型',
   '正在编排…',
   '正在编排',
-  '工具执行',
-  '后续步骤',
-  '模型选择工具…',
   '调用模型编排…',
 ])
 

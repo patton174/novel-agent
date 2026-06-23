@@ -38,7 +38,7 @@ class AgentTranscript:
         self.entries.append(
             TranscriptEntry(
                 kind="plan",
-                summary=f"编排：{reason or label}"[:500],
+                summary=f"执行：{reason or label}"[:500],
                 meta={"tools": tools},
             )
         )

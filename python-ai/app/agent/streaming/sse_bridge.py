@@ -421,7 +421,7 @@ async def stream_cc_tool_step(
                 message_id=message_id,
                 step_id=message_step_id,
                 sequence=seq,
-                payload={"role": "assistant"},
+                payload={"role": "assistant", "delivery": True},
             )
             seq += 1
             async for ev, next_seq in _yield_message_deltas(
@@ -441,7 +441,7 @@ async def stream_cc_tool_step(
                 message_id=message_id,
                 step_id=message_step_id,
                 sequence=seq,
-                payload={"role": "assistant"},
+                payload={"role": "assistant", "delivery": True},
             )
             seq += 1
 

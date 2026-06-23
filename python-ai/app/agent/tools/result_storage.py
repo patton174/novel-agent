@@ -22,7 +22,7 @@ def truncate_tool_result(text: str, *, max_chars: int = MAX_DEFAULT_CHARS) -> st
     return (
         body[:keep]
         + f"\n\n… [{len(body) - keep} chars truncated; total {len(body)} chars. "
-        "Use a smaller Read limit or continue with offset.]"
+        "Read fewer items per turn or use offset/limit on ReadChapter.]"
     )
 
 

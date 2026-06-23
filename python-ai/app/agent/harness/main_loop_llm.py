@@ -13,11 +13,7 @@ from langchain_core.messages import AIMessage, AIMessageChunk
 from app.agent.harness.llm_trace import extract_cache_usage, log_llm_exchange
 from app.agent.harness.tool_call_chunk_accumulator import ToolCallChunkAccumulator
 from app.agent.harness.tool_use_ready import build_validated_tool_use_events
-from app.agent.harness.visible_text_channel import (
-    classify_visible_channel_prefix,
-    polish_visible_text,
-    prefix_scan_state,
-)
+from app.agent.harness.visible_text_channel import polish_visible_text
 from app.agent.schemas import AgentRunContext
 from app.core.llm_chunk_split import LlmChunkSplitter
 from app.runtime.events import build_event
@@ -38,42 +34,16 @@ class MainLoopLlmStreamState:
 
 @dataclass
 class _VisibleTextForwarder:
-    """Stream visible assistant text as message.delta (no orchestration/delivery split)."""
-
-    _hold: str = ""
-    _lead_done: bool = False
-
-    def _polish(self, text: str) -> str:
-        raw = (text or "").replace("\ufffd", "")
-        if not raw:
-            return ""
-        if not self._lead_done:
-            _, body = classify_visible_channel_prefix(raw)
-            raw = body
-            self._lead_done = True
-        return polish_visible_text(raw)
+    """Stream visible assistant text as message.delta."""
 
     def feed(self, text: str) -> list[str]:
         if not text:
             return []
-        if self._lead_done:
-            piece = polish_visible_text(text.replace("\ufffd", ""))
-            return [piece] if piece else []
-        self._hold += text
-        if prefix_scan_state(self._hold) == "partial":
-            return []
-        chunk = self._hold
-        self._hold = ""
-        piece = self._polish(chunk)
+        piece = polish_visible_text(text.replace("\ufffd", ""))
         return [piece] if piece else []
 
     def flush(self) -> list[str]:
-        if self._lead_done or not self._hold:
-            return []
-        chunk = self._hold
-        self._hold = ""
-        piece = self._polish(chunk)
-        return [piece] if piece else []
+        return []
 
 
 async def _emit_reasoning_completed(
@@ -95,13 +65,45 @@ async def _emit_reasoning_completed(
     state.sequence += 1
 
 
+async def _emit_message_segment_completed(
+    state: MainLoopLlmStreamState,
+    *,
+    message_step_id: str,
+    message_open: list[bool],
+    delivery: bool,
+) -> AsyncIterator[dict[str, Any]]:
+    """Close visible-text segment; delivery=false → 编排正文, delivery=true → 回复正文."""
+    if not message_open[0]:
+        return
+    message_open[0] = False
+    yield build_event(
+        event_type="message.completed",
+        run_id=state.run_id,
+        session_id=state.session_id,
+        message_id=state.message_id,
+        step_id=message_step_id,
+        sequence=state.sequence,
+        payload={"role": "assistant", "delivery": delivery},
+    )
+    state.sequence += 1
+
+
 async def _yield_validated_tool_use_events(
     *,
     stream_state: MainLoopLlmStreamState,
     ready: Any,
     ctx: AgentRunContext,
     planning_step_id: str,
+    message_step_id: str,
+    message_open: list[bool],
 ) -> AsyncIterator[dict[str, Any]]:
+    async for ev in _emit_message_segment_completed(
+        stream_state,
+        message_step_id=message_step_id,
+        message_open=message_open,
+        delivery=False,
+    ):
+        yield ev
     async for ev in _emit_reasoning_completed(stream_state):
         yield ev
     events, stream_state.sequence = build_validated_tool_use_events(
@@ -133,7 +135,7 @@ async def _emit_reasoning_delta(
             message_id=state.message_id,
             step_id=state.reasoning_step_id,
             sequence=state.sequence,
-            payload={"title": "编排推理"},
+            payload={"title": "推理中"},
         )
         state.sequence += 1
     yield build_event(
@@ -220,15 +222,6 @@ async def stream_bind_tools_turn(
             else:
                 gathered = gathered + chunk
 
-            for ready in tool_accumulator.feed(chunk):
-                async for ev in _yield_validated_tool_use_events(
-                    stream_state=stream_state,
-                    ready=ready,
-                    ctx=ctx,
-                    planning_step_id=planning_step_id,
-                ):
-                    yield ev
-
             raw = getattr(chunk, "content", chunk)
             for kind, text in splitter.feed(raw):
                 if kind == "reasoning":
@@ -244,6 +237,17 @@ async def stream_bind_tools_turn(
                         ):
                             yield ev
 
+            for ready in tool_accumulator.feed(chunk):
+                async for ev in _yield_validated_tool_use_events(
+                    stream_state=stream_state,
+                    ready=ready,
+                    ctx=ctx,
+                    planning_step_id=planning_step_id,
+                    message_step_id=message_step_id,
+                    message_open=message_open,
+                ):
+                    yield ev
+
         async for ev in _emit_reasoning_completed(stream_state):
             yield ev
 
@@ -258,21 +262,26 @@ async def stream_bind_tools_turn(
 
         has_tool_calls = _gathered_has_tool_calls(gathered)
 
-        if message_open[0] and not has_tool_calls:
-            yield build_event(
-                event_type="message.completed",
-                run_id=ctx.run_id,
-                session_id=ctx.session_id,
-                message_id=ctx.message_id,
-                step_id=message_step_id,
-                sequence=stream_state.sequence,
-                payload={"role": "assistant"},
-            )
-            stream_state.sequence += 1
-
         if gathered is None:
             yield AIMessage(content="")
             return
+
+        if has_tool_calls:
+            async for ev in _emit_message_segment_completed(
+                stream_state,
+                message_step_id=message_step_id,
+                message_open=message_open,
+                delivery=False,
+            ):
+                yield ev
+        else:
+            async for ev in _emit_message_segment_completed(
+                stream_state,
+                message_step_id=message_step_id,
+                message_open=message_open,
+                delivery=True,
+            ):
+                yield ev
 
         final_tool_calls = getattr(gathered, "tool_calls", None) or []
         for ready in tool_accumulator.feed_gathered_tool_calls(final_tool_calls):
@@ -281,6 +290,8 @@ async def stream_bind_tools_turn(
                 ready=ready,
                 ctx=ctx,
                 planning_step_id=planning_step_id,
+                message_step_id=message_step_id,
+                message_open=message_open,
             ):
                 yield ev
 

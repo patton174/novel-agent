@@ -15,9 +15,84 @@ from app.agent.schemas import AgentRunContext, PlanRequest
 logger = logging.getLogger(__name__)
 
 _SYNTHETIC_TOOL_RESULT = (
-    "[Tool result missing — conversation history was repaired before the next model call. "
-    "Do not assume this tool succeeded; re-call tools if you still need the data.]"
+    "[工具结果未配对写入历史；若仍需要该数据请重新调用此工具。]"
 )
+
+
+def filter_ai_message_tool_calls(ai_msg: AIMessage, tool_call_ids: set[str]) -> AIMessage:
+    """Keep only tool_use blocks that will receive a ToolMessage in this turn."""
+    if not tool_call_ids:
+        return AIMessage(
+            content=ai_msg.content,
+            tool_calls=[],
+            additional_kwargs=getattr(ai_msg, "additional_kwargs", None) or {},
+            response_metadata=getattr(ai_msg, "response_metadata", None) or {},
+            id=getattr(ai_msg, "id", None),
+        )
+    kept: list = []
+    for tc in ai_msg.tool_calls or []:
+        tid, _ = _tool_call_id_and_name(tc)
+        if tid and tid in tool_call_ids:
+            kept.append(tc)
+    if len(kept) == len(ai_msg.tool_calls or []):
+        return ai_msg
+    return AIMessage(
+        content=ai_msg.content,
+        tool_calls=kept,
+        additional_kwargs=getattr(ai_msg, "additional_kwargs", None) or {},
+        response_metadata=getattr(ai_msg, "response_metadata", None) or {},
+        id=getattr(ai_msg, "id", None),
+    )
+
+
+def seal_tool_results_for_last_assistant(messages: list) -> bool:
+    """Append placeholder ToolMessages for the last AIMessage still missing results."""
+    last_ai_idx: int | None = None
+    for i in range(len(messages) - 1, -1, -1):
+        if isinstance(messages[i], AIMessage):
+            last_ai_idx = i
+            break
+    if last_ai_idx is None:
+        return False
+
+    ai_msg = messages[last_ai_idx]
+    pending: dict[str, str] = {}
+    for tc in ai_msg.tool_calls or []:
+        tid, name = _tool_call_id_and_name(tc)
+        if tid:
+            pending[tid] = name
+
+    if not pending:
+        return False
+
+    for msg in messages[last_ai_idx + 1 :]:
+        if isinstance(msg, AIMessage):
+            break
+        if isinstance(msg, ToolMessage):
+            tid = str(getattr(msg, "tool_call_id", "") or "").strip()
+            pending.pop(tid, None)
+
+    if not pending:
+        return False
+
+    missing = list(pending.items())
+    insert_at = last_ai_idx + 1
+    while insert_at < len(messages) and isinstance(messages[insert_at], ToolMessage):
+        insert_at += 1
+    for tid, name in missing:
+        messages.insert(
+            insert_at,
+            ToolMessage(
+                content=f"{_SYNTHETIC_TOOL_RESULT} (tool: {name})",
+                tool_call_id=tid,
+            ),
+        )
+        insert_at += 1
+    logger.warning(
+        "sealed %d missing tool_result(s) for last assistant message",
+        len(missing),
+    )
+    return True
 
 
 def build_run_context_human(
@@ -40,7 +115,7 @@ def build_run_context_human(
             ),
             f"RUN_CONTEXT_JSON:\n{json.dumps(ctx_json, ensure_ascii=False)[:14000]}",
             f"用户消息：{ctx.user_message}",
-            "请通过 tool_use 调用工具完成任务。",
+            "若仍需数据或操作则调用 tool_use；若任务已完成则写完整回复（勿再调用工具）。",
         ]
     )
 
@@ -160,7 +235,9 @@ def repair_tool_message_pairing(messages: list) -> tuple[list, bool]:
                 repaired = True
             continue
 
-        flush_pending()
+        # Do not flush on Human/System/etc. between an assistant and its
+        # ToolMessages — only the next AIMessage (handled above) or final
+        # flush_pending() should synthesize missing results.
         out.append(msg)
 
     flush_pending()

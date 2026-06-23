@@ -336,7 +336,7 @@ def output_submit_messages(
         )
     else:
         routing = (
-            "step_kind=output；根据正文是否已完整交付用户，"
+            "step_kind=output；根据正文是否已完整回复用户，"
             "选择 action=end 或 continue。"
         )
     return build_step_submit_messages(

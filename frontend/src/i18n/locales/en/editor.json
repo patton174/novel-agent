@@ -216,10 +216,10 @@
       "contextPending": "Context …"
     },
     "timeline": {
-      "orchestration": "Orchestration",
-      "orchestrationActive": "Orchestrating…",
-      "orchestrationDone": "Orchestration complete",
-      "deliveryPendingHint": "Waiting for orchestration before streaming output",
+      "orchestration": "Execution",
+      "orchestrationActive": "Running…",
+      "orchestrationDone": "Execution complete",
+      "deliveryPendingHint": "Waiting for execution to finish before streaming the reply",
       "drafting": "Drafting…",
       "thinking": "Thinking",
       "thinkingActive": "Thinking…",

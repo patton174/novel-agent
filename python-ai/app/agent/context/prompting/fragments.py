@@ -29,7 +29,7 @@ def build_think_system_text(intensity: str = "medium") -> str:
         "本段思考会进入下一轮 Plan，供工具选择参考。"
         "勿在 Think 里写章节正文；章名与剧情由后续工具 LLM 根据上下文完成。\n"
         "对照 RUN_CONTEXT 章节列表与当前章，勿臆造已完成章节，"
-        "避免误导后续编排的表述。\n\n"
+        "避免误导后续执行的表述。\n\n"
         "用自然流畅的简体中文 Markdown 回答，可以分段、用小标题。\n"
         f"篇幅约 {lo}–{hi} 字（含标点）。\n"
         "禁止：小说正文、角色对白、代码块、JSON、StepResult、系统指令复述。\n"
@@ -101,18 +101,18 @@ def build_ask_user_task_text(mode: str, topic: str, background: str) -> str:
 def build_output_delivery_hint(tool_input: dict) -> str:
     mode = str(tool_input.get("output_mode") or "").strip().lower()
     if mode == "progress":
-        return "【交付倾向】本批后还会继续编排，给用户简短进度即可。"
+        return "【回复倾向】本批后还会继续执行，给用户简短进度即可。"
     if mode == "complete":
-        return "【交付倾向】本批后 run 结束，给用户完整收尾说明。"
+        return "【回复倾向】本批后 run 结束，给用户完整收尾说明。"
     end_run = tool_input.get("end_run")
     if end_run is True:
-        return "【交付倾向】本批后 run 结束，给用户完整收尾说明。"
+        return "【回复倾向】本批后 run 结束，给用户完整收尾说明。"
     if end_run is False:
         return (
-            "【交付倾向】本批后还会继续编排，给用户简短进度即可；"
+            "【回复倾向】本批后还会继续执行，给用户简短进度即可；"
             "勿贴完整章节正文。"
         )
-    return "【交付倾向】按编排意图判断进度或总结；勿贴完整章节正文。"
+    return "【回复倾向】按任务意图判断进度或总结；勿贴完整章节正文。"
 
 
 def main_loop_guide_block() -> str:
@@ -126,7 +126,7 @@ def build_chapter_task_text(
     mode: str, task: str, background: str, word_count: int
 ) -> str:
     _ = mode
-    prompt = f"{_TASK_AUTO_HINT}\n编排意图：{task}\n\n"
+    prompt = f"{_TASK_AUTO_HINT}\n任务意图：{task}\n\n"
     if background:
         prompt += f"前文/设定/章节上下文：\n{background[:12000]}\n\n"
     prompt += (

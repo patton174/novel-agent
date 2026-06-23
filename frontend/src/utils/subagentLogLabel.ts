@@ -2,15 +2,15 @@ import type { AgentSubagentLogEntry } from '../types/agent'
 import { toolDisplayName } from './agentLabels'
 import { normalizeToolName } from './agentToolNames'
 
-const SKIP_TITLE = /^(Read|Write|Edit|Glob|Grep|Delete|Agent|编排中)/i
+const SKIP_TITLE = /^(Read|Write|Edit|Glob|Grep|Delete|Agent|执行中|编排中)/i
 
 export function formatSubagentLogLabel(entry: AgentSubagentLogEntry): string {
   if (entry.phase === 'turn') {
     const t = (entry.title || '').trim()
-    if (t && !/^编排/.test(t)) {
-      return t.replace(/^调用模型编排[….]*$/u, '编排中…')
+    if (t && !/^(执行|编排)/.test(t)) {
+      return t.replace(/^调用模型(?:编排)?[….]*$/u, '执行中…')
     }
-    return '编排中…'
+    return '执行中…'
   }
 
   if (entry.phase === 'error') {
@@ -72,7 +72,7 @@ export function visibleSubagentLogs(
   })
 }
 
-/** 仅工具步骤（编排/思考由 PlanningStack + thinkText 展示） */
+/** 仅工具步骤（执行/思考由 PlanningStack + thinkText 展示） */
 export function subagentToolEntries(
   logs: AgentSubagentLogEntry[],
   opts: { runActive: boolean },

@@ -216,10 +216,10 @@
       "contextPending": "上下文 …"
     },
     "timeline": {
-      "orchestration": "编排",
-      "orchestrationActive": "编排中…",
-      "orchestrationDone": "编排完成",
-      "deliveryPendingHint": "等待编排完成后开始流式输出正文",
+      "orchestration": "执行",
+      "orchestrationActive": "执行中…",
+      "orchestrationDone": "执行完成",
+      "deliveryPendingHint": "等待执行完成后开始流式输出回复",
       "drafting": "成稿中…",
       "thinking": "思考",
       "thinkingActive": "思考中…",

@@ -510,6 +510,8 @@ export function useEditorAgentStream({
           agentTimeline: nextTimeline,
           agentTodos: nextTodos,
           agentContextUsage: state.contextUsage,
+          agentStreamingContent: state.segmentOpen ? state.messageContent : undefined,
+          agentSegmentOpen: state.segmentOpen,
         }
         persistDebouncer.schedule(agentSessionIdRef.current, next)
         return next
@@ -754,6 +756,13 @@ export function useEditorAgentStream({
       }
       if (
         type === 'message.delta' ||
+        type === 'message.started' ||
+        type === 'message.completed' ||
+        type === 'subagent.started' ||
+        type === 'subagent.event' ||
+        type === 'subagent.progress' ||
+        type === 'subagent.completed' ||
+        type === 'subagent.failed' ||
         type === 'think.delta' ||
         type === 'reasoning.delta' ||
         type === 'narration.delta'

@@ -40,7 +40,7 @@ function OrchestrationLoop() {
     <>
       <button type="button" className={DEMO_ORCH_HEADER_STATIC} aria-expanded>
         <span className="chevron" />
-        <span className="title">编排中 · 续写第二章</span>
+        <span className="title">执行中 · 续写第二章</span>
       </button>
       {ORCH_STEPS.map((item, i) => (
         <div key={item.name} className={demoOrchLineClass(i <= step)}>

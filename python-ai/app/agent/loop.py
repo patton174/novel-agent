@@ -56,11 +56,14 @@ from app.agent.harness.loop_support import (
 from app.agent.harness.main_loop_llm import stream_bind_tools_turn
 from app.agent.harness.message_history import (
     build_run_context_human,
+    filter_ai_message_tool_calls,
     is_tool_pairing_llm_error,
     prune_message_tail,
     refresh_run_context_human,
     repair_tool_message_pairing,
+    seal_tool_results_for_last_assistant,
 )
+from app.core.llm_content import sanitize_ai_message_for_history
 from app.agent.harness.orchestration_contract import (
     PLAN_MAX_TOOL_CALLS,
     QUERY_LOOP_INTERACTION_TOOLS,
@@ -383,7 +386,7 @@ async def run_query_loop(
                 message_id=state.ctx.message_id,
                 step_id=step_id,
                 sequence=state.sequence,
-                payload={"title": "编排中…", "message": "模型选择工具…"},
+                payload={"title": "执行中…", "message": "模型选择工具…"},
             )
             state.sequence += 1
 
@@ -499,7 +502,7 @@ async def run_query_loop(
                 message_id=state.ctx.message_id,
                 step_id=step_id,
                 sequence=state.sequence,
-                payload={"title": "调用模型编排…"},
+                payload={"title": "调用模型…"},
             )
             state.sequence += 1
 
@@ -629,7 +632,7 @@ async def run_query_loop(
                             step_id=step_id,
                             sequence=state.sequence,
                             payload={
-                                "title": "修复工具配对后重试编排…",
+                                "title": "修复工具配对后重试…",
                                 "retry": llm_pairing_retries,
                             },
                         )
@@ -659,20 +662,36 @@ async def run_query_loop(
             if ai_msg is None:
                 ai_msg = AIMessage(content="")
 
-            messages.append(ai_msg)
-            state.run_usage.add_llm_usage(extract_cache_usage(ai_msg))
-            yield _yield_context_usage(state, messages, source="api")
+            preview_calls = _tool_calls_from_ai(ai_msg)
+            ai_calls = preview_calls
+
+            if not preview_calls:
+                messages.append(sanitize_ai_message_for_history(ai_msg))
+                state.run_usage.add_llm_usage(extract_cache_usage(ai_msg))
+                yield _yield_context_usage(state, messages, source="api")
+                valid_calls, invalid_entries = [], []
+            else:
+                valid_calls, invalid_entries = turn_batch.reconcile(ai_calls, state.ctx)
+                responded_ids = {
+                    c.tool_call_id for c in valid_calls
+                } | {e.tool_call_id for e in invalid_entries}
+                messages.append(
+                    sanitize_ai_message_for_history(
+                        filter_ai_message_tool_calls(ai_msg, responded_ids)
+                    )
+                )
+                state.run_usage.add_llm_usage(extract_cache_usage(ai_msg))
+                yield _yield_context_usage(state, messages, source="api")
+                if invalid_entries:
+                    append_per_tool_validation_errors(messages, invalid_entries)
 
             prompt_measure = measure_agent_context(
                 messages, req=_context_request(state), source="api"
             )
-            ai_calls = _tool_calls_from_ai(ai_msg)
-            valid_calls, invalid_entries = turn_batch.reconcile(ai_calls, state.ctx)
 
             if invalid_entries and not valid_calls and not (
                 stream_executor and stream_executor.has_completed
             ):
-                append_per_tool_validation_errors(messages, invalid_entries)
                 state.param_repair_rounds += 1
                 if state.param_repair_rounds >= _MAX_PARAM_REPAIR_ROUNDS:
                     detail = "; ".join(e.error for e in invalid_entries[:3])
@@ -697,7 +716,7 @@ async def run_query_loop(
                 continue
 
             working_calls = valid_calls if invalid_entries else ai_calls
-            pending_invalid = list(invalid_entries)
+            pending_invalid: list = []
 
             def _append_pending_invalid() -> None:
                 nonlocal pending_invalid
@@ -905,6 +924,8 @@ async def run_query_loop(
                     await stream_executor.submit(item)
             await stream_executor.finish_submitting()
 
+            pending_tool_messages: list[tuple[int, ToolMessage]] = []
+
             async for kind, payload in stream_executor.iter_combined():
                 if kind == "ctx":
                     state.ctx = payload
@@ -932,12 +953,15 @@ async def run_query_loop(
                 for run in runs:
                     tool = run.item.tool
                     if run.failed:
-                        messages.append(
-                            ToolMessage(
-                                content=_format_tool_result_text(
-                                    tool, run.error, is_error=True
+                        pending_tool_messages.append(
+                            (
+                                run.item.call_order,
+                                ToolMessage(
+                                    content=_format_tool_result_text(
+                                        tool, run.error, is_error=True
+                                    ),
+                                    tool_call_id=run.item.tool_call_id,
                                 ),
-                                tool_call_id=run.item.tool_call_id,
                             )
                         )
                         _fail, err_code, err_detail = classify_tool_step_failure(
@@ -961,19 +985,22 @@ async def run_query_loop(
                         if run.result and run.result.display and run.result.display.content
                         else None
                     )
-                    messages.append(
-                        ToolMessage(
-                            content=_format_tool_result_text(
-                                tool,
-                                tool_message_text(
-                                    message_output=run.message_output or "",
-                                    step_result_display_content=display_content,
-                                    step_result_reason=(
-                                        run.result.reason if run.result else None
+                    pending_tool_messages.append(
+                        (
+                            run.item.call_order,
+                            ToolMessage(
+                                content=_format_tool_result_text(
+                                    tool,
+                                    tool_message_text(
+                                        message_output=run.message_output or "",
+                                        step_result_display_content=display_content,
+                                        step_result_reason=(
+                                            run.result.reason if run.result else None
+                                        ),
                                     ),
                                 ),
+                                tool_call_id=run.item.tool_call_id,
                             ),
-                            tool_call_id=run.item.tool_call_id,
                         )
                     )
 
@@ -1058,6 +1085,13 @@ async def run_query_loop(
 
                 if waited:
                     break
+
+            if pending_tool_messages:
+                for _, tool_msg in sorted(
+                    pending_tool_messages, key=lambda pair: pair[0]
+                ):
+                    messages.append(tool_msg)
+            seal_tool_results_for_last_assistant(messages)
 
             if any(i.tool in _MEMORY_WRITE_TOOLS for i in exec_items):
                 merged_patch = dict(state.ctx.context_patch or {})

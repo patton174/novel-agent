@@ -16,7 +16,7 @@ from app.agent.backend.memory_node_store import (
 )
 from app.agent.backend.memory_catalog import invalidate_memory_trees_cache
 from app.agent.backend.memory_style_presets import default_style_for_scope, normalize_style
-from app.agent.context.memory_log import append_memory_op_log
+from app.agent.context.memory_log import append_memory_op_log, append_memory_read_record
 from app.agent.schemas import AgentRunContext
 from app.agent.tools.errors import ToolError, ToolErrorCode, tool_error_result
 from app.agent.tools.schemas import (
@@ -138,13 +138,12 @@ async def read_memory(ctx: AgentRunContext, inp: ReadMemoryInput) -> ToolCallRes
     content = (node.get("content") or "").strip()
     title = str(node.get("title") or "")
     header = f"# {title}\n\n" if title else ""
-    patch: dict[str, Any] = {
-        "last_memory_read": {
-            "ok": True,
-            "memory_id": inp.memory_id,
-            "scope": node.get("scope"),
-        }
-    }
+    patch = append_memory_read_record(
+        ctx.context_patch if isinstance(ctx.context_patch, dict) else {},
+        memory_id=inp.memory_id,
+        scope=str(node.get("scope") or "") or None,
+        title=title or None,
+    )
     return ToolCallResult(content=f"{header}{content}", context_patch=patch)
 
 

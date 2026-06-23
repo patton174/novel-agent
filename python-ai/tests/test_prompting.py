@@ -44,7 +44,7 @@ def test_output_stream_includes_delivery_modes():
     from app.agent.context.prompting.tool_contracts import output_stream_system_lines
 
     text = "\n".join(output_stream_system_lines())
-    assert "交付倾向" in text or "进度" in text
+    assert "回复倾向" in text or "进度" in text
 
 
 def test_output_delivery_hint_uses_mode():

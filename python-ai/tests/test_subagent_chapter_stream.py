@@ -1,10 +1,25 @@
-"""Subagent SSE forwards chapter.stream events to parent timeline."""
+"""Subagent SSE forwards child events in real time."""
 
 from __future__ import annotations
 
 import pytest
 
-from app.agent.harness.subagent_sse import _map_child_to_subagent_progress
+from app.agent.harness.subagent_sse import (
+    _map_child_to_subagent_progress,
+    _should_forward_child_event,
+)
+
+
+def test_should_forward_child_tool_events():
+    assert _should_forward_child_event(
+        "tool.completed",
+        {"name": "ReadChapter", "display_excerpt": "ok"},
+    )
+    assert not _should_forward_child_event("tool.completed", {"name": "think"})
+    assert _should_forward_child_event(
+        "message.completed",
+        {"role": "assistant"},
+    )
 
 
 def test_map_child_to_subagent_progress_ignores_chapter_stream():
@@ -40,6 +55,16 @@ async def test_stream_subagent_forwards_chapter_stream_events(monkeypatch):
             "payload": {},
             "step_id": "child_step",
         }
+        yield {
+            "type": "tool.started",
+            "step_id": "tool-1",
+            "payload": {"name": "ReadChapter"},
+        }
+        yield {
+            "type": "tool.completed",
+            "step_id": "tool-1",
+            "payload": {"name": "ReadChapter", "display_excerpt": "ok"},
+        }
         yield {"type": "run.completed", "payload": {}}
 
     monkeypatch.setattr("app.agent.loop.run_query_loop", fake_run_query_loop)
@@ -69,3 +94,19 @@ async def test_stream_subagent_forwards_chapter_stream_events(monkeypatch):
     assert "chapter.stream.started" in types
     assert "chapter.stream.delta" in types
     assert "chapter.stream.completed" in types
+    assert "subagent.event" in types
+    assert "subagent.progress" in types
+    progress_phases = [
+        e.get("payload", {}).get("phase")
+        for e in events
+        if e.get("type") == "subagent.progress"
+    ]
+    assert "tool_started" in progress_phases
+    assert "tool_done" in progress_phases
+    child_types = [
+        e.get("payload", {}).get("child_type")
+        for e in events
+        if e.get("type") == "subagent.event"
+    ]
+    assert "tool.started" in child_types
+    assert "tool.completed" in child_types

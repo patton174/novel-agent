@@ -55,6 +55,19 @@ describe('agentMessageMobileSummary', () => {
     expect(extractPostTimelineDeliveryText(message, timeline, steps, true)).toBe('')
   })
 
+  it('suppresses post-timeline delivery when trailing blocks remain in orchestration timeline', () => {
+    const table = '| 章节 | 标题 |\n章节代理测试成功。'
+    const message = { content: table, role: 'assistant' } as EditorMessage
+    const timeline: AgentTimelineBlock[] = [
+      { kind: 'think', id: 'think-a', text: '测试并行读取。', status: 'done' },
+      { kind: 'tool', id: 'tool:1', stepId: '1' },
+      { kind: 'narration', id: 'n1', content: table },
+      { kind: 'think', id: 'think-b', text: table, status: 'done' },
+    ]
+    const steps = [{ type: 'tool', toolName: 'ReadChapter', stepId: '1', status: 'completed' }] as never
+    expect(extractPostTimelineDeliveryText(message, timeline, steps, true)).toBe('')
+  })
+
   it('keeps post-timeline delivery for plain assistant without orchestration', () => {
     const message = { content: '简单回复', role: 'assistant' } as EditorMessage
     expect(extractPostTimelineDeliveryText(message, [], [], true)).toBe('简单回复')

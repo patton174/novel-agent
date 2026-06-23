@@ -65,7 +65,7 @@ Rules:
 - Run **ChapterAudit** and **NarrativeReview(scope=full_book)** for the whole book; focus ReadChapter on changed chapters.
 - Check: semantic & literal duplication, chapter-to-chapter continuity, outline drift, worldview, foreshadow payoffs, reader engagement.
 - Use ReadMemory(novel/world/chapter) and SearchKnowledge when needed.
-- Final turn: start with `[交付]` then a full markdown report (## 必须修 / ## 建议修 / ## 可选优化)."""
+- Final turn without tools: write the full markdown report (## 必须修 / ## 建议修 / ## 可选优化)."""
 
 
 def build_review_subagent_run_context_human(ctx: AgentRunContext, transcript: Any) -> str:
@@ -78,7 +78,7 @@ def build_review_subagent_run_context_human(ctx: AgentRunContext, transcript: An
     return (
         f"【审查 Agent】{desc}\n优先改动章节：{focus}\n\n"
         f"{base}\n\n"
-        "完成 ChapterAudit + NarrativeReview(full_book) 后，用 `[交付]` 输出完整审查报告。"
+        "完成 ChapterAudit + NarrativeReview(full_book) 后，写完整审查报告（无工具轮）。"
     )
 
 
@@ -127,7 +127,7 @@ def _build_review_prompt(changed_ids: list[str]) -> str:
 3. 每个改动章：ReadChapter + ReadMemory(scope=chapter)
 4. ReadMemory(novel/world) 核对大纲与设定；必要时 SearchKnowledge
 
-最后一轮 `[交付]` 完整报告。"""
+最后一轮无工具时写完整报告。"""
 
 
 async def run_review_subagent(

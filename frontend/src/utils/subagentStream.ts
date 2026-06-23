@@ -4,6 +4,10 @@ import type {
   AgentSubagentLogEntry,
   AgentSubagentState,
 } from '../types/agent'
+import {
+  applySubagentChildEvent,
+  parseSubagentChildEvent,
+} from './subagentTimeline'
 import { sanitizeThinkText } from './sanitizeAgentText'
 
 const MAX_SUBAGENT_LOGS = 160
@@ -131,7 +135,34 @@ export function applySubagentStepEvent(
         maxTurns: typeof p.max_turns === 'number' ? p.max_turns : undefined,
         turn: 0,
         logs: [],
+        timeline: [],
+        childStepStates: [],
       }),
+      description,
+      subagentKind,
+    )
+  }
+
+  if (event.type === 'subagent.event') {
+    const child = parseSubagentChildEvent(event)
+    if (!child) {
+      return stepStates
+    }
+    return upsertStepSubagent(
+      stepStates,
+      parentId,
+      (sub) => {
+        const base =
+          sub ??
+          ({
+            description,
+            status: 'active' as const,
+            logs: [],
+            timeline: [],
+            childStepStates: [],
+          } satisfies AgentSubagentState)
+        return applySubagentChildEvent(base, child)
+      },
       description,
       subagentKind,
     )
@@ -317,18 +348,19 @@ export function applySubagentStepEvent(
       const incoming =
         typeof p.summary_preview === 'string' ? p.summary_preview.trim() : ''
       const prev = sub?.summaryPreview?.trim() ?? ''
-      let summaryPreview = prev || undefined
-      if (incoming) {
-        if (!prev) {
-          summaryPreview = incoming
-        } else if (incoming.length >= prev.length) {
-          summaryPreview = incoming
-        } else if (prev.startsWith(incoming) || incoming.startsWith(prev.slice(0, Math.min(prev.length, 200)))) {
-          summaryPreview = prev
-        } else {
-          summaryPreview = prev.length > incoming.length ? prev : incoming
-        }
-      }
+      const timelineText = (sub?.timeline ?? [])
+        .filter(
+          (block): block is Extract<typeof block, { kind: 'text' }> =>
+            block.kind === 'text',
+        )
+        .map((block) => block.content)
+        .join('')
+        .trim()
+      const candidates = [incoming, prev, timelineText].filter(Boolean)
+      const summaryPreview =
+        candidates.length > 0
+          ? candidates.reduce((best, cur) => (cur.length > best.length ? cur : best))
+          : undefined
       return {
         description: sub?.description ?? '子任务',
         childRunId: sub?.childRunId,
@@ -336,6 +368,8 @@ export function applySubagentStepEvent(
         maxTurns: sub?.maxTurns,
         turn: typeof p.turns === 'number' ? p.turns : sub?.turn,
         logs: closeOpenReasoningLogs(sub?.logs ?? []),
+        timeline: sub?.timeline ?? [],
+        childStepStates: sub?.childStepStates ?? [],
         thinkText: sub?.thinkText,
         summaryPreview,
       }

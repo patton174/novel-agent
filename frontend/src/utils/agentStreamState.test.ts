@@ -611,12 +611,27 @@ describe('applyAgentEvent', () => {
     state = applyAgentEvent(
       state,
       'agent-event',
+      JSON.stringify({ type: 'message.started', sequence: 1, payload: {} }),
+    )
+    state = applyAgentEvent(
+      state,
+      'agent-event',
       JSON.stringify({
         type: 'message.delta',
+        sequence: 2,
         payload: { text: report },
       }),
     )
-    expect(state.timeline.filter((b) => b.kind === 'text')).toHaveLength(0)
+    state = applyAgentEvent(
+      state,
+      'agent-event',
+      JSON.stringify({
+        type: 'message.completed',
+        sequence: 3,
+        payload: { delivery: true },
+      }),
+    )
+    expect(state.timeline.filter((b) => b.kind === 'text')).toHaveLength(1)
     state = applyAgentEvent(
       state,
       'agent-event',
@@ -626,7 +641,7 @@ describe('applyAgentEvent', () => {
         payload: { name: 'output', output: report },
       }),
     )
-    expect(state.timeline.filter((b) => b.kind === 'text')).toHaveLength(0)
+    expect(state.timeline.filter((b) => b.kind === 'text')).toHaveLength(1)
     expect(finalizeAgentMessageContent(state)).toBe(report)
   })
 

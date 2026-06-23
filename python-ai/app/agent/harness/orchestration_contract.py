@@ -166,14 +166,11 @@ def plan_has_terminal_reply(calls: list[PlanToolCall]) -> bool:
 
 def is_tool_concurrency_safe(tool: str, inp: dict | None = None) -> bool:
     from app.agent.tools.registry import partition_concurrency_safe
-    import os
+    from app.config import settings
 
     raw = dict(inp or {})
     if (tool or "").strip() == "Agent":
-        flag = os.environ.get("AGENT_PARALLEL_SUBAGENTS", "").strip().lower()
-        if flag in ("1", "true", "yes", "on"):
-            return True
-        return False
+        return settings.agent_parallel_subagents
     if partition_concurrency_safe(tool, raw):
         return True
     t = find_tool_by_name(tool)
@@ -196,11 +193,11 @@ def is_tool_concurrency_safe(tool: str, inp: dict | None = None) -> bool:
 def build_main_loop_system_prompt() -> str:
     from app.agent.backend.memory_style_presets import memory_style_prompt_block
     from app.agent.harness.tool_contract import tool_contract_prompt_block
-    from app.agent.harness.visible_text_channel import visible_text_channel_prompt_block
+    from app.agent.harness.visible_text_channel import visible_text_prompt_block
     from app.agent.tools.registry import get_all_tools
 
     names = ", ".join(sorted(t.name for t in get_all_tools()))
-    channel_block = visible_text_channel_prompt_block()
+    channel_block = visible_text_prompt_block()
     contract_block = tool_contract_prompt_block()
     return f"""You are a novel-writing agent with structured API tools (not file paths).
 

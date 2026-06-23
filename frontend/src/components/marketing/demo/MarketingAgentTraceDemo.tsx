@@ -112,7 +112,7 @@ export function MarketingAgentTraceDemo({ variant }: { variant: MarketingAgentDe
         <>
           <button type="button" className={cn(DEMO_ORCH_HEADER, 'demo-orch-header')} aria-expanded>
             <span className="chevron" />
-            <span className="title">编排中 · 续写第二章</span>
+            <span className="title">执行中 · 续写第二章</span>
           </button>
           <div className={cn(DEMO_TOOL_LIST, 'demo-tool-list')}>
             <ToolRows tools={ORCH_TOOLS} />

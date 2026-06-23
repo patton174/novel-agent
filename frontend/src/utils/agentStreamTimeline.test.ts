@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest'
+import type { AgentEventEnvelope, AgentTimelineBlock } from '../types/agent'
+import { applyMessageSegmentEvent } from './messageSegment'
 import {
   appendTimelineTextDelta,
   applyTimelineEvent,
@@ -22,6 +24,26 @@ import {
   thinkRoundToolBlocks,
 } from './agentStreamTimeline'
 import type { AgentStepState } from '../types/agent'
+
+function commitMessageEvents(
+  timeline: AgentTimelineBlock[],
+  events: Array<{
+    type: string
+    step_id?: string
+    payload?: Record<string, unknown>
+  }>,
+) {
+  let seg = { messageContent: '', segmentOpen: false, timeline }
+  for (const [index, ev] of events.entries()) {
+    seg = applyMessageSegmentEvent(seg, {
+      type: ev.type,
+      sequence: index + 1,
+      step_id: ev.step_id,
+      payload: ev.payload ?? {},
+    } as AgentEventEnvelope)
+  }
+  return seg
+}
 
 describe('agentStreamTimeline', () => {
   it('interleaves text and tool blocks in order', () => {
@@ -235,7 +257,7 @@ describe('agentStreamTimeline', () => {
     timeline = applyTimelineEvent(timeline, {
       type: 'planning.next_step',
       step_id: 'step-plan',
-      payload: { title: '编排中…' },
+      payload: { title: '执行中…' },
     })
     timeline = applyTimelineEvent(timeline, {
       type: 'reasoning.started',
@@ -275,7 +297,7 @@ describe('agentStreamTimeline', () => {
     timeline = applyTimelineEvent(timeline, {
       type: 'planning.next_step',
       step_id: 'step-plan',
-      payload: { title: '编排中…' },
+      payload: { title: '执行中…' },
     })
     const units = groupTimelineUnits(timeline)
     expect(units).toHaveLength(1)
@@ -426,7 +448,7 @@ describe('agentStreamTimeline', () => {
     let timeline = applyTimelineEvent([], {
       type: 'planning.next_step',
       step_id: 'step-plan',
-      payload: { title: '编排中…' },
+      payload: { title: '执行中…' },
     })
     timeline = applyTimelineEvent(timeline, {
       type: 'reasoning.started',
@@ -461,13 +483,13 @@ describe('agentStreamTimeline', () => {
     let timeline = applyTimelineEvent([], {
       type: 'planning.next_step',
       step_id: 'step-plan',
-      payload: { title: '编排中…' },
+      payload: { title: '执行中…' },
     })
     timeline = applyTimelineEvent(timeline, {
       type: 'planning.completed',
       step_id: 'step-plan',
       payload: {
-        title: '编排中…',
+        title: '执行中…',
         tool_calls: [
           { tool: 'Glob', tool_call_id: 'call_glob' },
           { tool: 'Write', tool_call_id: 'call_write' },
@@ -486,7 +508,7 @@ describe('agentStreamTimeline', () => {
 
   it('shows orchestration overview beside done headline', () => {
     const headline = deriveOrchestrationHeadline([], [], false, true, 'done', '列举 → 写入')
-    expect(headline).toBe('编排完成 · 列举 → 写入')
+    expect(headline).toBe('执行完成 · 列举 → 写入')
   })
 
   it('deriveOrchestrationHeadline follows active tool while streaming', () => {
@@ -536,7 +558,7 @@ describe('agentStreamTimeline', () => {
     let timeline = applyTimelineEvent([], {
       type: 'planning.next_step',
       step_id: 'step-plan',
-      payload: { title: '编排中…' },
+      payload: { title: '执行中…' },
     })
     timeline = applyTimelineEvent(timeline, {
       type: 'planning.completed',
@@ -561,13 +583,13 @@ describe('agentStreamTimeline', () => {
       true,
       false,
     )
-    expect(active).toBe('编排中…')
+    expect(active).toBe('执行中…')
     const emptyActive = formatPlanningHeadline(
       { kind: 'transition', id: 't3', title: '', status: 'active' },
       true,
       false,
     )
-    expect(emptyActive).toBe('编排中…')
+    expect(emptyActive).toBe('执行中…')
   })
 
   it('ignores think.transition blocks', () => {
@@ -678,28 +700,19 @@ describe('agentStreamTimeline', () => {
     expect(delivery?.kind).toBe('segment')
   })
 
-  it('keeps trailing text inside orchestration while stream is still live', () => {
+  it('keeps open message segment in buffer until completed (not timeline)', () => {
     let timeline = applyTimelineEvent([], {
       type: 'tool.started',
       step_id: 'step-mem',
       payload: { name: 'Glob' },
     })
-    timeline = applyTimelineEvent(timeline, {
-      type: 'message.delta',
-      step_id: 'step-out',
-      payload: { text: '流式正文' },
-    })
-    const units = groupTimelineUnits(timeline, undefined, { streamFinished: false })
-    const orch = units.find((u) => u.kind === 'orchestration')
-    expect(orch?.kind).toBe('orchestration')
-    if (orch?.kind === 'orchestration') {
-      const textBlocks = orch.rounds.flatMap((round) =>
-        round.items
-          .filter((item) => item.kind === 'text')
-          .flatMap((item) => item.blocks),
-      )
-      expect(textBlocks.some((b) => b.content.includes('流式正文'))).toBe(true)
-    }
+    const seg = commitMessageEvents(timeline, [
+      { type: 'message.started', payload: {} },
+      { type: 'message.delta', step_id: 'step-out', payload: { text: '流式正文' } },
+    ])
+    const units = groupTimelineUnits(seg.timeline, undefined, { streamFinished: false })
+    expect(seg.messageContent).toContain('流式正文')
+    expect(seg.timeline.some((b) => b.kind === 'text')).toBe(false)
     expect(units.some((u) => u.kind === 'segment')).toBe(false)
   })
 
@@ -717,7 +730,7 @@ describe('agentStreamTimeline', () => {
     timeline = applyTimelineEvent(timeline, {
       type: 'planning.next_step',
       step_id: 'step-plan-2',
-      payload: { title: '编排中' },
+      payload: { title: '执行中' },
     })
     timeline = applyTimelineEvent(timeline, {
       type: 'narration.delta',
@@ -768,7 +781,7 @@ describe('agentStreamTimeline', () => {
     let timeline = applyTimelineEvent([], {
       type: 'planning.next_step',
       step_id: 'step-plan',
-      payload: { title: '编排中' },
+      payload: { title: '执行中' },
     })
     timeline = applyTimelineEvent(timeline, {
       type: 'narration.delta',
@@ -856,63 +869,79 @@ describe('agentStreamTimeline', () => {
       step_id: 'step-out',
       payload: { text: '不应覆盖' },
     })
-    const promoted = promoteTrailingNarrationToDelivery(timeline, '[交付] 已有正文')
-    expect(promoted.messageContent).toBe('[交付] 已有正文')
+    const promoted = promoteTrailingNarrationToDelivery(timeline, '已有正文')
+    expect(promoted.messageContent).toBe('已有正文')
     expect(promoted.timeline).toEqual(timeline)
   })
 
-  it('appends message.delta to timeline for chronological interleaving', () => {
-    const timeline = applyTimelineEvent([], {
-      type: 'message.delta',
-      step_id: 'step-out',
-      payload: { text: '最终回复' },
-    })
+  it('commits message segment to timeline on completed', () => {
+    const { timeline } = commitMessageEvents([], [
+      { type: 'message.started', payload: {} },
+      { type: 'message.delta', step_id: 'step-out', payload: { text: '最终回复' } },
+      { type: 'message.completed', step_id: 'step-out', payload: { delivery: true } },
+    ])
     expect(timeline).toEqual([
-      expect.objectContaining({ kind: 'text', content: '最终回复' }),
+      expect.objectContaining({ kind: 'text', content: '最终回复', delivery: true }),
     ])
   })
 
-  it('interleaves message.delta with tools on timeline', () => {
-    let timeline = applyTimelineEvent([], {
-      type: 'message.delta',
-      step_id: 'step-out',
-      payload: { text: '编排说明' },
-    })
+  it('interleaves orchestration and reply segments with tools', () => {
+    let timeline: AgentTimelineBlock[] = []
+    let seg = commitMessageEvents(timeline, [
+      { type: 'message.started', payload: {} },
+      { type: 'message.delta', step_id: 'step-out', payload: { text: '编排说明' } },
+      { type: 'message.completed', step_id: 'step-out', payload: { delivery: false } },
+    ])
+    timeline = seg.timeline
     timeline = applyTimelineEvent(timeline, {
       type: 'tool.started',
       step_id: 'step-read',
       payload: { name: 'ReadChapter' },
     })
     expect(timeline.map((b) => b.kind)).toEqual(['text', 'tool'])
-    expect(timeline[0].kind === 'text' && timeline[0].frozen).toBe(true)
-    timeline = applyTimelineEvent(timeline, {
-      type: 'message.delta',
-      step_id: 'step-out',
-      payload: { text: '交付正文' },
-    })
-    expect(timeline.map((b) => b.kind)).toEqual(['text', 'tool', 'text'])
-    expect(timeline[2].kind === 'text' && timeline[2].content).toBe('交付正文')
+    expect(timeline[0].kind === 'text' && timeline[0].delivery).toBe(false)
+    seg = commitMessageEvents(timeline, [
+      { type: 'message.started', payload: {} },
+      { type: 'message.delta', step_id: 'step-reply', payload: { text: '回复正文' } },
+      { type: 'message.completed', step_id: 'step-reply', payload: { delivery: true } },
+    ])
+    expect(seg.timeline.map((b) => b.kind)).toEqual(['text', 'tool', 'text'])
+    expect(seg.timeline[2].kind === 'text' && seg.timeline[2].content).toBe('回复正文')
+    expect(seg.timeline[2].kind === 'text' && seg.timeline[2].delivery).toBe(true)
   })
 
-  it('appends message.delta after planning transition on timeline', () => {
+  it('keeps markdown section breaks in message segment (not chapter stream leak)', () => {
+    const { timeline } = commitMessageEvents([], [
+      { type: 'message.started', payload: {} },
+      { type: 'message.delta', step_id: 'step-out', payload: { text: '## 记忆汇总\n\n' } },
+      { type: 'message.delta', step_id: 'step-out', payload: { text: '---\n\n' } },
+      { type: 'message.delta', step_id: 'step-out', payload: { text: '## 章节汇总\n' } },
+      { type: 'message.completed', step_id: 'step-out', payload: { delivery: true } },
+    ])
+    expect(timeline).toHaveLength(1)
+    expect(timeline[0].kind === 'text' && timeline[0].content).toContain('---')
+    expect(timeline[0].kind === 'text' && timeline[0].content).toContain('章节汇总')
+  })
+
+  it('appends message segment after planning transition on timeline', () => {
     let timeline = applyTimelineEvent([], {
       type: 'planning.next_step',
       step_id: 'step-plan',
-      payload: { title: '编排中' },
+      payload: { title: '执行中' },
     })
-    timeline = applyTimelineEvent(timeline, {
-      type: 'message.delta',
-      step_id: 'step-out',
-      payload: { text: '可见正文' },
-    })
-    expect(timeline.map((b) => b.kind)).toEqual(['transition', 'text'])
+    const seg = commitMessageEvents(timeline, [
+      { type: 'message.started', payload: {} },
+      { type: 'message.delta', step_id: 'step-out', payload: { text: '可见正文' } },
+      { type: 'message.completed', step_id: 'step-out', payload: { delivery: false } },
+    ])
+    expect(seg.timeline.map((b) => b.kind)).toEqual(['transition', 'text'])
   })
 
   it('extracts legacy delivery text from planning children as top-level segment', () => {
     let timeline = applyTimelineEvent([], {
       type: 'planning.next_step',
       step_id: 'step-plan',
-      payload: { title: '编排中' },
+      payload: { title: '执行中' },
     })
     timeline = applyTimelineEvent(timeline, {
       type: 'reasoning.delta',
@@ -1252,7 +1281,7 @@ describe('agentStreamTimeline', () => {
     let timeline = applyTimelineEvent([], {
       type: 'planning.next_step',
       step_id: 'step-plan',
-      payload: { title: '编排中…' },
+      payload: { title: '执行中…' },
     })
     timeline = applyTimelineEvent(timeline, {
       type: 'planning.invoking',
@@ -1260,7 +1289,7 @@ describe('agentStreamTimeline', () => {
       payload: { message: '正在调用编排模型' },
     })
     const transition = timeline.find((b) => b.kind === 'transition')
-    expect(transition?.kind === 'transition' && transition.title).toBe('编排中…')
+    expect(transition?.kind === 'transition' && transition.title).toBe('执行中…')
   })
 
   it('drops plan reasoning placeholder deltas', () => {

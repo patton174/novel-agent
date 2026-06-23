@@ -137,6 +137,9 @@ class StreamingToolExecutor:
                 continue
             yield kind, payload
             if all_done and self._queue.empty():
+                from app.agent.tools.chapter_catalog import clear_chapter_rows_cache
+
+                clear_chapter_rows_cache()
                 break
 
     async def _schedule(self) -> None:
@@ -167,11 +170,17 @@ class StreamingToolExecutor:
 
     async def _run_track(self, track: _TrackedTool) -> None:
         from app.agent.harness.loop_support import ToolStepOutcome
+        from app.agent.tools.chapter_catalog import (
+            CHAPTER_CATALOG_TOOLS,
+            prime_chapter_rows_cache,
+        )
 
         if self._discarded:
             track.status = "discarded"
             return
         item = track.item
+        if item.tool in CHAPTER_CATALOG_TOOLS:
+            await prime_chapter_rows_cache(self._working_ctx or self.ctx)
         seq = self.sequence + item.call_order * 50
         outcome = ToolStepOutcome()
         try:

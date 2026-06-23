@@ -44,7 +44,7 @@ def _chapter_body_rejection_reason(text: str) -> str | None:
     lowered = body.lower()
     for marker in _TOOL_LEAK_MARKERS:
         if marker.lower() in lowered:
-            return "正文中混入 tool_call/编排语句，请只输出小说正文"
+            return "正文中混入 tool_call/执行语句，请只输出小说正文"
     if len(body.replace("\n", "").replace(" ", "")) < _CHAPTER_MIN_BODY_CHARS:
         return f"章节正文过短（不足 {_CHAPTER_MIN_BODY_CHARS} 字），请写完整章节"
     return None

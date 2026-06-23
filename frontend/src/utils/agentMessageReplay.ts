@@ -4,6 +4,10 @@ import { isAssistantFallbackContent } from './agentTracePersist'
 import { normalizeTimelineBlockIds } from './agentStreamTimeline'
 import type { PersistableAssistantMessage } from './agentMessagePersist'
 import { repairFlattenedMarkdown } from './normalizeAgentMarkdown'
+import {
+  extractDeliveryTextFromTimeline,
+  timelineHasExplicitDelivery,
+} from './messageSegment'
 
 function timelineTextContent(timeline?: AgentTimelineBlock[]): string {
   return (timeline ?? [])
@@ -19,8 +23,12 @@ function pickRicherAssistantContent(
   local: string,
   timeline?: AgentTimelineBlock[],
 ): string {
-  const fromTimeline = timelineTextContent(timeline)
-  const candidates = [fromTimeline, local, remote].filter((c) => c.trim())
+  const fromTimeline = extractDeliveryTextFromTimeline(timeline ?? [])
+  if (fromTimeline.trim()) {
+    return repairFlattenedMarkdown(fromTimeline)
+  }
+  const fromLegacyTimeline = timelineTextContent(timeline)
+  const candidates = [fromLegacyTimeline, local, remote].filter((c) => c.trim())
   if (candidates.length === 0) {
     return remote
   }
@@ -85,6 +93,7 @@ export function ensureReplayTimeline(message: PersistableAssistantMessage): Agen
       id: `text-replay-${message.id}`,
       content: repairFlattenedMarkdown(message.content),
       frozen: true,
+      delivery: true,
     })
   }
 
@@ -146,6 +155,43 @@ export function mergeStepStatesPreferRicher(
   return [...byId.values()]
 }
 
+function preferLocalTimeline(
+  local?: AgentTimelineBlock[],
+  remote?: AgentTimelineBlock[],
+): AgentTimelineBlock[] | undefined {
+  if (!local?.length) {
+    return remote
+  }
+  if (!remote?.length) {
+    return local
+  }
+  if (timelineHasExplicitDelivery(local) && !timelineHasExplicitDelivery(remote)) {
+    return local
+  }
+  if (timelineHasExplicitDelivery(remote) && !timelineHasExplicitDelivery(local)) {
+    return remote
+  }
+  const localScore = timelineRichnessScore(local)
+  const remoteScore = timelineRichnessScore(remote)
+  return localScore >= remoteScore ? local : remote
+}
+
+function timelineRichnessScore(timeline: AgentTimelineBlock[]): number {
+  let score = timeline.length
+  for (const block of timeline) {
+    if (block.kind === 'text' || block.kind === 'narration') {
+      score += block.content.length
+      if (block.delivery !== undefined) {
+        score += 1000
+      }
+    }
+    if (block.kind === 'tool') {
+      score += 10
+    }
+  }
+  return score
+}
+
 export function mergeRemoteWithLocalTrace<T extends PersistableAssistantMessage>(
   remote: T[],
   local: T[],
@@ -180,7 +226,10 @@ export function mergeRemoteWithLocalTrace<T extends PersistableAssistantMessage>
       localHasTrace &&
       isAssistantFallbackContent(remoteMsg.content) &&
       Boolean(localMsg.content?.trim())
-    const mergedTimeline = remoteMsg.agentTimeline ?? localMsg.agentTimeline
+    const mergedTimeline =
+      preferLocalTimeline(localMsg.agentTimeline, remoteMsg.agentTimeline) ??
+      remoteMsg.agentTimeline ??
+      localMsg.agentTimeline
     const mergedContent = pickRicherAssistantContent(
       preferLocalContent ? localMsg.content : remoteMsg.content,
       localMsg.content,
@@ -195,7 +244,7 @@ export function mergeRemoteWithLocalTrace<T extends PersistableAssistantMessage>
         mergeStepStatesPreferRicher(remoteMsg.agentSteps, localMsg.agentSteps) ??
         remoteMsg.agentSteps ??
         localMsg.agentSteps,
-      agentTimeline: remoteMsg.agentTimeline ?? localMsg.agentTimeline,
+      agentTimeline: mergedTimeline,
       agentTodos: remoteMsg.agentTodos ?? localMsg.agentTodos,
       agentStreamPhase: remoteMsg.agentStreamPhase ?? localMsg.agentStreamPhase,
       agentAwaitingInteraction:

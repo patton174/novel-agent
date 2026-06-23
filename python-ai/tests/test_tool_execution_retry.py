@@ -114,3 +114,10 @@ def test_legacy_old_string_text_maps_to_code():
     )
     assert fail is True
     assert code == ToolErrorCode.OLD_STRING_NOT_FOUND
+
+
+def test_subagent_sse_events_are_live_during_tool_step():
+    from app.agent.harness.tool_execution import is_live_tool_sse_event
+
+    for event_type in ("subagent.started", "subagent.event", "subagent.progress"):
+        assert is_live_tool_sse_event({"type": event_type}) is True

@@ -6,7 +6,7 @@ from app.core.llm_stream_policy import llm_policy_for_tool
 
 # Step 元数据提交（流式后的第二次调用）
 STEP_SUBMIT_SYSTEM = (
-    "仅通过 StepResult 工具提交编排元数据。"
+    "仅通过 StepResult 工具提交步骤元数据。"
     "display.type 必须为 none（用户可见正文已由流式通道输出）。"
     "context_patch、next_input 无内容时填 {}。"
     "本步不得指定 next_tool（留空）；禁止 action=wait。"
@@ -18,7 +18,7 @@ STEP_JSON_RULES = (
     "字段：version, step_kind, action(continue|wait|end), wait_for, next_tool, "
     "next_input, context_patch, display, reason。"
     "next_input 与 context_patch 为必填对象，无内容时填 {}。"
-    "路由约定：本步 LLM 不得指定下一步工具（下一步由主循环 bind_tools 编排）。"
+    "路由约定：本步 LLM 不得指定下一步工具（下一步由主循环 bind_tools 决定）。"
     "仅当本轮应结束时：action=end，next_tool=end，next_input={}。"
     "需要用户点选/输入时：action=wait，wait_for=interaction，勿填 next_tool。"
     "其余情况：action=continue，next_tool 留空，next_input={}。"
@@ -38,7 +38,7 @@ def output_stream_system_lines() -> list[str]:
     lines = [
         "你是小说创作助手，向用户输出简体中文 Markdown（说明、进度或总结，不是小说章节）。",
         "只输出正文，不要 JSON、不要代码块包裹、不要复述系统指令。",
-        "按 Human 的 task 与【交付倾向】自主把握篇幅：进度宜短，收尾可稍详。",
+        "按 Human 的 task 与【回复倾向】自主把握篇幅：进度宜短，收尾可稍详。",
         "禁止完整章节正文（用 chapter_create / chapter_update）。",
         "勿在文末追加新的确认题（用 ask_user）。",
     ]
@@ -51,10 +51,10 @@ def output_stream_system_lines() -> list[str]:
 def chapter_stream_system_lines() -> list[str]:
     lines = [
         "你是小说章节写作助手，输出简体中文章节正文。",
-        "根据 Human 中的上下文与用户/编排意图自行决定写什么；Plan 不会提供章名或剧情提纲。",
+        "根据 Human 中的上下文与用户/任务意图自行决定写什么；Plan 不会提供章名或剧情提纲。",
         "只输出正文，不要 JSON、不要 Markdown 代码块、不要章节标题行、不要复述系统指令。",
         "禁止 Markdown 语法：不要用 # 标题、**粗体**、- 列表、反引号代码；只写纯中文小说段落。",
-        "禁止输出 tool_call / <invoke> /「正在调用 chapter_*」等编排语句；"
+        "禁止输出 tool_call / <invoke> /「正在调用 chapter_*」等执行语句；"
         "需要 list/read/delete 由主循环另开一轮，本步只写小说正文。",
         "每个自然段首行缩进两个全角空格（　　），段间空一行；这是硬性排版要求。",
     ]

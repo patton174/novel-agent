@@ -83,6 +83,7 @@ class Settings(BaseSettings):
     agent_autocompact_max_input_chars: int = 90_000
     agent_subagent_max_turns: int = 20
     agent_subagent_max_depth: int = 1
+    agent_parallel_subagents: bool = True
     agent_durable_checkpoint: bool = False
     agent_relevance_inject: bool = False
     agent_warmup_enabled: bool = True

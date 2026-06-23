@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 import {
+  CC_BRANCH_CONTENT,
   CC_TOOL_MAIN,
   CC_TOOL_ROW_WRAP,
   THINK_HEADLINE_ROW,
@@ -67,12 +68,21 @@ export function TimelineInsightRow({
         ) : null}
 
         {body ? (
-          <TimelineBranchRow
-            variant={inThinkRound ? 'insight-in-round' : 'insight-standalone'}
-            testId={testId ? `${testId}-branch` : undefined}
-          >
-            {body}
-          </TimelineBranchRow>
+          inThinkRound ? (
+            <div
+              className={cn('pl-[calc(1.35rem+0.4rem)]', CC_BRANCH_CONTENT)}
+              data-testid={testId ? `${testId}-body` : undefined}
+            >
+              {body}
+            </div>
+          ) : (
+            <TimelineBranchRow
+              variant="insight-standalone"
+              testId={testId ? `${testId}-branch` : undefined}
+            >
+              {body}
+            </TimelineBranchRow>
+          )
         ) : null}
       </div>
     </div>

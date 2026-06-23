@@ -40,6 +40,73 @@ export function stripSubagentSummaryDuplicate(
   return filtered.join('\n').replace(/\n{3,}/g, '\n\n').trim()
 }
 
+import type { AgentSubagentLogEntry } from '../types/agent'
+
+/** 编排区内已展示的思考/推理正文（用于去重外部交付） */
+export function collectSubagentOrchestrationProse(
+  logs: AgentSubagentLogEntry[],
+  thinkText?: string,
+): string {
+  const parts: string[] = []
+  const seen = new Set<string>()
+  const push = (raw: string | undefined) => {
+    const text = raw?.trim() ?? ''
+    if (!text || seen.has(text)) {
+      return
+    }
+    seen.add(text)
+    parts.push(text)
+  }
+  push(thinkText)
+  for (const log of logs) {
+    if (log.phase === 'reasoning') {
+      push(log.excerpt)
+    }
+  }
+  return parts.join('\n\n').trim()
+}
+
+function stripLeadingOrchestrationOverlap(
+  delivery: string,
+  orchestrationProse: string,
+): string {
+  const body = delivery.trim()
+  const orch = orchestrationProse.trim()
+  if (!body || !orch) {
+    return body
+  }
+  if (body === orch) {
+    return ''
+  }
+  if (body.startsWith(orch)) {
+    const rest = body.slice(orch.length).replace(/^\s+/, '')
+    return rest || body
+  }
+  const orchParas = orch.split(/\n\n+/).map((p) => p.trim()).filter(Boolean)
+  const lastPara = orchParas[orchParas.length - 1]
+  if (lastPara && lastPara.length >= 24 && body.startsWith(lastPara)) {
+    const rest = body.slice(lastPara.length).replace(/^\s+/, '')
+    if (rest) {
+      return rest
+    }
+  }
+  return body
+}
+
+/**
+ * 子 Agent 编排层外的交付正文：去掉与编排思考重复的前缀，避免展开编排时与外部正文重复。
+ */
+export function extractSubagentTrailingDelivery(
+  summary: string | undefined,
+  orchestrationProse: string,
+): string {
+  const raw = summary?.trim() ?? ''
+  if (!raw) {
+    return ''
+  }
+  return stripLeadingOrchestrationOverlap(raw, orchestrationProse)
+}
+
 /** 子代理 Markdown 摘要正文；strip 为空时回退原始 preview */
 export function resolveSubagentSummaryBody(
   summaryPreview: string | undefined,

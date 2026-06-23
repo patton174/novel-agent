@@ -174,7 +174,7 @@ async def test_stream_bind_tools_visible_text_after_tool_start_forwards_message(
 
 
 @pytest.mark.asyncio
-async def test_stream_bind_tools_orchestration_prefix_stripped_in_message():
+async def test_stream_bind_tools_orchestration_prefix_passes_through_in_message():
     chunk1 = AIMessageChunk(content="[编排]\n\n")
     chunk2 = AIMessageChunk(content="- **Glob** 列章\n")
     chunk3 = AIMessageChunk(
@@ -196,16 +196,15 @@ async def test_stream_bind_tools_orchestration_prefix_stripped_in_message():
 
     assert "message.delta" in types
     assert "narration.delta" not in types
-    assert "[编排]" not in message_text
+    assert "[编排]" in message_text
     assert "Glob" in message_text
 
 
 @pytest.mark.asyncio
-async def test_stream_bind_tools_delivery_prefix_streams_message():
-    chunk1 = AIMessageChunk(content="[交付]\n\n")
-    chunk2 = AIMessageChunk(content="你好！**欢迎**回来。")
+async def test_stream_bind_tools_visible_text_passes_through_unchanged():
+    chunk1 = AIMessageChunk(content="你好！**欢迎**回来。")
     llm = MagicMock()
-    llm.astream = lambda _messages: _async_iter([chunk1, chunk2])
+    llm.astream = lambda _messages: _async_iter([chunk1])
 
     types: list[str] = []
     message_text = ""
@@ -219,7 +218,6 @@ async def test_stream_bind_tools_delivery_prefix_streams_message():
 
     assert "message.delta" in types
     assert "message.completed" in types
-    assert "[交付]" not in message_text
     assert "欢迎" in message_text
 
 
@@ -262,6 +260,51 @@ async def test_stream_bind_tools_orchestration_final_turn_emits_message():
     assert "message.delta" in types
     assert "message.completed" in types
     assert "narration.delta" not in types
+
+
+@pytest.mark.asyncio
+async def test_stream_bind_tools_with_tools_emits_completed_delivery_false_before_tools():
+    chunk1 = AIMessageChunk(content="我来帮你了解这本书的现状。")
+    chunk2 = AIMessageChunk(
+        content="",
+        tool_call_chunks=[{"name": "Glob", "args": "{}", "id": "c1", "index": 0}],
+    )
+    llm = MagicMock()
+    llm.astream = lambda _messages: _async_iter([chunk1, chunk2])
+
+    events: list[dict] = []
+    async for item in stream_bind_tools_turn(
+        llm, [], ctx=_ctx(), planning_step_id="step_p", sequence=0
+    ):
+        if not isinstance(item, AIMessage):
+            events.append(item)
+
+    types = [str(e.get("type")) for e in events]
+    completed = [e for e in events if e.get("type") == "message.completed"]
+    assert completed
+    assert completed[0].get("payload", {}).get("delivery") is False
+    tool_idx = next(i for i, t in enumerate(types) if t.startswith("tool."))
+    completed_idx = types.index("message.completed")
+    assert completed_idx < tool_idx
+
+
+@pytest.mark.asyncio
+async def test_stream_bind_tools_terminal_emits_completed_delivery_true():
+    chunk1 = AIMessageChunk(content="你好，")
+    chunk2 = AIMessageChunk(content="欢迎回来。")
+    llm = MagicMock()
+    llm.astream = lambda _messages: _async_iter([chunk1, chunk2])
+
+    events: list[dict] = []
+    async for item in stream_bind_tools_turn(
+        llm, [], ctx=_ctx(), planning_step_id="step_p", sequence=0
+    ):
+        if not isinstance(item, AIMessage):
+            events.append(item)
+
+    completed = [e for e in events if e.get("type") == "message.completed"]
+    assert len(completed) == 1
+    assert completed[0].get("payload", {}).get("delivery") is True
 
 
 async def _async_iter(items):

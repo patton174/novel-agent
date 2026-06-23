@@ -11,7 +11,7 @@ describe('orchestrationCompletedTitle', () => {
   it('formats parallel partition batch', () => {
     expect(
       orchestrationCompletedTitle({
-        title: '编排中…',
+        title: '执行中…',
         tool_calls: [{ tool: 'Read' }, { tool: 'Glob' }],
         partition: [{ parallel: true, tools: ['Read', 'Glob'] }],
       }),

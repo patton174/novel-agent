@@ -54,14 +54,14 @@ function deriveCurrentStep(
     .reverse()
     .find((log) => log.phase === 'reasoning' && log.reasoningOpen)
   if (openReasoning) {
-    return '编排中…'
+    return '执行中…'
   }
 
   const visible = visibleSubagentLogs(subagent.logs)
   const last = visible[visible.length - 1]
   if (last) {
     if (last.phase === 'turn') {
-      return '编排中…'
+      return '执行中…'
     }
     if (last.phase === 'tool_started' || last.status === 'started') {
       return formatSubagentLogLabel(last)
@@ -79,7 +79,7 @@ function deriveCurrentStep(
   }
 
   if (subagent.thinkText?.trim()) {
-    return '编排中…'
+    return '执行中…'
   }
 
   return runActive ? '启动中…' : null

@@ -66,6 +66,49 @@ def test_repair_inserts_missing_tool_results():
     assert len(fixed) == 5
     assert isinstance(fixed[4], ToolMessage)
     assert fixed[4].tool_call_id == "call_b"
+    assert "未配对" in str(fixed[4].content)
+
+
+def test_seal_tool_results_after_partial_batch():
+    messages = [
+        SystemMessage(content="s"),
+        HumanMessage(content="h"),
+        AIMessage(
+            content="",
+            tool_calls=[
+                {"name": "ReadMemory", "args": {}, "id": "m1", "type": "tool_call"},
+                {"name": "ReadMemory", "args": {}, "id": "m2", "type": "tool_call"},
+            ],
+        ),
+        ToolMessage(content="body", tool_call_id="m1"),
+    ]
+    from app.agent.harness.message_history import seal_tool_results_for_last_assistant
+
+    assert seal_tool_results_for_last_assistant(messages) is True
+    assert messages[4].tool_call_id == "m2"
+    assert "未配对" in str(messages[4].content)
+
+
+def test_repair_does_not_flush_pending_on_human_between_ai_and_tools():
+    """HumanMessage between AI and ToolMessages must not synthesize early."""
+    messages = [
+        SystemMessage(content="s"),
+        HumanMessage(content="h"),
+        AIMessage(
+            content="",
+            tool_calls=[
+                {"name": "ReadMemory", "args": {}, "id": "m1", "type": "tool_call"},
+                {"name": "ReadMemory", "args": {}, "id": "m2", "type": "tool_call"},
+            ],
+        ),
+        HumanMessage(content="compact summary or batch ack"),
+        ToolMessage(content="body1", tool_call_id="m1"),
+        ToolMessage(content="body2", tool_call_id="m2"),
+    ]
+    fixed, repaired = repair_tool_message_pairing(messages)
+    assert repaired is False
+    assert len(fixed) == len(messages)
+    assert all("未配对" not in str(m.content) for m in fixed if isinstance(m, ToolMessage))
 
 
 def test_repair_drops_orphan_tool_messages():

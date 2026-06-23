@@ -30,6 +30,7 @@ export function CcToolRow({
   iconName,
   iconStatus,
   inlineResult,
+  headlineOnClick,
 }: {
   name: string
   phaseActive?: boolean
@@ -46,13 +47,15 @@ export function CcToolRow({
   iconStatus?: ToolVisualStatus
   /** 标题行内联结果（产出摘要），与工具名、状态同一行展示 */
   inlineResult?: string | null
+  /** 点击标题（非折叠模式） */
+  headlineOnClick?: () => void
 }) {
   const interactive = collapsible && Boolean(onToggle)
   const displayName = translateToolDisplayName(name)
   const trimmedInline = inlineResult?.trim() || ''
   const hasDetailBranch = Boolean(branch || children)
-  const showBranchArea = Boolean(hasDetailBranch)
-  const showOptionalDetail = Boolean(expanded && (branch || children))
+  const showOptionalDetail = Boolean(expanded && hasDetailBranch)
+  const showBranchArea = showOptionalDetail
 
   const metaLine = phaseActive ? (
     <span className={ORCH_STEP_META} data-testid={testId ? `${testId}-meta` : undefined}>
@@ -105,20 +108,25 @@ export function CcToolRow({
     >
       {titleLine}
     </button>
+  ) : headlineOnClick ? (
+    <button
+      type="button"
+      className={CC_TOOL_HEADLINE_BUTTON}
+      onClick={headlineOnClick}
+      data-testid={testId ? `${testId}-headline` : undefined}
+    >
+      {titleLine}
+    </button>
   ) : (
     <div className={TOOL_HEADLINE_STATIC}>{titleLine}</div>
   )
 
   const branchBody = showBranchArea ? (
     <>
-      {showOptionalDetail ? (
-        <>
-          {branch}
-          {children}
-        </>
-      ) : null}
+      {branch}
+      {children}
     </>
-  ) : null
+  ) : undefined
 
   const leadIcon = iconName ? (
     <TimelineLeadIcon

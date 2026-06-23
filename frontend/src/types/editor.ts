@@ -41,6 +41,9 @@ export interface EditorMessage {
   /** TodoWrite 合并后的任务清单（消息顶栏固定展示） */
   agentTodos?: AgentTodoItem[]
   agentContextUsage?: AgentContextUsage
+  /** 流式段缓冲（message.completed 前；不落盘 sessionStorage） */
+  agentStreamingContent?: string
+  agentSegmentOpen?: boolean
 }
 
 export interface EditorChatSession {

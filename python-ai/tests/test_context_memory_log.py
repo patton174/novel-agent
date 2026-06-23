@@ -2,6 +2,7 @@
 
 from app.agent.context.memory_log import (
     append_memory_op_log,
+    append_memory_read_record,
     format_character_roster_for_plan,
     format_memory_ops_for_plan,
     update_character_roster,
@@ -39,3 +40,27 @@ def test_character_roster_survives_world_read():
     assert "唐云" in line
     assert "苏夜" in line
     assert "女主" not in line
+
+
+def test_memory_reads_session_keeps_parallel_read_ids():
+    patch = append_memory_read_record(
+        {},
+        memory_id="mem-a",
+        scope="world",
+        title="力量体系",
+    )
+    patch = append_memory_read_record(
+        patch,
+        memory_id="mem-b",
+        scope="character",
+        title="主角",
+    )
+    reads = patch.get("memory_reads_session")
+    assert isinstance(reads, list)
+    assert len(reads) == 2
+    assert reads[0]["memory_id"] == "mem-a"
+    assert reads[1]["memory_id"] == "mem-b"
+    assert patch["last_memory_read"]["memory_id"] == "mem-b"
+    ops = patch.get("memory_ops_log")
+    assert isinstance(ops, list)
+    assert len(ops) == 2

@@ -109,6 +109,18 @@ function stripHorizontalWhitespaceEnds(value: string): string {
     .replace(/[ \t\u00a0\f\v\u3000]+$/u, '')
 }
 
+/**
+ * WriteChapter 流式正文误灌 chat 的特征（非 Markdown 普通 `---` 分隔线）。
+ * 须同时命中 title + ---，或明确的「已写入《…》」长段，避免误杀汇总 Markdown。
+ */
+export function isWriteChapterStreamLeak(text: string): boolean {
+  const raw = text || ''
+  if (raw.includes('已写入《') && raw.length > 120) {
+    return true
+  }
+  return /^title:\s/m.test(raw) && /^---\s*$/m.test(raw)
+}
+
 /** 流式正文片段：丢弃思考块与提示词复述 */
 export function sanitizeMessageDeltaChunk(text: string): string {
   if (!text) {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { appendMessageDeltaContent, sanitizeMessageDeltaChunk } from './sanitizeAgentText'
+import { appendMessageDeltaContent, isWriteChapterStreamLeak, sanitizeMessageDeltaChunk } from './sanitizeAgentText'
 
 describe('sanitizeMessageDeltaChunk', () => {
   it('drops open thinking block chunks', () => {
@@ -22,6 +22,12 @@ describe('sanitizeMessageDeltaChunk', () => {
 
   it('passes through newline-only chunks for paragraph breaks', () => {
     expect(sanitizeMessageDeltaChunk('\n\n')).toBe('\n\n')
+  })
+
+  it('does not treat markdown horizontal rules as chapter stream leak', () => {
+    expect(isWriteChapterStreamLeak('---')).toBe(false)
+    expect(isWriteChapterStreamLeak('\n---\n\n## 汇总\n')).toBe(false)
+    expect(isWriteChapterStreamLeak('title: 第一章\n---\n\n正文')).toBe(true)
   })
 
   it('appendMessageDeltaContent preserves paragraph breaks across chunks', () => {

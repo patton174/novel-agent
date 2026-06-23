@@ -120,7 +120,14 @@ export interface AgentSubagentState {
   /** 子 Agent 编排推理（对齐主 Agent reasoning / 思考块） */
   thinkText?: string
   logs: AgentSubagentLogEntry[]
+  /** 与主 Agent 对齐的子 run 时间线（subagent.event → applyTimelineEvent） */
+  timeline?: AgentTimelineBlock[]
+  /** 子 run 工具 step 状态，供 TimelineToolBlock 渲染 */
+  childStepStates?: AgentStepState[]
   summaryPreview?: string
+  /** 子 run 流式段缓冲（message.delta，completed 后清空） */
+  messageContent?: string
+  segmentOpen?: boolean
   error?: string
 }
 
@@ -193,6 +200,8 @@ export interface AgentStreamUiState {
   streamPaused?: boolean
   /** Claude Code 风格上下文占用 */
   contextUsage?: AgentContextUsage
+  /** 当前 message 段是否已 started 且未 completed */
+  segmentOpen?: boolean
 }
 
 export type AgentTimelineBlock =
@@ -208,8 +217,8 @@ export type AgentTimelineBlock =
       /** 关联的 choose / ask_user 工具 step */
       stepId?: string
     }
-  | { kind: 'text'; id: string; content: string; frozen: boolean }
-  | { kind: 'narration'; id: string; content: string; frozen: boolean }
+  | { kind: 'text'; id: string; content: string; frozen: boolean; delivery?: boolean }
+  | { kind: 'narration'; id: string; content: string; frozen: boolean; delivery?: boolean }
 
 export type ThinkIntensity = 'light' | 'medium' | 'deep'
 

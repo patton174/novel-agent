@@ -91,14 +91,11 @@ def _trees_from_context_patch(ctx: AgentRunContext) -> dict[str, dict[str, Any]]
 
 
 def load_all_memory_trees(ctx: AgentRunContext) -> dict[str, dict[str, Any]]:
-    """Prefer Java-assembled index; else one /tree-index HTTP call; 15s process cache."""
-    preloaded = _trees_from_context_patch(ctx)
-    if preloaded is not None and _trees_have_nodes(preloaded):
-        return preloaded
-
+    """Prefer live /tree-index HTTP; fall back to context_patch only when fetch is empty."""
     nid = _novel_id(ctx)
     if not nid or ctx.user_id <= 0:
-        return {}
+        preloaded = _trees_from_context_patch(ctx)
+        return preloaded if preloaded is not None else {}
 
     key = (ctx.user_id, nid)
     now = time.monotonic()
@@ -107,6 +104,14 @@ def load_all_memory_trees(ctx: AgentRunContext) -> dict[str, dict[str, Any]]:
         return cached[1]
 
     trees = fetch_all_memory_trees_sync(ctx)
+    if _trees_have_nodes(trees):
+        _trees_cache[key] = (now, trees)
+        return trees
+
+    preloaded = _trees_from_context_patch(ctx)
+    if preloaded is not None and _trees_have_nodes(preloaded):
+        return preloaded
+
     _trees_cache[key] = (now, trees)
     return trees
 

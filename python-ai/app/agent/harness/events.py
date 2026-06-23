@@ -422,7 +422,7 @@ def emit_display_events(
                 message_id=message_id,
                 step_id=message_step_id,
                 sequence=sequence,
-                payload={"role": "assistant"},
+                payload={"role": "assistant", "delivery": True},
             )
         )
         sequence += 1
@@ -451,7 +451,7 @@ def emit_display_events(
                 message_id=message_id,
                 step_id=message_step_id,
                 sequence=sequence,
-                payload={"role": "assistant"},
+                payload={"role": "assistant", "delivery": True},
             )
         )
         sequence += 1

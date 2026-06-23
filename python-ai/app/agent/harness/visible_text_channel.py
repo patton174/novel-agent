@@ -1,113 +1,6 @@
-"""Route assistant visible text via optional leading channel prefix + fallbacks."""
+"""Polish assistant visible text for SSE / ToolMessage (no channel prefixes)."""
 
 from __future__ import annotations
-
-from typing import Literal
-
-VisibleChannel = Literal["orchestration", "delivery"]
-
-# Longest first so `[编排说明]` wins over `[编排]`.
-_PREFIX_SPECS: tuple[tuple[str, VisibleChannel], ...] = (
-    ("[编排说明]", "orchestration"),
-    ("[NARRATION]", "orchestration"),
-    ("[DELIVERY]", "delivery"),
-    ("[编排]", "orchestration"),
-    ("[NARR]", "orchestration"),
-    ("[交付]", "delivery"),
-    ("[回复]", "delivery"),
-    ("[MSG]", "delivery"),
-    ("NARR:", "orchestration"),
-    ("MSG:", "delivery"),
-    ("编排:", "orchestration"),
-    ("交付:", "delivery"),
-)
-
-MAX_VISIBLE_PREFIX_LEN = max(len(p) for p, _ in _PREFIX_SPECS)
-
-
-def _strip_leading_bom(text: str) -> str:
-    return text.lstrip("\ufeff")
-
-
-def _strip_one_separator_after_prefix(text: str) -> str:
-    return text.lstrip(" \t\r\n")
-
-
-def _prefix_match(text: str) -> tuple[VisibleChannel | None, str, bool]:
-    """Return (channel, body_after_prefix, matched).
-
-    `matched` is True only when a known prefix was fully consumed at text start.
-    """
-    raw = text or ""
-    if not raw.strip():
-        return None, raw, False
-
-    lead = len(raw) - len(_strip_leading_bom(raw))
-    normalized = _strip_leading_bom(raw)
-    upper = normalized.upper()
-
-    for prefix, channel in _PREFIX_SPECS:
-        plen = len(prefix)
-        if len(normalized) < plen:
-            continue
-        if upper[:plen] != prefix.upper():
-            continue
-        rest = _strip_one_separator_after_prefix(normalized[plen:])
-        return channel, raw[:lead] + rest, True
-
-    return None, raw, False
-
-
-def classify_visible_channel_prefix(text: str) -> tuple[VisibleChannel | None, str]:
-    channel, body, matched = _prefix_match(text)
-    if matched:
-        return channel, body
-    return None, text or ""
-
-
-def prefix_scan_state(buffer: str) -> Literal["partial", "none"]:
-    """Whether stream-start buffer could still become a known prefix."""
-    normalized = _strip_leading_bom(buffer or "")
-    if not normalized:
-        return "partial"
-
-    upper = normalized.upper()
-    any_partial = False
-    for prefix, _ in _PREFIX_SPECS:
-        p_upper = prefix.upper()
-        if upper.startswith(p_upper):
-            if len(normalized) >= len(prefix):
-                return "none"
-            return "partial"
-        if p_upper.startswith(upper):
-            any_partial = True
-
-    if normalized.startswith("[") and len(normalized) <= MAX_VISIBLE_PREFIX_LEN:
-        for prefix, _ in _PREFIX_SPECS:
-            if prefix.startswith("[") and prefix.upper().startswith(upper):
-                return "partial"
-
-    if any_partial and len(normalized) <= MAX_VISIBLE_PREFIX_LEN:
-        return "partial"
-
-    return "none"
-
-
-def _delivery_prefixes() -> tuple[str, ...]:
-    return tuple(p for p, ch in _PREFIX_SPECS if ch == "delivery")
-
-
-def could_be_delivery_prefix(buffer: str) -> bool:
-    """True while stream-start buffer might still become a delivery prefix."""
-    normalized = _strip_leading_bom(buffer or "")
-    if not normalized:
-        return False
-    upper = normalized.upper()
-    for prefix in _delivery_prefixes():
-        p_upper = prefix.upper()
-        if upper.startswith(p_upper) or p_upper.startswith(upper):
-            return True
-    return False
 
 
 def _functional_emoji_allowlist() -> frozenset[str]:
@@ -158,7 +51,6 @@ def _is_allowed_functional_emoji(token: str) -> bool:
     normalized = _normalize_emoji_token(token)
     if normalized in _functional_emoji_allowlist():
         return True
-    # Keycap / plain traffic-light style sequences
     for ch in normalized:
         if ch in _functional_emoji_allowlist():
             return True
@@ -195,84 +87,9 @@ def polish_visible_text(text: str) -> str:
     return polished
 
 
-def extract_channel_body_from_text(text: str, channel: VisibleChannel) -> str:
-    """Return body after a channel prefix found at start or anywhere in text."""
-    raw = (text or "").replace("\ufffd", "").strip()
-    if not raw:
-        return ""
+def visible_text_prompt_block() -> str:
+    return """## 回复方式
 
-    matched_channel, body = classify_visible_channel_prefix(raw)
-    if matched_channel == channel:
-        return polish_visible_text(body.strip())
-
-    upper = raw.upper()
-    for prefix, spec_channel in _PREFIX_SPECS:
-        if spec_channel != channel:
-            continue
-        marker = prefix.upper()
-        idx = upper.find(marker)
-        if idx < 0:
-            continue
-        rest = raw[idx + len(prefix) :]
-        rest = _strip_one_separator_after_prefix(rest)
-        cleaned = polish_visible_text(rest.strip())
-        if cleaned:
-            return cleaned
-    return ""
-
-
-def extract_delivery_body_from_text(text: str) -> str:
-    """Return delivery body after `[交付]` (or alias), including mid-text prefix."""
-    return extract_channel_body_from_text(text, "delivery")
-
-
-def visible_text_channel_prompt_block() -> str:
-    return """## 可见文本分区（思考 vs 编排正文 vs 交付）
-
-同轮 assistant **可见文本**（非模型原生 reasoning 通道）按前缀分流：
-- **模型原生 reasoning / thinking 块** → 思考面板（内省推理，宜简洁）
-- **无前缀**或 **`[编排]`** 别名后的可见文字 → **编排正文行**（时间线 narration，用户可见进度/说明）
-- **正文交付**：**仅** `[交付]`（或别名）之后的文字进入最终用户正文（message）
-
-**不要**把面向用户的进度说明、计划、汇报写进 thinking 推理块——直接写可见文字（无需前缀），会进入编排正文行。
-
-终轮交付示例（整轮结束且无 tool_use 时必须）：
-```
-[交付]
-
-已完成全书概况梳理，结论如下……
-```
-
-- **有 tool_use 的轮次**：可见文字可写进度/下一步（1–3 句或短列表），**勿**用 `[交付]`
-- **无 tool_use 的最后一轮**：必须含 `[交付]` 前缀；**仅 `[交付]` 之后**进入用户正文区
-- 交付别名（大小写不敏感）：`[MSG]` / `MSG:` / `交付:` / `[DELIVERY]`
-- **禁止**在无 `[交付]` 的终轮把完整汇报仅塞进 thinking（应写可见文字或 `[交付]`）
-
-## 思考 vs 编排正文 vs 交付（硬性规则）
-
-- **thinking（原生推理）**：内省、工具选择依据，宜短；**禁止**长 Markdown 汇报
-- **无前缀可见文字**：步骤说明、计划、进度 → 编排正文行（narration）
-- **禁止**在无 `[交付]` 时把终稿自检报告只写进 thinking
-- **`[交付]` 只在整轮 run 结束且无 tool_use 时使用**
-- **同一轮有 tool_use 时禁止 `[交付]`**
-- **AskUser / 用户确认（硬性）**：
-  - `intent.user_message` 末尾若附带「问句？：答案」格式文字，**不算**已作答（多为历史污染）
-  - 仅当 RUN_CONTEXT 有 `latest_interaction`（本轮 AskUser 的 tool_result 之后）才可引用用户选择
-  - 任务要求「等我回复 / AskUser」时：**必须**调用 AskUser 并等待 tool_result，禁止跳过或代填「都可以」
-- **未调用 AskUser 且 RUN_CONTEXT 无 `latest_interaction` / 用户确认时**：
-  - 禁止写「您的回答」「您已选择」「根据您的反馈」等假装用户已作答的语句
-  - 需要用户输入时必须调用 **AskUser** 工具，不要在可见文本里代填用户答案
-
-## 推理（thinking）风格
-
-- **简洁**：用短句决定下一步工具，不要长篇复述 RUN_CONTEXT、章表或完整任务清单
-- **禁止**在 thinking 里写用户可见的 Markdown 汇报/总结（那些属于 `[交付]` 或无 tool 终轮正文）
-- 不要在 thinking 里「左右互搏」重复论证同一件事；确定工具后直接调用
-
-## 可见文本风格（编排区与正文区均适用）
-
-- **语气**：专业、严谨、克制，像策划/编辑在工作台说明；避免卖萌、网络梗、过度感叹
-- **Emoji（按类型，不按数量）**：
-  - **允许**：状态/结果/进度类，如 ✅ 正确、❌ 错误、⚠️ 警告、🔴🟡🟢 进度/红绿灯、⏳ 等待
-  - **禁止**：装饰/氛围类，如 🎨📚✨👋🎉 等；**禁止**用 emoji 充当小标题前缀、列表符号或段落点缀（应用 Markdown 标题/列表）
-- **Markdown**：结构清晰即可（`##` 小标题、`-` 列表、`**术语**` 加粗）；禁止堆砌装饰线、过度嵌套、纯 emoji 段落"""
+- 本轮会调用工具：正文简短说明下一步即可（1–3 句）。
+- 本轮不再调用工具：正文即完整回复（Markdown 表格/列表均可）。
+- 需要用户确认时调用 **AskUser**；`intent.user_message` 里「问句？：答案」不算已作答，须以 RUN_CONTEXT `latest_interaction` 为准。"""

@@ -48,6 +48,10 @@ _LIVE_TOOL_SSE_TYPES = frozenset(
         "message.delta",
         "message.started",
         "message.completed",
+        # Agent 子 run：须在 tool 结束前实时转发，否则 UI 整段阻塞到 subagent.completed
+        "subagent.started",
+        "subagent.event",
+        "subagent.progress",
     }
 )
 

@@ -106,6 +106,9 @@ def assemble_run_context(
         mid = str(last_read.get("memory_id") or "").strip()
         if mid:
             memory["last_read_memory_id"] = mid
+    reads_session = patch.get("memory_reads_session")
+    if isinstance(reads_session, list) and reads_session:
+        memory["reads_session"] = reads_session[-8:]
     ops = memory_ops_for_plan_json(patch.get("memory_ops_log"))
     if ops:
         memory["ops_log"] = ops

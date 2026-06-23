@@ -10,8 +10,12 @@ import {
 import { formatRunToolStats, formatRunToolStatsCompact } from './agentToolStats'
 import { isHiddenUiTool } from './agentHiddenTools'
 import { isAskUserTool } from './agentToolNames'
-import { sanitizeMessageDeltaChunk, sanitizeThinkText } from './sanitizeAgentText'
+import { sanitizeMessageDeltaChunk, sanitizeThinkText, isWriteChapterStreamLeak } from './sanitizeAgentText'
 import { isToolErrorLikeText } from './toolErrorText'
+import {
+  collectDeliveryBlockIds,
+  timelineHasExplicitDelivery,
+} from './messageSegment'
 
 export { PLANNING_GENERIC_TITLES } from './agentOrchestration'
 
@@ -194,7 +198,7 @@ export function appendTextDelta(timeline: AgentTimelineBlock[], delta: string): 
 
 /**
  * 终轮无 tool_use 时：最后一个 tool 之后的 narration/text 视为交付正文，
- * 从编排时间线剥离并写入 messageContent（仅当尚无 [交付] message.delta 时）。
+ * 从编排时间线剥离并写入 messageContent（仅当尚无 message.delta 正文时）。
  */
 export function promoteTrailingNarrationToDelivery(
   timeline: AgentTimelineBlock[],
@@ -265,7 +269,7 @@ export function appendNarrationDelta(
 }
 
 /** 编排 LLM 占位文案，不写入 reasoning 正文 */
-const PLAN_REASONING_PLACEHOLDER = /^(?:正在调用编排模型|正在编排)[….]*\s*$|^第\s*\d+\s*次重试编排[….]*\s*$/u
+const PLAN_REASONING_PLACEHOLDER = /^(?:正在调用模型|正在执行|正在调用编排模型|正在编排)[….]*\s*$|^第\s*\d+\s*次重试(?:执行|编排)[….]*\s*$/u
 
 function isPlanReasoningPlaceholder(delta: string): boolean {
   return PLAN_REASONING_PLACEHOLDER.test(delta.trim())
@@ -579,7 +583,7 @@ export function applyTimelineEvent(
     const title =
       typeof event.payload.title === 'string' && event.payload.title
         ? event.payload.title
-        : '编排中…'
+        : '执行中…'
     const lastTransitionIdx = findLastIndex(timeline, (b) => b.kind === 'transition')
     let next: AgentTimelineBlock[]
     if (lastTransitionIdx >= 0) {
@@ -772,21 +776,7 @@ export function applyTimelineEvent(
     return timeline.filter((_, idx) => idx !== lastNarrIdx)
   }
 
-  if (type === 'message.delta') {
-    const raw = typeof event.payload.text === 'string' ? event.payload.text : ''
-    const text = sanitizeMessageDeltaChunk(raw)
-    if (!text) {
-      return timeline
-    }
-    const chapterLeak =
-      /^title:\s/m.test(text) ||
-      /^---\s*$/m.test(text) ||
-      (text.includes('已写入《') && text.length > 120)
-    if (chapterLeak) {
-      return timeline
-    }
-    return appendTextDelta(timeline, text)
-  }
+  // message.started / message.delta / message.completed → messageSegment.ts（applyAgentEvent）
 
   return dedupeToolTimelineBlocks(timeline)
 }
@@ -992,18 +982,18 @@ export function formatPlanningHeadline(
     transition.status === 'active' && streamLive && !streamFinished
   if (active) {
     if (!raw || generic) {
-      return '编排中…'
+      return '执行中…'
     }
     return raw
   }
   if (transition.status === 'done') {
     if (!raw || generic) {
-      return '编排完成'
+      return '执行完成'
     }
     return raw
   }
   if (!raw || generic) {
-    return '编排'
+    return '执行'
   }
   return raw
 }
@@ -1141,10 +1131,13 @@ function segmentShouldWrapAsPlanning(
   return false
 }
 
-/** 最后一个工具之后连续的 text/narration（终轮交付正文，不含编排过程叙述） */
+/** 回复正文块 id：优先 SSE delivery 标记，旧时间线 fallback 到最后一个 tool 之后 */
 export function collectTrailingDeliveryBlockIds(
   timeline: AgentTimelineBlock[],
 ): Set<string> {
+  if (timelineHasExplicitDelivery(timeline)) {
+    return collectDeliveryBlockIds(timeline)
+  }
   if (timeline.length === 0) {
     return new Set()
   }
@@ -1197,6 +1190,9 @@ function collectGlobalDeliveryBlockIds(
   timeline: AgentTimelineBlock[],
   streamFinished?: boolean,
 ): Set<string> {
+  if (timelineHasExplicitDelivery(timeline)) {
+    return collectDeliveryBlockIds(timeline)
+  }
   if (!streamFinished) {
     return new Set()
   }
@@ -1430,11 +1426,11 @@ export function deriveOrchestrationHeadline(
     if (status === 'done' && !toolsStillRunning) {
       const overview = completedOverview?.trim()
       if (overview && !PLANNING_GENERIC_TITLES.has(overview)) {
-        return `编排完成 · ${overview}`
+        return `执行完成 · ${overview}`
       }
-      return '编排完成'
+      return '执行完成'
     }
-    return '编排'
+    return '执行'
   }
 
   const toolHeadline = deriveActiveToolHeadlineFromRounds(rounds, stepStates)
@@ -1450,7 +1446,7 @@ export function deriveOrchestrationHeadline(
     return '成稿中…'
   }
 
-  return '编排中…'
+  return '执行中…'
 }
 
 function findLastAnsweredInteractionToolIndex(

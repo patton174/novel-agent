@@ -72,6 +72,41 @@ def _subagent_payload(
     return base
 
 
+_CHILD_FORWARD_TYPES = frozenset(
+    {
+        "tool.started",
+        "tool.completed",
+        "tool.progress",
+        "message.started",
+        "message.delta",
+        "message.completed",
+        "reasoning.started",
+        "reasoning.delta",
+        "reasoning.completed",
+        "step.started",
+        "planning.next_step",
+    }
+)
+
+
+def _hidden_child_tool(name: str) -> bool:
+    normalized = (name or "").strip()
+    if not normalized:
+        return False
+    lower = normalized.lower()
+    return lower in ("think", "agent")
+
+
+def _should_forward_child_event(event_type: str, payload: dict[str, Any]) -> bool:
+    if event_type not in _CHILD_FORWARD_TYPES:
+        return False
+    if event_type in ("tool.started", "tool.completed", "tool.progress"):
+        name = str(payload.get("name") or payload.get("display_name") or "").strip()
+        if _hidden_child_tool(name):
+            return False
+    return True
+
+
 def _map_child_to_subagent_progress(
     child: dict[str, Any],
     *,
@@ -194,6 +229,136 @@ def _map_child_to_subagent_progress(
         )
 
     return None
+
+
+async def _stream_child_subagent_run(
+    child: AgentRunContext,
+    *,
+    run_id: str,
+    session_id: str,
+    message_id: str,
+    step_id: str,
+    seq: int,
+    child_run_id: str,
+    description: str,
+    extra_payload: dict[str, Any] | None = None,
+    state: dict[str, Any],
+) -> AsyncIterator[dict[str, Any]]:
+    """Yield subagent.event / chapter.stream frames; mutates state in-place."""
+    from app.agent.loop import run_query_loop
+
+    collected: list[dict[str, Any]] = state.setdefault("collected", [])
+    turn_counter = int(state.get("turn_counter") or 0)
+    turn_text = str(state.get("turn_text") or "")
+    final_turn_text = str(state.get("final_turn_text") or "")
+    last_turn_visible = str(state.get("last_turn_visible") or "")
+
+    async for child_ev in run_query_loop(RunRequest(context=child)):
+        if not isinstance(child_ev, dict):
+            continue
+        collected.append(child_ev)
+        et = str(child_ev.get("type") or "")
+        child_payload = (
+            child_ev.get("payload")
+            if isinstance(child_ev.get("payload"), dict)
+            else {}
+        )
+
+        if et == "message.delta":
+            piece = str(
+                child_payload.get("text") or child_payload.get("content") or ""
+            )
+            if piece:
+                turn_text += piece
+        elif et == "message.completed":
+            if turn_text.strip():
+                last_turn_visible = turn_text.strip()
+            turn_text = ""
+        elif et == "planning.completed":
+            if str(child_payload.get("next_tool") or "") == "end":
+                if last_turn_visible.strip():
+                    final_turn_text = last_turn_visible.strip()
+                last_turn_visible = ""
+
+        if et == "planning.next_step":
+            turn_counter += 1
+            child_payload = {**child_payload, "turn": turn_counter}
+            child_ev = {**child_ev, "payload": child_payload}
+
+        if et in (
+            "chapter.stream.started",
+            "chapter.stream.delta",
+            "chapter.stream.completed",
+        ):
+            yield build_event(
+                event_type=et,
+                run_id=run_id,
+                session_id=session_id,
+                message_id=message_id,
+                step_id=step_id,
+                sequence=seq,
+                payload=child_payload,
+            )
+            seq += 1
+            await asyncio.sleep(0)
+            continue
+
+        progress_payload = _map_child_to_subagent_progress(
+            child_ev,
+            parent_step_id=step_id,
+            child_run_id=child_run_id,
+            description=description,
+            turn=turn_counter if turn_counter > 0 else None,
+        )
+        if progress_payload is not None:
+            yield build_event(
+                event_type="subagent.progress",
+                run_id=run_id,
+                session_id=session_id,
+                message_id=message_id,
+                step_id=step_id,
+                sequence=seq,
+                payload=progress_payload,
+            )
+            seq += 1
+            await asyncio.sleep(0)
+
+        if _should_forward_child_event(et, child_payload):
+            forward_extra = dict(extra_payload or {})
+            forward_extra.update(
+                {
+                    "child_type": et,
+                    "child_step_id": child_ev.get("step_id"),
+                    "child_sequence": child_ev.get("sequence"),
+                    "child_payload": child_payload,
+                }
+            )
+            yield build_event(
+                event_type="subagent.event",
+                run_id=run_id,
+                session_id=session_id,
+                message_id=message_id,
+                step_id=step_id,
+                sequence=seq,
+                payload=_subagent_payload(
+                    parent_step_id=step_id,
+                    child_run_id=child_run_id,
+                    description=description,
+                    extra=forward_extra,
+                ),
+            )
+            seq += 1
+            await asyncio.sleep(0)
+
+        if et in ("run.failed", "planning.failed"):
+            break
+
+    state["collected"] = collected
+    state["turn_counter"] = turn_counter
+    state["turn_text"] = turn_text
+    state["final_turn_text"] = final_turn_text
+    state["last_turn_visible"] = last_turn_visible
+    state["seq"] = seq
 
 
 async def stream_subagent_tool(
@@ -378,77 +543,37 @@ async def stream_subagent_tool(
     )
     seq += 1
 
-    from app.agent.loop import run_query_loop
-
-    collected: list[dict[str, Any]] = []
-    turn_counter = 0
-    delivery_stream = ""
-    async for child_ev in run_query_loop(RunRequest(context=child)):
-        if not isinstance(child_ev, dict):
-            continue
-        collected.append(child_ev)
-        if is_subagent_run(child):
-            pass
-        et = str(child_ev.get("type") or "")
-        child_payload = (
-            child_ev.get("payload")
-            if isinstance(child_ev.get("payload"), dict)
-            else {}
-        )
-        if et == "message.delta":
-            piece = str(
-                child_payload.get("text") or child_payload.get("content") or ""
-            )
-            if piece:
-                delivery_stream += piece
-        if et == "planning.next_step":
-            turn_counter += 1
-            child_payload = {**child_payload, "turn": turn_counter}
-            child_ev = {**child_ev, "payload": child_payload}
-        if et in ("chapter.stream.started", "chapter.stream.delta", "chapter.stream.completed"):
-            yield build_event(
-                event_type=et,
-                run_id=run_id,
-                session_id=session_id,
-                message_id=message_id,
-                step_id=step_id,
-                sequence=seq,
-                payload=child_payload,
-            )
-            seq += 1
-            continue
-        progress = _map_child_to_subagent_progress(
-            child_ev,
-            parent_step_id=step_id,
-            child_run_id=child_run_id,
-            description=description,
-            turn=turn_counter if turn_counter > 0 else None,
-        )
-        if progress:
-            yield build_event(
-                event_type="subagent.progress",
-                run_id=run_id,
-                session_id=session_id,
-                message_id=message_id,
-                step_id=step_id,
-                sequence=seq,
-                payload=progress,
-            )
-            seq += 1
-        if et in ("run.failed", "planning.failed"):
-            break
+    child_state: dict[str, Any] = {"seq": seq}
+    async for ev in _stream_child_subagent_run(
+        child,
+        run_id=run_id,
+        session_id=session_id,
+        message_id=message_id,
+        step_id=step_id,
+        seq=seq,
+        child_run_id=child_run_id,
+        description=description,
+        state=child_state,
+    ):
+        yield ev
+    seq = int(child_state.get("seq") or seq)
+    collected = list(child_state.get("collected") or [])
+    turn_counter = int(child_state.get("turn_counter") or 0)
+    final_turn_text = str(child_state.get("final_turn_text") or "")
 
     from app.agent.harness.subagent import (
-        _extract_subagent_delivery_text,
+        _extract_subagent_visible_text,
         _summarize_subagent_events,
     )
 
-    summary, is_error = _summarize_subagent_events(description, collected)
-    ui_delivery = _extract_subagent_delivery_text(
-        collected,
-        streamed_delivery=delivery_stream,
+    summary, is_error = _summarize_subagent_events(
+        description, collected, delivery_text=final_turn_text
     )
-    summary_preview = ui_delivery or summary
+    ui_visible = _extract_subagent_visible_text(
+        collected,
+        final_turn_text=final_turn_text,
+    )
+    summary_preview = ui_visible or summary
 
     if is_error:
         yield build_event(

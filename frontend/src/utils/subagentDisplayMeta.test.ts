@@ -40,7 +40,7 @@ describe('deriveSubagentDisplayMeta', () => {
       }),
       true,
     )
-    expect(meta.currentStep).toBe('编排中…')
+    expect(meta.currentStep).toBe('执行中…')
     expect(meta.turnHint).toBe('第 1/5 轮')
   })
 

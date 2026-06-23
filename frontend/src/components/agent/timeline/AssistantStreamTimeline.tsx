@@ -32,6 +32,7 @@ import { EditorButton } from '../../ui/EditorButton'
 import { SelectedChoiceSummary } from './SelectedChoiceSummary'
 import { StaggeredChoices } from './StaggeredChoices'
 import { TimelineDeliveryBlock } from './TimelineDeliveryBlock'
+import { AgentMarkdown } from '../AgentMarkdown'
 import { TimelineToolBlock } from './TimelineToolBlock'
 import { PlanReasoningBlock, ThinkBlock } from './ThinkBlocks'
 import { ThinkRoundGroup } from './ThinkRoundGroup'
@@ -67,6 +68,8 @@ export function AssistantStreamTimeline({
   onThinkExpandedChange,
   onSubmitInteraction,
   pinOrchestrationOpen = false,
+  streamingMessageContent,
+  segmentOpen = false,
 }: AssistantStreamTimelineProps) {
   const isMobile = useAppMobile()
   const [multiSelectDrafts, setMultiSelectDrafts] = useState<Record<string, AgentChoiceOption[]>>({})
@@ -740,6 +743,11 @@ export function AssistantStreamTimeline({
             orchestrationOverview={orchestrationOverview}
             renderTool={() => null}
           />
+        ) : null}
+        {segmentOpen && streamingMessageContent?.trim() ? (
+          <div className="px-0 py-0.5" data-testid="message-segment-streaming">
+            <AgentMarkdown text={streamingMessageContent} variant="chat" />
+          </div>
         ) : null}
       </div>
     </div>

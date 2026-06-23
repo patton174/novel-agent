@@ -10,6 +10,48 @@ if TYPE_CHECKING:
 from app.agent.backend.memory_catalog import extract_scope_root_ids
 
 _MAX_OPS = 24
+_MAX_READS_SESSION = 16
+
+
+def append_memory_read_record(
+    context_patch: dict[str, Any] | None,
+    *,
+    memory_id: str,
+    scope: str | None = None,
+    title: str | None = None,
+) -> dict[str, Any]:
+    """Track parallel ReadMemory in-session; last_memory_read alone drops earlier reads."""
+    patch = dict(context_patch or {})
+    entry: dict[str, Any] = {
+        "ok": True,
+        "memory_id": str(memory_id or "").strip(),
+    }
+    if scope:
+        entry["scope"] = str(scope)
+    title_text = str(title or "").strip()
+    if title_text:
+        entry["title"] = title_text[:120]
+    reads = patch.get("memory_reads_session")
+    if not isinstance(reads, list):
+        reads = []
+    mid = entry["memory_id"]
+    reads = [
+        row
+        for row in reads
+        if not (isinstance(row, dict) and str(row.get("memory_id") or "") == mid)
+    ]
+    reads.append(entry)
+    patch["memory_reads_session"] = reads[-_MAX_READS_SESSION:]
+    patch["last_memory_read"] = entry
+    label = title_text or (mid[:8] + "…" if mid else "memory")
+    return append_memory_op_log(
+        patch,
+        tool="ReadMemory",
+        ok=True,
+        summary=f"已读 {label}",
+        memory_id=mid,
+        scope=scope or "",
+    )
 
 
 def append_memory_op_log(

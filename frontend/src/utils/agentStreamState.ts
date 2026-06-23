@@ -30,13 +30,15 @@ import {
 } from './agentStreamTimeline'
 import { applySubagentStepEvent } from './subagentStream'
 import {
+  applyMessageSegmentEvent,
+  extractDeliveryTextFromTimeline,
+} from './messageSegment'
+import {
   hasChoiceMarkers,
   messageIntroBeforeChoices,
   sanitizeThinkText,
   stripChoiceBlocksFromMessage,
-  appendMessageDeltaContent,
   sanitizeAssistantMessage,
-  sanitizeMessageDeltaChunk,
 } from './sanitizeAgentText'
 import { clearStreamRecoveryBanner } from './agentStreamRecovery'
 
@@ -127,6 +129,7 @@ export function createInitialAgentStreamUiState(): AgentStreamUiState {
     seenEventIds: [],
     awaitingInteraction: false,
     streamPaused: false,
+    segmentOpen: false,
   }
 }
 
@@ -568,9 +571,48 @@ export function applyAgentEvent(
   }
 
   const marked = markEventSeen(state, event)
-  let next: AgentStreamUiState = {
-    ...marked,
-    timeline: normalizeTimelineBlockIds(applyTimelineEvent(marked.timeline, event)),
+  let next: AgentStreamUiState = { ...marked }
+
+  if (
+    event.type === 'message.started' ||
+    event.type === 'message.delta' ||
+    event.type === 'message.completed'
+  ) {
+    if (event.type === 'message.delta') {
+      const deltaText =
+        typeof event.payload.text === 'string' ? event.payload.text : ''
+      if (deltaText && hasChoiceMarkers(deltaText)) {
+        next = { ...next, stripChoiceBlockFromMessage: true }
+      }
+    }
+    const choiceTitles = next.stripChoiceBlockFromMessage
+      ? next.stepStates
+          .flatMap((s) => s.choices ?? [])
+          .map((c) => c.title)
+      : undefined
+    const seg = applyMessageSegmentEvent(
+      {
+        messageContent: marked.messageContent,
+        segmentOpen: marked.segmentOpen ?? false,
+        timeline: marked.timeline,
+      },
+      event,
+      {
+        stripChoiceBlock: next.stripChoiceBlockFromMessage,
+        choiceTitles,
+      },
+    )
+    next = {
+      ...next,
+      messageContent: seg.messageContent,
+      segmentOpen: seg.segmentOpen,
+      timeline: normalizeTimelineBlockIds(seg.timeline),
+    }
+  } else {
+    next = {
+      ...next,
+      timeline: normalizeTimelineBlockIds(applyTimelineEvent(marked.timeline, event)),
+    }
   }
 
   if (event.run_id) {
@@ -807,38 +849,9 @@ export function applyAgentEvent(
     }
   }
 
-  if (event.type === 'narration.delta') {
-    return next
-  }
-
-  if (event.type === 'message.delta') {
-    const text = sanitizeMessageDeltaChunk(
-      typeof event.payload.text === 'string' ? event.payload.text : '',
-    )
-    const chapterLeak =
-      /^title:\s/m.test(text) ||
-      /^---\s*$/m.test(text) ||
-      (text.includes('已写入《') && text.length > 120)
-    if (text && chapterLeak) {
-      return next
-    }
-    if (text) {
-      if (hasChoiceMarkers(text)) {
-        next = { ...next, stripChoiceBlockFromMessage: true }
-      }
-      const merged = appendMessageDeltaContent(next.messageContent, text)
-      const messageContent = next.stripChoiceBlockFromMessage
-        ? stripChoiceBlocksFromMessage(merged)
-        : merged
-      next = {
-        ...next,
-        messageContent,
-      }
-    }
-  }
-
   if (
     event.type === 'subagent.started' ||
+    event.type === 'subagent.event' ||
     event.type === 'subagent.progress' ||
     event.type === 'subagent.completed' ||
     event.type === 'subagent.failed'
@@ -1276,14 +1289,20 @@ export function applyAgentEvent(
           stepStates[idx].outputSummary ||
           ''
         const streamed = prevSub.summaryPreview?.trim() ?? ''
+        const hasTimeline = (prevSub.timeline?.length ?? 0) > 0
         const merged =
-          streamed && toolBody && streamed.length > toolBody.length
+          hasTimeline
             ? streamed
-            : toolBody || streamed
+            : streamed && toolBody && streamed.length > toolBody.length
+              ? streamed
+              : toolBody || streamed
         stepStates[idx] = {
           ...stepStates[idx],
-          subagent: merged
-            ? { ...prevSub, summaryPreview: merged }
+          subagent: merged || hasTimeline
+            ? {
+                ...prevSub,
+                ...(merged ? { summaryPreview: merged } : {}),
+              }
             : prevSub,
           displayExcerpt: undefined,
           toolOutputDetail: undefined,
@@ -1346,6 +1365,10 @@ export function applyAgentEvent(
 }
 
 function mergeAssistantTextFromTimeline(state: AgentStreamUiState): string {
+  const explicit = extractDeliveryTextFromTimeline(state.timeline)
+  if (explicit.trim()) {
+    return sanitizeAssistantMessage(explicit)
+  }
   if (state.messageContent.trim()) {
     return sanitizeAssistantMessage(state.messageContent)
   }

@@ -174,6 +174,8 @@ function EditorChatMessageInner({
               onSelectChoice={onSelectChoice}
               onSubmitInteraction={onSubmitInteraction}
               pinOrchestrationOpen={marketingPinOrchestration}
+              streamingMessageContent={message.agentStreamingContent}
+              segmentOpen={message.agentSegmentOpen}
             />
             {showPostTimelineDelivery ? (
               <TimelineDeliveryBlock

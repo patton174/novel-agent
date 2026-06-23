@@ -144,30 +144,69 @@ export function deriveSubagentLiveLines(
     }
   }
 
-  for (const log of visibleSubagentLogs(subagent.logs)) {
-    if (log.phase === 'error') {
-      lines.push(log.title || '步骤失败')
-      continue
+  const childSteps = subagent.childStepStates ?? []
+  if (childSteps.length > 0) {
+    for (const step of childSteps) {
+      if (step.status !== 'started' && step.status !== 'completed') {
+        continue
+      }
+      const hint =
+        step.resultLabels?.[0]?.trim() ||
+        step.displayExcerpt?.trim() ||
+        step.outputSummary?.trim() ||
+        step.toolArgs?.trim() ||
+        step.title?.trim()
+      const label = step.title?.trim() || step.toolName || '工具'
+      if (hint && !label.includes(hint.slice(0, 8))) {
+        lines.push(`${label} · ${hint.slice(0, 48)}`)
+      } else {
+        lines.push(label)
+      }
     }
-    if (log.phase === 'tool_started' || log.phase === 'tool_done') {
-      lines.push(liveLineForLog(log))
+  } else {
+    for (const log of visibleSubagentLogs(subagent.logs)) {
+      if (log.phase === 'error') {
+        lines.push(log.title || '步骤失败')
+        continue
+      }
+      if (log.phase === 'tool_started' || log.phase === 'tool_done') {
+        lines.push(liveLineForLog(log))
+      }
     }
   }
 
-  const outputPreview = subagent.summaryPreview?.trim()
-  if (outputPreview) {
-    const tailLines = outputPreview
-      .split('\n')
-      .map((l) => l.trim())
+  const timeline = subagent.timeline ?? []
+  if (timeline.length > 0) {
+    const openText = timeline
+      .filter((block) => block.kind === 'text' && !block.frozen)
+      .map((block) => block.content.trim())
       .filter(Boolean)
-    for (const line of tailLines.slice(-3)) {
-      lines.push(line.length > 120 ? `${line.slice(0, 120)}…` : line)
+      .join('\n')
+    if (openText) {
+      const tailLines = openText
+        .split('\n')
+        .map((l) => l.trim())
+        .filter(Boolean)
+      for (const line of tailLines.slice(-2)) {
+        lines.push(line.length > 120 ? `${line.slice(0, 120)}…` : line)
+      }
+    }
+  } else {
+    const outputPreview = subagent.summaryPreview?.trim()
+    if (outputPreview) {
+      const tailLines = outputPreview
+        .split('\n')
+        .map((l) => l.trim())
+        .filter(Boolean)
+      for (const line of tailLines.slice(-3)) {
+        lines.push(line.length > 120 ? `${line.slice(0, 120)}…` : line)
+      }
     }
   }
 
   const openReasoning = subagent.logs.some((l) => l.phase === 'reasoning' && l.reasoningOpen)
-  if (openReasoning && lines[lines.length - 1] !== '编排中…') {
-    lines.push('编排中…')
+  if (openReasoning && lines[lines.length - 1] !== '执行中…') {
+    lines.push('执行中…')
   }
 
   const deduped: string[] = []

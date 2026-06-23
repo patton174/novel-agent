@@ -38,6 +38,7 @@ export function SubagentDetailModal({
     subagent.logs.length,
     subagent.thinkText,
     subagent.summaryPreview,
+    subagent.timeline?.length,
     subagent.turn,
   ])
 
@@ -68,14 +69,6 @@ export function SubagentDetailModal({
                 当前步骤：
                 <strong className="font-semibold text-primary">{meta.currentStep}</strong>
                 {meta.turnHint ? <span> · {meta.turnHint}</span> : null}
-              </p>
-            ) : null}
-            {!runActive && meta.toolStats ? (
-              <p
-                className="mt-1.5 text-[11px] leading-snug text-muted-foreground"
-                data-testid="subagent-modal-stats"
-              >
-                {meta.toolStats}
               </p>
             ) : null}
           </div>

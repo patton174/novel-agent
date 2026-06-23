@@ -15,13 +15,13 @@ from app.agent.harness.review_agent import (
     _build_review_prompt,
 )
 from app.agent.harness.subagent import (
-    _extract_subagent_delivery_text,
+    _extract_subagent_visible_text,
     _summarize_subagent_events,
     build_subagent_context,
 )
-from app.agent.harness.subagent_policy import is_subagent_run, subagent_depth
+from app.agent.harness.subagent_policy import subagent_depth
 from app.agent.harness.subagent_sse import (
-    _map_child_to_subagent_progress,
+    _stream_child_subagent_run,
     _subagent_payload,
 )
 from app.agent.schemas import AgentRunContext, RunRequest
@@ -157,61 +157,33 @@ async def stream_review_subagent(
     )
     seq += 1
 
-    from app.agent.loop import run_query_loop
+    child_state: dict[str, Any] = {"seq": seq}
+    async for ev in _stream_child_subagent_run(
+        child,
+        run_id=run_id,
+        session_id=session_id,
+        message_id=message_id,
+        step_id=step_id,
+        seq=seq,
+        child_run_id=child_run_id,
+        description=description,
+        extra_payload={"subagent_kind": "review"},
+        state=child_state,
+    ):
+        yield ev
+    seq = int(child_state.get("seq") or seq)
+    collected = list(child_state.get("collected") or [])
+    turn_counter = int(child_state.get("turn_counter") or 0)
+    final_turn_text = str(child_state.get("final_turn_text") or "")
 
-    collected: list[dict[str, Any]] = []
-    turn_counter = 0
-    delivery_stream = ""
-    async for child_ev in run_query_loop(RunRequest(context=child)):
-        if not isinstance(child_ev, dict):
-            continue
-        collected.append(child_ev)
-        if is_subagent_run(child):
-            pass
-        et = str(child_ev.get("type") or "")
-        child_payload = (
-            child_ev.get("payload")
-            if isinstance(child_ev.get("payload"), dict)
-            else {}
-        )
-        if et == "message.delta":
-            piece = str(
-                child_payload.get("text") or child_payload.get("content") or ""
-            )
-            if piece:
-                delivery_stream += piece
-        if et == "planning.next_step":
-            turn_counter += 1
-            child_payload = {**child_payload, "turn": turn_counter}
-            child_ev = {**child_ev, "payload": child_payload}
-        progress = _map_child_to_subagent_progress(
-            child_ev,
-            parent_step_id=step_id,
-            child_run_id=child_run_id,
-            description=description,
-            turn=turn_counter if turn_counter > 0 else None,
-        )
-        if progress:
-            progress["subagent_kind"] = "review"
-            yield build_event(
-                event_type="subagent.progress",
-                run_id=run_id,
-                session_id=session_id,
-                message_id=message_id,
-                step_id=step_id,
-                sequence=seq,
-                payload=progress,
-            )
-            seq += 1
-        if et in ("run.failed", "planning.failed"):
-            break
-
-    summary, is_error = _summarize_subagent_events(description, collected)
-    ui_delivery = _extract_subagent_delivery_text(
-        collected,
-        streamed_delivery=delivery_stream,
+    summary, is_error = _summarize_subagent_events(
+        description, collected, delivery_text=final_turn_text
     )
-    summary_preview = ui_delivery or summary
+    ui_visible = _extract_subagent_visible_text(
+        collected,
+        final_turn_text=final_turn_text,
+    )
+    summary_preview = ui_visible or summary
     review_patch = _review_context_patch(
         parent,
         child_run_id=child_run_id,

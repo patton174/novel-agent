@@ -28,4 +28,7 @@ export interface AssistantStreamTimelineProps {
   ) => void
   /** 营销分镜 scrub：保持编排层展开 */
   pinOrchestrationOpen?: boolean
+  /** 未 completed 的 message.delta 缓冲（编排层流式展示） */
+  streamingMessageContent?: string
+  segmentOpen?: boolean
 }

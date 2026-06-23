@@ -6,11 +6,13 @@ import cn.novelstudio.module.agent.util.AgentTextSanitizer;
 
 /**
  * Collects assistant-visible text for session persistence from SSE frames.
- * Only {@code message.delta} and {@code output} tool results belong in the user-facing bubble.
+ * Only {@code message.completed} with {@code delivery:true} and {@code output} tool results
+ * belong in the user-facing bubble; orchestration segments ({@code delivery:false}) stay in trace.
  */
 public final class AssistantPersistCollector {
 
-    private final StringBuilder buffer = new StringBuilder();
+    private final StringBuilder segmentBuffer = new StringBuilder();
+    private final StringBuilder replyBuffer = new StringBuilder();
 
     public void onFrame(String frame, ObjectMapper objectMapper) {
         if (frame == null || frame.isBlank() || !frame.contains("event: agent-event")) {
@@ -26,8 +28,16 @@ public final class AssistantPersistCollector {
             if ("message.delta".equals(type)) {
                 String text = root.path("payload").path("text").asText("");
                 if (!text.isBlank()) {
-                    buffer.append(text);
+                    segmentBuffer.append(text);
                 }
+                return;
+            }
+            if ("message.completed".equals(type)) {
+                JsonNode delivery = root.path("payload").path("delivery");
+                if (delivery.isMissingNode() || delivery.asBoolean(true)) {
+                    replyBuffer.append(segmentBuffer);
+                }
+                segmentBuffer.setLength(0);
                 return;
             }
             if ("tool.completed".equals(type)) {
@@ -35,7 +45,7 @@ public final class AssistantPersistCollector {
                 if ("output".equals(name)) {
                     String output = root.path("payload").path("output").asText("");
                     if (!output.isBlank()) {
-                        buffer.append(output);
+                        replyBuffer.append(output);
                     }
                 }
             }
@@ -45,6 +55,6 @@ public final class AssistantPersistCollector {
     }
 
     public String buildSanitized() {
-        return AgentTextSanitizer.sanitizeAssistantVisibleText(buffer.toString());
+        return AgentTextSanitizer.sanitizeAssistantVisibleText(replyBuffer.toString());
     }
 }

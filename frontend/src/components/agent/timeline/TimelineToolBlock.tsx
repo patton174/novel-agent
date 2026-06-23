@@ -261,6 +261,7 @@ export function TimelineToolBlock({
     vfsInventoryTool &&
     !inventoryListTool &&
     resolved &&
+    !effectiveInlineResult &&
     toolDetailHasExpandableContent(step)
   ) {
     branchInner.push(
@@ -303,6 +304,7 @@ export function TimelineToolBlock({
     (memoryApiTool || memoryTreeTool || listChaptersTool || inventoryListTool) &&
     resolved &&
     !error &&
+    !effectiveInlineResult &&
     toolDetailHasExpandableContent(step)
   ) {
     branchInner.push(
@@ -369,7 +371,12 @@ export function TimelineToolBlock({
       : !readLabel && !memoryActionLabel)
 
   const suppressInventoryDetail = Boolean(
-    (memoryApiTool || listChaptersTool) && (compactBranchSummary || loading),
+    (memoryApiTool ||
+      memoryTreeTool ||
+      listChaptersTool ||
+      inventoryListTool ||
+      vfsInventoryTool) &&
+      (compactBranchSummary || Boolean(effectiveInlineResult?.trim()) || loading),
   )
 
   const hasExpandableDetail = Boolean(
@@ -398,7 +405,6 @@ export function TimelineToolBlock({
         : null
 
   const forceCompactRow =
-    !nested &&
     !children &&
     !loading &&
     resolved &&
@@ -410,8 +416,22 @@ export function TimelineToolBlock({
     !effectiveInlineResult &&
     (readTool || listChaptersTool || memoryTreeTool || memoryApiTool || inventoryListTool)
 
+  const compactNestedRow =
+    nested &&
+    !children &&
+    !loading &&
+    resolved &&
+    !error &&
+    !showInteraction &&
+    !hasTodoList &&
+    !showVerboseSummary &&
+    !detailBranch &&
+    !showDetailPeek &&
+    !hasExpandableDetail
+
   if (
     forceCompactRow ||
+    compactNestedRow ||
     (!nested &&
       !children &&
       !showVerboseSummary &&

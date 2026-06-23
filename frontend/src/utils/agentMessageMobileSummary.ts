@@ -1,6 +1,7 @@
 import type { AgentStepState, AgentTimelineBlock } from '../types/agent'
 import type { EditorMessage } from '../types/editor'
 import {
+  collectTrailingDeliveryBlockIds,
   extractTrailingDeliveryProseFromTimeline,
   groupTimelineUnits,
 } from './agentStreamTimeline'
@@ -71,7 +72,7 @@ function timelineHasOrchestration(
  * 编排时间线外的交付正文（EditorChatMessage 底部 TimelineDeliveryBlock）。
  *
  * 规则：
- * - 有编排且流未结束：正文只在编排区内展示（narration/text 与 message.delta 同源），此处返回空
+ * - 有编排且流未结束：正文只在编排区内展示（message.delta 流式写入 timeline），此处返回空
  * - 有编排且流已结束：最后一段正文已由 groupTimelineUnits 提升到 segment，由时间线渲染，此处返回空
  * - 无编排：沿用 message.content
  */
@@ -91,6 +92,11 @@ export function extractPostTimelineDeliveryText(
   }
 
   if (!streamFinished) {
+    return ''
+  }
+
+  const deliveryIds = collectTrailingDeliveryBlockIds(timeline)
+  if (deliveryIds.size > 0) {
     return ''
   }
 

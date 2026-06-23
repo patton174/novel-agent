@@ -118,7 +118,25 @@ def test_stale_empty_tree_patch_falls_back_to_fetch(monkeypatch):
     assert trees["世界观"]["nodes"][0]["memory_id"] == "fresh-uuid"
 
 
-def test_assemble_run_context_includes_scope_root_ids():
+def test_assemble_run_context_includes_scope_root_ids(monkeypatch):
+    from app.agent.backend.memory_catalog import invalidate_memory_trees_cache
+
+    tree_index = {
+        "世界观": {
+            "scope": "世界观",
+            "count": 1,
+            "nodes": [
+                {
+                    "memory_id": "root-world-uuid",
+                    "title": "世界观",
+                    "sort_order": 0,
+                    "node_kind": "both",
+                    "child_count": 0,
+                    "children": [],
+                }
+            ],
+        },
+    }
     ctx = AgentRunContext(
         run_id="r1",
         session_id="s1",
@@ -126,24 +144,16 @@ def test_assemble_run_context_includes_scope_root_ids():
         user_id=1,
         user_message="hi",
         novel_id="novel-1",
-        context_patch={
-            "memory_tree_index": {
-                "世界观": {
-                    "scope": "世界观",
-                    "count": 1,
-                    "nodes": [
-                        {
-                            "memory_id": "root-world-uuid",
-                            "title": "世界观",
-                            "sort_order": 0,
-                            "node_kind": "both",
-                            "child_count": 0,
-                            "children": [],
-                        }
-                    ],
-                },
-            },
-        },
+        context_patch={"memory_tree_index": tree_index},
+    )
+    invalidate_memory_trees_cache(user_id=1, novel_id="novel-1")
+
+    def fake_fetch(_ctx):
+        return tree_index
+
+    monkeypatch.setattr(
+        "app.agent.backend.memory_catalog.fetch_all_memory_trees_sync",
+        fake_fetch,
     )
     bundle = assemble_run_context(ctx)
     memory = bundle.get("memory") or {}

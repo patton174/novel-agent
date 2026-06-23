@@ -168,6 +168,10 @@ def split_messages_for_autocompact(
     slice_start = max(0, len(rest) - keep_tail)
     while slice_start > 0 and isinstance(rest[slice_start], ToolMessage):
         slice_start -= 1
+    if slice_start > 0 and isinstance(rest[slice_start - 1], AIMessage):
+        tool_calls = getattr(rest[slice_start - 1], "tool_calls", None) or []
+        if tool_calls:
+            slice_start -= 1
     body = rest[:slice_start]
     tail = rest[slice_start:]
     if not body:
