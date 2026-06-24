@@ -18,7 +18,7 @@ SQL_PATH = (
     / "resources"
     / "db"
     / "migration"
-    / "V10__usage_byok_model_code.sql"
+    / "V21__usage_byok_model_code.sql"
 )
 
 
