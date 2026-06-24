@@ -53,6 +53,7 @@ public class AgentBridgeService {
     private final RunProxyRegistry runProxyRegistry;
     private final RunProxyLiveHub runProxyLiveHub;
     private final QuotaGateService quotaGateService;
+    private final AgentModelResolver modelResolver;
 
     public AgentBridgeService(
         PythonAgentRunClient runClient,
@@ -71,7 +72,8 @@ public class AgentBridgeService {
         Executor sideEffectExecutor,
         RunProxyRegistry runProxyRegistry,
         RunProxyLiveHub runProxyLiveHub,
-        QuotaGateService quotaGateService
+        QuotaGateService quotaGateService,
+        AgentModelResolver modelResolver
     ) {
         this.runClient = runClient;
         this.contextAssembler = contextAssembler;
@@ -89,6 +91,7 @@ public class AgentBridgeService {
         this.runProxyRegistry = runProxyRegistry;
         this.runProxyLiveHub = runProxyLiveHub;
         this.quotaGateService = quotaGateService;
+        this.modelResolver = modelResolver;
     }
 
     public Flux<String> stream(Long userId, AgentStreamRequest request) {
@@ -130,15 +133,22 @@ public class AgentBridgeService {
                 ? new PgRunEventFanout(runMqPublisher, finalSessionId, runId)
                 : null;
             try {
-                CompletableFuture<QuotaGateResult> quotaFuture = CompletableFuture.supplyAsync(
-                    () -> quotaGateService.assertCanStartRun(userId)
-                );
+                Map<String, Object> modelConfig = modelResolver.resolve(userId, request.modelOverride());
+                boolean byok = modelResolver.isByok(modelConfig);
+
+                CompletableFuture<QuotaGateResult> quotaFuture = CompletableFuture.supplyAsync(() -> {
+                    if (byok) {
+                        return null;
+                    }
+                    return quotaGateService.assertCanStartRun(userId);
+                });
                 CompletableFuture<Map<String, Object>> contextFuture = CompletableFuture.supplyAsync(
                     () -> contextAssembler.assemble(userId, finalSessionId, request)
                 );
                 CompletableFuture.allOf(quotaFuture, contextFuture).join();
                 quotaFuture.join();
                 Map<String, Object> context = contextFuture.join();
+                context.put("model_config", modelConfig);
                 state = new AgentRunState(userId, finalSessionId, runId, messageId, request, context);
                 if (pgRun) {
                     bootstrapPgRun(userId, finalSessionId, runId, messageId, request.message(), mode);

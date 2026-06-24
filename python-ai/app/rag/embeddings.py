@@ -69,7 +69,12 @@ async def embed_texts(texts: Sequence[str]) -> list[list[float]]:
     if not texts:
         return []
 
-    provider = (settings.rag_embed_provider or "openai").strip().lower()
+    from app.core.model_registry import model_registry
+
+    embed_cfg = model_registry.try_get("embedding")
+    provider = (
+        (embed_cfg or {}).get("provider") or (settings.rag_embed_provider or "openai")
+    ).strip().lower()
 
     if provider in {"minimax", "minimaxi"}:
         try:
@@ -84,16 +89,17 @@ async def embed_texts(texts: Sequence[str]) -> list[list[float]]:
         try:
             from langchain_openai import OpenAIEmbeddings
 
-            api_key = _resolve_embed_api_key()
+            api_key = (embed_cfg or {}).get("api_key") or _resolve_embed_api_key()
             if not api_key:
                 raise RuntimeError("RAG_EMBED_API_KEY not configured")
-            base_url = _resolve_embed_base_url()
+            base_url = (embed_cfg or {}).get("base_url") or _resolve_embed_base_url()
             if _is_minimax_base_url(base_url):
                 return await _embed_minimax(list(texts), embed_type="db", base_url=base_url)
+            embed_model = (embed_cfg or {}).get("model_name") or settings.rag_embed_model or _OPENAI_DEFAULT_MODEL
             emb = OpenAIEmbeddings(
                 api_key=api_key,
                 base_url=base_url,
-                model=settings.rag_embed_model or _OPENAI_DEFAULT_MODEL,
+                model=embed_model,
             )
             return await emb.aembed_documents(list(texts))
         except Exception as exc:

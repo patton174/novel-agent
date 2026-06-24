@@ -57,3 +57,8 @@ management:
   health:
     redis:
       enabled: false
+
+app:
+  model:
+    # 本地 dev 默认密钥；生产必须设 MODEL_KEY_ENCRYPTION_KEY
+    key-encryption-key: ${MODEL_KEY_ENCRYPTION_KEY:+94f3tCiKS6dDFYF8aXCIrLPHMMmUHxhDhcyT/ckGaM=}

@@ -48,6 +48,7 @@ export function AdminSidebar({ embedded = false, onNavigate }: AdminSidebarProps
       items: [
         item(t('common:nav.adminUsers'), '/admin/users', ProIconAdminUsers),
         item(t('common:nav.adminPlans'), '/admin/plans', ProIconAdminPlan),
+        item(t('common:nav.adminModels'), '/admin/models', ProIconAdminSystem),
         item(t('common:nav.adminRevenue'), '/admin/revenue', ProIconAdminRevenue),
         item(t('common:nav.adminAuditLog'), '/admin/audit-log', ProIconAdminAudit),
       ],

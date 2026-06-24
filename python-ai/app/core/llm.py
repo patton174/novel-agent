@@ -43,7 +43,12 @@ class LLMProvider:
 
     def _resolve_config(self, config: dict | None, *, profile: LLMProfile) -> dict:
         if profile == "crawl" and config is None:
-            base = dict(settings.get_crawl_llm_config())
+            from app.core.model_registry import model_registry
+
+            try:
+                base = dict(model_registry.get("crawl"))
+            except RuntimeError:
+                base = dict(settings.get_crawl_llm_config())
         else:
             base = dict(settings.get_active_llm_config())
         if config:
@@ -64,7 +69,7 @@ class LLMProvider:
             raise LLMError(f"API key not configured for provider: {self._provider}")
 
         protocol = str(config.get("protocol") or "anthropic").lower()
-        model = config.get("model") or "MiniMax-M3"
+        model = config.get("model") or config.get("model_name") or "MiniMax-M3"
         max_tokens = int(config.get("max_tokens") or 8192)
         timeout = float(config.get("timeout") or 90)
         temperature = float(config.get("temperature") if config.get("temperature") is not None else 1.0)

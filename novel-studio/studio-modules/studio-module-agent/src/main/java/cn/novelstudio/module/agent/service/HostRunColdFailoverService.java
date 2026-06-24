@@ -137,6 +137,7 @@ public class HostRunColdFailoverService {
                     ctxDto == null ? null : ctxDto.currentChapterId(),
                     null,
                     runId,
+                    null,
                     null
                 );
                 AgentRunState state = new AgentRunState(

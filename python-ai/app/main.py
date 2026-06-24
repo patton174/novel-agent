@@ -10,6 +10,7 @@ from app.agent.harness.owner.router import router as owner_router
 from app.agent.router import router as agent_step_router
 from app.api.crawler_routes import internal_router as crawler_internal_router
 from app.api.crawler_routes import router as crawler_router
+from app.api.model_routes import internal_router as model_internal_router
 from app.api.parse_routes import internal_router as parse_internal_router
 from app.api.image_routes import router as image_router
 from app.api.kg_routes import router as kg_router
@@ -53,6 +54,7 @@ app.include_router(agent_step_router, prefix="/api", tags=["Agent Step"])
 app.include_router(owner_router, prefix="/internal", tags=["Owner Internal"])
 app.include_router(crawler_internal_router, prefix="/internal", tags=["Crawler Internal"])
 app.include_router(parse_internal_router, prefix="/internal", tags=["Parse Internal"])
+app.include_router(model_internal_router, prefix="/internal", tags=["Model Internal"])
 
 
 @app.on_event("startup")
@@ -60,6 +62,15 @@ async def startup_event():
     """Re-apply logging config after uvicorn overrides it."""
     _setup_logging()
     await _warmup_agent()
+    from app.core.model_registry import model_registry
+
+    for model_type in ("embedding", "crawl", "image"):
+        try:
+            model_registry.get(model_type)
+        except Exception as exc:
+            logging.getLogger(__name__).warning(
+                "model registry warmup failed type=%s err=%s", model_type, exc
+            )
     from app.crawl.orchestrator.loop import start_orchestrator_background
 
     start_orchestrator_background()

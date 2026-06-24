@@ -80,6 +80,9 @@ agent:
     warmup-python-ping: ${AGENT_RUNTIME_WARMUP_PYTHON:true}
 
 app:
+  model:
+    # base64 32-byte AES key; set MODEL_KEY_ENCRYPTION_KEY in production
+    key-encryption-key: ${MODEL_KEY_ENCRYPTION_KEY:}
   upload:
     storage-dir: ${UPLOAD_STORAGE_DIR:./data/uploads}
     max-file-size: ${UPLOAD_MAX_FILE_SIZE:50MB}

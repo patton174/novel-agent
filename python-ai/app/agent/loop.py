@@ -345,8 +345,14 @@ async def run_query_loop(
     else:
         messages = _build_messages(state.ctx, state.transcript)
 
-    llm = llm_provider.get_llm(profile="default").bind_tools(
-        build_agent_langchain_tools(state.ctx)
+    llm = (
+        llm_provider.get_llm(profile="default", config=base_ctx.resolved_model).bind_tools(
+            build_agent_langchain_tools(state.ctx)
+        )
+        if base_ctx.resolved_model
+        else llm_provider.get_llm(profile="default").bind_tools(
+            build_agent_langchain_tools(state.ctx)
+        )
     )
 
     turn_limit = _max_turns_for_ctx(state.ctx)

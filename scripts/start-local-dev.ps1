@@ -294,7 +294,8 @@ if ($want -contains "frontend") {
 }
 
 Write-Host "`n=== Ready ===" -ForegroundColor Green
-Write-Host "  Frontend:  http://127.0.0.1:3000"
+Write-Host "  Frontend:  https://127.0.0.1:3000  (dev uses self-signed HTTPS)"
+Write-Host "  Models:    https://127.0.0.1:3000/dashboard/settings#api-models"
 Write-Host "  Monolith:  http://127.0.0.1:8080"
 Write-Host "  Python AI: http://127.0.0.1:8000"
 Write-Host "  Health:    http://127.0.0.1:8080/actuator/health"

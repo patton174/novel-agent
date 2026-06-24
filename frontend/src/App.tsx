@@ -48,6 +48,7 @@ const RevenuePage = lazy(() => import('./pages/admin/RevenuePage'))
 const SiteContentPage = lazy(() => import('./pages/admin/SiteContentPage'))
 const AuditLogPage = lazy(() => import('./pages/admin/AuditLogPage'))
 const SystemSettingsPage = lazy(() => import('./pages/admin/SystemSettingsPage'))
+const AdminModelsPage = lazy(() => import('./pages/admin/AdminModelsPage'))
 
 function isAppShellRoute(pathname: string): boolean {
   return (
@@ -109,6 +110,7 @@ function AppRouteTree() {
           <Route index element={<AdminHomePage />} />
           <Route path="users" element={<UsersPage />} />
           <Route path="plans" element={<PlansPage />} />
+          <Route path="models" element={<AdminModelsPage />} />
           <Route path="revenue" element={<RevenuePage />} />
           <Route path="site-content" element={<SiteContentPage />} />
           <Route path="audit-log" element={<AuditLogPage />} />

@@ -17,11 +17,26 @@ class AgnesImageError(Exception):
 
 
 def is_configured() -> bool:
-    return bool(settings.agnes_image_api_key.strip())
+    from app.core.model_registry import model_registry
+
+    img_cfg = model_registry.try_get("image")
+    api_key = (img_cfg or {}).get("api_key") or settings.agnes_image_api_key.strip()
+    return bool(api_key)
+
+
+def _image_runtime() -> tuple[str, str, str]:
+    from app.core.model_registry import model_registry
+
+    img_cfg = model_registry.try_get("image")
+    api_key = (img_cfg or {}).get("api_key") or settings.agnes_image_api_key
+    base_url = (img_cfg or {}).get("base_url") or settings.agnes_image_base_url
+    model = (img_cfg or {}).get("model_name") or settings.agnes_image_model
+    return api_key, base_url, model
 
 
 def _endpoint() -> str:
-    base = settings.agnes_image_base_url.rstrip("/")
+    _, base_url, _ = _image_runtime()
+    base = base_url.rstrip("/")
     return f"{base}/v1/images/generations"
 
 
@@ -35,7 +50,7 @@ async def text_to_image(
         raise AgnesImageError("AGNES_IMAGE_API_KEY 未配置")
 
     body: dict[str, Any] = {
-        "model": settings.agnes_image_model,
+        "model": _image_runtime()[2],
         "prompt": prompt,
         "size": size,
     }
@@ -60,7 +75,7 @@ async def image_to_image(
         raise AgnesImageError("图生图需要至少一张输入图片")
 
     body: dict[str, Any] = {
-        "model": settings.agnes_image_model,
+        "model": _image_runtime()[2],
         "prompt": prompt,
         "size": size,
         "image": images,
@@ -78,8 +93,9 @@ async def _post_generate(body: dict[str, Any]) -> dict[str, str | None]:
         write=30.0,
         pool=30.0,
     )
+    api_key, _, _ = _image_runtime()
     headers = {
-        "Authorization": f"Bearer {settings.agnes_image_api_key}",
+        "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
     try:

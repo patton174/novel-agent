@@ -320,6 +320,9 @@ async def stream_bind_tools_turn(
             model=str(model_name) if model_name else None,
             usage=usage_fields,
             step_index=stream_state.sequence,
+            pricing=ctx.resolved_model.get("pricing") if ctx.resolved_model else None,
+            byok=bool(ctx.resolved_model.get("byok")) if ctx.resolved_model else False,
+            model_code=ctx.resolved_model.get("code") if ctx.resolved_model else None,
         )
 
         if isinstance(gathered, AIMessage):

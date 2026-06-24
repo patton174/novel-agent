@@ -11,6 +11,7 @@ import {
   AppShellCardHeader,
 } from '@/components/layout/AppPageStack'
 import { InlineTitleSkeleton } from '@/components/loading/PageSkeletons'
+import { PersonalModelCredentials } from '@/components/dashboard/PersonalModelCredentials'
 import { PersonalSettingsRows } from '@/components/dashboard/PersonalSettingsRows'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useTranslation } from 'react-i18next'
@@ -35,6 +36,16 @@ export function SettingsMobile() {
         }
         icon={Settings}
       />
+
+      <AppShellCard>
+        <AppShellCardHeader
+          title={t('dashboard:settings.modelSettingsTitle')}
+          description={t('dashboard:settings.modelSettingsDesc')}
+        />
+        <AppShellCardBody>
+          <PersonalModelCredentials />
+        </AppShellCardBody>
+      </AppShellCard>
 
       <AppShellCard>
         <AppShellCardHeader

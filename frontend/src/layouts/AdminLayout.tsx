@@ -21,6 +21,7 @@ export default function AdminLayout() {
     '/admin': { title: t('layout.admin.overviewTitle'), description: t('layout.admin.overviewDesc') },
     '/admin/users': { title: t('layout.admin.usersTitle'), description: t('layout.admin.usersDesc') },
     '/admin/plans': { title: t('layout.admin.plansTitle'), description: t('layout.admin.plansDesc') },
+    '/admin/models': { title: t('layout.admin.modelsTitle'), description: t('layout.admin.modelsDesc') },
     '/admin/revenue': { title: t('layout.admin.revenueTitle'), description: t('layout.admin.revenueDesc') },
     '/admin/site-content': { title: t('layout.admin.siteContentTitle'), description: t('layout.admin.siteContentDesc') },
     '/admin/audit-log': { title: t('layout.admin.auditLogTitle'), description: t('layout.admin.auditLogDesc') },

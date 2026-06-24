@@ -139,6 +139,7 @@ export function ChatComposer({
             {onModelOverrideChange ? (
               <ModelSelector
                 compact
+                showSessionBadge
                 value={modelOverride}
                 onChange={onModelOverrideChange}
                 disabled={streaming}

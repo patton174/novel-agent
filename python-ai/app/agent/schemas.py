@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 def _coerce_json_list(value: Any) -> list[Any] | None:
@@ -73,6 +73,8 @@ class StepResult(BaseModel):
 
 
 class AgentRunContext(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
     run_id: str
     session_id: str
     message_id: str
@@ -91,6 +93,7 @@ class AgentRunContext(BaseModel):
     last_reason: str | None = None
     context_patch: dict[str, Any] = Field(default_factory=dict)
     selected_choice: dict[str, Any] | None = None
+    resolved_model: dict[str, Any] | None = Field(default=None, alias="model_config")
 
     def merged_patch(self) -> dict[str, Any]:
         return dict(self.context_patch)

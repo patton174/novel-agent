@@ -1,6 +1,13 @@
 import { secureFetch } from '../security/secureFetch'
 import { parseResultResponse } from '../utils/resultApi'
-import type { AiModel, AvailableModels, ByokUpsertReq, UserModel } from '../types/model'
+import type {
+  AiModel,
+  AvailableModels,
+  ByokUpsertReq,
+  CredentialUpsertReq,
+  ModelCredential,
+  UserModel,
+} from '../types/model'
 
 const CRM = '/api/content/crm/model'
 const AUTH = '/api/content/auth/model'
@@ -11,7 +18,9 @@ export async function adminListModels(type?: string): Promise<AiModel[]> {
   return parseResultResponse<AiModel[]>(res)
 }
 
-export async function adminCreateModel(req: Partial<AiModel> & { apiKey: string }): Promise<AiModel> {
+export async function adminCreateModel(
+  req: Partial<AiModel> & { apiKey?: string; credentialId?: string; credentialLabel?: string },
+): Promise<AiModel> {
   const res = await secureFetch(CRM, { method: 'POST', body: JSON.stringify(req) })
   if (!res.ok) throw new Error('创建失败')
   return parseResultResponse<AiModel>(res)
@@ -44,10 +53,49 @@ export async function adminSetDefault(id: string): Promise<void> {
   if (!res.ok) throw new Error('设默认失败')
 }
 
-export async function adminTestModel(id: string): Promise<{ ok: boolean; error?: string }> {
+export async function adminTestModel(
+  id: string,
+): Promise<{ ok: boolean; error?: string; latencyMs?: number }> {
   const res = await secureFetch(`${CRM}/${id}/test`, { method: 'POST' })
   if (!res.ok) throw new Error('测试失败')
-  return parseResultResponse<{ ok: boolean; error?: string }>(res)
+  return parseResultResponse<{ ok: boolean; error?: string; latencyMs?: number }>(res)
+}
+
+export async function adminReorderModels(type: string, ids: string[]): Promise<void> {
+  const res = await secureFetch(`${CRM}/reorder`, {
+    method: 'PUT',
+    body: JSON.stringify({ type, ids }),
+  })
+  if (!res.ok) throw new Error('排序失败')
+}
+
+export async function adminListCredentials(type: string): Promise<ModelCredential[]> {
+  const res = await secureFetch(`${CRM}/credentials?type=${type}`)
+  if (!res.ok) throw new Error('加载 API 连接失败')
+  return parseResultResponse<ModelCredential[]>(res)
+}
+
+export async function adminCreateCredential(type: string, req: CredentialUpsertReq): Promise<ModelCredential> {
+  const res = await secureFetch(`${CRM}/credentials?type=${type}`, {
+    method: 'POST',
+    body: JSON.stringify(req),
+  })
+  if (!res.ok) throw new Error('创建 API 连接失败')
+  return parseResultResponse<ModelCredential>(res)
+}
+
+export async function adminUpdateCredential(id: string, req: CredentialUpsertReq): Promise<ModelCredential> {
+  const res = await secureFetch(`${CRM}/credentials/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(req),
+  })
+  if (!res.ok) throw new Error('更新 API 连接失败')
+  return parseResultResponse<ModelCredential>(res)
+}
+
+export async function adminDeleteCredential(id: string): Promise<void> {
+  const res = await secureFetch(`${CRM}/credentials/${id}`, { method: 'DELETE' })
+  if (!res.ok) throw new Error('删除 API 连接失败')
 }
 
 export async function fetchAvailableModels(type = 'llm'): Promise<AvailableModels> {
@@ -85,4 +133,33 @@ export async function updateByok(id: string, req: ByokUpsertReq): Promise<UserMo
 export async function deleteByok(id: string): Promise<void> {
   const res = await secureFetch(`${AUTH}/byok/${id}`, { method: 'DELETE' })
   if (!res.ok) throw new Error('删除私有模型失败')
+}
+
+export async function fetchCredentials(): Promise<ModelCredential[]> {
+  const res = await secureFetch(`${AUTH}/credentials`)
+  if (!res.ok) throw new Error('加载 API 连接失败')
+  return parseResultResponse<ModelCredential[]>(res)
+}
+
+export async function createCredential(req: CredentialUpsertReq): Promise<ModelCredential> {
+  const res = await secureFetch(`${AUTH}/credentials`, { method: 'POST', body: JSON.stringify(req) })
+  if (!res.ok) throw new Error('创建 API 连接失败')
+  return parseResultResponse<ModelCredential>(res)
+}
+
+export async function updateCredential(
+  id: string,
+  req: CredentialUpsertReq,
+): Promise<ModelCredential> {
+  const res = await secureFetch(`${AUTH}/credentials/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(req),
+  })
+  if (!res.ok) throw new Error('更新 API 连接失败')
+  return parseResultResponse<ModelCredential>(res)
+}
+
+export async function deleteCredential(id: string): Promise<void> {
+  const res = await secureFetch(`${AUTH}/credentials/${id}`, { method: 'DELETE' })
+  if (!res.ok) throw new Error('删除 API 连接失败')
 }

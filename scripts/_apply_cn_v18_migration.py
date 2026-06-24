@@ -1,0 +1,66 @@
+"""One-off: apply V18 ai_model migration to CN dev DB if missing."""
+from __future__ import annotations
+
+import pathlib
+import sys
+
+import psycopg2
+
+ROOT = pathlib.Path(__file__).resolve().parents[1]
+ENV_PATH = ROOT / "scripts" / "local-cn.env"
+V18_PATH = (
+    ROOT
+    / "novel-studio"
+    / "studio-modules"
+    / "studio-module-content"
+    / "src"
+    / "main"
+    / "resources"
+    / "db"
+    / "migration"
+    / "V18__ai_model.sql"
+)
+
+
+def load_env(path: pathlib.Path) -> dict[str, str]:
+    env: dict[str, str] = {}
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        env[key.strip()] = value.strip().strip('"')
+    return env
+
+
+def main() -> int:
+    if not ENV_PATH.is_file():
+        print(f"missing {ENV_PATH}", file=sys.stderr)
+        return 1
+    env = load_env(ENV_PATH)
+    conn = psycopg2.connect(
+        host=env["DB_HOST"],
+        port=int(env.get("DB_PORT", "5432")),
+        dbname=env["DB_NAME"],
+        user=env["DB_USER"],
+        password=env["DB_PASSWORD"],
+    )
+    conn.autocommit = True
+    cur = conn.cursor()
+    cur.execute("SELECT to_regclass('public.ai_model')")
+    before = cur.fetchone()[0]
+    print(f"ai_model before: {before}")
+    if not before:
+        sql = V18_PATH.read_text(encoding="utf-8")
+        cur.execute(sql)
+        print("applied V18__ai_model.sql")
+    cur.execute("SELECT to_regclass('public.ai_model')")
+    after = cur.fetchone()[0]
+    print(f"ai_model after: {after}")
+    cur.close()
+    conn.close()
+    return 0 if after else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

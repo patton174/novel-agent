@@ -76,6 +76,7 @@
       "hostRunningBanner": "托管运行中：任务在后台继续，请勿关闭浏览器标签页",
       "streamRecovery": "断线重连中…",
       "modelLabel": "选择模型",
+      "modelLoading": "加载中…",
       "modelLoadFailed": "模型列表暂不可用，将使用平台默认",
       "modelUnavailable": "模型服务未就绪",
       "modelEmpty": "暂无可用模型",

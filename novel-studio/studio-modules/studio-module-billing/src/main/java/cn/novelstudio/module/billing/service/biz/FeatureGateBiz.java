@@ -47,4 +47,8 @@ public class FeatureGateBiz extends BaseBiz {
         Integer planLimit = planFeatureRepository.findLimitValueByPlanAndKey(plan.getId(), featureKey).orElse(null);
         return effectiveQuotaSupport.resolveLibraryUploadLimit(userId, planLimit);
     }
+
+    public String resolvePlanCode(long userId) {
+        return subscriptionBiz.resolvePlanForUser(userId).getCode();
+    }
 }

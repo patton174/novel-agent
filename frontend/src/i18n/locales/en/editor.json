@@ -76,6 +76,7 @@
       "hostRunningBanner": "Hosted run in progress — keep this browser tab open",
       "streamRecovery": "Reconnecting…",
       "modelLabel": "Select model",
+      "modelLoading": "Loading…",
       "modelLoadFailed": "Model list unavailable — using platform default",
       "modelUnavailable": "Model service not ready",
       "modelEmpty": "No models available",
