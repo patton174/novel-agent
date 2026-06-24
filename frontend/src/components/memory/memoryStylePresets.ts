@@ -142,7 +142,7 @@ const LAYOUT_CONTAINER: Record<MemoryLayoutPreset, string> = {
   timeline: 'relative pl-4 before:absolute before:left-[5px] before:top-1 before:bottom-1 before:w-px before:bg-border/80',
   hero: 'rounded-xl border border-border/40 bg-gradient-to-br from-muted/50 via-card/40 to-transparent px-4 py-3',
   quote: 'rounded-lg border-l-[3px] border-primary/30 bg-muted/20 px-3 py-2.5',
-  prose: 'rounded-xl bg-muted/15 px-3 py-2.5 ring-1 ring-border/40',
+  prose: 'min-w-0',
 }
 
 const LAYOUT_TITLE: Record<MemoryLayoutPreset, string> = {
@@ -254,7 +254,7 @@ export function resolveNodePresentation(
     containerClass: LAYOUT_CONTAINER[layout] + variantContainerClass(variant) + (accentClass ? ` ${accentClass}` : ''),
     titleClass: LAYOUT_TITLE[layout] + variantTitleClass(variant),
     contentClass:
-      'text-[13px] leading-relaxed text-foreground agent-prose agent-prose-memory' +
+      'text-[13px] leading-relaxed text-foreground' +
       (variant === 'muted' ? ' text-muted-foreground' : ''),
     childContainerClass:
       layout === 'cards'

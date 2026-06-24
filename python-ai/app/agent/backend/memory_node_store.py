@@ -120,8 +120,12 @@ def fetch_all_memory_trees_sync(ctx: AgentRunContext) -> dict[str, dict[str, Any
     if not novel_id or ctx.user_id <= 0:
         return {}
     url = f"{_nodes_base(novel_id)}/tree-index"
-    with httpx.Client(timeout=30.0) as client:
-        resp = client.get(url, headers=user_headers(ctx.user_id))
+    try:
+        with httpx.Client(timeout=30.0) as client:
+            resp = client.get(url, headers=user_headers(ctx.user_id))
+    except httpx.HTTPError as exc:
+        logger.warning("memory tree-index fetch error: %s", exc)
+        return {}
     if resp.status_code >= 400:
         logger.warning("memory tree-index fetch failed: %s", _http_error(resp))
         return {}
@@ -134,8 +138,12 @@ async def fetch_all_memory_trees(ctx: AgentRunContext) -> dict[str, dict[str, An
     if not novel_id or ctx.user_id <= 0:
         return {}
     url = f"{_nodes_base(novel_id)}/tree-index"
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        resp = await client.get(url, headers=user_headers(ctx.user_id))
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            resp = await client.get(url, headers=user_headers(ctx.user_id))
+    except httpx.HTTPError as exc:
+        logger.warning("memory tree-index fetch error: %s", exc)
+        return {}
     if resp.status_code >= 400:
         logger.warning("memory tree-index fetch failed: %s", _http_error(resp))
         return {}

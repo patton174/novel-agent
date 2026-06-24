@@ -233,6 +233,8 @@ export interface AgentStreamRequestBody {
   mode?: string
   /** 托管模式：长时任务、后台持续盯防 */
   host_mode?: boolean
+  /** 临时模型覆盖：userModelId 或 pub:<publicModelId> */
+  model_override?: string
   /** 当前章节/编辑器正文，供 Agent 自主判断是否可直接续写 */
   context_text?: string
   /** 稳定会话 ID，多轮编排与记忆 */

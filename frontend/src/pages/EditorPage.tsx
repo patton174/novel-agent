@@ -147,8 +147,8 @@ const EditorPage: React.FC = () => {
             onInputChange={editor.setInputValue}
             onSend={() => void editor.stream.handleSend()}
             isLoading={editor.stream.isLoading}
-            hostModeEnabled={editor.hostModeEnabled}
-            onHostModeChange={editor.handleHostModeChange}
+            modelOverride={editor.modelOverride}
+            onModelOverrideChange={editor.handleModelOverrideChange}
             onStreamPause={editor.stream.handleStreamPause}
             onStreamResume={editor.stream.handleStreamResumeForMessage}
             onStreamAbort={editor.stream.handleStreamAbort}

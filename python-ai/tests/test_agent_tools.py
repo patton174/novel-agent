@@ -102,7 +102,7 @@ def test_read_chapter_error(monkeypatch):
 def test_write_chapter_stream_when_empty_content():
 
     out = asyncio.run(
-        chapter.write_chapter(_ctx(), WriteChapterInput(title="新章", content=""))
+        chapter.write_chapter(_ctx(), WriteChapterInput(title="新章", index=1, content=""))
     )
     assert not out.is_error
     assert out.context_patch.get("stream_chapter") is True

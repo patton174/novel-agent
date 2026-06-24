@@ -22,6 +22,12 @@ export type TablerIcon = ForwardRefExoticComponent<ProIconLikeProps & RefAttribu
 export interface IconStrokeProps {
   /** 图标组件（tabler 或自研 proIcons 均可） */
   icon: ProIconType
+  /**
+   * stroke = Tabler 等线稿图标（pathLength 描边动画）；
+   * fill = Solar duotone / proIcons（仅配色 + 缩放，不做描边动画）。
+   * 侧栏与 TabBar 的 proIcons 必须用 fill，否则 dash 动画会把填充路径画成乱线。
+   */
+  variant?: 'stroke' | 'fill'
   /** 无障碍标签；省略时图标对辅助技术隐藏（适用于图标旁已有可见文字的场景） */
   label?: string
   /** 是否选中态（触发描边绘制动画） */
@@ -44,6 +50,7 @@ export interface IconStrokeProps {
  */
 export function IconStroke({
   icon: Icon,
+  variant = 'fill',
   label,
   active = false,
   prefersReducedMotion = false,
@@ -51,30 +58,36 @@ export function IconStroke({
   size = 20,
 }: IconStrokeProps) {
   const ref = useRef<HTMLSpanElement>(null)
+  const isStrokeIcon = variant === 'stroke'
+
   useEffect(() => {
+    if (!isStrokeIcon) return
     const el = ref.current
     if (!el) return
     el
       .querySelectorAll('svg path, svg line, svg circle, svg rect, svg polygon, svg polyline')
       .forEach((n) => n.setAttribute('pathLength', '1'))
-  }, [Icon])
+  }, [Icon, isStrokeIcon])
+
   return (
     <span
       ref={ref}
       data-icon-stroke=""
+      data-icon-variant={variant}
       aria-label={label}
       aria-hidden={label ? undefined : true}
       role={label ? 'img' : undefined}
       className={cn(
         'inline-flex items-center justify-center transition-all duration-200',
-        active && 'pro-icon-stroke--active pro-icon-fill--active',
-        prefersReducedMotion && 'pro-icon-stroke--reduced',
+        active && isStrokeIcon && 'pro-icon-stroke--active',
+        active && !isStrokeIcon && 'pro-icon-fill--active',
+        prefersReducedMotion && isStrokeIcon && 'pro-icon-stroke--reduced',
         className,
       )}
     >
       <Icon
         size={size}
-        stroke={'1.5'}
+        {...(isStrokeIcon ? { stroke: '1.5' } : { stroke: 'none' })}
         aria-hidden="true"
         focusable="false"
       />

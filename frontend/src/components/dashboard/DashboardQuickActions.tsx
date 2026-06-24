@@ -1,10 +1,14 @@
 import { Link, useLocation } from 'react-router-dom'
 import { useUserStore } from '@/stores/userStore'
-import { Button } from '@/components/ui/button'
 import { AppShellToolbar } from '@/components/layout/AppShellToolbar'
-import { APP_BTN_SM } from '@/lib/appButtonTokens'
 import { useTranslation } from 'react-i18next'
-import { ProIconAdminSystem, ProIconOverview } from '@/components/pro/icons/proIcons'
+import { PixelIcons } from '@/components/icons/PixelIcons'
+import {
+  editorPixelButtonClass,
+  editorPixelIconButtonClass,
+  editorPrimaryButtonClass,
+} from '@/lib/editorPixelClasses'
+import { cn } from '@/lib/utils'
 
 export function DashboardQuickActions() {
   const { t } = useTranslation(['dashboard'])
@@ -18,38 +22,37 @@ export function DashboardQuickActions() {
       <AppShellToolbar />
       {isAdmin ? (
         <>
-          <Button
-            asChild
-            variant="outline"
-            size="icon"
-            className={`size-9 border-border/80 bg-background/80 sm:hidden ${APP_BTN_SM}`}
+          <Link
+            to="/admin"
             aria-label={t('dashboard:quickActions.admin')}
             title={t('dashboard:quickActions.admin')}
+            className={cn(editorPixelIconButtonClass(), 'text-foreground sm:hidden')}
           >
-            <Link to="/admin">
-              <ProIconAdminSystem size={16} />
-            </Link>
-          </Button>
-          <Button
-            asChild
-            variant="outline"
-            size="sm"
-            className={`hidden h-9 gap-1.5 border-border/80 bg-background/80 px-3 text-xs font-medium sm:inline-flex ${APP_BTN_SM}`}
+            <PixelIcons.Shield />
+          </Link>
+          <Link
+            to="/admin"
+            className={cn(
+              editorPixelButtonClass(),
+              'hidden h-9 items-center gap-1.5 px-3 text-xs normal-case sm:inline-flex',
+            )}
           >
-            <Link to="/admin">
-              <ProIconAdminSystem size={14} />
-              {t('dashboard:quickActions.admin')}
-            </Link>
-          </Button>
+            <PixelIcons.Shield />
+            {t('dashboard:quickActions.admin')}
+          </Link>
         </>
       ) : null}
       {!hideEditorCta ? (
-        <Button asChild size="sm" className={`h-9 gap-1.5 px-4 text-xs font-semibold ${APP_BTN_SM}`}>
-          <Link to="/editor">
-            <ProIconOverview size={14} />
-            {t('dashboard:quickActions.editor')}
-          </Link>
-        </Button>
+        <Link
+          to="/editor"
+          className={cn(
+            editorPrimaryButtonClass(),
+            'inline-flex h-9 items-center gap-1.5 px-4 text-xs font-semibold normal-case',
+          )}
+        >
+          <PixelIcons.Library />
+          {t('dashboard:quickActions.editor')}
+        </Link>
       ) : null}
     </div>
   )

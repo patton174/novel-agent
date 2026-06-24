@@ -1,9 +1,9 @@
 import { translateToolDisplayName } from './orchestrationI18n'
 import type { AgentStepState } from '../types/agent'
 import { toolDisplayName } from './agentLabels'
-import { planningActiveLabel } from './agentOrchestration'
 import i18n from '@/i18n'
-import { inferToolTitlePhase, resolveToolTitle } from './toolTitleI18n'
+import { isCompactToolResultText } from './toolDetailFormat'
+import { resolveToolTitle } from './toolTitleI18n'
 import {
   isCollapsibleReadTool,
   isMemoryVfsPath,
@@ -396,7 +396,7 @@ export function readToolBranchLabels(step: AgentStepState): string[] | null {
   const fromExcerpt = titleFromMemoryReadExcerpt(
     step.outputSummary || step.displayExcerpt || step.detail,
   )
-  if (fromExcerpt) {
+  if (fromExcerpt && fromExcerpt !== '（空）' && fromExcerpt !== '空章节' && fromExcerpt !== '已读取') {
     return [fromExcerpt]
   }
   if (path.includes('/memory/chapter/') && CHAPTER_ID_RE.test(path)) {
@@ -568,13 +568,7 @@ export function ccToolInlineResult(
   }
 
   if (options.loading) {
-    const progress =
-      options.chapterProgressHint?.trim() ||
-      options.readProgressHint?.trim() ||
-      options.readLabel?.trim() ||
-      options.earlyProgressHint?.trim() ||
-      ''
-    return progress || null
+    return null
   }
 
   if (options.error) {
@@ -590,23 +584,16 @@ export function ccToolInlineResult(
   }
 
   const compact =
+    step.displayExcerpt?.trim() ||
     step.outputSummary?.trim() ||
     step.resultLabels?.[0]?.trim() ||
     ''
-  if (
-    compact &&
-    !compact.startsWith('{') &&
-    !/tool_use_error|upstream_/i.test(compact)
-  ) {
+  if (isCompactToolResultText(compact)) {
     return compact.length > 96 ? `${compact.slice(0, 96)}…` : compact
   }
 
-  if (options.loading) {
-    return null
-  }
-
   const idleLabel = options.readLabel?.trim() || ''
-  if (idleLabel) {
+  if (idleLabel && idleLabel !== '（空）' && idleLabel !== compact) {
     return idleLabel.length > 96 ? `${idleLabel.slice(0, 96)}…` : idleLabel
   }
 
@@ -629,31 +616,14 @@ export function ccToolBranchStatus(
   },
 ): string {
   const iconName = step.toolName ?? 'Tool'
-  const { loading, error, phase } = options
+  const { loading, error } = options
 
   if (options.chooseLoading) {
     return '正在生成选项…'
   }
 
   if (loading) {
-    if (options.chapterProgressHint?.trim()) {
-      return options.chapterProgressHint.trim()
-    }
-    if (options.readProgressHint?.trim()) {
-      return options.readProgressHint.trim()
-    }
-    if (options.readLabel?.trim()) {
-      return options.readLabel.trim()
-    }
-    if (options.earlyProgressHint?.trim()) {
-      return options.earlyProgressHint.trim()
-    }
-    const titlePhase = inferToolTitlePhase(phase, { active: true })
-    const running = resolveToolTitle(iconName, titlePhase)
-    if (running.hasPhaseTitle) {
-      return running.title
-    }
-    return planningActiveLabel(iconName) ?? i18n.t('editor:timeline.phaseRunning')
+    return ''
   }
 
   if (error) {
@@ -673,14 +643,11 @@ export function ccToolBranchStatus(
   }
 
   const compactOutcome =
+    step.displayExcerpt?.trim() ||
     step.outputSummary?.trim() ||
     step.resultLabels?.[0]?.trim() ||
     ''
-  if (
-    compactOutcome &&
-    !compactOutcome.startsWith('{') &&
-    !/tool_use_error|upstream_/i.test(compactOutcome)
-  ) {
+  if (isCompactToolResultText(compactOutcome)) {
     return compactOutcome.length > 96 ? `${compactOutcome.slice(0, 96)}…` : compactOutcome
   }
 

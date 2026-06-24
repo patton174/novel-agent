@@ -27,4 +27,52 @@ describe('normalizeAgentMarkdown', () => {
     expect(repaired).toContain('\n| 列表位')
     expect(repaired).toContain('\n| --- |')
   })
+
+  it('restores inline fenced code blocks flattened onto one line', () => {
+    const flat =
+      '### 💕 网恋伏笔设计 ``` 关键问题：她是怎么找到林逸的？ ✅ 合理化解释： 1. 留学时在游戏里认识 2. 女主当时段位更高 ``` ---'
+    const normalized = normalizeAgentMarkdown(flat)
+    expect(normalized).toMatch(/```[\s\S]*?关键问题：她是怎么找到林逸的？[\s\S]*?```/)
+    expect(normalized).toContain('✅ 合理化解释：')
+    expect(normalized).toMatch(/1\.\s*留学时/)
+  })
+
+  it('does not rewrite list markers inside fenced blocks', () => {
+    const input = '前言\n\n```\n- 保留\n1. 编号\n```\n\n后缀'
+    expect(normalizeAgentMarkdown(input)).toBe('前言\n\n```text\n- 保留\n1. 编号\n```\n\n后缀')
+  })
+
+  it('restores line breaks inside well-formed but flattened fenced bodies', () => {
+    const input =
+      '```\n关键问题：她是怎么找到林逸的？ ✅ 合理化解释： 1. 留学时 2. 女主更高 ```'
+    const normalized = normalizeAgentMarkdown(input)
+    expect(normalized).toContain('✅ 合理化解释：')
+    expect(normalized).toMatch(/1\.\s*留学时\n2\./)
+  })
+
+  it('restores narrative line breaks for flat prose without fences', () => {
+    const flat = '关键问题：她是怎么找到林逸的？ ✅ 合理化解释： 1. 留学时 2. 女主更高'
+    const normalized = normalizeAgentMarkdown(flat)
+    expect(normalized).toMatch(/？\n\n✅/)
+    expect(normalized).toMatch(/1\.\s*留学时\n2\./)
+  })
+
+  it('moves emoji or CJK out of fence language slot into code body', () => {
+    const input = '```✅ 合理化解释：\n1. 留学时\n```'
+    const normalized = normalizeAgentMarkdown(input)
+    expect(normalized).toBe('```text\n✅ 合理化解释：\n1. 留学时\n```')
+  })
+
+  it('preserves checklist headings inside fenced bodies', () => {
+    const input = `关键问题：她是怎么找到林逸的？
+
+\`\`\`
+✅ 合理化解释：
+1. 留学时在游戏里认识
+2. 女主当时段位更高
+\`\`\``
+    const normalized = normalizeAgentMarkdown(input)
+    expect(normalized).toContain('✅ 合理化解释：')
+    expect(normalized).toContain('1. 留学时在游戏里认识')
+  })
 })

@@ -3,14 +3,15 @@ import { ActivityHeatmap } from '@/components/dashboard/ActivityHeatmap'
 import { DashboardActivityTrendChart } from '@/components/dashboard/DashboardActivityTrendChart'
 import { ProChartKpi } from '@/components/pro/ProChartKpi'
 import { ProAreaChart } from '@/components/pro/charts/ProAreaChart'
-import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { APP_BTN, APP_BTN_MD } from '@/lib/appButtonTokens'
+import { PixelIcons } from '@/components/icons/PixelIcons'
+import { ProIconLibrary, ProIconNovel, ProIconPencil } from '@/components/pro/icons/proIcons'
 import { useMarkRouteSeen } from '@/hooks/useMarkRouteSeen'
 import { EDITOR_CREATE_HREF, editorNovelHref } from '@/lib/editorRoutes'
+import { editorPixelButtonClass, editorPrimaryButtonClass } from '@/lib/editorPixelClasses'
 import { formatTokenCount } from '@/api/billingApi'
 import { useDashboardHome } from './useDashboardHome'
-import { ProIconPencil, ProIconArrowRight, ProIconNovel } from '@/components/pro/icons/proIcons'
+import { cn } from '@/lib/utils'
 
 export function DashboardHomeMobile() {
   useMarkRouteSeen()
@@ -45,15 +46,20 @@ export function DashboardHomeMobile() {
           <p className="mt-1 text-sm text-muted-foreground">{t('dashboard:home.desc')}</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button asChild className={APP_BTN_MD}>
-            <Link to={editorEntryHref}>
-              <ProIconPencil size={16} className="mr-2" />
-              {primaryNovelId ? t('dashboard:home.continueWriting') : t('dashboard:home.enterEditor')}
-            </Link>
-          </Button>
-          <Button asChild variant="outline" className={APP_BTN_MD}>
-            <Link to="/dashboard/novels">{t('dashboard:home.manageNovels')}</Link>
-          </Button>
+          <Link
+            to={editorEntryHref}
+            className={cn(editorPrimaryButtonClass(), 'inline-flex h-10 items-center gap-2 px-4 text-xs font-bold normal-case')}
+          >
+            <ProIconPencil size={18} />
+            {primaryNovelId ? t('dashboard:home.continueWriting') : t('dashboard:home.enterEditor')}
+          </Link>
+          <Link
+            to="/dashboard/novels"
+            className={cn(editorPixelButtonClass(), 'inline-flex h-10 items-center gap-2 px-4 text-xs normal-case')}
+          >
+            <ProIconLibrary size={18} />
+            {t('dashboard:home.manageNovels')}
+          </Link>
         </div>
       </header>
 
@@ -110,12 +116,13 @@ export function DashboardHomeMobile() {
           <h2 className="text-sm font-semibold text-foreground">
             {t('dashboard:home.recentEdits')}
           </h2>
-          <Button asChild variant="ghost" size="sm" className="h-7 gap-1 px-2 text-xs text-primary">
-            <Link to="/dashboard/novels">
-              {t('dashboard:home.viewAll')}
-              <ProIconArrowRight size={14} />
-            </Link>
-          </Button>
+          <Link
+            to="/dashboard/novels"
+            className={cn(editorPixelButtonClass(), 'inline-flex h-8 items-center gap-1 px-2.5 text-[11px] normal-case')}
+          >
+            {t('dashboard:home.viewAll')}
+            <PixelIcons.ArrowRight className="size-3.5" />
+          </Link>
         </div>
 
         {loading ? (
@@ -144,9 +151,12 @@ export function DashboardHomeMobile() {
                 ? t('dashboard:home.loadFailDesc')
                 : t('dashboard:home.noNovelsDesc')}
             </p>
-            <Button asChild className={`mt-4 px-6 ${APP_BTN_MD}`}>
-              <Link to={EDITOR_CREATE_HREF}>{t('dashboard:home.createNovel')}</Link>
-            </Button>
+            <Link
+              to={EDITOR_CREATE_HREF}
+              className={cn(editorPrimaryButtonClass(), 'mt-4 inline-flex px-6 py-2 text-xs normal-case')}
+            >
+              {t('dashboard:home.createNovel')}
+            </Link>
           </div>
         ) : (
           <div className="divide-y divide-border">
@@ -173,11 +183,12 @@ export function DashboardHomeMobile() {
                     {t('dashboard:home.recentlyEdited', { time: formatUpdatedAt(novel.updatedAt) })}
                   </p>
                 </div>
-                <Button asChild size="sm" className={`shrink-0 px-3 ${APP_BTN}`}>
-                  <Link to={editorNovelHref(novel.novelId)}>
-                    {t('dashboard:home.continueWriting')}
-                  </Link>
-                </Button>
+                <Link
+                  to={editorNovelHref(novel.novelId)}
+                  className={cn(editorPrimaryButtonClass(), 'inline-flex h-8 shrink-0 items-center px-3 text-[11px] normal-case')}
+                >
+                  {t('dashboard:home.continueWriting')}
+                </Link>
               </div>
             ))}
           </div>

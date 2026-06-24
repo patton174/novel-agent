@@ -1,8 +1,8 @@
-"""Run-layer context bundle — shared thin slice for think / tools."""
+"""Run-layer context bundle — single injection surface for main loop and tools."""
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from app.agent.backend.memory_catalog import (
     extract_scope_root_ids,
@@ -10,70 +10,94 @@ from app.agent.backend.memory_catalog import (
     load_all_memory_trees,
 )
 from app.agent.context.compact import (
-    CHAPTER_INFO_CHAIN_FOR_PROMPT,
     format_chapter_catalog_db,
     format_chapter_window,
 )
 from app.agent.context.memory_log import memory_ops_for_plan_json
 from app.agent.context.prompting.blocks import json_block
 from app.agent.harness.intent_message import intent_user_message_for_context
-from app.agent.harness.orchestration_contract import MAIN_LOOP_TOOLS
-from app.agent.harness.plan_context import _transcript_has_interaction, summarize_memory_patch, think_text_for_plan
+from app.agent.harness.orchestration_contract import context_decision_hints
+from app.agent.harness.plan_context import (
+    _transcript_has_interaction,
+    summarize_memory_delete,
+    summarize_memory_patch,
+    summarize_memory_read,
+    think_has_pending_confirm_from_rows,
+    think_text_from_rows,
+)
 from app.agent.harness.routing import format_dialogue_history, project_summary_from_ctx
 from app.agent.schemas import AgentRunContext, PlanRequest
 from app.agent.tools.todo_helpers import working_todos_from_patch
 
+ContextProfile = Literal["full", "tool"]
+
 _USER_MESSAGE_MAX = 800
 _DIALOGUE_MAX = 1600
-_STORY_SNAPSHOT_MAX = 800
 _THINK_SUMMARY_MAX = 1200
+_CHAPTER_FOCUS_MIN = 12
+_TRANSCRIPT_TAIL = 40
 
 
-def assemble_run_context(
+def assemble_agent_context(
     ctx: AgentRunContext,
     *,
     tool_input: dict[str, Any] | None = None,
-    include_think_summary: bool = True,
-    include_dialogue: bool = True,
     transcript_rows: list[dict[str, Any]] | None = None,
+    think_content: str = "",
+    retry_feedback: str = "",
+    include_dialogue: bool = True,
+    profile: ContextProfile = "full",
 ) -> dict[str, Any]:
-    """Session + novel + working set — injected into Tool / Think Human messages."""
+    """Single structured context for LLM injection — no duplicate plan/run blocks."""
     patch = ctx.context_patch if isinstance(ctx.context_patch, dict) else {}
     inp = tool_input or {}
+    rows = transcript_rows or []
+    has_interaction = _transcript_has_interaction(rows)
 
     intent: dict[str, Any] = {
         "user_message": intent_user_message_for_context(
             str(ctx.user_message or ""),
-            has_run_interaction=_transcript_has_interaction(transcript_rows or []),
+            has_run_interaction=has_interaction,
         )[:_USER_MESSAGE_MAX],
         "mode": ctx.mode,
     }
-
-    if ctx.selected_choice and _transcript_has_interaction(transcript_rows or []):
+    if ctx.selected_choice and has_interaction:
         intent["selected_choice"] = ctx.selected_choice
+    if profile == "full":
+        if isinstance(rows, list):
+            for row in reversed(rows):
+                if isinstance(row, dict) and row.get("kind") == "interaction":
+                    intent["latest_interaction"] = str(row.get("summary") or "")[:1200]
+                    break
+        if has_interaction:
+            interactions = patch.get("user_interactions")
+            if isinstance(interactions, list) and interactions:
+                last = interactions[-1]
+                if isinstance(last, dict) and last.get("text"):
+                    intent.setdefault("latest_interaction", str(last["text"])[:1200])
 
+    out: dict[str, Any] = {
+        "intent": intent,
+        "decision_hints": context_decision_hints(),
+    }
+
+    novel_id = str(ctx.novel_id or (ctx.project or {}).get("id") or "").strip()
     novel: dict[str, Any] = {}
-    nid = str(ctx.novel_id or (ctx.project or {}).get("id") or "").strip()
-    if nid:
-        novel["novel_id"] = nid
-        novel["vfs_root"] = f"/novel/{nid}/"
+    if novel_id:
+        novel["novel_id"] = novel_id
     project = project_summary_from_ctx(ctx)
     if project:
         novel["project"] = project[:600]
-    last_list = patch.get("last_chapter_list")
-    list_text = last_list.strip() if isinstance(last_list, str) else ""
-    list_is_empty = "暂无章节" in list_text if list_text else False
 
     chapters = [ch for ch in (ctx.chapters or []) if isinstance(ch, dict) and ch.get("id")]
-    if list_is_empty:
-        chapters = []
     if chapters:
         catalog = format_chapter_catalog_db(ctx)
         if catalog:
             novel["chapter_catalog"] = catalog[:6500]
-        chapter_window = format_chapter_window(ctx)
-        if chapter_window:
-            novel["chapter_window"] = chapter_window[:1200]
+        if len(chapters) >= _CHAPTER_FOCUS_MIN:
+            focus = format_chapter_window(ctx)
+            if focus:
+                novel["chapter_focus"] = focus[:1200]
         novel["chapter_count"] = len(chapters)
         written = sum(
             1
@@ -82,30 +106,36 @@ def assemble_run_context(
         )
         novel["chapters_written_count"] = written
         novel["chapters_pending_count"] = max(0, len(chapters) - written)
-    elif list_is_empty:
+    elif novel_id:
         novel["chapter_count"] = 0
         novel["chapters_written_count"] = 0
         novel["chapters_pending_count"] = 0
-    if list_text:
-        novel["chapter_list_full"] = list_text[:4500]
+
+    if novel:
+        out["novel"] = novel
 
     memory: dict[str, Any] = {}
-    mem_trees = load_all_memory_trees(ctx) if nid and ctx.user_id > 0 else {}
-    mem_index = format_memory_index(ctx, trees=mem_trees or None)
-    if mem_index:
-        memory["memory_index"] = mem_index[:5000]
-    scope_roots = extract_scope_root_ids(mem_trees) if mem_trees else {}
-    if scope_roots:
-        memory["scope_root_ids"] = scope_roots
+    if novel_id and ctx.user_id > 0:
+        mem_trees = load_all_memory_trees(ctx)
+        mem_index = format_memory_index(ctx, trees=mem_trees or None)
+        if mem_index:
+            memory["memory_index"] = mem_index[:5000]
+        scope_roots = extract_scope_root_ids(mem_trees) if mem_trees else {}
+        if scope_roots:
+            memory["scope_root_ids"] = scope_roots
+
     roster = patch.get("character_roster")
     if isinstance(roster, list) and roster:
         memory["character_roster"] = roster[:40]
     last_read = patch.get("last_memory_read")
     if isinstance(last_read, dict) and last_read.get("ok"):
-        memory["last_read_scope"] = str(last_read.get("scope") or "")
-        mid = str(last_read.get("memory_id") or "").strip()
-        if mid:
-            memory["last_read_memory_id"] = mid
+        memory["last_read"] = summarize_memory_read(last_read)
+    last_write = patch.get("last_memory_patch")
+    if isinstance(last_write, dict):
+        memory["last_write"] = summarize_memory_patch(last_write)
+    last_delete = patch.get("last_memory_delete")
+    if isinstance(last_delete, dict):
+        memory["last_delete"] = summarize_memory_delete(last_delete)
     reads_session = patch.get("memory_reads_session")
     if isinstance(reads_session, list) and reads_session:
         memory["reads_session"] = reads_session[-8:]
@@ -117,62 +147,91 @@ def assemble_run_context(
         )
         if ok_creates >= 2:
             memory["create_memory_ok_count"] = ok_creates
-    last_write = patch.get("last_memory_patch")
-    if isinstance(last_write, dict):
-        memory["last_write"] = summarize_memory_patch(last_write)
+    if memory:
+        out["memory"] = memory
 
-    working: dict[str, Any] = {}
-    if include_think_summary:
-        think = str(patch.get("think_summary") or "").strip()
-        if not think and inp.get("context"):
-            think = str(inp.get("context") or "")[:_THINK_SUMMARY_MAX]
-        if think:
-            working["think_summary"] = think[:_THINK_SUMMARY_MAX]
+    session: dict[str, Any] = {}
+    think = think_text_from_rows(
+        rows,
+        think_content=think_content,
+        think_summary=str(patch.get("think_summary") or ""),
+    )
+    if not think and inp.get("context"):
+        think = str(inp.get("context") or "")[:_THINK_SUMMARY_MAX]
+    if think:
+        session["think"] = think[:4000]
+        if think_has_pending_confirm_from_rows(think, rows):
+            session["think_has_pending_confirm"] = True
 
-    from app.agent.harness.routing import story_context_from_ctx
-
-    snippet = story_context_from_ctx(ctx)
-    if snippet:
-        working["story_snippet"] = snippet[:4000]
+    if profile == "full" and isinstance(rows, list) and rows:
+        session["transcript"] = rows[-_TRANSCRIPT_TAIL:]
 
     relevant = patch.get("relevant_context")
     if isinstance(relevant, list) and relevant:
-        working["relevant_context"] = relevant[:5]
+        session["relevant_context"] = relevant[:5]
 
     todos = working_todos_from_patch(patch)
     if todos:
-        working["todos"] = todos[:20]
+        session["todos"] = todos[:20]
         open_count = sum(
             1 for t in todos if str(t.get("status") or "") in ("pending", "in_progress")
         )
-        working["todos_open_count"] = open_count
+        session["todos_open_count"] = open_count
+    if session:
+        out["session"] = session
 
-    out: dict[str, Any] = {
-        "intent": intent,
-        "capabilities": _run_capabilities(),
-        "chapter_info_chain": CHAPTER_INFO_CHAIN_FOR_PROMPT,
-    }
-    if novel:
-        out["novel"] = novel
-    if memory:
-        out["memory"] = memory
-    if working:
-        out["working"] = working
-    if include_dialogue:
+    if include_dialogue and profile == "full":
         dialogue = format_dialogue_history(
             ctx,
             max_len=_DIALOGUE_MAX,
-            transcript=transcript_rows,
+            transcript=rows,
         )
         if dialogue:
             out["dialogue"] = dialogue[:_DIALOGUE_MAX]
+
+    run: dict[str, Any] = {
+        "step_index": ctx.step_index,
+    }
     if ctx.last_tool:
-        out["run"] = {
-            "step_index": ctx.step_index,
-            "last_tool": ctx.last_tool,
-            "last_reason": str(ctx.last_reason or "")[:240],
-        }
+        run["last_tool"] = ctx.last_tool
+    if ctx.last_reason:
+        run["last_reason"] = str(ctx.last_reason or "")[:240]
+    if ctx.last_tool == "output":
+        lr = str(ctx.last_reason or "")
+        if "output continue" in lr:
+            run["prior_output"] = "continue"
+        elif "output ok" in lr:
+            run["prior_output"] = "done"
+    out["run"] = run
+
+    if retry_feedback.strip():
+        out["retry"] = retry_feedback.strip()[:500]
+
     return out
+
+
+def assemble_run_context(
+    ctx: AgentRunContext,
+    *,
+    tool_input: dict[str, Any] | None = None,
+    include_think_summary: bool = True,
+    include_dialogue: bool = True,
+    transcript_rows: list[dict[str, Any]] | None = None,
+    profile: ContextProfile = "full",
+) -> dict[str, Any]:
+    """Backward-compatible alias — prefer assemble_agent_context."""
+    think_summary = ""
+    if include_think_summary:
+        patch = ctx.context_patch if isinstance(ctx.context_patch, dict) else {}
+        think_summary = str(patch.get("think_summary") or "")
+    return assemble_agent_context(
+        ctx,
+        tool_input=tool_input,
+        transcript_rows=transcript_rows,
+        think_content=think_summary,
+        include_dialogue=include_dialogue,
+        profile=profile,
+    )
 
 
 def assemble_run_context_from_plan_req(
@@ -181,17 +240,38 @@ def assemble_run_context_from_plan_req(
     tool_input: dict[str, Any] | None = None,
     include_think_summary: bool = True,
 ) -> dict[str, Any]:
-    base = assemble_run_context(
+    from app.agent.harness.plan_context import think_text_for_plan
+
+    rows = getattr(req, "transcript", None) or []
+    think = think_text_for_plan(req) if include_think_summary else ""
+    return assemble_agent_context(
         req.context,
         tool_input=tool_input,
-        include_think_summary=include_think_summary,
+        transcript_rows=rows if isinstance(rows, list) else [],
+        think_content=think,
+        profile="full",
     )
-    think = think_text_for_plan(req)
-    if think:
-        working = dict(base.get("working") or {})
-        working["think_full"] = think[:4000]
-        base["working"] = working
-    return base
+
+
+def format_agent_context_block(
+    ctx: AgentRunContext,
+    *,
+    tool_input: dict[str, Any] | None = None,
+    transcript_rows: list[dict[str, Any]] | None = None,
+    think_content: str = "",
+    retry_feedback: str = "",
+    profile: ContextProfile = "full",
+) -> str:
+    payload = assemble_agent_context(
+        ctx,
+        tool_input=tool_input,
+        transcript_rows=transcript_rows,
+        think_content=think_content,
+        retry_feedback=retry_feedback,
+        include_dialogue=profile == "full",
+        profile=profile,
+    )
+    return json_block("RUN_CONTEXT_JSON", payload)
 
 
 def format_run_context_block(
@@ -200,17 +280,16 @@ def format_run_context_block(
     tool_input: dict[str, Any] | None = None,
     include_think_summary: bool = True,
     transcript_rows: list[dict[str, Any]] | None = None,
+    profile: ContextProfile = "tool",
 ) -> str:
-    return json_block(
-        "RUN_CONTEXT_JSON",
-        assemble_run_context(
-            ctx,
-            tool_input=tool_input,
-            include_think_summary=include_think_summary,
-            transcript_rows=transcript_rows,
+    return format_agent_context_block(
+        ctx,
+        tool_input=tool_input,
+        transcript_rows=transcript_rows,
+        think_content=(
+            str((ctx.context_patch or {}).get("think_summary") or "")
+            if include_think_summary
+            else ""
         ),
+        profile=profile,
     )
-
-
-def _run_capabilities() -> list[str]:
-    return sorted(MAIN_LOOP_TOOLS)

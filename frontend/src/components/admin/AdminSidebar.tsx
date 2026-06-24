@@ -1,9 +1,10 @@
 import { useTranslation } from 'react-i18next'
 import { NavLink } from 'react-router-dom'
+import { PixelIcons } from '@/components/icons/PixelIcons'
 import { cn } from '@/lib/utils'
+import { editorPixelIconButtonClass } from '@/lib/editorPixelClasses'
 import { ProSidebar, type ProSidebarGroup, type ProSidebarItem } from '@/components/pro/ProSidebar'
-import { IconStroke, type ProIconType } from '@/components/pro/IconStroke'
-import { NovelAiPixelWordmark } from '@/components/marketing/pixel/NovelAiPixelWordmark'
+import { type ProIconType } from '@/components/pro/IconStroke'
 import { DashboardSidebarFooter } from '@/components/dashboard/DashboardSidebarFooter'
 import {
   ProIconAdminAudit,
@@ -16,7 +17,6 @@ import {
   ProIconAdminStats,
   ProIconAdminSystem,
   ProIconAdminUsers,
-  ProIconArrowLeft,
 } from '@/components/pro/icons/proIcons'
 
 interface AdminSidebarProps {
@@ -74,25 +74,27 @@ export function AdminSidebar({ embedded = false, onNavigate }: AdminSidebarProps
       header={
         <div
           className={cn(
-            'flex h-12 items-center gap-2 border-b border-border/60 px-3',
+            'flex h-12 items-center gap-2 border-b-2 border-black bg-background px-3',
             embedded && 'pr-3',
           )}
         >
           <NavLink
             to="/dashboard"
             onClick={onNavigate}
-            className="flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            className={cn(editorPixelIconButtonClass(), 'text-foreground')}
             aria-label={t('common:nav.backToUser')}
             title={t('common:nav.backToUser')}
           >
-            <IconStroke icon={ProIconArrowLeft} size={18} />
+            <PixelIcons.ArrowLeft />
           </NavLink>
-          <div className="min-w-0 flex-1 overflow-hidden">
-            <NovelAiPixelWordmark size="sm" cursor={false} />
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-mono text-sm font-black uppercase tracking-tight text-foreground">
+              {t('common:nav.adminTitle')}
+            </p>
           </div>
           {!embedded ? (
-            <span className="shrink-0 border-2 border-foreground bg-neon px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-widest text-ink">
-              ADMIN
+            <span className="shrink-0 border-2 border-foreground bg-neon px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-widest text-ink shadow-[1px_1px_0_0_var(--foreground)]">
+              Admin
             </span>
           ) : null}
         </div>

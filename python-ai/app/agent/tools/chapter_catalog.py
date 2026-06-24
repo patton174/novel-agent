@@ -104,13 +104,11 @@ async def enrich_stream_chapter_input(
     ctx: AgentRunContext,
     inp: dict[str, Any],
 ) -> tuple[dict[str, Any], str | None]:
-    """Resolve chapter row target and attach chapter_id/title/index for streaming."""
-    row, _rows, err = await resolve_chapter_target(
-        ctx,
-        chapter_id=str(inp.get("chapter_id") or "") or None,
-        title=str(inp.get("title") or "") or None,
-        index=inp.get("index"),
-    )
+    """Resolve chapter_id and attach title/index for EditChapter streaming."""
+    chapter_id = str(inp.get("chapter_id") or "").strip()
+    if not chapter_id:
+        return inp, "chapter_id is required"
+    row, _rows, err = await resolve_chapter_target(ctx, chapter_id=chapter_id)
     if err or not row:
         return inp, err or "chapter not found"
     meta = chapter_row_meta(row)

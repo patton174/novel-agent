@@ -1,4 +1,4 @@
-import { Menu } from 'lucide-react'
+import { PixelIcons } from '@/components/icons/PixelIcons'
 import { useTranslation } from 'react-i18next'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { EditorMobileSidebar } from '@/components/editor/EditorMobileSidebar'
@@ -43,7 +43,7 @@ export function EditorMobileNav({
           className={cn(editorPixelIconButtonClass(), 'inline-flex size-8 shrink-0 items-center justify-center')}
           onClick={() => onOpenChange(true)}
         >
-          <Menu className="size-4" />
+          <PixelIcons.Menu />
         </button>
         <div className="min-w-0 flex-1">
           <h1 className="truncate text-lg font-bold leading-none text-foreground">{headerTitle}</h1>

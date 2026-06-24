@@ -13,6 +13,7 @@ import type {
 import { chapterWriteProgressLabel, toolDisplayName } from './agentLabels'
 import {
   formatToolInputFromPayload,
+  isToolAckJsonStub,
   toolOutputFromPayload,
 } from './toolDetailFormat'
 import { isHiddenUiTool } from './agentHiddenTools'
@@ -258,19 +259,30 @@ function outputSummaryFromPayload(event: AgentEventEnvelope): string | undefined
   const toolName = typeof payload.name === 'string' ? payload.name : ''
   const labels = wireResultLabels(event)
   if (typeof payload.output_summary === 'string' && payload.output_summary.trim()) {
-    return payload.output_summary.trim()
+    const summary = payload.output_summary.trim()
+    if (isToolAckJsonStub(summary)) {
+      return undefined
+    }
+    return summary
   }
   if (labels?.length) {
     return undefined
   }
   if (typeof payload.display_excerpt === 'string' && payload.display_excerpt.trim()) {
-    return payload.display_excerpt.trim()
+    const excerpt = payload.display_excerpt.trim()
+    if (isToolAckJsonStub(excerpt)) {
+      return undefined
+    }
+    return excerpt
   }
   if (typeof payload.action_label === 'string' && payload.action_label) {
     return payload.action_label
   }
   if (typeof payload.output === 'string' && payload.output.trim()) {
     const text = payload.output.trim()
+    if (isToolAckJsonStub(text)) {
+      return undefined
+    }
     const canonical = normalizeToolName(toolName)
     const compactOnly =
       canonical === 'Read' ||
@@ -888,6 +900,11 @@ export function applyAgentEvent(
         ? payloadRecord.display_excerpt
         : undefined
     const toolName = typeof payloadRecord.name === 'string' ? payloadRecord.name : undefined
+    const canonicalTool = normalizeToolName(toolName)
+    const allowProgressSummary =
+      canonicalTool === 'WriteChapter' ||
+      canonicalTool === 'EditChapter' ||
+      canonicalTool === 'Agent'
     if (toolName === 'output' && next.messageContent.trim()) {
       return next
     }
@@ -899,7 +916,7 @@ export function applyAgentEvent(
         stepStates = [...next.stepStates]
         stepStates[idx] = {
           ...prev,
-          ...(progressMsg && !displayExcerpt
+          ...(progressMsg && !displayExcerpt && allowProgressSummary
             ? { detail: progressMsg, outputSummary: progressMsg }
             : {}),
           ...(displayExcerpt
@@ -918,8 +935,12 @@ export function applyAgentEvent(
           status: 'started',
           title: toolTitle(event),
           toolName,
-          detail: displayExcerpt ? undefined : progressMsg,
-          outputSummary: displayExcerpt ? undefined : progressMsg,
+          detail: displayExcerpt ? undefined : allowProgressSummary ? progressMsg : undefined,
+          outputSummary: displayExcerpt
+            ? undefined
+            : allowProgressSummary
+              ? progressMsg
+              : undefined,
           displayExcerpt,
           toolOutputDetail: displayExcerpt,
         }

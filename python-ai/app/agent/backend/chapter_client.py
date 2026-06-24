@@ -13,9 +13,11 @@ from app.agent.backend.chapter_store import (
     iter_chapter_read_slice_stream,
     normalize_chapter_summary,
     persist_chapter_write,
+    patch_chapter_lines,
     reorder_novel_chapters,
     resolve_chapter_row_api,
     update_chapter_sort_order,
+    update_chapter_title,
 )
 
 __all__ = [
@@ -31,7 +33,9 @@ __all__ = [
     "iter_chapter_read_slice_stream",
     "normalize_chapter_summary",
     "persist_chapter_write",
+    "patch_chapter_lines",
     "reorder_novel_chapters",
     "resolve_chapter_row_api",
     "update_chapter_sort_order",
+    "update_chapter_title",
 ]

@@ -42,9 +42,16 @@ def test_apply_moves_partial():
     assert moved == ["d", "a", "b", "c"]
 
 
-def test_build_reorder_appends_missing_ids():
+def test_build_reorder_requires_full_chapter_set():
     rows = _rows(("a", "第一章", 1), ("b", "第二章", 2), ("c", "第三章", 3))
     ids, err = build_reorder_ids(rows, chapter_ids=["b", "a"])
+    assert err is not None
+    assert "exactly once" in err
+
+
+def test_build_reorder_full_permutation():
+    rows = _rows(("a", "第一章", 1), ("b", "第二章", 2), ("c", "第三章", 3))
+    ids, err = build_reorder_ids(rows, chapter_ids=["b", "a", "c"])
     assert err is None
     assert ids == ["b", "a", "c"]
 

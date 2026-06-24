@@ -95,24 +95,23 @@ def test_read_chapter_json_schema_one_of():
         assert branch.get("additionalProperties") is False
 
 
-def test_edit_chapter_json_schema_one_of():
+def test_edit_chapter_json_schema_one_of_line_edit():
     schema = EditChapterInput.model_json_schema()
     assert "oneOf" in schema
     required = _one_of_required_sets(schema)
-    assert {"index"} in required
-    assert {"chapter_id"} in required
-    assert {"title"} in required
+    assert {"chapter_id", "line_start", "line_content"} in required
+    line_branch = next(
+        b for b in schema["oneOf"] if "line_content" in b.get("required", [])
+    )
+    lc = line_branch["properties"]["line_content"]
+    assert lc.get("type") == "string"
+    assert "anyOf" not in lc
 
 
-def test_delete_chapter_json_schema_one_of():
+def test_delete_chapter_json_schema_requires_chapter_id():
     schema = DeleteChapterInput.model_json_schema()
-    assert "oneOf" in schema
-    required = _one_of_required_sets(schema)
-    assert {"chapter_id"} in required
-    assert {"chapter_ids"} in required
-    assert {"title"} in required
-    assert {"index"} in required
-    assert {"dedupe_title"} in required
+    assert schema.get("required") == ["chapter_id"]
+    assert "oneOf" not in schema
 
 
 def test_update_memory_fields_json_schema_one_of():

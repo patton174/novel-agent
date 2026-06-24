@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Menu, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { PixelIcons } from '@/components/icons/PixelIcons'
 import { cn } from '@/lib/utils'
+import { editorPixelIconButtonClass } from '@/lib/editorPixelClasses'
 import { NovelAiPixelWordmark } from './pixel/NovelAiPixelWordmark'
 import { MKT_CTA_PRIMARY } from '@/lib/marketingCta'
 import { MarketingAuthFlipCta } from './MarketingAuthFlipCta'
@@ -114,12 +115,12 @@ export function MarketingNav() {
           )}
           <button
             type="button"
-            className="inline-flex size-9 shrink-0 items-center justify-center border-2 border-foreground bg-surface text-foreground"
+            className={cn(editorPixelIconButtonClass(), 'size-9 text-foreground')}
             aria-expanded={open}
             aria-label={open ? t('marketing:nav.close') : t('marketing:nav.menu')}
             onClick={() => setOpen((v) => !v)}
           >
-            {open ? <X className="size-4" /> : <Menu className="size-4" />}
+            {open ? <PixelIcons.X /> : <PixelIcons.Menu />}
           </button>
         </div>
       </nav>

@@ -206,6 +206,8 @@ export function StoryMemoryModal({
                 scope={resolvedScope ?? undefined}
                 emptyContentTitle={t('editor:memory.emptyContentTitle')}
                 emptyContentDescription={t('editor:memory.emptyContentDescription')}
+                showHeader={false}
+                embedded
               />
             ) : (
               <p className="py-8 text-center text-[13px] text-muted-foreground">

@@ -61,10 +61,24 @@ def patched(monkeypatch):
         captured["payload"] = payload
         return True, {"persisted": True, **payload}, ""
 
+    async def _update_title(_ctx, _cid, title):
+        captured["title"] = title
+        return True, ""
+
+    async def _patch_lines(_ctx, _cid, *, line_start, line_end, line_content):
+        captured["patch"] = {
+            "line_start": line_start,
+            "line_end": line_end,
+            "line_content": line_content,
+        }
+        return True, {"chapter_id": _cid, "content": line_content}, ""
+
     monkeypatch.setattr(chapter_catalog, "load_chapter_rows", _load_rows)
     monkeypatch.setattr(chapter_tool, "resolve_chapter_target", _resolve_target)
     monkeypatch.setattr(chapter_tool.chapter_client, "fetch_chapter_full", _full)
     monkeypatch.setattr(chapter_tool.chapter_client, "persist_chapter_write", _persist)
+    monkeypatch.setattr(chapter_tool.chapter_client, "update_chapter_title", _update_title)
+    monkeypatch.setattr(chapter_tool.chapter_client, "patch_chapter_lines", _patch_lines)
     return captured
 
 
@@ -88,9 +102,8 @@ def test_new_title_rename_keeps_body(patched):
         )
     )
     assert not out.is_error
-    assert patched["payload"]["title"] == "崭新标题"
-    # Rename-only keeps the original body.
-    assert patched["payload"]["content"].strip() == "原始正文内容"
+    assert patched["title"] == "崭新标题"
+    assert "payload" not in patched
 
 
 def test_new_content_and_rename_together(patched):
@@ -108,32 +121,51 @@ def test_new_content_and_rename_together(patched):
 
 
 def test_nothing_to_edit_is_schema_invalid(patched):
-    out = asyncio.run(chapter_tool.edit_chapter(_ctx(), EditChapterInput(chapter_id="ch-1")))
+    with pytest.raises(Exception):
+        EditChapterInput(chapter_id="ch-1")
+
+
+def test_same_title_rename_is_no_op(patched):
+    out = asyncio.run(
+        chapter_tool.edit_chapter(
+            _ctx(), EditChapterInput(chapter_id="ch-1", new_title="旧标题")
+        )
+    )
     assert out.is_error
     assert extract_error_code(out.content) == ToolErrorCode.SCHEMA_INVALID
-    assert "payload" not in patched  # never persisted
+    assert "payload" not in patched
 
 
-def test_old_string_not_found_returns_structured_error(patched):
+def test_line_range_edit(patched):
     out = asyncio.run(
         chapter_tool.edit_chapter(
             _ctx(),
             EditChapterInput(
-                chapter_id="ch-1", old_string="不存在的片段", new_string="X"
+                chapter_id="ch-1",
+                line_start=1,
+                line_content="修改后的首行",
+            ),
+        )
+    )
+    assert not out.is_error
+    assert patched["patch"]["line_start"] == 1
+    assert patched["patch"]["line_content"] == "修改后的首行"
+
+
+def test_line_edit_out_of_range(patched, monkeypatch):
+    async def _fail_patch(*_a, **_k):
+        return False, {}, "lineStart out of range (1-1)"
+
+    monkeypatch.setattr(chapter_tool.chapter_client, "patch_chapter_lines", _fail_patch)
+    out = asyncio.run(
+        chapter_tool.edit_chapter(
+            _ctx(),
+            EditChapterInput(
+                chapter_id="ch-1",
+                line_start=99,
+                line_content="X",
             ),
         )
     )
     assert out.is_error
-    assert extract_error_code(out.content) == ToolErrorCode.OLD_STRING_NOT_FOUND
-    assert "payload" not in patched
-
-
-def test_targeted_old_string_patch_still_works(patched):
-    out = asyncio.run(
-        chapter_tool.edit_chapter(
-            _ctx(),
-            EditChapterInput(chapter_id="ch-1", old_string="原始", new_string="修改"),
-        )
-    )
-    assert not out.is_error
-    assert patched["payload"]["content"].strip() == "修改正文内容"
+    assert extract_error_code(out.content) == ToolErrorCode.SCHEMA_INVALID

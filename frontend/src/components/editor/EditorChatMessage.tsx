@@ -139,8 +139,8 @@ function EditorChatMessageInner({
   const showMessageTodoPanel = todoItems.length > 0
 
   return (
-    <div className="flex w-full flex-col items-start">
-      <div className="flex w-full max-w-full flex-col gap-2 font-mono text-[0.82rem] leading-relaxed text-foreground">
+      <div className="flex w-full min-w-0 max-w-full flex-col items-start">
+        <div className="flex w-full min-w-0 max-w-full flex-col gap-2 font-mono text-[0.82rem] leading-relaxed text-foreground">
         {message.agentStreamError &&
         phase === 'error' &&
         !errorAlreadyInToolResults &&
@@ -156,7 +156,7 @@ function EditorChatMessageInner({
           <div
             className={cn(
               TIMELINE_ICON_GUTTER,
-              'flex flex-col overflow-visible',
+              'flex max-w-full flex-col overflow-x-hidden',
               streamActive && 'agent-stream-reveal-shell',
             )}
             data-testid="assistant-stream-shell"

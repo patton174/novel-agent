@@ -99,10 +99,12 @@
     "defaultTitle": "账户设置",
     "accountTitle": "账户与账单",
     "accountDesc": "邮箱验证、基本资料与用量账单",
-    "themeTitle": "外观主题",
-    "themeDesc": "选择浅色、深色或跟随系统外观",
+    "themeTitle": "个性设置",
+    "themeDesc": "主题与界面语言，在本设备记住偏好",
     "uiTheme": "界面主题",
     "themeHint": "切换后立即生效，并在本设备记住偏好。",
+    "uiLanguage": "显示语言",
+    "languageHint": "切换后立即生效，并在本设备记住偏好。",
     "feedbackTitle": "分享使用感受",
     "feedbackDesc": "你的评价会出现在首页创作者反馈区，帮助其他作者了解真实体验。",
     "feedbackPlaceholder": "写下你对执行过程、续写、记忆等功能的使用感受…",
@@ -111,6 +113,17 @@
     "feedbackSent": "评价已提交，感谢分享",
     "feedbackError": "提交失败，请稍后再试",
     "feedbackAlreadySubmitted": "已评价"
+  },
+  "model": {
+    "defaultTitle": "默认模型",
+    "defaultDesc": "Agent 对话默认使用的模型（可在聊天区临时切换）",
+    "byokTitle": "我的私有模型",
+    "byokBadge": "私有·不计费",
+    "addByok": "新建私有模型",
+    "platformDefault": "平台默认",
+    "public": "公共模型",
+    "defaultSaved": "默认模型已更新",
+    "defaultSaveFailed": "设置默认模型失败"
   },
   "bookstore": {
     "loadFail": "加载书库失败",

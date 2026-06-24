@@ -2,6 +2,23 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { ChatComposer } from './ChatComposer'
 
+vi.mock('@/components/model/ModelSelector', () => ({
+  ModelSelector: ({
+    onChange,
+  }: {
+    value?: string | null
+    onChange: (v: string | null) => void
+  }) => (
+    <select
+      data-testid="model-selector"
+      onChange={(e) => onChange(e.target.value || null)}
+    >
+      <option value="">default</option>
+      <option value="pub:test">Test Model</option>
+    </select>
+  ),
+}))
+
 describe('ChatComposer', () => {
   it('renders sharp textarea and sends on button click', () => {
     const onSend = vi.fn()
@@ -12,12 +29,13 @@ describe('ChatComposer', () => {
         value="你好"
         onChange={onChange}
         onSend={onSend}
-        hostModeEnabled={false}
-        onHostModeChange={vi.fn()}
+        modelOverride={null}
+        onModelOverrideChange={vi.fn()}
       />,
     )
 
     expect(screen.getByTestId('chat-composer')).toBeInTheDocument()
+    expect(screen.getByTestId('composer-attach-btn')).toBeInTheDocument()
     fireEvent.click(screen.getByTestId('send-btn'))
     expect(onSend).toHaveBeenCalled()
   })
@@ -33,8 +51,8 @@ describe('ChatComposer', () => {
         isLoading
         streamActive
         onStreamPause={onStreamPause}
-        hostModeEnabled={false}
-        onHostModeChange={vi.fn()}
+        modelOverride={null}
+        onModelOverrideChange={vi.fn()}
       />,
     )
 
@@ -53,8 +71,8 @@ describe('ChatComposer', () => {
         isLoading
         streamActive
         onStreamAbort={onStreamAbort}
-        hostModeEnabled={false}
-        onHostModeChange={vi.fn()}
+        modelOverride={null}
+        onModelOverrideChange={vi.fn()}
       />,
     )
 

@@ -7,12 +7,8 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useMarkRouteSeen } from '@/hooks/useMarkRouteSeen'
 import { EDITOR_CREATE_HREF, editorNovelHref } from '@/lib/editorRoutes'
 import { formatTokenCount } from '@/api/billingApi'
+import { ProIconLibrary, ProIconNovel, ProIconPencil } from '@/components/pro/icons/proIcons'
 import { useDashboardHome } from './useDashboardHome'
-import {
-  ProIconNovel,
-  ProIconPencil,
-  ProIconLibrary,
-} from '@/components/pro/icons/proIcons'
 
 /**
  * 仪表盘首页 · 桌面端。Neo-Brutalist Editorial：
@@ -65,14 +61,14 @@ export function DashboardHomeDesktop() {
             to="/dashboard/novels"
             className="inline-flex items-center gap-2 border-2 border-black bg-white px-4 py-2 font-mono text-sm font-bold uppercase tracking-wider text-ink shadow-soft transition-all hover:bg-neon active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
           >
-            <ProIconLibrary size={16} />
+            <ProIconLibrary size={18} />
             {t('dashboard:home.manageNovels')}
           </Link>
           <Link
             to={editorEntryHref}
             className="inline-flex h-11 items-center gap-2 border-2 border-black bg-primary px-6 font-mono text-sm font-bold uppercase tracking-wider text-white shadow-soft transition-all hover:bg-neon hover:text-ink active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
           >
-            <ProIconPencil size={16} />
+            <ProIconPencil size={18} />
             {primaryNovelId ? t('dashboard:home.continueWriting') : t('dashboard:home.enterEditor')}
           </Link>
         </div>

@@ -96,4 +96,13 @@ describe('AgentMarkdown', () => {
     const { container } = render(<AgentMarkdown text="**完成**" />)
     expect(container.querySelector('[data-markdown-mode="static"]')).toBeTruthy()
   })
+
+  it('renders flattened fenced code blocks in assistant prose', () => {
+    const flat =
+      '### 💕 网恋伏笔设计 ``` 关键问题：她是怎么找到林逸的？ ✅ 合理化解释： 1. 留学时在游戏里认识 ``` ---'
+    const { container } = render(<AgentMarkdown text={flat} variant="memory" />)
+    const root = container.querySelector('[data-variant="memory"]')!
+    const pre = within(root).getByText(/关键问题：她是怎么找到林逸的？/i).closest('pre')
+    expect(pre).toBeTruthy()
+  })
 })

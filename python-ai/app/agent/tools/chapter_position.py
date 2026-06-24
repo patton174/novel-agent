@@ -187,7 +187,11 @@ def apply_moves(ids: list[str], moves: list[tuple[str, int]]) -> tuple[list[str]
             return working, "move chapter_id is empty"
         if cid not in working:
             return working, f"chapter_id not in catalog: {cid}"
+        if position < 1 or position > len(working):
+            return working, f"position {position} out of range (1-{len(working)})"
         working = insert_id_at_position(working, cid, position)
+    if len(working) != len(set(working)):
+        return working, "duplicate chapter_id in result order"
     return working, None
 
 
@@ -201,7 +205,12 @@ def build_reorder_ids(
     known = set(current)
 
     if moves:
-        return apply_moves(current, moves)
+        working, err = apply_moves(current, moves)
+        if err:
+            return [], err
+        if set(working) != known:
+            return [], "moves must preserve the full chapter set"
+        return working, None
 
     if not chapter_ids:
         return [], "Provide chapter_ids or moves."
@@ -209,14 +218,18 @@ def build_reorder_ids(
     cleaned = [str(cid).strip() for cid in chapter_ids if str(cid).strip()]
     if not cleaned:
         return [], "chapter_ids is empty"
+    if len(cleaned) != len(set(cleaned)):
+        return [], "duplicate chapter_id in chapter_ids"
 
-    missing = [cid for cid in cleaned if cid not in known]
-    if missing:
-        return [], f"Unknown chapter_id(s): {', '.join(missing[:3])}"
-
-    extras = [cid for cid in current if cid not in cleaned]
-    if extras:
-        cleaned = cleaned + extras
+    missing = sorted(known - set(cleaned))
+    extra = sorted(set(cleaned) - known)
+    if missing or extra:
+        parts: list[str] = []
+        if missing:
+            parts.append(f"missing: {', '.join(missing[:3])}")
+        if extra:
+            parts.append(f"unknown: {', '.join(extra[:3])}")
+        return [], f"chapter_ids must list every chapter exactly once ({'; '.join(parts)})"
 
     return cleaned, None
 

@@ -7,6 +7,7 @@ import cn.novelstudio.module.content.dto.ChapterSearchHitDTO;
 import cn.novelstudio.module.content.dto.ChapterSummaryDTO;
 import cn.novelstudio.module.content.dto.CreateChapterRequest;
 import cn.novelstudio.module.content.dto.ReindexStatusDTO;
+import cn.novelstudio.module.content.dto.PatchChapterLinesRequest;
 import cn.novelstudio.module.content.dto.UpdateChapterRequest;
 import cn.novelstudio.module.content.entity.ChapterEntity;
 import cn.novelstudio.module.content.entity.ChapterVersionEntity;
@@ -14,6 +15,7 @@ import cn.novelstudio.module.content.entity.VolumeEntity;
 import cn.novelstudio.module.content.repository.ChapterRepository;
 import cn.novelstudio.module.content.repository.NovelRepository;
 import cn.novelstudio.module.content.repository.VolumeRepository;
+import cn.novelstudio.module.content.support.ChapterLineEditSupport;
 import cn.novelstudio.module.content.support.ContentExceptions;
 import cn.novelstudio.module.content.support.ChapterReadStreamWriter;
 import lombok.RequiredArgsConstructor;
@@ -235,8 +237,8 @@ public class ChapterService {
         int listIndex
     ) {
         ChapterDTO chapter = getChapter(userId, chapterId);
-        String markdown = toAgentMarkdown(chapter, listIndex);
-        String[] allLines = markdown.split("\\R", -1);
+        String content = chapter.content() == null ? "" : chapter.content();
+        String[] allLines = ChapterLineEditSupport.splitContentLines(content);
         int total = allLines.length;
         int start = offset == null || offset < 1 ? 0 : Math.min(offset - 1, total);
         int end = total;
@@ -318,6 +320,26 @@ public class ChapterService {
         indexClient.indexChapter(saved.getNovelId(), toDto(saved));
         recordWritingDeltaForNovel(saved.getNovelId(), 0, saved.getWordCount() == null ? 0 : saved.getWordCount());
         return toDto(saved);
+    }
+
+    @Transactional
+    public ChapterDTO patchChapterLines(
+        Long userId,
+        String chapterId,
+        PatchChapterLinesRequest request,
+        String source
+    ) {
+        ChapterEntity entity = chapterRepository.findById(chapterId)
+            .orElseThrow(ContentExceptions::chapterNotFound);
+        assertNovelOwned(userId, entity.getNovelId());
+        String current = entity.getContent() == null ? "" : entity.getContent();
+        String updated = ChapterLineEditSupport.replaceLineRange(
+            current,
+            request.lineStart(),
+            request.lineEnd(),
+            request.lineContent()
+        );
+        return applyUpdate(entity, null, updated, null, null, source);
     }
 
     @Transactional
@@ -457,6 +479,28 @@ public class ChapterService {
         assertNovelOwned(userId, novelId);
         if (chapterIds == null || chapterIds.isEmpty()) {
             throw ContentExceptions.badRequest("chapter_ids 不能为空");
+        }
+        List<ChapterSummaryDTO> current = listSummaries(userId, novelId);
+        java.util.Set<String> known = current.stream()
+            .map(ChapterSummaryDTO::id)
+            .collect(java.util.stream.Collectors.toCollection(java.util.LinkedHashSet::new));
+        java.util.Set<String> provided = new java.util.LinkedHashSet<>(chapterIds);
+        if (provided.size() != chapterIds.size()) {
+            throw ContentExceptions.badRequest("duplicate chapter_id in chapter_ids");
+        }
+        if (!known.equals(provided)) {
+            java.util.Set<String> missing = new java.util.LinkedHashSet<>(known);
+            missing.removeAll(provided);
+            java.util.Set<String> extra = new java.util.LinkedHashSet<>(provided);
+            extra.removeAll(known);
+            StringBuilder msg = new StringBuilder("chapter_ids must list every chapter exactly once");
+            if (!missing.isEmpty()) {
+                msg.append(" (missing: ").append(missing.stream().limit(3).toList()).append(')');
+            }
+            if (!extra.isEmpty()) {
+                msg.append(" (unknown: ").append(extra.stream().limit(3).toList()).append(')');
+            }
+            throw ContentExceptions.badRequest(msg.toString());
         }
         for (int i = 0; i < chapterIds.size(); i++) {
             ChapterEntity entity = chapterRepository.findById(chapterIds.get(i))

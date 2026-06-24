@@ -148,6 +148,69 @@ def create_memory_one_of_schema(*, properties: dict[str, Any]) -> JsonSchemaValu
     return {"oneOf": branches}
 
 
+def edit_chapter_one_of_schema(*, properties: dict[str, Any]) -> JsonSchemaValue:
+    """oneOf: line edit | rename | move | rewrite | full-body replace."""
+    branches: list[JsonSchemaValue] = []
+    if all(k in properties for k in ("chapter_id", "line_start", "line_content")):
+        line_props = _pick_properties(
+            properties,
+            ("chapter_id", "line_start", "line_content"),
+            ("line_end",),
+        )
+        line_props["line_content"] = _required_string_property(properties, "line_content")
+        branches.append(
+            {
+                "type": "object",
+                "required": ["chapter_id", "line_start", "line_content"],
+                "properties": line_props,
+                "additionalProperties": False,
+            }
+        )
+    if all(k in properties for k in ("chapter_id", "new_title")):
+        branches.append(
+            {
+                "type": "object",
+                "required": ["chapter_id", "new_title"],
+                "properties": _pick_properties(properties, ("chapter_id", "new_title")),
+                "additionalProperties": False,
+            }
+        )
+    if all(k in properties for k in ("chapter_id", "index")):
+        branches.append(
+            {
+                "type": "object",
+                "required": ["chapter_id", "index"],
+                "properties": _pick_properties(properties, ("chapter_id", "index")),
+                "additionalProperties": False,
+            }
+        )
+    if all(k in properties for k in ("chapter_id", "rewrite")):
+        rewrite_props = _pick_properties(properties, ("chapter_id", "rewrite"))
+        rewrite_props["rewrite"] = dict(rewrite_props.get("rewrite") or {})
+        rewrite_props["rewrite"]["const"] = True
+        rewrite_props["rewrite"].pop("default", None)
+        branches.append(
+            {
+                "type": "object",
+                "required": ["chapter_id", "rewrite"],
+                "properties": rewrite_props,
+                "additionalProperties": False,
+            }
+        )
+    if all(k in properties for k in ("chapter_id", "new_content")):
+        content_props = _pick_properties(properties, ("chapter_id", "new_content"))
+        content_props["new_content"] = _required_string_property(properties, "new_content")
+        branches.append(
+            {
+                "type": "object",
+                "required": ["chapter_id", "new_content"],
+                "properties": content_props,
+                "additionalProperties": False,
+            }
+        )
+    return {"oneOf": branches}
+
+
 def reorder_chapters_one_of_schema(*, properties: dict[str, Any]) -> JsonSchemaValue:
     """oneOf: chapter_ids or moves."""
     branches = []

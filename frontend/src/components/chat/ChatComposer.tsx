@@ -2,14 +2,15 @@ import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { AgentContextUsage } from '../../types/agent'
 import type { ComposerSpinnerMode } from '../../utils/deriveComposerSpinnerMode'
-import { Switch } from '../ui/switch'
+import { ModelSelector } from '@/components/model/ModelSelector'
 import { EditorButton, EditorSendIconLayer } from '../ui/EditorButton'
 import { ComposerStatusBar } from './ComposerStatusBar'
 import { cn } from '@/lib/utils'
+import { editorPixelIconButtonClass } from '@/lib/editorPixelClasses'
+import { appToast } from '@/stores/appToastStore'
 import {
   EDITOR_PIXEL_COMPOSER_TEXT,
   EDITOR_PIXEL_COMPOSER_WRAP,
-  EDITOR_PIXEL_HOST_MODE,
 } from '@/lib/editorPixelClasses'
 
 /** 约 4 行正文高度，避免悬浮区过高 */
@@ -17,6 +18,12 @@ const COMPOSER_TEXT_MIN_PX = 40
 const COMPOSER_TEXT_MAX_PX = 100
 
 const Icons = {
+  Plus: () => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" className="size-4">
+      <path d="M5 12h14" />
+      <path d="M12 5v14" />
+    </svg>
+  ),
   ArrowUp: () => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" className="size-4">
       <path d="M12 19V5" />
@@ -35,8 +42,8 @@ export interface ChatComposerProps {
   onChange: (value: string) => void
   onSend: () => void
   isLoading?: boolean
-  hostModeEnabled: boolean
-  onHostModeChange: (enabled: boolean) => void
+  modelOverride?: string | null
+  onModelOverrideChange?: (value: string | null) => void
   streamActive?: boolean
   spinnerMode?: ComposerSpinnerMode
   onStreamPause?: () => void
@@ -49,15 +56,15 @@ export function ChatComposer({
   onChange,
   onSend,
   isLoading = false,
-  hostModeEnabled,
-  onHostModeChange,
+  modelOverride = null,
+  onModelOverrideChange,
   streamActive = false,
   spinnerMode = 'idle',
   onStreamPause,
   onStreamAbort,
   contextUsage,
 }: ChatComposerProps) {
-  const { t } = useTranslation(['editor', 'common'])
+  const { t } = useTranslation(['editor'])
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const streaming = streamActive || isLoading
 
@@ -91,6 +98,10 @@ export function ChatComposer({
     }
   }
 
+  const handleAttachClick = () => {
+    appToast.info(t('editor:chat.attachSoon'))
+  }
+
   return (
     <footer data-testid="chat-composer" className="w-full min-w-0">
       <div className={cn(EDITOR_PIXEL_COMPOSER_WRAP, 'flex w-full min-w-0 flex-col gap-1.5')}>
@@ -113,17 +124,27 @@ export function ChatComposer({
         />
 
         <div className="flex w-full min-w-0 items-center justify-between gap-2 max-md:gap-1.5">
-          <div
-            data-testid="host-mode-control"
-            title={hostModeEnabled ? t('editor:chat.hostModeHint') : t('editor:chat.hostModeOffHint')}
-            className={cn(EDITOR_PIXEL_HOST_MODE, 'inline-flex h-7 shrink-0 items-center')}
-          >
-            <span className="hidden md:inline">{t('common:glossary.hostMode')}</span>
-            <Switch
-              checked={hostModeEnabled}
-              onCheckedChange={onHostModeChange}
-              aria-label={t('common:glossary.hostMode')}
-            />
+          <div className="flex min-w-0 flex-1 items-center gap-1.5">
+            <button
+              type="button"
+              data-testid="composer-attach-btn"
+              onClick={handleAttachClick}
+              disabled={streaming}
+              aria-label={t('editor:chat.attachSoon')}
+              title={t('editor:chat.attachSoon')}
+              className={cn(editorPixelIconButtonClass(), 'text-foreground disabled:opacity-45')}
+            >
+              <Icons.Plus />
+            </button>
+            {onModelOverrideChange ? (
+              <ModelSelector
+                compact
+                value={modelOverride}
+                onChange={onModelOverrideChange}
+                disabled={streaming}
+                className="min-w-0 flex-1"
+              />
+            ) : null}
           </div>
 
           <EditorButton

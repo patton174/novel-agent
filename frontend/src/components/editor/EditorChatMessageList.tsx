@@ -103,16 +103,16 @@ export function EditorChatMessageList({
   return (
     <div
       ref={setMessagesAreaNode}
-      className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-visible overflow-y-auto overscroll-contain py-3 [scrollbar-width:none] [-ms-overflow-style:none] [-webkit-overflow-scrolling:touch] [&::-webkit-scrollbar]:hidden"
+      className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto overscroll-contain py-3 [scrollbar-width:none] [-ms-overflow-style:none] [-webkit-overflow-scrolling:touch] [&::-webkit-scrollbar]:hidden"
       style={{
         paddingBottom: composerBottomInset != null ? `${composerBottomInset}px` : '10.5rem',
       }}
     >
       <div
-        className="relative mx-auto w-full"
+        className="relative mx-auto box-border w-full min-w-0 max-w-full pr-1"
         style={isMobile ? undefined : { maxWidth: editorLayout.contentMaxWidth }}
       >
-        <div className="relative w-full">
+        <div className="relative w-full min-w-0 max-w-full">
           {safeMessages.map((message, index) => (
             <div
               key={message.id}

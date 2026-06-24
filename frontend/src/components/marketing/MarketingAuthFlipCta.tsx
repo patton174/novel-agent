@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { LogIn, UserPlus } from 'lucide-react'
+import { PixelIcons } from '@/components/icons/PixelIcons'
 import { useReducedMotion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
@@ -47,7 +47,7 @@ export function MarketingAuthFlipCta({
           )}
           aria-label={registerLabel}
         >
-          <UserPlus className="size-4" strokeWidth={2.5} />
+          <PixelIcons.UserPlus />
         </Link>
       )
     }
@@ -79,7 +79,7 @@ export function MarketingAuthFlipCta({
             tabIndex={showRegister ? -1 : 0}
             aria-hidden={showRegister}
           >
-            <LogIn className="size-4" strokeWidth={2.5} />
+            <PixelIcons.LogIn />
           </Link>
           <Link
             to="/register"
@@ -88,7 +88,7 @@ export function MarketingAuthFlipCta({
             tabIndex={showRegister ? 0 : -1}
             aria-hidden={!showRegister}
           >
-            <UserPlus className="size-4" strokeWidth={2.5} />
+            <PixelIcons.UserPlus />
           </Link>
         </div>
         <span className="sr-only">{label}</span>

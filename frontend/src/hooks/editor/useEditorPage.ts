@@ -11,6 +11,10 @@ import type { ChapterVersion } from '../../types/novel'
 import { sortChapters } from '../../utils/outlineDrag'
 import { APP_MOBILE_MEDIA, matchesAppMobile } from '@/lib/breakpoints'
 import { readHostModePreference, writeHostModePreference } from '../../utils/agentHostMode'
+import {
+  readComposerModelOverride,
+  writeComposerModelOverride,
+} from '../../utils/composerModelOverride'
 import { toStoredChatMessage } from '../../utils/agentMessagePersist'
 import { saveSessionMessages } from '../../utils/chatSessionStore'
 import { useThemeStore } from '@/stores/themeStore'
@@ -76,6 +80,12 @@ export function useEditorPage() {
     initialSessionId ? adoptAgentSessionId(initialSessionId) : getOrCreateAgentSessionId(),
   )
   const hostModeRef = useRef(hostModeEnabled)
+  const modelOverrideRef = useRef<string | null>(
+    readComposerModelOverride(
+      initialSessionId ? adoptAgentSessionId(initialSessionId) : undefined,
+    ),
+  )
+  const [modelOverride, setModelOverride] = useState<string | null>(() => modelOverrideRef.current)
   const isLoadingRef = useRef(false)
   const refreshSessionsRef = useRef<(novelId?: string | null) => void>(() => {})
   const scrollToBottomRef = useRef<(force?: boolean) => void>(() => {})
@@ -132,6 +142,7 @@ export function useEditorPage() {
     activeChapterId,
     chapterContent,
     hostModeEnabled,
+    modelOverrideRef,
     inputValue,
     setInputValue,
     refreshSessions: (id) => refreshSessionsRef.current(id),
@@ -183,6 +194,21 @@ export function useEditorPage() {
   refreshSessionsRef.current = sessions.refreshSessions
   markTitlePendingRef.current = sessions.markSessionTitlePending
   scheduleTitleSyncRef.current = sessions.scheduleSessionTitleSync
+
+  useEffect(() => {
+    const next = readComposerModelOverride(sessions.activeSession)
+    modelOverrideRef.current = next
+    setModelOverride(next)
+  }, [sessions.activeSession])
+
+  const handleModelOverrideChange = useCallback(
+    (value: string | null) => {
+      modelOverrideRef.current = value
+      setModelOverride(value)
+      writeComposerModelOverride(sessions.activeSession, value)
+    },
+    [sessions.activeSession],
+  )
 
   useEditorBootstrap({
     messages,
@@ -345,6 +371,8 @@ export function useEditorPage() {
     setInputValue,
     hostModeEnabled,
     handleHostModeChange,
+    modelOverride,
+    handleModelOverrideChange,
     novels,
     activeNovelId,
     activeChapterId,

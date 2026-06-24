@@ -120,3 +120,26 @@ def should_fallback_full_body_replace(body: str, old_string: str, new_string: st
     if not stored:
         return True
     return len(replacement) >= max(200, int(len(stored) * 0.55))
+
+
+def apply_line_range_replace(
+    body: str,
+    line_start: int,
+    line_end: int | None,
+    new_text: str,
+) -> tuple[str | None, str | None]:
+    """Replace lines [line_start, line_end] (1-based, inclusive) with new_text."""
+    raw_lines = (body or "").split("\n")
+    if not raw_lines or (len(raw_lines) == 1 and raw_lines[0] == "" and not (body or "")):
+        raw_lines = [""]
+    end = line_end if line_end is not None else line_start
+    n = len(raw_lines)
+    if line_start < 1 or line_start > n:
+        return None, f"line_start out of range (1-{n})"
+    if end < line_start:
+        return None, "line_end must be >= line_start"
+    if end > n:
+        return None, f"line_end out of range ({line_start}-{n})"
+    replacement = (new_text or "").split("\n")
+    merged = raw_lines[: line_start - 1] + replacement + raw_lines[end:]
+    return "\n".join(merged), None

@@ -1,12 +1,12 @@
 /* Pro 组件专用样式：图标描边动画等。Editorial 基调，基于现有 @theme token。
    pathLength=1 由 IconStroke 通过 SVG 属性设置（非 CSS，CSS 无法设置 pathLength）。 */
 
-.pro-icon-stroke--active svg path,
-.pro-icon-stroke--active svg line,
-.pro-icon-stroke--active svg circle,
-.pro-icon-stroke--active svg rect,
-.pro-icon-stroke--active svg polygon,
-.pro-icon-stroke--active svg polyline {
+[data-icon-stroke][data-icon-variant='stroke'].pro-icon-stroke--active svg path,
+[data-icon-stroke][data-icon-variant='stroke'].pro-icon-stroke--active svg line,
+[data-icon-stroke][data-icon-variant='stroke'].pro-icon-stroke--active svg circle,
+[data-icon-stroke][data-icon-variant='stroke'].pro-icon-stroke--active svg rect,
+[data-icon-stroke][data-icon-variant='stroke'].pro-icon-stroke--active svg polygon,
+[data-icon-stroke][data-icon-variant='stroke'].pro-icon-stroke--active svg polyline {
   stroke-dasharray: 1;
   stroke-dashoffset: 1;
   animation: pro-icon-draw 420ms cubic-bezier(0.65, 0, 0.35, 1) forwards;
@@ -19,13 +19,13 @@
   }
 }
 
-/* 未选中态淡色 */
-[data-icon-stroke]:not(.pro-icon-stroke--active) svg path,
-[data-icon-stroke]:not(.pro-icon-stroke--active) svg line,
-[data-icon-stroke]:not(.pro-icon-stroke--active) svg circle,
-[data-icon-stroke]:not(.pro-icon-stroke--active) svg rect,
-[data-icon-stroke]:not(.pro-icon-stroke--active) svg polygon,
-[data-icon-stroke]:not(.pro-icon-stroke--active) svg polyline {
+/* 未选中态：仅线稿图标统一描边色；填充图标保持 fill，避免误加 stroke 看起来像乱码 */
+[data-icon-stroke][data-icon-variant='stroke']:not(.pro-icon-stroke--active) svg path,
+[data-icon-stroke][data-icon-variant='stroke']:not(.pro-icon-stroke--active) svg line,
+[data-icon-stroke][data-icon-variant='stroke']:not(.pro-icon-stroke--active) svg circle,
+[data-icon-stroke][data-icon-variant='stroke']:not(.pro-icon-stroke--active) svg rect,
+[data-icon-stroke][data-icon-variant='stroke']:not(.pro-icon-stroke--active) svg polygon,
+[data-icon-stroke][data-icon-variant='stroke']:not(.pro-icon-stroke--active) svg polyline {
   stroke: currentColor;
 }
 
@@ -43,23 +43,23 @@
 /* 未选中：随父级 ink/70 自然淡化，无需额外规则 */
 
 /* prefers-reduced-motion：跳过绘制，直接显示 */
-.pro-icon-stroke--reduced.pro-icon-stroke--active svg path,
-.pro-icon-stroke--reduced.pro-icon-stroke--active svg line,
-.pro-icon-stroke--reduced.pro-icon-stroke--active svg circle,
-.pro-icon-stroke--reduced.pro-icon-stroke--active svg rect,
-.pro-icon-stroke--reduced.pro-icon-stroke--active svg polygon,
-.pro-icon-stroke--reduced.pro-icon-stroke--active svg polyline {
+[data-icon-stroke][data-icon-variant='stroke'].pro-icon-stroke--reduced.pro-icon-stroke--active svg path,
+[data-icon-stroke][data-icon-variant='stroke'].pro-icon-stroke--reduced.pro-icon-stroke--active svg line,
+[data-icon-stroke][data-icon-variant='stroke'].pro-icon-stroke--reduced.pro-icon-stroke--active svg circle,
+[data-icon-stroke][data-icon-variant='stroke'].pro-icon-stroke--reduced.pro-icon-stroke--active svg rect,
+[data-icon-stroke][data-icon-variant='stroke'].pro-icon-stroke--reduced.pro-icon-stroke--active svg polygon,
+[data-icon-stroke][data-icon-variant='stroke'].pro-icon-stroke--reduced.pro-icon-stroke--active svg polyline {
   animation: none;
   stroke-dashoffset: 0;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .pro-icon-stroke--active svg path,
-  .pro-icon-stroke--active svg line,
-  .pro-icon-stroke--active svg circle,
-  .pro-icon-stroke--active svg rect,
-  .pro-icon-stroke--active svg polygon,
-  .pro-icon-stroke--active svg polyline {
+  [data-icon-stroke][data-icon-variant='stroke'].pro-icon-stroke--active svg path,
+  [data-icon-stroke][data-icon-variant='stroke'].pro-icon-stroke--active svg line,
+  [data-icon-stroke][data-icon-variant='stroke'].pro-icon-stroke--active svg circle,
+  [data-icon-stroke][data-icon-variant='stroke'].pro-icon-stroke--active svg rect,
+  [data-icon-stroke][data-icon-variant='stroke'].pro-icon-stroke--active svg polygon,
+  [data-icon-stroke][data-icon-variant='stroke'].pro-icon-stroke--active svg polyline {
     animation: none;
     stroke-dashoffset: 0;
   }

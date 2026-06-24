@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 
-import { EDITOR_PIXEL_CARD } from '@/lib/editorPixelClasses'
+import { EDITOR_PIXEL_CARD, editorPixelIconSlotClass } from '@/lib/editorPixelClasses'
 import { cn } from '@/lib/utils'
 
 export interface SidebarInsightCardProps {
@@ -51,9 +51,7 @@ export function SidebarInsightCard({
         className,
       )}
     >
-      <div className="flex size-9 shrink-0 items-center justify-center border-2 border-foreground bg-background text-foreground shadow-[1px_1px_0_0_var(--foreground)] [&_svg]:size-4">
-        {icon}
-      </div>
+      <div className={editorPixelIconSlotClass()}>{icon}</div>
       <div className="min-w-0 flex-1">
         <div className="truncate font-mono text-[10px] font-bold uppercase tracking-wide text-foreground">
           {title}

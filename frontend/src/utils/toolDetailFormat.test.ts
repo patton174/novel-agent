@@ -2,8 +2,11 @@ import { describe, expect, it } from 'vitest'
 import {
   buildToolDetailSections,
   formatToolInputFromPayload,
+  isToolAckJsonStub,
+  toolDetailHasExpandableContent,
   toolOutputFromPayload,
 } from './toolDetailFormat'
+import type { AgentStepState } from '../types/agent'
 
 describe('toolDetailFormat', () => {
   it('formats Read tool_input without raw md path', () => {
@@ -98,5 +101,24 @@ describe('toolDetailFormat', () => {
     })
     expect(input).toContain('chapters/x.md')
     expect(output).toContain('第一章')
+  })
+
+  it('detects tool ack JSON stubs', () => {
+    expect(isToolAckJsonStub('{"ok": true, "chapter_id": "x", "index": 1}')).toBe(true)
+    expect(isToolAckJsonStub('《码农的平凡日常》 · 第5行')).toBe(false)
+  })
+
+  it('hides ok-json stub from tool detail output', () => {
+    const step: AgentStepState = {
+      stepId: 's-edit',
+      type: 'tool',
+      status: 'completed',
+      title: '编辑章节',
+      toolName: 'EditChapter',
+      outputSummary: '{"ok": true, "chapter_id": "x", "index": 1}',
+    }
+    const { output } = buildToolDetailSections(step)
+    expect(output).toBeUndefined()
+    expect(toolDetailHasExpandableContent(step)).toBe(false)
   })
 })

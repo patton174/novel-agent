@@ -25,6 +25,7 @@ import {
   readToolBranchLabels,
 } from '../../../utils/ccToolDisplay'
 import {
+  isCompactToolResultText,
   readToolBodyExcerpt,
   toolDetailHasExpandableContent,
 } from '../../../utils/toolDetailFormat'
@@ -241,13 +242,19 @@ export function TimelineToolBlock({
     toolErrorText,
   })
 
-  const resultSnippet = (step.resultLabels?.[0] || step.outputSummary || '').trim()
+  const resultSnippet = (
+    step.displayExcerpt ||
+    step.outputSummary ||
+    step.resultLabels?.[0] ||
+    ''
+  ).trim()
+  const compactResultSnippet = isCompactToolResultText(resultSnippet) ? resultSnippet : ''
   const effectiveInlineResult =
     inlineResult ||
-    (resolved && resultSnippet && !containsToolUseError(resultSnippet)
-      ? resultSnippet.length > 96
-        ? `${resultSnippet.slice(0, 96)}…`
-        : resultSnippet
+    (resolved && compactResultSnippet
+      ? compactResultSnippet.length > 96
+        ? `${compactResultSnippet.slice(0, 96)}…`
+        : compactResultSnippet
       : null)
 
   const branchInner: ReactNode[] = []
@@ -292,7 +299,12 @@ export function TimelineToolBlock({
     )
   }
 
-  if (chapterWriteTool && resolved && toolDetailHasExpandableContent(step)) {
+  if (
+    chapterWriteTool &&
+    resolved &&
+    toolDetailHasExpandableContent(step) &&
+    !effectiveInlineResult
+  ) {
     branchInner.push(
       <ToolDetailPeek
         key="chapter-write-detail"

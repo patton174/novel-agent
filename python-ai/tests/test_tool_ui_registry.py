@@ -28,10 +28,20 @@ def test_build_tool_auto_wires_ui_excerpt():
 
 
 def test_registry_covers_api_tools():
+    from app.agent.tools.registry import build_agent_tools
+
     assert default_ui_excerpt_for_name("Agent") is not None
     assert default_ui_excerpt_for_name("ListChapters") is not None
+    assert default_ui_excerpt_for_name("ChapterAudit") is not None
+    assert default_ui_excerpt_for_name("NarrativeReview") is not None
     assert find_tool_by_name("ReadChapter") is not None
     assert find_tool_by_name("ReadChapter").ui_excerpt is read_chapter_ui_excerpt
+    missing = [
+        t.name
+        for t in build_agent_tools()
+        if t.name not in {"TodoWrite"} and default_ui_excerpt_for_name(t.name) is None
+    ]
+    assert missing == []
 
 
 def test_list_chapters_excerpt_from_json():
@@ -57,5 +67,4 @@ def test_list_chapters_sse_display_excerpt():
         content='{"chapters": [{"chapter_id": "a", "title": "第一章"}]}',
         tool_input={},
     )
-    assert "display_excerpt" in payload
-    assert "第一章" in payload["display_excerpt"]
+    assert payload.get("display_excerpt") == "1 章"

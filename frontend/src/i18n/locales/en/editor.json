@@ -74,7 +74,12 @@
       "skillCall": "Skill Call",
       "emptyHint": "Send a message to plan outlines, continue chapters, or adjust settings",
       "hostRunningBanner": "Hosted run in progress — keep this browser tab open",
-      "streamRecovery": "Reconnecting…"
+      "streamRecovery": "Reconnecting…",
+      "modelLabel": "Select model",
+      "modelLoadFailed": "Model list unavailable — using platform default",
+      "modelUnavailable": "Model service not ready",
+      "modelEmpty": "No models available",
+      "attachSoon": "Add attachment (coming soon)"
     },
     "picker": {
       "unselectedChapter": "No chapter selected",

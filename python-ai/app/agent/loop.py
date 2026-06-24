@@ -16,11 +16,9 @@ from app.agent.context.compact import apply_chapter_tool_patch_to_ctx
 from app.agent.context.compact_autocompact import autocompact_conversation
 from app.agent.context.compact_micro import microcompact_messages
 from app.agent.context.enrich import (
+    bootstrap_run_context,
     enrich_context as _enrich_context,
-)
-from app.agent.context.enrich import (
     enrich_context_for_run,
-    refresh_chapters_from_content_api,
 )
 from app.agent.context.memory_log import build_memory_write_batch_ack
 from app.agent.context.meter import measure_agent_context
@@ -332,7 +330,7 @@ async def run_query_loop(
     req: RunRequest,
 ) -> AsyncIterator[dict[str, Any]]:
     base_ctx = _enrich_context(req.context)
-    base_ctx = await refresh_chapters_from_content_api(base_ctx)
+    base_ctx = await bootstrap_run_context(base_ctx)
     base_ctx = await inject_relevant_context(base_ctx)
     base_ctx = _fresh_run_context(base_ctx)
     state = RunLoopState(
@@ -1049,16 +1047,14 @@ async def run_query_loop(
                                 "ReorderChapters",
                             }
                         )
-                        # P1.2 上下文随写失效：mutation 后必须用真值刷新，不再因
-                        # "tool 是写工具" 就跳过。patch 已携带真值 chapters 时才跳过 API 拉取。
-                        patch_has_fresh_chapters = isinstance(patch, dict) and isinstance(
-                            patch.get("chapters"), list
-                        )
                         catalog_stale = isinstance(patch, dict) and bool(
                             patch.get("catalog_stale")
                         )
-                        _ = (_CHAPTER_WRITE_TOOLS, _MEMORY_WRITE_TOOLS)  # record_chapter_mutation import
-                        refresh_chapters = catalog_stale or not patch_has_fresh_chapters
+                        refresh_chapters = (
+                            tool in _CHAPTER_WRITE_TOOLS
+                            or tool == "ReorderChapters"
+                            or catalog_stale
+                        )
                         state.ctx = await enrich_context_for_run(
                             state.ctx,
                             refresh_chapters=refresh_chapters,
@@ -1130,8 +1126,8 @@ async def run_query_loop(
                             content=(
                                 "以下章节未能写入作品库（标题与作品列表排序可能不一致），"
                                 "请根据错误修正 chapter_id，或查看 RUN_CONTEXT "
-                                "chapter_catalog / memory_catalog（作品库 API 章表/记忆表；"
-                                "Glob 仍可用于列举路径，但不要用 Glob 行数代替章数）：\n"
+                                "novel.chapter_catalog / memory.memory_index（Content API 真值；"
+                                "勿臆造 chapter_id）：\n"
                                 + "\n".join(lines)
                             )
                         )

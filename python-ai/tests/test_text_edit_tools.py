@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from app.agent.tools.chapter_resolve import resolve_chapter_row
 from app.agent.tools.text_edit import (
+    apply_line_range_replace,
     apply_string_replace,
     resolve_old_string_match,
     should_fallback_full_body_replace,
@@ -39,6 +40,20 @@ def test_should_fallback_full_body_replace_for_long_rewrite():
     body = "a" * 1000
     assert should_fallback_full_body_replace(body, "missing snippet", "b" * 600) is True
     assert should_fallback_full_body_replace(body, "missing snippet", "tiny fix") is False
+
+
+def test_apply_line_range_replace_single_line():
+    body = "第一行\n第二行\n第三行"
+    new_body, err = apply_line_range_replace(body, 2, None, "替换行")
+    assert err is None
+    assert new_body == "第一行\n替换行\n第三行"
+
+
+def test_apply_line_range_replace_span():
+    body = "a\nb\nc\nd"
+    new_body, err = apply_line_range_replace(body, 2, 3, "X\nY")
+    assert err is None
+    assert new_body == "a\nX\nY\nd"
 
 
 def test_resolve_chapter_row_by_index():

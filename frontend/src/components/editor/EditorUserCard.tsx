@@ -1,7 +1,8 @@
 import { useCallback, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { fetchUserInfo } from '@/api/userApi'
-import { ProIconSettings } from '@/components/pro/icons/proIcons'
+import { PixelIcons } from '@/components/icons/PixelIcons'
+import { editorPixelIconButtonClass } from '@/lib/editorPixelClasses'
 import { UserPixelAvatar } from '@/components/avatars/PixelAvatar'
 import { PixelAvatarFrame } from '@/components/avatars/PixelAvatarFrame'
 import { syncPixelAvatarForUser } from '@/stores/pixelAvatarStore'
@@ -88,7 +89,7 @@ export function EditorUserCard({ onOpenProfile, onOpenSettings, onOpenAvatarEdit
       <EditorButton
         type="button"
         variant="icon"
-        className="size-7 shrink-0 opacity-70 transition-opacity group-hover:opacity-100"
+        className={cn(editorPixelIconButtonClass(), 'size-7 shrink-0 opacity-70 transition-opacity group-hover:opacity-100')}
         aria-label={t('editor:user.openSettings')}
         title={t('editor:user.openSettings')}
         onClick={(e) => {
@@ -96,7 +97,7 @@ export function EditorUserCard({ onOpenProfile, onOpenSettings, onOpenAvatarEdit
           onOpenSettings()
         }}
       >
-        <ProIconSettings size={14} />
+        <PixelIcons.Settings />
       </EditorButton>
     </div>
   )

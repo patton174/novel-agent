@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { ShimmerScanText } from '../../loaders/ShimmerScanText'
-import { translateToolDisplayName, translateToolOutcome, translateToolPhase } from '../../../utils/orchestrationI18n'
+import { translateToolDisplayName, translateToolOutcome } from '../../../utils/orchestrationI18n'
 import { EDITOR_PIXEL_TOOL_ROW } from '@/lib/editorPixelClasses'
 import {
   CC_TOOL_HEADLINE_BUTTON,
@@ -57,13 +57,7 @@ export function CcToolRow({
   const showOptionalDetail = Boolean(expanded && hasDetailBranch)
   const showBranchArea = showOptionalDetail
 
-  const metaLine = phaseActive ? (
-    <span className={ORCH_STEP_META} data-testid={testId ? `${testId}-meta` : undefined}>
-      {' · '}
-      <ShimmerScanText active>{translateToolPhase('进行中') ?? '进行中'}</ShimmerScanText>
-      {trimmedInline ? <> · {trimmedInline}</> : null}
-    </span>
-  ) : outcomeBadge ? (
+  const metaLine = phaseActive ? null : outcomeBadge ? (
     <span className={ORCH_STEP_META} data-testid={testId ? `${testId}-meta` : undefined}>
       {' · '}
       <span

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { X } from 'lucide-react'
+import { PixelIcons } from '@/components/icons/PixelIcons'
 import { KnowledgeGraphMini } from '../agent/KnowledgeGraphMini'
 import { EditorButton } from '../ui/EditorButton'
 import { EditorIcons } from './icons'
@@ -126,7 +126,7 @@ export function EditorMobileSidebar({
                       setHintDismissed(true)
                     }}
                   >
-                    <X className="size-3.5" />
+                    <PixelIcons.X className="size-3.5" />
                   </button>
                 </div>
               ) : null}

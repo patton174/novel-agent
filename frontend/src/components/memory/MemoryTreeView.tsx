@@ -54,8 +54,8 @@ function MemoryContentPanel({
     )
   }
   return (
-    <div className="border-2 border-foreground bg-background px-3 py-2.5 font-mono text-[13px] leading-relaxed shadow-[2px_2px_0_0_var(--foreground)]">
-      <AgentMarkdown text={content} variant="pixel" />
+    <div className="min-w-0 text-[13px] leading-relaxed text-foreground">
+      <AgentMarkdown text={content} variant="memory" />
     </div>
   )
 }

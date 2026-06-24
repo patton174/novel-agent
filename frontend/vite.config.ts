@@ -178,6 +178,19 @@ export default defineConfig(({ mode }) => {
       alias: {
         '@': path.resolve(__dirname, './src'),
       },
+      // streamdown / @streamdown/* 与主应用必须共用同一份 React，否则 Invalid hook call
+      dedupe: ['react', 'react-dom'],
+    },
+    optimizeDeps: {
+      include: [
+        'react',
+        'react-dom',
+        'react/jsx-runtime',
+        'react/jsx-dev-runtime',
+        'streamdown',
+        '@streamdown/cjk',
+        '@streamdown/code',
+      ],
     },
     server: {
       host: true,

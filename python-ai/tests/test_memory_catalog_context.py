@@ -114,6 +114,9 @@ def test_stale_empty_tree_patch_falls_back_to_fetch(monkeypatch):
         "app.agent.backend.memory_catalog.fetch_all_memory_trees_sync",
         fake_fetch,
     )
+    from app.agent.backend.memory_catalog import invalidate_memory_trees_cache
+
+    invalidate_memory_trees_cache(user_id=1, novel_id="novel-1")
     trees = load_all_memory_trees(ctx)
     assert trees["世界观"]["nodes"][0]["memory_id"] == "fresh-uuid"
 

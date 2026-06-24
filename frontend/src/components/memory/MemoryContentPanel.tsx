@@ -31,6 +31,10 @@ export interface MemoryContentPanelProps {
   scope?: string
   emptyContentTitle: string
   emptyContentDescription: string
+  /** 侧栏已展示标题时隐藏正文区重复标题 */
+  showHeader?: boolean
+  /** 弹窗右侧正文区：去掉 layout 外框，避免多层灰框嵌套 */
+  embedded?: boolean
 }
 
 export function MemoryContentPanel({
@@ -38,6 +42,8 @@ export function MemoryContentPanel({
   scope,
   emptyContentTitle,
   emptyContentDescription,
+  showHeader = true,
+  embedded = false,
 }: MemoryContentPanelProps) {
   const content = (detail?.content || '').trim()
   if (!content) {
@@ -54,16 +60,21 @@ export function MemoryContentPanel({
 
   return (
     <article
-      className={cn(presentation.containerClass, presentation.levelIndentClass)}
-      style={presentation.accentStyle}
+      className={cn(
+        embedded ? 'min-w-0' : presentation.containerClass,
+        presentation.levelIndentClass,
+      )}
+      style={embedded ? undefined : presentation.accentStyle}
     >
-      <header className={cn('flex items-center gap-2', presentation.titleClass)}>
-        {presentation.icon ? (
-          <MemoryNodeIcon name={presentation.icon} className="size-4 shrink-0 opacity-80" />
-        ) : null}
-        <h3 className="min-w-0 truncate">{detail?.title}</h3>
-      </header>
-      <div className={cn('mt-2', presentation.contentClass)}>
+      {showHeader ? (
+        <header className={cn('flex items-center gap-2', presentation.titleClass)}>
+          {presentation.icon ? (
+            <MemoryNodeIcon name={presentation.icon} className="size-4 shrink-0 opacity-80" />
+          ) : null}
+          <h3 className="min-w-0 truncate">{detail?.title}</h3>
+        </header>
+      ) : null}
+      <div className={cn(embedded ? '' : 'mt-2', presentation.contentClass)}>
         <AgentMarkdown text={content} variant="memory" />
       </div>
     </article>

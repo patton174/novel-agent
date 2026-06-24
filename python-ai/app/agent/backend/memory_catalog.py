@@ -112,7 +112,6 @@ def load_all_memory_trees(ctx: AgentRunContext) -> dict[str, dict[str, Any]]:
     if preloaded is not None and _trees_have_nodes(preloaded):
         return preloaded
 
-    _trees_cache[key] = (now, trees)
     return trees
 
 

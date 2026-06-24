@@ -9,9 +9,32 @@ HIDDEN_UI_TOOLS = frozenset(
 )
 LEGACY_HIDDEN_TOOLS = frozenset({"orchestrator", "plan", "write_chapter"})
 
-READ_RESULT_LABEL_TOOLS = frozenset(
-    {"ReadChapter", "ReadMemory", "ListMemory", "GetMemoryTree", "SearchKnowledge"}
-)
+READ_RESULT_LABEL_TOOLS = frozenset()
+
+_CHAPTER_STREAM_UI_TOOLS = frozenset({"WriteChapter", "EditChapter"})
+
+
+def should_emit_tool_progress_log(tool: str | None) -> bool:
+    """During tool run: only chapter write/edit stream progress (Agent uses subagent_sse)."""
+    return normalize_tool_name(tool or "") in _CHAPTER_STREAM_UI_TOOLS
+
+
+def should_stream_tool_result_excerpt(tool: str | None) -> bool:
+    """Do not stream display_excerpt chunks in tool.progress after tool completes."""
+    _ = tool
+    return False
+
+
+def sse_tool_result_title_only(tool: str | None) -> bool:
+    """tool.completed carries a single result title; tool name already shows the action."""
+    raw = normalize_tool_name(tool or "")
+    if raw in _CHAPTER_STREAM_UI_TOOLS:
+        return False
+    if raw == "Agent":
+        return False
+    if is_ask_user_tool(raw):
+        return False
+    return True
 
 TOOL_DISPLAY_NAMES: dict[str, str] = {
     "ListChapters": "列举章节",
@@ -20,6 +43,8 @@ TOOL_DISPLAY_NAMES: dict[str, str] = {
     "EditChapter": "编辑章节",
     "DeleteChapter": "删除章节",
     "ReorderChapters": "调整章节顺序",
+    "ChapterAudit": "章节目录审查",
+    "NarrativeReview": "叙事审查",
     "ListMemory": "列举记忆",
     "GetMemoryTree": "记忆树",
     "ReadMemory": "查阅记忆",
@@ -116,4 +141,4 @@ def should_forward_worker_live_event(event: dict[str, Any]) -> bool:
 
 
 def should_emit_read_result_labels(tool: str, _file_path: str = "") -> bool:
-    return (tool or "").strip() in READ_RESULT_LABEL_TOOLS
+    return False

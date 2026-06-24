@@ -60,23 +60,20 @@ TOOL_CONTRACTS: dict[str, ToolContract] = {
     ),
     "WriteChapter": ToolContract(
         name="WriteChapter",
-        required_summary=f"`{CHAPTER_TITLE_FIELD}` required; `content` must be empty (stream-only).",
-        example_json='{"title": "咖啡厅奇遇", "position": 3}',
+        required_summary=f"`{CHAPTER_TITLE_FIELD}` + `{CHAPTER_INDEX_FIELD}` required; `content` must be empty (stream-only).",
+        example_json='{"title": "咖啡厅奇遇", "index": 3}',
         list_tool="ListChapters",
     ),
     "EditChapter": ToolContract(
         name="EditChapter",
-        required_summary=CHAPTER_ROW_TARGET_ONE_OF,
-        example_json='{"chapter_id": "<uuid-from-chapter_catalog>", "mode": "patch", "old_string": "…", "new_string": "…"}',
+        required_summary=f"`{CHAPTER_ID_FIELD}` required; optional new_title, index (move), rewrite, new_content, line_start/line_content.",
+        example_json='{"chapter_id": "<uuid-from-chapter_catalog>", "line_start": 12, "line_content": "…"}',
         list_tool="ListChapters",
     ),
     "DeleteChapter": ToolContract(
         name="DeleteChapter",
-        required_summary=(
-            f"One of `{CHAPTER_ID_FIELD}`, `{CHAPTER_INDEX_FIELD}`, `{CHAPTER_TITLE_FIELD}`, "
-            "chapter_ids, or dedupe_title."
-        ),
-        example_json='{"index": 2}',
+        required_summary=f"`{CHAPTER_ID_FIELD}` required.",
+        example_json='{"chapter_id": "<uuid-from-chapter_catalog>"}',
         list_tool="ListChapters",
     ),
     "ReorderChapters": ToolContract(
@@ -335,11 +332,12 @@ def tool_workflow_prompt_block() -> str:
     return f"""## Tool workflow (names = bind_tools schema)
 
 - **Chapters**: `ListChapters` → `{CHAPTER_ID_FIELD}` + `{CHAPTER_INDEX_FIELD}`; `ReadChapter` / `WriteChapter` / `EditChapter` / `DeleteChapter` / `ReorderChapters` / `ChapterAudit` / `NarrativeReview`
-- **WriteChapter**: pure `{CHAPTER_TITLE_FIELD}` (no 第N章 prefix); `position` or `after_chapter_id` controls order (append by default); **never pass `content`** — body streams server-side
+- **WriteChapter**: pure `{CHAPTER_TITLE_FIELD}` + required `{CHAPTER_INDEX_FIELD}` (no 第N章 prefix); create-only — **never pass `content` or `chapter_id`** — body streams server-side
 - **ChapterAudit**: catalog hygiene — duplicate titles, empty chapters, title prefixes
 - **NarrativeReview**: `scope=full_book` for semantic duplicate scan + deep-read; checks memory_node scopes
-- **ReorderChapters**: full `chapter_ids` or partial `moves` [{{chapter_id, position}}]
-- **DeleteChapter**: one of `{CHAPTER_ID_FIELD}`, `{CHAPTER_INDEX_FIELD}`, `{CHAPTER_TITLE_FIELD}`, chapter_ids, dedupe_title
+- **ReorderChapters**: full `chapter_ids` (every chapter exactly once) or partial `moves` [{{chapter_id, position}}]; single-chapter move → `EditChapter.index`
+- **EditChapter**: `{CHAPTER_ID_FIELD}` only for target; `new_title`, `index` (move), `rewrite` / `new_content`, or `line_start`+`line_content` (`line_content` must be a string — use `""` to clear lines, never `null`)
+- **DeleteChapter**: `{CHAPTER_ID_FIELD}` only
 - **Memory**: `GetMemoryTree` / `ListMemory` → `{MEMORY_ID_FIELD}` + `{MEMORY_PARENT_ID_FIELD}` for hierarchy; `CreateMemory` — `{MEMORY_NODE_TYPE_FIELD}=root` (tab label, once per scope; keep root body short) or `{MEMORY_NODE_TYPE_FIELD}=child` (main readable blocks — **split topics into multiple children**, do not dump everything on the root; **child must set `{MEMORY_PARENT_ID_FIELD}` UUID** from memory.scope_root_ids); if scope is already in `memory_index`, only use `child`; `{MEMORY_UPDATE_FIELD_TOOLS}` / `{MEMORY_UPDATE_CONTENT_TOOL}` / `{MEMORY_UPDATE_META_TOOL}`; `MoveMemory` / `DeleteMemory`
 - **Search**: `SearchKnowledge(query)`; `GetCharacterGraph(character)` when KG enabled
 - **TodoWrite**: id + content + status; merge=true with full list

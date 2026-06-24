@@ -112,7 +112,6 @@ async def list_memory(ctx: AgentRunContext, inp: ListMemoryInput) -> ToolCallRes
     entries = [_list_entry(r) for r in rows]
     return ToolCallResult(
         content=json.dumps({"scope": inp.scope, "entries": entries}, ensure_ascii=False),
-        context_patch={"memory_catalog": entries},
     )
 
 
@@ -120,7 +119,6 @@ async def get_memory_tree(ctx: AgentRunContext, inp: GetMemoryTreeInput) -> Tool
     tree = await fetch_memory_tree(ctx, inp.scope)
     return ToolCallResult(
         content=json.dumps(tree, ensure_ascii=False),
-        context_patch={"memory_tree": tree},
     )
 
 

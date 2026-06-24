@@ -14,17 +14,17 @@ CHAPTER_WRITTEN_WORD_MIN = 100
 
 # --- Chapter info chain (window → list → read); keep wording in sync across surfaces ---
 CHAPTER_WINDOW_SCOPE_NOTE = (
-    "【省略版·章节概览】最近若干章的 index/chapter_id/title/字数（无正文）。"
-    "全书章表 → RUN_CONTEXT `chapter_catalog`（Content API）。"
-    "ReadChapter 须显式传 index 或 chapter_id（可从本段复制）。"
+    "【章节焦点】大书时最近若干章的 index/chapter_id/title/字数（无正文）。"
+    "全书章表 → RUN_CONTEXT novel.chapter_catalog（Content API）。"
+    "ReadChapter 须显式传 index 或 chapter_id（从 catalog 复制）。"
 )
 
 CHAPTER_LIST_SCOPE_NOTE = (
     "【章节目录】index=阅读顺序，chapter_id=工具 ID，word_count=字数。"
     "标题为纯文本（勿写第N章前缀，UI 用 index 显示章序）。"
-    "WriteChapter 可用 position / after_chapter_id 指定位置（默认追加）；"
-    "ReorderChapters 可用 moves 局部调序；DeleteChapter 可用 dedupe_title 去重；"
-    "并行写章后可用 ChapterAudit 审查。"
+    "WriteChapter 必传 index 指定插入位置（仅新建）；EditChapter.index 可移动单章；"
+    "ReorderChapters 批量排序（chapter_ids 须含全书每章）；"
+    "DeleteChapter 仅 chapter_id；并行写章后可用 ChapterAudit 审查。"
 )
 
 CHAPTER_DB_CATALOG_NOTE = (
@@ -32,16 +32,15 @@ CHAPTER_DB_CATALOG_NOTE = (
     "禁止构造路径。以本章表的字数/状态为准。"
 )
 
-CHAPTER_INFO_CHAIN_FOR_PROMPT = """## 作品库与记忆（Content API，无 VFS 路径）
-| 来源 | 说明 | 工具字段 |
-|------|------|----------|
-| RUN_CONTEXT `chapter_catalog` | 全书章节元数据 | chapter_id, index, title |
-| RUN_CONTEXT `chapter_window` | 最近章节摘要（含 chapter_id） | chapter_id, index |
-| RUN_CONTEXT `memory_index` | 故事记忆标题索引 | memory_id, scope, title |
-| ListChapters | 章表 JSON（与 catalog 同字段名） | chapter_id, index |
-| ListMemory / GetMemoryTree | 记忆节点列表/树 | memory_id |
+CHAPTER_INFO_CHAIN_FOR_PROMPT = """## 作品库与记忆（Content API）
+| RUN_CONTEXT 字段 | 含义 | 工具字段 |
+|------------------|------|----------|
+| novel.chapter_catalog | 全书章节元数据（Content API 真值） | chapter_id, index |
+| novel.chapter_focus | 大书时最近章节摘要（≥12 章时出现） | chapter_id, index |
+| memory.memory_index | 故事记忆标题索引 | memory_id |
+| ListChapters / ReadMemory | 需要最新列表或正文时再调用 | 同上 |
 
-盘点章节 → chapter_catalog 或 ListChapters；盘点记忆 → memory_index 或 ListMemory。
+盘点章节 → novel.chapter_catalog；盘点记忆 → memory.memory_index。
 WriteChapter 禁止预填 content；ReadChapter/EditChapter 禁止空参数 {}。"""
 _ONBOARDING_HINTS = (
     "你好！当前正在创作",

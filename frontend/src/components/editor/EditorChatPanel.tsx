@@ -26,8 +26,8 @@ export interface EditorChatPanelProps {
   onInputChange: (value: string) => void
   onSend: () => void
   isLoading: boolean
-  hostModeEnabled: boolean
-  onHostModeChange: (enabled: boolean) => void
+  modelOverride?: string | null
+  onModelOverrideChange?: (value: string | null) => void
   onStreamPause: () => void
   onStreamResume: (messageId: string) => void
   onStreamAbort: () => void
@@ -66,8 +66,8 @@ export function EditorChatPanel({
   onInputChange,
   onSend,
   isLoading,
-  hostModeEnabled,
-  onHostModeChange,
+  modelOverride,
+  onModelOverrideChange,
   onStreamPause,
   onStreamResume,
   onStreamAbort,
@@ -113,7 +113,7 @@ export function EditorChatPanel({
 
       <div
         className={cn(
-          'relative flex min-h-0 flex-1 flex-col overflow-x-visible overflow-y-hidden box-border',
+          'relative flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-hidden box-border',
           isMobile ? 'px-2' : '',
         )}
         style={
@@ -139,7 +139,7 @@ export function EditorChatPanel({
         {!isInitial ? (
           <div
             className={cn(
-              'relative flex min-h-0 w-full flex-1 flex-col overflow-x-visible overflow-y-hidden',
+              'relative flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col overflow-x-hidden overflow-y-hidden',
               !isMobile && 'mx-auto',
             )}
             style={isMobile ? undefined : { maxWidth: editorLayout.contentMaxWidth }}
@@ -176,8 +176,8 @@ export function EditorChatPanel({
                   onChange={onInputChange}
                   onSend={onSend}
                   isLoading={isLoading}
-                  hostModeEnabled={hostModeEnabled}
-                  onHostModeChange={onHostModeChange}
+                  modelOverride={modelOverride}
+                  onModelOverrideChange={onModelOverrideChange}
                   streamActive={isLoading}
                   spinnerMode={spinnerMode}
                   onStreamPause={onStreamPause}
@@ -216,8 +216,8 @@ export function EditorChatPanel({
                 onChange={onInputChange}
                 onSend={onSend}
                 isLoading={isLoading}
-                hostModeEnabled={hostModeEnabled}
-                onHostModeChange={onHostModeChange}
+                modelOverride={modelOverride}
+                onModelOverrideChange={onModelOverrideChange}
                 streamActive={isLoading}
                 spinnerMode={spinnerMode}
                 onStreamPause={onStreamPause}

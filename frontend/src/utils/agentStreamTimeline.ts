@@ -10,7 +10,7 @@ import {
 import { formatRunToolStats, formatRunToolStatsCompact } from './agentToolStats'
 import { isHiddenUiTool } from './agentHiddenTools'
 import { isAskUserTool } from './agentToolNames'
-import { sanitizeMessageDeltaChunk, sanitizeThinkText, isWriteChapterStreamLeak } from './sanitizeAgentText'
+import { sanitizeMessageDeltaChunk, sanitizeThinkText } from './sanitizeAgentText'
 import { isToolErrorLikeText } from './toolErrorText'
 import {
   collectDeliveryBlockIds,

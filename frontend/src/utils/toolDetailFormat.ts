@@ -230,6 +230,23 @@ function looksLikeRawToolDump(text: string): boolean {
   )
 }
 
+const CHAPTER_INDEX_ONLY_RE = /^第\d+章$/
+const EMPTY_EXCERPT_MARKERS = new Set(['（空）', '空章节', '已读取', '未变更'])
+
+function isChapterTitleOnlyLine(line: string): boolean {
+  const t = line.trim()
+  if (!t) {
+    return true
+  }
+  if (EMPTY_EXCERPT_MARKERS.has(t)) {
+    return true
+  }
+  if (CHAPTER_INDEX_ONLY_RE.test(t)) {
+    return true
+  }
+  return t.startsWith('《') && t.endsWith('》')
+}
+
 export function readToolBodyExcerpt(step: AgentStepState): string | undefined {
   let raw =
     step.displayExcerpt?.trim() ||
@@ -251,13 +268,65 @@ export function readToolBodyExcerpt(step: AgentStepState): string | undefined {
   }
   if (lines.length === 1) {
     const only = lines[0]
-    if (only.startsWith('《') && only.endsWith('》')) {
+    if (isChapterTitleOnlyLine(only)) {
       return undefined
     }
     return only
   }
   const body = lines.slice(1).join('\n').trim()
   return body || undefined
+}
+
+export function isToolAckJsonStub(text: string | undefined): boolean {
+  const t = (text || '').trim()
+  if (!t.startsWith('{')) {
+    return false
+  }
+  try {
+    const parsed = JSON.parse(t) as Record<string, unknown>
+    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+      return false
+    }
+    const keys = Object.keys(parsed)
+    if (parsed.ok === true && keys.length <= 6) {
+      return true
+    }
+    if (
+      typeof parsed.chapter_id === 'string' &&
+      !('chapters' in parsed) &&
+      keys.length <= 5
+    ) {
+      return true
+    }
+    if (typeof parsed.memory_id === 'string' && keys.length <= 6) {
+      return true
+    }
+    if (typeof parsed.skill === 'string' && parsed.loaded === true) {
+      return true
+    }
+    if ('deleted' in parsed && parsed.ok === true) {
+      return true
+    }
+    return false
+  } catch {
+    return false
+  }
+}
+
+/** @deprecated use isToolAckJsonStub */
+export function isChapterToolOkStub(text: string | undefined): boolean {
+  return isToolAckJsonStub(text)
+}
+
+export function isCompactToolResultText(text: string | undefined): boolean {
+  const t = (text || '').trim()
+  if (!t || t === '（空）' || t === '空章节' || t === '已读取') {
+    return false
+  }
+  if (t.startsWith('{') || isToolAckJsonStub(t)) {
+    return false
+  }
+  return !/tool_use_error|upstream_/i.test(t)
 }
 
 export function buildToolDetailSections(step: AgentStepState): {
@@ -278,11 +347,15 @@ export function buildToolDetailSections(step: AgentStepState): {
         step.outputSummary?.trim() ||
         undefined
   if (output?.trim()) {
-    const normalized = cap(stripToolLineNumbers(normalizeToolDisplayText(output)))
-    output =
-      tool === 'Glob' || tool === 'Grep'
-        ? formatGlobGrepDisplayOutput(normalized)
-        : toolOutputPreview(normalized)
+    if (isToolAckJsonStub(output)) {
+      output = undefined
+    } else {
+      const normalized = cap(stripToolLineNumbers(normalizeToolDisplayText(output)))
+      output =
+        tool === 'Glob' || tool === 'Grep'
+          ? formatGlobGrepDisplayOutput(normalized)
+          : toolOutputPreview(normalized)
+    }
   }
   return {
     input: input?.trim() || undefined,
@@ -295,5 +368,8 @@ export function toolDetailHasExpandableContent(step: AgentStepState): boolean {
     return false
   }
   const { input, output } = buildToolDetailSections(step)
+  if (output && isToolAckJsonStub(output)) {
+    return Boolean(input)
+  }
   return Boolean(input || output)
 }

@@ -208,7 +208,7 @@ def build_main_loop_system_prompt() -> str:
 {memory_style_prompt_block()}
 
 Data lives in **Content API (PostgreSQL)** and **memory_node API** — never construct VFS paths.
-Use RUN_CONTEXT `chapter_catalog` / `memory_index` for IDs when present.
+Use RUN_CONTEXT `novel.chapter_catalog` / `memory.memory_index` for IDs when present.
 
 Available tools: {names}"""
 
@@ -225,8 +225,8 @@ def context_decision_hints() -> dict[str, str]:
 
     return {
         "catalog": (
-            f"Use novel.chapter_catalog for `{CHAPTER_ID_FIELD}` / `{CHAPTER_INDEX_FIELD}`. "
-            "Chapter tools accept index or chapter_id; ListChapters returns the same field names."
+            f"Use RUN_CONTEXT novel.chapter_catalog for `{CHAPTER_ID_FIELD}` / `{CHAPTER_INDEX_FIELD}`. "
+            "Chapter tools accept chapter_id (preferred) or index; call ListChapters when catalog may be stale."
         ),
         "memory": (
             f"Use memory.memory_index for `{MEMORY_ID_FIELD}` per node (each line shows `[{MEMORY_ID_FIELD}=…]`). "

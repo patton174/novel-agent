@@ -263,3 +263,31 @@ def test_create_memory_child_error_lists_scope_root_ids():
     assert err
     assert "scope=世界观" in err
     assert "root-world-uuid" in err
+
+
+def test_edit_chapter_line_content_null_rejected():
+    ctx = AgentRunContext(run_id="r1", session_id="s1", message_id="m1", user_id=1, novel_id="n1")
+    prepared, err = prepare_tool_input(
+        "EditChapter",
+        {
+            "chapter_id": "ch-1",
+            "line_start": 5,
+            "line_content": None,
+        },
+        ctx,
+    )
+    assert prepared is None
+    assert err
+    assert "line_content" in err.lower()
+
+
+def test_edit_chapter_line_content_null_stripped_before_validate():
+    """Null optional keys are stripped; line_start without line_content must fail."""
+    out = apply_tool_input_policy(
+        "EditChapter",
+        {"chapter_id": "ch-1", "line_start": 5, "line_content": None},
+    )
+    assert "line_content" not in out
+    prepared, err = prepare_tool_input("EditChapter", out, _ctx())
+    assert prepared is None
+    assert err

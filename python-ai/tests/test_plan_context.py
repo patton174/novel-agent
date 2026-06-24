@@ -42,7 +42,6 @@ def test_has_character_roster_snapshot():
     }
     assert has_character_roster_snapshot(patch) is True
     assert has_character_roster_snapshot({}) is False
-    assert has_character_roster_snapshot({"memory_catalog": [{"scope": "character", "title": "苏夜"}]}) is True
 
 
 def test_build_plan_context_bounded_slots():
@@ -72,11 +71,10 @@ def test_build_plan_context_bounded_slots():
     ctx_json = build_plan_context(req)
     assert ctx_json["run"]["step_index"] == 12
     assert ctx_json["intent"]["user_message"] == "优化角色库"
-    assert ctx_json["think"] == "x" * 5000
+    assert ctx_json["session"]["think"] == "x" * 4000
     assert ctx_json["memory"]["character_roster"] == ["唐云", "苏夜"]
     assert ctx_json["memory"]["last_read"]["memory_id"] == "m-char"
-    assert "story_snapshot" not in ctx_json.get("memory", {})
-    assert len(ctx_json["think"]) == 5000
+    assert len(ctx_json["session"]["think"]) == 4000
 
 
 def test_build_plan_context_think_pending_confirm_flag():
@@ -88,9 +86,9 @@ def test_build_plan_context_think_pending_confirm_flag():
         think_tool_input={"question": "优化角色库"},
     )
     ctx_json = build_plan_context(req)
-    assert ctx_json["think"] == think
-    assert ctx_json["think_has_pending_confirm"] is True
-    assert "待确认点" in ctx_json["think"]
+    assert ctx_json["session"]["think"] == think
+    assert ctx_json["session"]["think_has_pending_confirm"] is True
+    assert "待确认点" in ctx_json["session"]["think"]
 
 
 def test_main_loop_system_prompt_non_empty():
@@ -111,7 +109,7 @@ def test_context_decision_hints_memory_child_requires_parent_or_scope():
 def test_format_plan_context_message_roundtrip():
     req = PlanRequest(context=_ctx(), think_content="", think_tool_input={})
     text = format_plan_context_message(req)
-    assert "PLAN_CONTEXT_JSON:" in text
+    assert "RUN_CONTEXT_JSON:" in text
     assert "decision_hints" in json.loads(text.split("\n", 1)[1].split("\n\n")[0])
 
 

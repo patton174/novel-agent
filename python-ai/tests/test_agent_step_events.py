@@ -1,5 +1,7 @@
 """Tests for display -> SSE event mapping."""
 
+import json
+
 from app.agent.harness.events import build_tool_completed_sse_payload, emit_display_events
 from app.agent.schemas import DisplayPayload, StepResult
 
@@ -71,7 +73,7 @@ def test_read_memory_error_envelope():
     assert payload["status"] == "error"
 
 
-def test_read_chapter_emits_title_labels_not_md_path():
+def test_read_chapter_emits_title_only():
     content = (
         "---\ntitle: 初入江湖\nchapter_id: abc\nlist_index: 2\nsort_order: 1\n---\n\n正文"
     )
@@ -80,23 +82,117 @@ def test_read_chapter_emits_title_labels_not_md_path():
         content=content,
         tool_input={"chapter_id": "abc"},
     )
-    assert payload["result_labels"] == ["《初入江湖》·作品列表第2章"]
-    assert "display_excerpt" in payload
-    assert "初入江湖" in payload["display_excerpt"]
-    assert "chapter_id" not in payload["display_excerpt"]
+    assert "result_labels" not in payload
+    assert payload.get("display_excerpt") == "《初入江湖》"
+    assert payload.get("output_summary") == "《初入江湖》"
 
 
-def test_list_chapters_sse_uses_display_excerpt():
-    content = '{"chapters": [{"chapter_id": "ch_0", "title": "第一章"}]}'
+def test_read_chapter_sse_uses_catalog_title_without_frontmatter():
+    content = "     1| 第一段\n     2| 第二段"
+    payload = build_tool_completed_sse_payload(
+        "ReadChapter",
+        content=content,
+        tool_input={"index": 1},
+        context_patch={
+            "chapters": [
+                {
+                    "chapter_id": "ch-1",
+                    "id": "ch-1",
+                    "title": "码农的平凡日常",
+                    "list_index": 1,
+                }
+            ]
+        },
+    )
+    assert payload.get("display_excerpt") == "《码农的平凡日常》"
+
+
+def test_read_chapter_sse_uses_read_target_from_context_patch():
+    content = "     1| 正文"
+    payload = build_tool_completed_sse_payload(
+        "ReadChapter",
+        content=content,
+        tool_input={"chapter_id": "ch-1"},
+        context_patch={
+            "read_target": {
+                "chapter_id": "ch-1",
+                "title": "码农的平凡日常",
+                "index": 1,
+            }
+        },
+    )
+    assert payload.get("display_excerpt") == "《码农的平凡日常》"
+    assert payload.get("tool_input", {}).get("title") == "码农的平凡日常"
+
+
+def test_list_chapters_sse_title_count_only():
+    content = '{"count": 1, "chapters": [{"chapter_id": "ch_0", "title": "第一章"}]}'
     payload = build_tool_completed_sse_payload(
         "ListChapters",
         content=content,
         tool_input={},
     )
-    assert "display_excerpt" in payload
-    assert "第一章" in payload["display_excerpt"]
-    assert "output_summary" in payload
-    assert "第一章" in payload["output_summary"]
+    assert payload.get("display_excerpt") == "1 章"
+    assert payload.get("output_summary") == "1 章"
+
+
+def test_edit_chapter_sse_line_edit_title_not_raw_json():
+    content = json.dumps(
+        {"ok": True, "chapter_id": "2067855154601754626", "index": 1},
+        ensure_ascii=False,
+    )
+    payload = build_tool_completed_sse_payload(
+        "EditChapter",
+        content=content,
+        tool_input={"chapter_id": "2067855154601754626", "line_start": 5},
+        context_patch={
+            "chapters": [
+                {
+                    "chapter_id": "2067855154601754626",
+                    "title": "码农的平凡日常",
+                    "list_index": 1,
+                }
+            ]
+        },
+    )
+    assert payload.get("display_excerpt") == "《码农的平凡日常》 · 第5行"
+    assert payload.get("output_summary") == "《码农的平凡日常》 · 第5行"
+    assert not str(payload.get("display_excerpt") or "").startswith("{")
+
+
+def test_write_chapter_sse_title_not_raw_json():
+    content = json.dumps(
+        {"ok": True, "chapter_id": "ch-1", "index": 1, "title": "码农的平凡日常"},
+        ensure_ascii=False,
+    )
+    payload = build_tool_completed_sse_payload(
+        "WriteChapter",
+        content=content,
+        tool_input={"chapter_id": "ch-1", "title": "码农的平凡日常"},
+    )
+    assert payload.get("display_excerpt") == "《码农的平凡日常》"
+    assert not str(payload.get("display_excerpt") or "").startswith("{")
+
+
+def test_delete_chapter_sse_title_not_raw_json():
+    content = json.dumps({"ok": True, "deleted": ["ch-1"]}, ensure_ascii=False)
+    payload = build_tool_completed_sse_payload(
+        "DeleteChapter",
+        content=content,
+        tool_input={"chapter_id": "ch-1"},
+        context_patch={
+            "chapters": [
+                {"chapter_id": "ch-1", "title": "码农的平凡日常", "list_index": 1},
+            ]
+        },
+    )
+    assert payload.get("display_excerpt") == "《码农的平凡日常》"
+
+
+def test_reorder_chapters_sse_count_not_raw_json():
+    content = json.dumps({"ok": True, "count": 2, "order": []}, ensure_ascii=False)
+    payload = build_tool_completed_sse_payload("ReorderChapters", content=content)
+    assert payload.get("display_excerpt") == "2 章"
 
 
 def test_write_completed_payload_omits_body_from_tool_input():

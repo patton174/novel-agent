@@ -172,14 +172,18 @@ class StreamingToolExecutor:
         from app.agent.harness.loop_support import ToolStepOutcome
         from app.agent.tools.chapter_catalog import (
             CHAPTER_CATALOG_TOOLS,
+            clear_chapter_rows_cache,
             prime_chapter_rows_cache,
         )
 
+        _CATALOG_READ_TOOLS = frozenset(
+            {"ReadChapter", "ListChapters", "ChapterAudit"},
+        )
         if self._discarded:
             track.status = "discarded"
             return
         item = track.item
-        if item.tool in CHAPTER_CATALOG_TOOLS:
+        if item.tool in _CATALOG_READ_TOOLS:
             await prime_chapter_rows_cache(self._working_ctx or self.ctx)
         seq = self.sequence + item.call_order * 50
         outcome = ToolStepOutcome()
@@ -218,6 +222,8 @@ class StreamingToolExecutor:
                     self._working_ctx or self.ctx,
                     run.result.model_dump(),
                 )
+            if item.tool in CHAPTER_CATALOG_TOOLS and item.tool not in _CATALOG_READ_TOOLS:
+                clear_chapter_rows_cache()
             await self._queue.put(("result", _sort_runs_by_call_order([run])))
             await self._queue.put(("ctx", self._working_ctx))
         except asyncio.CancelledError:

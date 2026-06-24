@@ -29,7 +29,7 @@ def is_chapter_markdown_path(file_path: str) -> bool:
 
 
 def chapter_stream_input_api(inp: dict[str, Any], ctx: AgentRunContext) -> dict[str, Any]:
-    """Build stream input for WriteChapter API tool."""
+    """Build stream input for WriteChapter / EditChapter API tools."""
     stream_input = dict(inp)
     stream_input.pop("content", None)
     title = str(stream_input.get("title") or "").strip()
@@ -45,8 +45,12 @@ def chapter_stream_input_api(inp: dict[str, Any], ctx: AgentRunContext) -> dict[
     stream_input.setdefault("task", (ctx.user_message or "")[:500])
     if chapter_id:
         stream_input["chapter_id"] = chapter_id
-    for key in ("position", "sort_order", "after_chapter_id", "before_chapter_id", "target_position"):
-        if key in inp and inp[key] is not None:
+    index = inp.get("index")
+    if index is not None:
+        stream_input["index"] = index
+        stream_input["target_position"] = index
+    for key in ("target_position",):
+        if key in inp and inp[key] is not None and key not in stream_input:
             stream_input[key] = inp[key]
     return stream_input
 
@@ -78,22 +82,12 @@ def should_stream_chapter_write(tool: str, inp: dict[str, Any]) -> bool:
     tool_norm = (tool or "").strip()
     if tool_norm == "WriteChapter":
         return True
-    preset_body = (
-        str(inp.get("new_string") or "").strip()
-        or str(inp.get("new_content") or "").strip()
-    )
-    if preset_body:
+    if str(inp.get("new_content") or "").strip():
+        return False
+    if inp.get("line_start") is not None:
         return False
     if tool_norm == "EditChapter":
-        mode = str(inp.get("mode") or "patch").strip()
-        has_target = bool(
-            str(inp.get("chapter_id") or "").strip()
-            or inp.get("index") is not None
-            or str(inp.get("title") or "").strip()
-        )
-        if mode == "rewrite":
-            return has_target
-        return has_target and not str(inp.get("old_string") or "").strip()
+        return bool(inp.get("rewrite")) and bool(str(inp.get("chapter_id") or "").strip())
     return False
 
 
@@ -156,7 +150,7 @@ async def run_chapter_stream_pipeline(
     fp = str(inp.get("file_path") or "")
     preset_body = ""
     if tool_norm == "EditChapter":
-        preset_body = str(inp.get("new_string") or "").strip() or str(inp.get("new_content") or "").strip()
+        preset_body = str(inp.get("new_content") or "").strip()
 
     yield build_event(
         event_type="tool.progress",
@@ -296,11 +290,11 @@ async def run_chapter_stream_pipeline(
     if tool_norm == "EditChapter":
         edit_inp = dict(inp)
         if content:
-            # Streamed rewrite is always a full-body save — use new_content, the
-            # explicit full-replace path (no fragile old_string matching).
             edit_inp["new_content"] = content
-            edit_inp.pop("old_string", None)
-            edit_inp.pop("new_string", None)
+            edit_inp.pop("rewrite", None)
+            edit_inp.pop("line_start", None)
+            edit_inp.pop("line_end", None)
+            edit_inp.pop("line_content", None)
         result = await run_tool_use(tool, edit_inp, ctx, tool_use_id=step_id)
         if result.is_error:
             fail_events, _ = failure_event_sequence(

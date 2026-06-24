@@ -172,7 +172,7 @@ export function extractOrchestrationTextFromTimeline(timeline: AgentTimelineBloc
       (block): block is Extract<AgentTimelineBlock, { kind: 'text' | 'narration' }> =>
         (block.kind === 'text' || block.kind === 'narration') &&
         block.delivery === false &&
-        block.content.trim(),
+        Boolean(block.content.trim()),
     )
     .map((block) => block.content)
     .join('\n\n')

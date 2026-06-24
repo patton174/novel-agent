@@ -12,7 +12,7 @@ from pydantic_core import core_schema
 from app.agent.harness.tool_json_schema import (
     chapter_row_target_one_of_schema,
     create_memory_one_of_schema,
-    delete_chapter_one_of_schema,
+    edit_chapter_one_of_schema,
     merge_bind_schema,
     move_memory_one_of_schema,
     reorder_chapters_one_of_schema,
@@ -138,83 +138,73 @@ class WriteChapterInput(BaseModel):
         min_length=1,
         description="Pure chapter title (no 第N章 prefix; index comes from sort order).",
     )
+    index: int = Field(
+        ...,
+        ge=1,
+        description="1-based reading slot where the new chapter is inserted (from ListChapters).",
+    )
     content: str = Field(
         "",
         description="Must be empty — chapter body is generated via stream pipeline; do not pass prose here.",
     )
-    chapter_id: str | None = Field(None, description="Existing chapter UUID to overwrite.")
-    position: int | None = Field(
-        None,
-        ge=1,
-        description="1-based reading slot (1=first). Defaults to append for new chapters.",
-    )
-    after_chapter_id: str | None = Field(
-        None,
-        description="Insert after this chapter (alternative to position).",
-    )
-    before_chapter_id: str | None = Field(
-        None,
-        description="Insert before this chapter (alternative to position).",
-    )
-    sort_order: int | None = Field(
-        None,
-        ge=1,
-        description="Alias of position (legacy).",
-    )
-
-
-class EditChapterMode(str, Enum):
-    rewrite = "rewrite"
-    patch = "patch"
 
 
 class EditChapterInput(BaseModel):
-    mode: EditChapterMode = Field(
-        EditChapterMode.patch,
-        description=(
-            "rewrite=server streams full body (pass index/chapter_id only, no new_content); "
-            "patch=targeted old_string/new_string or small new_content."
-        ),
-    )
-    chapter_id: str | None = Field(
-        None,
-        description="Chapter UUID from ListChapters. Optional if title or index is set.",
-    )
-    title: str | None = Field(
-        None,
+    chapter_id: str = Field(
+        ...,
         min_length=1,
-        description="Resolve chapter by exact title when chapter_id is missing or wrong.",
-    )
-    index: int | None = Field(
-        None,
-        ge=1,
-        description="1-based reading-order index from ListChapters.",
-    )
-    new_content: str | None = Field(
-        None,
-        description=(
-            "patch mode only: full replacement body when small enough to inline. "
-            "For rewrites use mode=rewrite (server streams body)."
-        ),
+        description="Chapter UUID from ListChapters (required target).",
     )
     new_title: str | None = Field(
         None,
         min_length=1,
         description="Rename the chapter to this pure title (no 第N章 prefix).",
     )
-    old_string: str = Field(
-        "",
+    index: int | None = Field(
+        None,
+        ge=1,
+        description="Move this chapter to the given 1-based reading-order slot.",
+    )
+    rewrite: bool = Field(
+        False,
+        description="When true, server streams a full body rewrite (omit new_content / line_*).",
+    )
+    new_content: str | None = Field(
+        None,
+        description="Sync full-body replacement (small rewrites). Mutually exclusive with rewrite stream.",
+    )
+    line_start: int | None = Field(
+        None,
+        ge=1,
+        description="1-based start line for a targeted body edit (matches ReadChapter line numbers).",
+    )
+    line_end: int | None = Field(
+        None,
+        ge=1,
+        description="1-based end line (inclusive); defaults to line_start.",
+    )
+    line_content: str | None = Field(
+        None,
         description=(
-            "Targeted patch only: exact snippet to replace. Prefer new_content for "
-            "rewrites. Empty old_string replaces the entire body."
+            "Replacement text for lines line_start..line_end (may span multiple lines). "
+            'Required when line_start is set — use empty string "" to delete lines, never null.'
         ),
     )
-    new_string: str = Field("")
-    replace_all: bool = False
-    position: int | None = Field(None, ge=1, description="Move chapter to this reading slot.")
-    after_chapter_id: str | None = None
-    before_chapter_id: str | None = None
-    sort_order: int | None = Field(None, ge=1, description="Alias of position (legacy).")
+
+    @model_validator(mode="after")
+    def require_edit_operation(self) -> "EditChapterInput":
+        has_meta = bool(self.new_title and self.new_title.strip()) or self.index is not None
+        has_line = self.line_start is not None
+        has_body = self.rewrite or self.new_content is not None or has_line
+        if not has_meta and not has_body:
+            raise ValueError(
+                "Provide new_title, index (move), rewrite, new_content, or line_start+line_content."
+            )
+        if has_line and self.line_content is None:
+            raise ValueError("line_content is required when line_start is set.")
+        if self.rewrite and (self.new_content is not None or has_line):
+            raise ValueError("rewrite cannot combine with new_content or line_* edits.")
+        return self
 
     @classmethod
     def __get_pydantic_json_schema__(
@@ -225,54 +215,12 @@ class EditChapterInput(BaseModel):
         base = handler(core_schema)
         return merge_bind_schema(
             base,
-            chapter_row_target_one_of_schema(
-                properties=base.get("properties", {}),
-                optional_keys=(
-                    "mode",
-                    "new_content",
-                    "new_title",
-                    "old_string",
-                    "new_string",
-                    "replace_all",
-                    "position",
-                    "after_chapter_id",
-                    "before_chapter_id",
-                    "sort_order",
-                ),
-            ),
+            edit_chapter_one_of_schema(properties=base.get("properties", {})),
         )
 
 
 class DeleteChapterInput(BaseModel):
-    chapter_id: str | None = Field(None, description="Delete a single chapter.")
-    chapter_ids: list[str] | None = Field(None, description="Delete multiple chapters.")
-    title: str | None = Field(
-        None,
-        min_length=1,
-        description="Delete by exact title (when chapter_id unknown).",
-    )
-    index: int | None = Field(
-        None,
-        ge=1,
-        description="Delete chapter at 1-based reading-order index.",
-    )
-    dedupe_title: str | None = Field(
-        None,
-        min_length=1,
-        description="Drop duplicate chapters with this exact title; keeps the earliest in reading order.",
-    )
-
-    @classmethod
-    def __get_pydantic_json_schema__(
-        cls,
-        core_schema: core_schema.CoreSchema,
-        handler: GetJsonSchemaHandler,
-    ) -> JsonSchemaValue:
-        base = handler(core_schema)
-        return merge_bind_schema(
-            base,
-            delete_chapter_one_of_schema(properties=base.get("properties", {})),
-        )
+    chapter_id: str = Field(..., min_length=1, description="Chapter UUID from ListChapters.")
 
 
 class ChapterMoveInput(BaseModel):
@@ -284,7 +232,7 @@ class ReorderChaptersInput(BaseModel):
     chapter_ids: list[str] | None = Field(
         None,
         min_length=1,
-        description="Full reading order. Omitted chapters are appended after these, in prior order.",
+        description="Full reading order — must list every chapter_id exactly once.",
     )
     moves: list[ChapterMoveInput] | None = Field(
         None,

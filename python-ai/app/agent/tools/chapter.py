@@ -19,7 +19,6 @@ from app.agent.tools.chapter_catalog import (
     catalog_list_items,
     chapter_row_meta,
     chapter_rows_patch,
-    format_catalog_list_text,
     load_chapter_rows,
     resolve_chapter_target,
 )
@@ -43,7 +42,6 @@ from app.agent.tools.schemas import (
     ReorderChaptersInput,
     WriteChapterInput,
 )
-from app.agent.tools.text_edit import apply_string_replace, should_fallback_full_body_replace
 from app.agent.tools.tool import ToolCallResult, build_tool
 
 
@@ -115,8 +113,6 @@ async def list_chapters(ctx: AgentRunContext, inp: ListChaptersInput) -> ToolCal
     rows = await load_chapter_rows(ctx)
     items = catalog_list_items(rows, include_summary=inp.include_summary)
     dupes = duplicate_title_groups(rows)
-    project_title = str((ctx.project or {}).get("title") or "").strip()
-    list_text = format_catalog_list_text(rows, project_title=project_title)
     payload: dict[str, Any] = {
         "count": len(items),
         "chapters": items,
@@ -125,9 +121,7 @@ async def list_chapters(ctx: AgentRunContext, inp: ListChaptersInput) -> ToolCal
         payload["duplicate_titles"] = {
             title: ids for title, ids in dupes.items()
         }
-    patch: dict[str, Any] = {
-        "last_chapter_list": list_text,
-    }
+    patch: dict[str, Any] = {}
     patch.update(chapter_rows_patch(rows))
     return ToolCallResult(
         content=json.dumps(payload, ensure_ascii=False),
@@ -163,6 +157,11 @@ async def read_chapter(ctx: AgentRunContext, inp: ReadChapterInput) -> ToolCallR
     if err:
         return _upstream_error(err)
     patch = chapter_rows_patch(rows)
+    patch["read_target"] = {
+        "chapter_id": meta["chapter_id"],
+        "title": meta["title"],
+        "index": meta["index"],
+    }
     return ToolCallResult(content=text or "", context_patch=patch)
 
 
@@ -179,20 +178,17 @@ async def write_chapter(ctx: AgentRunContext, inp: WriteChapterInput) -> ToolCal
         )
 
     rows = await load_chapter_rows(ctx)
-    position = inp.position if inp.position is not None else inp.sort_order
     target_pos, pos_err = resolve_target_position(
         rows,
-        chapter_id=(inp.chapter_id or "").strip(),
-        position=position,
-        after_chapter_id=inp.after_chapter_id,
-        before_chapter_id=inp.before_chapter_id,
+        chapter_id="",
+        position=inp.index,
     )
     if pos_err:
         return tool_error_result(
             ToolError(
                 code=ToolErrorCode.SCHEMA_INVALID,
                 message=pos_err,
-                hint="Use position (1-based), after_chapter_id, or before_chapter_id; or omit to append.",
+                hint="Use index (1-based reading slot from ListChapters).",
                 suggested_tools=["ListChapters"],
                 retryable=True,
             )
@@ -206,15 +202,13 @@ async def write_chapter(ctx: AgentRunContext, inp: WriteChapterInput) -> ToolCal
         )
         content = ""
     if not content:
-        meta = resolve_chapter_write_meta(
-            ctx, chapter_id=(inp.chapter_id or "").strip(), title=title
-        )
+        meta = resolve_chapter_write_meta(ctx, chapter_id="", title=title)
         patch: dict[str, Any] = {
             "chapter_write": {
                 "title": meta["title"],
                 "content": "",
                 "sort_order": target_pos or meta.get("sort_order", 0),
-                "chapter_id": inp.chapter_id or meta.get("chapter_id", ""),
+                "chapter_id": "",
                 "display_label": meta.get("display_label", title),
                 "target_position": target_pos,
             },
@@ -227,7 +221,7 @@ async def write_chapter(ctx: AgentRunContext, inp: WriteChapterInput) -> ToolCal
                     "streaming": True,
                     "title": meta["title"],
                     "target_position": target_pos,
-                    "chapter_id": patch["chapter_write"].get("chapter_id") or None,
+                    "index": inp.index,
                 },
                 ensure_ascii=False,
             ),
@@ -238,14 +232,12 @@ async def write_chapter(ctx: AgentRunContext, inp: WriteChapterInput) -> ToolCal
         "title": title,
         "content": normalize_chapter_body_for_persist(content),
     }
-    if inp.chapter_id:
-        payload["chapter_id"] = inp.chapter_id
 
     ok, out, err = await chapter_client.persist_chapter_write(ctx, payload)
     if not ok:
         return _upstream_error(err)
 
-    chapter_id = str(out.get("chapter_id") or inp.chapter_id or "").strip()
+    chapter_id = str(out.get("chapter_id") or "").strip()
     fresh = rows
     if chapter_id and target_pos is not None:
         fresh, reorder_err = await _apply_reading_order(
@@ -276,103 +268,82 @@ async def write_chapter(ctx: AgentRunContext, inp: WriteChapterInput) -> ToolCal
 
 
 async def edit_chapter(ctx: AgentRunContext, inp: EditChapterInput) -> ToolCallResult:
-    if not inp.chapter_id and not inp.title and inp.index is None:
-        # 诊断：chapter_id/title/index 三者全空才会到这里。模型 thinking 通常已
-        # 声明要传 chapter_id，若仍为空，说明流式 tool_use 参数在累积/解析时丢失
-        # （含多行 CJK old_string 的调用易触发）。落日志以便定位上游 args 丢失。
-        logger.warning(
-            "EditChapter missing target run_id=%s chapter_id=%r title=%r index=%r "
-            "input_keys=%s new_content_len=%s old_string_len=%s — args likely lost "
-            "during streaming tool_use accumulation",
-            ctx.run_id,
-            inp.chapter_id,
-            inp.title,
-            inp.index,
-            sorted(inp.model_dump().keys()),
-            len(inp.new_content or ""),
-            len(inp.old_string or ""),
-        )
-        return tool_error_result(
-            ToolError(
-                code=ToolErrorCode.SCHEMA_INVALID,
-                message="Provide chapter_id, title, or index.",
-                hint="Pass chapter_id (from ListChapters), title, or index to target the chapter.",
-                suggested_tools=["ListChapters", "ReadChapter"],
-                retryable=True,
-            )
-        )
     row, rows, resolve_err = await resolve_chapter_target(
         ctx,
         chapter_id=inp.chapter_id,
-        title=inp.title,
-        index=inp.index,
     )
     if resolve_err or not row:
-        code = (
-            ToolErrorCode.AMBIGUOUS_TITLE
-            if resolve_err and ("multiple" in resolve_err.lower() or "歧义" in resolve_err)
-            else ToolErrorCode.CHAPTER_NOT_FOUND
-        )
         return tool_error_result(
             ToolError(
-                code=code,
+                code=ToolErrorCode.CHAPTER_NOT_FOUND,
                 message=resolve_err or "chapter not found",
-                hint="Call ListChapters for index/chapter_id, or pass index directly.",
+                hint="Call ListChapters for chapter_id, then retry.",
                 suggested_tools=["ListChapters", "ReadChapter"],
             )
         )
     chapter_id = chapter_row_meta(row)["chapter_id"]
-    full = await chapter_client.fetch_chapter_full(ctx, chapter_id)
-    if not full:
-        return tool_error_result(
-            ToolError(
-                code=ToolErrorCode.CHAPTER_NOT_FOUND,
-                message=f"chapter not found: {chapter_id}",
-                hint="The chapter_id may be stale; call ListChapters and retry.",
-                suggested_tools=["ListChapters"],
-            )
-        )
-    body = str(full.get("content") or "")
-    old_title = str(full.get("title") or "")
+    old_title = chapter_row_meta(row)["title"]
 
     rename = bool(inp.new_title and inp.new_title.strip() and inp.new_title.strip() != old_title)
-    move = inp.position is not None or inp.after_chapter_id or inp.before_chapter_id or (
-        inp.sort_order is not None
-    )
+    move = inp.index is not None
+    line_edit = inp.line_start is not None
 
-    new_body = body
-    content_changed = False
+    full: dict[str, Any] | None = None
     if inp.new_content is not None:
-        # Preferred path: full-body replacement, no fragile snippet matching.
-        new_body = inp.new_content
-        content_changed = new_body != body
-    elif inp.old_string or inp.new_string:
-        new_body, edit_err = apply_string_replace(
-            body,
-            inp.old_string,
-            inp.new_string,
-            replace_all=inp.replace_all,
-        )
-        if (edit_err or new_body is None) and should_fallback_full_body_replace(
-            body, inp.old_string, inp.new_string
-        ):
-            new_body, edit_err = apply_string_replace(
-                body, "", inp.new_string, replace_all=False
-            )
-        if edit_err or new_body is None:
+        full = await chapter_client.fetch_chapter_full(ctx, chapter_id)
+        if not full:
             return tool_error_result(
                 ToolError(
-                    code=ToolErrorCode.OLD_STRING_NOT_FOUND,
-                    message=f"{edit_err or 'edit failed'} in chapter {chapter_id}",
+                    code=ToolErrorCode.CHAPTER_NOT_FOUND,
+                    message=f"chapter not found: {chapter_id}",
+                    hint="The chapter_id may be stale; call ListChapters and retry.",
+                    suggested_tools=["ListChapters"],
+                )
+            )
+        old_title = str(full.get("title") or old_title)
+
+    body = str((full or {}).get("content") or "")
+    new_body = body
+    content_changed = False
+    out: Any = None
+
+    if inp.new_content is not None:
+        new_body = inp.new_content
+        content_changed = new_body != body
+    elif line_edit:
+        ok, patch_out, patch_err = await chapter_client.patch_chapter_lines(
+            ctx,
+            chapter_id,
+            line_start=inp.line_start or 1,
+            line_end=inp.line_end,
+            line_content=inp.line_content or "",
+        )
+        if not ok:
+            return tool_error_result(
+                ToolError(
+                    code=ToolErrorCode.SCHEMA_INVALID,
+                    message=f"{patch_err or 'line edit failed'} in chapter {chapter_id}",
                     hint=(
-                        "Re-read with ReadChapter and copy body text without line numbers, "
-                        "or pass new_content to replace the full body."
+                        "Re-read with ReadChapter (1-based line numbers on body text), "
+                        "then pass line_start, line_end, and line_content."
                     ),
                     suggested_tools=["ReadChapter", "EditChapter"],
                     resource={"chapter_id": chapter_id},
                 )
             )
+        out = {"chapter_write": patch_out}
         content_changed = True
+
+    if inp.rewrite and not content_changed:
+        return tool_error_result(
+            ToolError(
+                code=ToolErrorCode.SCHEMA_INVALID,
+                message="rewrite streams server-side — omit new_content and line_* fields",
+                hint="Call EditChapter with rewrite=true and chapter_id only; body is streamed.",
+                suggested_tools=["ReadChapter"],
+                resource={"chapter_id": chapter_id},
+            )
+        )
 
     if not content_changed and not rename and not move:
         return tool_error_result(
@@ -380,50 +351,84 @@ async def edit_chapter(ctx: AgentRunContext, inp: EditChapterInput) -> ToolCallR
                 code=ToolErrorCode.SCHEMA_INVALID,
                 message="nothing to edit",
                 hint=(
-                    "Provide new_content (full rewrite), old_string/new_string (targeted "
-                    "patch), new_title (rename), or position/after/before (move)."
+                    "Provide new_title, index (move), rewrite, new_content, "
+                    "or line_start+line_content."
                 ),
                 suggested_tools=["ReadChapter"],
                 resource={"chapter_id": chapter_id},
             )
         )
 
-    out: Any = None
-    if content_changed or rename:
-        payload = {
-            "chapter_id": chapter_id,
-            "title": (inp.new_title.strip() if rename else old_title) or "未命名",
-            "content": normalize_chapter_body_for_persist(new_body),
-            "sort_order": full.get("sort_order") or 0,
-        }
-        ok, out, err = await chapter_client.persist_chapter_write(ctx, payload)
-        if not ok:
+    out_payload: Any = out
+    if (content_changed and inp.new_content is not None) or (rename and not line_edit):
+        new_title = old_title
+        if rename:
+            cleaned, title_err = await _normalize_chapter_title(inp.new_title or "")
+            if title_err or not cleaned:
+                return tool_error_result(
+                    ToolError(
+                        code=ToolErrorCode.SCHEMA_INVALID,
+                        message=title_err or "new_title is invalid",
+                        retryable=True,
+                    )
+                )
+            new_title = cleaned
+        if inp.new_content is not None:
+            if full is None:
+                full = await chapter_client.fetch_chapter_full(ctx, chapter_id)
+            payload = {
+                "chapter_id": chapter_id,
+                "title": new_title or "未命名",
+                "content": normalize_chapter_body_for_persist(new_body),
+                "sort_order": (full or {}).get("sort_order") or 0,
+            }
+            ok, persist_out, err = await chapter_client.persist_chapter_write(ctx, payload)
+            if not ok:
+                return tool_error_result(
+                    ToolError(
+                        code=ToolErrorCode.UPSTREAM_5XX,
+                        message=err or "chapter persist failed",
+                        retryable=True,
+                        resource={"chapter_id": chapter_id},
+                    )
+                )
+            out_payload = persist_out
+        elif rename:
+            ok, err = await chapter_client.update_chapter_title(ctx, chapter_id, new_title)
+            if not ok:
+                return _upstream_error(err)
+            out_payload = {"chapter_id": chapter_id, "title": new_title}
+    elif rename and line_edit:
+        cleaned, title_err = await _normalize_chapter_title(inp.new_title or "")
+        if title_err or not cleaned:
             return tool_error_result(
                 ToolError(
-                    code=ToolErrorCode.UPSTREAM_5XX,
-                    message=err or "chapter persist failed",
+                    code=ToolErrorCode.SCHEMA_INVALID,
+                    message=title_err or "new_title is invalid",
                     retryable=True,
-                    resource={"chapter_id": chapter_id},
                 )
             )
+        ok, err = await chapter_client.update_chapter_title(ctx, chapter_id, cleaned)
+        if not ok:
+            return _upstream_error(err)
 
     rows = await load_chapter_rows(ctx)
-    position = inp.position if inp.position is not None else inp.sort_order
-    if position is not None or inp.after_chapter_id or inp.before_chapter_id:
+    if move:
         rows, reorder_err = await _apply_reading_order(
             ctx,
             rows,
             chapter_id,
-            position=position,
-            after_chapter_id=inp.after_chapter_id,
-            before_chapter_id=inp.before_chapter_id,
+            position=inp.index,
         )
         if reorder_err:
             return _upstream_error(reorder_err)
 
     patch: dict[str, Any] = {}
-    if out is not None:
-        patch["chapter_write"] = out
+    if out_payload is not None:
+        if isinstance(out_payload, dict) and "chapter_write" in out_payload:
+            patch["chapter_write"] = out_payload["chapter_write"]
+        else:
+            patch["chapter_write"] = out_payload
     patch.update(chapter_rows_patch(rows or []))
     return ToolCallResult(
         content=json.dumps(
@@ -440,77 +445,24 @@ async def edit_chapter(ctx: AgentRunContext, inp: EditChapterInput) -> ToolCallR
 
 async def delete_chapter(ctx: AgentRunContext, inp: DeleteChapterInput) -> ToolCallResult:
     rows = await load_chapter_rows(ctx)
-    targets: list[str] = []
+    row, err = resolve_chapter_row(rows, chapter_id=inp.chapter_id.strip())
+    if err or not row:
+        return _upstream_error(err or "chapter not found")
+    target = str(row.get("id") or row.get("chapter_id") or "").strip()
 
-    if inp.dedupe_title:
-        dupes = duplicate_title_groups(rows)
-        ids = dupes.get(inp.dedupe_title.strip(), [])
-        if len(ids) <= 1:
-            return ToolCallResult(
-                content=json.dumps(
-                    {"ok": True, "deleted": [], "message": "no duplicate chapters for title"},
-                    ensure_ascii=False,
-                ),
-            )
-        targets.extend(ids[1:])
-
-    if inp.chapter_id:
-        row, err = resolve_chapter_row(rows, chapter_id=inp.chapter_id.strip())
-        if err or not row:
-            return _upstream_error(err)
-        targets.append(str(row.get("id") or row.get("chapter_id") or "").strip())
-    if inp.chapter_ids:
-        for raw in inp.chapter_ids:
-            cid = str(raw).strip()
-            if not cid:
-                continue
-            row, err = resolve_chapter_row(rows, chapter_id=cid)
-            if err or not row:
-                return _upstream_error(err)
-            targets.append(str(row.get("id") or row.get("chapter_id") or "").strip())
-    if inp.title and inp.title.strip():
-        row, err = resolve_chapter_row(rows, title=inp.title.strip())
-        if err or not row:
-            return _upstream_error(err)
-        targets.append(str(row.get("id") or row.get("chapter_id") or "").strip())
-    if inp.index is not None:
-        row, err = resolve_chapter_row(rows, index=inp.index)
-        if err or not row:
-            return _upstream_error(err)
-        targets.append(str(row.get("id") or row.get("chapter_id") or "").strip())
-
-    unique_targets = list(dict.fromkeys(targets))
-    if not unique_targets:
-        return tool_error_result(
-            ToolError(
-                code=ToolErrorCode.SCHEMA_INVALID,
-                message="Provide chapter_id, chapter_ids, title, index, or dedupe_title.",
-                hint="Pass at least one target: chapter_id(s), title, index, or dedupe_title.",
-                suggested_tools=["ListChapters"],
-                retryable=True,
-            )
-        )
-
-    deleted: list[str] = []
-    errors: list[str] = []
-    for cid in unique_targets:
-        ok, err = await chapter_client.delete_chapter(ctx, cid)
-        if ok:
-            deleted.append(cid)
-        else:
-            errors.append(f"{cid}: {err}")
+    ok, del_err = await chapter_client.delete_chapter(ctx, target)
+    if not ok:
+        return _upstream_error(del_err)
 
     fresh = await load_chapter_rows(ctx)
-    patch: dict[str, Any] = {"chapter_delete": {"deleted": deleted}}
+    patch: dict[str, Any] = {"chapter_delete": {"deleted": [target]}}
     patch.update(chapter_rows_patch(fresh))
-    if errors and not deleted:
-        return _upstream_error("; ".join(errors[:3]))
     return ToolCallResult(
         content=json.dumps(
-            {"ok": True, "deleted": deleted, "errors": errors[:5]},
+            {"ok": True, "deleted": [target]},
             ensure_ascii=False,
         ),
-        context_patch=patch or None,
+        context_patch=patch,
     )
 
 
@@ -588,9 +540,9 @@ CHAPTER_TOOLS = [
     build_tool(
         name="WriteChapter",
         description=(
-            "Create or update a chapter. Title is pure text (no 第N章 — index comes from sort). "
-            "Controls order via position (1-based), after_chapter_id, or before_chapter_id; "
-            "new chapters append by default. Empty content streams the body."
+            "Create a new chapter. Title is pure text (no 第N章 — index comes from sort). "
+            "Required index (1-based) sets insert position. Empty content streams the body. "
+            "Does not overwrite existing chapters — use EditChapter instead."
         ),
         input_model=WriteChapterInput,
         call=write_chapter,
@@ -599,20 +551,18 @@ CHAPTER_TOOLS = [
     build_tool(
         name="EditChapter",
         description=(
-            "Edit a chapter row (index / chapter_id / title). "
-            "mode=rewrite: server streams full body — pass index only, no new_content. "
-            "mode=patch: old_string/new_string for small edits. "
-            "new_title renames; position / after_chapter_id / before_chapter_id move it."
+            "Edit one chapter by chapter_id. "
+            "Fields: new_title, index (move to reading slot), "
+            "rewrite (stream full body), new_content (sync full replace), "
+            "or line_start/line_end/line_content (1-based line edit from ReadChapter; "
+            'line_content must be a string — use "" to delete lines, never null).'
         ),
         input_model=EditChapterInput,
         call=edit_chapter,
     ),
     build_tool(
         name="DeleteChapter",
-        description=(
-            "Delete by chapter_id, chapter_ids, title, index (ListChapters), "
-            "or dedupe_title (keeps earliest chapter with that title)."
-        ),
+        description="Delete one chapter by chapter_id from ListChapters.",
         input_model=DeleteChapterInput,
         call=delete_chapter,
         is_destructive=lambda _i: True,
@@ -620,8 +570,9 @@ CHAPTER_TOOLS = [
     build_tool(
         name="ReorderChapters",
         description=(
-            "Fix reading order. Use chapter_ids for the full sequence, "
-            "or moves [{chapter_id, position}] to adjust a few chapters."
+            "Batch reorder reading order. chapter_ids must list every chapter exactly once; "
+            "or moves [{chapter_id, position}] for partial batch adjustments. "
+            "Single-chapter moves use EditChapter.index."
         ),
         input_model=ReorderChaptersInput,
         call=reorder_chapters,

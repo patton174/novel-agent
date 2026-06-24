@@ -5,6 +5,7 @@ import cn.novelstudio.platform.web.BaseController;
 import cn.novelstudio.module.content.dto.ChapterDTO;
 import cn.novelstudio.module.content.dto.ChapterReadSliceDTO;
 import cn.novelstudio.module.content.dto.ChapterVersionDTO;
+import cn.novelstudio.module.content.dto.PatchChapterLinesRequest;
 import cn.novelstudio.module.content.dto.UpdateChapterRequest;
 import cn.novelstudio.module.content.service.auth.biz.AuthChapterBiz;
 import jakarta.validation.Valid;
@@ -13,6 +14,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -83,6 +85,16 @@ public class AuthChapterController extends BaseController {
         @Valid @RequestBody UpdateChapterRequest request
     ) {
         return biz.update(parseUserId(userId), chapterId, request, editSource);
+    }
+
+    @PatchMapping("/{chapterId}/lines")
+    public Result<ChapterDTO> patchLines(
+        @RequestHeader("X-User-Id") String userId,
+        @RequestHeader(value = "X-Edit-Source", required = false) String editSource,
+        @PathVariable String chapterId,
+        @Valid @RequestBody PatchChapterLinesRequest request
+    ) {
+        return biz.patchLines(parseUserId(userId), chapterId, request, editSource);
     }
 
     @DeleteMapping("/{chapterId}")

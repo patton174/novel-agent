@@ -11,8 +11,8 @@ import {
   AppShellCardHeader,
 } from '@/components/layout/AppPageStack'
 import { InlineTitleSkeleton } from '@/components/loading/PageSkeletons'
+import { PersonalSettingsRows } from '@/components/dashboard/PersonalSettingsRows'
 import { Skeleton } from '@/components/ui/skeleton'
-import { ThemeToggle } from '@/components/theme/ThemeToggle'
 import { useTranslation } from 'react-i18next'
 import { useSettings } from './useSettings'
 
@@ -76,13 +76,7 @@ export function SettingsDesktop() {
             description={t('dashboard:settings.themeDesc')}
           />
           <AppShellCardBody>
-            <div className="flex items-center justify-between gap-3 rounded-xl border border-border/70 bg-background/60 p-4">
-              <div>
-                <p className="text-sm font-medium text-foreground">{t('dashboard:settings.uiTheme')}</p>
-                <p className="text-xs text-muted-foreground">{t('dashboard:settings.themeHint')}</p>
-              </div>
-              <ThemeToggle />
-            </div>
+            <PersonalSettingsRows />
           </AppShellCardBody>
         </AppShellCard>
       </div>

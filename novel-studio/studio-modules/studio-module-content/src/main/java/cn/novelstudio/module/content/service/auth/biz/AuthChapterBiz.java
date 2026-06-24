@@ -5,6 +5,7 @@ import cn.novelstudio.kernel.biz.BaseBiz;
 import cn.novelstudio.module.content.dto.ChapterDTO;
 import cn.novelstudio.module.content.dto.ChapterReadSliceDTO;
 import cn.novelstudio.module.content.dto.ChapterVersionDTO;
+import cn.novelstudio.module.content.dto.PatchChapterLinesRequest;
 import cn.novelstudio.module.content.dto.UpdateChapterRequest;
 import cn.novelstudio.module.content.service.ChapterService;
 import cn.novelstudio.module.content.service.ChapterVersionService;
@@ -61,6 +62,16 @@ public class AuthChapterBiz extends BaseBiz {
     public Result<ChapterDTO> update(Long userId, String chapterId, UpdateChapterRequest request, String editSource) {
         String source = editSource == null || editSource.isBlank() ? "user" : editSource.trim();
         return ok(chapterService.updateChapter(userId, chapterId, request, source));
+    }
+
+    public Result<ChapterDTO> patchLines(
+        Long userId,
+        String chapterId,
+        PatchChapterLinesRequest request,
+        String editSource
+    ) {
+        String source = editSource == null || editSource.isBlank() ? "user" : editSource.trim();
+        return ok(chapterService.patchChapterLines(userId, chapterId, request, source));
     }
 
     public Result<Map<String, Object>> delete(Long userId, String chapterId) {

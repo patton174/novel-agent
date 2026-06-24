@@ -35,7 +35,7 @@ export const TIMELINE_BRANCH_OFFSET = `calc(${TIMELINE_LEAD_WIDTH} + 0.4rem)`
 
 /** 图标列 + 标题列网格：分支行与标题左缘对齐 */
 export const TIMELINE_LEAD_GRID = cn(
-  'grid w-full max-w-full grid-cols-[1.35rem_minmax(0,1fr)] gap-x-2 items-start overflow-visible',
+  'grid w-full min-w-0 max-w-full grid-cols-[1.35rem_minmax(0,1fr)] gap-x-2 items-start overflow-x-hidden',
 )
 
 export const TIMELINE_GRID_LEAD_CELL =
@@ -73,7 +73,7 @@ export function planningStackWrapClass(opts: {
   return cn(
     editorPixelThinkBlockClass(Boolean(opts.expanded || opts.active)),
     'm-0 flex max-w-full flex-col',
-    opts.flat && 'overflow-visible',
+    opts.flat && 'overflow-x-hidden',
   )
 }
 
@@ -82,7 +82,7 @@ export const ORCHESTRATION_HEADER_ROW =
 
 /** 助手流容器：与营销 demo 同宽，无左侧树状 gutter */
 export const TIMELINE_ICON_GUTTER =
-  'relative box-border w-full max-w-full overflow-visible'
+  'relative box-border w-full min-w-0 max-w-full overflow-x-hidden'
 
 export const PLANNING_HEADER = cn(
   'group block min-h-[1.35rem] w-full cursor-pointer border-none bg-transparent px-2 py-1 text-left',
@@ -128,14 +128,14 @@ export const ORCHESTRATION_BODY_ROW =
   'flex w-full max-w-full flex-row items-start gap-[0.4rem] px-0 py-[0.05rem] pb-[0.1rem]'
 
 export const ORCHESTRATION_FLAT_ROW = cn(
-  'box-border w-full max-w-full overflow-visible px-0 py-[0.2rem]',
+  'box-border w-full min-w-0 max-w-full overflow-x-hidden px-0 py-[0.2rem]',
 )
 
 export const ORCHESTRATION_SUMMARY_REVEAL = 'agent-timeline-orchestration-summary-reveal'
 
 export const THINK_BODY_IN_ROUND = ORCHESTRATION_FLAT_ROW
 
-export const CC_TOOL_ROW_WRAP = 'w-full max-w-full overflow-visible px-0 py-0'
+export const CC_TOOL_ROW_WRAP = 'w-full min-w-0 max-w-full overflow-x-hidden px-0 py-0'
 
 /** 思考头行（已验收对齐，勿与工具共用） */
 export const THINK_HEADLINE_ROW =

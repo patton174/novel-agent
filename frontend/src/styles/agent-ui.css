@@ -166,18 +166,12 @@
 }
 
 .agent-prose pre {
-  margin: 0.45rem 0;
-  padding: 0.55rem 0.65rem;
-  border-radius: 8px;
-  background: hsl(var(--muted) / 0.4);
-  border: 1px solid hsl(var(--border) / 0.7);
   overflow-x: auto;
 }
 
 .agent-prose pre code {
   padding: 0;
   background: none;
-  font-size: 0.78rem;
 }
 
 .agent-prose a {
@@ -285,8 +279,22 @@
   margin: 0 0 0.65rem;
 }
 
-.agent-prose-pixel code,
-.agent-prose-pixel pre {
+/* pixel 时间线：Streamdown 代码块单层像素框（勿再叠 pre 边框） */
+.agent-prose-pixel .agent-streamdown-root [data-streamdown='code-block-body'] {
+  border: 2px solid hsl(var(--foreground));
+  border-radius: 0;
+  background: hsl(var(--background));
+  box-shadow: none;
+  padding: 0.65rem 0.75rem;
+  font-family: inherit;
+}
+
+.agent-prose-pixel .agent-streamdown-root [data-streamdown='code-block'][data-language='text']
+  [data-streamdown='code-block-header'] {
+  display: none;
+}
+
+.agent-prose-pixel code:not(pre code) {
   font-family: inherit;
   border: 2px solid hsl(var(--foreground));
   box-shadow: 2px 2px 0 0 hsl(var(--foreground));

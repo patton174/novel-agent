@@ -1,4 +1,4 @@
-import type { AgentSubagentLogEntry, AgentSubagentState } from '../types/agent'
+import type { AgentSubagentLogEntry, AgentSubagentState, AgentTimelineBlock } from '../types/agent'
 import { isMemoryVfsPath, normalizeToolName } from './agentToolNames'
 import { formatSubagentLogLabel, visibleSubagentLogs } from './subagentLogLabel'
 
@@ -178,7 +178,10 @@ export function deriveSubagentLiveLines(
   const timeline = subagent.timeline ?? []
   if (timeline.length > 0) {
     const openText = timeline
-      .filter((block) => block.kind === 'text' && !block.frozen)
+      .filter(
+        (block): block is Extract<AgentTimelineBlock, { kind: 'text' }> =>
+          block.kind === 'text' && !block.frozen,
+      )
       .map((block) => block.content.trim())
       .filter(Boolean)
       .join('\n')

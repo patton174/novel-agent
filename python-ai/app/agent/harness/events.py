@@ -10,7 +10,6 @@ from app.agent.harness.cc_visibility import (
     is_ask_user_tool,
     is_hidden_ui_tool,
     normalize_tool_name,
-    should_emit_read_result_labels,
 )
 from app.agent.harness.cc_visibility import (
     tool_display_name as cc_tool_display_name,
@@ -111,6 +110,23 @@ def _attach_tool_display_excerpt(
     ) or _preview_text(excerpt, limit=120)
 
 
+def _attach_result_title(
+    payload: dict[str, Any],
+    name: str,
+    content: str,
+    file_path: str = "",
+    *,
+    tool_input: dict[str, Any] | None = None,
+) -> None:
+    from app.agent.harness.tool_ui import resolve_tool_result_title
+
+    title = resolve_tool_result_title(name, content, tool_input=tool_input, file_path=file_path)
+    if not title:
+        return
+    payload["display_excerpt"] = title
+    payload["output_summary"] = title[:200] + ("…" if len(title) > 200 else "")
+
+
 def _tool_completed_payload(
     *,
     name: str,
@@ -133,112 +149,29 @@ def _tool_completed_payload(
         payload["choices"] = display.choices
     if display.interaction:
         payload["interaction"] = display.interaction
-    if not content:
+    if not content and not failed:
         return payload
 
-    if should_emit_read_result_labels(name) or name in (
-        "ReadChapter",
-        "ReadMemory",
-    ):
-        if name == "ReadChapter":
-            labels = extract_chapter_read_labels(content)
-        else:
-            labels = extract_memory_read_labels(content)
-            labels = [
-                x
-                for x in labels
-                if x.strip() and not _CHAPTER_UUID_RE.match(x.strip())
-            ]
-        if labels:
-            payload["result_labels"] = labels
-        _attach_tool_display_excerpt(
-            payload, name, content, file_path, tool_input=tool_input
-        )
-        excerpt = str(payload.get("display_excerpt") or "")
-        payload["output_summary"] = (
-            excerpt.split("\n", 1)[0][:200]
-            if excerpt
-            else (labels[0] if labels else _preview_text(content))
-        )
+    if failed:
+        payload["output_summary"] = _preview_text(content, limit=80)
+        if len(content) <= 240:
+            payload["output"] = content
         return payload
 
-    canonical = normalize_tool_name(name)
-    is_chapter_io = canonical in ("WriteChapter", "EditChapter", "DeleteChapter", "ReorderChapters")
-    is_memory_mutation = canonical in (
-        "CreateMemory",
-        "UpdateMemoryFields",
-        "UpdateMemoryContent",
-        "UpdateMemoryMeta",
-        "MoveMemory",
-        "DeleteMemory",
-    )
-    if is_chapter_io and not failed and canonical in ("WriteChapter", "EditChapter"):
-        _attach_tool_display_excerpt(
-            payload, name, content, file_path, tool_input=tool_input
-        )
-        if payload.get("display_excerpt"):
-            payload["output_summary"] = str(payload["display_excerpt"]).split("\n", 1)[0][:200]
-        return payload
-    if is_memory_mutation and not failed:
-        _attach_tool_display_excerpt(
-            payload, name, content, file_path, tool_input=tool_input
-        )
-        label = str(payload.get("display_excerpt") or content.split("\n", 1)[0].strip())
-        payload["action_label"] = label[:120] + ("…" if len(label) > 120 else "")
-        payload["output_summary"] = payload["action_label"]
-        return payload
-    if is_memory_mutation and failed:
-        payload["output"] = content
-        payload["status"] = "error"
-        payload["output_summary"] = _preview_text(content)
-        return payload
-
-    if is_ask_user_tool(name) and not failed:
-        _attach_tool_display_excerpt(
-            payload, name, content, file_path, tool_input=tool_input
-        )
-        if payload.get("display_excerpt"):
-            payload["output_summary"] = str(payload["display_excerpt"])[:200]
-        return payload
-
-    canonical_del = normalize_tool_name(name)
-    if canonical_del in ("DeleteChapter", "DeleteMemory") and not failed:
-        _attach_tool_display_excerpt(
-            payload, name, content, file_path, tool_input=tool_input
-        )
-        if payload.get("display_excerpt"):
-            payload["output_summary"] = str(payload["display_excerpt"])[:200]
-        return payload
-
-    if failed or name == "output":
-        payload["output"] = content
+    if name == "output":
         if len(content) > 80:
             payload["output_summary"] = _preview_text(content)
         return payload
 
-    if canonical in ("ListChapters", "ListMemory", "SearchKnowledge", "GetMemoryTree"):
-        _attach_tool_display_excerpt(
+    if is_ask_user_tool(name):
+        _attach_result_title(
             payload, name, content, file_path, tool_input=tool_input
         )
-        excerpt = str(payload.get("display_excerpt") or "")
-        if excerpt:
-            payload["output_summary"] = excerpt[:200]
         return payload
 
-    _attach_tool_display_excerpt(
+    # All successful tools: single-line human title (never raw JSON acks).
+    _attach_result_title(
         payload, name, content, file_path, tool_input=tool_input
-    )
-    if payload.get("display_excerpt"):
-        payload["output_summary"] = str(payload["display_excerpt"]).split("\n", 1)[0][:200]
-        return payload
-
-    if len(content) <= 240:
-        payload["output_summary"] = _preview_text(content)
-        return payload
-
-    first_line = content.split("\n", 1)[0].strip()
-    payload["output_summary"] = (
-        first_line[:120] + "…" if len(first_line) > 120 else first_line
     )
     return payload
 
@@ -248,6 +181,7 @@ _SSE_TOOL_INPUT_KEYS = (
     "path",
     "chapter_id",
     "title",
+    "index",
     "scope",
     "key",
     "query",
@@ -304,6 +238,68 @@ def _normalize_interaction_for_sse(interaction: dict[str, Any] | None) -> dict[s
     return out
 
 
+def _enrich_read_chapter_tool_input(
+    inp: dict[str, Any],
+    context_patch: dict[str, Any] | None,
+) -> dict[str, Any]:
+    """Attach resolved chapter title/index for UI excerpts (body may lack frontmatter)."""
+    out = dict(inp or {})
+    patch = context_patch if isinstance(context_patch, dict) else {}
+    target = patch.get("read_target")
+    if isinstance(target, dict):
+        title = str(target.get("title") or "").strip()
+        if title:
+            out.setdefault("title", title)
+        cid = str(target.get("chapter_id") or "").strip()
+        if cid:
+            out.setdefault("chapter_id", cid)
+        idx = target.get("index")
+        try:
+            idx_int = int(idx) if idx is not None else None
+        except (TypeError, ValueError):
+            idx_int = None
+        if idx_int is not None and idx_int > 0:
+            out.setdefault("index", idx_int)
+
+    chapters: list[Any] = []
+    if isinstance(patch, dict):
+        rows = patch.get("chapters")
+        if isinstance(rows, list):
+            chapters = rows
+    if not chapters:
+        return out
+
+    want_id = str(out.get("chapter_id") or "").strip()
+    want_index = out.get("index")
+    try:
+        want_index_int = int(want_index) if want_index is not None else None
+    except (TypeError, ValueError):
+        want_index_int = None
+
+    for row in chapters:
+        if not isinstance(row, dict):
+            continue
+        row_id = str(row.get("chapter_id") or row.get("id") or "").strip()
+        row_index = row.get("list_index")
+        if row_index is None:
+            row_index = row.get("index")
+        try:
+            row_index_int = int(row_index) if row_index is not None else 0
+        except (TypeError, ValueError):
+            row_index_int = 0
+        if want_id and row_id == want_id:
+            out.setdefault("title", str(row.get("title") or "").strip())
+            if row_index_int > 0:
+                out.setdefault("index", row_index_int)
+            break
+        if want_index_int is not None and row_index_int == want_index_int:
+            out.setdefault("title", str(row.get("title") or "").strip())
+            if row_id:
+                out.setdefault("chapter_id", row_id)
+            break
+    return out
+
+
 def build_tool_completed_sse_payload(
     tool: str,
     *,
@@ -315,6 +311,14 @@ def build_tool_completed_sse_payload(
 ) -> dict[str, Any]:
     """SSE tool.completed payload for CC tools (sse_bridge + display emitter)."""
     inp = dict(tool_input or {})
+    patch = context_patch if isinstance(context_patch, dict) else {}
+    if normalize_tool_name(tool) in (
+        "ReadChapter",
+        "EditChapter",
+        "WriteChapter",
+        "DeleteChapter",
+    ):
+        inp = _enrich_read_chapter_tool_input(inp, patch)
     file_path = str(inp.get("file_path") or "").strip()
     normalized_interaction = _normalize_interaction_for_sse(interaction)
     display = DisplayPayload(
@@ -336,7 +340,6 @@ def build_tool_completed_sse_payload(
         payload["interaction"] = normalized_interaction
     if inp:
         payload["tool_input"] = _tool_input_for_sse(tool, inp)
-    patch = context_patch if isinstance(context_patch, dict) else {}
     todos = patch.get("todos")
     if isinstance(todos, list) and todos:
         payload["todos"] = todos

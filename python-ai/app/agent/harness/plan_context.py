@@ -1,23 +1,10 @@
-"""Structured JSON context for agent run loop — replaceable slots, bounded size."""
+"""Structured JSON context helpers — plan/retry/think; assembly in run_context."""
 
 from __future__ import annotations
 
 from typing import Any
 
-from app.agent.context.compact import format_chapter_window
-from app.agent.context.memory_log import memory_ops_for_plan_json
-from app.agent.harness.intent_message import intent_user_message_for_context
-from app.agent.harness.orchestration_contract import context_decision_hints
-from app.agent.harness.routing import (
-    format_dialogue_history,
-    project_summary_from_ctx,
-)
 from app.agent.schemas import PlanRequest
-
-_PREVIEW_CHAR = 120
-_VALUE_PREVIEW = 400
-_DIALOGUE_MAX = 2000
-_USER_MESSAGE_MAX = 800
 
 
 def has_character_roster_snapshot(patch: dict[str, Any] | None) -> bool:
@@ -26,17 +13,11 @@ def has_character_roster_snapshot(patch: dict[str, Any] | None) -> bool:
         return False
     if isinstance(patch.get("character_roster"), list) and patch["character_roster"]:
         return True
-    catalog = patch.get("memory_catalog")
-    if isinstance(catalog, list):
-        return any(
-            isinstance(row, dict) and str(row.get("scope") or "") == "character"
-            for row in catalog
-        )
     last = patch.get("last_memory_read")
     return isinstance(last, dict) and last.get("ok") and last.get("scope") == "character"
 
 
-def summarize_memory_read(result: dict[str, Any] | None, *, preview_len: int = _PREVIEW_CHAR) -> dict[str, Any]:
+def summarize_memory_read(result: dict[str, Any] | None, *, preview_len: int = 120) -> dict[str, Any]:
     """Compact last_memory_read for context_patch / planner."""
     if not isinstance(result, dict):
         return {"ok": False, "reason": "invalid read result"}
@@ -101,160 +82,84 @@ def summarize_memory_delete(result: dict[str, Any] | None) -> dict[str, Any]:
     return {k: v for k, v in out.items() if v is not None}
 
 
-def _character_roster(patch: dict[str, Any]) -> list[str]:
-    roster = patch.get("character_roster")
-    if isinstance(roster, list) and roster:
-        return [str(x) for x in roster]
-    return []
-
-
-def think_text_for_plan(req: PlanRequest) -> str:
-    """Prefer live transcript think over frozen run-start think."""
-    transcript = getattr(req, "transcript", None) or []
-    if isinstance(transcript, list):
-        for row in reversed(transcript):
-            if isinstance(row, dict) and row.get("kind") == "think":
-                text = str(row.get("summary") or "").strip()
-                if text:
-                    return text
-    full = (req.think_content or "").strip()
-    if full:
-        return full
-    patch = req.context.context_patch if isinstance(req.context.context_patch, dict) else {}
-    return str(patch.get("think_summary") or "").strip()
-
-
-def think_has_pending_confirm(req: PlanRequest) -> bool:
-    transcript = getattr(req, "transcript", None) or []
-    if isinstance(transcript, list) and transcript:
-        last_think_idx = -1
-        for i, row in enumerate(transcript):
-            if isinstance(row, dict) and row.get("kind") == "think":
-                last_think_idx = i
-        if last_think_idx >= 0:
-            think = str(transcript[last_think_idx].get("summary") or "")
-            if "待确认" not in think:
-                return False
-            for row in transcript[last_think_idx + 1 :]:
-                if isinstance(row, dict) and row.get("kind") == "interaction":
-                    return False
-            return True
-    return "待确认" in think_text_for_plan(req)
-
-
 def _transcript_has_interaction(transcript_rows: list) -> bool:
     if not isinstance(transcript_rows, list):
         return False
     return any(isinstance(row, dict) and row.get("kind") == "interaction" for row in transcript_rows)
 
 
-def build_plan_context(req: PlanRequest, *, retry_feedback: str = "") -> dict[str, Any]:
-    """Assemble planner context — static fields first for MiniMax prompt cache prefix."""
-    ctx = req.context
-    patch = ctx.context_patch if isinstance(ctx.context_patch, dict) else {}
-    transcript_rows = getattr(req, "transcript", None) or []
+def think_text_from_rows(
+    transcript_rows: list[dict[str, Any]] | None,
+    *,
+    think_content: str = "",
+    think_summary: str = "",
+) -> str:
+    rows = transcript_rows or []
+    if isinstance(rows, list):
+        for row in reversed(rows):
+            if isinstance(row, dict) and row.get("kind") == "think":
+                text = str(row.get("summary") or "").strip()
+                if text:
+                    return text
+    full = (think_content or "").strip()
+    if full:
+        return full
+    return (think_summary or "").strip()
 
-    intent: dict[str, Any] = {
-        "user_message": intent_user_message_for_context(
-            str(ctx.user_message or ""),
-            has_run_interaction=_transcript_has_interaction(transcript_rows),
-        )[:_USER_MESSAGE_MAX],
-    }
-    if ctx.selected_choice and _transcript_has_interaction(transcript_rows):
-        intent["selected_choice"] = ctx.selected_choice
-    if isinstance(transcript_rows, list):
-        for row in reversed(transcript_rows):
-            if isinstance(row, dict) and row.get("kind") == "interaction":
-                intent["latest_interaction"] = str(row.get("summary") or "")[:1200]
-                break
-    if _transcript_has_interaction(transcript_rows):
-        interactions = patch.get("user_interactions")
-        if isinstance(interactions, list) and interactions:
-            last = interactions[-1]
-            if isinstance(last, dict) and last.get("text"):
-                intent.setdefault(
-                    "latest_interaction",
-                    str(last["text"])[:1200],
-                )
 
-    memory_stable: dict[str, Any] = {}
-    roster = _character_roster(patch)
-    if roster:
-        memory_stable["character_roster"] = roster
+def think_has_pending_confirm_from_rows(think: str, transcript_rows: list[dict[str, Any]] | None) -> bool:
+    rows = transcript_rows or []
+    if isinstance(rows, list) and rows:
+        last_think_idx = -1
+        for i, row in enumerate(rows):
+            if isinstance(row, dict) and row.get("kind") == "think":
+                last_think_idx = i
+        if last_think_idx >= 0:
+            block = str(rows[last_think_idx].get("summary") or "")
+            if "待确认" not in block:
+                return False
+            for row in rows[last_think_idx + 1 :]:
+                if isinstance(row, dict) and row.get("kind") == "interaction":
+                    return False
+            return True
+    return "待确认" in (think or "")
 
-    chapter_window = format_chapter_window(ctx)
-    if chapter_window:
-        memory_stable["chapter_window"] = chapter_window[:1200]
 
-    memory_dynamic: dict[str, Any] = {}
-    last_read = patch.get("last_memory_read")
-    if isinstance(last_read, dict):
-        memory_dynamic["last_read"] = summarize_memory_read(last_read)
-    last_write = patch.get("last_memory_patch")
-    if isinstance(last_write, dict):
-        memory_dynamic["last_write"] = summarize_memory_patch(last_write)
-    last_delete = patch.get("last_memory_delete")
-    if isinstance(last_delete, dict):
-        memory_dynamic["last_delete"] = summarize_memory_delete(last_delete)
+def think_text_for_plan(req: PlanRequest) -> str:
+    """Prefer live transcript think over frozen run-start think."""
+    rows = getattr(req, "transcript", None) or []
+    return think_text_from_rows(
+        rows if isinstance(rows, list) else [],
+        think_content=req.think_content or "",
+        think_summary=str((req.context.context_patch or {}).get("think_summary") or ""),
+    )
 
-    ops = memory_ops_for_plan_json(patch.get("memory_ops_log"))
-    if ops:
-        memory_dynamic["ops_log"] = ops
 
-    run: dict[str, Any] = {
-        "mode": ctx.mode,
-        "step_index": ctx.step_index,
-    }
-    if ctx.last_tool:
-        run["last_tool"] = ctx.last_tool
-    if ctx.last_reason:
-        run["last_reason"] = str(ctx.last_reason)[:240]
-    if ctx.last_tool == "output":
-        lr = str(ctx.last_reason or "")
-        if "output continue" in lr:
-            run["prior_output"] = "continue"
-        elif "output ok" in lr:
-            run["prior_output"] = "done"
-    out: dict[str, Any] = {
-        "intent": intent,
-        "decision_hints": context_decision_hints(),
-    }
-
-    transcript = getattr(req, "transcript", None) or []
-    if isinstance(transcript, list) and transcript:
-        out["transcript"] = transcript[-40:]
-
-    project = project_summary_from_ctx(ctx)
-    if project:
-        out["project"] = project[:600]
-
+def think_has_pending_confirm(req: PlanRequest) -> bool:
     think = think_text_for_plan(req)
-    if think:
-        out["think"] = think
-        if think_has_pending_confirm(req):
-            out["think_has_pending_confirm"] = True
+    rows = getattr(req, "transcript", None) or []
+    return think_has_pending_confirm_from_rows(
+        think,
+        rows if isinstance(rows, list) else [],
+    )
 
-    dialogue = format_dialogue_history(ctx, max_len=_DIALOGUE_MAX)
-    if dialogue:
-        out["dialogue"] = dialogue[:_DIALOGUE_MAX]
 
-    memory: dict[str, Any] = {}
-    memory.update(memory_stable)
-    memory.update(memory_dynamic)
-    if memory:
-        out["memory"] = memory
+def build_plan_context(req: PlanRequest, *, retry_feedback: str = "") -> dict[str, Any]:
+    """Assemble planner context — delegates to unified assemble_agent_context."""
+    from app.agent.context.prompting.run_context import assemble_agent_context
 
-    out["run"] = run
-
-    if retry_feedback.strip():
-        out["retry"] = retry_feedback.strip()[:500]
-
-    return out
+    rows = getattr(req, "transcript", None) or []
+    return assemble_agent_context(
+        req.context,
+        transcript_rows=rows if isinstance(rows, list) else [],
+        think_content=think_text_for_plan(req),
+        retry_feedback=retry_feedback,
+        profile="full",
+    )
 
 
 def format_plan_context_message(req: PlanRequest, *, retry_feedback: str = "") -> str:
-    """PLAN_CONTEXT_JSON block (tests / legacy label; main loop uses RUN_CONTEXT_JSON)."""
     from app.agent.context.prompting.blocks import join_human_blocks, json_block
 
     payload = build_plan_context(req, retry_feedback=retry_feedback)
-    return join_human_blocks(json_block("PLAN_CONTEXT_JSON", payload))
+    return join_human_blocks(json_block("RUN_CONTEXT_JSON", payload))

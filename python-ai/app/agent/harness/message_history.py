@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
-import json
 import logging
 
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 
-from app.agent.context.prompting.run_context import format_run_context_block
-from app.agent.harness.plan_context import build_plan_context
+from app.agent.context.prompting.run_context import format_agent_context_block
+from app.agent.harness.plan_context import think_text_for_plan
 from app.agent.harness.transcript import AgentTranscript
 from app.agent.schemas import AgentRunContext, PlanRequest
 
@@ -99,21 +98,22 @@ def build_run_context_human(
     ctx: AgentRunContext,
     transcript: AgentTranscript,
 ) -> str:
+    rows = transcript.format_for_plan()
     req = PlanRequest(
         context=ctx,
         think_content=transcript.latest_think_text(),
         think_tool_input={"topic": ctx.user_message},
-        transcript=transcript.format_for_plan(),
+        transcript=rows,
     )
-    ctx_json = build_plan_context(req)
+    block = format_agent_context_block(
+        ctx,
+        transcript_rows=rows,
+        think_content=think_text_for_plan(req),
+        profile="full",
+    )
     return "\n\n".join(
         [
-            format_run_context_block(
-                ctx,
-                include_think_summary=True,
-                transcript_rows=transcript.format_for_plan(),
-            ),
-            f"RUN_CONTEXT_JSON:\n{json.dumps(ctx_json, ensure_ascii=False)[:14000]}",
+            block,
             f"用户消息：{ctx.user_message}",
             "若仍需数据或操作则调用 tool_use；若任务已完成则写完整回复（勿再调用工具）。",
         ]

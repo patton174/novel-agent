@@ -75,7 +75,7 @@ Available tools: {names}
 Rules:
 - Complete **only** the delegated task in the user message. Do not expand scope.
 - **Batch size**: at most 3–4 chapters (or 3–4 memory writes) per turn; use multiple turns if needed (max ~{max_turns} turns).
-- Use RUN_CONTEXT `chapter_catalog` / `memory_catalog` for UUIDs; chapter memory → `/memory/chapter/{{chapter_id}}.json` only.
+- Use RUN_CONTEXT `novel.chapter_catalog` / `memory.memory_index` for UUIDs.
 - Glob/Grep are paths only → must Read for bodies. Do not call removed tools.
 - **No** AskUser, **no** Agent/subagent, **no** plan mode — work autonomously."""
 

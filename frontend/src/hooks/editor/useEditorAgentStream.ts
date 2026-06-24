@@ -69,6 +69,7 @@ export interface UseEditorAgentStreamOptions {
   activeChapterId: string | null
   chapterContent: string
   hostModeEnabled: boolean
+  modelOverrideRef: React.MutableRefObject<string | null>
   inputValue: string
   setInputValue: (value: string) => void
   refreshSessions: (novelId?: string | null) => void
@@ -98,6 +99,7 @@ export function useEditorAgentStream({
   activeChapterId,
   chapterContent,
   hostModeEnabled,
+  modelOverrideRef,
   inputValue,
   setInputValue,
   refreshSessions: _refreshSessions,
@@ -908,6 +910,7 @@ export function useEditorAgentStream({
         {
           message: userText,
           host_mode: hostModeEnabled,
+          model_override: modelOverrideRef.current || undefined,
           context_text: storyContext,
           session_id: agentSessionIdRef.current,
           novel_id: activeNovelId ?? undefined,

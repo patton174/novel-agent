@@ -99,10 +99,12 @@
     "defaultTitle": "Account Settings",
     "accountTitle": "Account & Billing",
     "accountDesc": "Email verification, basic profile, and usage billing",
-    "themeTitle": "Appearance Theme",
-    "themeDesc": "Choose light, dark, or system appearance",
+    "themeTitle": "Personal Settings",
+    "themeDesc": "Theme and display language preferences saved on this device",
     "uiTheme": "UI Theme",
     "themeHint": "Takes effect immediately and remembers preference on this device.",
+    "uiLanguage": "Display Language",
+    "languageHint": "Takes effect immediately and remembers preference on this device.",
     "feedbackTitle": "Share your experience",
     "feedbackDesc": "Your comment may appear in the homepage creator feedback section.",
     "feedbackPlaceholder": "Share how orchestration, continuation, memory, and other features work for you…",
@@ -111,6 +113,17 @@
     "feedbackSent": "Feedback submitted — thank you",
     "feedbackError": "Failed to submit, please try again later",
     "feedbackAlreadySubmitted": "Submitted"
+  },
+  "model": {
+    "defaultTitle": "Default Model",
+    "defaultDesc": "Default model for agent chats (can override per session in the editor)",
+    "byokTitle": "My Private Models",
+    "byokBadge": "Private · No billing",
+    "addByok": "Add Private Model",
+    "platformDefault": "Platform Default",
+    "public": "Public Models",
+    "defaultSaved": "Default model updated",
+    "defaultSaveFailed": "Failed to set default model"
   },
   "bookstore": {
     "loadFail": "Failed to load bookstore",

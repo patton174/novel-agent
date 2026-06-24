@@ -46,4 +46,4 @@ def test_relevance_inject_adds_snippets(monkeypatch):
     assert patch["relevant_context"][0]["content"] == "林动突破"
 
     assembled = assemble_run_context(out)
-    assert assembled["working"]["relevant_context"][0]["content"] == "林动突破"
+    assert assembled["session"]["relevant_context"][0]["content"] == "林动突破"

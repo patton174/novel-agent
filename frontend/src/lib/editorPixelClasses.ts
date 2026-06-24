@@ -131,7 +131,7 @@ export const EDITOR_PIXEL_MODAL_HEADER = cn(
 )
 
 export const EDITOR_PIXEL_ORCH_TIMELINE =
-  'flex w-full max-w-full flex-col gap-2 overflow-visible py-1'
+  'flex w-full min-w-0 max-w-full flex-col gap-2 overflow-x-hidden py-1'
 
 export const EDITOR_PIXEL_ORCH_STATUS_LINE = cn(
   'flex items-center gap-2 font-mono text-[0.78rem] font-bold uppercase tracking-wide text-muted-foreground',
@@ -181,7 +181,7 @@ export const EDITOR_PIXEL_DELIVERY = cn(
 
 export function editorPixelThinkBlockClass(expanded?: boolean) {
   return cn(
-    'overflow-visible border-2 border-foreground bg-background px-2 py-1',
+    'overflow-x-hidden border-2 border-foreground bg-background px-2 py-1',
     expanded && 'border-l-[3px] border-l-foreground bg-neon/10 pl-2.5',
   )
 }
@@ -237,6 +237,27 @@ export function editorPixelIconButtonClass(className?: string) {
   return cn(
     'inline-flex size-8 shrink-0 items-center justify-center border-2 border-foreground bg-background text-muted-foreground shadow-soft',
     'hover:bg-neon/30 hover:text-foreground',
+    '[&_svg]:size-[18px] [&_svg]:shrink-0',
+    className,
+  )
+}
+
+/** 主题/语言等带文字标签的像素切换按钮（非 compact 时勿用固定 width） */
+export function editorPixelToggleButtonClass(compact = false, className?: string) {
+  return cn(
+    'inline-flex shrink-0 items-center justify-center border-2 border-foreground bg-background text-foreground shadow-soft',
+    'hover:bg-neon/30',
+    '[&_svg]:size-[18px] [&_svg]:shrink-0',
+    compact ? 'size-8' : 'h-9 gap-1.5 whitespace-nowrap px-3 text-sm font-medium normal-case',
+    className,
+  )
+}
+
+/** 侧栏/卡片左侧图标槽 — 与 editorPixelIconButton 同系像素框 */
+export function editorPixelIconSlotClass(className?: string) {
+  return cn(
+    'flex size-9 shrink-0 items-center justify-center border-2 border-foreground bg-background text-foreground shadow-[1px_1px_0_0_var(--foreground)]',
+    '[&_svg]:size-[18px] [&_svg]:shrink-0',
     className,
   )
 }

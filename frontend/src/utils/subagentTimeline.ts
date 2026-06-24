@@ -134,7 +134,7 @@ export function applySubagentToolStepEvent(
   const title =
     typeof payloadRecord.display_name === 'string' && payloadRecord.display_name.trim()
       ? payloadRecord.display_name.trim()
-      : toolDisplayName(toolName, payloadRecord)
+      : toolDisplayName(toolName)
 
   const step: AgentStepState = {
     stepId,

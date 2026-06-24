@@ -74,7 +74,12 @@
       "skillCall": "技能调用",
       "emptyHint": "向 AI 发送消息，开始规划大纲、续写章节或调整设定",
       "hostRunningBanner": "托管运行中：任务在后台继续，请勿关闭浏览器标签页",
-      "streamRecovery": "断线重连中…"
+      "streamRecovery": "断线重连中…",
+      "modelLabel": "选择模型",
+      "modelLoadFailed": "模型列表暂不可用，将使用平台默认",
+      "modelUnavailable": "模型服务未就绪",
+      "modelEmpty": "暂无可用模型",
+      "attachSoon": "添加附件（即将推出）"
     },
     "picker": {
       "unselectedChapter": "未选章节",

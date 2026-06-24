@@ -513,6 +513,66 @@ async def persist_chapter_write(
     return True, out, ""
 
 
+async def patch_chapter_lines(
+    ctx: AgentRunContext,
+    chapter_id: str,
+    *,
+    line_start: int,
+    line_end: int | None,
+    line_content: str,
+) -> tuple[bool, dict[str, Any], str]:
+    """PATCH Content API line-range edit (1-based, on stored content)."""
+    if ctx.user_id <= 0 or not chapter_id:
+        return False, {}, "missing user_id or chapter_id"
+    if line_start < 1:
+        return False, {}, "line_start must be >= 1"
+    url = content_auth_url(f"/chapters/{chapter_id}/lines")
+    body: dict[str, Any] = {
+        "lineStart": int(line_start),
+        "lineContent": line_content or "",
+    }
+    if line_end is not None:
+        body["lineEnd"] = int(line_end)
+    headers = user_headers(ctx.user_id, edit_source="ai")
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            resp = await client.patch(url, headers=headers, json=body)
+            if resp.status_code not in (200, 204):
+                return False, {}, _chapter_http_error(resp)
+            data = unwrap_result(resp.json()) if resp.content else {}
+            if not isinstance(data, dict):
+                return True, {"chapter_id": chapter_id}, ""
+            return True, {
+                "chapter_id": str(data.get("id") or chapter_id),
+                "title": str(data.get("title") or ""),
+                "content": str(data.get("content") or ""),
+                "sort_order": int(data.get("sortOrder") or data.get("sort_order") or 0),
+            }, ""
+    except Exception as exc:
+        return False, {}, str(exc)
+
+
+async def update_chapter_title(
+    ctx: AgentRunContext,
+    chapter_id: str,
+    title: str,
+) -> tuple[bool, str]:
+    if ctx.user_id <= 0 or not chapter_id:
+        return False, "missing user_id or chapter_id"
+    if not is_valid_chapter_title(title):
+        return False, CHAPTER_TITLE_REQUIRED_MSG
+    url = content_auth_url(f"/chapters/{chapter_id}")
+    headers = user_headers(ctx.user_id, edit_source="ai")
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            resp = await client.put(url, headers=headers, json={"title": title.strip()})
+            if resp.status_code in (200, 204):
+                return True, ""
+            return False, _chapter_http_error(resp)
+    except Exception as exc:
+        return False, str(exc)
+
+
 async def update_chapter_sort_order(
     ctx: AgentRunContext,
     chapter_id: str,

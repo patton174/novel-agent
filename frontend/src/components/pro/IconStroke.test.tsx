@@ -5,36 +5,44 @@ import { IconStroke } from './IconStroke'
 
 describe('IconStroke', () => {
   it('exposes an accessible img role with the label when label provided', () => {
-    render(<IconStroke icon={IconHome} label="首页" />)
+    render(<IconStroke icon={IconHome} variant="stroke" label="首页" />)
     expect(screen.getByRole('img', { name: '首页' })).toBeInTheDocument()
   })
 
   it('hides icon from assistive tech when label omitted', () => {
-    const { container } = render(<IconStroke icon={IconHome} />)
+    const { container } = render(<IconStroke icon={IconHome} variant="stroke" />)
     const wrapper = container.querySelector('[data-icon-stroke]')
     expect(wrapper?.getAttribute('aria-hidden')).toBe('true')
     expect(wrapper?.getAttribute('role')).toBeNull()
   })
 
   it('applies pro-icon-stroke--active class when active=true', () => {
-    const { container } = render(<IconStroke icon={IconHome} label="首页" active />)
+    const { container } = render(<IconStroke icon={IconHome} variant="stroke" label="首页" active />)
     expect(container.querySelector('[data-icon-stroke]')?.className).toContain('pro-icon-stroke--active')
   })
 
   it('does not apply active class when active=false', () => {
-    const { container } = render(<IconStroke icon={IconHome} label="首页" />)
+    const { container } = render(<IconStroke icon={IconHome} variant="stroke" label="首页" />)
     expect(container.querySelector('[data-icon-stroke]')?.className).not.toContain('pro-icon-stroke--active')
   })
 
   it('applies pro-icon-stroke--reduced class when prefersReducedMotion=true', () => {
-    const { container } = render(<IconStroke icon={IconHome} label="首页" active prefersReducedMotion />)
+    const { container } = render(<IconStroke icon={IconHome} variant="stroke" label="首页" active prefersReducedMotion />)
     expect(container.querySelector('[data-icon-stroke]')?.className).toContain('pro-icon-stroke--reduced')
   })
 
   it('sets pathLength=1 attribute on svg path children (enables draw animation)', () => {
-    const { container } = render(<IconStroke icon={IconHome} label="首页" active />)
+    const { container } = render(<IconStroke icon={IconHome} variant="stroke" label="首页" active />)
     const paths = container.querySelectorAll('svg path')
     expect(paths.length).toBeGreaterThan(0)
     paths.forEach((p) => expect(p.getAttribute('pathLength')).toBe('1'))
+  })
+
+  it('defaults to fill variant for duotone icons (no stroke animation classes)', () => {
+    const { container } = render(<IconStroke icon={IconHome} label="首页" active />)
+    const wrapper = container.querySelector('[data-icon-stroke]')
+    expect(wrapper?.getAttribute('data-icon-variant')).toBe('fill')
+    expect(wrapper?.className).toContain('pro-icon-fill--active')
+    expect(wrapper?.className).not.toContain('pro-icon-stroke--active')
   })
 })

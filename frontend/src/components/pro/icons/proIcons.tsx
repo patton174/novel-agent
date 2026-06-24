@@ -29,6 +29,7 @@ function Svg({ size = 24, className, children, ...rest }: ProIconProps & { child
       height={size}
       viewBox="0 0 24 24"
       className={className}
+      stroke="none"
       aria-hidden="true"
       focusable="false"
       {...(rest as SVGProps<SVGSVGElement>)}
@@ -126,8 +127,14 @@ export function ProIconMonitor(props: ProIconProps) {
 export function ProIconSettings(props: ProIconProps) {
   return (
     <Svg {...props}>
-      <path fill="currentColor" d="M12 15a3 3 0 1 0 0-6a3 3 0 0 0 0 6" opacity=".5" />
-      <path fill="currentColor" d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83a2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33a1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2a2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0a2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0 .33 1.82V21a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 0 2-2a2 2 0 0 0-2-2h-.09a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83a2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H21a1.65 1.65 0 0 0 1-1.51V15z" />
+      <circle cx="12" cy="12" r="3" fill="currentColor" opacity=".5" />
+      <path
+        fill="currentColor"
+        d="M12 2v2.5M12 19.5V22M4.22 4.22l1.77 1.77M18.01 18.01l1.77 1.77M2 12h2.5M19.5 12H22M4.22 19.78l1.77-1.77M18.01 5.99l1.77-1.77"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+      />
     </Svg>
   )
 }
@@ -157,8 +164,15 @@ export function ProIconLogout(props: ProIconProps) {
 export function ProIconPencil(props: ProIconProps) {
   return (
     <Svg {...props}>
-      <path fill="currentColor" d="M17.71 7.71l-4.42-4.42a1 1 0 0 0-1.42 0l-.71.71l4.42 4.42l.71-.71a1 1 0 0 0 0-1.42l2.12 2.12l-5.13 5.13a1 1 0 0 0 0 1.42l.71.71a1 1 0 0 0 1.42 0l5.13-5.13l2.12 2.12a1 1 0 0 0 1.42 0l.71-.71a1 1 0 0 0 0-1.42l-4.42-4.42l.71.71a1 1 0 0 0 1.42 0z" opacity=".5" />
-      <path fill="currentColor" d="M3 21l1.5-1.5l3.5-3.5l1 1l-3.5 3.5z" />
+      <path
+        fill="currentColor"
+        d="M4 20h4l10.5-10.5a1.5 1.5 0 0 0-4.24-4.24L3.76 15.76A1 1 0 0 0 4 16.59V20z"
+        opacity=".5"
+      />
+      <path
+        fill="currentColor"
+        d="m13.5 6.5 4 4M16 4l4 4-2 2-4-4 2-2z"
+      />
     </Svg>
   )
 }
@@ -262,8 +276,12 @@ export function ProIconAdminSystem(props: ProIconProps) {
 export function ProIconArrowRight(props: ProIconProps) {
   return (
     <Svg {...props}>
-      <path fill="currentColor" d="M5.375 12a.625.625 0 0 1-.445-.183l-4.5-4.625a.625.625 0 0 1 0-.859l4.5-4.625a.625.625 0 0 1 .89.859L2.146 11.5H11a.625.625 0 0 1 0 1.25H2.146l3.674 3.824a.625.625 0 0 1-.445 1.001" opacity=".5" />
-      <path fill="currentColor" d="M16.5 12a.625.625 0 0 1-.445-.183l-4.5-4.625a.625.625 0 0 1 0-.859l4.5-4.625a.625.625 0 0 1 .89.859L13.271 11.5H21a.625.625 0 0 1 0 1.25H13.271l3.674 3.824a.625.625 0 0 1-.445 1.001" />
+      <path
+        fill="currentColor"
+        d="M12.75 5.25a.75.75 0 0 1 1.06 0l5.72 5.72a1 1 0 0 1 0 1.42l-5.72 5.72a.75.75 0 1 1-1.06-1.06L17.94 12.5H5a.75.75 0 0 1 0-1.5h12.94l-3.19-3.19a.75.75 0 0 1 0-1.06"
+        opacity=".5"
+      />
+      <path fill="currentColor" d="M5 11.25a.75.75 0 0 1 .75-.75H19a.75.75 0 0 1 0 1.5H5.75a.75.75 0 0 1-.75-.75" />
     </Svg>
   )
 }
@@ -272,8 +290,15 @@ export function ProIconArrowRight(props: ProIconProps) {
 export function ProIconArrowLeft(props: ProIconProps) {
   return (
     <Svg {...props}>
-      <path fill="currentColor" d="M18.625 12a.625.625 0 0 0 .445-.183l4.5-4.625a.625.625 0 0 0 0-.859l-4.5-4.625a.625.625 0 0 0-.89.859L21.854 11.5H13a.625.625 0 0 0 0 1.25h8.854l-3.674 3.824a.625.625 0 0 0 .445 1.001" opacity=".5" />
-      <path fill="currentColor" d="M7.5 12a.625.625 0 0 0 .445-.183l4.5-4.625a.625.625 0 0 0 0-.859l-4.5-4.625a.625.625 0 0 0-.89.859L10.729 11.5H3a.625.625 0 0 0 0 1.25h7.729l-3.674 3.824a.625.625 0 0 0 .445 1.001" />
+      <path
+        fill="currentColor"
+        d="M11.25 5.25a.75.75 0 0 1 0 1.06L6.06 11.5l5.19 5.19a.75.75 0 1 1-1.06 1.06l-5.72-5.72a1 1 0 0 1 0-1.42l5.72-5.72a.75.75 0 0 1 1.06 0"
+        opacity=".5"
+      />
+      <path
+        fill="currentColor"
+        d="M19 11.25a.75.75 0 0 1 .75.75v.5a.75.75 0 0 1-.75.75H7.5a.75.75 0 0 1 0-1.5H19z"
+      />
     </Svg>
   )
 }
