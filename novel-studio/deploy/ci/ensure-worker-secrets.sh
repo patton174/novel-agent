@@ -58,6 +58,39 @@ read_secret() {
   return 1
 }
 
+ensure_key_or_generate() {
+  local key="$1" min_len="${2:-32}" ci_val="${3:-}"
+  local current="" resolved=""
+
+  current="$(env_get_remote "$REMOTE" "$ENV_REL" "$key" || true)"
+  if [[ -n "$current" && ${#current} -ge "$min_len" ]]; then
+    echo "[ensure-secrets] $key ok on worker (${#current} chars)"
+    return 0
+  fi
+
+  if [[ -n "$ci_val" && ${#ci_val} -ge "$min_len" ]]; then
+    resolved="$ci_val"
+    echo "[ensure-secrets] $key from CI env"
+  else
+    resolved="$(read_secret "$key" || true)"
+    if [[ -n "$resolved" ]]; then
+      echo "[ensure-secrets] $key synced from MW/legacy env"
+    fi
+  fi
+
+  if [[ -z "$resolved" || ${#resolved} -lt "$min_len" ]]; then
+    resolved="$(deploy_ssh "$REMOTE" "openssl rand -base64 32" | tr -d '\r\n')"
+    echo "[ensure-secrets] $key generated on worker (${#resolved} chars)"
+  fi
+
+  [[ -n "$resolved" && ${#resolved} -ge "$min_len" ]] || {
+    echo "[ensure-secrets] ERROR: $key missing or shorter than $min_len chars on worker"
+    exit 1
+  }
+
+  patch_env_remote "$REMOTE" "$ENV_REL" "$key" "$resolved"
+}
+
 ensure_key() {
   local key="$1" min_len="${2:-1}" ci_val="${3:-}"
   local current="" resolved=""
@@ -125,6 +158,7 @@ sync_key_prefer_ci() {
 echo "[ensure-secrets] checking $ENV_REL on worker..."
 ensure_key JWT_SECRET 32 "${JWT_SECRET:-}"
 ensure_key AGENT_INTERNAL_SERVICE_KEY 8 "${AGENT_INTERNAL_SERVICE_KEY:-}"
+ensure_key_or_generate MODEL_KEY_ENCRYPTION_KEY 32 "${MODEL_KEY_ENCRYPTION_KEY:-}"
 sync_key_prefer_ci MAILTRAP_TOKEN 8 "${MAILTRAP_TOKEN:-}"
 sync_key_optional AUTH_EMAIL_LINK_SECRET 16 "${AUTH_EMAIL_LINK_SECRET:-}"
 
