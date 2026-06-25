@@ -14,12 +14,17 @@ import {
   formatTokenQuota,
   type PlatformUsageTrendPoint,
 } from '@/api/billingAdminApi'
-import { AdminNativeSelect } from '@/components/layout/AdminNativeSelect'
-import { AppPageStack, AppShellCard, AppShellCardBody, AppShellCardHeader, AppStatCard } from '@/components/layout/AppPageStack'
+import { AdminField, AdminSelect } from '@/components/admin/AdminFormControls'
+import {
+  AdminDataPage,
+  AdminDataPanel,
+  AdminDataPanelBody,
+  AdminDataPanelHeader,
+  AdminStatStrip,
+} from '@/components/layout/AdminDataLayout'
 import { useMarkRouteSeen } from '@/hooks/useMarkRouteSeen'
 import { appToast } from '@/stores/appToastStore'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Bot, BookOpen, UserCheck, UserPlus, Users, Zap } from 'lucide-react'
 
 const StatsOverviewCharts = lazy(() => import('./StatsOverviewCharts'))
 
@@ -104,97 +109,52 @@ export default function StatsPage() {
   const summaryLoading = loading || platform === null || content === null
 
   return (
-    <AppPageStack className="gap-4">
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <AppStatCard
-          label={t('admin:home.totalUsers')}
-          icon={Users}
-          iconClassName="text-blue-600"
-          iconBgClassName="bg-blue-500/10"
-          loading={summaryLoading}
-          value={platform?.totalUsers.toLocaleString('zh-CN') ?? '—'}
-        />
-        <AppStatCard
-          label={t('admin:stats.periodRegistrations', { range: rangeLabel })}
-          icon={UserPlus}
-          iconClassName="text-emerald-600"
-          iconBgClassName="bg-emerald-500/10"
-          loading={summaryLoading}
-          value={periodRegistrations.toLocaleString('zh-CN')}
-        />
-        <AppStatCard
-          label={t('admin:stats.periodAgentRuns', { range: rangeLabel })}
-          icon={Bot}
-          iconClassName="text-rose-600"
-          iconBgClassName="bg-rose-500/10"
-          loading={summaryLoading}
-          value={periodAgentRuns.toLocaleString('zh-CN')}
-        />
-        <AppStatCard
-          label={t('admin:home.activeUsers')}
-          icon={UserCheck}
-          iconClassName="text-violet-600"
-          iconBgClassName="bg-violet-500/10"
-          loading={summaryLoading}
-          value={platform?.activeUsers.toLocaleString('zh-CN') ?? '—'}
-        />
-      </div>
+    <AdminDataPage>
+      <AdminStatStrip
+        loading={summaryLoading}
+        items={[
+          { label: t('admin:home.totalUsers'), value: platform?.totalUsers.toLocaleString('zh-CN') ?? '—' },
+          {
+            label: t('admin:stats.periodRegistrations', { range: rangeLabel }),
+            value: periodRegistrations.toLocaleString('zh-CN'),
+          },
+          {
+            label: t('admin:stats.periodAgentRuns', { range: rangeLabel }),
+            value: periodAgentRuns.toLocaleString('zh-CN'),
+          },
+          { label: t('admin:home.activeUsers'), value: platform?.activeUsers.toLocaleString('zh-CN') ?? '—' },
+          { label: t('admin:stats.periodTokens', { range: rangeLabel }), value: formatTokenQuota(periodTokens) },
+          { label: t('admin:stats.periodCost', { range: rangeLabel }), value: formatCostMicros(periodCost) },
+          { label: t('admin:home.totalNovels'), value: content?.totalNovels.toLocaleString('zh-CN') ?? '—' },
+          {
+            label: t('admin:home.totalAgentRuns'),
+            value: content?.totalAgentRuns.toLocaleString('zh-CN') ?? '—',
+          },
+        ]}
+      />
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <AppStatCard
-          label={t('admin:stats.periodTokens', { range: rangeLabel })}
-          icon={Zap}
-          iconClassName="text-indigo-600"
-          iconBgClassName="bg-indigo-500/10"
-          loading={summaryLoading}
-          value={formatTokenQuota(periodTokens)}
-        />
-        <AppStatCard
-          label={t('admin:stats.periodCost', { range: rangeLabel })}
-          icon={Zap}
-          iconClassName="text-purple-600"
-          iconBgClassName="bg-purple-500/10"
-          loading={summaryLoading}
-          value={formatCostMicros(periodCost)}
-        />
-        <AppStatCard
-          label={t('admin:home.totalNovels')}
-          icon={BookOpen}
-          iconClassName="text-amber-600"
-          iconBgClassName="bg-amber-500/10"
-          loading={summaryLoading}
-          value={content?.totalNovels.toLocaleString('zh-CN') ?? '—'}
-        />
-        <AppStatCard
-          label={t('admin:home.totalAgentRuns')}
-          icon={Bot}
-          iconClassName="text-cyan-600"
-          iconBgClassName="bg-cyan-500/10"
-          loading={summaryLoading}
-          value={content?.totalAgentRuns.toLocaleString('zh-CN') ?? '—'}
-        />
-      </div>
-
-      <AppShellCard>
-        <AppShellCardHeader
+      <AdminDataPanel>
+        <AdminDataPanelHeader
           title={t('admin:stats.title')}
           description={t('admin:stats.descExtended')}
           action={
-            <AdminNativeSelect
-              value={days}
-              aria-label={t('admin:stats.dateRange')}
-              className="w-full sm:w-auto"
-              onChange={(e) => setDays(Number(e.target.value))}
-            >
-              {RANGE_OPTIONS.map((opt) => (
-                <option key={opt.days} value={opt.days}>
-                  {opt.label}
-                </option>
-              ))}
-            </AdminNativeSelect>
+            <AdminField label={t('admin:stats.dateRange')} className="min-w-[10rem] sm:max-w-none">
+              <AdminSelect
+                value={days}
+                aria-label={t('admin:stats.dateRange')}
+                className="sm:w-40"
+                onChange={(e) => setDays(Number(e.target.value))}
+              >
+                {RANGE_OPTIONS.map((opt) => (
+                  <option key={opt.days} value={opt.days}>
+                    {opt.label}
+                  </option>
+                ))}
+              </AdminSelect>
+            </AdminField>
           }
         />
-        <AppShellCardBody className="py-4">
+        <AdminDataPanelBody className="py-3">
           {loading || agentRunTrend === null ? (
             chartAreaFallback
           ) : (
@@ -207,8 +167,8 @@ export default function StatsPage() {
               />
             </Suspense>
           )}
-        </AppShellCardBody>
-      </AppShellCard>
-    </AppPageStack>
+        </AdminDataPanelBody>
+      </AdminDataPanel>
+    </AdminDataPage>
   )
 }

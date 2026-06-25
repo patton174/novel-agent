@@ -34,6 +34,7 @@
     "hotBadge": "热门推荐",
     "tokensPerMonth": "{{label}} AI 额度 / 月",
     "unlimitedTokens": "不限 AI 额度",
+    "runsPerMonth": "每月 {{count}} 次 Agent 运行",
     "loadError": "套餐加载失败，请稍后重试",
     "faqTitle": "常见问题",
     "faq": {
@@ -42,7 +43,23 @@
       "3": { "q": "能否随时升级或降级？", "a": "可以。在创作台用量页查看配额，升级即时生效；企业版支持定制额度与私有化对接。" }
     },
     "feasibilityNote": "不确定是否适合？先看",
-    "feasibilityLink": "适用场景与对比"
+    "feasibilityLink": "适用场景与对比",
+    "checkout": {
+      "title": "确认订单",
+      "subtitle": "选择支付方式并完成支付，支付成功后将自动开通套餐。",
+      "summary": "订单摘要",
+      "selectMethod": "选择支付方式",
+      "choosePlanHint": "选择上方套餐后，将在此完成下单与支付。"
+    }
+  },
+  "recommend": {
+    "title": "升级套餐，释放更多创作力",
+    "quotaDesc": "本月 AI 额度即将用尽，升级后可获得更高配额与更稳定的创作体验。",
+    "upgradeDesc": "升级套餐解锁更高额度、更多 Agent 运行次数与完整能力。",
+    "featureDesc": "当前套餐不包含此能力，升级后即可使用。",
+    "recommended": "推荐",
+    "viewPricing": "查看完整定价",
+    "empty": "暂无可购套餐，请稍后再试或联系客服。"
   },
   "guide": {
     "eyebrow": "创作指南",

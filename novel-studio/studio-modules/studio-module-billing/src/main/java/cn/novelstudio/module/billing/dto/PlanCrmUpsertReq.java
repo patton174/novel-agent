@@ -16,6 +16,8 @@ public record PlanCrmUpsertReq(
     Integer rateLimitRpm,
     Boolean isFeatured,
     Integer sortOrder,
-    List<String> features
+    List<String> features,
+    String idrProjectId,
+    String idrSkuId
 ) {
 }

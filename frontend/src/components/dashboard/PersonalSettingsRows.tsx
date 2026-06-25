@@ -6,8 +6,9 @@ import { ThemeToggle } from '@/components/theme/ThemeToggle'
 import { useTranslation } from 'react-i18next'
 import { appToast } from '@/stores/appToastStore'
 import { MODEL_PIXEL_ROW } from '@/lib/modelPixelClasses'
+import { resolveDefaultModelValue } from '@/utils/modelSelection'
 
-/** 个性设置：主题 + 语言 + 默认模型，桌面/移动设置页共用。 */
+/** 个性设置：主题 + 语言 + 默认平台模型，桌面/移动设置页共用。 */
 export function PersonalSettingsRows() {
   const { t } = useTranslation(['dashboard'])
   const [defaultModelId, setDefaultModelId] = useState<string | null>(null)
@@ -19,18 +20,10 @@ export function PersonalSettingsRows() {
     fetchDefaultModel('llm')
       .then((model) => {
         if (cancelled) return
-        if (!model) {
-          setDefaultModelId(null)
-          return
-        }
-        if (model.publicModelId) {
-          setDefaultModelId(`pub:${model.publicModelId}`)
-        } else {
-          setDefaultModelId(model.id)
-        }
+        setDefaultModelId(resolveDefaultModelValue(model))
       })
       .catch(() => {
-        if (!cancelled) setDefaultModelId(null)
+        if (!cancelled) setDefaultModelId('')
       })
       .finally(() => {
         if (!cancelled) setDefaultReady(true)
@@ -41,13 +34,10 @@ export function PersonalSettingsRows() {
   }, [])
 
   const handleDefaultModelChange = useCallback(async (value: string | null) => {
-    if (!value) {
-      setDefaultModelId(null)
-      return
-    }
+    const normalized = value ?? ''
     try {
-      await setDefaultModel('llm', value)
-      setDefaultModelId(value)
+      await setDefaultModel('llm', normalized)
+      setDefaultModelId(normalized)
       setModelSelectorKey((k) => k + 1)
       appToast.success(t('dashboard:model.defaultSaved'))
     } catch (e) {
@@ -85,6 +75,7 @@ export function PersonalSettingsRows() {
         {defaultReady ? (
           <ModelSelector
             key={modelSelectorKey}
+            forSettings
             value={defaultModelId}
             onChange={(v) => void handleDefaultModelChange(v)}
             className="shrink-0"

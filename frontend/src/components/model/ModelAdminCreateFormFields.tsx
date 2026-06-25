@@ -1,13 +1,14 @@
 import { Input } from '@/components/ui/input'
 import { ModelProviderPresetPicker } from '@/components/model/ModelProviderPresetPicker'
 import { ModelProtocolField, withAnthropicProtocol } from '@/components/model/ModelProtocolField'
-import { ModelTierPicker } from '@/components/model/ModelTierPicker'
-import { applyModelProviderPreset, MODEL_PROTOCOL } from '@/config/modelProviderPresets'
+import { ModelMultiplierField } from '@/components/model/ModelMultiplierField'
 import {
-  modelTierMultiplier,
-  multiplierToTier,
-  type ModelTierId,
-} from '@/config/modelTiers'
+  applyModelProviderPreset,
+  findModelProviderPreset,
+  MODEL_PROTOCOL,
+  type ModelProviderPreset,
+} from '@/config/modelProviderPresets'
+import { isValidTierMultiplier } from '@/config/modelTiers'
 import type { ModelCredential } from '@/types/model'
 import {
   MODEL_PIXEL_INPUT,
@@ -31,7 +32,7 @@ export interface AdminModelFormState {
   modelName: string
   baseUrl: string
   apiKey: string
-  modelTier: ModelTierId
+  priceMultiplier: string
   planCodes: string[]
 }
 
@@ -58,9 +59,7 @@ interface ModelAdminCreateFormFieldsProps {
     baseUrl: string
     apiKey: string
     apiKeyOptional?: string
-    tier: string
     plans: string
-    readonlyHint: string
   }
 }
 
@@ -72,8 +71,24 @@ const modeBtnClass = (active: boolean) =>
     active ? 'bg-foreground text-background' : 'bg-background text-foreground hover:bg-muted/40',
   )
 
-const readonlyFieldClass =
-  'border-2 border-foreground/20 bg-muted/30 px-2 py-1.5 font-mono text-xs text-foreground'
+function applyPreset(
+  form: AdminModelFormState,
+  preset: ModelProviderPreset,
+): Partial<AdminModelFormState> {
+  const applied = applyModelProviderPreset(preset, {
+    label: form.displayName,
+    code: form.code,
+  })
+  return {
+    presetId: preset.id,
+    provider: applied.provider,
+    protocol: applied.protocol,
+    modelName: applied.modelName,
+    baseUrl: applied.baseUrl,
+    displayName: applied.displayName ?? preset.suggestedLabel,
+    code: applied.code ?? preset.suggestedCode ?? form.code,
+  }
+}
 
 export function ModelAdminCreateFormFields({
   form,
@@ -161,36 +176,20 @@ export function ModelAdminCreateFormFields({
             />
           </div>
           <div className="grid gap-1.5">
-            <label className={MODEL_PIXEL_LABEL}>{labels.preset}</label>
-            <ModelProviderPresetPicker
-              value={form.presetId}
-              onChange={(preset) => {
-                const applied = applyModelProviderPreset(preset, {
-                  label: form.displayName,
-                  code: form.code,
-                })
-                set({
-                  presetId: preset.id,
-                  provider: applied.provider,
-                  protocol: applied.protocol,
-                  modelName: applied.modelName || form.modelName,
-                  baseUrl: applied.baseUrl,
-                  displayName: applied.displayName ?? form.displayName,
-                  code: applied.code ?? form.code,
-                })
-              }}
+            <label className={MODEL_PIXEL_LABEL}>{labels.provider}</label>
+            <Input
+              value={form.provider}
+              onChange={(e) => set({ provider: e.target.value })}
+              className={pixelInput}
             />
-          </div>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div className="grid gap-1.5">
-              <label className={MODEL_PIXEL_LABEL}>{labels.provider}</label>
-              <div className={readonlyFieldClass}>{form.provider || '—'}</div>
-            </div>
-            <ModelProtocolField label={labels.protocol} />
           </div>
           <div className="grid gap-1.5">
             <label className={MODEL_PIXEL_LABEL}>{labels.baseUrl}</label>
-            <div className={readonlyFieldClass}>{form.baseUrl || '—'}</div>
+            <Input
+              value={form.baseUrl}
+              onChange={(e) => set({ baseUrl: e.target.value })}
+              className={pixelInput}
+            />
           </div>
           <div className="grid gap-1.5">
             <label className={MODEL_PIXEL_LABEL}>{labels.apiKey}</label>
@@ -204,39 +203,41 @@ export function ModelAdminCreateFormFields({
         </>
       ) : null}
 
-      {!showConnectionFields && !editing ? (
-        <div className="grid gap-1.5">
-          <label className={MODEL_PIXEL_LABEL}>{labels.preset}</label>
-          <ModelProviderPresetPicker
-            value={form.presetId}
-            onChange={(preset) => {
-              const applied = applyModelProviderPreset(preset, { code: form.code, label: form.displayName })
-              set({
-                presetId: preset.id,
-                modelName: applied.modelName || form.modelName,
-                code: applied.code ?? form.code,
-              })
-            }}
-          />
-        </div>
-      ) : null}
+      <div className="grid gap-1.5">
+        <label className={MODEL_PIXEL_LABEL}>{labels.preset}</label>
+        <ModelProviderPresetPicker
+          value={form.presetId}
+          onChange={(preset) => set(applyPreset(form, preset))}
+        />
+      </div>
+      <ModelProtocolField label={labels.protocol} />
 
       <div className="grid gap-1.5">
         <label className={MODEL_PIXEL_LABEL}>{labels.code}</label>
-        <div className={readonlyFieldClass}>{form.code || labels.readonlyHint}</div>
+        <Input value={form.code} onChange={(e) => set({ code: e.target.value })} className={pixelInput} />
       </div>
       <div className="grid gap-1.5">
         <label className={MODEL_PIXEL_LABEL}>{labels.displayName}</label>
-        <div className={readonlyFieldClass}>{form.displayName || labels.readonlyHint}</div>
+        <Input
+          value={form.displayName}
+          onChange={(e) => set({ displayName: e.target.value })}
+          className={pixelInput}
+        />
       </div>
       <div className="grid gap-1.5">
         <label className={MODEL_PIXEL_LABEL}>{labels.modelName}</label>
-        <div className={readonlyFieldClass}>{form.modelName || labels.readonlyHint}</div>
+        <Input
+          value={form.modelName}
+          onChange={(e) => set({ modelName: e.target.value })}
+          className={pixelInput}
+        />
       </div>
-      <ModelTierPicker
-        value={form.modelTier}
-        onChange={(modelTier) => set({ modelTier })}
+
+      <ModelMultiplierField
+        value={form.priceMultiplier}
+        onChange={(priceMultiplier) => set({ priceMultiplier })}
       />
+
       <div className="grid gap-1.5">
         <span className={MODEL_PIXEL_LABEL}>{labels.plans}</span>
         <div className="flex flex-wrap gap-2">
@@ -281,8 +282,9 @@ export function ModelAdminCreateFormFields({
 }
 
 export function emptyAdminModelForm(credentialId = ''): AdminModelFormState {
-  return withAnthropicProtocol({
-    credentialMode: credentialId ? 'existing' : 'new',
+  const preset = findModelProviderPreset('claude-official')
+  const base = withAnthropicProtocol({
+    credentialMode: (credentialId ? 'existing' : 'new') as AdminCredentialMode,
     credentialId,
     credentialLabel: '',
     presetId: 'claude-official',
@@ -293,9 +295,11 @@ export function emptyAdminModelForm(credentialId = ''): AdminModelFormState {
     modelName: '',
     baseUrl: 'https://api.anthropic.com',
     apiKey: '',
-    modelTier: 'light',
+    priceMultiplier: '1.25',
     planCodes: [],
   })
+  if (!preset) return base
+  return { ...base, ...applyPreset(base, preset) }
 }
 
 export function aiModelToAdminForm(model: {
@@ -313,7 +317,7 @@ export function aiModelToAdminForm(model: {
     credentialMode: model.credentialId ? 'existing' : 'new',
     credentialId: model.credentialId ?? '',
     credentialLabel: '',
-    presetId: 'custom',
+    presetId: 'claude-official',
     code: model.code,
     displayName: model.displayName,
     provider: model.provider,
@@ -321,11 +325,16 @@ export function aiModelToAdminForm(model: {
     modelName: model.modelName,
     baseUrl: model.baseUrl,
     apiKey: '',
-    modelTier: multiplierToTier(model.priceMultiplier ?? 1),
+    priceMultiplier: String(model.priceMultiplier ?? 1.25),
     planCodes: model.planCodes?.length ? [...model.planCodes] : [],
   })
 }
 
 export function adminFormPriceMultiplier(form: AdminModelFormState): number {
-  return modelTierMultiplier(form.modelTier)
+  const value = Number(form.priceMultiplier)
+  return Number.isFinite(value) ? value : 1.25
+}
+
+export function adminFormMultiplierValid(form: AdminModelFormState): boolean {
+  return isValidTierMultiplier(Number(form.priceMultiplier))
 }

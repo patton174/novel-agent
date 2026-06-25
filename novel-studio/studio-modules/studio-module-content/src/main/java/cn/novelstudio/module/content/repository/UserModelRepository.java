@@ -12,6 +12,9 @@ public interface UserModelRepository extends JpaRepository<UserModelEntity, Stri
 
     Optional<UserModelEntity> findByUserIdAndModelTypeAndIsDefaultTrue(Long userId, String modelType);
 
+    Optional<UserModelEntity> findByUserIdAndModelTypeAndPublicModelId(
+        Long userId, String modelType, String publicModelId);
+
     boolean existsByPublicModelId(String publicModelId);
 
     long countByCredentialId(String credentialId);

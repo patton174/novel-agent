@@ -32,9 +32,6 @@ export function ModelTierPicker({ value, onChange, className }: ModelTierPickerP
               <span className="text-[10px] font-normal text-muted-foreground">
                 {t(`dashboard:model.${tier.rangeLabelKey}`)}
               </span>
-              <span className="font-mono text-[10px] text-muted-foreground">
-                ×{tier.defaultMultiplier}
-              </span>
             </button>
           )
         })}

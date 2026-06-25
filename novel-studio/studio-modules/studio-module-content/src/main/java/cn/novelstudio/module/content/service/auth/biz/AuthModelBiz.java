@@ -3,6 +3,7 @@ package cn.novelstudio.module.content.service.auth.biz;
 import cn.novelstudio.kernel.base.Result;
 import cn.novelstudio.kernel.biz.BaseBiz;
 import cn.novelstudio.module.billing.service.biz.FeatureGateBiz;
+import cn.novelstudio.module.content.entity.AiModelEntity;
 import cn.novelstudio.module.content.entity.AiModelPlanAccessEntity;
 import cn.novelstudio.module.content.entity.UserModelCredentialEntity;
 import cn.novelstudio.module.content.entity.UserModelEntity;
@@ -48,17 +49,10 @@ public class AuthModelBiz extends BaseBiz {
             .filter(e -> t.equals(e.getModelType()) && Boolean.TRUE.equals(e.getActive()))
             .map(aiModelService::toDto)
             .collect(Collectors.toList());
-        List<UserModelDTO> byok = userModelRepo.findByUserIdAndModelType(userId, t).stream()
-            .filter(e -> Boolean.TRUE.equals(e.getByok()))
-            .map(this::toUserDto)
-            .collect(Collectors.toList());
-        List<ModelCredentialDTO> credentials = credentialRepo.findByUserIdOrderByCreatedAtAsc(userId).stream()
-            .map(this::toCredentialDto)
-            .collect(Collectors.toList());
         AvailableModelsDTO dto = new AvailableModelsDTO();
         dto.setPublicModels(publicModels);
-        dto.setByok(byok);
-        dto.setCredentials(credentials);
+        dto.setByok(List.of());
+        dto.setCredentials(List.of());
         return ok(dto);
     }
 
@@ -77,21 +71,124 @@ public class AuthModelBiz extends BaseBiz {
             .orElse(null));
     }
 
+    private static final String AUTO_MARKER = "auto";
+    private static final String TIER_PREFIX = "tier:";
+
     @Transactional
     public Result<Void> setDefault(Long userId, String type, String userModelId) {
         String t = type == null ? "llm" : type;
-        userModelRepo.findByUserIdAndModelTypeAndIsDefaultTrue(userId, t).ifPresent(old -> {
+        clearDefault(userId, t);
+
+        if (userModelId == null || userModelId.isBlank()) {
+            upsertTierPreference(userId, t, tierMarkerForPlatformDefault(t));
+            return ok();
+        }
+
+        if (AUTO_MARKER.equals(userModelId)) {
+            upsertAutoPreference(userId, t);
+            return ok();
+        }
+
+        if (userModelId.startsWith(TIER_PREFIX)) {
+            upsertTierPreference(userId, t, userModelId);
+            return ok();
+        }
+
+        if (userModelId.startsWith("pub:")) {
+            String publicId = userModelId.substring(4);
+            AiModelEntity m = aiModelRepo.findById(publicId)
+                .orElseThrow(() -> new IllegalArgumentException("模型不存在"));
+            if (!Boolean.TRUE.equals(m.getActive()) || !t.equals(m.getModelType())) {
+                throw new IllegalArgumentException("模型不可用");
+            }
+            upsertTierPreference(userId, t, tierMarkerForModel(m));
+            return ok();
+        }
+
+        throw new IllegalArgumentException("仅支持 Auto 或模型档位");
+    }
+
+    private String tierMarkerForPlatformDefault(String modelType) {
+        AiModelEntity platformDefault = aiModelRepo.findFirstByModelTypeAndIsDefaultTrueAndActiveTrue(modelType)
+            .orElseThrow(() -> new IllegalArgumentException("暂无平台默认模型"));
+        return tierMarkerForModel(platformDefault);
+    }
+
+    private String tierMarkerForModel(AiModelEntity model) {
+        var tier = cn.novelstudio.module.content.service.model.ModelPriceTier.tierOf(model.getPriceMultiplier());
+        if (tier == null) {
+            return TIER_PREFIX + "balanced";
+        }
+        return TIER_PREFIX + tier.name().toLowerCase();
+    }
+
+    private void upsertTierPreference(Long userId, String type, String tierMarker) {
+        UserModelEntity e = userModelRepo.findByUserIdAndModelType(userId, type).stream()
+            .filter(u -> !Boolean.TRUE.equals(u.getByok())
+                && u.getPublicModelId() == null
+                && tierMarker.equals(u.getModelName()))
+            .findFirst()
+            .orElseGet(() -> {
+                UserModelEntity n = new UserModelEntity();
+                n.setUserId(userId);
+                n.setModelType(type);
+                n.setByok(false);
+                return n;
+            });
+        e.setPublicModelId(null);
+        e.setModelName(tierMarker);
+        e.setLabel(tierMarker);
+        e.setIsDefault(true);
+        userModelRepo.save(e);
+    }
+
+    private void clearDefault(Long userId, String type) {
+        userModelRepo.findByUserIdAndModelTypeAndIsDefaultTrue(userId, type).ifPresent(old -> {
             old.setIsDefault(false);
             userModelRepo.save(old);
         });
-        UserModelEntity e = userModelRepo.findById(userModelId)
-            .orElseThrow(() -> new IllegalArgumentException("模型不存在"));
-        if (!e.getUserId().equals(userId)) {
-            throw new IllegalArgumentException("无权操作");
+    }
+
+    private void upsertPublicPreference(Long userId, String type, String publicModelId, String label) {
+        AiModelEntity m = aiModelRepo.findById(publicModelId).orElse(null);
+        if (m != null) {
+            upsertTierPreference(userId, type, tierMarkerForModel(m));
+            return;
         }
+        UserModelEntity e = userModelRepo
+            .findByUserIdAndModelTypeAndPublicModelId(userId, type, publicModelId)
+            .orElseGet(() -> {
+                UserModelEntity n = new UserModelEntity();
+                n.setUserId(userId);
+                n.setModelType(type);
+                n.setByok(false);
+                return n;
+            });
+        e.setPublicModelId(publicModelId);
+        e.setLabel(label);
+        e.setModelName(null);
         e.setIsDefault(true);
         userModelRepo.save(e);
-        return ok();
+    }
+
+    private void upsertAutoPreference(Long userId, String type) {
+        UserModelEntity e = userModelRepo.findByUserIdAndModelType(userId, type).stream()
+            .filter(u -> !Boolean.TRUE.equals(u.getByok())
+                && u.getPublicModelId() == null
+                && AUTO_MARKER.equals(u.getModelName()))
+            .findFirst()
+            .orElseGet(() -> {
+                UserModelEntity n = new UserModelEntity();
+                n.setUserId(userId);
+                n.setModelType(type);
+                n.setByok(false);
+                return n;
+            });
+        e.setPublicModelId(null);
+        e.setModelName(AUTO_MARKER);
+        e.setLabel(AUTO_MARKER);
+        e.setIsDefault(true);
+        userModelRepo.save(e);
     }
 
     @Transactional
@@ -126,82 +223,17 @@ public class AuthModelBiz extends BaseBiz {
 
     @Transactional
     public Result<UserModelDTO> createByok(Long userId, ByokUpsertReq req) {
-        if (req.getLabel() == null || req.getLabel().isBlank()) {
-            throw new IllegalArgumentException("请填写模型名称");
-        }
-        UserModelEntity e = new UserModelEntity();
-        e.setUserId(userId);
-        e.setModelType(req.getModelType() == null ? "llm" : req.getModelType());
-        e.setByok(true);
-        e.setLabel(req.getLabel());
-        e.setModelName(req.getModelName() == null || req.getModelName().isBlank()
-            ? req.getLabel() : req.getModelName());
-
-        if (req.getCredentialId() != null && !req.getCredentialId().isBlank()) {
-            UserModelCredentialEntity cred = requireOwnedCredential(userId, req.getCredentialId());
-            linkModelToCredential(e, cred);
-        } else {
-            if (req.getApiKey() == null || req.getApiKey().isBlank()) {
-                throw new IllegalArgumentException("请填写 API Key 或选择已有连接");
-            }
-            requireConnectionFields(req);
-            UserModelCredentialEntity cred = new UserModelCredentialEntity();
-            cred.setUserId(userId);
-            cred.setLabel(resolveCredentialLabel(req));
-            cred.setProvider(req.getProvider());
-            cred.setProtocol(req.getProtocol());
-            cred.setBaseUrl(req.getBaseUrl());
-            cred.setApiKeyEnc(keyCodec.encrypt(req.getApiKey()));
-            cred = credentialRepo.save(cred);
-            linkModelToCredential(e, cred);
-        }
-        return ok(toUserDto(userModelRepo.save(e)));
+        throw new IllegalArgumentException("用户端已关闭私有模型，请使用平台提供的模型");
     }
 
     @Transactional
     public Result<UserModelDTO> updateByok(Long userId, String id, ByokUpsertReq req) {
-        UserModelEntity e = userModelRepo.findById(id)
-            .orElseThrow(() -> new IllegalArgumentException("模型不存在"));
-        if (!e.getUserId().equals(userId)) {
-            throw new IllegalArgumentException("无权操作");
-        }
-        if (req.getLabel() == null || req.getLabel().isBlank()) {
-            throw new IllegalArgumentException("请填写模型名称");
-        }
-        e.setLabel(req.getLabel());
-        e.setModelName(req.getModelName() == null || req.getModelName().isBlank()
-            ? req.getLabel() : req.getModelName());
-
-        if (req.getCredentialId() != null && !req.getCredentialId().isBlank()
-            && !req.getCredentialId().equals(e.getCredentialId())) {
-            UserModelCredentialEntity cred = requireOwnedCredential(userId, req.getCredentialId());
-            linkModelToCredential(e, cred);
-        } else if (e.getCredentialId() == null || e.getCredentialId().isBlank()) {
-            if (req.getProvider() != null) {
-                e.setProvider(req.getProvider());
-            }
-            if (req.getProtocol() != null) {
-                e.setProtocol(req.getProtocol());
-            }
-            if (req.getBaseUrl() != null) {
-                e.setBaseUrl(req.getBaseUrl());
-            }
-            if (req.getApiKey() != null && !req.getApiKey().isEmpty()) {
-                e.setApiKeyEnc(keyCodec.encrypt(req.getApiKey()));
-            }
-        }
-        return ok(toUserDto(userModelRepo.save(e)));
+        throw new IllegalArgumentException("用户端已关闭私有模型，请使用平台提供的模型");
     }
 
     @Transactional
     public Result<Void> deleteByok(Long userId, String id) {
-        UserModelEntity e = userModelRepo.findById(id)
-            .orElseThrow(() -> new IllegalArgumentException("模型不存在"));
-        if (!e.getUserId().equals(userId)) {
-            throw new IllegalArgumentException("无权操作");
-        }
-        userModelRepo.delete(e);
-        return ok();
+        throw new IllegalArgumentException("用户端已关闭私有模型，请使用平台提供的模型");
     }
 
     private void linkModelToCredential(UserModelEntity model, UserModelCredentialEntity cred) {

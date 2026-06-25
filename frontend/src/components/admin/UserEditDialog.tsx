@@ -13,6 +13,7 @@ import {
   type AdminUserUsage,
 } from '@/api/billingAdminApi'
 import { AppModalShell } from '@/components/ui/AppModalShell'
+import { AdminButton, AdminButtonOutline } from '@/components/admin/AdminFormControls'
 import { Button } from '@/components/ui/button'
 import { DialogFooter } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
@@ -336,14 +337,14 @@ export function UserEditDialog({
           </div>
         )}
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
+        <DialogFooter className="gap-2 sm:gap-2">
+          <AdminButtonOutline onClick={() => onOpenChange(false)} disabled={saving}>
             {t('admin:userEdit.close')}
-          </Button>
+          </AdminButtonOutline>
           {tab === 'account' ? (
-            <Button onClick={() => void handleSaveAccount()} disabled={saving || !user}>
+            <AdminButton onClick={() => void handleSaveAccount()} disabled={saving || !user}>
               {saving ? t('admin:userEdit.saving') : t('admin:userEdit.saveAccount')}
-            </Button>
+            </AdminButton>
           ) : null}
         </DialogFooter>
       </AppModalShell>

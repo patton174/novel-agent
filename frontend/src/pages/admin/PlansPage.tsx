@@ -1,31 +1,52 @@
+import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useCallback, useEffect, useState } from 'react'
 import {
+  activateAdminPlan,
   createAdminPlan,
   deactivateAdminPlan,
+  fetchAdminPlanDetail,
   fetchAdminPlans,
+  fetchAdminPaymentOrderDetail,
   formatPlanPrice,
   formatTokenQuota,
   PLAN_FEATURE_OPTIONS,
   updateAdminPlan,
   type AdminPlan,
+  type AdminPlanDetail,
   type AdminPlanUpsertPayload,
+  type AdminPaymentOrder,
+  type AdminPaymentOrderDetail,
 } from '@/api/billingAdminApi'
+import { PlanDetailModal } from '@/components/admin/PlanDetailModal'
+import { IdrProjectSkuPicker } from '@/components/admin/IdrProjectSkuPicker'
+import { PaymentOrderDetailModal } from '@/components/admin/PaymentOrderDetailModal'
 import { AppModalShell } from '@/components/ui/AppModalShell'
-import { Button } from '@/components/ui/button'
-import {
-  AppPageStack,
-  AppShellCard,
-  AppShellCardHeader,
-} from '@/components/layout/AppPageStack'
 import { DialogFooter } from '@/components/ui/dialog'
+import {
+  AdminButton,
+  AdminButtonGhost,
+  AdminButtonOutline,
+  AdminStatusBadge,
+} from '@/components/admin/AdminFormControls'
+import {
+  adminTableCellClass,
+  adminTableClass,
+  adminTableHeadClass,
+} from '@/components/admin/adminUiTokens'
+import {
+  AdminDataPage,
+  AdminDataPanel,
+  AdminDataPanelBody,
+  AdminDataPanelHeader,
+} from '@/components/layout/AdminDataLayout'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useMarkRouteSeen } from '@/hooks/useMarkRouteSeen'
 import { appToast } from '@/stores/appToastStore'
 import { confirmAction } from '@/stores/appDialog'
 import { cn } from '@/lib/utils'
-import { ProIconAdminPlan, ProIconPencil } from '@/components/pro/icons/proIcons'
+import { ProIconAdminPlan } from '@/components/pro/icons/proIcons'
 
 const emptyForm = (): AdminPlanUpsertPayload => ({
   code: '',
@@ -41,91 +62,6 @@ const emptyForm = (): AdminPlanUpsertPayload => ({
   features: ['basic_editor'],
 })
 
-function PlanAdminCard({
-  plan,
-  onEdit,
-  onDeactivate,
-}: {
-  plan: AdminPlan
-  onEdit: (plan: AdminPlan) => void
-  onDeactivate: (plan: AdminPlan) => void
-}) {
-  const { t } = useTranslation(['admin'])
-
-  return (
-    <article className="flex flex-col border-2 border-black bg-white shadow-soft">
-      <div className="flex items-start justify-between gap-3 border-b-2 border-black px-4 py-3">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <h3 className="truncate text-lg font-black uppercase tracking-tight text-ink">{plan.name}</h3>
-            {plan.isFeatured ? (
-              <span className="shrink-0 border border-black bg-neon px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase text-ink">
-                ★
-              </span>
-            ) : null}
-          </div>
-          <p className="mt-0.5 truncate font-mono text-xs text-muted-foreground">{plan.code}</p>
-        </div>
-        <span
-          className={cn(
-            'shrink-0 border-2 border-black px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wide',
-            plan.isActive ? 'bg-neon text-ink' : 'bg-muted text-muted-foreground',
-          )}
-        >
-          {plan.isActive ? t('admin:plans.statusActive') : t('admin:plans.statusInactive')}
-        </span>
-      </div>
-
-      <dl className="grid flex-1 grid-cols-2 gap-x-4 gap-y-3 px-4 py-4">
-        <div>
-          <dt className="font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-            {t('admin:plans.colPrice')}
-          </dt>
-          <dd className="mt-1 text-sm font-bold tabular-nums text-ink">{formatPlanPrice(plan.priceCents)}</dd>
-        </div>
-        <div>
-          <dt className="font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Token</dt>
-          <dd className="mt-1 text-sm font-bold tabular-nums text-ink">{formatTokenQuota(plan.monthlyTokenQuota)}</dd>
-        </div>
-        <div>
-          <dt className="font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Run</dt>
-          <dd className="mt-1 text-sm font-bold tabular-nums text-ink">
-            {plan.monthlyRunQuota == null ? t('admin:plans.unlimited') : plan.monthlyRunQuota}
-          </dd>
-        </div>
-        <div>
-          <dt className="font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground">RPM</dt>
-          <dd className="mt-1 text-sm font-bold tabular-nums text-ink">{plan.rateLimitRpm}</dd>
-        </div>
-      </dl>
-
-      <div className="flex gap-2 border-t-2 border-black p-3">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="h-9 flex-1 border-2 border-black bg-white font-mono text-xs font-bold uppercase shadow-soft hover:bg-neon"
-          onClick={() => onEdit(plan)}
-        >
-          <ProIconPencil size={14} className="mr-1.5" />
-          {t('admin:plans.edit')}
-        </Button>
-        {plan.isActive ? (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="h-9 shrink-0 border-2 border-black bg-white px-3 font-mono text-xs font-bold uppercase text-destructive shadow-soft hover:bg-destructive/10"
-            onClick={() => void onDeactivate(plan)}
-          >
-            {t('admin:plans.deactivateBtn')}
-          </Button>
-        ) : null}
-      </div>
-    </article>
-  )
-}
-
 export default function PlansPage() {
   const { t } = useTranslation(['admin'])
   useMarkRouteSeen()
@@ -135,6 +71,10 @@ export default function PlansPage() {
   const [editing, setEditing] = useState<AdminPlan | null>(null)
   const [form, setForm] = useState<AdminPlanUpsertPayload>(emptyForm())
   const [saving, setSaving] = useState(false)
+  const [planDetail, setPlanDetail] = useState<AdminPlanDetail | null>(null)
+  const [planDetailLoading, setPlanDetailLoading] = useState(false)
+  const [orderDetail, setOrderDetail] = useState<AdminPaymentOrderDetail | null>(null)
+  const [orderDetailLoading, setOrderDetailLoading] = useState(false)
 
   const loadPlans = useCallback(async () => {
     setLoading(true)
@@ -172,6 +112,8 @@ export default function PlansPage() {
       isFeatured: plan.isFeatured,
       sortOrder: plan.sortOrder,
       features: [...plan.features],
+      idrProjectId: plan.idrProjectId,
+      idrSkuId: plan.idrSkuId,
     })
     setDialogOpen(true)
   }
@@ -209,6 +151,49 @@ export default function PlansPage() {
     }
   }
 
+  const openPlanDetail = async (plan: AdminPlan) => {
+    setPlanDetailLoading(true)
+    setPlanDetail({ plan, paymentReady: plan.paymentReady, orderStats: plan.orderStats, recentOrders: [] })
+    try {
+      setPlanDetail(await fetchAdminPlanDetail(plan.id))
+    } catch (err) {
+      appToast.error(err instanceof Error ? err.message : t('admin:plans.loadDetailFail'))
+      setPlanDetail(null)
+    } finally {
+      setPlanDetailLoading(false)
+    }
+  }
+
+  const openOrderFromPlan = async (order: AdminPaymentOrder) => {
+    setOrderDetailLoading(true)
+    setOrderDetail({
+      ...order,
+      contactInfo: '',
+      callbackJson: null,
+      remoteStatus: null,
+      remoteSnapshot: null,
+    })
+    try {
+      const full = await fetchAdminPaymentOrderDetail(order.id)
+      setOrderDetail(full)
+    } catch (err) {
+      appToast.error(err instanceof Error ? err.message : t('admin:paymentOrders.loadDetailFail'))
+      setOrderDetail(null)
+    } finally {
+      setOrderDetailLoading(false)
+    }
+  }
+
+  const handleActivate = async (plan: AdminPlan) => {
+    try {
+      await activateAdminPlan(plan.id)
+      await loadPlans()
+      appToast.success(t('admin:plans.activated'))
+    } catch (err) {
+      appToast.error(err instanceof Error ? err.message : t('admin:plans.activateFail'))
+    }
+  }
+
   const handleDeactivate = async (plan: AdminPlan) => {
     if (
       !(await confirmAction({
@@ -233,53 +218,111 @@ export default function PlansPage() {
 
   if (loading) {
     return (
-      <AppPageStack>
-        <AppShellCard>
-          <AppShellCardHeader title={t('admin:plans.title')} description={t('admin:plans.loading')} />
-          <div className="grid gap-4 p-4 sm:grid-cols-2 sm:p-6 xl:grid-cols-3">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <Skeleton key={i} className="h-56 w-full border-2 border-black" />
-            ))}
-          </div>
-        </AppShellCard>
-      </AppPageStack>
+      <AdminDataPage>
+        <AdminDataPanel>
+          <AdminDataPanelHeader title={t('admin:plans.title')} description={t('admin:plans.loading')} />
+          <AdminDataPanelBody>
+            <Skeleton className="h-40 w-full rounded-lg" />
+          </AdminDataPanelBody>
+        </AdminDataPanel>
+      </AdminDataPage>
     )
   }
 
   return (
-    <AppPageStack>
-      <AppShellCard>
-        <AppShellCardHeader
+    <AdminDataPage>
+      <AdminDataPanel>
+        <AdminDataPanelHeader
           title={t('admin:plans.title')}
           description={t('admin:plans.desc')}
           action={
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="h-9 w-full border-2 border-black bg-white font-mono text-xs font-bold uppercase shadow-soft hover:bg-neon sm:w-auto"
-              onClick={openCreate}
-            >
-              <ProIconAdminPlan size={14} className="mr-1.5" />
+            <AdminButton type="button" onClick={openCreate}>
+              <ProIconAdminPlan size={16} className="mr-1.5" />
               {t('admin:plans.createBtn')}
-            </Button>
+            </AdminButton>
           }
         />
         {list.length === 0 ? (
-          <p className="px-6 py-12 text-center font-mono text-sm text-muted-foreground">{t('admin:plans.empty')}</p>
+          <p className="px-4 py-10 text-center text-sm text-muted-foreground">{t('admin:plans.empty')}</p>
         ) : (
-          <div className="grid gap-4 p-4 sm:grid-cols-2 sm:p-6 xl:grid-cols-3">
-            {list.map((plan) => (
-              <PlanAdminCard
-                key={plan.id}
-                plan={plan}
-                onEdit={openEdit}
-                onDeactivate={handleDeactivate}
-              />
-            ))}
+          <div className="overflow-x-auto">
+            <table className={cn(adminTableClass, 'min-w-[960px]')}>
+              <thead className="border-b border-border bg-muted/40 text-muted-foreground">
+                <tr>
+                  <th className={adminTableHeadClass}>{t('admin:plans.colPlan')}</th>
+                  <th className={adminTableHeadClass}>{t('admin:plans.colPrice')}</th>
+                  <th className={adminTableHeadClass}>Token / Run / RPM</th>
+                  <th className={adminTableHeadClass}>{t('admin:plans.colPayReady')}</th>
+                  <th className={adminTableHeadClass}>{t('admin:plans.orderStats')}</th>
+                  <th className={adminTableHeadClass}>{t('admin:plans.colStatus')}</th>
+                  <th className={adminTableHeadClass}>{t('admin:plans.colActions')}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {list.map((plan) => (
+                  <tr key={plan.id} className="hover:bg-muted/20">
+                    <td className={adminTableCellClass}>
+                      <p className="font-medium">
+                        {plan.name}
+                        {plan.isFeatured ? <span className="ml-1 text-amber-600">★</span> : null}
+                      </p>
+                      <p className="font-mono text-xs text-muted-foreground">{plan.code}</p>
+                    </td>
+                    <td className={cn(adminTableCellClass, 'tabular-nums font-medium')}>{formatPlanPrice(plan.priceCents)}</td>
+                    <td className={cn(adminTableCellClass, 'text-sm tabular-nums text-muted-foreground')}>
+                      {formatTokenQuota(plan.monthlyTokenQuota)} /{' '}
+                      {plan.monthlyRunQuota == null ? '∞' : plan.monthlyRunQuota} / {plan.rateLimitRpm}
+                    </td>
+                    <td className={adminTableCellClass}>
+                      {plan.priceCents != null && plan.priceCents > 0 ? (
+                        <AdminStatusBadge tone={plan.paymentReady ? 'success' : 'warning'}>
+                          {plan.paymentReady ? t('admin:plans.paymentReady') : t('admin:plans.paymentNotReady')}
+                        </AdminStatusBadge>
+                      ) : (
+                        '—'
+                      )}
+                    </td>
+                    <td className={cn(adminTableCellClass, 'text-sm tabular-nums')}>
+                      {t('admin:plans.orderStatsSummary', {
+                        paid: plan.orderStats.paid,
+                        pending: plan.orderStats.pending,
+                        total: plan.orderStats.total,
+                      })}
+                    </td>
+                    <td className={adminTableCellClass}>
+                      <AdminStatusBadge tone={plan.isActive ? 'success' : 'neutral'}>
+                        {plan.isActive ? t('admin:plans.statusActive') : t('admin:plans.statusInactive')}
+                      </AdminStatusBadge>
+                    </td>
+                    <td className={adminTableCellClass}>
+                      <div className="flex flex-wrap gap-1.5">
+                        <AdminButtonGhost onClick={() => void openPlanDetail(plan)}>
+                          {t('admin:plans.viewDetail')}
+                        </AdminButtonGhost>
+                        <AdminButtonGhost onClick={() => openEdit(plan)}>
+                          {t('admin:plans.edit')}
+                        </AdminButtonGhost>
+                        {plan.isActive ? (
+                          <AdminButtonGhost className="text-destructive hover:text-destructive" onClick={() => void handleDeactivate(plan)}>
+                            {t('admin:plans.deactivateBtn')}
+                          </AdminButtonGhost>
+                        ) : (
+                          <AdminButtonGhost onClick={() => void handleActivate(plan)}>
+                            {t('admin:plans.activateBtn')}
+                          </AdminButtonGhost>
+                        )}
+                        <AdminButtonGhost asChild>
+                          <Link to={`/admin/payment-orders?planId=${plan.id}`}>{t('admin:plans.viewOrders')}</Link>
+                        </AdminButtonGhost>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
-      </AppShellCard>
+      </AdminDataPanel>
 
       <AppModalShell
         open={dialogOpen}
@@ -399,7 +442,7 @@ export default function PlansPage() {
                       type="button"
                       onClick={() => toggleFeature(opt.key)}
                       className={cn(
-                        'rounded-full border px-3 py-1 text-xs transition-colors',
+                        'rounded-full border px-3.5 py-1.5 text-sm transition-colors',
                         checked
                           ? 'border-primary bg-primary/10 text-primary'
                           : 'border-border text-muted-foreground hover:bg-muted',
@@ -419,17 +462,46 @@ export default function PlansPage() {
               />
               {t('admin:plans.formFeatured')}
             </label>
+            <div className="grid grid-cols-1 gap-3">
+              <IdrProjectSkuPicker
+                projectId={form.idrProjectId}
+                skuId={form.idrSkuId}
+                onProjectChange={(pid) => setForm((f) => ({ ...f, idrProjectId: pid, idrSkuId: null }))}
+                onSkuChange={(sid) => setForm((f) => ({ ...f, idrSkuId: sid }))}
+              />
+              <p className="text-xs text-muted-foreground">{t('admin:plans.formIdrSkuHint')}</p>
+            </div>
           </div>
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
+          <DialogFooter className="gap-2 sm:gap-2">
+            <AdminButtonOutline type="button" onClick={() => setDialogOpen(false)}>
               {t('admin:plans.cancel')}
-            </Button>
-            <Button type="button" onClick={() => void handleSave()} disabled={saving}>
+            </AdminButtonOutline>
+            <AdminButton type="button" onClick={() => void handleSave()} disabled={saving}>
               {saving ? t('admin:plans.saving') : t('admin:plans.save')}
-            </Button>
+            </AdminButton>
           </DialogFooter>
       </AppModalShell>
-    </AppPageStack>
+
+      <PlanDetailModal
+        detail={planDetail}
+        loading={planDetailLoading}
+        onClose={() => setPlanDetail(null)}
+        onOpenOrder={(order) => void openOrderFromPlan(order)}
+      />
+
+      <PaymentOrderDetailModal
+        order={orderDetail}
+        loading={orderDetailLoading}
+        onClose={() => setOrderDetail(null)}
+        onUpdated={(updated) => {
+          setOrderDetail(updated)
+          void loadPlans()
+          if (planDetail?.plan.id === updated.planId) {
+            void openPlanDetail(planDetail.plan)
+          }
+        }}
+      />
+    </AdminDataPage>
   )
 }

@@ -2,8 +2,10 @@ package cn.novelstudio.module.billing.controller.crm;
 
 import cn.novelstudio.module.billing.dto.*;
 import cn.novelstudio.module.billing.service.biz.AuditLogBiz;
+import cn.novelstudio.module.billing.service.biz.PaymentOrderCrmBiz;
 import cn.novelstudio.module.billing.service.biz.PlanCrmBiz;
 import cn.novelstudio.module.billing.service.biz.SiteContentBiz;
+import cn.novelstudio.module.billing.service.PaymentSettingsBiz;
 import cn.novelstudio.module.billing.service.biz.SiteSettingsBiz;
 import cn.novelstudio.module.billing.service.biz.SubscriptionBiz;
 import cn.novelstudio.module.billing.service.biz.UsageCrmBiz;
@@ -22,15 +24,34 @@ import java.util.List;
 public class BillingCrmController extends BaseController {
 
     private final PlanCrmBiz planCrmBiz;
+    private final PaymentOrderCrmBiz paymentOrderCrmBiz;
     private final SubscriptionBiz subscriptionBiz;
     private final UsageCrmBiz usageCrmBiz;
     private final SiteContentBiz siteContentBiz;
     private final SiteSettingsBiz siteSettingsBiz;
+    private final PaymentSettingsBiz paymentSettingsBiz;
     private final AuditLogBiz auditLogBiz;
 
     @GetMapping("/plans")
     public Result<List<PlanCrmResp>> listPlans() {
         return planCrmBiz.listAll();
+    }
+
+    @GetMapping("/plans/{id}")
+    public Result<PlanCrmDetailResp> planDetail(
+        @PathVariable long id,
+        @RequestParam(defaultValue = "5") int recentLimit
+    ) {
+        return planCrmBiz.detail(id, recentLimit);
+    }
+
+    @GetMapping("/plans/{id}/orders")
+    public Result<Page<PaymentOrderCrmResp>> planOrders(
+        @PathVariable long id,
+        @RequestParam(defaultValue = "1") int pageCurrent,
+        @RequestParam(defaultValue = "20") int pageSize
+    ) {
+        return planCrmBiz.listOrders(id, pageCurrent, pageSize);
     }
 
     @PostMapping("/plans")
@@ -56,6 +77,70 @@ public class BillingCrmController extends BaseController {
         @RequestHeader(value = "X-User-Id", required = false) String actorHeader
     ) {
         return planCrmBiz.deactivate(id, parseOptionalUserId(actorHeader));
+    }
+
+    @PostMapping("/plans/{id}/activate")
+    public Result<PlanCrmResp> activatePlan(
+        @PathVariable long id,
+        @RequestHeader(value = "X-User-Id", required = false) String actorHeader
+    ) {
+        return planCrmBiz.activate(id, parseOptionalUserId(actorHeader));
+    }
+
+    @PutMapping("/plans/{id}/idr-binding")
+    public Result<PlanCrmResp> updatePlanIdrBinding(
+        @PathVariable long id,
+        @RequestHeader(value = "X-User-Id", required = false) String actorHeader,
+        @RequestBody PlanIdrBindingReq req
+    ) {
+        return planCrmBiz.updateIdrBinding(id, req, parseOptionalUserId(actorHeader));
+    }
+
+    @GetMapping("/payment-orders")
+    public Result<Page<PaymentOrderCrmResp>> listPaymentOrders(
+        @RequestParam(required = false) String status,
+        @RequestParam(required = false) Long userId,
+        @RequestParam(required = false) Long planId,
+        @RequestParam(required = false) String planCode,
+        @RequestParam(required = false) String orderQuery,
+        @RequestParam(defaultValue = "1") int pageCurrent,
+        @RequestParam(defaultValue = "20") int pageSize
+    ) {
+        return paymentOrderCrmBiz.page(status, userId, planId, planCode, orderQuery, pageCurrent, pageSize);
+    }
+
+    @GetMapping("/payment-orders/{id}")
+    public Result<PaymentOrderCrmDetailResp> paymentOrderDetail(
+        @PathVariable long id,
+        @RequestParam(defaultValue = "false") boolean syncRemote
+    ) {
+        return paymentOrderCrmBiz.detail(id, syncRemote);
+    }
+
+    @PostMapping("/payment-orders/{id}/sync")
+    public Result<PaymentOrderCrmDetailResp> syncPaymentOrder(
+        @PathVariable long id,
+        @RequestHeader(value = "X-User-Id", required = false) String actorHeader
+    ) {
+        return paymentOrderCrmBiz.syncRemote(id, parseOptionalUserId(actorHeader));
+    }
+
+    @PostMapping("/payment-orders/{id}/fulfill")
+    public Result<PaymentOrderCrmDetailResp> fulfillPaymentOrder(
+        @PathVariable long id,
+        @RequestHeader(value = "X-User-Id", required = false) String actorHeader,
+        @RequestBody(required = false) PaymentOrderActionReq req
+    ) {
+        return paymentOrderCrmBiz.fulfill(id, parseOptionalUserId(actorHeader), req);
+    }
+
+    @PostMapping("/payment-orders/{id}/expire")
+    public Result<PaymentOrderCrmDetailResp> expirePaymentOrder(
+        @PathVariable long id,
+        @RequestHeader(value = "X-User-Id", required = false) String actorHeader,
+        @RequestBody(required = false) PaymentOrderActionReq req
+    ) {
+        return paymentOrderCrmBiz.expire(id, parseOptionalUserId(actorHeader), req);
     }
 
     @PutMapping("/user/{userId}/subscription")
@@ -127,6 +212,21 @@ public class BillingCrmController extends BaseController {
         @Valid @RequestBody SiteSettingsUpdateReq req
     ) {
         return siteSettingsBiz.updateSettings(req, parseOptionalUserId(actorHeader));
+    }
+
+    @GetMapping("/payment-settings")
+    public Result<PaymentSettingsResp> getPaymentSettings() {
+        return ok(paymentSettingsBiz.getSettings());
+    }
+
+    @PutMapping("/payment-settings")
+    public Result<PaymentSettingsResp> updatePaymentSettings(@Valid @RequestBody PaymentSettingsUpdateReq req) {
+        return ok(paymentSettingsBiz.updateSettings(req));
+    }
+
+    @PostMapping("/payment-settings/test")
+    public Result<PaymentSettingsTestResp> testPaymentSettings() {
+        return ok(paymentSettingsBiz.testConnection());
     }
 
     private static Long parseOptionalUserId(String header) {

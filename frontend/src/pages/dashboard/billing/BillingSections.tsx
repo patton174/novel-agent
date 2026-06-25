@@ -1,9 +1,11 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Activity, BarChart3, CreditCard, Receipt } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { APP_BTN_MD } from '@/lib/appButtonTokens'
 import { formatCostMicros, formatTokenCount, type UsageCurrent } from '@/api/billingApi'
+import { PlanRecommendDialog } from '@/components/billing/PlanRecommendDialog'
 import { useTranslation } from 'react-i18next'
 
 export interface BillingUsageContentProps {
@@ -75,13 +77,26 @@ export function BillingUsageContent({ usage, loading, tokenPercent }: BillingUsa
 export interface BillingBillContentProps {
   usage: UsageCurrent | null
   loading: boolean
+  payReturnChecking?: boolean
 }
 
 /** 账单正文：预估费用 + 套餐徽标 + 升级提示 + 跳转按钮。桌面 tab / 手机卡共用。 */
-export function BillingBillContent({ usage, loading }: BillingBillContentProps) {
+export function BillingBillContent({
+  usage,
+  loading,
+  payReturnChecking = false,
+}: BillingBillContentProps) {
   const { t } = useTranslation(['dashboard'])
+  const [recommendOpen, setRecommendOpen] = useState(false)
+  const showUpgrade = usage?.planCode === 'hobby' || usage?.quotaWarning
+
   return (
     <div className="flex flex-col gap-5">
+      {payReturnChecking ? (
+        <p className="rounded-lg border border-primary/30 bg-primary/5 px-4 py-3 text-xs text-primary">
+          {t('dashboard:billing.payReturnChecking')}
+        </p>
+      ) : null}
       {loading ? (
         <div className="space-y-3">
           <Skeleton className="h-10 w-32" />
@@ -126,10 +141,27 @@ export function BillingBillContent({ usage, loading }: BillingBillContentProps) 
             {t('dashboard:billing.viewPlans')}
           </Link>
         </Button>
-        <Button className={`flex-1 ${APP_BTN_MD}`} variant="outline" asChild>
-          <Link to="/contact">{t('dashboard:billing.contactUpgrade')}</Link>
-        </Button>
+        {showUpgrade ? (
+          <Button
+            className={`flex-1 ${APP_BTN_MD}`}
+            variant="outline"
+            onClick={() => setRecommendOpen(true)}
+          >
+            {t('dashboard:billing.payNow')}
+          </Button>
+        ) : (
+          <Button className={`flex-1 ${APP_BTN_MD}`} variant="outline" asChild>
+            <Link to="/contact">{t('dashboard:billing.contactUpgrade')}</Link>
+          </Button>
+        )}
       </div>
+
+      <PlanRecommendDialog
+        open={recommendOpen}
+        onOpenChange={setRecommendOpen}
+        recommendPlanCode="pro"
+        reason={usage?.quotaWarning ? 'quota' : 'upgrade'}
+      />
     </div>
   )
 }

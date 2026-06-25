@@ -1,8 +1,9 @@
+import type { MouseEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Pencil } from 'lucide-react'
 import type { AdminUser } from '@/api/adminApi'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { AdminButtonIcon } from '@/components/admin/AdminFormControls'
 import { ProTable, type ProColumn } from '@/components/pro/ProTable'
 
 interface UserTableProps {
@@ -44,17 +45,16 @@ export function UserTable({ users, loading, onEdit, onRowClick }: UserTableProps
       header: t('admin:users.colActions'),
       align: 'right',
       render: (u) => (
-        <Button
+        <AdminButtonIcon
           variant="ghost"
-          size="icon-sm"
-          onClick={(e) => {
+          onClick={(e: MouseEvent) => {
             e.stopPropagation()
             onEdit(u)
           }}
         >
           <Pencil className="size-4" />
           <span className="sr-only">{t('admin:users.edit')}</span>
-        </Button>
+        </AdminButtonIcon>
       ),
     },
   ]
@@ -65,6 +65,7 @@ export function UserTable({ users, loading, onEdit, onRowClick }: UserTableProps
       data={users}
       rowKey="id"
       loading={loading}
+      dense
       onRowClick={onRowClick}
       emptyText={t('admin:users.empty')}
       className="[&_tr]:cursor-pointer"

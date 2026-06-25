@@ -126,6 +126,18 @@ mailtrap:
   from-email: hello@noreply.novel-agent.cn
   from-name: Novel Agent
 
+billing:
+  idatariver:
+    enabled: ${IDATARIVER_ENABLED:false}
+    base-url: ${IDATARIVER_BASE_URL:https://open.idatariver.com}
+    merchant-secret: ${IDATARIVER_MERCHANT_SECRET:}
+    project-id: ${IDATARIVER_PROJECT_ID:}
+    public-base-url: ${BILLING_PUBLIC_BASE_URL:${AUTH_FRONTEND_BASE_URL:https://www.novel-agent.cn}}
+    locale: ${IDATARIVER_LOCALE:zh-cn}
+    default-pay-method: ${IDATARIVER_DEFAULT_PAY_METHOD:alipay}
+    plan-sku-ids:
+      pro: ${IDATARIVER_SKU_PRO:}
+
 mail:
   brand:
     primary: "#4f46e5"

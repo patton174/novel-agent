@@ -80,6 +80,7 @@
       "modelLoadFailed": "Model list unavailable — using platform default",
       "modelUnavailable": "Model service not ready",
       "modelEmpty": "No models available",
+      "billedModelLabel": "Billed model: {{name}}",
       "attachSoon": "Add attachment (coming soon)"
     },
     "picker": {

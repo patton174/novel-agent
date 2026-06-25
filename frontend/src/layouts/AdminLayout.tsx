@@ -20,7 +20,15 @@ export default function AdminLayout() {
   const PAGE_META: Record<string, { title: string; description?: string }> = {
     '/admin': { title: t('layout.admin.overviewTitle'), description: t('layout.admin.overviewDesc') },
     '/admin/users': { title: t('layout.admin.usersTitle'), description: t('layout.admin.usersDesc') },
+    '/admin/products': {
+      title: t('layout.admin.productsTitle'),
+      description: t('layout.admin.productsDesc'),
+    },
     '/admin/plans': { title: t('layout.admin.plansTitle'), description: t('layout.admin.plansDesc') },
+    '/admin/payment-orders': {
+      title: t('layout.admin.paymentOrdersTitle'),
+      description: t('layout.admin.paymentOrdersDesc'),
+    },
     '/admin/models': { title: t('layout.admin.modelsTitle'), description: t('layout.admin.modelsDesc') },
     '/admin/revenue': { title: t('layout.admin.revenueTitle'), description: t('layout.admin.revenueDesc') },
     '/admin/site-content': { title: t('layout.admin.siteContentTitle'), description: t('layout.admin.siteContentDesc') },
@@ -67,7 +75,7 @@ export default function AdminLayout() {
         <AppShellMain>
           {location.pathname !== '/admin' ? (
             <ProBreadcrumb
-              className="mb-4"
+              className="mb-2"
               items={[
                 { label: t('common:nav.adminTitle'), to: '/admin' },
                 { label: meta.title },

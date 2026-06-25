@@ -260,6 +260,7 @@ def _yield_context_usage(
         compressed=compressed,
         compact_note=compact_note,
         last_compact_mode=last_compact_mode,
+        resolved_model=state.ctx.resolved_model,
     )
     return ev
 

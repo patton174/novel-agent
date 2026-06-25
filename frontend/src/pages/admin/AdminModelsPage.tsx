@@ -32,6 +32,7 @@ import { ModelAdminCard, type ModelTestResult } from '@/components/model/ModelAd
 import { ModelAdminSortableList } from '@/components/model/ModelAdminSortableList'
 import {
   ModelAdminCreateFormFields,
+  adminFormMultiplierValid,
   adminFormPriceMultiplier,
   aiModelToAdminForm,
   emptyAdminModelForm,
@@ -86,9 +87,6 @@ export default function AdminModelsPage() {
     baseUrl: t('model.formBaseUrl'),
     apiKey: t('model.formApiKey'),
     apiKeyOptional: t('model.formApiKeyOptional'),
-    multiplier: t('model.formTier'),
-    tier: t('model.formTier'),
-    readonlyHint: t('model.formPresetFirst'),
     plans: t('model.plansLabel'),
   }
 
@@ -337,6 +335,10 @@ export default function AdminModelsPage() {
       appToast.error(t('model.createRequired'))
       return
     }
+    if (!adminFormMultiplierValid(createForm)) {
+      appToast.error(t('model.multiplierInvalid'))
+      return
+    }
     if (useExisting && !createForm.credentialId) {
       appToast.error(t('dashboard:model.byokFormConnectionSelect'))
       return
@@ -368,6 +370,10 @@ export default function AdminModelsPage() {
     if (!editing) return
     if (!editForm.displayName.trim()) {
       appToast.error(t('model.editRequired'))
+      return
+    }
+    if (!adminFormMultiplierValid(editForm)) {
+      appToast.error(t('model.multiplierInvalid'))
       return
     }
     setSavingEdit(true)

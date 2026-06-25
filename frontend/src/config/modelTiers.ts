@@ -9,7 +9,6 @@ export interface ModelTier {
   rangeLabelKey: string
   min: number
   max: number
-  defaultMultiplier: number
 }
 
 export const MODEL_TIERS: ModelTier[] = [
@@ -19,7 +18,6 @@ export const MODEL_TIERS: ModelTier[] = [
     rangeLabelKey: 'tierLightRange',
     min: 1,
     max: 1.5,
-    defaultMultiplier: 1.25,
   },
   {
     id: 'balanced',
@@ -27,7 +25,6 @@ export const MODEL_TIERS: ModelTier[] = [
     rangeLabelKey: 'tierBalancedRange',
     min: 1.5,
     max: 2.5,
-    defaultMultiplier: 2,
   },
   {
     id: 'extreme',
@@ -35,19 +32,36 @@ export const MODEL_TIERS: ModelTier[] = [
     rangeLabelKey: 'tierExtremeRange',
     min: 2.5,
     max: 3,
-    defaultMultiplier: 2.75,
   },
 ]
+
+export const MODEL_OVERRIDE_AUTO = 'auto'
+export const MODEL_OVERRIDE_TIER_PREFIX = 'tier:'
+
+export function tierOverrideValue(tierId: ModelTierId): string {
+  return `${MODEL_OVERRIDE_TIER_PREFIX}${tierId}`
+}
+
+export function parseTierOverride(value: string | null | undefined): ModelTierId | null {
+  if (!value?.startsWith(MODEL_OVERRIDE_TIER_PREFIX)) return null
+  const id = value.slice(MODEL_OVERRIDE_TIER_PREFIX.length) as ModelTierId
+  return MODEL_TIERS.some((t) => t.id === id) ? id : null
+}
+
+export function tierLabelKey(tierId: ModelTierId): string {
+  return findModelTier(tierId)?.labelKey ?? 'tierLight'
+}
 
 export function findModelTier(id: string): ModelTier | undefined {
   return MODEL_TIERS.find((t) => t.id === id)
 }
 
-export function modelTierMultiplier(tierId: ModelTierId): number {
-  return findModelTier(tierId)?.defaultMultiplier ?? 1.25
+export function tierForMultiplier(multiplier: number): ModelTier {
+  const id = multiplierToTier(multiplier)
+  return findModelTier(id) ?? MODEL_TIERS[0]
 }
 
-/** 由已有倍率反推档位（编辑回填） */
+/** 由倍率反推档位（编辑回填 / 展示分类） */
 export function multiplierToTier(multiplier: number): ModelTierId {
   if (multiplier <= 1.5) return 'light'
   if (multiplier <= 2.5) return 'balanced'
@@ -57,4 +71,11 @@ export function multiplierToTier(multiplier: number): ModelTierId {
 export function isValidTierMultiplier(value: number): boolean {
   if (!Number.isFinite(value)) return false
   return MODEL_TIERS.some((t) => value >= t.min && value <= t.max)
+}
+
+export function clampTierMultiplier(value: number): number {
+  if (!Number.isFinite(value)) return 1.25
+  if (value < 1) return 1
+  if (value > 3) return 3
+  return Math.round(value * 1000) / 1000
 }

@@ -35,6 +35,8 @@ async def report_llm_usage(
     pricing: dict | None = None,
     byok: bool = False,
     model_code: str | None = None,
+    display_name: str | None = None,
+    provider: str | None = None,
 ) -> None:
     if not settings.billing_report_enabled:
         return
@@ -59,13 +61,20 @@ async def report_llm_usage(
 
     trace_id = trace_id_var.get() or None
     idempotency = f"{run_id}:{step_index or 0}:{input_tokens}:{output_tokens}"
+    metadata: dict[str, Any] = {"phase": "main_loop", "stepIndex": step_index}
+    if model_code:
+        metadata["modelCode"] = model_code
+    if display_name:
+        metadata["displayName"] = display_name
+    if provider:
+        metadata["provider"] = provider
     payload: dict[str, Any] = {
         "userId": user_id,
         "runId": run_id,
         "sessionId": session_id,
         "traceId": trace_id,
         "eventType": "llm_call",
-        "model": model,
+        "model": display_name or model,
         "inputTokens": input_tokens,
         "outputTokens": output_tokens,
         "cacheReadTokens": cache_read,
@@ -75,7 +84,7 @@ async def report_llm_usage(
         "byok": False,
         "modelCode": model_code,
         "idempotencyKey": idempotency,
-        "metadata": {"phase": "main_loop", "stepIndex": step_index},
+        "metadata": metadata,
     }
 
     url = settings.billing_report_url.rstrip("/") + "/internal/billing/usage/report"

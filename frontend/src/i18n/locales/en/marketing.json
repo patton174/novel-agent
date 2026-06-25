@@ -34,6 +34,7 @@
     "hotBadge": "Most Popular",
     "tokensPerMonth": "{{label}} AI Tokens / Month",
     "unlimitedTokens": "Unlimited AI Tokens",
+    "runsPerMonth": "{{count}} agent runs / month",
     "loadError": "Failed to load plans, please try again later",
     "faqTitle": "Frequently Asked Questions",
     "faq": {
@@ -42,7 +43,23 @@
       "3": { "q": "Can I upgrade or downgrade anytime?", "a": "Yes. Check your quota on the dashboard usage page; upgrades take effect immediately. The Enterprise plan supports custom quotas and private integration." }
     },
     "feasibilityNote": "Not sure if it's right for you? Check out",
-    "feasibilityLink": "Use Cases & Comparisons"
+    "feasibilityLink": "Use Cases & Comparisons",
+    "checkout": {
+      "title": "Confirm order",
+      "subtitle": "Choose a payment method to complete checkout. Your plan activates after payment.",
+      "summary": "Order summary",
+      "selectMethod": "Payment method",
+      "choosePlanHint": "Select a plan above to checkout here."
+    }
+  },
+  "recommend": {
+    "title": "Upgrade your plan",
+    "quotaDesc": "You're running low on AI quota this month. Upgrade for more capacity and a smoother workflow.",
+    "upgradeDesc": "Upgrade for higher quotas, more agent runs, and full capabilities.",
+    "featureDesc": "This capability isn't included in your current plan. Upgrade to unlock it.",
+    "recommended": "Recommended",
+    "viewPricing": "View full pricing",
+    "empty": "No purchasable plans right now. Please try again later or contact support."
   },
   "guide": {
     "eyebrow": "Creation Guide",

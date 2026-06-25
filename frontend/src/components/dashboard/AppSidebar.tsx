@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 import { NovelAiPixelWordmark } from '@/components/marketing/pixel/NovelAiPixelWordmark'
 import { ProSidebar, type ProSidebarGroup } from '@/components/pro/ProSidebar'
 import {
-  ProIconAdminSystem,
   ProIconBilling,
   ProIconLibrary,
   ProIconNovel,
@@ -28,11 +27,6 @@ export function AppSidebar({ embedded = false, onNavigate }: AppSidebarProps) {
         { label: t('common:nav.dashboardNovels'), to: '/dashboard/novels', icon: ProIconNovel },
         { label: t('common:nav.dashboardMyLibrary'), to: '/dashboard/my-library', icon: ProIconLibrary },
         { label: t('common:nav.dashboardBilling'), to: '/dashboard/billing', icon: ProIconBilling },
-        {
-          label: t('common:nav.dashboardModelConnections'),
-          to: '/dashboard/settings#api-models',
-          icon: ProIconAdminSystem,
-        },
       ],
     },
   ]

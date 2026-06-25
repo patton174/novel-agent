@@ -15,6 +15,25 @@ export interface AdminPlan {
   isFeatured: boolean
   sortOrder: number
   features: string[]
+  idrProjectId: string | null
+  idrSkuId: string | null
+  paymentReady: boolean
+  orderStats: PlanOrderStats
+}
+
+export interface PlanOrderStats {
+  total: number
+  pending: number
+  paid: number
+  expired: number
+  refunded: number
+}
+
+export interface AdminPlanDetail {
+  plan: AdminPlan
+  paymentReady: boolean
+  orderStats: PlanOrderStats
+  recentOrders: AdminPaymentOrder[]
 }
 
 export interface AdminPlanUpsertPayload {
@@ -29,6 +48,8 @@ export interface AdminPlanUpsertPayload {
   isFeatured?: boolean
   sortOrder?: number
   features?: string[]
+  idrProjectId?: string | null
+  idrSkuId?: string | null
 }
 
 export const PLAN_FEATURE_OPTIONS = [
@@ -100,7 +121,49 @@ export async function fetchAdminPlans(): Promise<AdminPlan[]> {
     throw new Error(res.status === 403 ? '无管理权限' : '加载套餐失败')
   }
   const data = await parseResponse<AdminPlan[]>(res)
-  return Array.isArray(data) ? data : []
+  return Array.isArray(data) ? data.map(normalizeAdminPlan) : []
+}
+
+export async function fetchAdminPlanDetail(id: number, recentLimit = 5): Promise<AdminPlanDetail> {
+  const res = await secureFetch(`/api/billing/crm/plans/${id}?recentLimit=${recentLimit}`)
+  if (!res.ok) {
+    throw new Error('加载套餐详情失败')
+  }
+  const data = await parseResponse<AdminPlanDetail>(res)
+  return {
+    ...data,
+    plan: normalizeAdminPlan(data.plan),
+    recentOrders: Array.isArray(data.recentOrders) ? data.recentOrders : [],
+  }
+}
+
+export async function fetchAdminPlanOrders(
+  planId: number,
+  params?: { pageCurrent?: number; pageSize?: number },
+): Promise<AdminPaymentOrderPage> {
+  const search = new URLSearchParams({
+    pageCurrent: String(params?.pageCurrent ?? 1),
+    pageSize: String(params?.pageSize ?? 20),
+  })
+  const res = await secureFetch(`/api/billing/crm/plans/${planId}/orders?${search.toString()}`)
+  if (!res.ok) {
+    throw new Error('加载套餐订单失败')
+  }
+  const data = await parseResponse<AdminPaymentOrderPage>(res)
+  return {
+    list: Array.isArray(data?.list) ? data.list : [],
+    totalCount: data?.totalCount ?? 0,
+    pageCurrent: data?.pageCurrent ?? 1,
+    pageSize: data?.pageSize ?? 20,
+  }
+}
+
+function normalizeAdminPlan(plan: AdminPlan): AdminPlan {
+  return {
+    ...plan,
+    orderStats: plan.orderStats ?? { total: 0, pending: 0, paid: 0, expired: 0, refunded: 0 },
+    paymentReady: Boolean(plan.paymentReady),
+  }
 }
 
 export async function createAdminPlan(payload: AdminPlanUpsertPayload): Promise<AdminPlan> {
@@ -130,11 +193,214 @@ export async function updateAdminPlan(
   return parseResponse<AdminPlan>(res)
 }
 
+export async function updateAdminPlanIdrBinding(
+  id: number,
+  payload: { idrProjectId?: string | null; idrSkuId?: string | null },
+): Promise<AdminPlan> {
+  const res = await secureFetch(`/api/billing/crm/plans/${id}/idr-binding`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!res.ok) {
+    throw new Error('绑定 iDataRiver 商品失败')
+  }
+  return normalizeAdminPlan(await parseResponse<AdminPlan>(res))
+}
+
 export async function deactivateAdminPlan(id: number): Promise<void> {
   const res = await secureFetch(`/api/billing/crm/plans/${id}`, { method: 'DELETE' })
   if (!res.ok) {
     throw new Error('停用套餐失败')
   }
+}
+
+export async function activateAdminPlan(id: number): Promise<AdminPlan> {
+  const res = await secureFetch(`/api/billing/crm/plans/${id}/activate`, { method: 'POST' })
+  if (!res.ok) {
+    throw new Error('上架套餐失败')
+  }
+  return parseResponse<AdminPlan>(res)
+}
+
+export interface AdminPaymentOrder {
+  id: number
+  userId: number
+  planId: number | null
+  planCode: string
+  planName: string
+  idrSkuId: string | null
+  idrProjectId: string | null
+  idrOrderId: string
+  status: string
+  payMethod: string | null
+  amountCents: number | null
+  currency: string | null
+  payUrl: string | null
+  paidAt: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface AdminPaymentOrderDetail extends AdminPaymentOrder {
+  contactInfo: string
+  callbackJson: Record<string, unknown> | null
+  remoteStatus: string | null
+  remoteSnapshot: Record<string, unknown> | null
+}
+
+export interface AdminPaymentOrderPage {
+  list: AdminPaymentOrder[]
+  totalCount: number
+  pageCurrent: number
+  pageSize: number
+}
+
+export async function fetchAdminPaymentOrders(params: {
+  status?: string
+  userId?: number
+  planId?: number
+  planCode?: string
+  orderQuery?: string
+  pageCurrent?: number
+  pageSize?: number
+}): Promise<AdminPaymentOrderPage> {
+  const search = new URLSearchParams({
+    pageCurrent: String(params.pageCurrent ?? 1),
+    pageSize: String(params.pageSize ?? 20),
+  })
+  if (params.status?.trim()) search.set('status', params.status.trim())
+  if (params.userId != null) search.set('userId', String(params.userId))
+  if (params.planId != null) search.set('planId', String(params.planId))
+  if (params.planCode?.trim()) search.set('planCode', params.planCode.trim())
+  if (params.orderQuery?.trim()) search.set('orderQuery', params.orderQuery.trim())
+  const res = await secureFetch(`/api/billing/crm/payment-orders?${search.toString()}`)
+  if (!res.ok) {
+    throw new Error('加载订单失败')
+  }
+  const data = await parseResponse<AdminPaymentOrderPage>(res)
+  return {
+    list: Array.isArray(data?.list) ? data.list : [],
+    totalCount: data?.totalCount ?? 0,
+    pageCurrent: data?.pageCurrent ?? 1,
+    pageSize: data?.pageSize ?? 20,
+  }
+}
+
+export async function fetchAdminPaymentOrderDetail(
+  id: number,
+  syncRemote = false,
+): Promise<AdminPaymentOrderDetail> {
+  const res = await secureFetch(
+    `/api/billing/crm/payment-orders/${id}?syncRemote=${syncRemote ? 'true' : 'false'}`,
+  )
+  if (!res.ok) {
+    throw new Error('加载订单详情失败')
+  }
+  return parseResponse<AdminPaymentOrderDetail>(res)
+}
+
+export async function syncAdminPaymentOrder(id: number): Promise<AdminPaymentOrderDetail> {
+  const res = await secureFetch(`/api/billing/crm/payment-orders/${id}/sync`, { method: 'POST' })
+  if (!res.ok) {
+    throw new Error('同步订单失败')
+  }
+  return parseResponse<AdminPaymentOrderDetail>(res)
+}
+
+export async function fulfillAdminPaymentOrder(
+  id: number,
+  reason?: string,
+): Promise<AdminPaymentOrderDetail> {
+  const res = await secureFetch(`/api/billing/crm/payment-orders/${id}/fulfill`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ reason: reason ?? null }),
+  })
+  if (!res.ok) {
+    throw new Error('履约失败')
+  }
+  return parseResponse<AdminPaymentOrderDetail>(res)
+}
+
+export async function expireAdminPaymentOrder(
+  id: number,
+  reason?: string,
+): Promise<AdminPaymentOrderDetail> {
+  const res = await secureFetch(`/api/billing/crm/payment-orders/${id}/expire`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ reason: reason ?? null }),
+  })
+  if (!res.ok) {
+    throw new Error('关闭订单失败')
+  }
+  return parseResponse<AdminPaymentOrderDetail>(res)
+}
+
+export function formatOrderAmount(amountCents: number | null, currency: string | null): string {
+  if (amountCents == null) return '—'
+  const symbol = !currency || currency === 'CNY' ? '¥' : `${currency} `
+  return `${symbol}${(amountCents / 100).toFixed(amountCents % 100 === 0 ? 0 : 2)}`
+}
+
+export interface AdminPaymentSettings {
+  enabled: boolean
+  configured: boolean
+  merchantSecretSet: boolean
+  merchantSecretMasked: string
+  baseUrl: string
+  projectId: string
+  publicBaseUrl: string
+  defaultPayMethod: string
+  locale: string
+  webhookUrl: string
+  docsUrl: string
+}
+
+export interface AdminPaymentSettingsUpdate {
+  enabled?: boolean
+  baseUrl?: string
+  merchantSecret?: string
+  projectId?: string
+  publicBaseUrl?: string
+  defaultPayMethod?: string
+  locale?: string
+}
+
+export interface AdminPaymentSettingsTest {
+  ok: boolean
+  message: string
+}
+
+export async function fetchAdminPaymentSettings(): Promise<AdminPaymentSettings> {
+  const res = await secureFetch('/api/billing/crm/payment-settings')
+  if (!res.ok) {
+    throw new Error('加载支付配置失败')
+  }
+  return parseResponse<AdminPaymentSettings>(res)
+}
+
+export async function updateAdminPaymentSettings(
+  payload: AdminPaymentSettingsUpdate,
+): Promise<AdminPaymentSettings> {
+  const res = await secureFetch('/api/billing/crm/payment-settings', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!res.ok) {
+    throw new Error('保存支付配置失败')
+  }
+  return parseResponse<AdminPaymentSettings>(res)
+}
+
+export async function testAdminPaymentSettings(): Promise<AdminPaymentSettingsTest> {
+  const res = await secureFetch('/api/billing/crm/payment-settings/test', { method: 'POST' })
+  if (!res.ok) {
+    throw new Error('测试连接失败')
+  }
+  return parseResponse<AdminPaymentSettingsTest>(res)
 }
 
 export async function updateUserSubscription(

@@ -313,6 +313,7 @@ async def stream_bind_tools_turn(
             model_name = meta.get("model") or meta.get("model_name")
         from app.billing.reporter import report_llm_usage
 
+        resolved = ctx.resolved_model or {}
         await report_llm_usage(
             user_id=ctx.user_id,
             run_id=ctx.run_id,
@@ -320,9 +321,11 @@ async def stream_bind_tools_turn(
             model=str(model_name) if model_name else None,
             usage=usage_fields,
             step_index=stream_state.sequence,
-            pricing=ctx.resolved_model.get("pricing") if ctx.resolved_model else None,
-            byok=bool(ctx.resolved_model.get("byok")) if ctx.resolved_model else False,
-            model_code=ctx.resolved_model.get("code") if ctx.resolved_model else None,
+            pricing=resolved.get("pricing") if resolved else None,
+            byok=bool(resolved.get("byok")) if resolved else False,
+            model_code=resolved.get("code") if resolved else None,
+            display_name=resolved.get("display_name") or resolved.get("displayName") if resolved else None,
+            provider=resolved.get("provider") if resolved else None,
         )
 
         if isinstance(gathered, AIMessage):

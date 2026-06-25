@@ -24,7 +24,7 @@ interface AdminSidebarProps {
   onNavigate?: () => void
 }
 
-/** 管理后台侧栏：ProSidebar 四分组 + 顶部返回 + 底部用户卡。 */
+/** 管理后台侧栏：按业务域分组（概览 / 数据 / 计费 / 运营 / 内容 / 系统） */
 export function AdminSidebar({ embedded = false, onNavigate }: AdminSidebarProps) {
   const { t } = useTranslation(['common'])
 
@@ -38,18 +38,27 @@ export function AdminSidebar({ embedded = false, onNavigate }: AdminSidebarProps
   const groups: ProSidebarGroup[] = [
     {
       title: t('common:nav.groupOverview'),
+      items: [item(t('common:nav.adminOverview'), '/admin', ProIconAdminOverview, true)],
+    },
+    {
+      title: t('common:nav.groupAnalytics'),
       items: [
-        item(t('common:nav.adminOverview'), '/admin', ProIconAdminOverview, true),
         item(t('common:nav.adminStats'), '/admin/stats', ProIconAdminStats),
+        item(t('common:nav.adminRevenue'), '/admin/revenue', ProIconAdminRevenue),
+      ],
+    },
+    {
+      title: t('common:nav.groupBilling'),
+      items: [
+        item(t('common:nav.adminProducts'), '/admin/products', ProIconAdminPlan),
+        item(t('common:nav.adminPlans'), '/admin/plans', ProIconAdminPlan),
+        item(t('common:nav.adminPaymentOrders'), '/admin/payment-orders', ProIconAdminRevenue),
       ],
     },
     {
       title: t('common:nav.groupOperations'),
       items: [
         item(t('common:nav.adminUsers'), '/admin/users', ProIconAdminUsers),
-        item(t('common:nav.adminPlans'), '/admin/plans', ProIconAdminPlan),
-        item(t('common:nav.adminModels'), '/admin/models', ProIconAdminSystem),
-        item(t('common:nav.adminRevenue'), '/admin/revenue', ProIconAdminRevenue),
         item(t('common:nav.adminAuditLog'), '/admin/audit-log', ProIconAdminAudit),
       ],
     },
@@ -63,7 +72,10 @@ export function AdminSidebar({ embedded = false, onNavigate }: AdminSidebarProps
     },
     {
       title: t('common:nav.groupSystem'),
-      items: [item(t('common:nav.adminSystemSettings'), '/admin/system-settings', ProIconAdminSystem)],
+      items: [
+        item(t('common:nav.adminModels'), '/admin/models', ProIconAdminSystem),
+        item(t('common:nav.adminSystemSettings'), '/admin/system-settings', ProIconAdminSystem),
+      ],
     },
   ]
 

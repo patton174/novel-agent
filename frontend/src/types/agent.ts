@@ -20,6 +20,12 @@ export interface AgentContextUsage {
   source?: 'api' | 'estimate' | string
   thresholds?: AgentContextThresholds
   lastCompactMode?: string
+  /** 实际路由到的平台模型（计价展示用） */
+  resolvedModel?: {
+    displayName: string
+    provider: string
+    code?: string
+  }
 }
 
 export interface AgentChoiceOption {

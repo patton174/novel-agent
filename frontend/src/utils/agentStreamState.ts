@@ -231,6 +231,26 @@ function contextUsageFromPayload(payload: Record<string, unknown>): AgentContext
     typeof payload.last_compact_mode === 'string' && payload.last_compact_mode
       ? payload.last_compact_mode
       : undefined
+  const resolvedRaw = payload.resolved_model
+  const resolvedModel =
+    resolvedRaw && typeof resolvedRaw === 'object' && !Array.isArray(resolvedRaw)
+      ? {
+          displayName:
+            typeof (resolvedRaw as Record<string, unknown>).display_name === 'string'
+              ? String((resolvedRaw as Record<string, unknown>).display_name)
+              : typeof (resolvedRaw as Record<string, unknown>).displayName === 'string'
+                ? String((resolvedRaw as Record<string, unknown>).displayName)
+                : '',
+          provider:
+            typeof (resolvedRaw as Record<string, unknown>).provider === 'string'
+              ? String((resolvedRaw as Record<string, unknown>).provider)
+              : 'platform',
+          code:
+            typeof (resolvedRaw as Record<string, unknown>).code === 'string'
+              ? String((resolvedRaw as Record<string, unknown>).code)
+              : undefined,
+        }
+      : undefined
   return {
     turn: typeof payload.turn === 'number' ? payload.turn : 0,
     promptTokens: Number(payload.prompt_tokens) || 0,
@@ -251,6 +271,7 @@ function contextUsageFromPayload(payload: Record<string, unknown>): AgentContext
     source,
     thresholds: contextThresholdsFromPayload(payload.thresholds),
     lastCompactMode,
+    resolvedModel: resolvedModel?.displayName ? resolvedModel : undefined,
   }
 }
 

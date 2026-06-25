@@ -28,11 +28,14 @@ function formatChartDate(value: string): string {
 }
 
 interface RevenueChartsProps {
-  trends: PlatformUsageTrendPoint[]
-  modelBreakdown: { model: string; tokens: number; costMicros: number }[]
+  trends?: PlatformUsageTrendPoint[]
+  modelBreakdown?: { model: string; tokens: number; costMicros: number }[]
 }
 
-export default function RevenueCharts({ trends, modelBreakdown }: RevenueChartsProps) {
+export default function RevenueCharts({
+  trends = [],
+  modelBreakdown = [],
+}: RevenueChartsProps) {
   const { t } = useTranslation(['admin'])
   const tokenTrend = trends.map((p) => ({
     date: p.date,

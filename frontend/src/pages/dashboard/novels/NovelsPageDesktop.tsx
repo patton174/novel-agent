@@ -4,7 +4,7 @@ import { AppEmptyState, AppPageIntro, AppPageStack } from '@/components/layout/A
 import { CoverGenerateDialog } from '@/components/dashboard/CoverGenerateDialog'
 import { Button } from '@/components/ui/button'
 import { InlineTitleSkeleton } from '@/components/loading/PageSkeletons'
-import { ProButton } from '@/components/pro/ProButton'
+import { TableActionBar, TableActionButton } from '@/components/shared/TableActions'
 import { ProPagination } from '@/components/pro/ProPagination'
 import { ProColumn, ProTable } from '@/components/pro/ProTable'
 import { useMarkRouteSeen } from '@/hooks/useMarkRouteSeen'
@@ -73,22 +73,19 @@ export function NovelsPageDesktop() {
       render: (novel) => {
         const isGenerating = generatingId === novel.id
         return (
-          <div className="flex items-center justify-end gap-2">
-            <ProButton
+          <TableActionBar align="end">
+            <TableActionButton
               type="button"
-              variant="ghost"
-              size="sm"
               disabled={isGenerating}
-              loading={isGenerating}
-              leftIcon={<ImagePlus className="size-4" />}
               onClick={() => setDialogNovel(novel)}
             >
-              {novel.coverUrl ? t('dashboard:novels.regenCover') : t('dashboard:novels.genCover')}
-            </ProButton>
-            <Button asChild size="sm">
+              <ImagePlus className="size-4" />
+              {isGenerating ? '…' : novel.coverUrl ? t('dashboard:novels.regenCover') : t('dashboard:novels.genCover')}
+            </TableActionButton>
+            <TableActionButton asChild>
               <Link to={editorNovelHref(novel.id)}>{t('dashboard:novels.continueWriting')}</Link>
-            </Button>
-          </div>
+            </TableActionButton>
+          </TableActionBar>
         )
       },
     },

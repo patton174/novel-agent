@@ -25,7 +25,7 @@ export function LayoutOutletSkeleton() {
   if (pathname.startsWith('/admin/users')) {
     return <AdminTableContentSkeleton />
   }
-  if (pathname.startsWith('/admin/plans')) {
+  if (pathname.startsWith('/admin/products') || pathname.startsWith('/admin/plans') || pathname.startsWith('/admin/payment-orders')) {
     return <AdminTableContentSkeleton />
   }
   if (pathname.startsWith('/admin/revenue') || pathname.startsWith('/admin/stats')) {

@@ -1,12 +1,17 @@
 import { useTranslation } from 'react-i18next'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Search } from 'lucide-react'
 import { fetchUserPage, type AdminUser } from '@/api/adminApi'
 import { UserEditDialog } from '@/components/admin/UserEditDialog'
 import { UserTable } from '@/components/admin/UserTable'
-import { AppPageStack, AppShellCard, AppShellCardBody, AppShellCardHeader } from '@/components/layout/AppPageStack'
+import { AdminField, AdminSearchInput } from '@/components/admin/AdminFormControls'
+import {
+  AdminDataPage,
+  AdminDataPanel,
+  AdminDataPanelBody,
+  AdminDataPanelHeader,
+  AdminDataToolbar,
+} from '@/components/layout/AdminDataLayout'
 import { ProPagination } from '@/components/pro/ProPagination'
-import { Input } from '@/components/ui/input'
 import { useMarkRouteSeen } from '@/hooks/useMarkRouteSeen'
 import { appToast } from '@/stores/appToastStore'
 
@@ -74,34 +79,35 @@ export default function UsersPage() {
   }
 
   return (
-    <AppPageStack className="gap-4">
-      <AppShellCard>
-        <AppShellCardHeader title={t('admin:users.title')} description={t('admin:users.desc')} />
-        <AppShellCardBody className="py-4">
-          <div className="relative max-w-md">
-            <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
+    <AdminDataPage>
+      <AdminDataPanel>
+        <AdminDataPanelHeader
+          title={t('admin:users.title')}
+          description={t('admin:users.desc')}
+        />
+        <AdminDataToolbar>
+          <AdminField
+            label={t('admin:users.searchPlaceholder')}
+            hint={t('admin:users.searchHint')}
+            className="max-w-md flex-[2]"
+          >
+            <AdminSearchInput
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               placeholder={t('admin:users.searchPlaceholder')}
-              className="rounded-xl pl-8"
               aria-label={t('admin:users.searchPlaceholder')}
             />
-          </div>
-          <p className="mt-2 text-[11px] text-muted-foreground">{t('admin:users.searchHint')}</p>
-        </AppShellCardBody>
-      </AppShellCard>
-
-      {loading && users === null ? (
-        <UserTable users={[]} loading onEdit={openEdit} onRowClick={openEdit} />
-      ) : (
-        <UserTable
-          users={users ?? []}
-          loading={false}
-          onEdit={openEdit}
-          onRowClick={openEdit}
-        />
-      )}
+          </AdminField>
+        </AdminDataToolbar>
+        <AdminDataPanelBody className="p-0">
+          <UserTable
+            users={users ?? []}
+            loading={loading && users === null}
+            onEdit={openEdit}
+            onRowClick={openEdit}
+          />
+        </AdminDataPanelBody>
+      </AdminDataPanel>
 
       <ProPagination
         page={pageCurrent}
@@ -117,6 +123,6 @@ export default function UsersPage() {
         onOpenChange={setDialogOpen}
         onSaved={handleSaved}
       />
-    </AppPageStack>
+    </AdminDataPage>
   )
 }

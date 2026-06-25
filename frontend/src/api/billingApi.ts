@@ -48,6 +48,7 @@ export interface UsageEventItem {
   totalTokens: number
   totalCostMicros: number
   createdAt: string
+  metadata?: Record<string, unknown> | null
 }
 
 export interface UsageEventsPage {
@@ -122,6 +123,71 @@ export async function fetchSubscription(): Promise<SubscriptionInfo | null> {
     return null
   }
   return parseResultResponse<SubscriptionInfo>(res)
+}
+
+export interface PayMethodOption {
+  method: string
+  name: string
+  desc: string
+  platform: boolean
+}
+
+export interface PayCheckoutResult {
+  localOrderId: number
+  orderId: string
+  planCode: string
+  planName: string
+  status: string
+  amountCents: number | null
+  currency: string | null
+  payments: PayMethodOption[]
+  alipayHint: string | null
+}
+
+export interface PayStartResult {
+  payUrl: string | null
+  payCurrency: string | null
+  amount: number | null
+  alipayHint: string | null
+}
+
+export interface PayOrderStatus {
+  localOrderId: number
+  orderId: string
+  planCode: string
+  status: string
+  paid: boolean
+  payUrl: string | null
+}
+
+export async function payCheckout(planCode: string): Promise<PayCheckoutResult> {
+  const res = await secureFetch('/api/billing/auth/pay/checkout', {
+    method: 'POST',
+    body: JSON.stringify({ planCode }),
+  })
+  if (!res.ok) {
+    throw new Error(await readApiErrorMessage(res))
+  }
+  return parseResultResponse<PayCheckoutResult>(res)
+}
+
+export async function payStart(orderId: string, method: string): Promise<PayStartResult> {
+  const res = await secureFetch('/api/billing/auth/pay/start', {
+    method: 'POST',
+    body: JSON.stringify({ orderId, method }),
+  })
+  if (!res.ok) {
+    throw new Error(await readApiErrorMessage(res))
+  }
+  return parseResultResponse<PayStartResult>(res)
+}
+
+export async function fetchPayOrderStatus(orderId: string): Promise<PayOrderStatus> {
+  const res = await secureFetch(`/api/billing/auth/pay/orders/${encodeURIComponent(orderId)}`)
+  if (!res.ok) {
+    throw new Error(await readApiErrorMessage(res))
+  }
+  return parseResultResponse<PayOrderStatus>(res)
 }
 
 export async function fetchEnabledFeatures(): Promise<string[]> {

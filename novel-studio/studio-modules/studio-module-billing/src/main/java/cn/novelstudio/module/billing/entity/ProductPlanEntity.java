@@ -55,6 +55,12 @@ public class ProductPlanEntity {
     @Column(name = "sort_order", nullable = false)
     private Integer sortOrder = 0;
 
+    @Column(name = "idr_project_id", length = 64)
+    private String idrProjectId;
+
+    @Column(name = "idr_sku_id", length = 64)
+    private String idrSkuId;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private Instant createdAt;

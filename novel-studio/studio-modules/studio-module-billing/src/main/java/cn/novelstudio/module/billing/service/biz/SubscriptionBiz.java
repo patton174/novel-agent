@@ -1,6 +1,7 @@
 package cn.novelstudio.module.billing.service.biz;
 
 import cn.novelstudio.module.billing.dto.SubscriptionResp;
+import cn.novelstudio.module.billing.entity.PaymentOrderEntity;
 import cn.novelstudio.module.billing.entity.ProductPlanEntity;
 import cn.novelstudio.module.billing.entity.UserSubscriptionEntity;
 import cn.novelstudio.module.billing.repository.UserSubscriptionRepository;
@@ -70,9 +71,29 @@ public class SubscriptionBiz extends BaseBiz {
     @Transactional
     public void changeUserPlan(long userId, String planCode, Long actorId, String reason) {
         ProductPlanEntity plan = planBiz.requireActivePlanByCode(planCode);
+        applyPlanChange(userId, plan, plan.getCode(), actorId, reason);
+    }
+
+    @Transactional
+    public void changeUserPlanFromOrder(PaymentOrderEntity order, Long actorId, String reason) {
+        if (order.getPlanId() != null) {
+            ProductPlanEntity plan = planBiz.requirePlanByIdForOrder(order.getPlanId());
+            applyPlanChange(order.getUserId(), plan, plan.getCode(), actorId, reason);
+            return;
+        }
+        changeUserPlan(order.getUserId(), order.getPlanCode(), actorId, reason);
+    }
+
+    private void applyPlanChange(
+        long userId,
+        ProductPlanEntity plan,
+        String planCode,
+        Long actorId,
+        String reason
+    ) {
         var existing = userSubscriptionRepository.findByUserId(userId);
         String beforePlan = existing
-            .map(s -> planBiz.requirePlanById(s.getPlanId()).getCode())
+            .map(s -> planBiz.requirePlanByIdForOrder(s.getPlanId()).getCode())
             .orElse("none");
         UserSubscriptionEntity sub = existing.orElseGet(() -> createSubscription(userId, planCode));
         sub.setPlanId(plan.getId());

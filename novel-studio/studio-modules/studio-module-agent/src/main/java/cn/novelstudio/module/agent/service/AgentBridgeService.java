@@ -133,7 +133,9 @@ public class AgentBridgeService {
                 ? new PgRunEventFanout(runMqPublisher, finalSessionId, runId)
                 : null;
             try {
-                Map<String, Object> modelConfig = modelResolver.resolve(userId, request.modelOverride());
+                Map<String, Object> modelConfig = modelResolver.resolve(
+                    userId, request.modelOverride(), request.message()
+                );
                 boolean byok = modelResolver.isByok(modelConfig);
 
                 CompletableFuture<QuotaGateResult> quotaFuture = CompletableFuture.supplyAsync(() -> {

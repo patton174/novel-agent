@@ -44,6 +44,8 @@ const StatsPage = lazy(() => import('./pages/admin/StatsPage'))
 const CrawlerPage = lazy(() => import('./pages/admin/CrawlerPage'))
 const CatalogPage = lazy(() => import('./pages/admin/CatalogPage'))
 const PlansPage = lazy(() => import('./pages/admin/PlansPage'))
+const PaymentOrdersPage = lazy(() => import('./pages/admin/PaymentOrdersPage'))
+const PaymentProductsPage = lazy(() => import('./pages/admin/PaymentProductsPage'))
 const RevenuePage = lazy(() => import('./pages/admin/RevenuePage'))
 const SiteContentPage = lazy(() => import('./pages/admin/SiteContentPage'))
 const AuditLogPage = lazy(() => import('./pages/admin/AuditLogPage'))
@@ -110,6 +112,8 @@ function AppRouteTree() {
           <Route index element={<AdminHomePage />} />
           <Route path="users" element={<UsersPage />} />
           <Route path="plans" element={<PlansPage />} />
+          <Route path="products" element={<PaymentProductsPage />} />
+          <Route path="payment-orders" element={<PaymentOrdersPage />} />
           <Route path="models" element={<AdminModelsPage />} />
           <Route path="revenue" element={<RevenuePage />} />
           <Route path="site-content" element={<SiteContentPage />} />

@@ -112,6 +112,7 @@ def build_context_usage_payload(
     compressed: bool = False,
     compact_note: str = "",
     last_compact_mode: str = "",
+    resolved_model: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     limit = int(prompt_measure.get("context_limit") or context_window_tokens())
     prompt_tokens = int(prompt_measure.get("prompt_tokens") or 0)
@@ -128,7 +129,7 @@ def build_context_usage_payload(
         from app.agent.context.meter import context_thresholds
 
         thresholds = context_thresholds()
-    return {
+    payload = {
         "turn": turn,
         "prompt_tokens": prompt_tokens,
         "context_limit": limit,
@@ -145,6 +146,17 @@ def build_context_usage_payload(
         "compact_note": compact_note,
         "last_compact_mode": last_compact_mode or "",
     }
+    if isinstance(resolved_model, dict) and resolved_model:
+        display_name = resolved_model.get("display_name") or resolved_model.get("displayName")
+        provider = resolved_model.get("provider")
+        code = resolved_model.get("code")
+        if display_name or provider or code:
+            payload["resolved_model"] = {
+                "display_name": str(display_name or ""),
+                "provider": str(provider or "platform"),
+                "code": str(code) if code else None,
+            }
+    return payload
 
 
 def build_context_usage_event(
@@ -159,6 +171,7 @@ def build_context_usage_event(
     compressed: bool = False,
     compact_note: str = "",
     last_compact_mode: str = "",
+    resolved_model: dict[str, Any] | None = None,
 ) -> tuple[dict[str, Any], int]:
     """Build context.usage SSE event and next sequence (CC-style metering push)."""
     from uuid import uuid4
@@ -180,6 +193,7 @@ def build_context_usage_event(
             compressed=compressed,
             compact_note=compact_note,
             last_compact_mode=last_compact_mode,
+            resolved_model=resolved_model,
         ),
     )
     return ev, sequence + 1

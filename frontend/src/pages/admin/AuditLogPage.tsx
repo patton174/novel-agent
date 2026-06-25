@@ -1,21 +1,20 @@
 import { useTranslation } from 'react-i18next'
 import { useCallback, useEffect, useState } from 'react'
 import { fetchAuditLogs, type AuditLogItem } from '@/api/billingAdminApi'
+import { AdminField, AdminSelect, AdminTextInput } from '@/components/admin/AdminFormControls'
 import {
   ResponsiveTable,
   type ResponsiveTableColumn,
 } from '@/components/layout/ResponsiveTable'
 import {
-  AppPageStack,
-  AppShellCard,
-  AppShellCardBody,
-  AppShellCardHeader,
-} from '@/components/layout/AppPageStack'
-import { AdminNativeSelect } from '@/components/layout/AdminNativeSelect'
+  AdminDataPage,
+  AdminDataPanel,
+  AdminDataPanelHeader,
+  AdminDataToolbar,
+} from '@/components/layout/AdminDataLayout'
 import { ProPagination } from '@/components/pro/ProPagination'
 import { AuditLogDetailModal } from '@/components/admin/AuditLogDetailModal'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { AdminButtonGhost, AdminButtonOutline } from '@/components/admin/AdminFormControls'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useMarkRouteSeen } from '@/hooks/useMarkRouteSeen'
 import { appToast } from '@/stores/appToastStore'
@@ -31,6 +30,10 @@ export default function AuditLogPage() {
     { value: 'plan.create', label: t('admin:auditLog.actionPlanCreate') },
     { value: 'plan.update', label: t('admin:auditLog.actionPlanUpdate') },
     { value: 'plan.delete', label: t('admin:auditLog.actionPlanDelete') },
+    { value: 'plan.activate', label: t('admin:auditLog.actionPlanActivate') },
+    { value: 'payment_order.sync', label: t('admin:auditLog.actionPaymentSync') },
+    { value: 'payment_order.fulfill', label: t('admin:auditLog.actionPaymentFulfill') },
+    { value: 'payment_order.expire', label: t('admin:auditLog.actionPaymentExpire') },
     { value: 'user.subscription.change', label: t('admin:auditLog.actionSubChange') },
     { value: 'user.quota.override', label: t('admin:auditLog.actionQuotaOverride') },
     { value: 'user.role.change', label: t('admin:auditLog.actionRoleChange') },
@@ -76,25 +79,25 @@ export default function AuditLogPage() {
     {
       key: 'createdAt',
       header: t('admin:auditLog.colTime'),
-      cellClassName: 'whitespace-nowrap text-xs text-muted-foreground',
+      cellClassName: 'whitespace-nowrap text-sm text-muted-foreground',
       renderCell: (log) => new Date(log.createdAt).toLocaleString('zh-CN'),
     },
     {
       key: 'action',
       header: t('admin:auditLog.colAction'),
-      cellClassName: 'font-mono text-xs',
+      cellClassName: 'font-mono text-sm',
       renderCell: (log) => log.action,
     },
     {
       key: 'actorId',
       header: t('admin:auditLog.colActor'),
-      cellClassName: 'tabular-nums',
+      cellClassName: 'tabular-nums text-sm',
       renderCell: (log) => log.actorId,
     },
     {
       key: 'target',
       header: t('admin:auditLog.colTarget'),
-      cellClassName: 'text-xs',
+      cellClassName: 'text-sm',
       renderCell: (log) => (
         <>
           {log.targetType ?? '—'}
@@ -108,28 +111,25 @@ export default function AuditLogPage() {
       cellClassName: 'max-w-xs',
       renderCell: (log) =>
         log.beforeJson || log.afterJson ? (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-8 px-2 text-xs text-primary"
-            onClick={() => setDetailLog(log)}
-          >
+          <AdminButtonGhost className="text-primary hover:text-primary" onClick={() => setDetailLog(log)}>
             {t('admin:auditLog.viewJson')}
-          </Button>
+          </AdminButtonGhost>
         ) : (
-          <span className="text-xs text-muted-foreground">—</span>
+          <span className="text-sm text-muted-foreground">—</span>
         ),
     },
   ]
 
   return (
-    <AppPageStack className="gap-4">
-      <AppShellCard>
-        <AppShellCardHeader title={t('admin:auditLog.filterTitle')} description={t('admin:auditLog.filterDesc')} />
-        <AppShellCardBody className="py-4">
-          <div className="flex flex-wrap gap-2">
-            <AdminNativeSelect
+    <AdminDataPage>
+      <AdminDataPanel>
+        <AdminDataPanelHeader
+          title={t('admin:auditLog.listTitle')}
+          description={t('admin:auditLog.listDesc', { count: totalCount })}
+        />
+        <AdminDataToolbar>
+          <AdminField label={t('admin:auditLog.colAction')}>
+            <AdminSelect
               value={action}
               onChange={(e) => {
                 setPageCurrent(1)
@@ -141,9 +141,10 @@ export default function AuditLogPage() {
                   {opt.label}
                 </option>
               ))}
-            </AdminNativeSelect>
-            <Input
-              className="h-9 w-full min-w-0 rounded-xl sm:w-40"
+            </AdminSelect>
+          </AdminField>
+          <AdminField label={t('admin:auditLog.colActor')}>
+            <AdminTextInput
               placeholder={t('admin:auditLog.actorPlaceholder')}
               value={actorIdInput}
               onChange={(e) => {
@@ -151,67 +152,56 @@ export default function AuditLogPage() {
                 setActorIdInput(e.target.value)
               }}
             />
-          </div>
-        </AppShellCardBody>
-      </AppShellCard>
+          </AdminField>
+        </AdminDataToolbar>
 
-      <ResponsiveTable
-        columns={columns}
-        rows={list}
-        loading={initialLoading}
-        loadingRowCount={6}
-        loadingCardCount={4}
-        getRowKey={(log) => log.id}
-        wrapDesktopInCard={false}
-        tableClassName="min-w-[720px] text-sm"
-        tableHeaderClassName="bg-muted/40 text-left text-xs text-muted-foreground"
-        tableBodyClassName="divide-y divide-border"
-        desktopSkeletonClassName="h-4 w-full max-w-28"
-        renderDesktopContainer={(content) => (
-          <AppShellCard>
-            <AppShellCardHeader
-              title={t('admin:auditLog.listTitle')}
-              description={t('admin:auditLog.listDesc', { count: totalCount })}
-            />
-            {content}
-          </AppShellCard>
-        )}
-        renderMobileCard={(log) => (
-          <article className="rounded-xl border border-border/70 bg-surface p-4 shadow-sm">
-            <p className="text-xs text-muted-foreground">
-              {new Date(log.createdAt).toLocaleString('zh-CN')}
-            </p>
-            <p className="mt-1 font-mono text-sm font-medium text-foreground">{log.action}</p>
-            <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
-              <div>
-                <dt className="text-muted-foreground">{t('admin:auditLog.colActor')}</dt>
-                <dd className="tabular-nums">{log.actorId}</dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">{t('admin:auditLog.colTarget')}</dt>
-                <dd className="truncate">
-                  {log.targetType ?? '—'}
-                  {log.targetId ? ` #${log.targetId}` : ''}
-                </dd>
-              </div>
-            </dl>
-            {(log.beforeJson || log.afterJson) && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="mt-3 h-8 w-full rounded-lg text-xs"
-                onClick={() => setDetailLog(log)}
-              >
-                {t('admin:auditLog.viewDetails')}
-              </Button>
-            )}
-          </article>
-        )}
-        renderLoadingMobileCard={(index) => <Skeleton key={index} className="h-28 w-full rounded-xl" />}
-        renderMobileEmpty={<p className="py-8 text-center text-sm text-muted-foreground">{t('admin:auditLog.empty')}</p>}
-        renderDesktopEmpty={<p className="py-8 text-center text-muted-foreground">{t('admin:auditLog.empty')}</p>}
-      />
+        <ResponsiveTable
+          columns={columns}
+          rows={list}
+          loading={initialLoading}
+          loadingRowCount={8}
+          loadingCardCount={4}
+          getRowKey={(log) => log.id}
+          wrapDesktopInCard={false}
+          tableClassName="min-w-[720px] text-sm"
+          tableHeaderClassName="bg-muted/40 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground"
+          tableBodyClassName="divide-y divide-border"
+          desktopSkeletonClassName="h-4 w-full max-w-28"
+          renderDesktopContainer={(content) => content}
+          renderMobileCard={(log) => (
+            <article className="rounded-xl border border-border bg-surface p-4 shadow-sm">
+              <p className="text-xs text-muted-foreground">
+                {new Date(log.createdAt).toLocaleString('zh-CN')}
+              </p>
+              <p className="mt-1 font-mono text-sm font-medium">{log.action}</p>
+              <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-sm">
+                <div>
+                  <dt className="text-muted-foreground">{t('admin:auditLog.colActor')}</dt>
+                  <dd className="tabular-nums">{log.actorId}</dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">{t('admin:auditLog.colTarget')}</dt>
+                  <dd className="truncate">
+                    {log.targetType ?? '—'}
+                    {log.targetId ? ` #${log.targetId}` : ''}
+                  </dd>
+                </div>
+              </dl>
+              {(log.beforeJson || log.afterJson) && (
+                <AdminButtonOutline
+                  className="mt-3 w-full"
+                  onClick={() => setDetailLog(log)}
+                >
+                  {t('admin:auditLog.viewDetails')}
+                </AdminButtonOutline>
+              )}
+            </article>
+          )}
+          renderLoadingMobileCard={(index) => <Skeleton key={index} className="h-28 w-full rounded-xl" />}
+          renderMobileEmpty={<p className="py-8 text-center text-sm text-muted-foreground">{t('admin:auditLog.empty')}</p>}
+          renderDesktopEmpty={<p className="py-10 text-center text-sm text-muted-foreground">{t('admin:auditLog.empty')}</p>}
+        />
+      </AdminDataPanel>
 
       <ProPagination
         page={pageCurrent}
@@ -222,6 +212,6 @@ export default function AuditLogPage() {
       />
 
       <AuditLogDetailModal log={detailLog} onClose={() => setDetailLog(null)} />
-    </AppPageStack>
+    </AdminDataPage>
   )
 }

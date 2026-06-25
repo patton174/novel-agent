@@ -9,6 +9,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import type { UsageEventItem } from '@/api/billingApi'
+import { UsageModelCell } from '@/components/billing/UsageModelCell'
 import { useTranslation } from 'react-i18next'
 import { useBilling } from './useBilling'
 import { BillingBillContent, BillingUsageContent } from './BillingSections'
@@ -34,7 +35,9 @@ function UsageEventCard({
       <dl className="mt-2 space-y-1 text-xs text-muted-foreground">
         <div className="flex justify-between gap-2">
           <dt>{t('dashboard:billing.colModel')}</dt>
-          <dd className="truncate text-right text-foreground">{ev.model ?? '—'}</dd>
+          <dd className="min-w-0 text-right">
+            <UsageModelCell ev={ev} />
+          </dd>
         </div>
         <div className="flex justify-between gap-2">
           <dt>{t('dashboard:billing.colTime')}</dt>
@@ -73,7 +76,8 @@ function UsageEventCard({
 /** 账单 — 手机：纵向堆叠（用量 / 账单 / 明细卡片）。 */
 export function BillingMobile() {
   const { t } = useTranslation(['dashboard'])
-  const { usage, events, loading, runFilter, setRunFilter, tokenPercent } = useBilling()
+  const { usage, events, loading, runFilter, setRunFilter, tokenPercent, payReturnChecking } =
+    useBilling()
 
   return (
     <AppPageStack compact>
@@ -97,7 +101,11 @@ export function BillingMobile() {
           description={t('dashboard:billing.billDesc')}
         />
         <AppShellCardBody className="flex flex-col gap-5">
-          <BillingBillContent usage={usage} loading={loading} />
+          <BillingBillContent
+            usage={usage}
+            loading={loading}
+            payReturnChecking={payReturnChecking}
+          />
         </AppShellCardBody>
       </AppShellCard>
 

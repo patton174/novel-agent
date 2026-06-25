@@ -1,18 +1,28 @@
 package cn.novelstudio.module.billing.service.biz;
 
+import cn.novelstudio.module.billing.config.IDataRiverProperties;
+import cn.novelstudio.module.billing.service.IDataRiverConfigService;
+import cn.novelstudio.module.billing.dto.PlanIdrBindingReq;
+import cn.novelstudio.module.billing.dto.PlanCrmDetailResp;
 import cn.novelstudio.module.billing.dto.PlanCrmResp;
 import cn.novelstudio.module.billing.dto.PlanCrmUpsertReq;
+import cn.novelstudio.module.billing.dto.PaymentOrderCrmResp;
 import cn.novelstudio.module.billing.entity.PlanFeatureEntity;
 import cn.novelstudio.module.billing.entity.ProductPlanEntity;
+import cn.novelstudio.module.billing.repository.PaymentOrderRepository;
 import cn.novelstudio.module.billing.repository.PlanFeatureRepository;
 import cn.novelstudio.module.billing.repository.ProductPlanRepository;
 import cn.novelstudio.module.billing.service.AuditLogService;
+import cn.novelstudio.module.billing.support.PlanPaymentSupport;
+import cn.novelstudio.kernel.base.Page;
 import cn.novelstudio.kernel.base.Result;
 import cn.novelstudio.kernel.biz.BaseBiz;
 import cn.novelstudio.kernel.enums.ResultCode;
 import cn.novelstudio.kernel.exception.BizException;
 import cn.novelstudio.kernel.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +37,10 @@ public class PlanCrmBiz extends BaseBiz {
 
     private final ProductPlanRepository productPlanRepository;
     private final PlanFeatureRepository planFeatureRepository;
+    private final PaymentOrderRepository paymentOrderRepository;
+    private final PaymentOrderCrmBiz paymentOrderCrmBiz;
+    private final IDataRiverConfigService idataRiverConfigService;
+    private final IDataRiverProperties envProperties;
     private final AuditLogService auditLogService;
 
     public Result<List<PlanCrmResp>> listAll() {
@@ -34,6 +48,39 @@ public class PlanCrmBiz extends BaseBiz {
             .map(this::toCrm)
             .toList();
         return ok(plans);
+    }
+
+    public Result<PlanCrmDetailResp> detail(long planId, int recentLimit) {
+        ProductPlanEntity plan = requirePlan(planId);
+        PlanCrmResp crm = toCrm(plan);
+        int limit = Math.min(Math.max(recentLimit, 1), 20);
+        var pageable = PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "createdAt"));
+        var recent = paymentOrderRepository.findLinkedToPlan(plan.getId(), plan.getCode(), pageable)
+            .getContent().stream()
+            .map(paymentOrderCrmBiz::toCrmResp)
+            .toList();
+        return ok(new PlanCrmDetailResp(
+            crm,
+            crm.paymentReady(),
+            crm.orderStats(),
+            recent
+        ));
+    }
+
+    public Result<Page<PaymentOrderCrmResp>> listOrders(
+        long planId,
+        int pageCurrent,
+        int pageSize
+    ) {
+        ProductPlanEntity plan = requirePlan(planId);
+        var pageable = PageRequest.of(
+            Math.max(pageCurrent - 1, 0),
+            Math.max(pageSize, 1),
+            Sort.by(Sort.Direction.DESC, "createdAt")
+        );
+        var page = paymentOrderRepository.findLinkedToPlan(plan.getId(), plan.getCode(), pageable);
+        var list = page.getContent().stream().map(paymentOrderCrmBiz::toCrmResp).toList();
+        return ok(Page.of(list, page.getTotalElements(), pageCurrent, pageSize));
     }
 
     @Transactional
@@ -68,12 +115,42 @@ public class PlanCrmBiz extends BaseBiz {
     @Transactional
     public Result<Void> deactivate(long planId, Long actorId) {
         ProductPlanEntity plan = requirePlan(planId);
+        long pending = paymentOrderRepository.countLinkedByStatus(plan.getId(), plan.getCode(), "NEW");
+        if (pending > 0) {
+            throw BizException.of(
+                ResultCode.BAD_REQUEST,
+                "该套餐仍有 " + pending + " 笔待支付订单，请先关闭订单或等待用户支付"
+            );
+        }
         PlanCrmResp before = toCrm(plan);
         plan.setIsActive(false);
         plan.setIsFeatured(false);
         productPlanRepository.save(plan);
         auditLogService.log(actorId, "plan.delete", "product_plan", String.valueOf(planId), before, toCrm(plan));
         return ok();
+    }
+
+    @Transactional
+    public Result<PlanCrmResp> activate(long planId, Long actorId) {
+        ProductPlanEntity plan = requirePlan(planId);
+        PlanCrmResp before = toCrm(plan);
+        plan.setIsActive(true);
+        ProductPlanEntity saved = productPlanRepository.save(plan);
+        PlanCrmResp after = toCrm(saved);
+        auditLogService.log(actorId, "plan.activate", "product_plan", String.valueOf(planId), before, after);
+        return ok(after);
+    }
+
+    @Transactional
+    public Result<PlanCrmResp> updateIdrBinding(long planId, PlanIdrBindingReq req, Long actorId) {
+        ProductPlanEntity plan = requirePlan(planId);
+        PlanCrmResp before = toCrm(plan);
+        plan.setIdrProjectId(trimOrNull(req.idrProjectId()));
+        plan.setIdrSkuId(trimOrNull(req.idrSkuId()));
+        ProductPlanEntity saved = productPlanRepository.save(plan);
+        PlanCrmResp after = toCrm(saved);
+        auditLogService.log(actorId, "plan.idr_binding", "product_plan", String.valueOf(planId), before, after);
+        return ok(after);
     }
 
     private ProductPlanEntity applyFields(ProductPlanEntity plan, PlanCrmUpsertReq req) {
@@ -93,7 +170,16 @@ public class PlanCrmBiz extends BaseBiz {
         if (req.sortOrder() != null) {
             plan.setSortOrder(req.sortOrder());
         }
+        plan.setIdrProjectId(trimOrNull(req.idrProjectId()));
+        plan.setIdrSkuId(trimOrNull(req.idrSkuId()));
         return plan;
+    }
+
+    private static String trimOrNull(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.trim();
     }
 
     private void replaceFeatures(long planId, List<String> features) {
@@ -135,7 +221,11 @@ public class PlanCrmBiz extends BaseBiz {
             Boolean.TRUE.equals(plan.getIsActive()),
             Boolean.TRUE.equals(plan.getIsFeatured()),
             plan.getSortOrder() == null ? 0 : plan.getSortOrder(),
-            features
+            features,
+            plan.getIdrProjectId(),
+            plan.getIdrSkuId(),
+            PlanPaymentSupport.isPaymentReady(plan, idataRiverConfigService.effective(), envProperties),
+            PlanPaymentSupport.statsForPlan(paymentOrderRepository, plan)
         );
     }
 

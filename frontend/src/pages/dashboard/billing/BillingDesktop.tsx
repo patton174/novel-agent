@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { ProTabs } from '@/components/pro/ProTabs'
 import { ProTable, type ProColumn } from '@/components/pro/ProTable'
 import type { UsageEventItem } from '@/api/billingApi'
+import { UsageModelCell } from '@/components/billing/UsageModelCell'
 import { useTranslation } from 'react-i18next'
 import { useBilling } from './useBilling'
 import { BillingBillContent, BillingUsageContent } from './BillingSections'
@@ -49,7 +50,8 @@ function UsageEventRelatedCell({
 /** 账单 — 桌面：ProTabs（用量 / 账单 / 明细），明细用 ProTable。 */
 export function BillingDesktop() {
   const { t } = useTranslation(['dashboard'])
-  const { usage, events, loading, runFilter, setRunFilter, tokenPercent } = useBilling()
+  const { usage, events, loading, runFilter, setRunFilter, tokenPercent, payReturnChecking } =
+    useBilling()
 
   const eventColumns: ProColumn<UsageEventItem>[] = [
     {
@@ -70,7 +72,7 @@ export function BillingDesktop() {
     {
       key: 'model',
       header: t('dashboard:billing.colModel'),
-      render: (ev) => <span className="text-muted-foreground">{ev.model ?? '—'}</span>,
+      render: (ev) => <UsageModelCell ev={ev} />,
     },
     {
       key: 'time',
@@ -118,7 +120,11 @@ export function BillingDesktop() {
             content: (
               <div className="max-w-2xl space-y-4">
                 <p className="text-sm text-muted-foreground">{t('dashboard:billing.billDesc')}</p>
-                <BillingBillContent usage={usage} loading={loading} />
+                <BillingBillContent
+                  usage={usage}
+                  loading={loading}
+                  payReturnChecking={payReturnChecking}
+                />
               </div>
             ),
           },

@@ -80,6 +80,7 @@
       "modelLoadFailed": "模型列表暂不可用，将使用平台默认",
       "modelUnavailable": "模型服务未就绪",
       "modelEmpty": "暂无可用模型",
+      "billedModelLabel": "计费模型：{{name}}",
       "attachSoon": "添加附件（即将推出）"
     },
     "picker": {

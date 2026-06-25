@@ -38,6 +38,12 @@ public class PlanBiz extends BaseBiz {
             .orElseThrow(() -> new NotFoundException(ResultCode.BILLING_PLAN_NOT_FOUND, "套餐不存在"));
     }
 
+    /** 订单履约等场景：允许已下架套餐（按下单快照 plan_id 升级）。 */
+    public ProductPlanEntity requirePlanByIdForOrder(long planId) {
+        return productPlanRepository.findById(planId)
+            .orElseThrow(() -> new NotFoundException(ResultCode.BILLING_PLAN_NOT_FOUND, "套餐不存在"));
+    }
+
     private PlanPublicResp toPublic(ProductPlanEntity plan) {
         List<String> features = planFeatureRepository.findByPlanIdAndEnabledTrue(plan.getId()).stream()
             .map(f -> featureLabel(f.getFeatureKey()))

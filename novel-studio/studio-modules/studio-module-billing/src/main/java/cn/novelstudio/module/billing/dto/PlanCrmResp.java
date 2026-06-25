@@ -15,6 +15,10 @@ public record PlanCrmResp(
     boolean isActive,
     boolean isFeatured,
     int sortOrder,
-    List<String> features
+    List<String> features,
+    String idrProjectId,
+    String idrSkuId,
+    boolean paymentReady,
+    PlanOrderStatsResp orderStats
 ) {
 }

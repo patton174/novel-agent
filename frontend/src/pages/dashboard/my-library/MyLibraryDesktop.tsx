@@ -3,7 +3,7 @@ import { Library, Plus, RefreshCw } from 'lucide-react'
 import { AppPageIntro, AppPageStack } from '@/components/layout/AppPageStack'
 import { Button } from '@/components/ui/button'
 import { FileUploader } from '@/components/ui/FileUploader'
-import { ProButton } from '@/components/pro/ProButton'
+import { TableActionBar, TableActionButton } from '@/components/shared/TableActions'
 import { ProTable, type ProColumn } from '@/components/pro/ProTable'
 import type { CatalogNovel } from '@/api/catalogApi'
 import { useTranslation } from 'react-i18next'
@@ -40,14 +40,12 @@ export function MyLibraryDesktop() {
       header: t('dashboard:myLibrary.colAction'),
       align: 'right',
       render: () => (
-        <ProButton
-          size="sm"
-          variant="secondary"
-          leftIcon={<Plus className="size-4" />}
-          onClick={() => void load()}
-        >
-          {t('dashboard:myLibrary.addToNovel')}
-        </ProButton>
+        <TableActionBar align="end">
+          <TableActionButton variant="outline" onClick={() => void load()}>
+            <Plus className="size-4" />
+            {t('dashboard:myLibrary.addToNovel')}
+          </TableActionButton>
+        </TableActionBar>
       ),
     },
   ]
