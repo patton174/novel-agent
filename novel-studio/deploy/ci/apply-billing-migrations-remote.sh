@@ -14,8 +14,6 @@ V23="$(ls -1 "$BILLING_MIGRATION_DIR"/V23__*.sql | head -1)"
 
 REMOTE="$(ci_remote mw)"
 RDIR="$(ci_remote_dir mw)"
-COMPOSE_FILE="docker-compose.infra.yml"
-ENV_FILE="$(ci_env_file mw)"
 STAGE="$RDIR/$STAGING_DIR/pg-migrate-$$"
 
 ci_setup_ssh
@@ -28,59 +26,50 @@ deploy_scp "$V23" "$REMOTE:$STAGE/v23.sql"
 deploy_ssh "$REMOTE" bash -s <<EOF
 set -euo pipefail
 STAGE='$STAGE'
-RDIR='$RDIR'
-COMPOSE_FILE='$COMPOSE_FILE'
-ENV_FILE='$ENV_FILE'
 
-cd "$RDIR/novel-studio/deploy/docker"
-set -a
-# shellcheck disable=SC1090
-source "$ENV_FILE"
-set +a
-
-PG_CID="$(docker ps -q -f name=novel-studio-postgresql | head -1)"
-if [[ -z "$PG_CID" ]]; then
-  PG_CID="$(docker ps -q -f ancestor=postgres:18.4-alpine | head -1)"
+PG_CID="\$(docker ps -q -f name=novel-studio-postgresql | head -1)"
+if [[ -z "\$PG_CID" ]]; then
+  PG_CID="\$(docker ps -q -f ancestor=postgres:18.4-alpine | head -1)"
 fi
-[[ -n "$PG_CID" ]] || { echo "[migrate] ERROR: postgres container not found"; exit 1; }
+[[ -n "\$PG_CID" ]] || { echo "[migrate] ERROR: postgres container not found"; exit 1; }
 
 psql_exec() {
-  docker exec -i "$PG_CID" psql -v ON_ERROR_STOP=1 -U "${DB_USER:-postgres}" -d "${DB_NAME:-novel_agent}" "$@"
+  docker exec -i "\$PG_CID" psql -v ON_ERROR_STOP=1 -U postgres -d novel_agent "\$@"
 }
 
 apply_if_needed() {
-  local version="$1"
-  local file="$2"
-  local check_sql="$3"
-  if psql_exec -tAc "$check_sql" | grep -q '^t$'; then
-    echo "[migrate] V${version} skip (already applied)"
+  local version="\$1"
+  local check_sql="\$2"
+  local file="\$3"
+  if psql_exec -tAc "\$check_sql" | grep -q '^t\$'; then
+    echo "[migrate] V\${version} skip (already applied)"
     return 0
   fi
-  echo "[migrate] applying V${version} ..."
-  psql_exec -f - < "$file"
+  echo "[migrate] applying V\${version} ..."
+  psql_exec -f - < "\$file"
   local desc
-  desc="$(basename "$file")"
-  desc="${desc#*__}"
-  desc="${desc%.sql}"
+  desc="\$(basename "\$file")"
+  desc="\${desc#*__}"
+  desc="\${desc%.sql}"
   psql_exec <<PSQL
 INSERT INTO flyway_schema_history_studio
   (installed_rank, version, description, type, script, checksum, installed_by, installed_on, execution_time, success)
 SELECT
   COALESCE((SELECT MAX(installed_rank) FROM flyway_schema_history_studio), 0) + 1,
-  '${version}',
-  '${desc}',
+  '\${version}',
+  '\${desc}',
   'SQL',
-  '$(basename "$file")',
+  '\$(basename "\$file")',
   NULL,
   'deploy_ci',
   NOW(),
   0,
   TRUE
 WHERE NOT EXISTS (
-  SELECT 1 FROM flyway_schema_history_studio WHERE version = '${version}' AND success = TRUE
+  SELECT 1 FROM flyway_schema_history_studio WHERE version = '\${version}' AND success = TRUE
 );
 PSQL
-  echo "[migrate] V${version} ok"
+  echo "[migrate] V\${version} ok"
 }
 
 psql_exec -tAc "SELECT to_regclass('public.flyway_schema_history_studio')" | grep -q flyway_schema_history_studio \
@@ -99,10 +88,10 @@ CREATE TABLE IF NOT EXISTS flyway_schema_history_studio (
 );
 PSQL
 
-apply_if_needed "22" "$STAGE/v22.sql" "SELECT to_regclass('public.payment_order') IS NOT NULL"
-apply_if_needed "23" "$STAGE/v23.sql" "SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='payment_order' AND column_name='plan_id')"
+apply_if_needed "22" "SELECT to_regclass('public.payment_order') IS NOT NULL" "\$STAGE/v22.sql"
+apply_if_needed "23" "SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='payment_order' AND column_name='plan_id')" "\$STAGE/v23.sql"
 
-rm -rf "$STAGE"
+rm -rf "\$STAGE"
 echo "[migrate] done"
 EOF
 
