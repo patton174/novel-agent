@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useMarkRouteSeen } from '@/hooks/useMarkRouteSeen'
 import { appToast } from '@/stores/appToastStore'
 import {
-  fetchPayOrderStatus,
   fetchUsageCurrent,
   fetchUsageEvents,
   type UsageCurrent,
@@ -24,6 +23,7 @@ export interface UseBillingResult {
 /** 账单：当前用量 + 用量明细（可按 runId 筛选，URL searchParams 驱动）。逻辑迁自原 BillingPage。 */
 export function useBilling(): UseBillingResult {
   const { t } = useTranslation(['dashboard'])
+  const navigate = useNavigate()
   useMarkRouteSeen()
   const [searchParams, setSearchParams] = useSearchParams()
   const runFilter = searchParams.get('runId')?.trim() || ''
@@ -31,8 +31,11 @@ export function useBilling(): UseBillingResult {
   const [usage, setUsage] = useState<UsageCurrent | null>(null)
   const [events, setEvents] = useState<UsageEventItem[]>([])
   const [loading, setLoading] = useState(true)
-  const [reloadTick, setReloadTick] = useState(0)
-  const [payReturnChecking, setPayReturnChecking] = useState(false)
+
+  useEffect(() => {
+    if (!payOrder) return
+    navigate(`/checkout?order=${encodeURIComponent(payOrder)}&return=1`, { replace: true })
+  }, [payOrder, navigate])
 
   useEffect(() => {
     let cancelled = false
@@ -56,57 +59,7 @@ export function useBilling(): UseBillingResult {
       cancelled = true
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [runFilter, reloadTick])
-
-  useEffect(() => {
-    if (!payOrder) {
-      setPayReturnChecking(false)
-      return
-    }
-    let cancelled = false
-    let attempts = 0
-    setPayReturnChecking(true)
-
-    const clearPayOrderParam = () => {
-      setSearchParams((prev) => {
-        const next = new URLSearchParams(prev)
-        next.delete('payOrder')
-        return next
-      })
-    }
-
-    const poll = async (): Promise<void> => {
-      if (cancelled) return
-      try {
-        const status = await fetchPayOrderStatus(payOrder)
-        if (cancelled) return
-        if (status.paid) {
-          appToast.success(t('dashboard:billing.paySuccess'))
-          clearPayOrderParam()
-          setReloadTick((n) => n + 1)
-          setPayReturnChecking(false)
-          return
-        }
-      } catch {
-        if (cancelled) return
-      }
-      attempts += 1
-      if (attempts >= 15) {
-        appToast.info(t('dashboard:billing.payPending'))
-        clearPayOrderParam()
-        setPayReturnChecking(false)
-        return
-      }
-      window.setTimeout(() => {
-        void poll()
-      }, 2000)
-    }
-
-    void poll()
-    return () => {
-      cancelled = true
-    }
-  }, [payOrder, setSearchParams, t])
+  }, [runFilter, t])
 
   const tokenPercent =
     usage?.tokenQuota && usage.tokenQuota > 0
@@ -122,5 +75,13 @@ export function useBilling(): UseBillingResult {
     }
   }
 
-  return { usage, events, loading, runFilter, setRunFilter, tokenPercent, payReturnChecking }
+  return {
+    usage,
+    events,
+    loading,
+    runFilter,
+    setRunFilter,
+    tokenPercent,
+    payReturnChecking: Boolean(payOrder),
+  }
 }

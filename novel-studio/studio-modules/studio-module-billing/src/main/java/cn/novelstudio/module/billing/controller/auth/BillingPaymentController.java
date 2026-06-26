@@ -3,6 +3,7 @@ package cn.novelstudio.module.billing.controller.auth;
 import cn.novelstudio.kernel.base.Result;
 import cn.novelstudio.module.billing.dto.PayCheckoutReq;
 import cn.novelstudio.module.billing.dto.PayCheckoutResp;
+import cn.novelstudio.module.billing.dto.PayPendingResp;
 import cn.novelstudio.module.billing.dto.PayOrderStatusResp;
 import cn.novelstudio.module.billing.dto.PayStartReq;
 import cn.novelstudio.module.billing.dto.PayStartResp;
@@ -41,5 +42,12 @@ public class BillingPaymentController extends BaseController {
         @PathVariable String orderId
     ) {
         return paymentBiz.orderStatus(parseUserId(userIdHeader), orderId);
+    }
+
+    @GetMapping("/pending")
+    public Result<PayPendingResp> pending(
+        @RequestHeader("X-User-Id") String userIdHeader
+    ) {
+        return paymentBiz.pendingOrder(parseUserId(userIdHeader));
     }
 }

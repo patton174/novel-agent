@@ -163,6 +163,15 @@ export interface PayOrderStatus {
   payUrl: string | null
 }
 
+export interface PayPendingOrder {
+  orderId: string
+  planCode: string
+  planName: string
+  status: string
+  amountCents: number | null
+  currency: string | null
+}
+
 export async function payCheckout(params: {
   planCode?: string | null
   orderId?: string | null
@@ -201,6 +210,15 @@ export async function fetchPayOrderStatus(orderId: string): Promise<PayOrderStat
     throw new Error(await readApiErrorMessage(res))
   }
   return parseResultResponse<PayOrderStatus>(res)
+}
+
+export async function fetchPendingPayOrder(): Promise<PayPendingOrder | null> {
+  const res = await secureFetch('/api/billing/auth/pay/pending')
+  if (!res.ok) {
+    return null
+  }
+  const data = await parseResultResponse<PayPendingOrder | null>(res)
+  return data?.orderId ? data : null
 }
 
 export async function fetchEnabledFeatures(): Promise<string[]> {

@@ -11,6 +11,7 @@ export interface UsePayCheckoutOptions {
   planCode: string | null
   orderId?: string | null
   enabled: boolean
+  reloadNonce?: number
   onCheckoutResolved?: (checkout: PayCheckoutResult) => void
 }
 
@@ -40,6 +41,7 @@ export function usePayCheckout({
   planCode,
   orderId,
   enabled,
+  reloadNonce = 0,
   onCheckoutResolved,
 }: UsePayCheckoutOptions) {
   const { t } = useTranslation(['dashboard'])
@@ -70,11 +72,15 @@ export function usePayCheckout({
     }
 
     const cached = readCache(cacheRef.current, planCode, orderId)
-    if (cached) {
+    if (cached && reloadNonce === 0) {
       setCheckout(cached)
       setMethod(cached.payments[0]?.method ?? 'alipay')
       setLoading(false)
       return
+    }
+
+    if (reloadNonce > 0) {
+      cacheRef.current = null
     }
 
     let cancelled = false
@@ -111,7 +117,7 @@ export function usePayCheckout({
     return () => {
       cancelled = true
     }
-  }, [enabled, planCode, orderId, reset, t])
+  }, [enabled, planCode, orderId, reloadNonce, reset, t])
 
   const handlePay = async () => {
     if (!checkout?.orderId || !method) return

@@ -6,6 +6,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { APP_BTN_MD } from '@/lib/appButtonTokens'
 import { formatCostMicros, formatTokenCount, type UsageCurrent } from '@/api/billingApi'
 import { PlanRecommendDialog } from '@/components/billing/PlanRecommendDialog'
+import { PendingPayOrderBanner } from '@/components/billing/PendingPayOrderBanner'
 import { useTranslation } from 'react-i18next'
 
 export interface BillingUsageContentProps {
@@ -97,6 +98,7 @@ export function BillingBillContent({
           {t('dashboard:billing.payReturnChecking')}
         </p>
       ) : null}
+      <PendingPayOrderBanner />
       {loading ? (
         <div className="space-y-3">
           <Skeleton className="h-10 w-32" />

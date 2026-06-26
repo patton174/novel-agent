@@ -8,6 +8,7 @@ import cn.novelstudio.module.billing.config.IDataRiverProperties;
 import cn.novelstudio.module.billing.service.IDataRiverConfigService;
 import cn.novelstudio.module.billing.dto.PayCheckoutReq;
 import cn.novelstudio.module.billing.dto.PayCheckoutResp;
+import cn.novelstudio.module.billing.dto.PayPendingResp;
 import cn.novelstudio.module.billing.dto.PayOrderStatusResp;
 import cn.novelstudio.module.billing.dto.PayStartReq;
 import cn.novelstudio.module.billing.dto.PayStartResp;
@@ -162,6 +163,36 @@ public class IDataRiverPaymentBiz extends BaseBiz {
     }
 
     @Transactional
+    public Result<PayPendingResp> pendingOrder(long userId) {
+        Optional<PaymentOrderEntity> pending = paymentOrderRepository
+            .findFirstByUserIdAndStatusOrderByCreatedAtDesc(userId, "NEW");
+        if (pending.isEmpty()) {
+            return ok(null);
+        }
+        PaymentOrderEntity entity = pending.get();
+        if (client.isConfigured()) {
+            try {
+                JsonNode remote = client.getOrderInfo(entity.getIdrOrderId());
+                syncFromRemote(entity, remote);
+                paymentOrderRepository.save(entity);
+            } catch (Exception ex) {
+                log.debug("refresh pending order {} failed: {}", entity.getIdrOrderId(), ex.getMessage());
+            }
+        }
+        if (!"NEW".equals(entity.getStatus())) {
+            return ok(null);
+        }
+        return ok(new PayPendingResp(
+            entity.getIdrOrderId(),
+            entity.getPlanCode(),
+            entity.getPlanName(),
+            entity.getStatus(),
+            entity.getAmountCents(),
+            entity.getCurrency()
+        ));
+    }
+
+    @Transactional
     public Result<PayStartResp> startPay(long userId, PayStartReq req) {
         requireConfigured();
         PaymentOrderEntity entity = paymentOrderRepository.findByIdrOrderId(req.orderId())
@@ -180,7 +211,9 @@ public class IDataRiverPaymentBiz extends BaseBiz {
         if (method == null || method.isBlank()) {
             method = configService.effective().getDefaultPayMethod();
         }
-        String redirectUrl = configService.effective().publicUrl("/dashboard/billing?payOrder=" + entity.getIdrOrderId());
+        String redirectUrl = configService.effective().publicUrl(
+            "/checkout?order=" + entity.getIdrOrderId() + "&return=1"
+        );
         String callbackUrl = configService.effective().webhookUrl();
 
         PayOrderResult pay = client.payOrder(
