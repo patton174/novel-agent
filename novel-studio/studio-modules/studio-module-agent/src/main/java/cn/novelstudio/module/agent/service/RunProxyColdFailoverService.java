@@ -34,13 +34,13 @@ public class RunProxyColdFailoverService {
     private AgentRunDTO requireRecoverableRun(Long userId, String runId) {
         AgentRunDTO run = contentInternalClient.getRun(runId);
         if (run == null) {
-            throw new NotFoundException(ResultCode.AGENT_RUN_NOT_FOUND, "运行记录不存在");
+            throw NotFoundException.keyed(ResultCode.AGENT_RUN_NOT_FOUND, "result.content.agent_run_not_found");
         }
         if (userId == null || run.getUserId() == null || !userId.equals(run.getUserId())) {
-            throw new ForbiddenException(ResultCode.AGENT_RUN_FORBIDDEN, "无权访问该运行记录");
+            throw ForbiddenException.keyed(ResultCode.AGENT_RUN_FORBIDDEN, "result.content.agent_run_forbidden");
         }
         if (!isRecoverableStatus(run.getStatus())) {
-            throw new NotFoundException(ResultCode.NOT_FOUND, "运行已结束，无法冷恢复");
+            throw NotFoundException.keyed(ResultCode.NOT_FOUND, "agent.run.already_finished");
         }
         return run;
     }

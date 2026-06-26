@@ -12,7 +12,8 @@ public record PayCheckoutResp(
     Integer amountCents,
     String currency,
     List<PayMethodOption> payments,
-    String alipayHint
+    String alipayHint,
+    boolean resumed
 ) {
     public record PayMethodOption(
         String method,

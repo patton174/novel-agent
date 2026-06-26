@@ -46,10 +46,18 @@
     "feasibilityLink": "Use Cases & Comparisons",
     "checkout": {
       "title": "Confirm order",
+      "pageTitle": "Checkout",
       "subtitle": "Choose a payment method to complete checkout. Your plan activates after payment.",
+      "orderInfo": "Order details",
+      "paymentInfo": "Payment",
       "summary": "Order summary",
+      "planLabel": "Plan",
+      "amountLabel": "Amount due",
+      "statusLabel": "Status",
       "selectMethod": "Payment method",
-      "choosePlanHint": "Select a plan above to checkout here."
+      "choosePlanHint": "Select a plan above to open the checkout page.",
+      "missingParamsTitle": "Missing checkout parameters",
+      "missingParamsSubtitle": "Please choose a plan on the pricing page first."
     }
   },
   "recommend": {

@@ -4,9 +4,9 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Positive;
 
 public record CreateNovelRequest(
-    @NotBlank String title,
+    @NotBlank(message = "{validation.content.title_required}") String title,
     String description,
     String genre,
     String style,
-    @Positive Integer targetChapterWords
+    @Positive(message = "{validation.content.target_words_positive}") Integer targetChapterWords
 ) {}

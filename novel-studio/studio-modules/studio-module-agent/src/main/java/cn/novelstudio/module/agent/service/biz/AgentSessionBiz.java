@@ -4,15 +4,18 @@ import cn.novelstudio.kernel.biz.BaseBiz;
 import cn.novelstudio.module.agent.dto.agent.SessionTitleRequest;
 import cn.novelstudio.module.agent.dto.agent.SessionTitleResponse;
 import cn.novelstudio.module.agent.service.PythonSessionTitleClient;
+import cn.novelstudio.platform.i18n.StudioMessages;
 import org.springframework.stereotype.Component;
 
 @Component
 public class AgentSessionBiz extends BaseBiz {
 
     private final PythonSessionTitleClient titleClient;
+    private final StudioMessages messages;
 
-    public AgentSessionBiz(PythonSessionTitleClient titleClient) {
+    public AgentSessionBiz(PythonSessionTitleClient titleClient, StudioMessages messages) {
         this.titleClient = titleClient;
+        this.messages = messages;
     }
 
     public SessionTitleResponse generateTitle(SessionTitleRequest request) {
@@ -27,10 +30,10 @@ public class AgentSessionBiz extends BaseBiz {
         return new SessionTitleResponse(title);
     }
 
-    private static String fallbackTitle(String userMessage) {
+    private String fallbackTitle(String userMessage) {
         String clean = userMessage == null ? "" : userMessage.trim().replaceAll("\\s+", " ");
         if (clean.isBlank()) {
-            return "新对话";
+            return messages.get("content.session.default_title");
         }
         if (clean.length() > 18) {
             return clean.substring(0, 18) + "…";

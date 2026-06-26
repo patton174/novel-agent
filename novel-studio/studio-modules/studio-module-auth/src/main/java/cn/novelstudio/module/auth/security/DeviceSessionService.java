@@ -139,7 +139,7 @@ public class DeviceSessionService {
                 Duration.ofSeconds(sessionTtlSeconds)
             );
         } catch (JsonProcessingException ex) {
-            throw AuthExceptions.internalError("设备会话存储失败");
+            throw AuthExceptions.internalError("auth.device.session_store_failed");
         }
     }
 

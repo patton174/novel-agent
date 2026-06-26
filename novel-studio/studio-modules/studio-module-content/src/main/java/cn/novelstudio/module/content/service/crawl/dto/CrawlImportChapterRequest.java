@@ -4,8 +4,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 public record CrawlImportChapterRequest(
-    @NotBlank String title,
+    @NotBlank(message = "{validation.content.title_required}") String title,
     String content,
-    @NotNull Integer sortOrder,
+    @NotNull(message = "{validation.crawl.sort_order_required}") Integer sortOrder,
     String sourceUrl
 ) {}

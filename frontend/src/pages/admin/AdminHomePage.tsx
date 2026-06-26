@@ -1,44 +1,29 @@
 import { useTranslation } from 'react-i18next'
-import { lazy, Suspense, useEffect, useState } from 'react'
-import { Bot, BookOpen, FileText, UserCheck, UserPlus, Users } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { ArrowRight, Bot, BookOpen, FileText, UserCheck, UserPlus, Users } from 'lucide-react'
 import {
   fetchContentStats,
   fetchPlatformStats,
-  fetchStatsTrends,
   type ContentStats,
   type PlatformStats,
-  type TrendPoint,
 } from '@/api/adminApi'
 import {
   fetchPlatformUsageOverview,
-  fetchPlatformUsageTrends,
   formatCostMicros,
   formatTokenQuota,
   type PlatformUsageOverview,
-  type PlatformUsageTrendPoint,
 } from '@/api/billingAdminApi'
 import { AppPageStack, AppShellCard, AppShellCardBody, AppShellCardHeader, AppStatCard } from '@/components/layout/AppPageStack'
 import { AdminQuickLinks } from '@/components/admin/AdminQuickLinks'
 import { Skeleton } from '@/components/ui/skeleton'
 import { appToast } from '@/stores/appToastStore'
 
-const AdminHomeOverviewCharts = lazy(() => import('./AdminHomeOverviewCharts'))
-
-const chartFallback = (
-  <div className="grid gap-6 xl:grid-cols-3" aria-hidden>
-    <Skeleton className="h-72 rounded-2xl" />
-    <Skeleton className="h-72 rounded-2xl" />
-    <Skeleton className="h-72 rounded-2xl" />
-  </div>
-)
-
 export default function AdminHomePage() {
   const { t } = useTranslation(['admin'])
   const [platform, setPlatform] = useState<PlatformStats | null>(null)
   const [content, setContent] = useState<ContentStats | null>(null)
   const [billing, setBilling] = useState<PlatformUsageOverview | null>(null)
-  const [registrationTrend, setRegistrationTrend] = useState<TrendPoint[] | null>(null)
-  const [usageTrend, setUsageTrend] = useState<PlatformUsageTrendPoint[] | null>(null)
   const [billingError, setBillingError] = useState<string | null>(null)
 
   const STAT_CARDS = [
@@ -112,23 +97,19 @@ export default function AdminHomePage() {
     void Promise.all([
       fetchPlatformStats(),
       fetchContentStats(),
-      fetchStatsTrends(30),
       fetchPlatformUsageOverview().catch((err: unknown) => {
         if (!cancelled) {
           setBillingError(err instanceof Error ? err.message : t('admin:home.billingLoadFail'))
         }
         return null
       }),
-      fetchPlatformUsageTrends(30).catch(() => [] as PlatformUsageTrendPoint[]),
     ])
-      .then(([platformStats, contentStats, trends, billingOverview, billingTrends]) => {
+      .then(([platformStats, contentStats, billingOverview]) => {
         if (cancelled) {
           return
         }
         setPlatform(platformStats)
         setContent(contentStats)
-        setRegistrationTrend(trends.registrationTrend)
-        setUsageTrend(billingTrends)
         setBilling(billingOverview)
       })
       .catch((err: unknown) => {
@@ -137,8 +118,6 @@ export default function AdminHomePage() {
         }
         setPlatform({ totalUsers: 0, todayRegistrations: 0, activeUsers: 0 })
         setContent({ totalNovels: 0, totalChapters: 0, totalAgentRuns: 0 })
-        setRegistrationTrend([])
-        setUsageTrend([])
         appToast.error(err instanceof Error ? err.message : t('admin:home.loadStatsFail'))
       })
 
@@ -148,7 +127,6 @@ export default function AdminHomePage() {
   }, [t])
 
   const loading = platform === null || content === null
-  const chartsLoading = registrationTrend === null || usageTrend === null
   const subsSummary = billing
     ? Object.entries(billing.activeSubscriptions)
         .map(([code, count]) => `${code}: ${count}`)
@@ -169,6 +147,15 @@ export default function AdminHomePage() {
           <AppShellCardHeader
             title={t('admin:home.snapshotTitle')}
             description={t('admin:home.snapshotDesc')}
+            action={
+              <Link
+                to="/admin/analytics"
+                className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+              >
+                {t('admin:home.openAnalytics')}
+                <ArrowRight className="size-3" />
+              </Link>
+            }
           />
         </AppShellCard>
         {STAT_CARDS.map((stat) => {
@@ -191,6 +178,15 @@ export default function AdminHomePage() {
         <AppShellCardHeader
           title={t('admin:home.billingTitle')}
           description={billingError ?? t('admin:home.billingDesc')}
+          action={
+            <Link
+              to="/admin/analytics?tab=revenue"
+              className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+            >
+              {t('admin:home.openRevenueAnalytics')}
+              <ArrowRight className="size-3" />
+            </Link>
+          }
         />
         <AppShellCardBody className="py-3">
           {loading ? (
@@ -223,26 +219,6 @@ export default function AdminHomePage() {
             <p className="py-4 text-center text-sm text-muted-foreground">
               {billingError ?? t('admin:home.billingEmpty')}
             </p>
-          )}
-        </AppShellCardBody>
-      </AppShellCard>
-
-      <AppShellCard>
-        <AppShellCardHeader
-          title={t('admin:home.chartsTitle')}
-          description={t('admin:home.chartsDesc')}
-        />
-        <AppShellCardBody className="py-4">
-          {chartsLoading ? (
-            chartFallback
-          ) : (
-            <Suspense fallback={chartFallback}>
-              <AdminHomeOverviewCharts
-                registrationTrend={registrationTrend ?? []}
-                usageTrend={usageTrend ?? []}
-                rangeLabel={t('admin:stats.last30Days')}
-              />
-            </Suspense>
           )}
         </AppShellCardBody>
       </AppShellCard>

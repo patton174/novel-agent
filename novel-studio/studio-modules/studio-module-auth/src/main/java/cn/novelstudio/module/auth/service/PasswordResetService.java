@@ -64,7 +64,7 @@ public class PasswordResetService {
 
         String cooldownProbeKey = SecurityRedisKeys.EMAIL_COOLDOWN_PREFIX + "reset-probe:" + normalized;
         if (Boolean.TRUE.equals(redisTemplate.hasKey(cooldownProbeKey))) {
-            throw new TooManyRequestsException(ResultCode.EMAIL_SEND_TOO_FREQUENT, "发送过于频繁，请稍后再试");
+            throw TooManyRequestsException.keyed(ResultCode.EMAIL_SEND_TOO_FREQUENT, "result.email.send_too_frequent");
         }
 
         humanVerificationService.consumeVerificationToken(captchaToken, normalized);
@@ -80,26 +80,26 @@ public class PasswordResetService {
 
     public void confirmPasswordReset(String token, String sig, long expEpochSec, String newPassword) {
         if (newPassword == null || newPassword.length() < 6) {
-            throw new ValidationException(ResultCode.BAD_REQUEST, "密码至少 6 位");
+            throw ValidationException.keyed(ResultCode.BAD_REQUEST, "validation.password.min_length");
         }
         if (token == null || token.isBlank()) {
-            throw new ValidationException(ResultCode.EMAIL_VERIFY_LINK_INVALID, "重置链接无效");
+            throw ValidationException.keyed(ResultCode.EMAIL_VERIFY_LINK_INVALID, "validation.reset_link.invalid");
         }
         if (sig == null || sig.isBlank()) {
-            throw new ValidationException(ResultCode.EMAIL_VERIFY_LINK_INVALID, "重置链接签名无效");
+            throw ValidationException.keyed(ResultCode.EMAIL_VERIFY_LINK_INVALID, "validation.reset_link.bad_sig");
         }
         if (expEpochSec <= 0 || Instant.now().getEpochSecond() > expEpochSec) {
-            throw new ValidationException(ResultCode.EMAIL_VERIFY_LINK_INVALID, "重置链接已过期");
+            throw ValidationException.keyed(ResultCode.EMAIL_VERIFY_LINK_INVALID, "validation.reset_link.expired");
         }
 
         String key = SecurityRedisKeys.PASSWORD_RESET_LINK_PREFIX + token.trim();
         String userIdRaw = redisTemplate.opsForValue().get(key);
         if (userIdRaw == null) {
-            throw new ValidationException(ResultCode.EMAIL_VERIFY_LINK_INVALID, "重置链接无效或已过期");
+            throw ValidationException.keyed(ResultCode.EMAIL_VERIFY_LINK_INVALID, "validation.reset_link.invalid_or_expired");
         }
         Long userId = Long.parseLong(userIdRaw);
         if (!EmailVerifyLinkCodec.verify(token.trim(), userId, expEpochSec, requireEmailLinkSecret(), sig)) {
-            throw new ValidationException(ResultCode.EMAIL_VERIFY_LINK_INVALID, "重置链接签名无效");
+            throw ValidationException.keyed(ResultCode.EMAIL_VERIFY_LINK_INVALID, "validation.reset_link.bad_sig");
         }
 
         AuthUser user = authUserRepository.findById(userId)
@@ -115,7 +115,7 @@ public class PasswordResetService {
 
         String cooldownKey = SecurityRedisKeys.EMAIL_COOLDOWN_PREFIX + "reset:" + userId;
         if (Boolean.TRUE.equals(redisTemplate.hasKey(cooldownKey))) {
-            throw new TooManyRequestsException(ResultCode.EMAIL_SEND_TOO_FREQUENT, "发送过于频繁，请稍后再试");
+            throw TooManyRequestsException.keyed(ResultCode.EMAIL_SEND_TOO_FREQUENT, "result.email.send_too_frequent");
         }
 
         String token = UUID.randomUUID().toString().replace("-", "");

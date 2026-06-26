@@ -7,14 +7,15 @@ const ADMIN_PASS = process.env.NOVEL_AGENT_E2E_ADMIN_PASSWORD
 const ADMIN_ROUTES = [
   '/admin',
   '/admin/users',
-  '/admin/stats',
-  '/admin/plans',
-  '/admin/revenue',
+  '/admin/analytics',
+  '/admin/billing/plans',
   '/admin/audit-log',
-  '/admin/site-content',
-  '/admin/settings',
-  '/admin/crawler',
-  '/admin/catalog',
+  '/admin/content/legal',
+  '/admin/content/announcements',
+  '/admin/billing/pricing',
+  '/admin/system/settings',
+  '/admin/content/crawler',
+  '/admin/content/catalog',
 ] as const
 
 function isAdminApi(url: string): boolean {
@@ -67,14 +68,14 @@ test.describe('admin CRM APIs', () => {
         waitUntil: 'domcontentloaded',
         timeout: 45_000,
       })
-      await page.waitForTimeout(route === '/admin/crawler' ? 5_000 : 2_500)
+      await page.waitForTimeout(route === '/admin/content/crawler' ? 5_000 : 2_500)
       expect(failures, `${route}:\n${failures.join('\n')}`).toEqual([])
     }
   })
 
   test('套餐更新后 GET 应返回最新数据', async ({ page }) => {
     await loginAsAdmin(page)
-    await page.goto(`${PROD_URL}/admin/plans`, { waitUntil: 'domcontentloaded', timeout: 45_000 })
+    await page.goto(`${PROD_URL}/admin/billing/plans`, { waitUntil: 'domcontentloaded', timeout: 45_000 })
     await page.waitForTimeout(2_000)
 
     const editBtn = page.getByRole('button', { name: /编辑|Edit/i }).first()
@@ -127,7 +128,7 @@ test.describe('admin CRM APIs', () => {
 
     await loginAsAdmin(page)
     adminApiCount = 0
-    await page.goto(`${PROD_URL}/admin/crawler`, { waitUntil: 'domcontentloaded', timeout: 45_000 })
+    await page.goto(`${PROD_URL}/admin/content/crawler`, { waitUntil: 'domcontentloaded', timeout: 45_000 })
     await page.waitForTimeout(5_000)
 
     expect(adminApiCount, `5s 内 ${adminApiCount} 次 CRM 请求`).toBeLessThanOrEqual(12)

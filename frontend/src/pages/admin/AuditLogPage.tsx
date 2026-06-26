@@ -1,11 +1,22 @@
 import { useTranslation } from 'react-i18next'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { fetchAuditLogs, type AuditLogItem } from '@/api/billingAdminApi'
-import { AdminField, AdminSelect, AdminTextInput } from '@/components/admin/AdminFormControls'
 import {
-  ResponsiveTable,
-  type ResponsiveTableColumn,
-} from '@/components/layout/ResponsiveTable'
+  AdminButtonOutline,
+  AdminField,
+  AdminSelect,
+  AdminTextInput,
+} from '@/components/admin/AdminFormControls'
+import { AdminResponsivePixelTable } from '@/components/admin/AdminResponsivePixelTable'
+import { AuditLogDetailModal } from '@/components/admin/AuditLogDetailModal'
+import {
+  PixelCellMono,
+  PixelCellStack,
+  PIXEL_MOBILE_CARD,
+  PixelTableActionButton,
+  type PixelColumn,
+} from '@/components/pixel'
+import { cn } from '@/lib/utils'
 import {
   AdminDataPage,
   AdminDataPanel,
@@ -13,9 +24,6 @@ import {
   AdminDataToolbar,
 } from '@/components/layout/AdminDataLayout'
 import { ProPagination } from '@/components/pro/ProPagination'
-import { AuditLogDetailModal } from '@/components/admin/AuditLogDetailModal'
-import { AdminButtonGhost, AdminButtonOutline } from '@/components/admin/AdminFormControls'
-import { Skeleton } from '@/components/ui/skeleton'
 import { useMarkRouteSeen } from '@/hooks/useMarkRouteSeen'
 import { appToast } from '@/stores/appToastStore'
 
@@ -75,50 +83,53 @@ export default function AuditLogPage() {
 
   const list = logs ?? []
   const initialLoading = loading && logs === null
-  const columns: ResponsiveTableColumn<AuditLogItem>[] = [
-    {
-      key: 'createdAt',
-      header: t('admin:auditLog.colTime'),
-      cellClassName: 'whitespace-nowrap text-sm text-muted-foreground',
-      renderCell: (log) => new Date(log.createdAt).toLocaleString('zh-CN'),
-    },
-    {
-      key: 'action',
-      header: t('admin:auditLog.colAction'),
-      cellClassName: 'font-mono text-sm',
-      renderCell: (log) => log.action,
-    },
-    {
-      key: 'actorId',
-      header: t('admin:auditLog.colActor'),
-      cellClassName: 'tabular-nums text-sm',
-      renderCell: (log) => log.actorId,
-    },
-    {
-      key: 'target',
-      header: t('admin:auditLog.colTarget'),
-      cellClassName: 'text-sm',
-      renderCell: (log) => (
-        <>
-          {log.targetType ?? '—'}
-          {log.targetId ? ` #${log.targetId}` : ''}
-        </>
-      ),
-    },
-    {
-      key: 'changes',
-      header: t('admin:auditLog.colChanges'),
-      cellClassName: 'max-w-xs',
-      renderCell: (log) =>
-        log.beforeJson || log.afterJson ? (
-          <AdminButtonGhost className="text-primary hover:text-primary" onClick={() => setDetailLog(log)}>
-            {t('admin:auditLog.viewJson')}
-          </AdminButtonGhost>
-        ) : (
-          <span className="text-sm text-muted-foreground">—</span>
+
+  const columns = useMemo((): PixelColumn<AuditLogItem>[] => {
+    return [
+      {
+        key: 'createdAt',
+        header: t('admin:auditLog.colTime'),
+        render: (log) => (
+          <PixelCellMono className="whitespace-nowrap text-muted-foreground">
+            {new Date(log.createdAt).toLocaleString('zh-CN')}
+          </PixelCellMono>
         ),
-    },
-  ]
+      },
+      {
+        key: 'action',
+        header: t('admin:auditLog.colAction'),
+        render: (log) => <PixelCellMono>{log.action}</PixelCellMono>,
+      },
+      {
+        key: 'actorId',
+        header: t('admin:auditLog.colActor'),
+        className: 'tabular-nums',
+        render: (log) => log.actorId,
+      },
+      {
+        key: 'target',
+        header: t('admin:auditLog.colTarget'),
+        render: (log) => (
+          <PixelCellStack
+            title={log.targetType ?? '—'}
+            subtitle={log.targetId ? `#${log.targetId}` : undefined}
+          />
+        ),
+      },
+      {
+        key: 'changes',
+        header: t('admin:auditLog.colChanges'),
+        render: (log) =>
+          log.beforeJson || log.afterJson ? (
+            <PixelTableActionButton onClick={() => setDetailLog(log)}>
+              {t('admin:auditLog.viewJson')}
+            </PixelTableActionButton>
+          ) : (
+            <span className="font-mono text-xs text-muted-foreground">—</span>
+          ),
+      },
+    ]
+  }, [t])
 
   return (
     <AdminDataPage>
@@ -155,25 +166,20 @@ export default function AuditLogPage() {
           </AdminField>
         </AdminDataToolbar>
 
-        <ResponsiveTable
+        <AdminResponsivePixelTable
           columns={columns}
-          rows={list}
-          loading={initialLoading}
-          loadingRowCount={8}
-          loadingCardCount={4}
-          getRowKey={(log) => log.id}
-          wrapDesktopInCard={false}
-          tableClassName="min-w-[720px] text-sm"
-          tableHeaderClassName="bg-muted/40 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground"
-          tableBodyClassName="divide-y divide-border"
-          desktopSkeletonClassName="h-4 w-full max-w-28"
-          renderDesktopContainer={(content) => content}
+          data={list}
+          rowKey="id"
+          loading={loading && !initialLoading}
+          initialLoading={initialLoading}
+          emptyText={t('admin:auditLog.empty')}
+          skeletonRows={8}
           renderMobileCard={(log) => (
-            <article className="rounded-xl border border-border bg-surface p-4 shadow-sm">
-              <p className="text-xs text-muted-foreground">
+            <article className={cn(PIXEL_MOBILE_CARD, 'p-4')}>
+              <PixelCellMono className="text-muted-foreground">
                 {new Date(log.createdAt).toLocaleString('zh-CN')}
-              </p>
-              <p className="mt-1 font-mono text-sm font-medium">{log.action}</p>
+              </PixelCellMono>
+              <p className="mt-1 font-mono text-sm font-bold">{log.action}</p>
               <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-sm">
                 <div>
                   <dt className="text-muted-foreground">{t('admin:auditLog.colActor')}</dt>
@@ -187,19 +193,13 @@ export default function AuditLogPage() {
                   </dd>
                 </div>
               </dl>
-              {(log.beforeJson || log.afterJson) && (
-                <AdminButtonOutline
-                  className="mt-3 w-full"
-                  onClick={() => setDetailLog(log)}
-                >
+              {log.beforeJson || log.afterJson ? (
+                <AdminButtonOutline className="mt-3 w-full" onClick={() => setDetailLog(log)}>
                   {t('admin:auditLog.viewDetails')}
                 </AdminButtonOutline>
-              )}
+              ) : null}
             </article>
           )}
-          renderLoadingMobileCard={(index) => <Skeleton key={index} className="h-28 w-full rounded-xl" />}
-          renderMobileEmpty={<p className="py-8 text-center text-sm text-muted-foreground">{t('admin:auditLog.empty')}</p>}
-          renderDesktopEmpty={<p className="py-10 text-center text-sm text-muted-foreground">{t('admin:auditLog.empty')}</p>}
         />
       </AdminDataPanel>
 

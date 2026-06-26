@@ -3,6 +3,8 @@ package cn.novelstudio.module.content.service.model;
 import cn.novelstudio.module.content.client.PythonModelTestClient;
 import cn.novelstudio.module.content.entity.AiModelCredentialEntity;
 import cn.novelstudio.module.content.entity.AiModelEntity;
+import cn.novelstudio.kernel.exception.NotFoundException;
+import cn.novelstudio.kernel.exception.ValidationException;
 import cn.novelstudio.module.content.entity.AiModelPlanAccessEntity;
 import cn.novelstudio.module.content.repository.AiModelPlanAccessRepository;
 import cn.novelstudio.module.content.repository.AiModelRepository;
@@ -41,7 +43,7 @@ public class AiModelService {
 
     @Transactional
     public AiModelDTO update(String id, AiModelUpsertReq req) {
-        AiModelEntity e = repo.findById(id).orElseThrow(() -> new IllegalArgumentException("模型不存在"));
+        AiModelEntity e = repo.findById(id).orElseThrow(() -> NotFoundException.keyed("model.not_found"));
         applyReq(e, req, false, true);
         return toDto(repo.save(e));
     }
@@ -127,14 +129,14 @@ public class AiModelService {
             }
         } else if (keyRequired && (e.getCredentialId() == null || e.getCredentialId().isBlank())
             && (e.getApiKeyEnc() == null || e.getApiKeyEnc().isBlank())) {
-            throw new IllegalArgumentException("apiKey 必填或选择已有连接");
+            throw ValidationException.keyed("model.api_key_or_connection_required");
         }
     }
 
     @Transactional
     public void delete(String id) {
         if (!repo.existsById(id)) {
-            throw new IllegalArgumentException("模型不存在");
+            throw NotFoundException.keyed("model.not_found");
         }
         repo.deleteById(id);
         planRepo.deleteByModelId(id);
@@ -153,13 +155,13 @@ public class AiModelService {
 
     @Transactional(readOnly = true)
     public AiModelDTO get(String id) {
-        return toDto(repo.findById(id).orElseThrow(() -> new IllegalArgumentException("模型不存在")));
+        return toDto(repo.findById(id).orElseThrow(() -> NotFoundException.keyed("model.not_found")));
     }
 
     @Transactional
     public void setPlans(String id, List<String> planCodes) {
         if (!repo.existsById(id)) {
-            throw new IllegalArgumentException("模型不存在");
+            throw NotFoundException.keyed("model.not_found");
         }
         planRepo.deleteByModelId(id);
         if (planCodes != null) {
@@ -174,7 +176,7 @@ public class AiModelService {
 
     @Transactional
     public void setDefault(String id) {
-        AiModelEntity target = repo.findById(id).orElseThrow(() -> new IllegalArgumentException("模型不存在"));
+        AiModelEntity target = repo.findById(id).orElseThrow(() -> NotFoundException.keyed("model.not_found"));
         repo.findFirstByModelTypeAndIsDefaultTrueAndActiveTrue(target.getModelType())
             .ifPresent(old -> {
                 old.setIsDefault(false);
@@ -194,16 +196,16 @@ public class AiModelService {
     @Transactional
     public void reorder(String type, List<String> ids) {
         if (type == null || type.isBlank()) {
-            throw new IllegalArgumentException("type 必填");
+            throw ValidationException.keyed("model.type_required");
         }
         if (ids == null || ids.isEmpty()) {
             return;
         }
         for (int i = 0; i < ids.size(); i++) {
             String id = ids.get(i);
-            AiModelEntity e = repo.findById(id).orElseThrow(() -> new IllegalArgumentException("模型不存在: " + id));
+            AiModelEntity e = repo.findById(id).orElseThrow(() -> NotFoundException.keyed("model.not_found"));
             if (!type.equals(e.getModelType())) {
-                throw new IllegalArgumentException("模型类型不匹配: " + id);
+                throw ValidationException.keyed("model.type_mismatch", id);
             }
             e.setSortOrder(i);
             repo.save(e);
@@ -212,11 +214,11 @@ public class AiModelService {
 
     @Transactional(readOnly = true)
     public AiModelEntity getEntity(String id) {
-        return repo.findById(id).orElseThrow(() -> new IllegalArgumentException("模型不存在"));
+        return repo.findById(id).orElseThrow(() -> NotFoundException.keyed("model.not_found"));
     }
 
     public Map<String, Object> testConnectivity(String id) {
-        AiModelEntity e = repo.findById(id).orElseThrow(() -> new IllegalArgumentException("模型不存在"));
+        AiModelEntity e = repo.findById(id).orElseThrow(() -> NotFoundException.keyed("model.not_found"));
         long start = System.currentTimeMillis();
         Map<String, Object> result = new HashMap<>();
         try {
@@ -224,7 +226,7 @@ public class AiModelService {
             result.putAll(remote);
         } catch (Exception ex) {
             result.put("ok", false);
-            result.put("error", ex.getMessage() != null ? ex.getMessage() : "连通检查失败");
+            result.put("error", ex.getMessage() != null ? ex.getMessage() : "model.connectivity_check_failed");
         }
         result.put("latencyMs", System.currentTimeMillis() - start);
         return result;

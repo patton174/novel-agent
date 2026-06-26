@@ -29,7 +29,7 @@ public final class ChapterReadStreamWriter {
         Integer nextOffset
     ) {}
 
-    public static void write(OutputStream out, SliceView view) throws IOException {
+    public static void write(OutputStream out, SliceView view, String readMoreFooter) throws IOException {
         Map<String, Object> meta = new LinkedHashMap<>();
         meta.put("type", "meta");
         meta.put("chapterId", view.chapter().id());
@@ -48,14 +48,8 @@ public final class ChapterReadStreamWriter {
             String delta = String.format("%6d\t%s%n", view.offsetOut() + i, view.sliceLines()[i]);
             writeLine(out, Map.of("type", "delta", "text", delta));
         }
-        if (view.hasMore() && view.nextOffset() != null) {
-            String footer = String.format(
-                "%n%n[章节共 %d 行，本次 %d 行；续读 offset=%d limit=…]",
-                view.totalLines(),
-                view.returnedLines(),
-                view.nextOffset()
-            );
-            writeLine(out, Map.of("type", "delta", "text", footer));
+        if (view.hasMore() && view.nextOffset() != null && readMoreFooter != null && !readMoreFooter.isBlank()) {
+            writeLine(out, Map.of("type", "delta", "text", readMoreFooter));
         }
         writeLine(out, Map.of("type", "done"));
     }

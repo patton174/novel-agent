@@ -156,3 +156,138 @@ export function resolveSkuStockCount(sku: Pick<IdrSkuItem, 'stock' | 'itemsNum'>
   if (sku.itemsNum != null) return sku.itemsNum
   return null
 }
+
+export interface IdrSkuCreatePayload {
+  name: string
+  status?: 'ONLINE' | 'OFFLINE'
+  quantity?: number
+}
+
+export interface IdrPricingCreatePayload {
+  status?: 'ONLINE' | 'OFFLINE'
+  scope?: 'global' | 'specific'
+  scopeItems?: string[]
+  policy?: 'fixed'
+  price: string
+}
+
+export interface IdrCouponCreatePayload {
+  status?: 'ONLINE' | 'OFFLINE'
+  scope?: 'global' | 'specific'
+  scopeItems?: string[]
+  policy: 'reduction' | 'discount' | 'fixed'
+  reduction?: number
+  fixed?: number
+  discount?: number
+  capped?: number
+}
+
+export async function createIdrSku(projectId: string, payload: IdrSkuCreatePayload): Promise<IdrSkuItem> {
+  const res = await secureFetch(`/api/billing/crm/idatariver/projects/${encodeURIComponent(projectId)}/skus`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!res.ok) {
+    throw new Error('创建商品失败')
+  }
+  return parseResponse<IdrSkuItem>(res)
+}
+
+export async function createIdrPricing(
+  projectId: string,
+  payload: IdrPricingCreatePayload,
+): Promise<IdrPricingItem> {
+  const res = await secureFetch(
+    `/api/billing/crm/idatariver/projects/${encodeURIComponent(projectId)}/pricings`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    },
+  )
+  if (!res.ok) {
+    throw new Error('创建定价失败')
+  }
+  return parseResponse<IdrPricingItem>(res)
+}
+
+export async function createIdrCoupon(
+  projectId: string,
+  payload: IdrCouponCreatePayload,
+): Promise<IdrCouponItem> {
+  const res = await secureFetch(
+    `/api/billing/crm/idatariver/projects/${encodeURIComponent(projectId)}/coupons`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    },
+  )
+  if (!res.ok) {
+    throw new Error('创建优惠券失败')
+  }
+  return parseResponse<IdrCouponItem>(res)
+}
+
+export interface IdrSkuUpdatePayload {
+  name?: string
+  status?: 'ONLINE' | 'OFFLINE'
+}
+
+export interface IdrPricingUpdatePayload {
+  status?: 'ONLINE' | 'OFFLINE'
+  price?: string
+}
+
+export interface IdrCouponUpdatePayload {
+  status: 'ONLINE' | 'OFFLINE'
+}
+
+export async function updateIdrSku(skuId: string, payload: IdrSkuUpdatePayload): Promise<IdrSkuItem> {
+  const res = await secureFetch(`/api/billing/crm/idatariver/skus/${encodeURIComponent(skuId)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!res.ok) {
+    throw new Error('更新商品失败')
+  }
+  return parseResponse<IdrSkuItem>(res)
+}
+
+export async function updateIdrPricing(
+  pricingId: string,
+  payload: IdrPricingUpdatePayload,
+): Promise<IdrPricingItem> {
+  const res = await secureFetch(
+    `/api/billing/crm/idatariver/pricings/${encodeURIComponent(pricingId)}`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    },
+  )
+  if (!res.ok) {
+    throw new Error('更新定价失败')
+  }
+  return parseResponse<IdrPricingItem>(res)
+}
+
+export async function updateIdrCoupon(
+  couponId: string,
+  payload: IdrCouponUpdatePayload,
+): Promise<IdrCouponItem> {
+  const res = await secureFetch(
+    `/api/billing/crm/idatariver/coupons/${encodeURIComponent(couponId)}`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    },
+  )
+  if (!res.ok) {
+    throw new Error('更新优惠券失败')
+  }
+  return parseResponse<IdrCouponItem>(res)
+}

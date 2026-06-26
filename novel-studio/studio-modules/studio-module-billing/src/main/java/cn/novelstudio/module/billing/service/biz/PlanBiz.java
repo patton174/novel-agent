@@ -1,13 +1,17 @@
 package cn.novelstudio.module.billing.service.biz;
 
+import cn.novelstudio.module.billing.config.IDataRiverProperties;
 import cn.novelstudio.module.billing.dto.PlanPublicResp;
 import cn.novelstudio.module.billing.entity.ProductPlanEntity;
 import cn.novelstudio.module.billing.repository.PlanFeatureRepository;
 import cn.novelstudio.module.billing.repository.ProductPlanRepository;
+import cn.novelstudio.module.billing.service.IDataRiverConfigService;
+import cn.novelstudio.module.billing.support.PlanPaymentSupport;
 import cn.novelstudio.kernel.base.Result;
 import cn.novelstudio.kernel.biz.BaseBiz;
 import cn.novelstudio.kernel.exception.NotFoundException;
 import cn.novelstudio.kernel.enums.ResultCode;
+import cn.novelstudio.platform.i18n.StudioMessages;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -19,6 +23,9 @@ public class PlanBiz extends BaseBiz {
 
     private final ProductPlanRepository productPlanRepository;
     private final PlanFeatureRepository planFeatureRepository;
+    private final StudioMessages messages;
+    private final IDataRiverConfigService configService;
+    private final IDataRiverProperties envProperties;
 
     public Result<List<PlanPublicResp>> listPublicPlans() {
         List<PlanPublicResp> plans = productPlanRepository.findByIsActiveTrueOrderBySortOrderAsc().stream()
@@ -29,19 +36,32 @@ public class PlanBiz extends BaseBiz {
 
     public ProductPlanEntity requireActivePlanByCode(String code) {
         return productPlanRepository.findByCodeAndIsActiveTrue(code)
-            .orElseThrow(() -> new NotFoundException(ResultCode.BILLING_PLAN_NOT_FOUND, "套餐不存在: " + code));
+            .orElseThrow(() -> NotFoundException.keyed(
+                ResultCode.BILLING_PLAN_NOT_FOUND,
+                "result.billing.plan_not_found_code",
+                code
+            ));
     }
 
     public ProductPlanEntity requirePlanById(long planId) {
         return productPlanRepository.findById(planId)
             .filter(ProductPlanEntity::getIsActive)
-            .orElseThrow(() -> new NotFoundException(ResultCode.BILLING_PLAN_NOT_FOUND, "套餐不存在"));
+            .orElseThrow(() -> NotFoundException.keyed(ResultCode.BILLING_PLAN_NOT_FOUND, "result.billing.plan_not_found"));
     }
 
     /** 订单履约等场景：允许已下架套餐（按下单快照 plan_id 升级）。 */
     public ProductPlanEntity requirePlanByIdForOrder(long planId) {
         return productPlanRepository.findById(planId)
-            .orElseThrow(() -> new NotFoundException(ResultCode.BILLING_PLAN_NOT_FOUND, "套餐不存在"));
+            .orElseThrow(() -> NotFoundException.keyed(ResultCode.BILLING_PLAN_NOT_FOUND, "result.billing.plan_not_found"));
+    }
+
+    public ProductPlanEntity requireActivePlanByIdrSkuId(String idrSkuId) {
+        return productPlanRepository.findFirstByIdrSkuIdAndIsActiveTrue(idrSkuId)
+            .orElseThrow(() -> NotFoundException.keyed(
+                ResultCode.BILLING_PLAN_NOT_FOUND,
+                "payment.webhook.plan_not_found_for_sku",
+                idrSkuId
+            ));
     }
 
     private PlanPublicResp toPublic(ProductPlanEntity plan) {
@@ -49,19 +69,21 @@ public class PlanBiz extends BaseBiz {
             .map(f -> featureLabel(f.getFeatureKey()))
             .toList();
         String priceLabel = plan.getPriceCents() == null
-            ? "定制"
-            : (plan.getPriceCents() == 0 ? "免费" : "¥" + (plan.getPriceCents() / 100));
-        String periodLabel = plan.getPriceCents() != null && plan.getPriceCents() > 0 ? "/月" : null;
+            ? messages.get("plan.price.custom")
+            : (plan.getPriceCents() == 0 ? messages.get("plan.price.free") : "¥" + (plan.getPriceCents() / 100));
+        String periodLabel = plan.getPriceCents() != null && plan.getPriceCents() > 0
+            ? messages.get("plan.price.per_month")
+            : null;
         String cta = switch (plan.getCode()) {
-            case "free", "hobby" -> "免费开始";
-            case "lite" -> "立即升级";
-            case "pro" -> "联系升级";
-            default -> "联系销售";
+            case "free", "hobby" -> messages.get("plan.cta.start_free");
+            case "lite" -> messages.get("plan.cta.upgrade");
+            case "pro" -> messages.get("plan.cta.contact_upgrade");
+            default -> messages.get("plan.cta.contact_sales");
         };
         return new PlanPublicResp(
             plan.getCode(),
-            plan.getName(),
-            plan.getDescription(),
+            planLabel(plan.getCode(), "name", plan.getName()),
+            planLabel(plan.getCode(), "desc", plan.getDescription()),
             plan.getPriceCents(),
             plan.getCurrency(),
             priceLabel,
@@ -70,20 +92,25 @@ public class PlanBiz extends BaseBiz {
             plan.getMonthlyRunQuota(),
             features,
             Boolean.TRUE.equals(plan.getIsFeatured()),
-            cta
+            cta,
+            paymentSkuId(plan)
         );
     }
 
-    private static String featureLabel(String key) {
-        return switch (key) {
-            case "basic_editor" -> "智能编辑器";
-            case "txt_export" -> "导出 TXT";
-            case "pdf_export" -> "导出 PDF / EPUB";
-            case "custom_model" -> "自定义 AI 模型";
-            case "priority_support" -> "优先技术支持";
-            case "team_collaboration" -> "团队协作";
-            case "custom_integrations" -> "定制集成";
-            default -> key;
-        };
+    private String paymentSkuId(ProductPlanEntity plan) {
+        if (!PlanPaymentSupport.isPaymentReady(plan, configService.effective(), envProperties)) {
+            return null;
+        }
+        String sku = PlanPaymentSupport.resolveSkuId(plan, envProperties);
+        return sku.isBlank() ? null : sku;
+    }
+
+    private String planLabel(String code, String field, String fallback) {
+        String key = "plan." + code + "." + field;
+        return messages.getOrDefault(key, fallback == null ? "" : fallback);
+    }
+
+    private String featureLabel(String key) {
+        return messages.getOrDefault("plan.feature." + key, key);
     }
 }

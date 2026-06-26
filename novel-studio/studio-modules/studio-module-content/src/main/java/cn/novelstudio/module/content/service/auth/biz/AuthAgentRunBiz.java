@@ -3,6 +3,8 @@ package cn.novelstudio.module.content.service.auth.biz;
 import cn.novelstudio.kernel.base.Result;
 import cn.novelstudio.kernel.biz.BaseBiz;
 import cn.novelstudio.kernel.enums.ResultCode;
+import cn.novelstudio.kernel.exception.ForbiddenException;
+import cn.novelstudio.kernel.exception.NotFoundException;
 import cn.novelstudio.module.content.dto.agent.AgentEventDTO;
 import cn.novelstudio.module.content.dto.agent.AgentRunDTO;
 import cn.novelstudio.module.content.service.agent.AgentRunService;
@@ -41,12 +43,20 @@ public class AuthAgentRunBiz extends BaseBiz {
     private AgentRunDTO requireRun(String runId) {
         AgentRunDTO run = agentRunService.getRun(runId);
         if (run == null) {
-            notFound(ResultCode.AGENT_RUN_NOT_FOUND, "运行记录不存在");
+            throw NotFoundException.keyed(
+                ResultCode.AGENT_RUN_NOT_FOUND,
+                "result.content.agent_run_not_found"
+            );
         }
         return run;
     }
 
     private void requireRunOwner(Long userId, AgentRunDTO run) {
-        requireOwner(userId, run.getUserId(), ResultCode.AGENT_RUN_FORBIDDEN, "无权访问该运行记录");
+        if (!java.util.Objects.equals(userId, run.getUserId())) {
+            throw ForbiddenException.keyed(
+                ResultCode.AGENT_RUN_FORBIDDEN,
+                "result.content.agent_run_forbidden"
+            );
+        }
     }
 }

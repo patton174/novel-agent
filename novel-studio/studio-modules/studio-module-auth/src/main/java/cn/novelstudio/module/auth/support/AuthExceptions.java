@@ -10,7 +10,7 @@ public final class AuthExceptions {
 
     private AuthExceptions() {}
 
-    public static BizException internalError(String message) {
-        return BizException.of(ResultCode.ERROR, message);
+    public static BizException internalError(String messageKey) {
+        return BizException.keyed(ResultCode.ERROR, messageKey);
     }
 }

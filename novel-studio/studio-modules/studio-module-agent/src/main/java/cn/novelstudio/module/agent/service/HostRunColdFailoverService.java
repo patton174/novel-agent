@@ -14,6 +14,7 @@ import cn.novelstudio.module.content.dto.agent.AgentCheckpointDTO;
 import cn.novelstudio.module.agent.client.ContentInternalClient;
 import cn.novelstudio.module.content.dto.agent.AgentRunDTO;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import cn.novelstudio.platform.i18n.ResultLocalizer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -50,6 +51,7 @@ public class HostRunColdFailoverService {
     private final Executor sideEffectExecutor;
     private final AgentRunMqPublisher runMqPublisher;
     private final AgentRuntimeProperties runtimeProperties;
+    private final ResultLocalizer resultLocalizer;
 
     public HostRunColdFailoverService(
         ContentInternalClient contentInternalClient,
@@ -65,7 +67,8 @@ public class HostRunColdFailoverService {
         HostRunResumeStreamService hostRunResumeStreamService,
         @Qualifier(AgentSideEffectExecutorConfig.BEAN_NAME) Executor sideEffectExecutor,
         AgentRunMqPublisher runMqPublisher,
-        AgentRuntimeProperties runtimeProperties
+        AgentRuntimeProperties runtimeProperties,
+        ResultLocalizer resultLocalizer
     ) {
         this.contentInternalClient = contentInternalClient;
         this.contextBuilder = contextBuilder;
@@ -81,6 +84,7 @@ public class HostRunColdFailoverService {
         this.sideEffectExecutor = sideEffectExecutor;
         this.runMqPublisher = runMqPublisher;
         this.runtimeProperties = runtimeProperties;
+        this.resultLocalizer = resultLocalizer;
     }
 
     public Flux<String> resumeWithDirectPython(
@@ -94,7 +98,7 @@ public class HostRunColdFailoverService {
         }
         AgentCheckpointDTO checkpoint = contentInternalClient.getCheckpoint(runId);
         if (checkpoint == null || checkpoint.getTranscriptRef() == null || checkpoint.getTranscriptRef().isBlank()) {
-            throw new NotFoundException(ResultCode.NOT_FOUND, "缺少 checkpoint，无法冷恢复");
+            throw NotFoundException.keyed(ResultCode.NOT_FOUND, "agent.run.checkpoint_missing");
         }
         runProxyRegistry.claim(runId);
         AgentRunEventJournal.RunMeta meta = eventJournal.readMeta(runId);
@@ -154,7 +158,8 @@ public class HostRunColdFailoverService {
                     runClient,
                     objectMapper,
                     chapterSideEffectService,
-                    sideEffectExecutor
+                    sideEffectExecutor,
+                    resultLocalizer
                 );
                 runRegistry.register(coordinator);
                 HostModeEventFanout fanout = new HostModeEventFanout(

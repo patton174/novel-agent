@@ -24,17 +24,13 @@ public final class ChapterLineEditSupport {
         int end = lineEnd == null ? lineStart : lineEnd;
         int total = lines.length;
         if (lineStart < 1 || lineStart > total) {
-            throw ContentExceptions.badRequest(
-                String.format("lineStart out of range (1-%d)", total)
-            );
+            throw ContentExceptions.badRequest("content.chapter.line_start_out_of_range", total);
         }
         if (end < lineStart) {
-            throw ContentExceptions.badRequest("lineEnd must be >= lineStart");
+            throw ContentExceptions.badRequest("content.chapter.line_end_before_start");
         }
         if (end > total) {
-            throw ContentExceptions.badRequest(
-                String.format("lineEnd out of range (%d-%d)", lineStart, total)
-            );
+            throw ContentExceptions.badRequest("content.chapter.line_end_out_of_range", lineStart, total);
         }
         String[] replacement = splitContentLines(lineContent == null ? "" : lineContent);
         String[] merged = new String[lines.length - (end - lineStart + 1) + replacement.length];

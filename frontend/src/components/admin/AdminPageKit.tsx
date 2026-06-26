@@ -18,11 +18,16 @@ export {
 } from './AdminFormControls'
 
 export {
-  TableActionBar,
-  TableActionButton,
-  TableActionIconButton,
-  tableActionButtonClass,
-} from '@/components/shared/TableActions'
+  PixelTableActionBar as TableActionBar,
+  PixelTableActionButton as TableActionButton,
+  PixelTableActionIconButton as TableActionIconButton,
+  PixelTable,
+  pixelColumns,
+  type PixelColumn,
+  type PixelTableProps,
+} from '@/components/pixel'
+
+export { tableActionButtonClass } from '@/components/shared/TableActions'
 
 export {
   adminEmptyClass,
@@ -46,3 +51,8 @@ export {
 } from '@/components/layout/AdminDataLayout'
 
 export { AdminNativeSelect } from '@/components/layout/AdminNativeSelect'
+
+export {
+  AdminResponsivePixelTable,
+  type AdminResponsivePixelTableProps,
+} from './AdminResponsivePixelTable'

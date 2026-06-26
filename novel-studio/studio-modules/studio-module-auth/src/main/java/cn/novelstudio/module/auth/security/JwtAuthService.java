@@ -100,7 +100,7 @@ public class JwtAuthService {
     public AuthSessionBundle refresh(String refreshToken, AuthUser user, String fingerprint, java.util.Map<String, Object> envSnapshot) {
         RefreshRecord record = loadRefresh(refreshToken);
         if (record == null || user == null || !record.userId().equals(user.getId())) {
-            throw new UnauthorizedException(ResultCode.AUTH_TOKEN_EXPIRED, "登录已过期，请重新登录");
+            throw UnauthorizedException.keyed(ResultCode.AUTH_TOKEN_EXPIRED, "result.auth.token_expired");
         }
         redisTemplate.delete(REFRESH_PREFIX + refreshToken);
         deviceSessionService.revokeSession(record.sessionId());
@@ -124,14 +124,14 @@ public class JwtAuthService {
 
     public cn.novelstudio.platform.security.JwtPrincipal parseAccessPrincipal(String authorizationHeader) {
         if (authorizationHeader == null || authorizationHeader.isBlank()) {
-            throw new UnauthorizedException("未登录");
+            throw UnauthorizedException.keyed("result.framework.not_logged_in");
         }
         return jwtCodec.parseAccessToken(authorizationHeader.trim());
     }
 
     public Long parseAccessUserId(String authorizationHeader) {
         if (authorizationHeader == null || authorizationHeader.isBlank()) {
-            throw new UnauthorizedException("未登录");
+            throw UnauthorizedException.keyed("result.framework.not_logged_in");
         }
         return jwtCodec.parseAccessToken(authorizationHeader.trim()).userId();
     }
@@ -202,7 +202,7 @@ public class JwtAuthService {
                 Duration.ofSeconds(refreshTtlSeconds)
             );
         } catch (JsonProcessingException ex) {
-            throw AuthExceptions.internalError("刷新令牌存储失败");
+            throw AuthExceptions.internalError("auth.refresh_token_store_failed");
         }
     }
 

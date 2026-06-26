@@ -1,14 +1,20 @@
 import { Link } from 'react-router-dom'
+import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   formatOrderAmount,
   type AdminPlanDetail,
   type AdminPaymentOrder,
 } from '@/api/billingAdminApi'
+import { AdminButtonGhost, AdminStatusBadge } from '@/components/admin/AdminFormControls'
+import {
+  PixelBadge,
+  PixelCellMono,
+  PixelTable,
+  PixelTableActionButton,
+  type PixelColumn,
+} from '@/components/pixel'
 import { AppSheetModal } from '@/components/ui/AppSheetModal'
-import { TableActionButton } from '@/components/shared/TableActions'
-import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
 
 interface PlanDetailModalProps {
   detail: AdminPlanDetail | null
@@ -20,6 +26,59 @@ interface PlanDetailModalProps {
 export function PlanDetailModal({ detail, loading, onClose, onOpenOrder }: PlanDetailModalProps) {
   const { t } = useTranslation(['admin'])
   const plan = detail?.plan
+
+  const orderColumns = useMemo((): PixelColumn<AdminPaymentOrder>[] => {
+    return [
+      {
+        key: 'id',
+        header: 'ID',
+        render: (order) => <PixelCellMono>#{order.id}</PixelCellMono>,
+      },
+      {
+        key: 'idr',
+        header: t('admin:paymentOrders.colIdrOrder'),
+        render: (order) => (
+          <PixelCellMono className="max-w-[120px] truncate">{order.idrOrderId}</PixelCellMono>
+        ),
+      },
+      {
+        key: 'amount',
+        header: t('admin:paymentOrders.colAmount'),
+        render: (order) => (
+          <PixelCellMono>{formatOrderAmount(order.amountCents, order.currency)}</PixelCellMono>
+        ),
+      },
+      {
+        key: 'status',
+        header: t('admin:paymentOrders.colStatus'),
+        render: (order) => (
+          <AdminStatusBadge
+            tone={
+              order.status === 'DONE'
+                ? 'success'
+                : order.status === 'NEW'
+                  ? 'info'
+                  : order.status === 'REFUND'
+                    ? 'warning'
+                    : 'neutral'
+            }
+          >
+            {order.status}
+          </AdminStatusBadge>
+        ),
+      },
+      {
+        key: 'actions',
+        header: t('admin:paymentOrders.colActions'),
+        align: 'right',
+        render: (order) => (
+          <PixelTableActionButton onClick={() => onOpenOrder(order)}>
+            {t('admin:paymentOrders.viewDetail')}
+          </PixelTableActionButton>
+        ),
+      },
+    ]
+  }, [onOpenOrder, t])
 
   return (
     <AppSheetModal
@@ -36,17 +95,18 @@ export function PlanDetailModal({ detail, loading, onClose, onOpenOrder }: PlanD
         <p className="py-8 text-center text-muted-foreground">{t('admin:plans.loading')}</p>
       ) : plan ? (
         <>
-          <div className="flex flex-wrap gap-2">
-            <StatusPill active={plan.isActive} label={plan.isActive ? t('admin:plans.statusActive') : t('admin:plans.statusInactive')} />
+          <div className="flex flex-wrap gap-2 px-4">
+            <PixelBadge tone={plan.isActive ? 'success' : 'warning'}>
+              {plan.isActive ? t('admin:plans.statusActive') : t('admin:plans.statusInactive')}
+            </PixelBadge>
             {plan.priceCents != null && plan.priceCents > 0 ? (
-              <StatusPill
-                active={plan.paymentReady}
-                label={plan.paymentReady ? t('admin:plans.paymentReady') : t('admin:plans.paymentNotReady')}
-              />
+              <PixelBadge tone={plan.paymentReady ? 'success' : 'warning'}>
+                {plan.paymentReady ? t('admin:plans.paymentReady') : t('admin:plans.paymentNotReady')}
+              </PixelBadge>
             ) : null}
           </div>
 
-          <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <dl className="grid grid-cols-2 gap-3 px-4 sm:grid-cols-4">
             <Stat label={t('admin:plans.statsTotal')} value={plan.orderStats.total} />
             <Stat label={t('admin:plans.statsPending')} value={plan.orderStats.pending} />
             <Stat label={t('admin:plans.statsPaid')} value={plan.orderStats.paid} />
@@ -54,7 +114,7 @@ export function PlanDetailModal({ detail, loading, onClose, onOpenOrder }: PlanD
           </dl>
 
           {(plan.idrSkuId || plan.idrProjectId) && (
-            <div className="rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs">
+            <div className="mx-4 border-2 border-foreground/20 bg-muted/20 px-3 py-2 font-mono text-xs">
               {plan.idrProjectId ? (
                 <p>
                   <span className="text-muted-foreground">{t('admin:plans.formIdrProject')}:</span>{' '}
@@ -70,37 +130,23 @@ export function PlanDetailModal({ detail, loading, onClose, onOpenOrder }: PlanD
             </div>
           )}
 
-          <div className="flex flex-wrap gap-2">
-            <Button type="button" variant="outline" size="sm" asChild>
-              <Link to={`/admin/payment-orders?planId=${plan.id}`}>{t('admin:plans.viewOrders')}</Link>
-            </Button>
+          <div className="flex flex-wrap gap-2 px-4">
+            <AdminButtonGhost asChild>
+              <Link to={`/admin/billing/orders?planId=${plan.id}`}>{t('admin:plans.viewOrders')}</Link>
+            </AdminButtonGhost>
           </div>
 
-          <div>
-            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          <div className="px-2">
+            <p className="mb-2 px-2 font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
               {t('admin:plans.recentOrders')}
             </p>
-            {detail.recentOrders.length === 0 ? (
-              <p className="text-sm text-muted-foreground">{t('admin:plans.noOrders')}</p>
-            ) : (
-              <ul className="divide-y divide-border rounded-lg border border-border">
-                {detail.recentOrders.map((order) => (
-                  <li key={order.id} className="flex items-center justify-between gap-3 px-3 py-2">
-                    <div className="min-w-0">
-                      <p className="font-mono text-xs">#{order.id}</p>
-                      <p className="truncate text-xs text-muted-foreground">{order.idrOrderId}</p>
-                    </div>
-                    <div className="flex shrink-0 items-center gap-2">
-                      <span className="text-xs tabular-nums">{formatOrderAmount(order.amountCents, order.currency)}</span>
-                      <span className="font-mono text-[10px] uppercase">{order.status}</span>
-                      <TableActionButton onClick={() => onOpenOrder(order)}>
-                        {t('admin:paymentOrders.viewDetail')}
-                      </TableActionButton>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
+            <PixelTable
+              columns={orderColumns}
+              data={detail.recentOrders}
+              rowKey="id"
+              compact
+              emptyText={t('admin:plans.noOrders')}
+            />
           </div>
         </>
       ) : null}
@@ -110,22 +156,9 @@ export function PlanDetailModal({ detail, loading, onClose, onOpenOrder }: PlanD
 
 function Stat({ label, value }: { label: string; value: number }) {
   return (
-    <div>
-      <dt className="text-[11px] text-muted-foreground">{label}</dt>
+    <div className="border-2 border-foreground/15 bg-muted/10 px-3 py-2">
+      <dt className="font-mono text-[10px] uppercase text-muted-foreground">{label}</dt>
       <dd className="text-lg font-bold tabular-nums">{value}</dd>
     </div>
-  )
-}
-
-function StatusPill({ active, label }: { active: boolean; label: string }) {
-  return (
-    <span
-      className={cn(
-        'rounded-full px-2 py-0.5 font-mono text-[10px] font-bold uppercase',
-        active ? 'bg-emerald-100 text-emerald-900' : 'bg-amber-100 text-amber-900',
-      )}
-    >
-      {label}
-    </span>
   )
 }

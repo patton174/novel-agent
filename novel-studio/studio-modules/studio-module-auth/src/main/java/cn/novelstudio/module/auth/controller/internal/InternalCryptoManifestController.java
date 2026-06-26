@@ -38,7 +38,7 @@ public class InternalCryptoManifestController extends BaseController {
 
     @Data
     public static class PublishManifestRequest {
-        @NotNull
+        @NotNull(message = "{validation.crypto.manifest_required}")
         private CryptoManifestService.CryptoManifestView manifest;
         private long ttlSec = 86400L * 2;
     }

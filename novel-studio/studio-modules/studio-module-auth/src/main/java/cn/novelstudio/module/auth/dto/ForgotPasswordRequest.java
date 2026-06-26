@@ -7,10 +7,10 @@ import lombok.Data;
 @Data
 public class ForgotPasswordRequest {
 
-    @NotBlank
-    @Email
+    @NotBlank(message = "{validation.auth.email_required}")
+    @Email(message = "{validation.auth.email_invalid}")
     private String email;
 
-    @NotBlank(message = "请先完成滑块验证")
+    @NotBlank(message = "{validation.auth.captcha_required}")
     private String captchaToken;
 }

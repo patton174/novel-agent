@@ -6,6 +6,7 @@ import cn.novelstudio.module.content.dto.ContentMessageDTO;
 import cn.novelstudio.module.content.dto.SessionDTO;
 import cn.novelstudio.module.content.dto.UpsertSessionRequest;
 import cn.novelstudio.module.content.service.auth.biz.AuthContentSessionBiz;
+import cn.novelstudio.platform.i18n.StudioMessages;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -18,9 +19,11 @@ public class AgentSessionMemoryService {
     private static final int DEFAULT_LIMIT = 24;
 
     private final AuthContentSessionBiz sessionBiz;
+    private final StudioMessages messages;
 
-    public AgentSessionMemoryService(AuthContentSessionBiz sessionBiz) {
+    public AgentSessionMemoryService(AuthContentSessionBiz sessionBiz, StudioMessages messages) {
         this.sessionBiz = sessionBiz;
+        this.messages = messages;
     }
 
     public List<HistoryTurn> loadHistory(Long userId, String sessionId, int limit) {
@@ -53,18 +56,18 @@ public class AgentSessionMemoryService {
 
     public String getSessionTitle(Long userId, String sessionId) {
         if (userId == null || userId <= 0 || sessionId == null || sessionId.isBlank()) {
-            return "新对话";
+            return defaultSessionTitle();
         }
         try {
             Result<SessionDTO> result = sessionBiz.get(String.valueOf(userId), sessionId);
             SessionDTO session = result == null ? null : result.data();
             if (session == null || session.title() == null) {
-                return "新对话";
+                return defaultSessionTitle();
             }
             String title = session.title().trim();
-            return title.isBlank() ? "新对话" : title;
+            return title.isBlank() ? defaultSessionTitle() : title;
         } catch (Exception ex) {
-            return "新对话";
+            return defaultSessionTitle();
         }
     }
 
@@ -113,9 +116,13 @@ public class AgentSessionMemoryService {
         // 迁移到 content + MQ 异步持久化后，此方法保留以兼容旧调用，不再直接写 Redis。
     }
 
+    private String defaultSessionTitle() {
+        return messages.get("content.session.default_title");
+    }
+
     private String inferTitle(String content) {
         if (content == null || content.isBlank()) {
-            return "新对话";
+            return defaultSessionTitle();
         }
         String clean = content.replaceAll("\\s+", " ").trim();
         return clean.length() > 18 ? clean.substring(0, 18) + "..." : clean;

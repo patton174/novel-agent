@@ -11,6 +11,6 @@ public final class MqExceptions {
     private MqExceptions() {}
 
     public static BizException sendFailed(String topicName) {
-        return BizException.of(ResultCode.ERROR, "发送 MQ 消息失败: " + topicName);
+        return BizException.keyed(ResultCode.ERROR, "messaging.send_failed", topicName);
     }
 }

@@ -4,10 +4,9 @@ import { useTranslation } from 'react-i18next'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
-import { ExternalLink, Link2, Package, RefreshCw, Save, Settings2, Zap } from 'lucide-react'
+import { ExternalLink, RefreshCw, Save, Zap } from 'lucide-react'
 
 import {
-
   fetchAdminPaymentSettings,
 
   fetchAdminPlans,
@@ -29,8 +28,8 @@ import {
 import { fetchIdrMerchantBasic, fetchIdrProjects, formatIdrProjectLabel, type IdrProjectItem } from '@/api/idrAdminApi'
 
 import { IdrCatalogPanel } from '@/components/admin/IdrCatalogPanel'
+import { AdminFoldSection } from '@/components/admin/AdminFoldSection'
 import {
-  AdminButton,
   AdminButtonGhost,
   AdminButtonIcon,
   AdminButtonOutline,
@@ -39,23 +38,19 @@ import {
   AdminNotice,
   AdminSelect,
   AdminSummaryBar,
-  AdminTabList,
-  AdminTabTrigger,
   AdminTextInput,
+  AdminButton,
 } from '@/components/admin/AdminFormControls'
 import {
-  adminTableCellClass,
-  adminTableClass,
-  adminTableHeadClass,
-} from '@/components/admin/adminUiTokens'
+  PixelBadge,
+  PixelCellStack,
+  PixelTable,
+  PixelTableActionButton,
+  type PixelColumn,
+} from '@/components/pixel'
 import { IdrProjectSkuPicker } from '@/components/admin/IdrProjectSkuPicker'
 
 import { AdminDataPage } from '@/components/layout/AdminDataLayout'
-import {
-  AppShellCard,
-  AppShellCardBody,
-  AppShellCardHeader,
-} from '@/components/layout/AppPageStack'
 
 import { Skeleton } from '@/components/ui/skeleton'
 
@@ -65,37 +60,26 @@ import { useMarkRouteSeen } from '@/hooks/useMarkRouteSeen'
 
 import { appToast } from '@/stores/appToastStore'
 
-import { cn } from '@/lib/utils'
 
-
-
-type TabId = 'setup' | 'catalog' | 'bind'
 
 type PlanBindingDraft = { projectId: string | null; skuId: string | null }
 
 
 
-const TABS: { id: TabId; icon: typeof Settings2 }[] = [
+export type PaymentProductsView = 'all' | 'platform' | 'catalog' | 'inventory' | 'bind'
 
-  { id: 'setup', icon: Settings2 },
-
-  { id: 'catalog', icon: Package },
-
-  { id: 'bind', icon: Link2 },
-
-]
-
-
-
-export default function PaymentProductsPage() {
+export default function PaymentProductsPage({ view = 'all' }: { view?: PaymentProductsView } = {}) {
 
   const { t } = useTranslation(['admin'])
 
   useMarkRouteSeen()
 
+  const showSummary = view === 'all' || view === 'platform' || view === 'catalog' || view === 'inventory'
+  const showSetup = view === 'all' || view === 'platform'
+  const showCatalog = view === 'all' || view === 'catalog' || view === 'inventory'
+  const showBind = view === 'all' || view === 'platform'
 
 
-  const [activeTab, setActiveTab] = useState<TabId>('setup')
 
   const [settings, setSettings] = useState<AdminPaymentSettings | null>(null)
 
@@ -413,182 +397,170 @@ export default function PaymentProductsPage() {
 
   const readyPlans = paidPlans.filter((p) => p.paymentReady).length
 
+  const bindColumns = useMemo((): PixelColumn<AdminPlan>[] => {
+    return [
+      {
+        key: 'name',
+        header: t('admin:products.colName'),
+        render: (plan) => (
+          <PixelCellStack title={plan.name} subtitle={`${plan.code} · ${formatPlanPrice(plan.priceCents)}`} />
+        ),
+      },
+      {
+        key: 'payReady',
+        header: t('admin:products.colPayReady'),
+        render: (plan) => (
+          <PixelBadge tone={plan.paymentReady ? 'success' : 'warning'}>
+            {plan.paymentReady ? t('admin:plans.paymentReady') : t('admin:plans.paymentNotReady')}
+          </PixelBadge>
+        ),
+      },
+      {
+        key: 'binding',
+        header: `${t('admin:products.pickProject')} / ${t('admin:products.pickSku')}`,
+        className: 'min-w-[280px]',
+        render: (plan) => {
+          const draft = planBindings[plan.id] ?? { projectId: null, skuId: null }
+          return (
+            <IdrProjectSkuPicker
+              autoLoad={canUseCatalog}
+              projectId={draft.projectId}
+              skuId={draft.skuId}
+              disabled={!canUseCatalog}
+              compact
+              onProjectChange={(pid) =>
+                setPlanBindings((prev) => ({
+                  ...prev,
+                  [plan.id]: { projectId: pid, skuId: null },
+                }))
+              }
+              onSkuChange={(sid) =>
+                setPlanBindings((prev) => ({
+                  ...prev,
+                  [plan.id]: { ...prev[plan.id], skuId: sid },
+                }))
+              }
+            />
+          )
+        },
+      },
+      {
+        key: 'actions',
+        header: t('admin:products.colActions'),
+        render: (plan) => (
+          <PixelTableActionButton
+            disabled={!canUseCatalog || bindingPlanId === plan.id}
+            onClick={() => void handleBindPlan(plan)}
+          >
+            {bindingPlanId === plan.id ? t('admin:products.binding') : t('admin:products.bindSave')}
+          </PixelTableActionButton>
+        ),
+      },
+    ]
+  }, [bindingPlanId, canUseCatalog, handleBindPlan, planBindings, t])
 
+  const catalogTitle =
+    view === 'inventory' ? t('admin:products.tab.inventory') : t('admin:products.tab.catalog')
+  const catalogDesc =
+    view === 'inventory' ? t('admin:products.inventoryDesc') : t('admin:products.catalogDesc')
 
   return (
-
     <AdminDataPage>
-
-      <AdminSummaryBar
-        actions={
-          <>
-            <AdminButtonGhost asChild>
-              <Link to="/admin/payment-orders?status=DONE">{t('admin:products.viewRedemptions')}</Link>
-            </AdminButtonGhost>
-            <AdminButtonIcon onClick={() => void load()} disabled={loading} aria-label={t('admin:products.catalogRefresh')}>
-              <RefreshCw className="size-4" />
-            </AdminButtonIcon>
-          </>
-        }
-      >
-        <span>
-          {t('admin:products.summaryGateway')}:{' '}
-          <strong className={settings?.configured ? 'text-emerald-700' : 'text-amber-700'}>
-            {settings?.configured ? t('admin:products.statusConfigured') : t('admin:products.statusNotConfigured')}
-          </strong>
-        </span>
-        <span>
-          {t('admin:products.summaryMerchant')}: <strong className="text-foreground">{merchantName ?? '—'}</strong>
-        </span>
-        <span>
-          {t('admin:products.summaryPlansReady')}:{' '}
-          <strong className="text-foreground tabular-nums">
-            {readyPlans}/{paidPlans.length}
-          </strong>
-        </span>
-      </AdminSummaryBar>
-
-      <AdminTabList
-        trailing={
-          <AdminButtonGhost asChild>
-            <Link to="/admin/payment-orders">{t('admin:products.viewOrders')}</Link>
-          </AdminButtonGhost>
-        }
-      >
-        {TABS.map(({ id, icon: Icon }) => (
-          <AdminTabTrigger key={id} active={activeTab === id} onClick={() => setActiveTab(id)}>
-            <Icon className="size-4" />
-            {t(`admin:products.tab.${id}`)}
-          </AdminTabTrigger>
-        ))}
-      </AdminTabList>
-
-
-
-      {activeTab === 'setup' ? (
-
-        <AppShellCard className="border-border shadow-none">
-
-          <AppShellCardHeader
-
-            className="px-4 py-3"
-
-            title={t('admin:products.gatewayTitle')}
-
-            description={t('admin:products.gatewayDesc')}
-
-            action={
-
-              settings?.docsUrl ? (
-
-                <a
-
-                  href={settings.docsUrl}
-
-                  target="_blank"
-
-                  rel="noreferrer"
-
-                  className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-
-                >
-
-                  {t('admin:products.docsLink')}
-
-                  <ExternalLink className="size-3" />
-
-                </a>
-
-              ) : null
-
-            }
-
-          />
-
-          <AppShellCardBody className="px-4 py-3">
-
-            {loading ? (
-
-              <Skeleton className="h-48 w-full rounded-lg" />
-
-            ) : (
-
-              <SetupForm
-
-                t={t}
-
-                enabled={enabled}
-
-                setEnabled={setEnabled}
-
-                merchantSecret={merchantSecret}
-
-                setMerchantSecret={setMerchantSecret}
-
-                baseUrl={baseUrl}
-
-                setBaseUrl={setBaseUrl}
-
-                publicBaseUrl={publicBaseUrl}
-
-                setPublicBaseUrl={setPublicBaseUrl}
-
-                defaultPayMethod={defaultPayMethod}
-
-                setDefaultPayMethod={setDefaultPayMethod}
-
-                locale={locale}
-
-                setLocale={setLocale}
-
-                settings={settings}
-
-                saving={saving}
-
-                testing={testing}
-
-                onSave={() => void handleSave()}
-
-                onTest={() => void handleTest()}
-
-              />
-
-            )}
-
-          </AppShellCardBody>
-
-        </AppShellCard>
-
+      {showSummary ? (
+        <AdminSummaryBar
+          actions={
+            <>
+              <AdminButtonGhost asChild>
+                <Link to="/admin/billing/orders?status=DONE">{t('admin:products.viewRedemptions')}</Link>
+              </AdminButtonGhost>
+              <AdminButtonIcon onClick={() => void load()} disabled={loading} aria-label={t('admin:products.catalogRefresh')}>
+                <RefreshCw className="size-4" />
+              </AdminButtonIcon>
+            </>
+          }
+        >
+          <span>
+            {t('admin:products.summaryGateway')}:{' '}
+            <strong className={settings?.configured ? 'text-emerald-700' : 'text-amber-700'}>
+              {settings?.configured ? t('admin:products.statusConfigured') : t('admin:products.statusNotConfigured')}
+            </strong>
+          </span>
+          <span>
+            {t('admin:products.summaryMerchant')}: <strong className="text-foreground">{merchantName ?? '—'}</strong>
+          </span>
+          <span>
+            {t('admin:products.summaryPlansReady')}:{' '}
+            <strong className="text-foreground tabular-nums">
+              {readyPlans}/{paidPlans.length}
+            </strong>
+          </span>
+        </AdminSummaryBar>
       ) : null}
 
-
-
-      {activeTab === 'catalog' ? (
-
-        <AppShellCard className="border-border shadow-none">
-
-          <AppShellCardHeader
-
-            className="px-4 py-3"
-
-            title={t('admin:products.catalogTitle')}
-
-            description={t('admin:products.catalogDescInventory')}
-
-          />
-
-          <AppShellCardBody className="space-y-3 px-4 py-3">
-
+      <div className="space-y-3">
+        {showSetup ? (
+          <AdminFoldSection
+            title={t('admin:products.tab.setup')}
+            description={t('admin:products.gatewayDesc')}
+            defaultOpen
+            action={
+              settings?.docsUrl ? (
+                <a
+                  href={settings.docsUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                >
+                  {t('admin:products.docsLink')}
+                  <ExternalLink className="size-3" />
+                </a>
+              ) : null
+            }
+          >
             {loading ? (
+              <Skeleton className="h-48 w-full rounded-lg" />
+            ) : (
+              <SetupForm
+                t={t}
+                enabled={enabled}
+                setEnabled={setEnabled}
+                merchantSecret={merchantSecret}
+                setMerchantSecret={setMerchantSecret}
+                baseUrl={baseUrl}
+                setBaseUrl={setBaseUrl}
+                publicBaseUrl={publicBaseUrl}
+                setPublicBaseUrl={setPublicBaseUrl}
+                defaultPayMethod={defaultPayMethod}
+                setDefaultPayMethod={setDefaultPayMethod}
+                locale={locale}
+                setLocale={setLocale}
+                settings={settings}
+                saving={saving}
+                testing={testing}
+                onSave={() => void handleSave()}
+                onTest={() => void handleTest()}
+              />
+            )}
+          </AdminFoldSection>
+        ) : null}
 
+        {showCatalog ? (
+          <AdminFoldSection
+            title={catalogTitle}
+            description={catalogDesc}
+            defaultOpen={canUseCatalog}
+            action={
+              <AdminButtonGhost asChild>
+                <Link to="/admin/billing/orders">{t('admin:products.viewOrders')}</Link>
+              </AdminButtonGhost>
+            }
+          >
+            {loading ? (
               <Skeleton className="h-32 w-full rounded-lg" />
-
             ) : canUseCatalog ? (
-
               <>
-
-                <div className="flex flex-wrap items-end gap-3">
-                  <AdminField label={t('admin:products.catalogPickProject')} className="min-w-[240px] sm:max-w-sm">
+                <div className="mb-2 flex flex-wrap items-end gap-2">
+                  <AdminField label={t('admin:products.catalogPickProject')} className="min-w-[200px] max-w-sm">
                     <AdminSelect
                       value={catalogProjectId ?? ''}
                       onChange={(e) => setCatalogProjectId(e.target.value || null)}
@@ -602,209 +574,35 @@ export default function PaymentProductsPage() {
                     </AdminSelect>
                   </AdminField>
                 </div>
-
-                <IdrCatalogPanel projectId={catalogProjectId} />
-
+                <IdrCatalogPanel
+                  projectId={catalogProjectId}
+                  view={view === 'catalog' ? 'products' : view === 'inventory' ? 'inventory' : 'all'}
+                />
               </>
-
             ) : (
-
               <AdminNotice>{t('admin:products.catalogNeedSecret')}</AdminNotice>
-
             )}
+          </AdminFoldSection>
+        ) : null}
 
-          </AppShellCardBody>
-
-        </AppShellCard>
-
-      ) : null}
-
-
-
-      {activeTab === 'bind' ? (
-
-        <AppShellCard className="border-border shadow-none">
-
-          <AppShellCardHeader
-
-            className="px-4 py-3"
-
-            title={t('admin:products.bindTitle')}
-
-            description={t('admin:products.bindDesc')}
-
-          />
-
-          <AppShellCardBody className="px-4 py-3">
-
+        {showBind ? (
+          <AdminFoldSection title={t('admin:products.tab.bind')} description={t('admin:products.bindDesc')}>
             {loading ? (
-
               <Skeleton className="h-32 w-full rounded-lg" />
-
             ) : paidPlans.length === 0 ? (
-
-              <p className="text-sm text-muted-foreground">{t('admin:products.noPaidPlans')}</p>
-
+              <p className="font-mono text-sm text-muted-foreground">{t('admin:products.noPaidPlans')}</p>
             ) : (
-
-              <div className="overflow-x-auto rounded-xl border border-border">
-
-                <table className={cn(adminTableClass, 'min-w-[720px]')}>
-
-                  <thead className="border-b border-border bg-muted/40 text-muted-foreground">
-
-                    <tr>
-
-                      <th className={adminTableHeadClass}>{t('admin:products.colName')}</th>
-
-                      <th className={adminTableHeadClass}>{t('admin:products.colPayReady')}</th>
-
-                      <th className={adminTableHeadClass} colSpan={2}>
-
-                        {t('admin:products.pickProject')} / {t('admin:products.pickSku')}
-
-                      </th>
-
-                      <th className={adminTableHeadClass}>{t('admin:products.colActions')}</th>
-
-                    </tr>
-
-                  </thead>
-
-                  <tbody className="divide-y divide-border">
-
-                    {paidPlans.map((plan) => {
-
-                      const draft = planBindings[plan.id] ?? { projectId: null, skuId: null }
-
-                      return (
-
-                        <tr key={plan.id} className="align-top hover:bg-muted/20">
-
-                          <td className={adminTableCellClass}>
-
-                            <p className="font-medium">{plan.name}</p>
-
-                            <p className="font-mono text-xs text-muted-foreground">
-
-                              {plan.code} · {formatPlanPrice(plan.priceCents)}
-
-                            </p>
-
-                          </td>
-
-                          <td className={adminTableCellClass}>
-
-                            <span
-
-                              className={cn(
-
-                                'inline-flex rounded-full px-2.5 py-0.5 font-mono text-xs font-semibold uppercase',
-
-                                plan.paymentReady
-
-                                  ? 'bg-emerald-100 text-emerald-900'
-
-                                  : 'bg-amber-100 text-amber-900',
-
-                              )}
-
-                            >
-
-                              {plan.paymentReady
-
-                                ? t('admin:plans.paymentReady')
-
-                                : t('admin:plans.paymentNotReady')}
-
-                            </span>
-
-                          </td>
-
-                          <td className={cn(adminTableCellClass, 'min-w-[280px]')} colSpan={2}>
-
-                            <IdrProjectSkuPicker
-
-                              autoLoad={canUseCatalog}
-
-                              projectId={draft.projectId}
-
-                              skuId={draft.skuId}
-
-                              disabled={!canUseCatalog}
-
-                              compact
-
-                              onProjectChange={(pid) =>
-
-                                setPlanBindings((prev) => ({
-
-                                  ...prev,
-
-                                  [plan.id]: { projectId: pid, skuId: null },
-
-                                }))
-
-                              }
-
-                              onSkuChange={(sid) =>
-
-                                setPlanBindings((prev) => ({
-
-                                  ...prev,
-
-                                  [plan.id]: { ...prev[plan.id], skuId: sid },
-
-                                }))
-
-                              }
-
-                            />
-
-                          </td>
-
-                          <td className={adminTableCellClass}>
-
-                            <AdminButton
-
-                              disabled={!canUseCatalog || bindingPlanId === plan.id}
-
-                              onClick={() => void handleBindPlan(plan)}
-
-                            >
-
-                              {bindingPlanId === plan.id
-
-                                ? t('admin:products.binding')
-
-                                : t('admin:products.bindSave')}
-
-                            </AdminButton>
-
-                          </td>
-
-                        </tr>
-
-                      )
-
-                    })}
-
-                  </tbody>
-
-                </table>
-
-              </div>
-
+              <PixelTable
+                columns={bindColumns}
+                data={paidPlans}
+                rowKey="id"
+                emptyText={t('admin:products.noPaidPlans')}
+              />
             )}
-
-          </AppShellCardBody>
-
-        </AppShellCard>
-
-      ) : null}
-
+          </AdminFoldSection>
+        ) : null}
+      </div>
     </AdminDataPage>
-
   )
 
 }
@@ -891,11 +689,11 @@ function SetupForm({
 
   return (
 
-    <div className="space-y-5">
+    <div className="space-y-3">
 
-      <label className="flex items-center justify-between gap-4 rounded-xl border border-border bg-muted/20 px-5 py-4">
+      <label className="flex items-center justify-between gap-3 rounded-lg border border-border bg-muted/15 px-3.5 py-2.5">
 
-        <span className="text-sm font-medium">{t('admin:products.fieldEnabled')}</span>
+        <span className="text-xs font-medium">{t('admin:products.fieldEnabled')}</span>
 
         <Switch checked={enabled} onCheckedChange={setEnabled} />
 
@@ -903,9 +701,9 @@ function SetupForm({
 
 
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2 lg:max-w-4xl">
 
-        <AdminField layout="form" label={t('admin:products.fieldMerchantSecret')}>
+        <AdminField layout="form" label={t('admin:products.fieldMerchantSecret')} className="sm:col-span-2">
 
           <AdminTextInput
 
@@ -941,7 +739,12 @@ function SetupForm({
 
         </AdminField>
 
-        <AdminField layout="form" label={t('admin:products.fieldWebhook')}>
+        <AdminField
+          layout="form"
+          label={t('admin:products.fieldWebhook')}
+          hint={t('admin:products.fieldWebhookHint')}
+          className="sm:col-span-2"
+        >
 
           <AdminTextInput value={settings?.webhookUrl ?? ''} readOnly className="font-mono text-xs" />
 
@@ -963,19 +766,19 @@ function SetupForm({
 
 
 
-      <AdminFormActions bordered={false} className="pt-2">
+      <AdminFormActions bordered={false} className="lg:max-w-4xl">
 
-        <AdminButton onClick={onSave} disabled={saving}>
+        <AdminButton size="sm" onClick={onSave} disabled={saving}>
 
-          <Save className="size-4" />
+          <Save className="size-3.5" />
 
           {saving ? t('admin:products.saving') : t('admin:products.save')}
 
         </AdminButton>
 
-        <AdminButtonOutline onClick={onTest} disabled={testing}>
+        <AdminButtonOutline size="sm" onClick={onTest} disabled={testing}>
 
-          <Zap className="size-4" />
+          <Zap className="size-3.5" />
 
           {testing ? t('admin:products.testing') : t('admin:products.test')}
 

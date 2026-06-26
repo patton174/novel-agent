@@ -13,41 +13,47 @@ public final class ContentExceptions {
     private ContentExceptions() {}
 
     public static NotFoundException novelNotFound() {
-        return new NotFoundException(ResultCode.NOVEL_NOT_FOUND, "小说不存在");
+        return keyedNotFound(ResultCode.NOVEL_NOT_FOUND);
     }
 
     public static NotFoundException chapterNotFound() {
-        return new NotFoundException(ResultCode.CHAPTER_NOT_FOUND, "章节不存在");
+        return keyedNotFound(ResultCode.CHAPTER_NOT_FOUND);
     }
 
     public static NotFoundException volumeNotFound() {
-        return new NotFoundException(ResultCode.VOLUME_NOT_FOUND, "卷不存在");
+        return keyedNotFound(ResultCode.VOLUME_NOT_FOUND);
     }
 
     public static NotFoundException versionNotFound() {
-        return new NotFoundException(ResultCode.CHAPTER_VERSION_NOT_FOUND, "版本不存在");
+        return keyedNotFound(ResultCode.CHAPTER_VERSION_NOT_FOUND);
     }
 
     public static NotFoundException agentRunNotFound() {
-        return new NotFoundException(ResultCode.AGENT_RUN_NOT_FOUND, "运行记录不存在");
+        return keyedNotFound(ResultCode.AGENT_RUN_NOT_FOUND);
     }
 
     public static ValidationException commandIdRequired() {
-        return new ValidationException(ResultCode.BAD_REQUEST, "commandId required");
+        return ValidationException.keyed("content.chapter.command_id_required");
     }
 
     public static ValidationException agentRunTransitionInvalid(AgentRunStatus from, AgentRunStatus to) {
-        return new ValidationException(
+        return ValidationException.keyed(
             ResultCode.AGENT_RUN_TRANSITION_INVALID,
-            "非法 Run 状态迁移: " + from + " -> " + to
+            ResultCode.AGENT_RUN_TRANSITION_INVALID.getMessageKey(),
+            from,
+            to
         );
     }
 
-    public static ValidationException badRequest(String message) {
-        return new ValidationException(message);
+    public static ValidationException badRequest(String messageKey, Object... args) {
+        return ValidationException.keyed(messageKey, args);
     }
 
-    public static ValidationException badRequest(ResultCode code, String message) {
-        return new ValidationException(code, message);
+    public static ValidationException badRequest(ResultCode code, String messageKey, Object... args) {
+        return ValidationException.keyed(code, messageKey, args);
+    }
+
+    private static NotFoundException keyedNotFound(ResultCode code) {
+        return NotFoundException.keyed(code, code.getMessageKey());
     }
 }

@@ -18,6 +18,7 @@ import cn.novelstudio.module.content.repository.CrawlJobRepository;
 import cn.novelstudio.module.content.repository.CrawlSiteRepository;
 import cn.novelstudio.module.content.service.catalog.CatalogService;
 import cn.novelstudio.module.content.service.crawl.dto.CatalogNovelDTO;
+import cn.novelstudio.platform.i18n.StudioMessages;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -48,10 +49,11 @@ public class CrawlJobService {
     private final IMessageProducer messageProducer;
     private final ObjectMapper objectMapper;
     private final CrawlJobLogService crawlJobLogService;
+    private final StudioMessages messages;
 
     public CrawlJobEntity getJob(String jobId) {
         return crawlJobRepository.findById(jobId)
-            .orElseThrow(() -> new NotFoundException(ResultCode.NOT_FOUND, "爬虫任务不存在"));
+            .orElseThrow(() -> NotFoundException.keyed("content.crawl.job_not_found"));
     }
 
     public Page<CrawlJobEntity> pageJobs(int pageCurrent, int pageSize) {
@@ -73,7 +75,7 @@ public class CrawlJobService {
         String configJson
     ) {
         if (sourceUrl == null || sourceUrl.isBlank()) {
-            throw new ValidationException(ResultCode.BAD_REQUEST, "sourceUrl 不能为空");
+            throw ValidationException.keyed(ResultCode.BAD_REQUEST, "content.crawl.source_url_required");
         }
         CrawlJobEntity entity = new CrawlJobEntity();
         entity.setSourceUrl(sourceUrl.trim());
@@ -88,7 +90,7 @@ public class CrawlJobService {
     public CrawlJobEntity startJob(String jobId) {
         CrawlJobEntity entity = getJob(jobId);
         if (!STARTABLE.contains(entity.getStatus())) {
-            throw new ValidationException(ResultCode.BAD_REQUEST, "当前状态不可启动: " + entity.getStatus());
+            throw ValidationException.keyed(ResultCode.BAD_REQUEST, "content.crawl.invalid_start_status", entity.getStatus());
         }
         entity.setStatus(CrawlJobStatus.RUNNING);
         entity.setErrorMessage(null);
@@ -105,7 +107,7 @@ public class CrawlJobService {
                 1
             )
         );
-        crawlJobLogService.append(saved.getId(), CrawlLogLevel.INFO, "任务已启动，正在派发至执行队列…");
+        crawlJobLogService.append(saved.getId(), CrawlLogLevel.INFO, "content.crawl.log.started");
         return saved;
     }
 
@@ -113,11 +115,11 @@ public class CrawlJobService {
     public CrawlJobEntity pauseJob(String jobId) {
         CrawlJobEntity entity = getJob(jobId);
         if (entity.getStatus() != CrawlJobStatus.RUNNING && entity.getStatus() != CrawlJobStatus.PENDING) {
-            throw new ValidationException(ResultCode.BAD_REQUEST, "当前状态不可暂停");
+            throw ValidationException.keyed(ResultCode.BAD_REQUEST, "content.crawl.invalid_pause_status");
         }
         entity.setStatus(CrawlJobStatus.PAUSED);
         CrawlJobEntity saved = crawlJobRepository.save(entity);
-        crawlJobLogService.append(saved.getId(), CrawlLogLevel.WARN, "任务已暂停");
+        crawlJobLogService.append(saved.getId(), CrawlLogLevel.WARN, "content.crawl.log.paused");
         return saved;
     }
 
@@ -127,7 +129,7 @@ public class CrawlJobService {
         entity.setStatus(CrawlJobStatus.CANCELLED);
         entity.setCompletedAt(Instant.now());
         CrawlJobEntity saved = crawlJobRepository.save(entity);
-        crawlJobLogService.append(saved.getId(), CrawlLogLevel.WARN, "任务已取消");
+        crawlJobLogService.append(saved.getId(), CrawlLogLevel.WARN, "content.crawl.log.cancelled");
         return saved;
     }
 
@@ -135,7 +137,7 @@ public class CrawlJobService {
     public void deleteJob(String jobId) {
         CrawlJobEntity entity = getJob(jobId);
         if (entity.getStatus() == CrawlJobStatus.RUNNING) {
-            throw new ValidationException(ResultCode.BAD_REQUEST, "运行中的任务请先取消");
+            throw ValidationException.keyed(ResultCode.BAD_REQUEST, "content.crawl.cancel_running_first");
         }
         crawlJobLogService.clear(jobId);
         crawlJobRepository.delete(entity);
@@ -176,7 +178,7 @@ public class CrawlJobService {
         try {
             entity.setConfigJson(objectMapper.writeValueAsString(config));
         } catch (JsonProcessingException ex) {
-            throw new ValidationException(ResultCode.BAD_REQUEST, "runtime 序列化失败");
+            throw ValidationException.keyed(ResultCode.BAD_REQUEST, "content.crawl.runtime_serialize_failed");
         }
         return crawlJobRepository.save(entity);
     }
@@ -212,15 +214,15 @@ public class CrawlJobService {
     ) {
         CrawlJobEntity job = getJob(jobId);
         if (job.getStatus() == CrawlJobStatus.CANCELLED || job.getStatus() == CrawlJobStatus.PAUSED) {
-            throw new ValidationException(ResultCode.BAD_REQUEST, "任务已停止");
+            throw ValidationException.keyed(ResultCode.BAD_REQUEST, "content.crawl.job_stopped");
         }
         String catalogNovelId = job.getCatalogNovelId();
         if (catalogNovelId == null || catalogNovelId.isBlank()) {
-            throw new ValidationException(ResultCode.BAD_REQUEST, "书库作品未初始化");
+            throw ValidationException.keyed(ResultCode.BAD_REQUEST, "content.crawl.catalog_not_init");
         }
         catalogService.addChapter(
             catalogNovelId,
-            title == null || title.isBlank() ? "第" + sortOrder + "章" : title.trim(),
+            title == null || title.isBlank() ? messages.get("content.chapter.default_title", sortOrder) : title.trim(),
             content,
             sortOrder,
             sourceUrl
@@ -233,10 +235,10 @@ public class CrawlJobService {
         CrawlJobEntity job = getJob(jobId);
         String catalogNovelId = job.getCatalogNovelId();
         if (catalogNovelId == null || catalogNovelId.isBlank()) {
-            throw new ValidationException(ResultCode.BAD_REQUEST, "书库作品未关联，无法更新封面");
+            throw ValidationException.keyed(ResultCode.BAD_REQUEST, "content.crawl.catalog_novel_missing");
         }
         if (coverUrl == null || coverUrl.isBlank()) {
-            throw new ValidationException(ResultCode.BAD_REQUEST, "coverUrl 不能为空");
+            throw ValidationException.keyed(ResultCode.BAD_REQUEST, "content.crawl.cover_url_required");
         }
         return catalogService.setCoverUrl(catalogNovelId, coverUrl.trim());
     }
@@ -273,7 +275,7 @@ public class CrawlJobService {
 
     public CrawlSiteEntity getSite(String siteId) {
         return crawlSiteRepository.findById(siteId)
-            .orElseThrow(() -> new NotFoundException(ResultCode.NOT_FOUND, "站点配置不存在"));
+            .orElseThrow(() -> NotFoundException.keyed("content.crawl.site_not_found"));
     }
 
     private String resolveConfigJson(String siteId, String overrideJson) {

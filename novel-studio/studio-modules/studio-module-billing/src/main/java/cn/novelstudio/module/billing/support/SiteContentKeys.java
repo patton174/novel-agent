@@ -13,7 +13,7 @@ public final class SiteContentKeys {
 
     public static void requireAllowed(String key) {
         if (key == null || !ALLOWED.contains(key.trim())) {
-            throw BizException.of(ResultCode.BAD_REQUEST, "不支持的内容 key: " + key);
+            throw BizException.keyed(ResultCode.BAD_REQUEST, "billing.site_content.unsupported_key", key);
         }
     }
 }

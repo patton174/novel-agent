@@ -6,14 +6,14 @@ export function AdminQuickLinks() {
   const { t } = useTranslation(['common'])
 
   const QUICK_LINKS = [
-    { to: '/admin/stats', label: t('common:nav.adminStats') },
+    { to: '/admin/analytics', label: t('common:nav.adminAnalytics') },
     { to: '/admin/users', label: t('common:nav.adminUsers') },
-    { to: '/admin/products', label: t('common:nav.adminProducts') },
-    { to: '/admin/plans', label: t('common:nav.adminPlans') },
-    { to: '/admin/payment-orders', label: t('common:nav.adminPaymentOrders') },
-    { to: '/admin/revenue', label: t('common:nav.adminRevenue') },
-    { to: '/admin/crawler', label: t('common:nav.adminCrawler') },
-    { to: '/admin/site-content', label: t('common:nav.adminSiteContent') },
+    { to: '/admin/billing/plans', label: t('common:nav.adminPlans') },
+    { to: '/admin/billing/payment', label: t('common:nav.adminBillingPayment') },
+    { to: '/admin/billing/orders', label: t('common:nav.adminBillingOrders') },
+    { to: '/admin/content/legal', label: t('common:nav.adminContentLegal') },
+    { to: '/admin/content/crawler', label: t('common:nav.adminCrawler') },
+    { to: '/admin/system/monitoring', label: t('common:nav.adminSystemMonitoring') },
   ] as const
 
   return (

@@ -9,6 +9,8 @@ import cn.novelstudio.module.content.repository.ChapterRepository;
 import cn.novelstudio.module.content.repository.NovelRepository;
 import cn.novelstudio.module.content.repository.VolumeRepository;
 import cn.novelstudio.module.content.support.ContentExceptions;
+import cn.novelstudio.module.content.support.ContentLegacyDefaults;
+import cn.novelstudio.platform.i18n.StudioMessages;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +24,7 @@ public class VolumeService {
     private final VolumeRepository volumeRepository;
     private final ChapterRepository chapterRepository;
     private final NovelRepository novelRepository;
+    private final StudioMessages messages;
 
     @Transactional
     public List<VolumeDTO> listVolumes(Long userId, String novelId) {
@@ -69,13 +72,13 @@ public class VolumeService {
         ensureDefaultVolume(novelId);
         List<VolumeEntity> existing = volumeRepository.findByNovelIdOrderBySortOrderAscCreatedAtAsc(novelId);
         if (volumeIds.size() != existing.size()) {
-            throw ContentExceptions.badRequest("卷列表不完整");
+            throw ContentExceptions.badRequest("content.volume.list_incomplete");
         }
         java.util.Set<String> expected = existing.stream()
             .map(VolumeEntity::getId)
             .collect(java.util.stream.Collectors.toSet());
         if (!expected.equals(new java.util.HashSet<>(volumeIds))) {
-            throw ContentExceptions.badRequest("卷 ID 不匹配");
+            throw ContentExceptions.badRequest("content.volume.ids_mismatch");
         }
         for (int i = 0; i < volumeIds.size(); i++) {
             VolumeEntity entity = volumeRepository.findByIdAndNovelId(volumeIds.get(i), novelId)
@@ -90,13 +93,13 @@ public class VolumeService {
     public void deleteVolume(Long userId, String volumeId) {
         VolumeEntity entity = findOwnedVolume(userId, volumeId);
         if (volumeRepository.countByNovelId(entity.getNovelId()) <= 1) {
-            throw ContentExceptions.badRequest("至少保留一卷");
+            throw ContentExceptions.badRequest("content.volume.keep_at_least_one");
         }
         VolumeEntity fallback = volumeRepository.findByNovelIdOrderBySortOrderAscCreatedAtAsc(entity.getNovelId())
             .stream()
             .filter(v -> !v.getId().equals(volumeId))
             .findFirst()
-            .orElseThrow(() -> ContentExceptions.badRequest("至少保留一卷"));
+            .orElseThrow(() -> ContentExceptions.badRequest("content.volume.keep_at_least_one"));
         for (ChapterEntity chapter : chapterRepository.findByVolumeIdOrderBySortOrderAscCreatedAtAsc(volumeId)) {
             chapter.setVolumeId(fallback.getId());
             chapterRepository.save(chapter);
@@ -111,7 +114,7 @@ public class VolumeService {
         if (volumes.isEmpty()) {
             VolumeEntity entity = new VolumeEntity();
             entity.setNovelId(novelId);
-            entity.setTitle("第一卷");
+            entity.setTitle(messages.get("content.volume.default_title"));
             entity.setSortOrder(1);
             defaultVolume = volumeRepository.save(entity);
         } else {
@@ -164,12 +167,19 @@ public class VolumeService {
         return new VolumeDTO(
             entity.getId(),
             entity.getNovelId(),
-            entity.getTitle(),
+            resolveVolumeTitle(entity.getTitle()),
             entity.getDescription(),
             entity.getSortOrder() == null ? 0 : entity.getSortOrder(),
             chapterCount,
             entity.getCreatedAt().toEpochMilli(),
             entity.getUpdatedAt().toEpochMilli()
         );
+    }
+
+    private String resolveVolumeTitle(String title) {
+        if (title == null || title.isBlank() || ContentLegacyDefaults.isBlankOrLegacyVolumeTitle(title)) {
+            return messages.get("content.volume.default_title");
+        }
+        return title;
     }
 }

@@ -59,7 +59,7 @@ public class EmailVerificationService {
 
         String cooldownKey = SecurityRedisKeys.EMAIL_COOLDOWN_PREFIX + normalized;
         if (Boolean.TRUE.equals(redisTemplate.hasKey(cooldownKey))) {
-            throw new TooManyRequestsException(ResultCode.EMAIL_SEND_TOO_FREQUENT, "发送过于频繁，请稍后再试");
+            throw TooManyRequestsException.keyed(ResultCode.EMAIL_SEND_TOO_FREQUENT, "result.email.send_too_frequent");
         }
 
         humanVerificationService.consumeVerificationToken(captchaToken, normalized);
@@ -83,16 +83,16 @@ public class EmailVerificationService {
     public void verifyRegisterCode(String email, String code) {
         String normalized = normalizeEmail(email);
         if (code == null || !code.matches("\\d{6}")) {
-            throw new ValidationException(ResultCode.EMAIL_CODE_INVALID, "验证码格式不正确");
+            throw ValidationException.keyed(ResultCode.EMAIL_CODE_INVALID, "validation.email_code.format");
         }
         String key = SecurityRedisKeys.EMAIL_CODE_PREFIX + normalized;
         String expected = redisTemplate.opsForValue().get(key);
         if (expected == null) {
-            throw new ValidationException(ResultCode.EMAIL_CODE_INVALID, "验证码已过期，请重新获取");
+            throw ValidationException.keyed(ResultCode.EMAIL_CODE_INVALID, "validation.email_code.expired");
         }
         rateLimitService.check("verify-email-code:" + normalized, normalized, 8, Duration.ofMinutes(10));
         if (!expected.equals(code.trim())) {
-            throw new ValidationException(ResultCode.EMAIL_CODE_INVALID, "验证码错误");
+            throw ValidationException.keyed(ResultCode.EMAIL_CODE_INVALID, "validation.email_code.wrong");
         }
         redisTemplate.delete(key);
     }
@@ -105,14 +105,14 @@ public class EmailVerificationService {
         }
         String email = normalizeEmail(user.getEmail());
         if (email.isBlank()) {
-            throw new ValidationException(ResultCode.BAD_REQUEST, "账户未绑定邮箱");
+            throw ValidationException.keyed(ResultCode.BAD_REQUEST, "validation.account.no_email");
         }
 
         assertSendEmailVerifyAllowed(userId, email);
 
         String cooldownKey = SecurityRedisKeys.EMAIL_COOLDOWN_PREFIX + "verify:" + userId;
         if (Boolean.TRUE.equals(redisTemplate.hasKey(cooldownKey))) {
-            throw new TooManyRequestsException(ResultCode.EMAIL_SEND_TOO_FREQUENT, "发送过于频繁，请稍后再试");
+            throw TooManyRequestsException.keyed(ResultCode.EMAIL_SEND_TOO_FREQUENT, "result.email.send_too_frequent");
         }
 
         String token = UUID.randomUUID().toString().replace("-", "");
@@ -146,23 +146,23 @@ public class EmailVerificationService {
 
     public void confirmAccountVerifyLink(String token, String sig, long expEpochSec) {
         if (token == null || token.isBlank()) {
-            throw new ValidationException(ResultCode.EMAIL_VERIFY_LINK_INVALID, "验证链接无效");
+            throw ValidationException.keyed(ResultCode.EMAIL_VERIFY_LINK_INVALID, "validation.email_link.invalid");
         }
         if (sig == null || sig.isBlank()) {
-            throw new ValidationException(ResultCode.EMAIL_VERIFY_LINK_INVALID, "验证链接签名无效");
+            throw ValidationException.keyed(ResultCode.EMAIL_VERIFY_LINK_INVALID, "validation.email_link.bad_sig");
         }
         if (expEpochSec <= 0 || Instant.now().getEpochSecond() > expEpochSec) {
-            throw new ValidationException(ResultCode.EMAIL_VERIFY_LINK_INVALID, "验证链接已过期");
+            throw ValidationException.keyed(ResultCode.EMAIL_VERIFY_LINK_INVALID, "validation.email_link.expired");
         }
 
         String key = SecurityRedisKeys.EMAIL_VERIFY_LINK_PREFIX + token.trim();
         String userIdRaw = redisTemplate.opsForValue().get(key);
         if (userIdRaw == null) {
-            throw new ValidationException(ResultCode.EMAIL_VERIFY_LINK_INVALID, "验证链接无效或已过期");
+            throw ValidationException.keyed(ResultCode.EMAIL_VERIFY_LINK_INVALID, "validation.email_link.invalid_or_expired");
         }
         Long userId = Long.parseLong(userIdRaw);
         if (!EmailVerifyLinkCodec.verify(token.trim(), userId, expEpochSec, requireEmailLinkSecret(), sig)) {
-            throw new ValidationException(ResultCode.EMAIL_VERIFY_LINK_INVALID, "验证链接签名无效");
+            throw ValidationException.keyed(ResultCode.EMAIL_VERIFY_LINK_INVALID, "validation.email_link.bad_sig");
         }
 
         AuthUser user = authUserRepository.findById(userId)
@@ -219,7 +219,7 @@ public class EmailVerificationService {
             redisTemplate.expire(dayKey, Duration.ofDays(1));
         }
         if (count != null && count > properties.getEmailDailyLimit()) {
-            throw new TooManyRequestsException(ResultCode.EMAIL_SEND_TOO_FREQUENT, "该邮箱今日发送次数已达上限");
+            throw TooManyRequestsException.keyed(ResultCode.EMAIL_SEND_TOO_FREQUENT, "validation.email.daily_limit");
         }
     }
 

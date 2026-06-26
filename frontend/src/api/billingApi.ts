@@ -14,6 +14,8 @@ export interface PlanPublic {
   features: string[]
   highlight: boolean
   cta: string
+  /** iDataRiver SKU，用于跳转独立站下单 */
+  idrSkuId?: string | null
 }
 
 export interface UsageCurrent {
@@ -142,6 +144,7 @@ export interface PayCheckoutResult {
   currency: string | null
   payments: PayMethodOption[]
   alipayHint: string | null
+  resumed?: boolean
 }
 
 export interface PayStartResult {
@@ -160,10 +163,20 @@ export interface PayOrderStatus {
   payUrl: string | null
 }
 
-export async function payCheckout(planCode: string): Promise<PayCheckoutResult> {
+export async function payCheckout(params: {
+  planCode?: string | null
+  orderId?: string | null
+}): Promise<PayCheckoutResult> {
+  const body: { planCode?: string; orderId?: string } = {}
+  if (params.planCode?.trim()) {
+    body.planCode = params.planCode.trim()
+  }
+  if (params.orderId?.trim()) {
+    body.orderId = params.orderId.trim()
+  }
   const res = await secureFetch('/api/billing/auth/pay/checkout', {
     method: 'POST',
-    body: JSON.stringify({ planCode }),
+    body: JSON.stringify(body),
   })
   if (!res.ok) {
     throw new Error(await readApiErrorMessage(res))

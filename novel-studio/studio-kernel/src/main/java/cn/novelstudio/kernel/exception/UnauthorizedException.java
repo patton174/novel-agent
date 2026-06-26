@@ -11,4 +11,16 @@ public class UnauthorizedException extends BizException {
     public UnauthorizedException(ResultCode resultCode, String message) {
         super(resultCode, message);
     }
+
+    protected UnauthorizedException(ResultCode resultCode, String messageKey, Object[] messageArgs) {
+        super(resultCode, messageKey, messageArgs, messageKey);
+    }
+
+    public static UnauthorizedException keyed(ResultCode resultCode, String messageKey, Object... messageArgs) {
+        return new UnauthorizedException(resultCode, messageKey, messageArgs);
+    }
+
+    public static UnauthorizedException keyed(String messageKey, Object... messageArgs) {
+        return new UnauthorizedException(ResultCode.UNAUTHORIZED, messageKey, messageArgs);
+    }
 }

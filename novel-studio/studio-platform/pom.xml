@@ -20,5 +20,9 @@
         <module>studio-platform-messaging</module>
         <module>studio-platform-mail</module>
         <module>studio-platform-media</module>
+        <module>studio-platform-idr</module>
+        <module>studio-platform-storage</module>
+        <module>studio-platform-scheduling</module>
+        <module>studio-platform-i18n</module>
     </modules>
 </project>

@@ -50,7 +50,7 @@ public class CryptoManifestService {
                 redisTemplate.opsForValue().set(SecurityRedisKeys.CRYPTO_MANIFEST_KEY, json);
             }
         } catch (Exception ex) {
-            throw BizException.of(ResultCode.ERROR, "publish crypto manifest failed");
+            throw BizException.keyed(ResultCode.ERROR, "auth.crypto.manifest_publish_failed");
         }
     }
 

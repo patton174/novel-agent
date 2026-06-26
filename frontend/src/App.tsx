@@ -24,6 +24,7 @@ const HomePage = lazy(() => import('./pages/HomePage'))
 const LoginPage = lazy(() => import('./pages/LoginPage'))
 const RegisterPage = lazy(() => import('./pages/RegisterPage'))
 const PricingPage = lazy(() => import('./pages/PricingPage'))
+const PayCheckoutPage = lazy(() => import('./pages/PayCheckoutPage'))
 const GuidePage = lazy(() => import('./pages/GuidePage'))
 const AboutPage = lazy(() => import('./pages/AboutPage'))
 const GenericContentPage = lazy(() => import('./pages/GenericContentPage'))
@@ -40,17 +41,30 @@ const VerifyEmailPage = lazy(() => import('./pages/VerifyEmailPage'))
 const ThinkRailFixturePage = lazy(() => import('./pages/dev/ThinkRailFixturePage'))
 const AdminHomePage = lazy(() => import('./pages/admin/AdminHomePage'))
 const UsersPage = lazy(() => import('./pages/admin/UsersPage'))
-const StatsPage = lazy(() => import('./pages/admin/StatsPage'))
 const CrawlerPage = lazy(() => import('./pages/admin/CrawlerPage'))
 const CatalogPage = lazy(() => import('./pages/admin/CatalogPage'))
 const PlansPage = lazy(() => import('./pages/admin/PlansPage'))
 const PaymentOrdersPage = lazy(() => import('./pages/admin/PaymentOrdersPage'))
 const PaymentProductsPage = lazy(() => import('./pages/admin/PaymentProductsPage'))
-const RevenuePage = lazy(() => import('./pages/admin/RevenuePage'))
-const SiteContentPage = lazy(() => import('./pages/admin/SiteContentPage'))
 const AuditLogPage = lazy(() => import('./pages/admin/AuditLogPage'))
 const SystemSettingsPage = lazy(() => import('./pages/admin/SystemSettingsPage'))
 const AdminModelsPage = lazy(() => import('./pages/admin/AdminModelsPage'))
+const AdminAnalyticsPage = lazy(() => import('./pages/admin/AdminAnalyticsPage'))
+const SystemMonitoringPage = lazy(() => import('./pages/admin/SystemMonitoringPage'))
+const AdminUserRolesPage = lazy(() => import('./pages/admin/UserRolesPage'))
+const AdminUserPermissionsPage = lazy(() => import('./pages/admin/UserPermissionsPage'))
+const AdminUserMembershipPage = lazy(() => import('./pages/admin/UserMembershipPage'))
+const AdminSystemJobsPage = lazy(() => import('./pages/admin/SystemJobsPage'))
+const AdminUploadOpsPage = lazy(() => import('./pages/admin/UploadOpsPage'))
+const AdminLegalContentPage = lazy(() =>
+  import('./pages/admin/AdminContentPages').then((m) => ({ default: m.AdminLegalContentPage })),
+)
+const AdminAnnouncementsContentPage = lazy(() =>
+  import('./pages/admin/AdminContentPages').then((m) => ({ default: m.AdminAnnouncementsContentPage })),
+)
+const AdminSitePagesContentPage = lazy(() =>
+  import('./pages/admin/AdminContentPages').then((m) => ({ default: m.AdminSitePagesContentPage })),
+)
 
 function isAppShellRoute(pathname: string): boolean {
   return (
@@ -69,6 +83,7 @@ function AppRouteTree() {
         <Route path="/" element={<HomePage />} />
         <Route path="/guide" element={<GuidePage />} />
         <Route path="/pricing" element={<PricingPage />} />
+        <Route path="/checkout" element={<PayCheckoutPage />} />
         <Route path="/about" element={<AboutPage />} />
         <Route path="/features" element={<Navigate to="/guide" replace />} />
         <Route path="/testimonials" element={<Navigate to="/about" replace />} />
@@ -110,18 +125,42 @@ function AppRouteTree() {
           }
         >
           <Route index element={<AdminHomePage />} />
+          <Route path="analytics" element={<AdminAnalyticsPage />} />
+          <Route path="billing/plans" element={<PlansPage />} />
+          <Route path="billing/payment" element={<PaymentProductsPage view="all" />} />
+          <Route path="billing/orders" element={<PaymentOrdersPage />} />
+          <Route path="billing/platform" element={<Navigate to="/admin/billing/payment" replace />} />
+          <Route path="billing/products" element={<Navigate to="/admin/billing/payment" replace />} />
+          <Route path="billing/inventory" element={<Navigate to="/admin/billing/payment" replace />} />
+          <Route path="billing/pricing" element={<Navigate to="/admin/billing/payment" replace />} />
+          <Route path="billing/coupons" element={<Navigate to="/admin/billing/payment" replace />} />
           <Route path="users" element={<UsersPage />} />
-          <Route path="plans" element={<PlansPage />} />
-          <Route path="products" element={<PaymentProductsPage />} />
-          <Route path="payment-orders" element={<PaymentOrdersPage />} />
-          <Route path="models" element={<AdminModelsPage />} />
-          <Route path="revenue" element={<RevenuePage />} />
-          <Route path="site-content" element={<SiteContentPage />} />
+          <Route path="users/roles" element={<AdminUserRolesPage />} />
+          <Route path="users/permissions" element={<AdminUserPermissionsPage />} />
+          <Route path="users/membership" element={<AdminUserMembershipPage />} />
+          <Route path="content/legal" element={<AdminLegalContentPage />} />
+          <Route path="content/announcements" element={<AdminAnnouncementsContentPage />} />
+          <Route path="content/pages" element={<AdminSitePagesContentPage />} />
+          <Route path="content/crawler" element={<CrawlerPage />} />
+          <Route path="content/catalog" element={<CatalogPage />} />
+          <Route path="content/uploads" element={<AdminUploadOpsPage />} />
+          <Route path="system/models" element={<AdminModelsPage />} />
+          <Route path="system/monitoring" element={<SystemMonitoringPage />} />
+          <Route path="system/jobs" element={<AdminSystemJobsPage />} />
+          <Route path="system/settings" element={<SystemSettingsPage />} />
           <Route path="audit-log" element={<AuditLogPage />} />
-          <Route path="system-settings" element={<SystemSettingsPage />} />
-          <Route path="stats" element={<StatsPage />} />
-          <Route path="crawler" element={<CrawlerPage />} />
-          <Route path="catalog" element={<CatalogPage />} />
+          {/* Legacy redirects */}
+          <Route path="stats" element={<Navigate to="/admin/analytics" replace />} />
+          <Route path="revenue" element={<Navigate to="/admin/analytics?tab=revenue" replace />} />
+          <Route path="products" element={<Navigate to="/admin/billing/payment" replace />} />
+          <Route path="plans" element={<Navigate to="/admin/billing/plans" replace />} />
+          <Route path="payment-orders" element={<Navigate to="/admin/billing/orders" replace />} />
+          <Route path="site-content" element={<Navigate to="/admin/content/legal" replace />} />
+          <Route path="content/site" element={<Navigate to="/admin/content/legal" replace />} />
+          <Route path="crawler" element={<Navigate to="/admin/content/crawler" replace />} />
+          <Route path="catalog" element={<Navigate to="/admin/content/catalog" replace />} />
+          <Route path="models" element={<Navigate to="/admin/system/models" replace />} />
+          <Route path="system-settings" element={<Navigate to="/admin/system/settings" replace />} />
         </Route>
       </Routes>
     </RouteErrorBoundary>

@@ -1,5 +1,6 @@
 package cn.novelstudio.module.agent.controller;
 
+import cn.novelstudio.platform.i18n.ResultLocalizer;
 import cn.novelstudio.module.agent.dto.agent.AgentStreamRequest;
 import cn.novelstudio.module.agent.service.biz.AgentStreamBiz;
 import cn.novelstudio.module.agent.support.AgentStreamSsePrelude;
@@ -29,9 +30,11 @@ import java.nio.charset.StandardCharsets;
 public class AgentStreamController {
 
     private final AgentStreamBiz biz;
+    private final ResultLocalizer resultLocalizer;
 
-    public AgentStreamController(AgentStreamBiz biz) {
+    public AgentStreamController(AgentStreamBiz biz, ResultLocalizer resultLocalizer) {
         this.biz = biz;
+        this.resultLocalizer = resultLocalizer;
     }
 
     @PostMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
@@ -93,7 +96,9 @@ public class AgentStreamController {
                 writeFrame(outputStream, AgentStreamSsePrelude.connectedFrame());
             }
             session.frames()
-                .onErrorResume(ex -> Flux.fromIterable(AgentStreamSupport.errorFrames(ex)))
+                .onErrorResume(ex -> Flux.fromIterable(
+                    AgentStreamSupport.errorFrames(AgentStreamSupport.resolveStreamError(ex, resultLocalizer))
+                ))
                 .doOnNext(frame -> writeFrame(outputStream, frame))
                 .blockLast();
         };

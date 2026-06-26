@@ -36,7 +36,7 @@ public class ChapterVersionService {
         ChapterVersionEntity version = versionRepository.findById(versionId)
             .orElseThrow(ContentExceptions::versionNotFound);
         if (!chapterId.equals(version.getChapterId())) {
-            throw ContentExceptions.badRequest("版本与章节不匹配");
+            throw ContentExceptions.badRequest("content.chapter.version_mismatch");
         }
         return version;
     }

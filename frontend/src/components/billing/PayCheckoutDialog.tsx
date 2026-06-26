@@ -18,7 +18,7 @@ export function PayCheckoutDialog({ open, planCode, onOpenChange }: PayCheckoutD
       title={t('dashboard:billing.payTitle')}
       description={t('dashboard:billing.payDesc')}
       size="form"
-      className="sm:max-w-lg"
+      className="sm:max-w-4xl"
     >
       <PayCheckoutPanel
         layout="embedded"

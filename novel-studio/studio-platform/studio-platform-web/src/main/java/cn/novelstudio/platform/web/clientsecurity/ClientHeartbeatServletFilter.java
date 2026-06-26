@@ -24,6 +24,7 @@ public class ClientHeartbeatServletFilter extends OncePerRequestFilter {
     private final ClientAuthSupport clientAuthSupport;
     private final DeviceSessionSupport deviceSessionSupport;
     private final ClientSecurityProperties properties;
+    private final ClientSecurityResponses securityResponses;
 
     @Override
     protected void doFilterInternal(
@@ -54,7 +55,7 @@ public class ClientHeartbeatServletFilter extends OncePerRequestFilter {
                     properties.enforceHeartbeat()
                 );
                 if (properties.enforceHeartbeat()) {
-                    ClientSecurityResponses.unauthorized(response, "HEARTBEAT_REQUIRED");
+                    securityResponses.unauthorized(response, "HEARTBEAT_REQUIRED");
                     return;
                 }
             }

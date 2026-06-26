@@ -38,7 +38,7 @@ public class HumanVerificationService {
 
         String normalizedEmail = normalizeEmail(email);
         if (normalizedEmail.isBlank()) {
-            throw new ValidationException(ResultCode.BAD_REQUEST, "邮箱不能为空");
+            throw ValidationException.keyed(ResultCode.BAD_REQUEST, "validation.email.required");
         }
 
         String token = UUID.randomUUID().toString().replace("-", "");
@@ -52,22 +52,22 @@ public class HumanVerificationService {
 
     public void consumeVerificationToken(String token, String email) {
         if (token == null || token.isBlank()) {
-            throw new ValidationException(ResultCode.CAPTCHA_INVALID, "请先完成人机验证");
+            throw ValidationException.keyed(ResultCode.CAPTCHA_INVALID, "validation.captcha.human_required");
         }
         String normalizedEmail = normalizeEmail(email);
         String key = SecurityRedisKeys.CAPTCHA_TOKEN_PREFIX + token;
         String bound = redisTemplate.opsForValue().getAndDelete(key);
         if (bound == null) {
-            throw new ValidationException(ResultCode.CAPTCHA_INVALID, "人机验证已失效，请重新验证");
+            throw ValidationException.keyed(ResultCode.CAPTCHA_INVALID, "validation.captcha.stale");
         }
         if (!bound.equals(CaptchaTokenBinding.hashEmail(normalizedEmail))) {
-            throw new ValidationException(ResultCode.CAPTCHA_INVALID, "人机验证与当前邮箱不匹配，请重新验证");
+            throw ValidationException.keyed(ResultCode.CAPTCHA_INVALID, "validation.captcha.email_mismatch");
         }
     }
 
     private static void assertHoneypotBlank(String honeypot) {
         if (honeypot != null && !honeypot.isBlank()) {
-            throw new ValidationException(ResultCode.CAPTCHA_INVALID, "验证失败");
+            throw ValidationException.keyed(ResultCode.CAPTCHA_INVALID, "validation.captcha.failed");
         }
     }
 

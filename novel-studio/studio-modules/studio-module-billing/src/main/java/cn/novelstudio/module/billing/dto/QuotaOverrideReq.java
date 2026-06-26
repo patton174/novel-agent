@@ -6,8 +6,8 @@ import jakarta.validation.constraints.NotNull;
 import java.time.Instant;
 
 public record QuotaOverrideReq(
-    @NotNull @Min(0) Long tokenBonus,
-    @NotNull @Min(0) Integer runBonus,
+    @NotNull(message = "{validation.billing.quota_bonus_required}") @Min(value = 0, message = "{validation.number.min_zero}") Long tokenBonus,
+    @NotNull(message = "{validation.billing.quota_bonus_required}") @Min(value = 0, message = "{validation.number.min_zero}") Integer runBonus,
     Instant expiresAt,
     String reason
 ) {

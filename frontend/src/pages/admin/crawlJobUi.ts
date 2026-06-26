@@ -39,6 +39,26 @@ export function crawlJobStatusClass(status: CrawlJobStatus): string {
   return STATUS_CLASS[status] ?? STATUS_CLASS.PENDING
 }
 
+export function crawlJobStatusTone(
+  status: CrawlJobStatus,
+): 'default' | 'success' | 'warning' | 'danger' | 'muted' | 'neon' {
+  switch (status) {
+    case 'COMPLETED':
+      return 'success'
+    case 'FAILED':
+      return 'danger'
+    case 'RUNNING':
+      return 'neon'
+    case 'PENDING':
+    case 'PAUSED':
+      return 'warning'
+    case 'CANCELLED':
+      return 'muted'
+    default:
+      return 'default'
+  }
+}
+
 export function crawlJobActions(status: CrawlJobStatus): CrawlJobAction[] {
   switch (status) {
     case 'PENDING':

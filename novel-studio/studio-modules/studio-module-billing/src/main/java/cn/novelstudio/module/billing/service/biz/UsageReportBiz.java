@@ -7,6 +7,7 @@ import cn.novelstudio.module.billing.entity.UsagePeriodSummaryEntity;
 import cn.novelstudio.module.billing.entity.UsagePeriodSummaryId;
 import cn.novelstudio.module.billing.repository.UsageEventRepository;
 import cn.novelstudio.module.billing.repository.UsagePeriodSummaryRepository;
+import cn.novelstudio.kernel.exception.ValidationException;
 import cn.novelstudio.module.billing.support.BillingPeriodSupport;
 import cn.novelstudio.module.billing.support.BillingRedisKeys;
 import cn.novelstudio.kernel.biz.BaseBiz;
@@ -32,7 +33,7 @@ public class UsageReportBiz extends BaseBiz {
     @Transactional
     public void persistReport(UsageReportRequest request) {
         if (request.userId() == null) {
-            badRequest("userId required");
+            throw ValidationException.keyed("billing.usage.user_id_required");
         }
         if (request.idempotencyKey() != null && !request.idempotencyKey().isBlank()) {
             if (usageEventRepository.existsByIdempotencyKey(request.idempotencyKey())) {

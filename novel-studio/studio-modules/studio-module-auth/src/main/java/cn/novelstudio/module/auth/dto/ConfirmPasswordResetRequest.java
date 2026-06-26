@@ -8,16 +8,16 @@ import lombok.Data;
 @Data
 public class ConfirmPasswordResetRequest {
 
-    @NotBlank
+    @NotBlank(message = "{validation.email_link.token_required}")
     private String token;
 
-    @NotBlank
+    @NotBlank(message = "{validation.email_link.sig_required}")
     private String sig;
 
-    @NotNull
+    @NotNull(message = "{validation.email_link.exp_required}")
     private Long exp;
 
-    @NotBlank
-    @Size(min = 6, max = 128)
+    @NotBlank(message = "{validation.password.new_required}")
+    @Size(min = 6, max = 128, message = "{validation.password.size_range}")
     private String newPassword;
 }

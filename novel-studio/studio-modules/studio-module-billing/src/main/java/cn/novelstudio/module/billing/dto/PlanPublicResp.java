@@ -14,6 +14,7 @@ public record PlanPublicResp(
     Integer monthlyRunQuota,
     List<String> features,
     boolean highlight,
-    String cta
+    String cta,
+    String idrSkuId
 ) {
 }

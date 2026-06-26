@@ -33,7 +33,7 @@ public final class SseEventCodec {
         try {
             return "event: agent-event\ndata: " + mapper.writeValueAsString(event) + "\n\n";
         } catch (Exception ex) {
-            throw PyaiExceptions.internalError("SSE 编码失败");
+            throw PyaiExceptions.internalError("agent.sse.encode_failed");
         }
     }
 

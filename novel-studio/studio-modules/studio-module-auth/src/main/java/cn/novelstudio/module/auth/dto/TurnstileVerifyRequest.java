@@ -7,11 +7,11 @@ import lombok.Data;
 @Data
 public class TurnstileVerifyRequest {
 
-    @NotBlank(message = "email 不能为空")
-    @Email(message = "邮箱格式不正确")
+    @NotBlank(message = "{validation.auth.email_field_required}")
+    @Email(message = "{validation.auth.email_invalid}")
     private String email;
 
-    @NotBlank(message = "turnstileToken 不能为空")
+    @NotBlank(message = "{validation.auth.turnstile_token_required}")
     private String turnstileToken;
 
     /** Honeypot：正常客户端留空。 */

@@ -124,7 +124,7 @@ public class ClientAuthSupport {
         if (isWsPath(path) && ticket != null && !ticket.isBlank()) {
             WsTicketRecord record = wsTicketSupport.consume(ticket);
             if (record == null) {
-                throw new AuthUnauthorizedException("无效或已过期的 WS ticket");
+                throw new AuthUnauthorizedException("auth.ws_ticket.invalid");
             }
             validateWsTicketBinding(request, record);
             return new JwtPrincipal(
@@ -142,13 +142,13 @@ public class ClientAuthSupport {
         if ("run".equalsIgnoreCase(record.purpose())) {
             String runId = request.getParameter("runId");
             if (record.resourceId() != null && runId != null && !record.resourceId().equals(runId)) {
-                throw new AuthUnauthorizedException("WS ticket 与 runId 不匹配");
+                throw new AuthUnauthorizedException("auth.ws_ticket.run_mismatch");
             }
         }
         if ("status".equalsIgnoreCase(record.purpose())) {
             String sessionId = request.getParameter("sessionId");
             if (record.resourceId() != null && sessionId != null && !record.resourceId().equals(sessionId)) {
-                throw new AuthUnauthorizedException("WS ticket 与 sessionId 不匹配");
+                throw new AuthUnauthorizedException("auth.ws_ticket.session_mismatch");
             }
         }
     }

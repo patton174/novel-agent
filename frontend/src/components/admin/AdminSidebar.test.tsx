@@ -20,17 +20,17 @@ describe('AdminSidebar', () => {
     expect(screen.getAllByText('概览').length).toBeGreaterThan(0)
     expect(screen.getAllByText('数据').length).toBeGreaterThan(0)
     expect(screen.getAllByText('计费').length).toBeGreaterThan(0)
-    expect(screen.getAllByText('运营').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('用户').length).toBeGreaterThan(0)
     expect(screen.getAllByText('内容').length).toBeGreaterThan(0)
     expect(screen.getAllByText('系统').length).toBeGreaterThan(0)
   })
 
-  it('renders all admin nav links', () => {
+  it('renders key admin nav links', () => {
     wrap()
-    expect(screen.getByRole('link', { name: '平台统计' })).toHaveAttribute('href', '/admin/stats')
+    expect(screen.getByRole('link', { name: '数据分析' })).toHaveAttribute('href', '/admin/analytics')
     expect(screen.getByRole('link', { name: '用户管理' })).toHaveAttribute('href', '/admin/users')
-    expect(screen.getByRole('link', { name: '核销记录' })).toHaveAttribute('href', '/admin/payment-orders')
-    expect(screen.getByRole('link', { name: '系统参数' })).toHaveAttribute('href', '/admin/system-settings')
+    expect(screen.getByRole('link', { name: '订单管理' })).toHaveAttribute('href', '/admin/billing/orders')
+    expect(screen.getByRole('link', { name: '系统参数' })).toHaveAttribute('href', '/admin/system/settings')
   })
 
   it('renders the back-to-user link in the footer', () => {

@@ -44,7 +44,7 @@ public class AuthUserInfoBiz extends BaseBiz {
 
     private AuthUser requireUser(Long userId) {
         return authUserRepository.findById(userId)
-            .orElseThrow(() -> new NotFoundException(ResultCode.AUTH_USER_NOT_FOUND, "用户不存在"));
+            .orElseThrow(() -> NotFoundException.keyed(ResultCode.AUTH_USER_NOT_FOUND, ResultCode.AUTH_USER_NOT_FOUND.getMessageKey()));
     }
 
     private AuthUserInfoResp toInfoResp(AuthUser user) {
@@ -60,13 +60,13 @@ public class AuthUserInfoBiz extends BaseBiz {
 
     private void validatePixelAvatar(PixelAvatarPrefsReq req) {
         if (req == null) {
-            throw new ValidationException("头像配置不能为空");
+            throw ValidationException.keyed("validation.avatar.seed_required");
         }
         if (req.style() == null || req.style().isBlank()) {
-            throw new ValidationException("头像风格不能为空");
+            throw ValidationException.keyed("validation.avatar.style_required");
         }
         if (req.presetId() == null || req.presetId().isBlank()) {
-            throw new ValidationException("头像配色不能为空");
+            throw ValidationException.keyed("validation.avatar.palette_required");
         }
     }
 }

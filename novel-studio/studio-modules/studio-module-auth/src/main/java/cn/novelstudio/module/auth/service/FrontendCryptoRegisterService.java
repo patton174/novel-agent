@@ -68,7 +68,7 @@ public class FrontendCryptoRegisterService {
                 Duration.ofSeconds(ttl)
             );
         } catch (JsonProcessingException ex) {
-            throw AuthExceptions.internalError("加密配置写入失败");
+            throw AuthExceptions.internalError("auth.crypto.register_failed");
         }
 
         log.info("frontend crypto registered kid={} version={} host={}", kid, version, hostLabel);

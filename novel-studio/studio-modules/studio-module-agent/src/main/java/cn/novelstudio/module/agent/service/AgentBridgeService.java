@@ -54,6 +54,8 @@ public class AgentBridgeService {
     private final RunProxyLiveHub runProxyLiveHub;
     private final QuotaGateService quotaGateService;
     private final AgentModelResolver modelResolver;
+    private final cn.novelstudio.platform.i18n.StudioMessages messages;
+    private final cn.novelstudio.platform.i18n.ResultLocalizer resultLocalizer;
 
     public AgentBridgeService(
         PythonAgentRunClient runClient,
@@ -73,7 +75,9 @@ public class AgentBridgeService {
         RunProxyRegistry runProxyRegistry,
         RunProxyLiveHub runProxyLiveHub,
         QuotaGateService quotaGateService,
-        AgentModelResolver modelResolver
+        AgentModelResolver modelResolver,
+        cn.novelstudio.platform.i18n.StudioMessages messages,
+        cn.novelstudio.platform.i18n.ResultLocalizer resultLocalizer
     ) {
         this.runClient = runClient;
         this.contextAssembler = contextAssembler;
@@ -92,6 +96,8 @@ public class AgentBridgeService {
         this.runProxyLiveHub = runProxyLiveHub;
         this.quotaGateService = quotaGateService;
         this.modelResolver = modelResolver;
+        this.messages = messages;
+        this.resultLocalizer = resultLocalizer;
     }
 
     public Flux<String> stream(Long userId, AgentStreamRequest request) {
@@ -156,7 +162,7 @@ public class AgentBridgeService {
                     bootstrapPgRun(userId, finalSessionId, runId, messageId, request.message(), mode);
                 }
                 coordinator = new AgentRunCoordinator(
-                    state, runClient, objectMapper, chapterSideEffectService, sideEffectExecutor
+                    state, runClient, objectMapper, chapterSideEffectService, sideEffectExecutor, resultLocalizer
                 );
                 runRegistry.register(coordinator);
                 eventJournal.beginRun(runId, userId, finalSessionId);
@@ -192,7 +198,7 @@ public class AgentBridgeService {
                         mode,
                         sanitizeAssistantText(assistantCollector.buildSanitized()),
                         "failed",
-                        "aborted by user"
+                        "agent.run.aborted_by_user"
                     );
                 } else {
                     persistTurn(
@@ -324,13 +330,13 @@ public class AgentBridgeService {
         HostModeEventFanout fanout = new HostModeEventFanout(
             eventJournal, statusHub, objectMapper, userId, sessionId, runId
         );
-        fanout.publishRecovering("连接中断，任务在后台继续；正在通过托管通道同步进度…");
+        fanout.publishRecovering(messages.get("agent.stream.recovering"));
     }
 
     private String sanitizeAssistantText(String raw) {
         String clean = AgentTextSanitizer.sanitizeAssistantVisibleText(raw);
         if (clean.isBlank()) {
-            return "我整理好了上下文，但本次没有生成可展示正文。请给我一句更明确的续写指令，我马上继续。";
+            return messages.get("agent.stream.empty_assistant");
         }
         return clean;
     }

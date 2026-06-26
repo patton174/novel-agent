@@ -6,16 +6,13 @@ import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
 
 @AutoConfiguration
 @ConditionalOnClass(MailtrapEmailSender.class)
 @EnableConfigurationProperties({MailtrapProperties.class, EmailBrandProperties.class})
+@ComponentScan(basePackages = "cn.novelstudio.platform.mail.template")
 public class MailAutoConfiguration {
-
-    @Bean
-    public EmailTemplateRenderer emailTemplateRenderer(EmailBrandProperties brandProperties) {
-        return new EmailTemplateRenderer(brandProperties);
-    }
 
     @Bean
     public MailtrapEmailSender mailtrapEmailSender(

@@ -2,6 +2,7 @@ package cn.novelstudio.module.content.service;
 
 import cn.novelstudio.module.content.dto.NovelDescriptionPromptRequest;
 import cn.novelstudio.module.content.dto.NovelDescriptionPromptResponse;
+import cn.novelstudio.platform.i18n.StudioMessages;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -19,13 +20,16 @@ public class NovelDescriptionClient {
 
     private final RestClient pythonRestClient;
     private final ObjectMapper objectMapper;
+    private final StudioMessages messages;
 
     public NovelDescriptionClient(
         RestClient pythonRestClient,
-        ObjectMapper objectMapper
+        ObjectMapper objectMapper,
+        StudioMessages messages
     ) {
         this.pythonRestClient = pythonRestClient;
         this.objectMapper = objectMapper;
+        this.messages = messages;
     }
 
     public NovelDescriptionPromptResponse suggestDescription(NovelDescriptionPromptRequest request) {
@@ -54,7 +58,7 @@ public class NovelDescriptionClient {
                 .retrieve()
                 .body(DescriptionBody.class);
             if (body != null) {
-                return body.toResponse();
+                return body.toResponse(this);
             }
         } catch (Exception ex) {
             log.warn("python-ai 建书草稿生成失败 title={}: {}", req.title(), ex.getMessage());
@@ -62,11 +66,11 @@ public class NovelDescriptionClient {
         return fallbackResponse(req);
     }
 
-    private static NovelDescriptionPromptResponse fallbackResponse(NovelDescriptionPromptRequest req) {
-        String title = blankOr(req.title(), "未命名作品");
-        String genre = blankOr(req.genre(), "玄幻");
-        String tags = blankOr(req.tags(), "爽文");
-        String style = blankOr(req.style(), "快节奏");
+    private NovelDescriptionPromptResponse fallbackResponse(NovelDescriptionPromptRequest req) {
+        String title = blankOr(req.title(), messages.get("content.novel.unnamed"));
+        String genre = blankOr(req.genre(), messages.get("content.novel.fallback.genre"));
+        String tags = blankOr(req.tags(), messages.get("content.novel.fallback.tags"));
+        String style = blankOr(req.style(), messages.get("content.novel.fallback.style"));
         String hook = nullToEmpty(req.hook());
         String protagonist = nullToEmpty(req.protagonist());
         String worldview = nullToEmpty(req.worldview());
@@ -74,8 +78,8 @@ public class NovelDescriptionClient {
             ? req.synopsis().trim()
             : (req.draft() != null && !req.draft().isBlank()
                 ? req.draft().trim()
-                : String.format(
-                    "《%s》是一部%s题材的%s长篇。主角在异变的世界中踏上成长之路，围绕核心冲突展开冒险。",
+                : messages.get(
+                    "content.novel.fallback.synopsis",
                     title,
                     genre,
                     tags.replace(" ", "·")
@@ -100,7 +104,7 @@ public class NovelDescriptionClient {
         );
     }
 
-    private static String assembleDescription(
+    String assembleDescription(
         String hook,
         String synopsis,
         String worldview,
@@ -109,24 +113,24 @@ public class NovelDescriptionClient {
     ) {
         StringBuilder sb = new StringBuilder();
         if (hook != null && !hook.isBlank()) {
-            sb.append("【一句话卖点】").append(hook.trim()).append("\n\n");
+            sb.append(messages.get("content.novel.desc.hook_label")).append(hook.trim()).append("\n\n");
         }
         if (synopsis != null && !synopsis.isBlank()) {
-            sb.append("【简介】\n").append(synopsis.trim()).append("\n\n");
+            sb.append(messages.get("content.novel.desc.synopsis_label")).append("\n").append(synopsis.trim()).append("\n\n");
         }
         if (worldview != null && !worldview.isBlank()) {
-            sb.append("【世界观】").append(worldview.trim()).append("\n\n");
+            sb.append(messages.get("content.novel.desc.worldview_label")).append(worldview.trim()).append("\n\n");
         }
         if (protagonist != null && !protagonist.isBlank()) {
-            sb.append("【主角】").append(protagonist.trim()).append("\n\n");
+            sb.append(messages.get("content.novel.desc.protagonist_label")).append(protagonist.trim()).append("\n\n");
         }
         if (sellingPoints != null && !sellingPoints.isBlank()) {
-            sb.append("【卖点】").append(sellingPoints.trim());
+            sb.append(messages.get("content.novel.desc.selling_points_label")).append(sellingPoints.trim());
         }
         return sb.toString().trim();
     }
 
-    private static String blankOr(String value, String fallback) {
+    String blankOr(String value, String fallback) {
         return value == null || value.isBlank() ? fallback : value.trim();
     }
 
@@ -148,18 +152,18 @@ public class NovelDescriptionClient {
         Integer target_chapter_words,
         String description
     ) {
-        NovelDescriptionPromptResponse toResponse() {
+        NovelDescriptionPromptResponse toResponse(NovelDescriptionClient client) {
             int words = target_chapter_words != null && target_chapter_words > 0
                 ? target_chapter_words
                 : 3000;
             String desc = description != null && !description.isBlank()
                 ? description.trim()
-                : assembleDescription(hook, synopsis, worldview, protagonist, selling_points);
+                : client.assembleDescription(hook, synopsis, worldview, protagonist, selling_points);
             return new NovelDescriptionPromptResponse(
-                blankOr(title, "未命名作品"),
-                blankOr(genre, "玄幻"),
-                blankOr(tags, "爽文"),
-                blankOr(style, "快节奏"),
+                client.blankOr(title, client.messages.get("content.novel.unnamed")),
+                client.blankOr(genre, client.messages.get("content.novel.fallback.genre")),
+                client.blankOr(tags, client.messages.get("content.novel.fallback.tags")),
+                client.blankOr(style, client.messages.get("content.novel.fallback.style")),
                 hook == null ? "" : hook.trim(),
                 protagonist == null ? "" : protagonist.trim(),
                 worldview == null ? "" : worldview.trim(),

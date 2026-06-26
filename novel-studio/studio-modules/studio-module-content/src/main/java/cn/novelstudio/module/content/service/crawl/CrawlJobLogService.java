@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import cn.novelstudio.module.content.crawl.CrawlLogLevel;
 import cn.novelstudio.module.content.service.crawl.dto.CrawlLogEntryDTO;
 import cn.novelstudio.module.content.service.crawl.dto.CrawlLogsResponse;
+import cn.novelstudio.platform.i18n.StudioMessages;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -27,6 +28,7 @@ public class CrawlJobLogService {
 
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
+    private final StudioMessages messages;
 
     public void append(String jobId, CrawlLogLevel level, String message) {
         if (jobId == null || jobId.isBlank() || message == null || message.isBlank()) {
@@ -64,7 +66,7 @@ public class CrawlJobLogService {
                 continue;
             }
             if (entry.seq() > afterSeq) {
-                logs.add(entry);
+                logs.add(localizeEntry(entry));
             }
             if (entry.seq() > maxSeq) {
                 maxSeq = entry.seq();
@@ -84,6 +86,14 @@ public class CrawlJobLogService {
     private long nextSeq(String jobId) {
         Long seq = redisTemplate.opsForValue().increment(seqKey(jobId));
         return seq == null ? 1L : seq;
+    }
+
+    private CrawlLogEntryDTO localizeEntry(CrawlLogEntryDTO entry) {
+        String message = entry.message();
+        if (message != null && message.matches("^[a-z][a-z0-9_.]*$")) {
+            message = messages.get(message);
+        }
+        return new CrawlLogEntryDTO(entry.seq(), entry.level(), message, entry.ts());
     }
 
     private CrawlLogEntryDTO parseEntry(String json) {

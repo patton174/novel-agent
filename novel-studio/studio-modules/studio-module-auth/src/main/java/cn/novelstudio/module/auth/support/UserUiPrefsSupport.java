@@ -71,7 +71,7 @@ public class UserUiPrefsSupport {
             root.set(KEY_PIXEL_AVATAR, avatar);
             return objectMapper.writeValueAsString(root);
         } catch (Exception e) {
-            throw new IllegalStateException("Failed to serialize ui prefs", e);
+            throw new IllegalStateException("auth.ui_prefs.serialize_failed", e);
         }
     }
 

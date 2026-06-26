@@ -38,7 +38,7 @@ public class NovelCoverService {
     public NovelDTO generateCover(Long userId, String novelId, String customPrompt) {
         billingFeatureClient.assertFeature(userId, "custom_model");
         if (!pythonImageClient.enabled()) {
-            throw BizException.of(ResultCode.IMAGE_GENERATION_FAILED, "图像生成服务未配置");
+            throw BizException.keyed(ResultCode.IMAGE_GENERATION_FAILED, "content.image.service_not_configured");
         }
         NovelEntity entity = novelRepository.findByIdAndUserId(novelId, userId)
             .orElseThrow(ContentExceptions::novelNotFound);

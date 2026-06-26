@@ -293,23 +293,20 @@ public class MemoryNodeService {
         String parentId = blankToNull(request.parentId());
         String title = request.title().trim();
         if (title.isBlank()) {
-            throw new ValidationException("title is required");
+            throw ValidationException.keyed("memory.title_required");
         }
 
         String scopeNorm;
         if (parentId != null) {
             MemoryNodeEntity parent = requireNode(userId, novelId, parentId);
             if (isNestedNode(parent)) {
-                throw new ValidationException(
-                    "Memory tree supports two levels only: scope root → content node; "
-                        + "parent_id must be the scope root's memory_id (depth 0)"
-                );
+                throw ValidationException.keyed("memory.two_level_only");
             }
             scopeNorm = parent.getScope();
         } else {
             scopeNorm = scopeFromRootTitle(title);
             if (repository.existsByUserIdAndNovelIdAndScopeAndParentIdIsNull(userId, novelId, scopeNorm)) {
-                throw new ValidationException("scope root already exists: " + scopeNorm);
+                throw ValidationException.keyed("memory.scope_root_exists", scopeNorm);
             }
         }
 
@@ -352,7 +349,7 @@ public class MemoryNodeService {
                 String newScope = scopeFromRootTitle(newTitle);
                 if (!newScope.equals(oldScope)) {
                     if (repository.existsByUserIdAndNovelIdAndScopeAndParentIdIsNull(userId, novelId, newScope)) {
-                        throw new ValidationException("scope root already exists: " + newScope);
+                        throw ValidationException.keyed("memory.scope_root_exists", newScope);
                     }
                     renameScope(userId, novelId, oldScope, newScope);
                     entity.setScope(newScope);
@@ -388,19 +385,17 @@ public class MemoryNodeService {
             String newParent = blankToNull(request.parentId().orElse(null));
             if (newParent != null) {
                 if (newParent.equals(memoryId)) {
-                    throw new ValidationException("parent_id cannot equal memory_id");
+                    throw ValidationException.keyed("memory.parent_self");
                 }
                 MemoryNodeEntity parent = requireNode(userId, novelId, newParent);
                 if (isNestedNode(parent)) {
-                    throw new ValidationException(
-                        "Memory tree supports two levels only: parent_id must be the scope root's memory_id"
-                    );
+                    throw ValidationException.keyed("memory.two_level_only");
                 }
                 if (!parent.getScope().equals(entity.getScope())) {
-                    throw new ValidationException("cannot move node across scope roots");
+                    throw ValidationException.keyed("memory.cross_scope_move");
                 }
             } else if (entity.getParentId() == null || entity.getParentId().isBlank()) {
-                throw new ValidationException("scope root cannot be moved to top level without parent");
+                throw ValidationException.keyed("memory.root_move_forbidden");
             }
             entity.setParentId(newParent);
             parentForSort = newParent;
@@ -422,7 +417,7 @@ public class MemoryNodeService {
         } else {
             long children = repository.countByUserIdAndNovelIdAndParentId(userId, novelId, memoryId);
             if (children > 0) {
-                throw new ValidationException("node has children; use cascade=true or delete children first");
+                throw ValidationException.keyed("memory.has_children");
             }
         }
         repository.delete(entity);
@@ -497,7 +492,7 @@ public class MemoryNodeService {
 
     private MemoryNodeEntity requireNode(Long userId, String novelId, String memoryId) {
         return repository.findByUserIdAndNovelIdAndId(userId, novelId, memoryId)
-            .orElseThrow(() -> new NotFoundException("memory node not found: " + memoryId));
+            .orElseThrow(() -> NotFoundException.keyed("memory.not_found", memoryId));
     }
 
     private MemoryNodeDTO toDto(MemoryNodeEntity row, Long userId, String novelId) {
@@ -581,10 +576,10 @@ public class MemoryNodeService {
     private static String normalizeScope(String scope) {
         String norm = (scope == null ? "" : scope.trim());
         if (norm.isEmpty()) {
-            throw new ValidationException("scope is required");
+            throw ValidationException.keyed("memory.scope_required");
         }
         if (norm.length() > MAX_SCOPE_LEN) {
-            throw new ValidationException("scope too long (max " + MAX_SCOPE_LEN + ")");
+            throw ValidationException.keyed("memory.scope_too_long", MAX_SCOPE_LEN);
         }
         return norm.toLowerCase(Locale.ROOT);
     }
@@ -592,7 +587,7 @@ public class MemoryNodeService {
     private static String normalizeKind(String kind) {
         String norm = (kind == null || kind.isBlank()) ? "both" : kind.trim().toLowerCase(Locale.ROOT);
         if (!VALID_KINDS.contains(norm)) {
-            throw new ValidationException("unsupported node_kind: " + kind);
+            throw ValidationException.keyed("memory.unsupported_kind", kind);
         }
         return norm;
     }

@@ -19,6 +19,10 @@
             <artifactId>studio-kernel</artifactId>
         </dependency>
         <dependency>
+            <groupId>cn.novelstudio</groupId>
+            <artifactId>studio-platform-i18n</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.mailtrap</groupId>
             <artifactId>mailtrap-java</artifactId>
         </dependency>

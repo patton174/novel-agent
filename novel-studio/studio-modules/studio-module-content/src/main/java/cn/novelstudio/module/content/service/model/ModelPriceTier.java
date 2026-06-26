@@ -1,5 +1,7 @@
 package cn.novelstudio.module.content.service.model;
 
+import cn.novelstudio.kernel.exception.ValidationException;
+
 import java.math.BigDecimal;
 
 /** 平台模型档位倍率：轻量 1–1.5、性能 1.5–2.5、极致 2.5–3 */
@@ -20,7 +22,7 @@ public final class ModelPriceTier {
         if (tierOf(multiplier) != null) {
             return;
         }
-        throw new IllegalArgumentException("价格倍率须为轻量(1–1.5)、性能(1.5–2.5)或极致(2.5–3)");
+        throw ValidationException.keyed("model.price_tier_invalid");
     }
 
     public static Tier tierOf(BigDecimal multiplier) {
@@ -64,6 +66,12 @@ public final class ModelPriceTier {
             || lower.contains("大纲")
             || lower.contains("世界观")
             || lower.contains("多章节")
+            || lower.contains("outline")
+            || lower.contains("worldbuilding")
+            || lower.contains("world view")
+            || lower.contains("multi-chapter")
+            || lower.contains("full book")
+            || lower.contains("rewrite")
             || lower.contains("refactor")
             || lower.contains("architecture");
     }

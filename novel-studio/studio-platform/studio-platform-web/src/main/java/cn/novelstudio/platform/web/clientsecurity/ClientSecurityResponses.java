@@ -1,42 +1,76 @@
 package cn.novelstudio.platform.web.clientsecurity;
 
+import cn.novelstudio.platform.i18n.ResultLocalizer;
+import cn.novelstudio.platform.i18n.StudioMessages;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 
-final class ClientSecurityResponses {
+@Component
+public class ClientSecurityResponses {
 
-    private ClientSecurityResponses() {
+    private static final Map<String, String> PROTOCOL_MESSAGE_KEYS = Map.of(
+        "CSRF_INVALID", "security.client.csrf_invalid",
+        "DEVICE_MISMATCH", "security.client.device_mismatch",
+        "HEARTBEAT_REQUIRED", "security.client.heartbeat_required",
+        "REPLAY_WINDOW", "security.client.replay_window",
+        "REPLAY_NONCE", "security.client.replay_nonce"
+    );
+
+    private final StudioMessages messages;
+    private final ResultLocalizer resultLocalizer;
+
+    public ClientSecurityResponses(StudioMessages messages, ResultLocalizer resultLocalizer) {
+        this.messages = messages;
+        this.resultLocalizer = resultLocalizer;
     }
 
-    static void badRequest(HttpServletResponse response, String message) throws IOException {
+    public void badRequest(HttpServletResponse response, String messageOrKey) throws IOException {
         response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-        response.setContentType("application/json;charset=UTF-8");
-        String safe = message == null ? "bad request" : message.replace("\"", "'");
-        response.getOutputStream().write(("{\"code\":400,\"message\":\"" + safe + "\"}").getBytes(StandardCharsets.UTF_8));
+        writeJson(response, 400, resolve(messageOrKey, "security.client.bad_request"));
     }
 
-    static void unauthorized(HttpServletResponse response, String message) throws IOException {
+    public void unauthorized(HttpServletResponse response, String messageOrKey) throws IOException {
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-        response.setContentType("application/json;charset=UTF-8");
-        String safe = message == null ? "登录已过期，请重新登录" : message.replace("\"", "'");
-        response.getOutputStream().write(("{\"code\":401,\"message\":\"" + safe + "\"}").getBytes(StandardCharsets.UTF_8));
+        writeJson(response, 401, resolve(messageOrKey, "result.auth.token_expired"));
     }
 
-    static void forbidden(HttpServletResponse response, String code) throws IOException {
+    public void forbidden(HttpServletResponse response, String messageOrKey) throws IOException {
         response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-        response.setContentType("application/json;charset=UTF-8");
-        response.getOutputStream().write(("{\"code\":403,\"message\":\"" + code + "\"}").getBytes(StandardCharsets.UTF_8));
+        writeJson(response, 403, resolve(messageOrKey, "result.forbidden"));
     }
 
-    static void staleCrypto(HttpServletResponse response, String message) throws IOException {
+    public void staleCrypto(HttpServletResponse response, String messageOrKey) throws IOException {
         response.setStatus(HttpServletResponse.SC_NOT_FOUND);
         response.setContentType("application/json;charset=UTF-8");
         response.setHeader("X-Crypto-Stale", "1");
-        String safe = message == null ? "crypto stale" : message.replace("\"", "'");
+        String safe = escapeJson(resolve(messageOrKey, "security.client.crypto_route_stale"));
         response.getOutputStream().write(
             ("{\"code\":404,\"message\":\"" + safe + "\",\"cryptoStale\":true}").getBytes(StandardCharsets.UTF_8)
         );
+    }
+
+    private String resolve(String messageOrKey, String fallbackKey) {
+        if (messageOrKey == null || messageOrKey.isBlank()) {
+            return messages.get(fallbackKey);
+        }
+        String protocolKey = PROTOCOL_MESSAGE_KEYS.get(messageOrKey);
+        if (protocolKey != null) {
+            return messages.get(protocolKey);
+        }
+        return resultLocalizer.resolveLiteral(messageOrKey);
+    }
+
+    private static void writeJson(HttpServletResponse response, int code, String message) throws IOException {
+        response.setContentType("application/json;charset=UTF-8");
+        String safe = escapeJson(message);
+        response.getOutputStream().write(("{\"code\":" + code + ",\"message\":\"" + safe + "\"}").getBytes(StandardCharsets.UTF_8));
+    }
+
+    private static String escapeJson(String message) {
+        return message == null ? "" : message.replace("\"", "'");
     }
 }

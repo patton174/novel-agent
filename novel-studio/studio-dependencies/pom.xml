@@ -60,6 +60,26 @@
             </dependency>
             <dependency>
                 <groupId>cn.novelstudio</groupId>
+                <artifactId>studio-platform-idr</artifactId>
+                <version>${studio.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.novelstudio</groupId>
+                <artifactId>studio-platform-storage</artifactId>
+                <version>${studio.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.novelstudio</groupId>
+                <artifactId>studio-platform-scheduling</artifactId>
+                <version>${studio.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.novelstudio</groupId>
+                <artifactId>studio-platform-i18n</artifactId>
+                <version>${studio.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.novelstudio</groupId>
                 <artifactId>studio-module-auth</artifactId>
                 <version>${studio.version}</version>
             </dependency>
@@ -81,6 +101,11 @@
             <dependency>
                 <groupId>cn.novelstudio</groupId>
                 <artifactId>studio-module-worker</artifactId>
+                <version>${studio.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.novelstudio</groupId>
+                <artifactId>studio-module-upload</artifactId>
                 <version>${studio.version}</version>
             </dependency>
 

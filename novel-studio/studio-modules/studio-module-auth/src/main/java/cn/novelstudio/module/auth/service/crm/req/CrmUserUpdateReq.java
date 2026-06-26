@@ -4,8 +4,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 public record CrmUserUpdateReq(
-    @NotBlank(message = "角色不能为空")
+    @NotBlank(message = "{validation.auth.role_required}")
     String role,
-    @NotNull(message = "状态不能为空")
+    @NotNull(message = "{validation.auth.status_required}")
     Boolean isActive
 ) {}

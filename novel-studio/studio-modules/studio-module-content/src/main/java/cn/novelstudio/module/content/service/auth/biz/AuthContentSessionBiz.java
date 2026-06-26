@@ -3,6 +3,8 @@ package cn.novelstudio.module.content.service.auth.biz;
 import cn.novelstudio.kernel.base.Result;
 import cn.novelstudio.kernel.biz.BaseBiz;
 import cn.novelstudio.kernel.enums.ResultCode;
+import cn.novelstudio.kernel.exception.NotFoundException;
+import cn.novelstudio.kernel.exception.ValidationException;
 import cn.novelstudio.module.content.dto.AppendMessageRequest;
 import cn.novelstudio.module.content.dto.BatchDeleteSessionsRequest;
 import cn.novelstudio.module.content.dto.ContentMessageDTO;
@@ -29,7 +31,7 @@ public class AuthContentSessionBiz extends BaseBiz {
     public Result<SessionDTO> get(String userId, String sessionId) {
         SessionDTO session = sessionService.getSession(userId, sessionId);
         if (session == null) {
-            notFound(ResultCode.SESSION_NOT_FOUND, "会话不存在");
+            throw NotFoundException.keyed(ResultCode.SESSION_NOT_FOUND, ResultCode.SESSION_NOT_FOUND.getMessageKey());
         }
         return ok(session);
     }
@@ -41,7 +43,7 @@ public class AuthContentSessionBiz extends BaseBiz {
 
     public Result<Map<String, Object>> delete(String userId, String sessionId) {
         if (!sessionService.deleteSession(userId, sessionId)) {
-            notFound(ResultCode.SESSION_NOT_FOUND, "会话不存在");
+            throw NotFoundException.keyed(ResultCode.SESSION_NOT_FOUND, ResultCode.SESSION_NOT_FOUND.getMessageKey());
         }
         return ok(Map.of("ok", true));
     }
@@ -61,13 +63,17 @@ public class AuthContentSessionBiz extends BaseBiz {
     }
 
     public Result<Map<String, Object>> saveRunTrace(String userId, String sessionId, String runId, SaveRunTraceRequest request) {
-        require(runId.equals(request.runId()), ResultCode.BAD_REQUEST, "runId mismatch");
+        if (!runId.equals(request.runId())) {
+            throw ValidationException.keyed("content.session.run_id_mismatch");
+        }
         sessionService.saveRunTrace(userId, sessionId, runId, request.traceJson() == null ? "" : request.traceJson());
         return ok(Map.of("ok", true));
     }
 
     public Result<Map<String, Object>> appendMessage(String userId, String sessionId, AppendMessageRequest request) {
-        require(sessionId.equals(request.sessionId()), ResultCode.BAD_REQUEST, "session mismatch");
+        if (!sessionId.equals(request.sessionId())) {
+            throw ValidationException.keyed("content.session.session_mismatch");
+        }
         sessionService.appendMessage(
             userId,
             sessionId,

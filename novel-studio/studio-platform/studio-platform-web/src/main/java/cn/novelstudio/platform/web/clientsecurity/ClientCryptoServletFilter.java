@@ -41,6 +41,7 @@ public class ClientCryptoServletFilter extends OncePerRequestFilter {
     private final SessionAesKeySupport sessionAesKeySupport;
     private final NonceStoreSupport nonceStoreSupport;
     private final ObjectMapper objectMapper;
+    private final ClientSecurityResponses securityResponses;
 
     @Override
     protected void doFilterInternal(
@@ -68,7 +69,7 @@ public class ClientCryptoServletFilter extends OncePerRequestFilter {
             : new byte[0];
 
         if (!querySign && raw.length == 0 && properties.aesRequired() && envelopeBodySign) {
-            ClientSecurityResponses.badRequest(response, "request sign required");
+            securityResponses.badRequest(response, "security.client.sign_required");
             return;
         }
 
@@ -76,12 +77,12 @@ public class ClientCryptoServletFilter extends OncePerRequestFilter {
         if (querySign) {
             SignMaterial material = extractSignMaterial(request, raw, envelopeBodySign, queryParams);
             if (material == null) {
-                ClientSecurityResponses.badRequest(response, "request sign required");
+                securityResponses.badRequest(response, "security.client.sign_required");
                 return;
             }
             var keyOpt = sessionAesKeySupport.loadKeyBase64(material.kid());
             if (keyOpt.isEmpty()) {
-                ClientSecurityResponses.badRequest(response, "unknown sign key");
+                securityResponses.badRequest(response, "security.client.sign_unknown_key");
                 return;
             }
             String signedPath = RequestSignCodec.businessPathWithQuery(
@@ -100,7 +101,7 @@ public class ClientCryptoServletFilter extends OncePerRequestFilter {
             );
             if (!ok) {
                 log.warn("request sign mismatch path={} kid={}", path, material.kid());
-                ClientSecurityResponses.badRequest(response, "invalid sign");
+                securityResponses.badRequest(response, "security.client.sign_invalid");
                 return;
             }
             request.setAttribute(ClientSecurityAttributes.CRYPTO_TS, material.ts());
@@ -119,7 +120,7 @@ public class ClientCryptoServletFilter extends OncePerRequestFilter {
                 );
             }
         } else if (properties.enabled() && properties.aesRequired() && envelopeBodySign && raw.length > 0) {
-            ClientSecurityResponses.badRequest(response, "request sign required");
+            securityResponses.badRequest(response, "security.client.sign_required");
             return;
         }
 
@@ -130,7 +131,7 @@ public class ClientCryptoServletFilter extends OncePerRequestFilter {
                 if (envelope.looksEncrypted()) {
                     var keyOpt = sessionAesKeySupport.loadKeyBase64(envelope.kid());
                     if (keyOpt.isEmpty()) {
-                        ClientSecurityResponses.badRequest(response, "unknown key id");
+                        securityResponses.badRequest(response, "security.client.crypto_unknown_key");
                         return;
                     }
                     AesGcmCodec codec = AesGcmCodec.fromBase64Key(keyOpt.get());
@@ -146,12 +147,12 @@ public class ClientCryptoServletFilter extends OncePerRequestFilter {
                         current.setAttribute(ClientSecurityAttributes.CRYPTO_KID, envelope.kid());
                     }
                 } else if (properties.aesRequired()) {
-                    ClientSecurityResponses.badRequest(response, "AES envelope required");
+                    securityResponses.badRequest(response, "security.client.crypto_aes_required");
                     return;
                 }
             } catch (Exception ex) {
                 if (properties.aesRequired()) {
-                    ClientSecurityResponses.badRequest(response, "AES envelope required");
+                    securityResponses.badRequest(response, "security.client.crypto_aes_required");
                     return;
                 }
             }
@@ -161,7 +162,7 @@ public class ClientCryptoServletFilter extends OncePerRequestFilter {
                 if (kidObj != null && FieldSecurePayload.looksSecure(objectMapper, body)) {
                     var keyOpt = sessionAesKeySupport.loadKeyBase64(String.valueOf(kidObj));
                     if (keyOpt.isEmpty()) {
-                        ClientSecurityResponses.badRequest(response, "unknown key for field expand");
+                        securityResponses.badRequest(response, "security.client.crypto_field_key_unknown");
                         return;
                     }
                     try {
@@ -169,7 +170,7 @@ public class ClientCryptoServletFilter extends OncePerRequestFilter {
                         body = FieldSecurePayload.expand(objectMapper, body, codec);
                     } catch (Exception ex) {
                         log.warn("field payload expand failed: {}", ex.getMessage());
-                        ClientSecurityResponses.badRequest(response, "field expand failed");
+                        securityResponses.badRequest(response, "security.client.crypto_field_expand_failed");
                         return;
                     }
                 }
@@ -189,7 +190,7 @@ public class ClientCryptoServletFilter extends OncePerRequestFilter {
                 long now = Instant.now().toEpochMilli();
                 if (Math.abs(now - ts) > windowMs) {
                     log.warn("replay window exceeded ts={} now={}", ts, now);
-                    ClientSecurityResponses.badRequest(response, "REPLAY_WINDOW");
+                    securityResponses.badRequest(response, "REPLAY_WINDOW");
                     return;
                 }
                 String nonce = String.valueOf(nonceObj);
@@ -200,7 +201,7 @@ public class ClientCryptoServletFilter extends OncePerRequestFilter {
                     }
                     if (!nonceStoreSupport.tryConsume(nonce, NONCE_TTL_SECONDS)) {
                         log.warn("duplicate nonce={}", nonce);
-                        ClientSecurityResponses.badRequest(response, "REPLAY_NONCE");
+                        securityResponses.badRequest(response, "REPLAY_NONCE");
                         return;
                     }
                     current.setAttribute(ClientSecurityAttributes.REPLAY_GUARD_PASSED, Boolean.TRUE);

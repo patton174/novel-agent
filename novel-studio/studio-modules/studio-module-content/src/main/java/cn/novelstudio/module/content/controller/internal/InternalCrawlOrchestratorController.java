@@ -51,11 +51,10 @@ public class InternalCrawlOrchestratorController {
     @PostMapping("/orchestrator/jobs")
     public CrawlJobDTO createAndStart(@RequestBody InternalCreateCrawlJobRequest request) {
         if (crawlBiz.runningJobCount() >= CrawlOrchestratorStateService.MAX_CONCURRENT_JOBS) {
-            throw new cn.novelstudio.kernel.exception.ValidationException(
+            throw cn.novelstudio.kernel.exception.ValidationException.keyed(
                 cn.novelstudio.kernel.enums.ResultCode.BAD_REQUEST,
-                "并发子任务已达上限 "
-                    + CrawlOrchestratorStateService.MAX_CONCURRENT_JOBS
-                    + "（含 RUNNING 与 PAUSED）"
+                "content.crawl.concurrent_limit",
+                CrawlOrchestratorStateService.MAX_CONCURRENT_JOBS
             );
         }
         CrawlJobEntity entity = crawlJobService.createJob(

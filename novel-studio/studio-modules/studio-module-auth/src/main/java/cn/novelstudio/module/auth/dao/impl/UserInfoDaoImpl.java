@@ -45,7 +45,7 @@ public class UserInfoDaoImpl implements UserInfoDao {
     @Override
     public void updateRoleAndStatus(Long id, String role, Boolean isActive) {
         AuthUser user = authUserRepository.findById(id)
-            .orElseThrow(() -> new NotFoundException(ResultCode.CRM_USER_NOT_FOUND, "用户不存在"));
+            .orElseThrow(() -> NotFoundException.keyed(ResultCode.CRM_USER_NOT_FOUND, ResultCode.CRM_USER_NOT_FOUND.getMessageKey()));
         user.setRole(role);
         user.setIsActive(isActive);
         authUserRepository.save(user);

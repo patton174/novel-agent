@@ -1,8 +1,7 @@
 import { useTranslation } from 'react-i18next'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, type MouseEvent } from 'react'
 import {
   BookOpen,
-  ChevronRight,
   Loader2,
   Pencil,
   RefreshCw,
@@ -18,15 +17,22 @@ import {
 } from '@/api/catalogAdminApi'
 import { CatalogOverviewDialog } from '@/components/admin/CatalogOverviewDialog'
 import { CatalogReaderModal } from '@/components/admin/CatalogReaderModal'
+import { AdminResponsivePixelTable } from '@/components/admin/AdminResponsivePixelTable'
+import { AdminTextInput } from '@/components/admin/AdminFormControls'
+import {
+  PixelCellStack,
+  PIXEL_MOBILE_CARD,
+  PixelTableActionBar,
+  PixelTableActionButton,
+  PixelTableActionIconButton,
+  type PixelColumn,
+} from '@/components/pixel'
 import {
   AppShellCard,
   AppShellCardBody,
   AppShellCardHeader,
 } from '@/components/layout/AppPageStack'
 import { ProPagination } from '@/components/pro/ProPagination'
-import { ResponsiveTable } from '@/components/layout/ResponsiveTable'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { confirmAction } from '@/stores/appDialog'
 import { appToast } from '@/stores/appToastStore'
@@ -94,8 +100,8 @@ export function CatalogAdminPanel({ onOpenJob }: CatalogAdminPanelProps) {
     setReaderOpen(true)
   }
 
-  const handleDeleteNovel = async (novel: CatalogNovel, e: React.MouseEvent) => {
-    e.stopPropagation()
+  const handleDeleteNovel = async (novel: CatalogNovel, e?: MouseEvent) => {
+    e?.stopPropagation()
     if (!(await confirmAction({
       title: t('admin:catalog.deleteTitle'),
       description: t('admin:catalog.deleteDesc', { title: novel.title }),
@@ -121,6 +127,84 @@ export function CatalogAdminPanel({ onOpenJob }: CatalogAdminPanelProps) {
     }
   }
 
+  const columns = useMemo((): PixelColumn<CatalogNovel>[] => {
+    return [
+      {
+        key: 'title',
+        header: t('admin:catalog.novelTitle'),
+        render: (n) => (
+          <div className="flex min-w-0 items-center gap-3">
+            {n.coverUrl ? (
+              <img src={n.coverUrl} alt="" className="size-12 shrink-0 border-2 border-foreground object-cover" />
+            ) : (
+              <div className="flex size-12 shrink-0 items-center justify-center border-2 border-foreground bg-muted text-muted-foreground">
+                <BookOpen className="size-5" />
+              </div>
+            )}
+            <PixelCellStack
+              title={n.title}
+              subtitle={t('admin:catalog.chapterCount', { count: n.chapterCount })}
+            />
+          </div>
+        ),
+      },
+      {
+        key: 'author',
+        header: t('admin:catalog.author'),
+        render: (n) => n.author || t('admin:catalog.unknownAuthor'),
+      },
+      {
+        key: 'source',
+        header: t('admin:catalog.sourceUrl'),
+        className: 'max-w-[200px]',
+        render: (n) => (
+          <span className="block truncate font-mono text-xs text-muted-foreground">{n.sourceUrl ?? '—'}</span>
+        ),
+      },
+      {
+        key: 'actions',
+        header: t('admin:users.colActions'),
+        align: 'right',
+        render: (n) => (
+          <PixelTableActionBar align="end">
+            <PixelTableActionButton
+              onClick={(e) => {
+                e.stopPropagation()
+                openReader(n)
+              }}
+            >
+              <BookOpen className="size-3.5" />
+              {t('admin:catalog.read')}
+            </PixelTableActionButton>
+            <PixelTableActionButton
+              onClick={(e) => {
+                e.stopPropagation()
+                openNovel(n)
+              }}
+            >
+              <Pencil className="size-3.5" />
+              {t('admin:catalog.overview')}
+            </PixelTableActionButton>
+            <PixelTableActionIconButton
+              variant="danger"
+              disabled={actingId === n.id}
+              onClick={(e) => {
+                e.stopPropagation()
+                void handleDeleteNovel(n, e)
+              }}
+            >
+              {actingId === n.id ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : (
+                <Trash2 className="size-3.5" />
+              )}
+            </PixelTableActionIconButton>
+          </PixelTableActionBar>
+        ),
+      },
+    ]
+  }, [actingId, handleDeleteNovel, openNovel, openReader, t])
+
   return (
     <>
     <AppShellCard>
@@ -130,18 +214,18 @@ export function CatalogAdminPanel({ onOpenJob }: CatalogAdminPanelProps) {
         action={
           <div className="flex flex-wrap items-center gap-2">
             <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
+              <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+              <AdminTextInput
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder={t('admin:catalog.searchPlaceholder')}
                 className="w-44 pl-8 sm:w-56"
               />
             </div>
-            <Button type="button" variant="outline" size="sm" onClick={() => void load()}>
-              <RefreshCw className="mr-1.5 size-4" />
+            <PixelTableActionButton onClick={() => void load()}>
+              <RefreshCw className="size-4" />
               {t('admin:catalog.refresh')}
-            </Button>
+            </PixelTableActionButton>
           </div>
         }
       />
@@ -181,137 +265,60 @@ export function CatalogAdminPanel({ onOpenJob }: CatalogAdminPanelProps) {
           {query.trim() ? t('admin:catalog.noMatch') : t('admin:catalog.empty')}
         </p>
       ) : (
-        <ResponsiveTable
-          columns={[]}
-          rows={filtered}
-          loading={false}
-          getRowKey={(novel) => novel.id}
-          wrapDesktopInCard={false}
+        <AdminResponsivePixelTable
+          columns={columns}
+          data={filtered}
+          rowKey="id"
+          loading={loading}
+          emptyText={query.trim() ? t('admin:catalog.noMatch') : t('admin:catalog.empty')}
+          onRowClick={openNovel}
+          className="[&_tbody_tr]:cursor-pointer"
           renderMobileCard={(n) => (
-            <article className="rounded-xl border border-border/70 bg-surface p-3 shadow-sm">
+            <article className={PIXEL_MOBILE_CARD}>
               <button
                 type="button"
                 className="flex w-full items-start gap-3 text-left"
                 onClick={() => openNovel(n)}
               >
                 {n.coverUrl ? (
-                  <img src={n.coverUrl} alt="" className="size-14 shrink-0 rounded-lg object-cover" />
+                  <img
+                    src={n.coverUrl}
+                    alt=""
+                    className="size-14 shrink-0 rounded-lg border border-border/70 object-cover"
+                  />
                 ) : (
-                  <div className="flex size-14 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                  <div className="flex size-14 shrink-0 items-center justify-center rounded-lg border border-border/70 bg-muted text-muted-foreground">
                     <BookOpen className="size-6" />
                   </div>
                 )}
-                <div className="min-w-0 flex-1">
-                  <p className="font-medium leading-snug">{n.title}</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    {t('admin:catalog.chapterCount', { count: n.chapterCount })} · {n.author || t('admin:catalog.unknownAuthor')}
-                  </p>
-                </div>
+                <PixelCellStack
+                  title={n.title}
+                  subtitle={`${t('admin:catalog.chapterCount', { count: n.chapterCount })} · ${n.author || t('admin:catalog.unknownAuthor')}`}
+                />
               </button>
-              <div className="mt-3 flex flex-wrap gap-2 border-t border-border/60 pt-3">
-                <Button type="button" size="sm" variant="outline" className="flex-1" onClick={() => openReader(n)}>
-                  <BookOpen className="mr-1 size-3.5" />
+              <PixelTableActionBar className="mt-3 border-t-2 border-foreground/15 pt-3">
+                <PixelTableActionButton className="flex-1" onClick={() => openReader(n)}>
+                  <BookOpen className="size-3.5" />
                   {t('admin:catalog.read')}
-                </Button>
-                <Button type="button" size="sm" variant="outline" className="flex-1" onClick={() => openNovel(n)}>
-                  <Pencil className="mr-1 size-3.5" />
+                </PixelTableActionButton>
+                <PixelTableActionButton className="flex-1" onClick={() => openNovel(n)}>
+                  <Pencil className="size-3.5" />
                   {t('admin:catalog.overview')}
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
+                </PixelTableActionButton>
+                <PixelTableActionIconButton
                   className="text-destructive hover:text-destructive"
                   disabled={actingId === n.id}
                   onClick={(e) => void handleDeleteNovel(n, e)}
                 >
-                  {actingId === n.id ? <Loader2 className="size-3.5 animate-spin" /> : <Trash2 className="size-3.5" />}
-                </Button>
-              </div>
+                  {actingId === n.id ? (
+                    <Loader2 className="size-3.5 animate-spin" />
+                  ) : (
+                    <Trash2 className="size-3.5" />
+                  )}
+                </PixelTableActionIconButton>
+              </PixelTableActionBar>
             </article>
           )}
-          renderDesktopCustom={(rows) => (
-            <div className="space-y-2">
-              {rows.map((n) => (
-                <div
-                  key={n.id}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => openNovel(n)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault()
-                      openNovel(n)
-                    }
-                  }}
-                  className="group flex cursor-pointer flex-col gap-2 rounded-xl border border-border/80 p-3 transition-colors hover:bg-muted/30 sm:flex-row sm:items-center sm:gap-3"
-                >
-                  {n.coverUrl ? (
-                    <img src={n.coverUrl} alt="" className="size-14 shrink-0 rounded-lg object-cover" />
-                  ) : (
-                    <div className="flex size-14 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-                      <BookOpen className="size-6" />
-                    </div>
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium">{n.title}</p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      {t('admin:catalog.chapterCount', { count: n.chapterCount })} · {n.author || t('admin:catalog.unknownAuthor')}
-                    </p>
-                    {n.sourceUrl ? (
-                      <p className="mt-0.5 truncate text-xs text-muted-foreground/80">{n.sourceUrl}</p>
-                    ) : null}
-                  </div>
-                  <div className="flex w-full shrink-0 items-center justify-end gap-1 sm:w-auto sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100">
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        openReader(n)
-                      }}
-                    >
-                      <BookOpen className="mr-1 size-3.5" />
-                      {t('admin:catalog.read')}
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        openNovel(n)
-                      }}
-                    >
-                      <Pencil className="mr-1 size-3.5" />
-                      {t('admin:catalog.overview')}
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      className="text-destructive hover:text-destructive"
-                      disabled={actingId === n.id}
-                      onClick={(e) => void handleDeleteNovel(n, e)}
-                    >
-                      {actingId === n.id ? (
-                        <Loader2 className="size-3.5 animate-spin" />
-                      ) : (
-                        <Trash2 className="size-3.5" />
-                      )}
-                    </Button>
-                  </div>
-                  <ChevronRight className="hidden size-4 shrink-0 text-muted-foreground md:block md:opacity-0 md:transition-opacity md:group-hover:opacity-100" />
-                </div>
-              ))}
-            </div>
-          )}
-          emptyState={
-            <p className="py-8 text-center text-sm text-muted-foreground">
-              {query.trim() ? t('admin:catalog.noMatch') : t('admin:catalog.empty')}
-            </p>
-          }
         />
       )}
 

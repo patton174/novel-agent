@@ -7,6 +7,7 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "./pro.css";
+@import "./pixel-admin.css";
 @import "@fontsource-variable/geist";
 
 @custom-variant dark (&:is(.dark *));

@@ -3,6 +3,7 @@ package cn.novelstudio.kernel.tools;
 import cn.novelstudio.kernel.exception.ValidationException;
 
 import java.sql.Date;
+import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 
@@ -14,15 +15,24 @@ public final class DateParseSupport {
     private DateParseSupport() {}
 
     public static LocalDate toLocalDateUtc(Object value) {
+        if (value == null) {
+            throw ValidationException.keyed("result.framework.date_column_null");
+        }
         if (value instanceof LocalDate localDate) {
             return localDate;
         }
         if (value instanceof Date sqlDate) {
             return sqlDate.toLocalDate();
         }
+        if (value instanceof Timestamp timestamp) {
+            return timestamp.toInstant().atZone(ZoneOffset.UTC).toLocalDate();
+        }
         if (value instanceof java.util.Date utilDate) {
             return utilDate.toInstant().atZone(ZoneOffset.UTC).toLocalDate();
         }
-        throw new ValidationException("Unsupported date type: " + value.getClass().getName());
+        if (value instanceof String text) {
+            return LocalDate.parse(text);
+        }
+        throw ValidationException.keyed("result.framework.date_type_unsupported", value.getClass().getName());
     }
 }

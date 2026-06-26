@@ -20,7 +20,10 @@ public class InternalServiceGuard {
             throw BizException.of(ResultCode.INTERNAL_KEY_NOT_CONFIGURED);
         }
         if (presentedKey == null || !configuredKey.equals(presentedKey)) {
-            throw new UnauthorizedException(ResultCode.INTERNAL_KEY_INVALID, "invalid internal key");
+            throw UnauthorizedException.keyed(
+                ResultCode.INTERNAL_KEY_INVALID,
+                ResultCode.INTERNAL_KEY_INVALID.getMessageKey()
+            );
         }
     }
 
@@ -28,7 +31,10 @@ public class InternalServiceGuard {
     public void requireValidKeyOrForbidden(String presentedKey) {
         if (configuredKey == null || configuredKey.isBlank()
             || presentedKey == null || !configuredKey.equals(presentedKey)) {
-            throw new ForbiddenException(ResultCode.INTERNAL_FORBIDDEN, "forbidden");
+            throw ForbiddenException.keyed(
+                ResultCode.INTERNAL_FORBIDDEN,
+                ResultCode.INTERNAL_FORBIDDEN.getMessageKey()
+            );
         }
     }
 }

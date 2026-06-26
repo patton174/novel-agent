@@ -142,24 +142,24 @@ public class AuthServiceImpl implements AuthService {
     public WsTicketResponse issueWsTicket(String authorizationHeader, WsTicketRequest request) {
         JwtPrincipal principal = jwtAuthService.parseAccessPrincipal(authorizationHeader);
         if (request == null || request.getPurpose() == null || request.getPurpose().isBlank()) {
-            throw BizException.of(ResultCode.BAD_REQUEST, "purpose 不能为空");
+            throw BizException.keyed(ResultCode.BAD_REQUEST, "auth.ws_ticket.purpose_required");
         }
         String purpose = request.getPurpose().trim().toLowerCase();
         String resourceId;
         switch (purpose) {
             case "run" -> {
                 if (request.getRunId() == null || request.getRunId().isBlank()) {
-                    throw BizException.of(ResultCode.BAD_REQUEST, "runId 不能为空");
+                    throw BizException.keyed(ResultCode.BAD_REQUEST, "auth.ws_ticket.run_id_required");
                 }
                 resourceId = request.getRunId().trim();
             }
             case "status" -> {
                 if (request.getSessionId() == null || request.getSessionId().isBlank()) {
-                    throw BizException.of(ResultCode.BAD_REQUEST, "sessionId 不能为空");
+                    throw BizException.keyed(ResultCode.BAD_REQUEST, "auth.ws_ticket.session_id_required");
                 }
                 resourceId = request.getSessionId().trim();
             }
-            default -> throw BizException.of(ResultCode.BAD_REQUEST, "不支持的 purpose: " + purpose);
+            default -> throw BizException.keyed(ResultCode.BAD_REQUEST, "auth.ws_ticket.purpose_unsupported", purpose);
         }
         String ticket = wsTicketService.issue(
             principal.userId(),

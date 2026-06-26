@@ -1,5 +1,7 @@
 package cn.novelstudio.module.content.service.auth.biz;
 
+import cn.novelstudio.kernel.exception.ForbiddenException;
+import cn.novelstudio.kernel.exception.ValidationException;
 import cn.novelstudio.kernel.base.Result;
 import cn.novelstudio.kernel.biz.BaseBiz;
 import cn.novelstudio.module.billing.service.biz.FeatureGateBiz;
@@ -97,20 +99,20 @@ public class AuthModelBiz extends BaseBiz {
         if (userModelId.startsWith("pub:")) {
             String publicId = userModelId.substring(4);
             AiModelEntity m = aiModelRepo.findById(publicId)
-                .orElseThrow(() -> new IllegalArgumentException("模型不存在"));
+                .orElseThrow(() -> ValidationException.keyed("model.not_found"));
             if (!Boolean.TRUE.equals(m.getActive()) || !t.equals(m.getModelType())) {
-                throw new IllegalArgumentException("模型不可用");
+            throw ValidationException.keyed("model.unavailable");
             }
             upsertTierPreference(userId, t, tierMarkerForModel(m));
             return ok();
         }
 
-        throw new IllegalArgumentException("仅支持 Auto 或模型档位");
+        throw ValidationException.keyed("model.tier_auto_only");
     }
 
     private String tierMarkerForPlatformDefault(String modelType) {
         AiModelEntity platformDefault = aiModelRepo.findFirstByModelTypeAndIsDefaultTrueAndActiveTrue(modelType)
-            .orElseThrow(() -> new IllegalArgumentException("暂无平台默认模型"));
+            .orElseThrow(() -> ValidationException.keyed("model.no_platform_default"));
         return tierMarkerForModel(platformDefault);
     }
 
@@ -215,7 +217,7 @@ public class AuthModelBiz extends BaseBiz {
         UserModelCredentialEntity cred = requireOwnedCredential(userId, id);
         long linked = userModelRepo.countByCredentialId(id);
         if (linked > 0) {
-            throw new IllegalArgumentException("该连接下仍有 " + linked + " 个模型，请先删除模型");
+            throw ValidationException.keyed("model.connection_has_models", linked);
         }
         credentialRepo.delete(cred);
         return ok();
@@ -223,17 +225,17 @@ public class AuthModelBiz extends BaseBiz {
 
     @Transactional
     public Result<UserModelDTO> createByok(Long userId, ByokUpsertReq req) {
-        throw new IllegalArgumentException("用户端已关闭私有模型，请使用平台提供的模型");
+        throw ValidationException.keyed("model.private_model_disabled");
     }
 
     @Transactional
     public Result<UserModelDTO> updateByok(Long userId, String id, ByokUpsertReq req) {
-        throw new IllegalArgumentException("用户端已关闭私有模型，请使用平台提供的模型");
+        throw ValidationException.keyed("model.private_model_disabled");
     }
 
     @Transactional
     public Result<Void> deleteByok(Long userId, String id) {
-        throw new IllegalArgumentException("用户端已关闭私有模型，请使用平台提供的模型");
+        throw ValidationException.keyed("model.private_model_disabled");
     }
 
     private void linkModelToCredential(UserModelEntity model, UserModelCredentialEntity cred) {
@@ -255,9 +257,9 @@ public class AuthModelBiz extends BaseBiz {
 
     private UserModelCredentialEntity requireOwnedCredential(Long userId, String id) {
         UserModelCredentialEntity cred = credentialRepo.findById(id)
-            .orElseThrow(() -> new IllegalArgumentException("API 连接不存在"));
+            .orElseThrow(() -> ValidationException.keyed("model.credential_not_found"));
         if (!cred.getUserId().equals(userId)) {
-            throw new IllegalArgumentException("无权操作");
+            throw ForbiddenException.keyed("model.forbidden");
         }
         return cred;
     }
@@ -266,21 +268,21 @@ public class AuthModelBiz extends BaseBiz {
         if (req.getProvider() == null || req.getProvider().isBlank()
             || req.getProtocol() == null || req.getProtocol().isBlank()
             || req.getBaseUrl() == null || req.getBaseUrl().isBlank()) {
-            throw new IllegalArgumentException("请填写提供商、协议与 API 地址");
+            throw ValidationException.keyed("model.provider_required");
         }
     }
 
     private void requireCredentialFields(CredentialUpsertReq req, boolean creating) {
         if (req.getLabel() == null || req.getLabel().isBlank()) {
-            throw new IllegalArgumentException("请填写连接名称");
+            throw ValidationException.keyed("model.connection_name_required");
         }
         if (creating && (req.getApiKey() == null || req.getApiKey().isBlank())) {
-            throw new IllegalArgumentException("请填写 API Key");
+            throw ValidationException.keyed("model.api_key_required");
         }
         if (req.getProvider() == null || req.getProvider().isBlank()
             || req.getProtocol() == null || req.getProtocol().isBlank()
             || req.getBaseUrl() == null || req.getBaseUrl().isBlank()) {
-            throw new IllegalArgumentException("请填写提供商、协议与 API 地址");
+            throw ValidationException.keyed("model.provider_required");
         }
     }
 
@@ -292,7 +294,7 @@ public class AuthModelBiz extends BaseBiz {
         if (req.getApiKey() != null && !req.getApiKey().isEmpty()) {
             cred.setApiKeyEnc(keyCodec.encrypt(req.getApiKey()));
         } else if (creating) {
-            throw new IllegalArgumentException("请填写 API Key");
+            throw ValidationException.keyed("model.api_key_required");
         }
     }
 

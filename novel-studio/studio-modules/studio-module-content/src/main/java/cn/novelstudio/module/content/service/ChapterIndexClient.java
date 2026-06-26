@@ -61,7 +61,7 @@ public class ChapterIndexClient {
                 .retrieve()
                 .toBodilessEntity();
         } catch (Exception ex) {
-            throw BizException.of(ResultCode.ERROR, "清空向量索引失败: " + ex.getMessage());
+            throw BizException.keyed(ResultCode.ERROR, "content.index.clear_failed", ex.getMessage());
         }
     }
 

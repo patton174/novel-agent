@@ -1,8 +1,9 @@
 import type { AuditLogItem } from '@/api/billingAdminApi'
+import { PIXEL_CODE_BLOCK, PIXEL_LABEL, PixelTableActionButton } from '@/components/pixel'
 import { AppSheetModal } from '@/components/ui/AppSheetModal'
-import { Button } from '@/components/ui/button'
 import { copyToClipboard } from '@/utils/copyToClipboard'
 import { appToast } from '@/stores/appToastStore'
+import { cn } from '@/lib/utils'
 
 interface AuditLogDetailModalProps {
   log: AuditLogItem | null
@@ -25,14 +26,14 @@ export function AuditLogDetailModal({ log, onClose }: AuditLogDetailModalProps) 
       onOpenChange={(open) => !open && onClose()}
       modalSize="reader"
       sheetSide="bottom"
-      title={log ? <span className="font-mono text-sm">{log.action}</span> : undefined}
+      title={log ? <span className="font-mono text-sm font-bold">{log.action}</span> : undefined}
       description={
         log
           ? `${new Date(log.createdAt).toLocaleString('zh-CN')} · 操作者 ${log.actorId} · 目标 ${log.targetType ?? '—'}${log.targetId ? ` #${log.targetId}` : ''}`
           : undefined
       }
       className="sm:max-w-2xl"
-      bodyClassName="space-y-4 px-0 pb-2 text-xs"
+      bodyClassName="space-y-4 px-4 pb-2 text-xs"
     >
       {log ? (
         <>
@@ -53,7 +54,7 @@ export function AuditLogDetailModal({ log, onClose }: AuditLogDetailModalProps) 
             />
           ) : null}
           {!beforeFormatted && !afterFormatted ? (
-            <p className="py-6 text-center text-sm text-muted-foreground">此记录无 JSON 变更载荷</p>
+            <p className="py-6 text-center font-mono text-sm text-muted-foreground">此记录无 JSON 变更载荷</p>
           ) : null}
         </>
       ) : null}
@@ -76,19 +77,18 @@ function JsonBlock({
     <div>
       <div className="mb-1.5 flex items-center justify-between gap-2">
         <p
-          className={
-            tone === 'before'
-              ? 'font-medium text-destructive'
-              : 'font-medium text-emerald-700 dark:text-emerald-400'
-          }
+          className={cn(
+            PIXEL_LABEL,
+            tone === 'before' ? 'text-destructive' : 'text-success',
+          )}
         >
           {label}
         </p>
-        <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={onCopy}>
+        <PixelTableActionButton variant="ghost" onClick={onCopy}>
           复制
-        </Button>
+        </PixelTableActionButton>
       </div>
-      <pre className="max-h-[min(42vh,320px)] overflow-auto rounded-lg border border-border bg-muted/40 p-3 font-mono text-[11px] leading-relaxed whitespace-pre-wrap break-all">
+      <pre className={cn('max-h-[min(42vh,320px)]', PIXEL_CODE_BLOCK)}>
         {text}
       </pre>
     </div>

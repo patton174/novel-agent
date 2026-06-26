@@ -15,4 +15,6 @@ public interface ProductPlanRepository extends JpaRepository<ProductPlanEntity, 
     List<ProductPlanEntity> findByIsActiveTrueOrderBySortOrderAsc();
 
     List<ProductPlanEntity> findAllByOrderBySortOrderAsc();
+
+    Optional<ProductPlanEntity> findFirstByIdrSkuIdAndIsActiveTrue(String idrSkuId);
 }

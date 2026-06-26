@@ -94,7 +94,7 @@ public class PaymentOrderCrmBiz extends BaseBiz {
     public Result<PaymentOrderCrmDetailResp> fulfill(long orderId, Long actorId, PaymentOrderActionReq req) {
         PaymentOrderEntity entity = requireOrder(orderId);
         if ("REFUND".equals(entity.getStatus())) {
-            throw BizException.of(ResultCode.BAD_REQUEST, "已退款订单不可履约");
+            throw BizException.keyed(ResultCode.BAD_REQUEST, "payment.order.refunded_no_fulfill");
         }
         PaymentOrderCrmDetailResp before = toDetailResp(entity, null);
         String reason = buildReason("admin-fulfill", req);
@@ -109,7 +109,7 @@ public class PaymentOrderCrmBiz extends BaseBiz {
     public Result<PaymentOrderCrmDetailResp> expire(long orderId, Long actorId, PaymentOrderActionReq req) {
         PaymentOrderEntity entity = requireOrder(orderId);
         if ("DONE".equals(entity.getStatus())) {
-            throw BizException.of(ResultCode.BAD_REQUEST, "已支付订单不可关闭");
+            throw BizException.keyed(ResultCode.BAD_REQUEST, "payment.order.paid_no_close");
         }
         PaymentOrderCrmDetailResp before = toDetailResp(entity, null);
         entity.setStatus("EXPIRED");
@@ -187,7 +187,7 @@ public class PaymentOrderCrmBiz extends BaseBiz {
 
     private PaymentOrderEntity requireOrder(long orderId) {
         return paymentOrderRepository.findById(orderId)
-            .orElseThrow(() -> new NotFoundException(ResultCode.BAD_REQUEST, "订单不存在"));
+            .orElseThrow(() -> NotFoundException.keyed("payment.order.not_found"));
     }
 
     private JsonNode fetchRemote(String idrOrderId) {
@@ -204,7 +204,7 @@ public class PaymentOrderCrmBiz extends BaseBiz {
 
     private JsonNode fetchRemoteRequired(String idrOrderId) {
         if (!client.isConfigured()) {
-            throw BizException.of(ResultCode.BAD_REQUEST, "iDataRiver 未配置，无法同步");
+            throw BizException.keyed(ResultCode.BAD_REQUEST, "payment.order.sync_not_configured");
         }
         return client.getOrderInfo(idrOrderId);
     }

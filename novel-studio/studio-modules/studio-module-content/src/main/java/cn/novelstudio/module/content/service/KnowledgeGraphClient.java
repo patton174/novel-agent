@@ -1,5 +1,7 @@
 package cn.novelstudio.module.content.service;
 
+import cn.novelstudio.platform.i18n.ResultLocalizer;
+import cn.novelstudio.platform.i18n.StudioMessages;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -16,14 +18,22 @@ public class KnowledgeGraphClient {
     private static final Logger log = LoggerFactory.getLogger(KnowledgeGraphClient.class);
 
     private final RestClient restClient;
+    private final StudioMessages messages;
+    private final ResultLocalizer resultLocalizer;
 
-    public KnowledgeGraphClient(@Qualifier("pythonRestClient") RestClient restClient) {
+    public KnowledgeGraphClient(
+        @Qualifier("pythonRestClient") RestClient restClient,
+        StudioMessages messages,
+        ResultLocalizer resultLocalizer
+    ) {
         this.restClient = restClient;
+        this.messages = messages;
+        this.resultLocalizer = resultLocalizer;
     }
 
     public Map<String, Object> getNovelGraph(String novelId) {
         if (novelId == null || novelId.isBlank()) {
-            return emptyGraph(false, "missing novel_id");
+            return emptyGraph(false, messages.get("content.kg.missing_novel_id"));
         }
         try {
             Map<String, Object> body = restClient.get()
@@ -33,7 +43,10 @@ public class KnowledgeGraphClient {
             return body == null ? emptyGraph(true, null) : body;
         } catch (Exception ex) {
             log.debug("knowledge graph fetch skipped novelId={}: {}", novelId, ex.getMessage());
-            return emptyGraph(false, ex.getMessage());
+            String note = ex.getMessage() == null || ex.getMessage().isBlank()
+                ? messages.get("content.kg.fetch_failed")
+                : resultLocalizer.resolveLiteral(ex.getMessage());
+            return emptyGraph(false, note);
         }
     }
 

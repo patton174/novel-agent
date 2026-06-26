@@ -61,10 +61,10 @@ public final class IdWorker {
 
         Sequence(long workerId, long datacenterId) {
             if (workerId > maxWorkerId || workerId < 0) {
-                throw new IllegalArgumentException("workerId out of range");
+                throw new IllegalArgumentException("framework.id_worker.worker_id_out_of_range");
             }
             if (datacenterId > maxDatacenterId || datacenterId < 0) {
-                throw new IllegalArgumentException("datacenterId out of range");
+                throw new IllegalArgumentException("framework.id_worker.datacenter_id_out_of_range");
             }
             this.workerId = workerId;
             this.datacenterId = datacenterId;
@@ -109,14 +109,14 @@ public final class IdWorker {
                         wait(offset << 1);
                         timestamp = timeGen();
                         if (timestamp < lastTimestamp) {
-                            throw new IllegalStateException("Clock moved backwards");
+                            throw new IllegalStateException("framework.id_worker.clock_backwards");
                         }
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
                         throw new IllegalStateException(e);
                     }
                 } else {
-                    throw new IllegalStateException("Clock moved backwards");
+                    throw new IllegalStateException("framework.id_worker.clock_backwards");
                 }
             }
 

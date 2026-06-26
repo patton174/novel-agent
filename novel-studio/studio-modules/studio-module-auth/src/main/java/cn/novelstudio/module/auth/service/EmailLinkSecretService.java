@@ -69,7 +69,7 @@ public class EmailLinkSecretService {
         if (!secret.isBlank()) {
             return secret;
         }
-        throw new IllegalStateException("AUTH_EMAIL_LINK_SECRET not configured");
+        throw new IllegalStateException("auth.email_link.secret_not_configured");
     }
 
     private static String normalize(String value) {

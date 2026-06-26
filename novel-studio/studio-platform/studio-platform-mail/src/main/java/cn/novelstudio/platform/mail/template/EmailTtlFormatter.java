@@ -1,28 +1,30 @@
 package cn.novelstudio.platform.mail.template;
 
-import cn.novelstudio.platform.mail.config.EmailBrandProperties;
+import cn.novelstudio.platform.i18n.StudioMessages;
+import org.springframework.stereotype.Component;
 
-import java.util.HashMap;
-import java.util.Map;
+@Component
+public class EmailTtlFormatter {
 
-public final class EmailTtlFormatter {
+    private final StudioMessages messages;
 
-    private EmailTtlFormatter() {
+    public EmailTtlFormatter(StudioMessages messages) {
+        this.messages = messages;
     }
 
-    public static String formatLabel(long ttlSeconds) {
+    public String formatLabel(long ttlSeconds) {
         if (ttlSeconds <= 0) {
-            return "有限时间";
+            return messages.get("mail.ttl.limited");
         }
         if (ttlSeconds % 86_400 == 0) {
-            return (ttlSeconds / 86_400) + " 天";
+            return messages.get("mail.ttl.days", ttlSeconds / 86_400);
         }
         if (ttlSeconds % 3_600 == 0) {
-            return (ttlSeconds / 3_600) + " 小时";
+            return messages.get("mail.ttl.hours", ttlSeconds / 3_600);
         }
         if (ttlSeconds % 60 == 0) {
-            return (ttlSeconds / 60) + " 分钟";
+            return messages.get("mail.ttl.minutes", ttlSeconds / 60);
         }
-        return ttlSeconds + " 秒";
+        return messages.get("mail.ttl.seconds", ttlSeconds);
     }
 }

@@ -7,12 +7,12 @@ import lombok.Data;
 @Data
 public class ConfirmEmailVerifyRequest {
 
-    @NotBlank
+    @NotBlank(message = "{validation.email_link.token_required}")
     private String token;
 
-    @NotBlank
+    @NotBlank(message = "{validation.email_link.sig_required}")
     private String sig;
 
-    @NotNull
+    @NotNull(message = "{validation.email_link.exp_required}")
     private Long exp;
 }

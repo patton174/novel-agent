@@ -88,6 +88,18 @@
     "payCancel": "取消",
     "payConfirm": "去支付",
     "payRedirecting": "跳转中…",
+    "payResumedPending": "检测到未完成订单，已为你恢复该订单，无需重复下单。",
+    "payOrderCopied": "订单号已复制",
+    "payMethods": {
+      "alipay": "支付宝",
+      "wechat": "微信支付"
+    },
+    "payStatus": {
+      "NEW": "待支付",
+      "DONE": "已支付",
+      "EXPIRED": "已过期",
+      "REFUND": "已退款"
+    },
     "paySuccess": "支付成功，套餐已更新",
     "payFail": "支付失败",
     "payPending": "支付处理中，请稍候…",

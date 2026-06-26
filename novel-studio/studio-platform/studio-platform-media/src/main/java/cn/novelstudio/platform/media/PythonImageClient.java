@@ -89,7 +89,7 @@ public class PythonImageClient {
         boolean returnBase64
     ) {
         if (inputImages == null || inputImages.isEmpty()) {
-            throw BizException.of(ResultCode.BAD_REQUEST, "图生图需要至少一张输入图片");
+            throw BizException.keyed(ResultCode.BAD_REQUEST, "content.image.input_required");
         }
         Map<String, Object> body = Map.of(
             "prompt", prompt,

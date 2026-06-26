@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   activateAdminPlan,
   createAdminPlan,
@@ -25,15 +25,18 @@ import { AppModalShell } from '@/components/ui/AppModalShell'
 import { DialogFooter } from '@/components/ui/dialog'
 import {
   AdminButton,
-  AdminButtonGhost,
   AdminButtonOutline,
   AdminStatusBadge,
 } from '@/components/admin/AdminFormControls'
 import {
-  adminTableCellClass,
-  adminTableClass,
-  adminTableHeadClass,
-} from '@/components/admin/adminUiTokens'
+  PixelCellMono,
+  PixelCellStack,
+  PixelCellText,
+  PixelTable,
+  PixelTableActionBar,
+  PixelTableActionButton,
+  type PixelColumn,
+} from '@/components/pixel'
 import {
   AdminDataPage,
   AdminDataPanel,
@@ -216,6 +219,105 @@ export default function PlansPage() {
 
   const list = plans ?? []
 
+  const planColumns = useMemo((): PixelColumn<AdminPlan>[] => {
+    return [
+      {
+        key: 'plan',
+        header: t('admin:plans.colPlan'),
+        render: (plan) => (
+          <PixelCellStack
+            title={
+              <>
+                {plan.name}
+                {plan.isFeatured ? <span className="ml-1 text-amber-600">★</span> : null}
+              </>
+            }
+            subtitle={plan.code}
+          />
+        ),
+      },
+      {
+        key: 'price',
+        header: t('admin:plans.colPrice'),
+        render: (plan) => <PixelCellMono>{formatPlanPrice(plan.priceCents)}</PixelCellMono>,
+      },
+      {
+        key: 'quota',
+        header: 'Token / Run / RPM',
+        render: (plan) => (
+          <PixelCellText muted>
+            {formatTokenQuota(plan.monthlyTokenQuota)} /{' '}
+            {plan.monthlyRunQuota == null ? '∞' : plan.monthlyRunQuota} / {plan.rateLimitRpm}
+          </PixelCellText>
+        ),
+      },
+      {
+        key: 'payReady',
+        header: t('admin:plans.colPayReady'),
+        render: (plan) =>
+          plan.priceCents != null && plan.priceCents > 0 ? (
+            <AdminStatusBadge tone={plan.paymentReady ? 'success' : 'warning'}>
+              {plan.paymentReady ? t('admin:plans.paymentReady') : t('admin:plans.paymentNotReady')}
+            </AdminStatusBadge>
+          ) : (
+            '—'
+          ),
+      },
+      {
+        key: 'orderStats',
+        header: t('admin:plans.orderStats'),
+        render: (plan) => (
+          <PixelCellMono>
+            {t('admin:plans.orderStatsSummary', {
+              paid: plan.orderStats.paid,
+              pending: plan.orderStats.pending,
+              total: plan.orderStats.total,
+            })}
+          </PixelCellMono>
+        ),
+      },
+      {
+        key: 'status',
+        header: t('admin:plans.colStatus'),
+        render: (plan) => (
+          <AdminStatusBadge tone={plan.isActive ? 'success' : 'neutral'}>
+            {plan.isActive ? t('admin:plans.statusActive') : t('admin:plans.statusInactive')}
+          </AdminStatusBadge>
+        ),
+      },
+      {
+        key: 'actions',
+        header: t('admin:plans.colActions'),
+        className: 'min-w-[280px]',
+        render: (plan) => (
+          <PixelTableActionBar>
+            <PixelTableActionButton onClick={() => void openPlanDetail(plan)}>
+              {t('admin:plans.viewDetail')}
+            </PixelTableActionButton>
+            <PixelTableActionButton onClick={() => openEdit(plan)}>
+              {t('admin:plans.edit')}
+            </PixelTableActionButton>
+            {plan.isActive ? (
+              <PixelTableActionButton
+                variant="danger"
+                onClick={() => void handleDeactivate(plan)}
+              >
+                {t('admin:plans.deactivateBtn')}
+              </PixelTableActionButton>
+            ) : (
+              <PixelTableActionButton onClick={() => void handleActivate(plan)}>
+                {t('admin:plans.activateBtn')}
+              </PixelTableActionButton>
+            )}
+            <PixelTableActionButton asChild>
+              <Link to={`/admin/billing/orders?planId=${plan.id}`}>{t('admin:plans.viewOrders')}</Link>
+            </PixelTableActionButton>
+          </PixelTableActionBar>
+        ),
+      },
+    ]
+  }, [handleActivate, handleDeactivate, openEdit, openPlanDetail, t])
+
   if (loading) {
     return (
       <AdminDataPage>
@@ -243,84 +345,14 @@ export default function PlansPage() {
           }
         />
         {list.length === 0 ? (
-          <p className="px-4 py-10 text-center text-sm text-muted-foreground">{t('admin:plans.empty')}</p>
+          <p className="px-4 py-10 text-center font-mono text-sm text-muted-foreground">{t('admin:plans.empty')}</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className={cn(adminTableClass, 'min-w-[960px]')}>
-              <thead className="border-b border-border bg-muted/40 text-muted-foreground">
-                <tr>
-                  <th className={adminTableHeadClass}>{t('admin:plans.colPlan')}</th>
-                  <th className={adminTableHeadClass}>{t('admin:plans.colPrice')}</th>
-                  <th className={adminTableHeadClass}>Token / Run / RPM</th>
-                  <th className={adminTableHeadClass}>{t('admin:plans.colPayReady')}</th>
-                  <th className={adminTableHeadClass}>{t('admin:plans.orderStats')}</th>
-                  <th className={adminTableHeadClass}>{t('admin:plans.colStatus')}</th>
-                  <th className={adminTableHeadClass}>{t('admin:plans.colActions')}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {list.map((plan) => (
-                  <tr key={plan.id} className="hover:bg-muted/20">
-                    <td className={adminTableCellClass}>
-                      <p className="font-medium">
-                        {plan.name}
-                        {plan.isFeatured ? <span className="ml-1 text-amber-600">★</span> : null}
-                      </p>
-                      <p className="font-mono text-xs text-muted-foreground">{plan.code}</p>
-                    </td>
-                    <td className={cn(adminTableCellClass, 'tabular-nums font-medium')}>{formatPlanPrice(plan.priceCents)}</td>
-                    <td className={cn(adminTableCellClass, 'text-sm tabular-nums text-muted-foreground')}>
-                      {formatTokenQuota(plan.monthlyTokenQuota)} /{' '}
-                      {plan.monthlyRunQuota == null ? '∞' : plan.monthlyRunQuota} / {plan.rateLimitRpm}
-                    </td>
-                    <td className={adminTableCellClass}>
-                      {plan.priceCents != null && plan.priceCents > 0 ? (
-                        <AdminStatusBadge tone={plan.paymentReady ? 'success' : 'warning'}>
-                          {plan.paymentReady ? t('admin:plans.paymentReady') : t('admin:plans.paymentNotReady')}
-                        </AdminStatusBadge>
-                      ) : (
-                        '—'
-                      )}
-                    </td>
-                    <td className={cn(adminTableCellClass, 'text-sm tabular-nums')}>
-                      {t('admin:plans.orderStatsSummary', {
-                        paid: plan.orderStats.paid,
-                        pending: plan.orderStats.pending,
-                        total: plan.orderStats.total,
-                      })}
-                    </td>
-                    <td className={adminTableCellClass}>
-                      <AdminStatusBadge tone={plan.isActive ? 'success' : 'neutral'}>
-                        {plan.isActive ? t('admin:plans.statusActive') : t('admin:plans.statusInactive')}
-                      </AdminStatusBadge>
-                    </td>
-                    <td className={adminTableCellClass}>
-                      <div className="flex flex-wrap gap-1.5">
-                        <AdminButtonGhost onClick={() => void openPlanDetail(plan)}>
-                          {t('admin:plans.viewDetail')}
-                        </AdminButtonGhost>
-                        <AdminButtonGhost onClick={() => openEdit(plan)}>
-                          {t('admin:plans.edit')}
-                        </AdminButtonGhost>
-                        {plan.isActive ? (
-                          <AdminButtonGhost className="text-destructive hover:text-destructive" onClick={() => void handleDeactivate(plan)}>
-                            {t('admin:plans.deactivateBtn')}
-                          </AdminButtonGhost>
-                        ) : (
-                          <AdminButtonGhost onClick={() => void handleActivate(plan)}>
-                            {t('admin:plans.activateBtn')}
-                          </AdminButtonGhost>
-                        )}
-                        <AdminButtonGhost asChild>
-                          <Link to={`/admin/payment-orders?planId=${plan.id}`}>{t('admin:plans.viewOrders')}</Link>
-                        </AdminButtonGhost>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <PixelTable
+            columns={planColumns}
+            data={list}
+            rowKey="id"
+            emptyText={t('admin:plans.empty')}
+          />
         )}
       </AdminDataPanel>
 

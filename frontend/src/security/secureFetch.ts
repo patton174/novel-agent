@@ -13,6 +13,7 @@ import {
   isSecurityCryptoEnabled,
   isStreamUrl,
 } from './requestCrypto'
+import { apiLocaleHeaders } from '@/i18n/localeHeader'
 
 const ENC_CONTENT_TYPE = 'application/vnd.novel-agent.enc+json'
 const TRACE_HEADER = 'X-Trace-Id'
@@ -55,6 +56,7 @@ async function buildRequest(
 
   const headers: Record<string, string> = {
     ...getAuthHeaders(),
+    ...apiLocaleHeaders(),
     [TRACE_HEADER]: newTraceId(),
     ...(init?.headers as Record<string, string> | undefined),
   }

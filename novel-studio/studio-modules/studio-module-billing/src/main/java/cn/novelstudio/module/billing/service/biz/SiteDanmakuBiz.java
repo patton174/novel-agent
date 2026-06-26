@@ -10,6 +10,7 @@ import cn.novelstudio.kernel.base.Result;
 import cn.novelstudio.kernel.biz.BaseBiz;
 import cn.novelstudio.kernel.enums.ResultCode;
 import cn.novelstudio.kernel.exception.BizException;
+import cn.novelstudio.platform.i18n.StudioMessages;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
@@ -23,6 +24,7 @@ public class SiteDanmakuBiz extends BaseBiz {
 
     private final SiteDanmakuRepository siteDanmakuRepository;
     private final IpRegionResolver ipRegionResolver;
+    private final StudioMessages messages;
 
     public Result<List<SiteDanmakuResp>> listRecent() {
         List<SiteDanmakuResp> list = siteDanmakuRepository.findTop120ByOrderByCreatedAtDesc().stream()
@@ -55,11 +57,11 @@ public class SiteDanmakuBiz extends BaseBiz {
     ) {
         String message = req.message().trim();
         if (message.length() < 2) {
-            throw new BizException(ResultCode.BAD_REQUEST, "弹幕太短");
+            throw BizException.keyed(ResultCode.BAD_REQUEST, "billing.danmaku.too_short");
         }
 
         if (userId != null && userId > 0 && siteDanmakuRepository.existsByUserId(userId)) {
-            throw new BizException(ResultCode.BAD_REQUEST, "已评价过，感谢支持");
+            throw BizException.keyed(ResultCode.BAD_REQUEST, "billing.danmaku.already_reviewed");
         }
 
         SiteDanmakuEntity entity = new SiteDanmakuEntity();
@@ -68,10 +70,12 @@ public class SiteDanmakuBiz extends BaseBiz {
 
         if (userId != null && userId > 0) {
             entity.setUserId(userId);
-            entity.setAuthorName(sanitizeAuthorName(username, userId));
+            String author = sanitizeAuthorName(username);
+            if (author != null) {
+                entity.setAuthorName(author);
+            }
             entity.setRegion(null);
         } else {
-            entity.setAuthorName("访客");
             entity.setRegion(ipRegionResolver.resolveRegion(clientIp));
         }
 
@@ -79,19 +83,30 @@ public class SiteDanmakuBiz extends BaseBiz {
         return ok(toResp(saved));
     }
 
-    private String sanitizeAuthorName(String username, Long userId) {
+    private String sanitizeAuthorName(String username) {
         if (username != null && !username.isBlank()) {
             String trimmed = username.trim();
             return trimmed.length() > 64 ? trimmed.substring(0, 64) : trimmed;
         }
-        return "用户" + userId;
+        return null;
+    }
+
+    private String resolveAuthorName(SiteDanmakuEntity entity) {
+        if (entity.getUserId() != null && entity.getUserId() > 0) {
+            String stored = entity.getAuthorName();
+            if (stored != null && !stored.isBlank()) {
+                return stored;
+            }
+            return messages.get("billing.danmaku.user_author", entity.getUserId());
+        }
+        return messages.get("billing.danmaku.guest_author");
     }
 
     private SiteDanmakuResp toResp(SiteDanmakuEntity entity) {
         return new SiteDanmakuResp(
             entity.getId(),
             entity.getMessage(),
-            entity.getAuthorName(),
+            resolveAuthorName(entity),
             entity.getRegion(),
             entity.getUserId(),
             entity.getCreatedAt()

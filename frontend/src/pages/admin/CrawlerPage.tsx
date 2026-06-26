@@ -19,10 +19,11 @@ import {
 } from '@/api/orchestratorAdminApi'
 import { fetchIncompleteCatalog } from '@/api/catalogAdminApi'
 import { CrawlJobDetailModal } from '@/components/admin/CrawlJobDetailModal'
-import { CrawlJobRow } from '@/components/admin/CrawlJobRow'
+import { CrawlJobsTable } from '@/components/admin/CrawlJobsTable'
 import { AdminCollapsibleCard } from '@/components/admin/AdminCollapsibleCard'
+import { AdminButton, AdminButtonOutline } from '@/components/admin/AdminFormControls'
 import { OrchestratorLogTerminal } from '@/components/admin/OrchestratorLogTerminal'
-import { Button } from '@/components/ui/button'
+import { PixelBadge } from '@/components/pixel'
 import { ProPagination } from '@/components/pro/ProPagination'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
@@ -341,19 +342,18 @@ export default function CrawlerPage() {
           title={t('admin:crawler.jobsTitle')}
           description={t('admin:crawler.jobsDesc')}
           action={
-            <Button
-              variant="outline"
+            <AdminButtonOutline
               size="sm"
               onClick={() => void refreshAll()}
               disabled={jobsLoading && jobs === null}
             >
-              <RefreshCw className={`mr-1.5 size-3.5 ${jobsLoading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`size-3.5 ${jobsLoading ? 'animate-spin' : ''}`} />
               {t('admin:crawler.refresh')}
-            </Button>
+            </AdminButtonOutline>
           }
         />
         <AppShellCardBody className="space-y-4 py-3">
-        <div className="flex flex-wrap gap-1 rounded-lg border border-border bg-muted/30 p-1">
+        <div className="flex flex-wrap gap-1 border-2 border-foreground bg-muted/20 p-1">
             {(
               [
                 ['all', t('admin:crawler.filterAll'), jobCounts.all],
@@ -369,10 +369,10 @@ export default function CrawlerPage() {
                   setJobPage(1)
                 }}
                 className={cn(
-                  'rounded-lg px-3 py-1.5 text-xs font-medium transition-colors',
+                  'border-2 px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-wide transition-colors',
                   jobFilter === key
-                    ? 'bg-background text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground',
+                    ? 'border-foreground bg-neon text-ink shadow-[1px_1px_0_0_var(--foreground)]'
+                    : 'border-transparent text-muted-foreground hover:bg-neon/20 hover:text-foreground',
                 )}
               >
                 {label} {count > 0 ? `(${count})` : ''}
@@ -383,28 +383,29 @@ export default function CrawlerPage() {
         {jobsLoading && jobs === null ? (
           <div className="space-y-1.5">
             {Array.from({ length: 5 }).map((_, i) => (
-              <Skeleton key={i} className="h-[4.5rem] w-full rounded-xl" />
+              <Skeleton key={i} className="h-16 w-full rounded-none border-2 border-foreground/20" />
             ))}
           </div>
         ) : filteredJobs.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
+          <p className="font-mono text-sm text-muted-foreground">
             {jobFilter === 'all'
               ? t('admin:crawler.emptyAll')
               : t('admin:crawler.emptyFiltered')}
           </p>
         ) : (
           <>
-            <div className="space-y-1.5">
-              {paginatedJobs.map((job) => (
-                <CrawlJobRow
-                  key={job.id}
-                  job={job}
-                  actingKey={actingKey}
-                  onOpen={openDetail}
-                  onAction={runAction}
-                />
-              ))}
-            </div>
+            <CrawlJobsTable
+              jobs={paginatedJobs}
+              actingKey={actingKey}
+              loading={jobsLoading && jobs !== null}
+              emptyText={
+                jobFilter === 'all'
+                  ? t('admin:crawler.emptyAll')
+                  : t('admin:crawler.emptyFiltered')
+              }
+              onOpen={openDetail}
+              onAction={runAction}
+            />
             <ProPagination
               page={jobPage}
               pageSize={JOBS_PAGE_SIZE}
@@ -413,10 +414,7 @@ export default function CrawlerPage() {
               onPageChange={setJobPage}
             />
             {(jobs?.length ?? 0) < jobsTotalCount ? (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
+              <AdminButtonOutline
                 className="w-full"
                 disabled={loadingMoreJobs}
                 onClick={() => void handleLoadMoreJobs()}
@@ -424,7 +422,7 @@ export default function CrawlerPage() {
                 {loadingMoreJobs
                   ? t('admin:crawler.loadMore')
                   : t('admin:crawler.loadMoreBtn', { shown: jobs?.length ?? 0, total: jobsTotalCount })}
-              </Button>
+              </AdminButtonOutline>
             ) : null}
           </>
         )}
@@ -437,16 +435,9 @@ export default function CrawlerPage() {
           description={t('admin:crawler.orchDesc', { running: orchState?.runningJobCount ?? 0, max: orchState?.maxConcurrentJobs ?? 3 })}
           defaultMobileOpen={false}
           action={
-            <span
-              className={cn(
-                'rounded-full px-2.5 py-0.5 text-xs font-medium',
-                isOrchRunning
-                  ? 'bg-primary/15 text-primary'
-                  : 'bg-muted text-muted-foreground',
-              )}
-            >
+            <PixelBadge tone={isOrchRunning ? 'neon' : 'muted'}>
               {isOrchRunning ? t('admin:crawler.orchRunning') : t('admin:crawler.orchSleeping')}
-            </span>
+            </PixelBadge>
           }
           bodyClassName="space-y-4"
         >
@@ -486,26 +477,15 @@ export default function CrawlerPage() {
         </div>
 
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-          <Button
-            disabled={!canSetGoal || orchBusy}
-            onClick={() => void handleSetOrchestratorGoal()}
-          >
+          <AdminButton disabled={!canSetGoal || orchBusy} onClick={() => void handleSetOrchestratorGoal()}>
             {!hasServerGoal || isOrchSleeping ? t('admin:crawler.setAndWake') : t('admin:crawler.updateGoal')}
-          </Button>
-          <Button
-            variant="secondary"
-            disabled={!canWake || orchBusy}
-            onClick={() => void handleWakeOrchestrator()}
-          >
+          </AdminButton>
+          <AdminButtonOutline disabled={!canWake || orchBusy} onClick={() => void handleWakeOrchestrator()}>
             {t('admin:crawler.wake')}
-          </Button>
-          <Button
-            variant="outline"
-            disabled={!canClear || orchBusy}
-            onClick={() => void handleClearOrchestrator()}
-          >
+          </AdminButtonOutline>
+          <AdminButtonOutline disabled={!canClear || orchBusy} onClick={() => void handleClearOrchestrator()}>
             {t('admin:crawler.clearAndSleep')}
-          </Button>
+          </AdminButtonOutline>
         </div>
         </AdminCollapsibleCard>
 

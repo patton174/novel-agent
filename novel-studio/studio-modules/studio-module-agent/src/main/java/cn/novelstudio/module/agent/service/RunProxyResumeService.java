@@ -67,7 +67,7 @@ public class RunProxyResumeService {
 
     public AgentStreamBiz.StreamFrames resumeOnOwner(Long userId, String runId, int afterSequence, boolean contentOnly) {
         if (!runProxyRegistry.isLocalOwner(runId)) {
-            throw new NotFoundException(ResultCode.NOT_FOUND, "当前节点不是运行代理 owner");
+            throw NotFoundException.keyed(ResultCode.NOT_FOUND, "agent.run.not_proxy_owner");
         }
         Flux<String> frames = localOwnerResume(userId, runId, afterSequence)
             .filter(frame -> !contentOnly || AgentStreamSupport.isContentFrame(frame));

@@ -272,6 +272,203 @@ export function ProIconAdminSystem(props: ProIconProps) {
   )
 }
 
+/** 数据分析：折线趋势。 */
+export function ProIconAdminAnalytics(props: ProIconProps) {
+  return (
+    <Svg {...props}>
+      <path fill="currentColor" d="M3 3v18h18" opacity=".4" />
+      <path
+        fill="currentColor"
+        d="M6 16l3.5-4 3 2.5L18 8"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle cx="6" cy="16" r="1.5" fill="currentColor" />
+      <circle cx="9.5" cy="12" r="1.5" fill="currentColor" opacity=".7" />
+      <circle cx="12.5" cy="14.5" r="1.5" fill="currentColor" opacity=".7" />
+      <circle cx="18" cy="8" r="1.5" fill="currentColor" />
+    </Svg>
+  )
+}
+
+/** 发卡平台：链接节点。 */
+export function ProIconAdminPlatform(props: ProIconProps) {
+  return (
+    <Svg {...props}>
+      <path fill="currentColor" d="M8.5 12a3.5 3.5 0 1 1 0-7h7a3.5 3.5 0 1 1 0 7z" opacity=".5" />
+      <path fill="currentColor" d="M7 12h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <circle cx="8.5" cy="8.5" r="1.25" fill="currentColor" />
+      <circle cx="15.5" cy="15.5" r="1.25" fill="currentColor" />
+    </Svg>
+  )
+}
+
+/** 商品：包装盒。 */
+export function ProIconAdminProduct(props: ProIconProps) {
+  return (
+    <Svg {...props}>
+      <path fill="currentColor" d="M12 2l8 4.5v9L12 22l-8-6.5v-9z" opacity=".5" />
+      <path fill="currentColor" d="M12 2v20M4 6.5l8 4.5l8-4.5" stroke="currentColor" strokeWidth="1.25" strokeLinejoin="round" />
+    </Svg>
+  )
+}
+
+/** 库存：堆叠货箱。 */
+export function ProIconAdminInventory(props: ProIconProps) {
+  return (
+    <Svg {...props}>
+      <path fill="currentColor" d="M4 10h7v8H4z" opacity=".5" />
+      <path fill="currentColor" d="M13 7h7v11h-7z" opacity=".7" />
+      <path fill="currentColor" d="M8 5h7v6H8z" />
+    </Svg>
+  )
+}
+
+/** 定价：价签。 */
+export function ProIconAdminPricing(props: ProIconProps) {
+  return (
+    <Svg {...props}>
+      <path fill="currentColor" d="M3 12a9 9 0 1 1 9 9l-5-5z" opacity=".5" />
+      <circle cx="12" cy="8" r="1.5" fill="currentColor" />
+      <path fill="currentColor" d="M11 11h2v5h-2z" />
+    </Svg>
+  )
+}
+
+/** 优惠券：票券。 */
+export function ProIconAdminCoupon(props: ProIconProps) {
+  return (
+    <Svg {...props}>
+      <path fill="currentColor" d="M4 8a2 2 0 0 1 2-2h12v4a2.5 2.5 0 0 0 0 5v4H6a2 2 0 0 1-2-2z" opacity=".5" />
+      <path fill="currentColor" d="M12 6v12" stroke="currentColor" strokeWidth="1.25" strokeDasharray="2 2" />
+      <path fill="currentColor" d="M7 10h3M7 14h2" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" />
+    </Svg>
+  )
+}
+
+/** 订单：清单收据。 */
+export function ProIconAdminOrder(props: ProIconProps) {
+  return (
+    <Svg {...props}>
+      <path fill="currentColor" d="M7 2h7l3 3v15a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2" opacity=".5" />
+      <path fill="currentColor" d="M14 2v4h4M8 11h8M8 15h6" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" />
+    </Svg>
+  )
+}
+
+/** 角色：盾牌。 */
+export function ProIconAdminRole(props: ProIconProps) {
+  return (
+    <Svg {...props}>
+      <path fill="currentColor" d="M12 2l8 3v6c0 5-3.5 9.5-8 11c-4.5-1.5-8-6-8-11V5z" opacity=".5" />
+      <path fill="currentColor" d="M9.5 12.5l1.75 1.75L15 10.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  )
+}
+
+/** 权限：钥匙。 */
+export function ProIconAdminPermission(props: ProIconProps) {
+  return (
+    <Svg {...props}>
+      <circle cx="9" cy="11" r="4" fill="currentColor" opacity=".5" />
+      <path fill="currentColor" d="M12 13h8v3h-2v4h-3v-4h-3" />
+      <circle cx="9" cy="11" r="1.5" fill="currentColor" />
+    </Svg>
+  )
+}
+
+/** 会员：徽章。 */
+export function ProIconAdminMembership(props: ProIconProps) {
+  return (
+    <Svg {...props}>
+      <circle cx="12" cy="9" r="5" fill="currentColor" opacity=".5" />
+      <path fill="currentColor" d="M8.5 14.5L7 21l5-2.5L17 21l-1.5-6.5" />
+      <path fill="currentColor" d="M12 7v4l2 1" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" />
+    </Svg>
+  )
+}
+
+/** 法律文档。 */
+export function ProIconAdminLegal(props: ProIconProps) {
+  return (
+    <Svg {...props}>
+      <path fill="currentColor" d="M8 3h8l3 3v15H8z" opacity=".5" />
+      <path fill="currentColor" d="M16 3v4h4M10 12h6M10 16h4" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" />
+      <path fill="currentColor" d="M6 7h2v10H6z" opacity=".7" />
+    </Svg>
+  )
+}
+
+/** 系统公告：喇叭。 */
+export function ProIconAdminAnnouncement(props: ProIconProps) {
+  return (
+    <Svg {...props}>
+      <path fill="currentColor" d="M4 10v4h4l6 4V6L8 10z" opacity=".5" />
+      <path fill="currentColor" d="M18 9a4 4 0 0 1 0 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </Svg>
+  )
+}
+
+/** 站点页面。 */
+export function ProIconAdminSitePage(props: ProIconProps) {
+  return (
+    <Svg {...props}>
+      <path fill="currentColor" d="M5 4h10v16H5z" opacity=".5" />
+      <path fill="currentColor" d="M9 4h10v16H9z" />
+      <path fill="currentColor" d="M11 8h6M11 12h5M11 16h4" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" />
+    </Svg>
+  )
+}
+
+/** 服务监控：脉搏。 */
+export function ProIconAdminMonitoring(props: ProIconProps) {
+  return (
+    <Svg {...props}>
+      <path fill="currentColor" d="M3 12h4l2-5l3 10l2-6h7" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+      <rect x="3" y="5" width="18" height="14" rx="2" fill="currentColor" opacity=".25" />
+    </Svg>
+  )
+}
+
+/** 定时任务：日历钟。 */
+export function ProIconAdminJobs(props: ProIconProps) {
+  return (
+    <Svg {...props}>
+      <path fill="currentColor" d="M5 5h14v16H5z" opacity=".5" />
+      <path fill="currentColor" d="M8 3v4M16 3v4M5 10h14" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" />
+      <circle cx="12" cy="15" r="3" fill="currentColor" opacity=".7" />
+      <path fill="currentColor" d="M12 14v2l1 1" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" />
+    </Svg>
+  )
+}
+
+/** 模型：芯片。 */
+export function ProIconAdminModels(props: ProIconProps) {
+  return (
+    <Svg {...props}>
+      <rect x="7" y="7" width="10" height="10" rx="2" fill="currentColor" opacity=".5" />
+      <rect x="9" y="9" width="6" height="6" rx="1" fill="currentColor" />
+      <path fill="currentColor" d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" />
+    </Svg>
+  )
+}
+
+/** 上传运维：云上传箭头。 */
+export function ProIconAdminUpload(props: ProIconProps) {
+  return (
+    <Svg {...props}>
+      <path fill="currentColor" d="M12 4v10" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
+      <path fill="currentColor" d="M8 8l4-4 4 4" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+      <path fill="currentColor" d="M5 14v4h14v-4" opacity=".5" />
+    </Svg>
+  )
+}
+
+/** 系统参数（齿轮）。 */
+export const ProIconAdminSettings = ProIconSettings
+
 /** 箭头向右：用于"查看全部"等场景。 */
 export function ProIconArrowRight(props: ProIconProps) {
   return (

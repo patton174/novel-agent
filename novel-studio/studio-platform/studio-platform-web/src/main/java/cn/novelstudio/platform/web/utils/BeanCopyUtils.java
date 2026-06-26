@@ -27,7 +27,7 @@ public final class BeanCopyUtils {
             BeanUtils.copyProperties(source, target);
             return target;
         } catch (ReflectiveOperationException ex) {
-            throw new IllegalStateException("Bean copy failed: " + targetClass.getName(), ex);
+            throw new IllegalStateException("framework.bean_copy.failed", ex);
         }
     }
 

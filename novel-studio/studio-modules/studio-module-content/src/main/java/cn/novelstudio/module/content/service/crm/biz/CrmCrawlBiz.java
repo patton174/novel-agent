@@ -21,6 +21,8 @@ import cn.novelstudio.module.content.service.crawl.dto.CrawlPreviewRequest;
 import cn.novelstudio.module.content.service.crawl.dto.CrawlSiteDTO;
 import cn.novelstudio.module.content.service.crawl.dto.SetOrchestratorGoalRequest;
 import cn.novelstudio.module.content.service.crawl.dto.UpsertCrawlSiteRequest;
+import cn.novelstudio.platform.i18n.ResultLocalizer;
+import cn.novelstudio.platform.i18n.StudioMessages;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
@@ -37,6 +39,8 @@ public class CrmCrawlBiz extends BaseBiz {
     private final PythonCrawlClient pythonCrawlClient;
     private final CrawlJobLogService crawlJobLogService;
     private final CrawlOrchestratorStateService orchestratorStateService;
+    private final StudioMessages messages;
+    private final ResultLocalizer resultLocalizer;
 
     public Result<Page<CrawlJobDTO>> pageJobs(int pageCurrent, int pageSize) {
         PageQuery query = pageQuery(pageCurrent, pageSize);
@@ -90,7 +94,10 @@ public class CrmCrawlBiz extends BaseBiz {
             }
             return ok(pythonCrawlClient.preview(request.sourceUrl(), config));
         } catch (Exception ex) {
-            return ok(Map.of("ok", false, "message", ex.getMessage() == null ? "预览失败" : ex.getMessage()));
+            String message = ex.getMessage() == null || ex.getMessage().isBlank()
+                ? messages.get("content.crawl.preview_failed")
+                : resultLocalizer.resolveLiteral(ex.getMessage());
+            return ok(Map.of("ok", false, "message", message));
         }
     }
 
@@ -166,7 +173,12 @@ public class CrmCrawlBiz extends BaseBiz {
             pythonCrawlClient.triggerOrchestratorCycle();
         } catch (Exception ex) {
             orchestratorStateService.recordDecision(
-                "触发主编排失败：" + (ex.getMessage() == null ? "python-ai 不可达" : ex.getMessage())
+                messages.get(
+                    "content.crawl.orchestrator_trigger_failed",
+                    ex.getMessage() == null || ex.getMessage().isBlank()
+                        ? messages.get("content.crawl.python_unreachable")
+                        : resultLocalizer.resolveLiteral(ex.getMessage())
+                )
             );
         }
     }

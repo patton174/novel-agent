@@ -1,6 +1,8 @@
 package cn.novelstudio.module.content.client;
 
 import cn.novelstudio.module.content.config.ContentRuntimeProperties;
+import cn.novelstudio.platform.i18n.ResultLocalizer;
+import cn.novelstudio.platform.i18n.StudioMessages;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
@@ -15,10 +17,19 @@ public class PythonModelTestClient {
 
     private final RestClient restClient;
     private final String internalKey;
+    private final StudioMessages messages;
+    private final ResultLocalizer resultLocalizer;
 
-    public PythonModelTestClient(RestClient pythonRestClient, ContentRuntimeProperties props) {
+    public PythonModelTestClient(
+        RestClient pythonRestClient,
+        ContentRuntimeProperties props,
+        StudioMessages messages,
+        ResultLocalizer resultLocalizer
+    ) {
         this.restClient = pythonRestClient;
         this.internalKey = props.internalServiceKey();
+        this.messages = messages;
+        this.resultLocalizer = resultLocalizer;
     }
 
     public Map<String, Object> test(Map<String, Object> config) {
@@ -31,7 +42,7 @@ public class PythonModelTestClient {
                 .body(body)
                 .retrieve()
                 .body(new ParameterizedTypeReference<>() {});
-            return resp != null ? resp : Map.of("ok", false, "error", "empty response");
+            return resp != null ? resp : Map.of("ok", false, "error", messages.get("model.python_test.empty_response"));
         } catch (RestClientResponseException ex) {
             return Map.of(
                 "ok", false,
@@ -40,7 +51,10 @@ public class PythonModelTestClient {
                     : ("HTTP " + ex.getStatusCode().value())
             );
         } catch (Exception ex) {
-            return Map.of("ok", false, "error", ex.getMessage() != null ? ex.getMessage() : "python test failed");
+            String error = ex.getMessage() == null || ex.getMessage().isBlank()
+                ? messages.get("model.python_test.failed")
+                : resultLocalizer.resolveLiteral(ex.getMessage());
+            return Map.of("ok", false, "error", error);
         }
     }
 }

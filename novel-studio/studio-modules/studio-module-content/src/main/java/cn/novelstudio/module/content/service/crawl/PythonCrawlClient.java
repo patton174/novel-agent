@@ -46,7 +46,7 @@ public class PythonCrawlClient {
             .retrieve()
             .body(JsonNode.class);
         if (response == null) {
-            return Map.of("ok", false, "message", "预览失败");
+            return Map.of("ok", false, "message", "content.crawl.preview_failed");
         }
         return objectMapper.convertValue(response, Map.class);
     }
@@ -91,7 +91,7 @@ public class PythonCrawlClient {
         try {
             return objectMapper.writeValueAsString(body);
         } catch (JsonProcessingException ex) {
-            throw new IllegalStateException("序列化爬虫请求失败", ex);
+            throw new IllegalStateException("content.crawl.request_serialize_failed", ex);
         }
     }
 

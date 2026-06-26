@@ -40,7 +40,7 @@ public class AgentRunService {
         String userMessageId = blankOr(request.getUserMessageId(), IdWorker.prefixed("message_"));
         String assistantMessageId = blankOr(request.getAssistantMessageId(), IdWorker.prefixed("message_"));
 
-        sessionPgService.upsertSession(request.getUserId(), request.getSessionId(), "新对话", null);
+        sessionPgService.upsertSession(request.getUserId(), request.getSessionId(), null, null);
         sessionPgService.appendMessage(
             request.getUserId(),
             request.getSessionId(),

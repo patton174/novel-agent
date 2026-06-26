@@ -45,14 +45,14 @@ public class CrmUserBiz extends BaseBiz {
 
     public Result<CrmUserDetailResp> detail(Long id) {
         AuthUser user = userInfoDao.findById(id)
-            .orElseThrow(() -> new NotFoundException(ResultCode.CRM_USER_NOT_FOUND, "用户不存在"));
+            .orElseThrow(() -> NotFoundException.keyed(ResultCode.CRM_USER_NOT_FOUND, ResultCode.CRM_USER_NOT_FOUND.getMessageKey()));
         return ok(toDetail(user));
     }
 
     public Result<CrmUserDetailResp> update(Long id, CrmUserUpdateReq req, Long actorId) {
         validateRole(req.role());
         AuthUser before = userInfoDao.findById(id)
-            .orElseThrow(() -> new NotFoundException(ResultCode.CRM_USER_NOT_FOUND, "用户不存在"));
+            .orElseThrow(() -> NotFoundException.keyed(ResultCode.CRM_USER_NOT_FOUND, ResultCode.CRM_USER_NOT_FOUND.getMessageKey()));
         userInfoDao.updateRoleAndStatus(id, req.role(), req.isActive());
         if (Boolean.FALSE.equals(req.isActive())) {
             deviceSessionService.revokeSessionsForUser(id);
@@ -66,7 +66,7 @@ public class CrmUserBiz extends BaseBiz {
 
     private void validateRole(String role) {
         if (role == null || !ALLOWED_ROLES.contains(role)) {
-            throw new ValidationException(ResultCode.AUTH_ROLE_INVALID, "不支持的角色: " + role);
+            throw ValidationException.keyed(ResultCode.AUTH_ROLE_INVALID, "auth.crm.unsupported_role", role);
         }
     }
 

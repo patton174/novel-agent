@@ -33,7 +33,7 @@ public class InternalModelController {
             entity = aiModelRepo.findFirstByModelTypeAndActiveTrueOrderBySortOrderAsc(type).orElse(null);
         }
         if (entity == null) {
-            throw new NotFoundException("no model for type=" + type);
+            throw NotFoundException.keyed("model.no_model_for_type", type);
         }
         return Result.ok(aiModelService.toActiveConfig(entity));
     }

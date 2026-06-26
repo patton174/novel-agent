@@ -9,6 +9,7 @@ import { AppShellMain } from '../components/layout/AppShellMain'
 import { LayoutOutletSkeleton } from '../components/loading/LayoutOutletSkeleton'
 import { AppShellToolbar } from '../components/layout/AppShellToolbar'
 import { ProBreadcrumb } from '@/components/pro/ProBreadcrumb'
+import { buildAdminBreadcrumbSegments } from '@/config/adminBreadcrumb'
 import { useUserStore } from '../stores/userStore'
 
 export default function AdminLayout() {
@@ -19,24 +20,46 @@ export default function AdminLayout() {
 
   const PAGE_META: Record<string, { title: string; description?: string }> = {
     '/admin': { title: t('layout.admin.overviewTitle'), description: t('layout.admin.overviewDesc') },
-    '/admin/users': { title: t('layout.admin.usersTitle'), description: t('layout.admin.usersDesc') },
-    '/admin/products': {
-      title: t('layout.admin.productsTitle'),
-      description: t('layout.admin.productsDesc'),
+    '/admin/analytics': { title: t('layout.admin.analyticsTitle'), description: t('layout.admin.analyticsDesc') },
+    '/admin/billing/plans': { title: t('layout.admin.plansTitle'), description: t('layout.admin.plansDesc') },
+    '/admin/billing/payment': {
+      title: t('layout.admin.billingPaymentTitle'),
+      description: t('layout.admin.billingPaymentDesc'),
     },
-    '/admin/plans': { title: t('layout.admin.plansTitle'), description: t('layout.admin.plansDesc') },
-    '/admin/payment-orders': {
+    '/admin/billing/orders': {
       title: t('layout.admin.paymentOrdersTitle'),
       description: t('layout.admin.paymentOrdersDesc'),
     },
-    '/admin/models': { title: t('layout.admin.modelsTitle'), description: t('layout.admin.modelsDesc') },
-    '/admin/revenue': { title: t('layout.admin.revenueTitle'), description: t('layout.admin.revenueDesc') },
-    '/admin/site-content': { title: t('layout.admin.siteContentTitle'), description: t('layout.admin.siteContentDesc') },
+    '/admin/users': { title: t('layout.admin.usersTitle'), description: t('layout.admin.usersDesc') },
+    '/admin/users/roles': { title: t('layout.admin.userRolesTitle'), description: t('layout.admin.userRolesDesc') },
+    '/admin/users/permissions': {
+      title: t('layout.admin.userPermissionsTitle'),
+      description: t('layout.admin.userPermissionsDesc'),
+    },
+    '/admin/users/membership': {
+      title: t('layout.admin.userMembershipTitle'),
+      description: t('layout.admin.userMembershipDesc'),
+    },
     '/admin/audit-log': { title: t('layout.admin.auditLogTitle'), description: t('layout.admin.auditLogDesc') },
-    '/admin/system-settings': { title: t('layout.admin.systemSettingsTitle'), description: t('layout.admin.systemSettingsDesc') },
-    '/admin/stats': { title: t('layout.admin.statsTitle'), description: t('layout.admin.statsDesc') },
-    '/admin/crawler': { title: t('layout.admin.crawlerTitle'), description: t('layout.admin.crawlerDesc') },
-    '/admin/catalog': { title: t('layout.admin.catalogTitle'), description: t('layout.admin.catalogDesc') },
+    '/admin/content/legal': { title: t('layout.admin.contentLegalTitle'), description: t('layout.admin.contentLegalDesc') },
+    '/admin/content/announcements': {
+      title: t('layout.admin.contentAnnouncementsTitle'),
+      description: t('layout.admin.contentAnnouncementsDesc'),
+    },
+    '/admin/content/pages': { title: t('layout.admin.contentPagesTitle'), description: t('layout.admin.contentPagesDesc') },
+    '/admin/content/crawler': { title: t('layout.admin.crawlerTitle'), description: t('layout.admin.crawlerDesc') },
+    '/admin/content/catalog': { title: t('layout.admin.catalogTitle'), description: t('layout.admin.catalogDesc') },
+    '/admin/content/uploads': { title: t('layout.admin.uploadOpsTitle'), description: t('layout.admin.uploadOpsDesc') },
+    '/admin/system/models': { title: t('layout.admin.modelsTitle'), description: t('layout.admin.modelsDesc') },
+    '/admin/system/monitoring': {
+      title: t('layout.admin.systemMonitoringTitle'),
+      description: t('layout.admin.systemMonitoringDesc'),
+    },
+    '/admin/system/jobs': { title: t('layout.admin.systemJobsTitle'), description: t('layout.admin.systemJobsDesc') },
+    '/admin/system/settings': {
+      title: t('layout.admin.systemSettingsTitle'),
+      description: t('layout.admin.systemSettingsDesc'),
+    },
   }
 
   useEffect(() => {
@@ -59,6 +82,7 @@ export default function AdminLayout() {
   }, [profile, setProfile])
 
   const meta = PAGE_META[location.pathname] ?? { title: t('layout.admin.defaultTitle') }
+  const breadcrumbSegments = buildAdminBreadcrumbSegments(location.pathname)
 
   return (
     <div className="flex h-screen overflow-hidden bg-background text-foreground">
@@ -78,7 +102,10 @@ export default function AdminLayout() {
               className="mb-2"
               items={[
                 { label: t('common:nav.adminTitle'), to: '/admin' },
-                { label: meta.title },
+                ...breadcrumbSegments.map((segment, index) => ({
+                  label: t(segment.labelKey),
+                  to: index < breadcrumbSegments.length - 1 ? segment.to : undefined,
+                })),
               ]}
             />
           ) : null}

@@ -27,6 +27,9 @@ public enum MqTopic {
     // 文件上传异步解析
     FILE_PARSE("agent.file.parse.exchange", "file.parse", "agent.file.parse.queue"),
 
+    // 平台批量任务（定时/异步分片调度）
+    BATCH_JOB("studio.batch.exchange", "batch.dispatch", "studio.batch.queue"),
+
     ;
 
     private final String exchange;

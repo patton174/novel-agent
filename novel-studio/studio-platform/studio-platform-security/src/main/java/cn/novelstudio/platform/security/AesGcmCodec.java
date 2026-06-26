@@ -18,7 +18,7 @@ public final class AesGcmCodec {
 
     public AesGcmCodec(byte[] keyBytes) {
         if (keyBytes == null || keyBytes.length != 32) {
-            throw new IllegalArgumentException("AES key must be 32 bytes");
+            throw new IllegalArgumentException("security.crypto.aes_key_invalid");
         }
         this.keySpec = new SecretKeySpec(keyBytes, "AES");
     }
@@ -45,7 +45,7 @@ public final class AesGcmCodec {
             buf.put(ct);
             return Base64.getEncoder().encodeToString(buf.array());
         } catch (Exception ex) {
-            throw new IllegalStateException("encrypt failed", ex);
+            throw new IllegalStateException("security.crypto.encrypt_failed", ex);
         }
     }
 
@@ -58,7 +58,7 @@ public final class AesGcmCodec {
             System.arraycopy(all, IV_LEN, ct, 0, ct.length);
             return decryptBytes(iv, ct);
         } catch (Exception ex) {
-            throw new IllegalStateException("decrypt failed", ex);
+            throw new IllegalStateException("security.crypto.decrypt_failed", ex);
         }
     }
 
@@ -68,7 +68,7 @@ public final class AesGcmCodec {
             byte[] ct = Base64.getDecoder().decode(ctB64);
             return decryptBytes(iv, ct);
         } catch (Exception ex) {
-            throw new IllegalStateException("decrypt failed", ex);
+            throw new IllegalStateException("security.crypto.decrypt_failed", ex);
         }
     }
 

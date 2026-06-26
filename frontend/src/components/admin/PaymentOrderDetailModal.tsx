@@ -8,12 +8,24 @@ import {
   syncAdminPaymentOrder,
   type AdminPaymentOrderDetail,
 } from '@/api/billingAdminApi'
+import {
+  AdminStatusBadge,
+  AdminTextInput,
+} from '@/components/admin/AdminFormControls'
+import {
+  PixelBadge,
+  PixelCellMono,
+  PIXEL_CODE_BLOCK,
+  PIXEL_LABEL,
+  PIXEL_PANEL,
+  PIXEL_PANEL_SOFT,
+  PixelTableActionBar,
+  PixelTableActionButton,
+} from '@/components/pixel'
 import { AppSheetModal } from '@/components/ui/AppSheetModal'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { cn } from '@/lib/utils'
 import { appToast } from '@/stores/appToastStore'
 import { confirmAction } from '@/stores/appDialog'
-import { cn } from '@/lib/utils'
 
 interface PaymentOrderDetailModalProps {
   order: AdminPaymentOrderDetail | null
@@ -22,12 +34,6 @@ interface PaymentOrderDetailModalProps {
   onUpdated: (order: AdminPaymentOrderDetail) => void
 }
 
-const STATUS_CLASS: Record<string, string> = {
-  NEW: 'bg-sky-100 text-sky-900',
-  DONE: 'bg-emerald-100 text-emerald-900',
-  EXPIRED: 'bg-muted text-muted-foreground',
-  REFUND: 'bg-amber-100 text-amber-900',
-}
 
 export function PaymentOrderDetailModal({
   order,
@@ -66,8 +72,6 @@ export function PaymentOrderDetailModal({
     }
   }
 
-  const statusClass = order ? (STATUS_CLASS[order.status] ?? 'bg-muted text-foreground') : ''
-
   return (
     <AppSheetModal
       open={order != null}
@@ -76,9 +80,9 @@ export function PaymentOrderDetailModal({
       sheetSide="bottom"
       title={
         order ? (
-          <span className="font-mono text-sm">
+          <PixelCellMono className="text-sm">
             #{order.id} · {order.idrOrderId}
-          </span>
+          </PixelCellMono>
         ) : undefined
       }
       description={
@@ -87,21 +91,33 @@ export function PaymentOrderDetailModal({
           : undefined
       }
       className="sm:max-w-2xl"
-      bodyClassName="space-y-4 px-0 pb-2 text-sm"
+      bodyClassName="space-y-4 px-4 pb-2 text-sm"
     >
       {loading ? (
-        <p className="py-8 text-center text-muted-foreground">{t('admin:paymentOrders.loadingDetail')}</p>
+        <p className="py-8 text-center font-mono text-sm text-muted-foreground">
+          {t('admin:paymentOrders.loadingDetail')}
+        </p>
       ) : order ? (
         <>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className={cn('grid gap-3 sm:grid-cols-2', PIXEL_PANEL_SOFT)}>
             <InfoRow label={t('admin:paymentOrders.colStatus')}>
-              <span className={cn('rounded-full px-2 py-0.5 font-mono text-[11px] font-bold uppercase', statusClass)}>
+              <AdminStatusBadge
+                tone={
+                  order.status === 'DONE'
+                    ? 'success'
+                    : order.status === 'NEW'
+                      ? 'info'
+                      : order.status === 'REFUND'
+                        ? 'warning'
+                        : 'neutral'
+                }
+              >
                 {order.status}
-              </span>
+              </AdminStatusBadge>
               {order.remoteStatus && order.remoteStatus !== order.status ? (
-                <span className="ml-2 font-mono text-[11px] text-muted-foreground">
+                <PixelBadge tone="muted" className="ml-2">
                   remote: {order.remoteStatus}
-                </span>
+                </PixelBadge>
               ) : null}
             </InfoRow>
             <InfoRow label={t('admin:paymentOrders.colPayMethod')}>{order.payMethod ?? '—'}</InfoRow>
@@ -111,10 +127,10 @@ export function PaymentOrderDetailModal({
             <InfoRow label={t('admin:paymentOrders.colPaidAt')}>
               {order.paidAt ? new Date(order.paidAt).toLocaleString('zh-CN') : '—'}
             </InfoRow>
-            <InfoRow label={t('admin:paymentOrders.contactInfo')}>{order.contactInfo}</InfoRow>
+            <InfoRow label={t('admin:paymentOrders.contactInfo')}>{order.contactInfo || '—'}</InfoRow>
             <InfoRow label={t('admin:paymentOrders.colPlan')}>
               {order.planId ? (
-                <Link to={`/admin/payment-orders?planId=${order.planId}`} className="text-primary hover:underline">
+                <Link to={`/admin/billing/orders?planId=${order.planId}`} className="text-primary hover:underline">
                   {order.planName}
                   <span className="ml-1 font-mono text-[11px] text-muted-foreground">{order.planCode}</span>
                 </Link>
@@ -128,19 +144,24 @@ export function PaymentOrderDetailModal({
           </div>
 
           {order.payUrl ? (
-            <div className="rounded-lg border border-border bg-muted/30 px-3 py-2">
-              <p className="text-xs text-muted-foreground">{t('admin:paymentOrders.payUrl')}</p>
-              <a href={order.payUrl} target="_blank" rel="noreferrer" className="break-all text-xs text-primary hover:underline">
+            <div className={PIXEL_PANEL}>
+              <p className={PIXEL_LABEL}>{t('admin:paymentOrders.payUrl')}</p>
+              <a
+                href={order.payUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-1 block break-all text-xs text-primary hover:underline"
+              >
                 {order.payUrl}
               </a>
             </div>
           ) : null}
 
           <div className="grid gap-2">
-            <label htmlFor="order-action-reason" className="text-xs font-medium text-muted-foreground">
+            <label htmlFor="order-action-reason" className={PIXEL_LABEL}>
               {t('admin:paymentOrders.actionReason')}
             </label>
-            <Input
+            <AdminTextInput
               id="order-action-reason"
               value={reason}
               placeholder={t('admin:paymentOrders.actionReasonHint')}
@@ -148,23 +169,20 @@ export function PaymentOrderDetailModal({
             />
           </div>
 
-          <div className="flex flex-wrap gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
+          <PixelTableActionBar>
+            <PixelTableActionButton
+              variant="secondary"
               disabled={acting}
               onClick={() =>
                 void runAction(t('admin:paymentOrders.syncBtn'), () => syncAdminPaymentOrder(order.id))
               }
             >
               {t('admin:paymentOrders.syncBtn')}
-            </Button>
+            </PixelTableActionButton>
             {order.status !== 'DONE' && order.status !== 'REFUND' ? (
               <>
-                <Button
-                  type="button"
-                  size="sm"
+                <PixelTableActionButton
+                  variant="primary"
                   disabled={acting}
                   onClick={() =>
                     void runAction(
@@ -178,11 +196,9 @@ export function PaymentOrderDetailModal({
                   }
                 >
                   {t('admin:paymentOrders.fulfillBtn')}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
+                </PixelTableActionButton>
+                <PixelTableActionButton
+                  variant="danger"
                   disabled={acting}
                   onClick={() =>
                     void runAction(
@@ -197,10 +213,10 @@ export function PaymentOrderDetailModal({
                   }
                 >
                   {t('admin:paymentOrders.expireBtn')}
-                </Button>
+                </PixelTableActionButton>
               </>
             ) : null}
-          </div>
+          </PixelTableActionBar>
 
           {order.callbackJson ? (
             <JsonBlock label={t('admin:paymentOrders.callbackJson')} value={order.callbackJson} />
@@ -217,7 +233,7 @@ export function PaymentOrderDetailModal({
 function InfoRow({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div>
-      <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className={PIXEL_LABEL}>{label}</p>
       <div className="mt-1 text-sm text-foreground">{children}</div>
     </div>
   )
@@ -226,8 +242,8 @@ function InfoRow({ label, children }: { label: string; children: ReactNode }) {
 function JsonBlock({ label, value }: { label: string; value: Record<string, unknown> }) {
   return (
     <div>
-      <p className="mb-1.5 text-xs font-medium text-muted-foreground">{label}</p>
-      <pre className="max-h-48 overflow-auto rounded-lg border border-border bg-muted/40 p-3 font-mono text-[11px] whitespace-pre-wrap break-all">
+      <p className={cn('mb-1.5', PIXEL_LABEL)}>{label}</p>
+      <pre className={cn('max-h-48', PIXEL_CODE_BLOCK)}>
         {JSON.stringify(value, null, 2)}
       </pre>
     </div>

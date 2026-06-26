@@ -41,7 +41,7 @@ public class WsTicketService {
                 Duration.ofSeconds(ticketTtlSeconds)
             );
         } catch (JsonProcessingException ex) {
-            throw AuthExceptions.internalError("WebSocket 票据存储失败");
+            throw AuthExceptions.internalError("auth.ws_ticket.store_failed");
         }
         return ticket;
     }

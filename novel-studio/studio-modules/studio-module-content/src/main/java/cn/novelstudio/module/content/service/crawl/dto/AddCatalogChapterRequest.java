@@ -4,8 +4,8 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 
 public record AddCatalogChapterRequest(
-    @NotBlank String title,
+    @NotBlank(message = "{validation.content.title_required}") String title,
     String content,
-    @Min(1) int sortOrder,
+    @Min(value = 1, message = "{validation.number.min_one}") int sortOrder,
     String sourceUrl
 ) {}

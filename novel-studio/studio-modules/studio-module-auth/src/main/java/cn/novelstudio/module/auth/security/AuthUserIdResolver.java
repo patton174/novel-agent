@@ -23,7 +23,7 @@ public class AuthUserIdResolver {
         if (userIdHeader != null && !userIdHeader.isBlank()) {
             return Long.parseLong(userIdHeader.trim());
         }
-        throw new UnauthorizedException("未登录或登录已过期");
+        throw UnauthorizedException.keyed("result.framework.missing_auth");
     }
 
     private Long tryParseJwtUserId(String authorization) {

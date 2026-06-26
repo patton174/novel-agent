@@ -11,4 +11,12 @@ public class TooManyRequestsException extends BizException {
     public TooManyRequestsException(ResultCode resultCode, String message) {
         super(resultCode, message);
     }
+
+    protected TooManyRequestsException(ResultCode resultCode, String messageKey, Object[] messageArgs) {
+        super(resultCode, messageKey, messageArgs, messageKey);
+    }
+
+    public static TooManyRequestsException keyed(ResultCode resultCode, String messageKey, Object... messageArgs) {
+        return new TooManyRequestsException(resultCode, messageKey, messageArgs);
+    }
 }

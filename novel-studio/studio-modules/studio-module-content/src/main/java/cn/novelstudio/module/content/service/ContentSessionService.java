@@ -6,6 +6,8 @@ import cn.novelstudio.module.content.dto.ContentMessageDTO;
 import cn.novelstudio.module.content.dto.SessionDTO;
 import cn.novelstudio.module.content.config.ContentRuntimeProperties;
 import cn.novelstudio.module.content.service.agent.AgentSessionPgService;
+import cn.novelstudio.module.content.support.ContentLegacyDefaults;
+import cn.novelstudio.platform.i18n.StudioMessages;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -33,6 +35,7 @@ public class ContentSessionService {
     private final ObjectMapper objectMapper;
     private final AgentSessionPgService agentSessionPgService;
     private final ContentRuntimeProperties runtimeProperties;
+    private final StudioMessages messages;
 
     public void upsertSession(String userId, String sessionId, String title) {
         upsertSession(userId, sessionId, title, null);
@@ -108,7 +111,13 @@ public class ContentSessionService {
     private SessionDTO readSessionMeta(String userId, String sessionId) {
         String metaKey = SESSION_META_KEY_PREFIX + userId + ":" + sessionId;
         Map<Object, Object> meta = redisTemplate.opsForHash().entries(metaKey);
-        String title = String.valueOf(meta.getOrDefault("title", "新对话"));
+        Object titleRaw = meta.get("title");
+        String title = titleRaw == null || String.valueOf(titleRaw).isBlank()
+            ? messages.get("content.session.default_title")
+            : String.valueOf(titleRaw);
+        if (ContentLegacyDefaults.isBlankOrLegacySessionTitle(title)) {
+            title = messages.get("content.session.default_title");
+        }
         long updatedAt = parseLong(meta.get("updatedAt"), Instant.now().toEpochMilli());
         Object novelIdRaw = meta.get("novelId");
         String novelId = novelIdRaw == null ? null : String.valueOf(novelIdRaw);
@@ -334,7 +343,7 @@ public class ContentSessionService {
 
     private String inferTitle(String content) {
         if (content == null || content.isBlank()) {
-            return "新对话";
+            return messages.get("content.session.default_title");
         }
         String clean = content.replaceAll("\\s+", " ").trim();
         return clean.length() > 18 ? clean.substring(0, 18) + "..." : clean;

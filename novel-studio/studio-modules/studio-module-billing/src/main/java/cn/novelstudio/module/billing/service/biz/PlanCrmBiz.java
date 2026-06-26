@@ -86,7 +86,7 @@ public class PlanCrmBiz extends BaseBiz {
     @Transactional
     public Result<PlanCrmResp> create(PlanCrmUpsertReq req, Long actorId) {
         if (productPlanRepository.findByCode(req.code()).isPresent()) {
-            throw BizException.of(ResultCode.BAD_REQUEST, "套餐 code 已存在: " + req.code());
+            throw BizException.keyed(ResultCode.BAD_REQUEST, "billing.plan.code_exists", req.code());
         }
         ProductPlanEntity plan = applyFields(new ProductPlanEntity(), req);
         plan.setIsActive(true);
@@ -102,7 +102,7 @@ public class PlanCrmBiz extends BaseBiz {
         PlanCrmResp before = toCrm(plan);
         if (!plan.getCode().equals(req.code())
             && productPlanRepository.findByCode(req.code()).filter(p -> !p.getId().equals(planId)).isPresent()) {
-            throw BizException.of(ResultCode.BAD_REQUEST, "套餐 code 已存在: " + req.code());
+            throw BizException.keyed(ResultCode.BAD_REQUEST, "billing.plan.code_exists", req.code());
         }
         applyFields(plan, req);
         ProductPlanEntity saved = productPlanRepository.save(plan);
@@ -117,10 +117,7 @@ public class PlanCrmBiz extends BaseBiz {
         ProductPlanEntity plan = requirePlan(planId);
         long pending = paymentOrderRepository.countLinkedByStatus(plan.getId(), plan.getCode(), "NEW");
         if (pending > 0) {
-            throw BizException.of(
-                ResultCode.BAD_REQUEST,
-                "该套餐仍有 " + pending + " 笔待支付订单，请先关闭订单或等待用户支付"
-            );
+            throw BizException.keyed(ResultCode.BAD_REQUEST, "billing.plan.pending_orders", pending);
         }
         PlanCrmResp before = toCrm(plan);
         plan.setIsActive(false);
@@ -231,6 +228,6 @@ public class PlanCrmBiz extends BaseBiz {
 
     private ProductPlanEntity requirePlan(long planId) {
         return productPlanRepository.findById(planId)
-            .orElseThrow(() -> new NotFoundException(ResultCode.BILLING_PLAN_NOT_FOUND, "套餐不存在"));
+            .orElseThrow(() -> NotFoundException.keyed(ResultCode.BILLING_PLAN_NOT_FOUND, ResultCode.BILLING_PLAN_NOT_FOUND.getMessageKey()));
     }
 }

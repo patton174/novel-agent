@@ -10,7 +10,9 @@
     "quickLinksTitle": "Quick Links",
     "quickLinksDesc": "Common management functions",
     "snapshotTitle": "Platform Snapshot",
-    "snapshotDesc": "Current cumulative metrics; charts below and full trends under Platform Statistics",
+    "snapshotDesc": "Current cumulative metrics; trends and multi-dimensional analytics live under Analytics",
+    "openAnalytics": "Open analytics",
+    "openRevenueAnalytics": "Revenue analytics",
     "billingTitle": "Revenue & Usage",
     "billingDesc": "MRR, token usage and LLM cost this month",
     "billingLoadFail": "Failed to load revenue and cost data",
@@ -76,7 +78,215 @@
     "saving": "Saving...",
     "saveAccount": "Save Account",
     "detailsTitle": "Usage Details",
-    "detailsDesc": "{{username}}'s recent {{count}} records"
+    "detailsDesc": "{{username}}'s recent {{count}} records",
+    "colEvent": "Event",
+    "noEvents": "No usage records"
+  },
+  "roles": {
+    "title": "Roles",
+    "desc": "Built-in platform roles; assign roles in User Management",
+    "openUsers": "Users",
+    "userCount": "users",
+    "sampleHint": "Counts sampled from latest {{sampled}} users ({{total}} total)",
+    "assignHint": "Role changes are audited and synced to Redis permission cache.",
+    "userDesc": "Standard creator account with editor and Agent access.",
+    "userCapabilities": "Permissions: novel:read · novel:write",
+    "vipDesc": "Paid or promotional tier linked to plan quotas.",
+    "vipCapabilities": "Permissions: novel:read · novel:write · higher quotas",
+    "adminDesc": "CRM admin with full /admin access.",
+    "adminCapabilities": "Permissions: full CRM · users/billing/content/system"
+  },
+  "permissions": {
+    "title": "Permissions",
+    "desc": "Static role-permission matrix (fine-grained ACL coming later)",
+    "openRoles": "Role guide",
+    "colPermission": "Permission",
+    "modelHint": "New users get novel:read / novel:write; CRM APIs require admin role.",
+    "futureHint": "Standalone permission CRUD and resource ACL will ship in a future release."
+  },
+  "membership": {
+    "title": "Membership",
+    "desc": "Plans, active subscriptions, and MRR; edit per-user subs in user editor",
+    "loadFail": "Failed to load membership data",
+    "openPlans": "Plans",
+    "openUsers": "Users",
+    "statPlans": "Active plans",
+    "statActiveSubs": "Active subs",
+    "colQuota": "Monthly tokens",
+    "colActiveSubs": "Active subs",
+    "colPayReady": "Pay ready",
+    "noPlans": "No plans",
+    "perUserHint": "Per-user plan and quota overrides: Users → Edit → Subscription & usage"
+  },
+  "jobs": {
+    "title": "Scheduled Jobs",
+    "desc": "Known production schedulers and daemons (read-only catalog)",
+    "descRegistry": "Live registry of cron jobs, MQ consumers, and registered BatchHandlers (read-only — no ops actions here)",
+    "descLive": "Live task registry (distributed cron, MQ consumers, batch dispatch)",
+    "refresh": "Refresh",
+    "loadFail": "Failed to load job registry",
+    "sectionScheduled": "Distributed / scheduled",
+    "sectionMq": "MQ consumers",
+    "sectionBatch": "Batch job types",
+    "sectionBatchHandlers": "Registered BatchHandlers",
+    "sectionExternal": "External ops",
+    "sourceStudio": "Platform scheduler",
+    "sourceSpring": "Spring @Scheduled",
+    "kindBatch": "Batch",
+    "kindBatchHandler": "BatchHandler",
+    "intervalMeta": "Initial delay {{initial}} · interval {{interval}}",
+    "statScheduled": "Scheduled",
+    "statMq": "MQ queues",
+    "statBatch": "Batch types",
+    "statScheduling": "Dist. lock",
+    "schedulingOn": "On",
+    "schedulingOff": "Off",
+    "metaLine": "Lock TTL {{lock}}s · batch dispatch {{batch}}",
+    "metaScheduling": "Distributed lock TTL {{lock}}s · scheduling {{enabled}}",
+    "batchDispatchReady": "ready",
+    "batchDispatchOff": "MQ unavailable",
+    "sectionScheduledDesc": "Platform scheduler and built-in Spring jobs",
+    "sectionMqDesc": "RabbitMQ queues and consumer bindings",
+    "sectionBatchDesc": "Manual batch dispatch and registered handlers",
+    "sectionBatchHandlersDesc": "jobType → handler mappings on Worker (dispatch from Upload Ops)",
+    "sectionExternalDesc": "Ops outside the JVM",
+    "duration": {
+      "dash": "—",
+      "minute": "1 min",
+      "minutes": "{{count}} min",
+      "second": "1 s",
+      "seconds": "{{count}} s",
+      "ms": "{{count}} ms"
+    },
+    "dispatch": {
+      "title": "Dispatch batch job",
+      "desc": "Send itemIds to studio.batch.queue for async worker execution",
+      "jobType": "Job type",
+      "itemIds": "Target IDs",
+      "itemIdsHint": "One per line, or comma / semicolon separated",
+      "itemIdsPlaceholder": "uploaded-file-id-1\nuploaded-file-id-2",
+      "itemCount": "Parsed count",
+      "itemCountHint": "{{count}} ID(s) recognized",
+      "submit": "Dispatch",
+      "submitting": "Dispatching…",
+      "pickType": "Select a job type",
+      "emptyIds": "Enter at least one ID",
+      "success": "Dispatched {{count}} ID(s)",
+      "fail": "Dispatch failed",
+      "noHandlers": "No BatchJobHandler registered",
+      "mqUnavailable": "MQ is not available — batch dispatch disabled (common in local dev without RabbitMQ)"
+    },
+    "uploadRetry": {
+      "title": "Uploads to retry",
+      "desc": "failed / pending files — select and fill the dispatch form",
+      "empty": "No uploads waiting for retry",
+      "summary": "{{total}} total · {{selected}} selected",
+      "fillDispatch": "Fill dispatch form ({{count}})"
+    },
+    "history": {
+      "title": "Recent batch jobs",
+      "empty": "No dispatch history yet",
+      "phase": {
+        "dispatched": "Dispatched",
+        "completed": "Completed",
+        "failed": "Failed"
+      }
+    },
+    "openMonitoring": "Monitoring",
+    "openSettings": "System settings",
+    "openUploadOps": "Upload Ops",
+    "registryHint": "Batch retry, MQ dispatch, and run history live under Content → Upload Ops.",
+    "apiHint": "Retry upload parse: enter file IDs in the form above and dispatch.",
+    "kindCron": "Cron",
+    "kindDaemon": "Daemon",
+    "kindMq": "Message queue",
+    "kindDeploy": "Deploy",
+    "catalog": {
+      "frontendCrypto": {
+        "name": "Frontend crypto register",
+        "desc": "Worker registers frontend bootstrap keys to Redis via novel-studio",
+        "schedule": "After deploy / daily cron (register-frontend-crypto.sh)",
+        "hint": "Powers GET /api/auth/crypto-config"
+      },
+      "agentSession": {
+        "name": "Agent session consumer",
+        "desc": "Processes agent.session.queue async completion",
+        "schedule": "Long-running consumer (do not run local dev against prod MQ)"
+      },
+      "storyMemory": {
+        "name": "Story memory consumer",
+        "desc": "Processes agent.story-memory.queue patches"
+      },
+      "crawlOrchestrator": {
+        "name": "Crawl orchestrator",
+        "desc": "python-ai global crawl_orchestrator daemon",
+        "hint": "Requires CRAWL_ORCHESTRATOR_ENABLED=true"
+      },
+      "crawlDispatch": {
+        "name": "Crawl dispatch",
+        "desc": "crawl.dispatch queue → sub crawl agents"
+      },
+      "deployPipeline": {
+        "name": "GitHub Actions deploy",
+        "desc": "Split deploy workflows for novel-studio / python-ai / frontend",
+        "schedule": "push to main or gh workflow run"
+      }
+    },
+    "runtime": {
+      "genericDesc": "Background scheduled task",
+      "uploadParseReaper": {
+        "name": "Upload parse reaper",
+        "desc": "Marks stale parsing/pending uploads as failed"
+      },
+      "idrConfigRefresh": {
+        "name": "iDataRiver config refresh",
+        "desc": "Merges payment.idatariver.* site settings from DB (every 30s)"
+      },
+      "siteSettingsRefresh": {
+        "name": "Site settings cache refresh",
+        "desc": "Refreshes billing site settings in-memory cache (every 60s)"
+      },
+      "agentRunProxy": {
+        "name": "Agent run proxy heartbeat",
+        "desc": "Renews run proxy lease in legacy runtime mode (every 15s)"
+      }
+    },
+    "mq": {
+      "permission": {
+        "name": "Permission sync consumer",
+        "desc": "permission.queue → role permission cache"
+      },
+      "agentRunEvents": {
+        "name": "Agent run events",
+        "desc": "agent.run.events.queue → runtime events"
+      },
+      "catalogIndex": {
+        "name": "Catalog vector index",
+        "desc": "agent.catalog-index.queue → Milvus chapter index"
+      },
+      "usageEvent": {
+        "name": "Usage reporting",
+        "desc": "agent.usage.queue → billing usage persist"
+      },
+      "fileParse": {
+        "name": "File parse",
+        "desc": "agent.file.parse.queue → python async parse"
+      },
+      "batchJob": {
+        "name": "Batch job dispatch",
+        "desc": "studio.batch.queue → BatchJobHandler routing"
+      }
+    },
+    "batch": {
+      "uploadParseRetry": {
+        "name": "Batch retry upload parse",
+        "desc": "jobType=upload.parse.retry — re-queue failed/pending files"
+      }
+    }
+  },
+  "uploadOps": {
+    "title": "Upload Ops",
+    "desc": "Retry failed/pending uploads, batch MQ dispatch, and execution history (business ops — not the job registry)"
   },
   "plans": {
     "loadFail": "Failed to load plans",
@@ -187,7 +397,7 @@
     "fieldProjectIdHint": "Save Secret first, then pick a project from the list",
     "projectManualHint": "Save Merchant Secret to enable project picker",
     "catalogTitle": "iDataRiver Catalog",
-    "catalogDesc": "View SKUs, pricing, and coupons for the default project (read-only)",
+    "catalogDesc": "Pick a project, then create SKUs, pricing, and coupons; sections fold to save space",
     "catalogPickProject": "Project to manage",
     "catalogSelectProjectHint": "Select a project below to view SKUs and inventory",
     "catalogDetailFail": "Failed to load project detail",
@@ -220,14 +430,41 @@
     "noPaidPlans": "No paid plans to bind",
     "tab": {
       "setup": "Connection",
-      "catalog": "Stock",
+      "catalog": "Catalog",
+      "inventory": "Inventory",
       "bind": "Plan bindings"
     },
     "summaryGateway": "Payment gateway",
     "summaryMerchant": "iDataRiver merchant",
     "summaryPlansReady": "Pay-ready plans",
-    "catalogDescInventory": "Enter a quantity to auto-generate CDKs; view redemptions under Payment orders (DONE).",
+    "catalogDescInventory": "Enter a quantity to auto-generate CDKs; view redemptions under Orders (DONE).",
+    "inventoryDesc": "View SKU stock, restock CDKs, and sync to the payment platform",
     "catalogNeedSecret": "Save Merchant Secret under Connection first",
+    "createSku": "Add SKU",
+    "createPricing": "Add pricing",
+    "createCoupon": "Add coupon",
+    "createSubmit": "Create",
+    "createSkuNeedName": "SKU name is required",
+    "createSkuSuccess": "SKU created",
+    "createSkuFail": "Failed to create SKU",
+    "createPricingNeedPrice": "Price is required",
+    "createPricingSuccess": "Pricing created",
+    "createPricingFail": "Failed to create pricing",
+    "createCouponNeedValue": "Coupon value is required",
+    "createCouponSuccess": "Coupon created",
+    "createCouponFail": "Failed to create coupon",
+    "createNeedSku": "Select a SKU when scope is specific",
+    "createInitialStock": "Initial stock",
+    "createInitialStockHint": "Optional; auto-generates CDKs",
+    "scopeGlobal": "All SKUs",
+    "scopeSpecific": "Specific SKU",
+    "couponPolicy": "Coupon type",
+    "couponPolicyReduction": "Amount off",
+    "couponPolicyDiscount": "Percent off",
+    "couponPolicyFixed": "Fixed price",
+    "couponValue": "Value",
+    "couponValueAmountHint": "USD amount",
+    "couponValueDiscountHint": "1–100 percent off",
     "statSkuCount": "SKUs",
     "statTotalStock": "Total stock",
     "statLowStock": "Low stock SKUs",
@@ -256,6 +493,15 @@
     "inventorySaveFail": "Failed to update inventory",
     "inventoryLoadFail": "Failed to load SKU detail",
     "inventoryNeedInput": "Add card codes or change listing status",
+    "edit": "Edit",
+    "takeOffline": "Take offline",
+    "takeOnline": "List online",
+    "updateSuccess": "Updated",
+    "updateFail": "Update failed",
+    "editSkuTitle": "Edit product",
+    "editPricingTitle": "Edit pricing",
+    "saveChanges": "Save",
+    "cancel": "Cancel",
     "itemTypeReuse": "Reuse",
     "itemTypeConsumable": "Consumable"
   },
@@ -371,6 +617,9 @@
     "actionSuccess": "Operation successful",
     "jobsTitle": "Sub-jobs List",
     "jobsDesc": "Click a row to view details and logs",
+    "colTask": "Task",
+    "colStatus": "Status",
+    "colProgress": "Progress",
     "refresh": "Refresh",
     "filterAll": "All",
     "filterActive": "Active",
@@ -448,6 +697,20 @@
       "unsavedConfirm": "You have unsaved changes. Are you sure you want to switch pages?",
       "pageTitle": "Pages",
       "pageDesc": "Privacy · Terms · Announcements",
+      "scope": {
+        "legal": {
+          "title": "Legal & Terms",
+          "desc": "Privacy policy and user agreement"
+        },
+        "announcements": {
+          "title": "Announcements",
+          "desc": "Site-wide notices and maintenance"
+        },
+        "pages": {
+          "title": "Site Pages",
+          "desc": "Contact and other static pages"
+        }
+      },
       "editLabel": "Edit Page",
       "unsaved": "Unsaved changes",
       "editDesc": "Edit Markdown. Changes take effect immediately on public pages and dashboard announcements.",
@@ -476,6 +739,8 @@
       "periodCost": "{{range}} LLM Cost",
       "tokenTrend": "Token Usage Trend",
       "tokenTrendDesc": "{{range}} platform tokens",
+      "usageTrend": "Usage Trends",
+      "usageTrendDesc": "{{range}} tokens & cost",
       "costTrend": "LLM Cost Trend",
       "costTrendDesc": "{{range}} estimated cost (CNY)",
       "agentRunTrend": "Agent Run Trend",
@@ -608,5 +873,39 @@
       "crawl": "Crawler",
       "image": "Image"
     }
+  },
+  "analytics": {
+    "title": "Analytics",
+    "desc": "Platform stats, revenue, and content trends in one place",
+    "tabPlatform": "Platform",
+    "tabRevenue": "Revenue",
+    "tabContent": "Content"
+  },
+  "placeholder": {
+    "defaultHint": "This module is under construction; full management features will ship in a future release.",
+    "rolesTitle": "Roles",
+    "rolesDesc": "Configure admin, VIP, and default permissions",
+    "permissionsTitle": "Permissions",
+    "permissionsDesc": "Fine-grained feature and data access control",
+    "membershipTitle": "Membership",
+    "membershipDesc": "Subscription tiers, benefits, and quota policies",
+    "pricingTitle": "Pricing",
+    "pricingDesc": "Pricing policies, bulk updates, and history",
+    "couponsTitle": "Coupons",
+    "couponsDesc": "Coupon templates, distribution, and redemption stats",
+    "jobsTitle": "Scheduled Jobs",
+    "jobsDesc": "Cron tasks, execution status, and manual triggers"
+  },
+  "monitoring": {
+    "title": "Service Monitoring",
+    "desc": "Probe frontend assets, novel-studio Actuator, and admin API availability",
+    "refresh": "Re-probe",
+    "servicesUp": "Services up",
+    "lastCheck": "Last check",
+    "latency": "{{ms}} ms",
+    "statusUp": "Up",
+    "statusDegraded": "Degraded",
+    "statusDown": "Down",
+    "hint": "Internal services such as Python AI are probed via novel-studio; Agent chain probes will follow."
   }
 }

@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { AdminUser } from '@/api/adminApi'
 import { updateUser } from '@/api/adminApi'
 import {
@@ -10,13 +10,29 @@ import {
   formatTokenQuota,
   updateUserSubscription,
   type AdminPlan,
+  type AdminUsageEvent,
   type AdminUserUsage,
 } from '@/api/billingAdminApi'
 import { AppModalShell } from '@/components/ui/AppModalShell'
-import { AdminButton, AdminButtonOutline } from '@/components/admin/AdminFormControls'
-import { Button } from '@/components/ui/button'
+import {
+  AdminButton,
+  AdminButtonOutline,
+  AdminField,
+  AdminSelect,
+  AdminTabList,
+  AdminTabTrigger,
+  AdminTextInput,
+} from '@/components/admin/AdminFormControls'
+import {
+  PixelCellMono,
+  PixelCellStack,
+  PIXEL_PANEL,
+  PixelTable,
+  PixelTableActionButton,
+  type PixelColumn,
+} from '@/components/pixel'
 import { DialogFooter } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
+import { cn } from '@/lib/utils'
 import {
   Select,
   SelectContent,
@@ -32,7 +48,6 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { Switch } from '@/components/ui/switch'
-import { cn } from '@/lib/utils'
 import { appToast } from '@/stores/appToastStore'
 import type { UserRole } from '@/stores/userStore'
 
@@ -159,6 +174,45 @@ export function UserEditDialog({
       ? Math.min(100, (usage.tokensUsed / usage.tokenQuota) * 100)
       : 0
 
+  const eventColumns = useMemo((): PixelColumn<AdminUsageEvent>[] => {
+    return [
+      {
+        key: 'type',
+        header: t('admin:userEdit.colEvent'),
+        render: (ev) => <PixelCellStack title={ev.eventType} subtitle={ev.model ?? '—'} />,
+      },
+      {
+        key: 'tokens',
+        header: 'Tokens',
+        align: 'right',
+        render: (ev) => (
+          <PixelCellMono>{ev.totalTokens.toLocaleString('zh-CN')}</PixelCellMono>
+        ),
+      },
+      {
+        key: 'time',
+        header: t('admin:auditLog.colTime'),
+        render: (ev) => (
+          <PixelCellMono className="whitespace-nowrap text-muted-foreground">
+            {new Date(ev.createdAt).toLocaleString('zh-CN')}
+          </PixelCellMono>
+        ),
+      },
+      {
+        key: 'run',
+        header: 'Run',
+        render: (ev) =>
+          ev.runId ? (
+            <PixelCellMono className="max-w-[120px] truncate">
+              <span title={ev.runId}>{ev.runId}</span>
+            </PixelCellMono>
+          ) : (
+            '—'
+          ),
+      },
+    ]
+  }, [t])
+
   return (
     <>
       <AppModalShell
@@ -178,28 +232,23 @@ export function UserEditDialog({
           ) : undefined
         }
       >
-        <div className="flex gap-2 border-b border-border pb-2">
+        <AdminTabList className="border-b-2 border-foreground/15 pb-2">
           {(
             [
               { key: 'account', label: t('admin:userEdit.tabAccount') },
               { key: 'billing', label: t('admin:userEdit.tabBilling') },
             ] as const
           ).map((item) => (
-            <button
+            <AdminTabTrigger
               key={item.key}
               type="button"
+              active={tab === item.key}
               onClick={() => setTab(item.key)}
-              className={cn(
-                'rounded-lg px-3 py-1.5 text-sm font-medium transition-colors',
-                tab === item.key
-                  ? 'bg-primary/10 text-primary'
-                  : 'text-muted-foreground hover:bg-muted',
-              )}
             >
               {item.label}
-            </button>
+            </AdminTabTrigger>
           ))}
-        </div>
+        </AdminTabList>
 
         {tab === 'account' ? (
           <div className="space-y-4 py-2">
@@ -234,40 +283,30 @@ export function UserEditDialog({
             ) : usage ? (
               <>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">{t('admin:userEdit.currentPlan')}</label>
-                  <Select value={planCode} onValueChange={setPlanCode}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
+                  <AdminField layout="form" label={t('admin:userEdit.currentPlan')}>
+                    <AdminSelect value={planCode} onChange={(e) => setPlanCode(e.target.value)}>
                       {plans.map((p) => (
-                        <SelectItem key={p.code} value={p.code}>
+                        <option key={p.code} value={p.code}>
                           {p.name} ({p.code})
-                        </SelectItem>
+                        </option>
                       ))}
-                    </SelectContent>
-                  </Select>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="secondary"
-                    disabled={saving}
-                    onClick={() => void handleSaveSubscription()}
-                  >
+                    </AdminSelect>
+                  </AdminField>
+                  <AdminButtonOutline size="sm" disabled={saving} onClick={() => void handleSaveSubscription()}>
                     {t('admin:userEdit.savePlan')}
-                  </Button>
+                  </AdminButtonOutline>
                 </div>
 
-                <div className="rounded-xl border border-border p-3 text-sm">
+                <div className={cn(PIXEL_PANEL, 'text-sm')}>
                   <p className="font-medium">{usage.planName} · {usage.periodYyyyMm}</p>
-                  <div className="mt-2 space-y-1 text-muted-foreground">
+                  <div className="mt-2 space-y-1 font-mono text-xs text-muted-foreground">
                     <p>
                       Tokens: {formatTokenQuota(usage.tokensUsed)} /{' '}
                       {formatTokenQuota(usage.tokenQuota)}（{usage.percentUsed.toFixed(1)}%）
                     </p>
-                    <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+                    <div className="h-1.5 overflow-hidden rounded-full bg-muted/50">
                       <div
-                        className="h-full rounded-full bg-primary"
+                        className="h-full bg-primary"
                         style={{ width: `${tokenPercent}%` }}
                       />
                     </div>
@@ -277,21 +316,18 @@ export function UserEditDialog({
                     </p>
                     <p>{t('admin:userEdit.estCost')}: {formatCostMicros(usage.costMicros)}</p>
                   </div>
-                  <Button
-                    type="button"
-                    variant="link"
-                    className="mt-2 h-auto p-0"
-                    onClick={() => setEventsOpen(true)}
-                  >
+                  <PixelTableActionButton className="mt-2" variant="ghost" onClick={() => setEventsOpen(true)}>
                     {t('admin:userEdit.viewDetails', { count: usage.recentEvents.length })}
-                  </Button>
+                  </PixelTableActionButton>
                 </div>
 
                 {usage.activeOverrides.length > 0 ? (
-                  <div className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground">
-                    <p className="mb-1 font-medium text-foreground">{t('admin:userEdit.activeOverrides')}</p>
+                  <div className={cn(PIXEL_PANEL, 'border-dashed font-mono text-xs text-muted-foreground')}>
+                    <p className="mb-1 font-bold uppercase tracking-wide text-foreground">
+                      {t('admin:userEdit.activeOverrides')}
+                    </p>
                     {usage.activeOverrides.map((o) => (
-                      <p key={o.id}>
+                      <p key={o.id} className="border-b border-foreground/10 py-1 last:border-0">
                         +{formatTokenQuota(o.tokenBonus)} tokens, +{o.runBonus} runs
                         {o.reason ? ` · ${o.reason}` : ''}
                       </p>
@@ -299,36 +335,30 @@ export function UserEditDialog({
                   </div>
                 ) : null}
 
-                <div className="space-y-2 rounded-xl border border-dashed border-border p-3">
+                <div className={cn(PIXEL_PANEL, 'space-y-2 border-dashed')}>
                   <p className="text-sm font-medium">{t('admin:userEdit.addOverrideTitle')}</p>
                   <div className="grid grid-cols-2 gap-2">
-                    <Input
+                    <AdminTextInput
                       type="number"
                       placeholder={t('admin:userEdit.tokenBonusPlaceholder')}
                       value={tokenBonus}
                       onChange={(e) => setTokenBonus(e.target.value)}
                     />
-                    <Input
+                    <AdminTextInput
                       type="number"
                       placeholder={t('admin:userEdit.runBonusPlaceholder')}
                       value={runBonus}
                       onChange={(e) => setRunBonus(e.target.value)}
                     />
                   </div>
-                  <Input
+                  <AdminTextInput
                     placeholder={t('admin:userEdit.reasonPlaceholder')}
                     value={overrideReason}
                     onChange={(e) => setOverrideReason(e.target.value)}
                   />
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    disabled={saving}
-                    onClick={() => void handleAddOverride()}
-                  >
+                  <AdminButtonOutline size="sm" disabled={saving} onClick={() => void handleAddOverride()}>
                     {t('admin:userEdit.addOverrideBtn')}
-                  </Button>
+                  </AdminButtonOutline>
                 </div>
               </>
             ) : (
@@ -357,26 +387,14 @@ export function UserEditDialog({
               {t('admin:userEdit.detailsDesc', { username: user?.username, count: usage?.recentEvents.length ?? 0 })}
             </SheetDescription>
           </SheetHeader>
-          <ul className="mt-4 divide-y divide-border text-sm">
-            {(usage?.recentEvents ?? []).map((ev) => (
-              <li key={ev.id} className="py-3">
-                <div className="flex justify-between gap-2">
-                  <span className="font-medium">{ev.eventType}</span>
-                  <span className="tabular-nums text-muted-foreground">
-                    {ev.totalTokens.toLocaleString('zh-CN')} tok
-                  </span>
-                </div>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {ev.model ?? '—'} · {new Date(ev.createdAt).toLocaleString('zh-CN')}
-                </p>
-                {ev.runId ? (
-                  <p className="mt-0.5 truncate font-mono text-xs text-muted-foreground">
-                    run:{ev.runId}
-                  </p>
-                ) : null}
-              </li>
-            ))}
-          </ul>
+          <PixelTable
+            columns={eventColumns}
+            data={usage?.recentEvents ?? []}
+            rowKey="id"
+            compact
+            emptyText={t('admin:userEdit.noEvents')}
+            className="mt-4"
+          />
         </SheetContent>
       </Sheet>
     </>

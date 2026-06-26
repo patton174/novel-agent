@@ -208,7 +208,7 @@ public class AgentRunState {
                 return Map.of();
             }
             Thread.currentThread().interrupt();
-            throw cn.novelstudio.module.agent.support.PyaiExceptions.internalError("交互等待失败");
+            throw cn.novelstudio.module.agent.support.PyaiExceptions.internalError("agent.interaction_wait_failed");
         }
     }
 
@@ -237,7 +237,7 @@ public class AgentRunState {
                 return;
             }
             Thread.currentThread().interrupt();
-            throw cn.novelstudio.module.agent.support.PyaiExceptions.internalError("恢复等待失败");
+            throw cn.novelstudio.module.agent.support.PyaiExceptions.internalError("agent.resume_wait_failed");
         }
     }
 
@@ -339,7 +339,7 @@ public class AgentRunState {
         if (line.isBlank()) {
             return false;
         }
-        if (line.contains("等待你的回复")) {
+        if (line.contains("等待你的回复") || line.toLowerCase().contains("waiting for your reply")) {
             return false;
         }
         if (line.startsWith("AskUser") || line.startsWith("ask_user")) {

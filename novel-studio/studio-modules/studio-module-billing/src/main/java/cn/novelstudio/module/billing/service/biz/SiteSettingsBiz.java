@@ -84,7 +84,7 @@ public class SiteSettingsBiz extends BaseBiz {
         for (Map.Entry<String, Object> entry : patch.entrySet()) {
             String key = entry.getKey();
             if (!ALLOWED_KEYS.contains(key)) {
-                throw BizException.of(ResultCode.BAD_REQUEST, "不支持的参数: " + key);
+                throw BizException.keyed(ResultCode.BAD_REQUEST, "billing.settings.unsupported_param", key);
             }
             SiteSettingEntity entity = siteSettingRepository.findById(key)
                 .orElseGet(() -> {
@@ -138,7 +138,7 @@ public class SiteSettingsBiz extends BaseBiz {
         try {
             return objectMapper.writeValueAsString(value);
         } catch (JsonProcessingException ex) {
-            throw BizException.of(ResultCode.BAD_REQUEST, "参数值无法序列化");
+            throw BizException.keyed(ResultCode.BAD_REQUEST, "billing.settings.serialize_failed");
         }
     }
 

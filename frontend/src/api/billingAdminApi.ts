@@ -517,6 +517,20 @@ export const SITE_CONTENT_KEYS = [
   { key: 'announcement', label: '系统公告' },
 ] as const
 
+export type SiteContentScope = 'legal' | 'announcements' | 'pages'
+
+export const SITE_CONTENT_SCOPE_KEYS: Record<SiteContentScope, readonly string[]> = {
+  legal: ['privacy', 'terms'],
+  announcements: ['announcement'],
+  pages: ['contact'],
+}
+
+export const SITE_CONTENT_SCOPE_DEFAULT: Record<SiteContentScope, string> = {
+  legal: 'privacy',
+  announcements: 'announcement',
+  pages: 'contact',
+}
+
 export async function fetchAdminSiteContent(): Promise<SiteContentItem[]> {
   const res = await secureFetch('/api/billing/crm/site-content')
   if (!res.ok) {

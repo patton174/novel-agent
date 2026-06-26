@@ -10,7 +10,9 @@
     "quickLinksTitle": "快捷入口",
     "quickLinksDesc": "常用管理功能",
     "snapshotTitle": "平台快照",
-    "snapshotDesc": "当前累计指标；趋势见下方图表与「平台统计」",
+    "snapshotDesc": "当前累计指标；趋势与多维分析见「数据分析」",
+    "openAnalytics": "查看数据分析",
+    "openRevenueAnalytics": "收入分析",
     "billingTitle": "收入与用量",
     "billingDesc": "本月 MRR、Token 消耗与 LLM 成本",
     "billingLoadFail": "收入与成本数据加载失败",
@@ -76,7 +78,215 @@
     "saving": "保存中…",
     "saveAccount": "保存账号",
     "detailsTitle": "用量明细",
-    "detailsDesc": "{{username}} 最近 {{count}} 条记录"
+    "detailsDesc": "{{username}} 最近 {{count}} 条记录",
+    "colEvent": "事件",
+    "noEvents": "暂无用量记录"
+  },
+  "roles": {
+    "title": "角色管理",
+    "desc": "平台内置角色与能力说明；分配角色请在用户管理中操作",
+    "openUsers": "用户管理",
+    "userCount": "用户",
+    "sampleHint": "角色人数基于最近 {{sampled}} 条用户采样（全站 {{total}} 人）",
+    "assignHint": "修改用户角色会写入审计日志，并同步 Redis 权限缓存。",
+    "userDesc": "普通创作者账号，可使用编辑器与 Agent 写作。",
+    "userCapabilities": "权限：novel:read · novel:write",
+    "vipDesc": "付费或活动升级的增强账号（与套餐配额联动）。",
+    "vipCapabilities": "权限：novel:read · novel:write · 更高配额",
+    "adminDesc": "管理后台 CRM 账号，可访问 /admin 全部模块。",
+    "adminCapabilities": "权限：CRM 全模块 · 用户/计费/内容/系统"
+  },
+  "permissions": {
+    "title": "权限管理",
+    "desc": "当前为角色绑定的静态权限矩阵（后续可扩展细粒度 ACL）",
+    "openRoles": "角色说明",
+    "colPermission": "权限标识",
+    "modelHint": "新用户默认写入 novel:read / novel:write；管理权限仅 admin 角色可访问 CRM API。",
+    "futureHint": "独立权限 CRUD 与资源级 ACL 将在后续版本提供。"
+  },
+  "membership": {
+    "title": "会员管理",
+    "desc": "套餐、活跃订阅与 MRR 概览；单用户订阅请在用户编辑中调整",
+    "loadFail": "加载会员数据失败",
+    "openPlans": "套餐管理",
+    "openUsers": "用户管理",
+    "statPlans": "上架套餐",
+    "statActiveSubs": "活跃订阅",
+    "colQuota": "月 Token 配额",
+    "colActiveSubs": "活跃订阅",
+    "colPayReady": "支付就绪",
+    "noPlans": "暂无套餐",
+    "perUserHint": "编辑单个用户的套餐与临时配额：用户管理 → 编辑 → 订阅与用量"
+  },
+  "jobs": {
+    "title": "定时任务",
+    "desc": "生产环境已知调度任务与守护进程目录（只读）",
+    "descRegistry": "Cron、MQ 消费者与已注册 BatchHandler 的运行时目录（只读，不含业务操作）",
+    "descLive": "运行时任务目录（分布式定时、MQ 消费者、批量调度）",
+    "refresh": "刷新",
+    "loadFail": "加载任务目录失败",
+    "sectionScheduled": "分布式 / 定时任务",
+    "sectionMq": "MQ 消费者",
+    "sectionBatch": "批量任务类型",
+    "sectionBatchHandlers": "已注册 BatchHandler",
+    "sectionExternal": "外部运维",
+    "sourceStudio": "平台调度",
+    "sourceSpring": "Spring @Scheduled",
+    "kindBatch": "批量",
+    "kindBatchHandler": "BatchHandler",
+    "intervalMeta": "首次延迟 {{initial}} · 间隔 {{interval}}",
+    "statScheduled": "定时任务",
+    "statMq": "MQ 队列",
+    "statBatch": "批量类型",
+    "statScheduling": "分布式锁",
+    "schedulingOn": "已启用",
+    "schedulingOff": "已关闭",
+    "metaLine": "任务锁 TTL {{lock}}s · 批量投递 {{batch}}",
+    "metaScheduling": "分布式锁 TTL {{lock}}s · 调度 {{enabled}}",
+    "batchDispatchReady": "可用",
+    "batchDispatchOff": "MQ 未就绪",
+    "sectionScheduledDesc": "平台调度器与 Spring 内建定时任务",
+    "sectionMqDesc": "RabbitMQ 队列与消费者绑定",
+    "sectionBatchDesc": "手动投递批量任务与已注册 handler",
+    "sectionBatchHandlersDesc": "Worker 已注册的 jobType → handler 映射（投递请到「上传运维」）",
+    "sectionExternalDesc": "JVM 外的运维与守护进程",
+    "duration": {
+      "dash": "—",
+      "minute": "1 分钟",
+      "minutes": "{{count}} 分钟",
+      "second": "1 秒",
+      "seconds": "{{count}} 秒",
+      "ms": "{{count}} 毫秒"
+    },
+    "dispatch": {
+      "title": "手动投递批量任务",
+      "desc": "将 itemIds 投递到 studio.batch.queue，由 Worker 异步分片执行",
+      "jobType": "任务类型",
+      "itemIds": "目标 ID 列表",
+      "itemIdsHint": "每行一个，或用逗号 / 分号分隔",
+      "itemIdsPlaceholder": "uploaded-file-id-1\nuploaded-file-id-2",
+      "itemCount": "解析数量",
+      "itemCountHint": "已识别 {{count}} 个 ID",
+      "submit": "投递",
+      "submitting": "投递中…",
+      "pickType": "请选择任务类型",
+      "emptyIds": "请填写至少一个 ID",
+      "success": "已投递 {{count}} 个 ID",
+      "fail": "投递失败",
+      "noHandlers": "当前无已注册的 BatchJobHandler",
+      "mqUnavailable": "MQ 未启用，无法投递批量任务（本地 dev 可能未连接 RabbitMQ）"
+    },
+    "uploadRetry": {
+      "title": "待重试上传",
+      "desc": "failed / pending 状态的文件，可勾选后填入批量投递表单",
+      "empty": "暂无待重试的上传文件",
+      "summary": "共 {{total}} 条，已选 {{selected}} 条",
+      "fillDispatch": "填入投递表单（{{count}}）"
+    },
+    "history": {
+      "title": "最近批量任务",
+      "empty": "暂无投递记录",
+      "phase": {
+        "dispatched": "已投递",
+        "completed": "已完成",
+        "failed": "失败"
+      }
+    },
+    "openMonitoring": "服务监控",
+    "openSettings": "系统参数",
+    "openUploadOps": "上传运维",
+    "registryHint": "批量重试、MQ 投递与执行历史请在「内容 → 上传运维」操作。",
+    "apiHint": "批量重试上传解析：在上方表单填入 fileId 后投递。",
+    "kindCron": "Cron",
+    "kindDaemon": "守护进程",
+    "kindMq": "消息队列",
+    "kindDeploy": "部署",
+    "catalog": {
+      "frontendCrypto": {
+        "name": "前端 Crypto 注册",
+        "desc": "Worker 向 novel-studio 注册前端 bootstrap 密钥到 Redis",
+        "schedule": "部署后 / 每日 cron（Worker register-frontend-crypto.sh）",
+        "hint": "对应 GET /api/auth/crypto-config"
+      },
+      "agentSession": {
+        "name": "Agent 会话异步消费",
+        "desc": "处理 agent.session.queue 中的会话补全与持久化",
+        "schedule": "常驻 Consumer（勿在本地 dev 连生产 MQ）"
+      },
+      "storyMemory": {
+        "name": "Story Memory 异步消费",
+        "desc": "处理 agent.story-memory.queue 中的记忆 patch"
+      },
+      "crawlOrchestrator": {
+        "name": "爬虫主编排",
+        "desc": "python-ai crawl_orchestrator 全局 daemon",
+        "hint": "需 CRAWL_ORCHESTRATOR_ENABLED=true"
+      },
+      "crawlDispatch": {
+        "name": "爬虫任务分发",
+        "desc": "crawl.dispatch 队列 → 子爬虫 Agent"
+      },
+      "deployPipeline": {
+        "name": "GitHub Actions 部署",
+        "desc": "novel-studio / python-ai / frontend 分 workflow 独立部署",
+        "schedule": "push main 或 gh workflow run"
+      }
+    },
+    "runtime": {
+      "genericDesc": "后台定时任务",
+      "uploadParseReaper": {
+        "name": "上传解析兜底回收",
+        "desc": "将超时仍处于 parsing/pending 的上传文件标记为 failed"
+      },
+      "idrConfigRefresh": {
+        "name": "iDataRiver 配置刷新",
+        "desc": "从 DB 合并 payment.idatariver.* 站点设置（每 30s）"
+      },
+      "siteSettingsRefresh": {
+        "name": "站点设置缓存刷新",
+        "desc": "刷新 billing 站点参数内存缓存（每 60s）"
+      },
+      "agentRunProxy": {
+        "name": "Agent Run 代理心跳",
+        "desc": "legacy runtime 模式下 Run 代理租约续期（每 15s）"
+      }
+    },
+    "mq": {
+      "permission": {
+        "name": "权限同步消费",
+        "desc": "permission.queue → 角色权限缓存"
+      },
+      "agentRunEvents": {
+        "name": "Agent Run 事件",
+        "desc": "agent.run.events.queue → 运行态事件"
+      },
+      "catalogIndex": {
+        "name": "书库向量索引",
+        "desc": "agent.catalog-index.queue → Milvus 章节索引"
+      },
+      "usageEvent": {
+        "name": "用量上报",
+        "desc": "agent.usage.queue → 计费用量落库"
+      },
+      "fileParse": {
+        "name": "文件解析",
+        "desc": "agent.file.parse.queue → python 异步解析"
+      },
+      "batchJob": {
+        "name": "批量任务分发",
+        "desc": "studio.batch.queue → BatchJobHandler 路由"
+      }
+    },
+    "batch": {
+      "uploadParseRetry": {
+        "name": "批量重试上传解析",
+        "desc": "jobType=upload.parse.retry，重投 failed/pending 文件到解析队列"
+      }
+    }
+  },
+  "uploadOps": {
+    "title": "上传运维",
+    "desc": "failed / pending 上传批量重试、MQ 投递与执行历史（业务操作，非定时任务目录）"
   },
   "plans": {
     "loadFail": "加载套餐失败",
@@ -187,7 +397,7 @@
     "fieldProjectIdHint": "在「商品库与库存」或「套餐绑定」中为每个套餐选择项目",
     "projectManualHint": "先保存 Merchant Secret 后可下拉选择",
     "catalogTitle": "iDataRiver 商品库",
-    "catalogDesc": "选定默认项目后，查看 SKU、定价与优惠券（只读；创建/改价请在 iDataRiver 控制台操作）",
+    "catalogDesc": "选定项目后，可在此新增商品、定价与优惠券；各区块可折叠节省空间",
     "catalogPickProject": "选择要查看/管理的项目",
     "catalogSelectProjectHint": "请在下方选择项目，查看 SKU 与库存",
     "catalogDetailFail": "加载项目详情失败",
@@ -220,14 +430,41 @@
     "noPaidPlans": "暂无付费套餐需要绑定",
     "tab": {
       "setup": "连接配置",
-      "catalog": "库存管理",
+      "catalog": "商品目录",
+      "inventory": "库存管理",
       "bind": "套餐绑定"
     },
     "summaryGateway": "支付网关",
     "summaryMerchant": "iDataRiver 商户",
     "summaryPlansReady": "可支付套餐",
-    "catalogDescInventory": "填写补充数量即可，系统自动生成 CDK 并同步至 iDataRiver；核销结果见「核销记录」",
+    "catalogDescInventory": "填写补充数量即可，系统自动生成 CDK 并同步至 iDataRiver；核销结果见「订单管理」",
+    "inventoryDesc": "查看 SKU 库存、补充 CDK 并同步至发卡平台",
     "catalogNeedSecret": "请先在「连接配置」保存 Merchant Secret",
+    "createSku": "新增商品",
+    "createPricing": "新增定价",
+    "createCoupon": "新增优惠券",
+    "createSubmit": "创建",
+    "createSkuNeedName": "请填写商品名称",
+    "createSkuSuccess": "商品已创建",
+    "createSkuFail": "创建商品失败",
+    "createPricingNeedPrice": "请填写价格",
+    "createPricingSuccess": "定价已创建",
+    "createPricingFail": "创建定价失败",
+    "createCouponNeedValue": "请填写优惠数值",
+    "createCouponSuccess": "优惠券已创建",
+    "createCouponFail": "创建优惠券失败",
+    "createNeedSku": "指定范围时需选择 SKU",
+    "createInitialStock": "初始库存",
+    "createInitialStockHint": "可选，自动生成 CDK",
+    "scopeGlobal": "全项目",
+    "scopeSpecific": "指定 SKU",
+    "couponPolicy": "优惠类型",
+    "couponPolicyReduction": "减价券",
+    "couponPolicyDiscount": "打折券",
+    "couponPolicyFixed": "一口价券",
+    "couponValue": "优惠数值",
+    "couponValueAmountHint": "USD 金额",
+    "couponValueDiscountHint": "1-100 折扣比例",
     "statSkuCount": "SKU 数量",
     "statTotalStock": "总库存",
     "statLowStock": "低库存 SKU",
@@ -256,6 +493,15 @@
     "inventorySaveFail": "库存更新失败",
     "inventoryLoadFail": "加载 SKU 详情失败",
     "inventoryNeedInput": "请填写新卡密或修改上架状态",
+    "edit": "编辑",
+    "takeOffline": "下架",
+    "takeOnline": "上架",
+    "updateSuccess": "已更新",
+    "updateFail": "更新失败",
+    "editSkuTitle": "编辑商品",
+    "editPricingTitle": "编辑定价",
+    "saveChanges": "保存",
+    "cancel": "取消",
     "itemTypeReuse": "重复出售 (reuse)",
     "itemTypeConsumable": "售后删档 (consumable)"
   },
@@ -371,6 +617,9 @@
     "actionSuccess": "操作成功",
     "jobsTitle": "子任务列表",
     "jobsDesc": "点击行查看详情与日志",
+    "colTask": "任务",
+    "colStatus": "状态",
+    "colProgress": "进度",
     "refresh": "刷新",
     "filterAll": "全部",
     "filterActive": "进行中",
@@ -448,6 +697,20 @@
       "unsavedConfirm": "有未保存的更改，确定切换页面？",
       "pageTitle": "页面",
       "pageDesc": "隐私 · 条款 · 公告",
+      "scope": {
+        "legal": {
+          "title": "法律与协议",
+          "desc": "隐私政策与用户协议"
+        },
+        "announcements": {
+          "title": "系统公告",
+          "desc": "全站公告与维护通知"
+        },
+        "pages": {
+          "title": "站点页面",
+          "desc": "联系我们等静态页面"
+        }
+      },
       "editLabel": "编辑页面",
       "unsaved": "有未保存的更改",
       "editDesc": "编辑 Markdown，保存后公开页与仪表盘公告即时生效。",
@@ -476,6 +739,8 @@
       "periodCost": "{{range}} LLM 成本",
       "tokenTrend": "Token 消耗趋势",
       "tokenTrendDesc": "{{range}} 全站 Token",
+      "usageTrend": "使用趋势",
+      "usageTrendDesc": "{{range}} Token 与费用",
       "costTrend": "LLM 成本趋势",
       "costTrendDesc": "{{range}} 估算成本（元）",
       "agentRunTrend": "Agent 调用趋势",
@@ -608,5 +873,39 @@
       "crawl": "爬虫",
       "image": "图像"
     }
+  },
+  "analytics": {
+    "title": "数据分析",
+    "desc": "合并平台统计、收入与成本、内容趋势，避免概览页重复展示",
+    "tabPlatform": "平台",
+    "tabRevenue": "收入",
+    "tabContent": "内容"
+  },
+  "placeholder": {
+    "defaultHint": "该模块正在建设中，后续版本将提供完整管理能力。",
+    "rolesTitle": "角色管理",
+    "rolesDesc": "配置管理员、VIP 等角色与默认权限",
+    "permissionsTitle": "权限管理",
+    "permissionsDesc": "细粒度功能与数据访问控制",
+    "membershipTitle": "会员管理",
+    "membershipDesc": "订阅等级、权益与配额策略",
+    "pricingTitle": "价格管理",
+    "pricingDesc": "统一定价策略、批量调价与历史记录",
+    "couponsTitle": "优惠券管理",
+    "couponsDesc": "优惠券模板、发放与核销统计",
+    "jobsTitle": "定时任务",
+    "jobsDesc": "系统调度任务、执行状态与手动触发"
+  },
+  "monitoring": {
+    "title": "服务监控",
+    "desc": "探测前端静态资源、novel-studio Actuator 与管理 API 可用性",
+    "refresh": "重新探测",
+    "servicesUp": "服务正常",
+    "lastCheck": "最近检测",
+    "latency": "{{ms}} ms",
+    "statusUp": "正常",
+    "statusDegraded": "降级",
+    "statusDown": "不可用",
+    "hint": "Python AI 等内网服务需通过 novel-studio 代理探测，后续将补充 Agent 链路探针。"
   }
 }

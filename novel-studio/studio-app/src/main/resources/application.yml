@@ -87,6 +87,11 @@ app:
     storage-dir: ${UPLOAD_STORAGE_DIR:./data/uploads}
     max-file-size: ${UPLOAD_MAX_FILE_SIZE:50MB}
     allowed-formats: [txt, md, markdown, epub, pdf, docx]
+  i18n:
+    enabled: true
+    translation-base-url: ${I18N_TRANSLATION_BASE_URL:}
+    translation-api-key: ${I18N_TRANSLATION_API_KEY:}
+    auto-translate-site-content: ${I18N_AUTO_TRANSLATE_SITE_CONTENT:true}
 
 studio:
   security:

@@ -5,6 +5,7 @@ import cn.novelstudio.module.agent.service.biz.AgentStreamBiz;
 import cn.novelstudio.module.agent.support.AgentStreamSsePrelude;
 import cn.novelstudio.module.agent.support.AgentStreamSupport;
 import cn.novelstudio.module.agent.support.PyaiRequestSupport;
+import cn.novelstudio.platform.i18n.ResultLocalizer;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -29,9 +30,14 @@ import java.nio.charset.StandardCharsets;
 public class InternalAgentRunStreamController {
 
     private final RunProxyResumeService runProxyResumeService;
+    private final ResultLocalizer resultLocalizer;
 
-    public InternalAgentRunStreamController(RunProxyResumeService runProxyResumeService) {
+    public InternalAgentRunStreamController(
+        RunProxyResumeService runProxyResumeService,
+        ResultLocalizer resultLocalizer
+    ) {
         this.runProxyResumeService = runProxyResumeService;
+        this.resultLocalizer = resultLocalizer;
     }
 
     @PostMapping(value = "/{runId}/stream/resume", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
@@ -50,7 +56,9 @@ public class InternalAgentRunStreamController {
         StreamingResponseBody body = outputStream -> {
             writeFrame(outputStream, AgentStreamSsePrelude.connectedFrame());
             session.frames()
-                .onErrorResume(ex -> Flux.fromIterable(AgentStreamSupport.errorFrames(ex)))
+                .onErrorResume(ex -> Flux.fromIterable(
+                    AgentStreamSupport.errorFrames(AgentStreamSupport.resolveStreamError(ex, resultLocalizer))
+                ))
                 .doOnNext(frame -> writeFrame(outputStream, frame))
                 .blockLast();
         };

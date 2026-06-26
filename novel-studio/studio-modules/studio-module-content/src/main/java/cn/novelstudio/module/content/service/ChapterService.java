@@ -18,6 +18,7 @@ import cn.novelstudio.module.content.repository.VolumeRepository;
 import cn.novelstudio.module.content.support.ChapterLineEditSupport;
 import cn.novelstudio.module.content.support.ContentExceptions;
 import cn.novelstudio.module.content.support.ChapterReadStreamWriter;
+import cn.novelstudio.platform.i18n.StudioMessages;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,6 +42,7 @@ public class ChapterService {
     private final ChapterIndexClient indexClient;
     private final ReindexJobService reindexJobService;
     private final UserWritingActivityService writingActivityService;
+    private final StudioMessages messages;
 
     @Transactional
     public List<ChapterSummaryDTO> listSummaries(Long userId, String novelId) {
@@ -83,16 +85,14 @@ public class ChapterService {
             return rows.stream()
                 .filter(row -> cid.equals(row.id()))
                 .findFirst()
-                .orElseThrow(() -> ContentExceptions.badRequest("chapter not found: " + cid));
+                .orElseThrow(() -> ContentExceptions.badRequest("content.chapter.resolve_not_found", cid));
         }
         if (index != null) {
             if (index < 1) {
-                throw ContentExceptions.badRequest("index must be >= 1");
+                throw ContentExceptions.badRequest("content.chapter.index_min");
             }
             if (index > rows.size()) {
-                throw ContentExceptions.badRequest(
-                    "index " + index + " out of range (1–" + rows.size() + ")"
-                );
+                throw ContentExceptions.badRequest("content.chapter.index_out_of_range", index, rows.size());
             }
             return rows.get(index - 1);
         }
@@ -105,11 +105,11 @@ public class ChapterService {
                 return exact.get(0);
             }
             if (exact.size() > 1) {
-                throw ContentExceptions.badRequest("ambiguous title: " + want);
+                throw ContentExceptions.badRequest("content.chapter.ambiguous_title", want);
             }
-            throw ContentExceptions.badRequest("no chapter titled: " + want);
+            throw ContentExceptions.badRequest("content.chapter.no_title_match", want);
         }
-        throw ContentExceptions.badRequest("provide chapterId, title, or index");
+        throw ContentExceptions.badRequest("content.chapter.resolve_target_required");
     }
 
     public ChapterReadSliceDTO readChapterSliceByTarget(
@@ -179,12 +179,7 @@ public class ChapterService {
         ChapterReadStreamWriter.SliceView view = buildReadSliceView(userId, chapterId, offset, limit, listIndex);
         String text = formatNumberedLines(view.sliceLines(), view.offsetOut());
         if (view.hasMore() && view.nextOffset() != null) {
-            text += String.format(
-                "%n%n[章节共 %d 行，本次 %d 行；续读 offset=%d limit=…]",
-                view.totalLines(),
-                view.returnedLines(),
-                view.nextOffset()
-            );
+            text += readMoreFooter(view.totalLines(), view.returnedLines(), view.nextOffset());
         }
         return new ChapterReadSliceDTO(
             view.chapter().id(),
@@ -212,7 +207,10 @@ public class ChapterService {
         ChapterDTO chapter = getChapter(userId, chapterId);
         int listIndex = findListIndex(userId, chapter.novelId(), chapterId);
         ChapterReadStreamWriter.SliceView view = buildReadSliceView(userId, chapterId, offset, limit, listIndex);
-        ChapterReadStreamWriter.write(out, view);
+        String footer = view.hasMore() && view.nextOffset() != null
+            ? readMoreFooter(view.totalLines(), view.returnedLines(), view.nextOffset())
+            : null;
+        ChapterReadStreamWriter.write(out, view, footer);
     }
 
     public void streamChapterReadSliceByTarget(
@@ -273,8 +271,10 @@ public class ChapterService {
             .orElse(0);
     }
 
-    private static String toAgentMarkdown(ChapterDTO chapter, int listIndex) {
-        String title = chapter.title() == null ? "未命名" : chapter.title();
+    private String toAgentMarkdown(ChapterDTO chapter, int listIndex) {
+        String title = chapter.title() == null || chapter.title().isBlank()
+            ? messages.get("content.chapter.untitled")
+            : chapter.title();
         String cid = chapter.id() == null ? "" : chapter.id();
         int sortOrder = chapter.sortOrder();
         String summary = chapter.summary() == null ? "" : chapter.summary();
@@ -465,7 +465,7 @@ public class ChapterService {
             ChapterEntity entity = chapterRepository.findById(chapterIds.get(i))
                 .orElseThrow(ContentExceptions::chapterNotFound);
             if (!novelId.equals(entity.getNovelId())) {
-                throw ContentExceptions.badRequest("章节与卷不属于同一小说");
+                throw ContentExceptions.badRequest("content.chapter.volume_novel_mismatch");
             }
             entity.setVolumeId(volumeId);
             entity.setSortOrder(i + 1);
@@ -478,7 +478,7 @@ public class ChapterService {
     public List<ChapterSummaryDTO> reorderNovelChapters(Long userId, String novelId, List<String> chapterIds) {
         assertNovelOwned(userId, novelId);
         if (chapterIds == null || chapterIds.isEmpty()) {
-            throw ContentExceptions.badRequest("chapter_ids 不能为空");
+            throw ContentExceptions.badRequest("content.chapter.ids_required");
         }
         List<ChapterSummaryDTO> current = listSummaries(userId, novelId);
         java.util.Set<String> known = current.stream()
@@ -486,27 +486,16 @@ public class ChapterService {
             .collect(java.util.stream.Collectors.toCollection(java.util.LinkedHashSet::new));
         java.util.Set<String> provided = new java.util.LinkedHashSet<>(chapterIds);
         if (provided.size() != chapterIds.size()) {
-            throw ContentExceptions.badRequest("duplicate chapter_id in chapter_ids");
+            throw ContentExceptions.badRequest("content.chapter.duplicate_ids");
         }
         if (!known.equals(provided)) {
-            java.util.Set<String> missing = new java.util.LinkedHashSet<>(known);
-            missing.removeAll(provided);
-            java.util.Set<String> extra = new java.util.LinkedHashSet<>(provided);
-            extra.removeAll(known);
-            StringBuilder msg = new StringBuilder("chapter_ids must list every chapter exactly once");
-            if (!missing.isEmpty()) {
-                msg.append(" (missing: ").append(missing.stream().limit(3).toList()).append(')');
-            }
-            if (!extra.isEmpty()) {
-                msg.append(" (unknown: ").append(extra.stream().limit(3).toList()).append(')');
-            }
-            throw ContentExceptions.badRequest(msg.toString());
+            throw ContentExceptions.badRequest("content.chapter.ids_set_mismatch");
         }
         for (int i = 0; i < chapterIds.size(); i++) {
             ChapterEntity entity = chapterRepository.findById(chapterIds.get(i))
                 .orElseThrow(ContentExceptions::chapterNotFound);
             if (!novelId.equals(entity.getNovelId())) {
-                throw ContentExceptions.badRequest("章节不属于该小说");
+                throw ContentExceptions.badRequest("content.chapter.not_in_novel");
             }
             entity.setSortOrder(i + 1);
             chapterRepository.save(entity);
@@ -585,6 +574,10 @@ public class ChapterService {
             ));
         }
         return out;
+    }
+
+    private String readMoreFooter(int totalLines, int returnedLines, int nextOffset) {
+        return "\n\n" + messages.get("content.chapter.read_footer", totalLines, returnedLines, nextOffset);
     }
 
     private ChapterDTO toDto(ChapterEntity entity) {

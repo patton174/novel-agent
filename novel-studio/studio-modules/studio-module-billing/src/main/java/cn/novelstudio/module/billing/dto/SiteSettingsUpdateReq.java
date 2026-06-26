@@ -5,6 +5,6 @@ import jakarta.validation.constraints.NotNull;
 import java.util.Map;
 
 public record SiteSettingsUpdateReq(
-    @NotNull Map<String, Object> settings
+    @NotNull(message = "{validation.billing.settings_required}") Map<String, Object> settings
 ) {
 }

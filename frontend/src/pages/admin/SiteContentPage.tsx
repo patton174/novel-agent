@@ -4,8 +4,11 @@ import { Eye, FileText, Save } from 'lucide-react'
 import {
   fetchAdminSiteContent,
   SITE_CONTENT_KEYS,
+  SITE_CONTENT_SCOPE_DEFAULT,
+  SITE_CONTENT_SCOPE_KEYS,
   updateAdminSiteContent,
   type SiteContentItem,
+  type SiteContentScope,
 } from '@/api/billingAdminApi'
 import { SiteMarkdown } from '@/components/content/SiteMarkdown'
 import {
@@ -22,11 +25,15 @@ import { cn } from '@/lib/utils'
 import { useMarkRouteSeen } from '@/hooks/useMarkRouteSeen'
 import { appToast } from '@/stores/appToastStore'
 
-export default function SiteContentPage() {
+export type { SiteContentScope }
+
+export default function SiteContentPage({ scope = 'legal' }: { scope?: SiteContentScope } = {}) {
   const { t } = useTranslation(['admin', 'common'])
   useMarkRouteSeen()
+  const allowedKeys = SITE_CONTENT_SCOPE_KEYS[scope]
+  const scopeKeys = SITE_CONTENT_KEYS.filter((item) => allowedKeys.includes(item.key))
   const [items, setItems] = useState<SiteContentItem[]>([])
-  const [selectedKey, setSelectedKey] = useState<string>('privacy')
+  const [selectedKey, setSelectedKey] = useState<string>(SITE_CONTENT_SCOPE_DEFAULT[scope])
   const [title, setTitle] = useState('')
   const [bodyMd, setBodyMd] = useState('')
   const [savedTitle, setSavedTitle] = useState('')
@@ -108,6 +115,9 @@ export default function SiteContentPage() {
   const selectedLabel =
     SITE_CONTENT_KEYS.find((k) => k.key === selectedKey)?.label ?? selectedKey
 
+  const scopeTitle = t(`admin:siteContent.scope.${scope}.title`)
+  const scopeDesc = t(`admin:siteContent.scope.${scope}.desc`)
+
   if (loading) {
     return (
       <AppPageStack>
@@ -122,10 +132,10 @@ export default function SiteContentPage() {
       <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
         <aside className="hidden w-full shrink-0 lg:sticky lg:top-6 lg:block lg:w-52">
           <AppShellCard>
-            <AppShellCardHeader title={t('admin:siteContent.pageTitle')} description={t('admin:siteContent.pageDesc')} />
+            <AppShellCardHeader title={scopeTitle} description={scopeDesc} />
             <AppShellCardBody className="py-2">
               <ul className="space-y-0.5">
-                {SITE_CONTENT_KEYS.map((item) => (
+                {scopeKeys.map((item) => (
                   <li key={item.key}>
                     <button
                       type="button"
@@ -158,7 +168,7 @@ export default function SiteContentPage() {
               value={selectedKey}
               className="w-full"
               onChange={selectKey}
-              options={SITE_CONTENT_KEYS.map((item) => ({
+              options={scopeKeys.map((item) => ({
                 value: item.key,
                 label: item.label,
               }))}

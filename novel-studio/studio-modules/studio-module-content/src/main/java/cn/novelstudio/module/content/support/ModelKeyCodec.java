@@ -26,7 +26,7 @@ public class ModelKeyCodec {
         try {
             return codec.decryptFromBase64(ciphertextB64);
         } catch (Exception e) {
-            throw new IllegalStateException("API key 解密失败", e);
+            throw new IllegalStateException("model.api_key_decrypt_failed", e);
         }
     }
 }

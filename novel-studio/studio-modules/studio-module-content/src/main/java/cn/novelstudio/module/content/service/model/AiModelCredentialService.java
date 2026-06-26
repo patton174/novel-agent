@@ -1,5 +1,7 @@
 package cn.novelstudio.module.content.service.model;
 
+import cn.novelstudio.kernel.exception.NotFoundException;
+import cn.novelstudio.kernel.exception.ValidationException;
 import cn.novelstudio.module.content.entity.AiModelCredentialEntity;
 import cn.novelstudio.module.content.entity.AiModelEntity;
 import cn.novelstudio.module.content.repository.AiModelCredentialRepository;
@@ -58,7 +60,7 @@ public class AiModelCredentialService {
         AiModelCredentialEntity cred = requireCredential(id);
         long linked = modelRepo.countByCredentialId(id);
         if (linked > 0) {
-            throw new IllegalArgumentException("该连接下仍有 " + linked + " 个模型，请先删除模型");
+            throw ValidationException.keyed("model.connection_has_models", linked);
         }
         credentialRepo.delete(cred);
     }
@@ -66,7 +68,7 @@ public class AiModelCredentialService {
     @Transactional(readOnly = true)
     public AiModelCredentialEntity requireCredential(String id) {
         return credentialRepo.findById(id)
-            .orElseThrow(() -> new IllegalArgumentException("API 连接不存在"));
+            .orElseThrow(() -> NotFoundException.keyed("model.credential_not_found"));
     }
 
     public String credentialLabel(String credentialId) {
@@ -77,7 +79,7 @@ public class AiModelCredentialService {
 
     public void linkModel(AiModelEntity model, AiModelCredentialEntity cred) {
         if (!cred.getModelType().equals(model.getModelType())) {
-            throw new IllegalArgumentException("连接类型与模型类型不一致");
+            throw ValidationException.keyed("model.credential_type_mismatch");
         }
         model.setCredentialId(cred.getId());
         model.setProvider(cred.getProvider());
@@ -92,7 +94,7 @@ public class AiModelCredentialService {
             return keyCodec.decrypt(cred.getApiKeyEnc());
         }
         if (model.getApiKeyEnc() == null || model.getApiKeyEnc().isBlank()) {
-            throw new IllegalStateException("模型未配置 API Key");
+            throw new IllegalStateException("model.credential_no_api_key");
         }
         return keyCodec.decrypt(model.getApiKeyEnc());
     }
@@ -120,15 +122,15 @@ public class AiModelCredentialService {
 
     private void requireFields(CredentialUpsertReq req, boolean creating) {
         if (req.getLabel() == null || req.getLabel().isBlank()) {
-            throw new IllegalArgumentException("请填写连接名称");
+            throw ValidationException.keyed("model.connection_name_required");
         }
         if (creating && (req.getApiKey() == null || req.getApiKey().isBlank())) {
-            throw new IllegalArgumentException("请填写 API Key");
+            throw ValidationException.keyed("model.api_key_required");
         }
         if (req.getProvider() == null || req.getProvider().isBlank()
             || req.getProtocol() == null || req.getProtocol().isBlank()
             || req.getBaseUrl() == null || req.getBaseUrl().isBlank()) {
-            throw new IllegalArgumentException("请填写提供商、协议与 API 地址");
+            throw ValidationException.keyed("model.provider_required");
         }
     }
 
@@ -140,7 +142,7 @@ public class AiModelCredentialService {
         if (req.getApiKey() != null && !req.getApiKey().isEmpty()) {
             cred.setApiKeyEnc(keyCodec.encrypt(req.getApiKey()));
         } else if (creating) {
-            throw new IllegalArgumentException("请填写 API Key");
+            throw ValidationException.keyed("model.api_key_required");
         }
     }
 

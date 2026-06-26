@@ -1,5 +1,6 @@
 package cn.novelstudio.module.auth.security;
 
+import cn.novelstudio.platform.i18n.StudioMessages;
 import cn.novelstudio.platform.security.AuthUnauthorizedException;
 import cn.novelstudio.platform.security.JwtCodec;
 import cn.novelstudio.platform.security.JwtPrincipal;
@@ -84,13 +85,16 @@ public class AuthUserIdInjectFilter extends OncePerRequestFilter {
     );
 
     private final JwtCodec jwtCodec;
+    private final StudioMessages messages;
     private final String internalServiceKey;
 
     public AuthUserIdInjectFilter(
         JwtCodec jwtCodec,
+        StudioMessages messages,
         @Value("${agent.internal.service-key:${INTERNAL_SERVICE_KEY:dev-internal-key-change-me}}") String internalServiceKey
     ) {
         this.jwtCodec = jwtCodec;
+        this.messages = messages;
         this.internalServiceKey = internalServiceKey == null ? "" : internalServiceKey.trim();
     }
 
@@ -112,18 +116,28 @@ public class AuthUserIdInjectFilter extends OncePerRequestFilter {
         }
         String token = resolveToken(request);
         if (token == null || token.isBlank()) {
-            unauthorized(response, "未登录或登录已过期");
+            unauthorized(response, messages.get("result.unauthorized"));
             return;
         }
         try {
             JwtPrincipal principal = jwtCodec.parseAccessToken(token);
             filterChain.doFilter(new InjectedHeadersRequest(request, buildHeaders(principal)), response);
         } catch (AuthUnauthorizedException ex) {
-            unauthorized(response, ex.getMessage());
+            unauthorized(response, localizeAuthMessage(ex.getMessage()));
         } catch (RuntimeException ex) {
             log.debug("access token parse failed path={}: {}", path, ex.getMessage());
-            unauthorized(response, "登录已过期，请重新登录");
+            unauthorized(response, messages.get("result.auth.token_expired"));
         }
+    }
+
+    private String localizeAuthMessage(String message) {
+        if (message == null || message.isBlank()) {
+            return messages.get("result.unauthorized");
+        }
+        if (message.matches("^[a-z][a-z0-9_.]*$")) {
+            return messages.get(message);
+        }
+        return message;
     }
 
     private Map<String, String> buildHeaders(JwtPrincipal principal) {

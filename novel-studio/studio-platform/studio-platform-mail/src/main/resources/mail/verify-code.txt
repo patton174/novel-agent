@@ -1,8 +1,10 @@
-__productName__ — 邮箱验证码
+__productName__ — __mailHeadline__
 
-您的验证码是：__code__
+__mailCodeLabel____code__
 
-验证码 __ttlLabel__ 内有效，请勿泄露给他人。如非本人操作请忽略。
+__mailTtlSecurity__
+
+__mailIgnoreShort__
 
 —
 __productName__

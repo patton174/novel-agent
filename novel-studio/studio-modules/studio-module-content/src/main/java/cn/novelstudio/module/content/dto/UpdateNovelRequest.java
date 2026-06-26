@@ -7,5 +7,5 @@ public record UpdateNovelRequest(
     String description,
     String genre,
     String style,
-    @Positive Integer targetChapterWords
+    @Positive(message = "{validation.content.target_words_positive}") Integer targetChapterWords
 ) {}

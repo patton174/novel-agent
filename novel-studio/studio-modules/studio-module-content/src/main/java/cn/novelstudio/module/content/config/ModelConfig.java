@@ -19,7 +19,7 @@ public class ModelConfig {
     @Bean
     AesGcmCodec modelKeyAesCodec() {
         if (keyEncryptionKey == null || keyEncryptionKey.isBlank()) {
-            throw new IllegalStateException("app.model.key-encryption-key 未配置（MODEL_KEY_ENCRYPTION_KEY）");
+            throw new IllegalStateException("model.key_encryption_key_missing");
         }
         return AesGcmCodec.fromBase64Key(keyEncryptionKey);
     }

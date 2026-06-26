@@ -1,7 +1,11 @@
 package cn.novelstudio.module.billing.support;
 
+import cn.novelstudio.platform.i18n.AppLocale;
+import cn.novelstudio.platform.i18n.LocaleContext;
+import cn.novelstudio.platform.i18n.StudioMessages;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -13,10 +17,12 @@ import java.time.Duration;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class IpRegionResolver {
 
     private static final Duration TIMEOUT = Duration.ofSeconds(2);
 
+    private final StudioMessages messages;
     private final HttpClient httpClient = HttpClient.newBuilder()
         .connectTimeout(TIMEOUT)
         .build();
@@ -24,15 +30,16 @@ public class IpRegionResolver {
 
     public String resolveRegion(String ip) {
         if (ip == null || ip.isBlank()) {
-            return "访客";
+            return messages.get("billing.danmaku.guest_author");
         }
         String normalized = ip.trim();
         if (isPrivateOrLocal(normalized)) {
-            return "本地访客";
+            return messages.get("billing.ip.local_guest");
         }
         try {
+            String lang = LocaleContext.get() == AppLocale.EN ? "en" : "zh-CN";
             HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create("http://ip-api.com/json/" + normalized + "?lang=zh-CN&fields=status,city,regionName,country"))
+                .uri(URI.create("http://ip-api.com/json/" + normalized + "?lang=" + lang + "&fields=status,city,regionName,country"))
                 .timeout(TIMEOUT)
                 .GET()
                 .build();
@@ -82,11 +89,11 @@ public class IpRegionResolver {
         return false;
     }
 
-    private static String fallbackLabel(String ip) {
+    private String fallbackLabel(String ip) {
         int lastDot = ip.lastIndexOf('.');
         if (lastDot > 0) {
-            return "访客·" + ip.substring(0, lastDot) + ".*";
+            return messages.get("billing.ip.guest_prefix", ip.substring(0, lastDot));
         }
-        return "访客";
+        return messages.get("billing.danmaku.guest_author");
     }
 }

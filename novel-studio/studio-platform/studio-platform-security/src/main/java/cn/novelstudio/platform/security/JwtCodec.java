@@ -21,7 +21,7 @@ public final class JwtCodec {
 
     public JwtCodec(String secret, String issuer, long accessTtlSeconds) {
         if (secret == null || secret.length() < 32) {
-            throw new IllegalArgumentException("JWT secret must be at least 32 characters");
+            throw new IllegalArgumentException("auth.jwt.secret_too_short");
         }
         this.secret = secret.getBytes(StandardCharsets.UTF_8);
         this.issuer = issuer == null || issuer.isBlank() ? "novel-agent" : issuer;
@@ -51,13 +51,13 @@ public final class JwtCodec {
             jwt.sign(new MACSigner(secret));
             return jwt.serialize();
         } catch (Exception ex) {
-            throw new IllegalStateException("issue access token failed", ex);
+            throw new IllegalStateException("auth.jwt.issue_failed", ex);
         }
     }
 
     public JwtPrincipal parseAccessToken(String token) {
         if (token == null || token.isBlank()) {
-            throw new AuthUnauthorizedException("未登录或登录已过期");
+            throw new AuthUnauthorizedException("result.unauthorized");
         }
         String normalized = token.trim();
         if (normalized.regionMatches(true, 0, "Bearer ", 0, 7)) {
@@ -66,16 +66,16 @@ public final class JwtCodec {
         try {
             SignedJWT jwt = SignedJWT.parse(normalized);
             if (!jwt.verify(new MACVerifier(secret))) {
-                throw new AuthUnauthorizedException("登录已过期，请重新登录");
+                throw new AuthUnauthorizedException("result.auth.token_expired");
             }
             JWTClaimsSet claims = jwt.getJWTClaimsSet();
             Date exp = claims.getExpirationTime();
             if (exp != null && exp.before(new Date())) {
-                throw new AuthUnauthorizedException("登录已过期，请重新登录");
+                throw new AuthUnauthorizedException("result.auth.token_expired");
             }
             String issuerClaim = claims.getIssuer();
             if (issuerClaim != null && !issuer.equals(issuerClaim)) {
-                throw new AuthUnauthorizedException("登录已过期，请重新登录");
+                throw new AuthUnauthorizedException("result.auth.token_expired");
             }
             Long userId = Long.parseLong(claims.getSubject());
             String sid = claims.getStringClaim("sid");
@@ -88,7 +88,7 @@ public final class JwtCodec {
         } catch (AuthUnauthorizedException ex) {
             throw ex;
         } catch (Exception ex) {
-            throw new AuthUnauthorizedException("登录已过期，请重新登录");
+            throw new AuthUnauthorizedException("result.auth.token_expired");
         }
     }
 

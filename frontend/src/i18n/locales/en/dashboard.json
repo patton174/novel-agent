@@ -88,6 +88,18 @@
     "payCancel": "Cancel",
     "payConfirm": "Pay",
     "payRedirecting": "Redirecting…",
+    "payResumedPending": "An unpaid order was found. Resuming checkout — no new order created.",
+    "payOrderCopied": "Order ID copied",
+    "payMethods": {
+      "alipay": "Alipay",
+      "wechat": "WeChat Pay"
+    },
+    "payStatus": {
+      "NEW": "Pending payment",
+      "DONE": "Paid",
+      "EXPIRED": "Expired",
+      "REFUND": "Refunded"
+    },
     "paySuccess": "Payment successful, plan updated",
     "payFail": "Payment failed",
     "payPending": "Payment processing, please wait…",

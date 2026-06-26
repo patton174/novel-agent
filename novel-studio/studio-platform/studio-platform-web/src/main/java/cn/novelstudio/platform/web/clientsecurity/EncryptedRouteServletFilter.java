@@ -26,6 +26,7 @@ public class EncryptedRouteServletFilter extends OncePerRequestFilter {
 
     private final BootstrapRuntimeSupport bootstrapRuntimeSupport;
     private final ClientSecurityProperties properties;
+    private final ClientSecurityResponses securityResponses;
 
     @Override
     protected void doFilterInternal(
@@ -45,19 +46,19 @@ public class EncryptedRouteServletFilter extends OncePerRequestFilter {
 
         var runtimeOpt = bootstrapRuntimeSupport.current();
         if (runtimeOpt.isEmpty()) {
-            ClientSecurityResponses.staleCrypto(response, "bootstrap runtime missing");
+            securityResponses.staleCrypto(response, "security.client.crypto_bootstrap_missing");
             return;
         }
         var runtime = runtimeOpt.get();
         String prefix = runtime.apiPathPrefix();
         if (prefix == null || prefix.isBlank()) {
-            ClientSecurityResponses.staleCrypto(response, "api path prefix missing");
+            securityResponses.staleCrypto(response, "security.client.crypto_api_prefix_missing");
             return;
         }
         String normalizedPrefix = prefix.startsWith("/") ? prefix : "/" + prefix;
         if (!path.startsWith(normalizedPrefix + "/")) {
             log.warn("route prefix stale: path={} expectedPrefix={}", path, normalizedPrefix);
-            ClientSecurityResponses.staleCrypto(response, "route prefix stale");
+            securityResponses.staleCrypto(response, "security.client.crypto_route_stale");
             return;
         }
         String segment = path.substring(normalizedPrefix.length() + 1);
@@ -66,14 +67,14 @@ public class EncryptedRouteServletFilter extends OncePerRequestFilter {
             segment = segment.substring(0, slash);
         }
         if (segment.isBlank()) {
-            ClientSecurityResponses.staleCrypto(response, "missing route cipher");
+            securityResponses.staleCrypto(response, "security.client.crypto_route_cipher_missing");
             return;
         }
         try {
             AesGcmCodec codec = AesGcmCodec.fromBase64Key(runtime.aesKeyB64());
             RoutePathCodec.RouteSpec spec = RoutePathCodec.decode(segment, codec);
             if (!spec.method().equalsIgnoreCase(request.getMethod())) {
-                ClientSecurityResponses.staleCrypto(response, "method mismatch");
+                securityResponses.staleCrypto(response, "security.client.crypto_method_mismatch");
                 return;
             }
             String realTarget = spec.path();
@@ -89,7 +90,7 @@ public class EncryptedRouteServletFilter extends OncePerRequestFilter {
             filterChain.doFilter(rewritten, response);
         } catch (Exception ex) {
             log.warn("route decrypt failed: {}", ex.getMessage());
-            ClientSecurityResponses.staleCrypto(response, "invalid route cipher");
+            securityResponses.staleCrypto(response, "security.client.crypto_route_cipher_invalid");
         }
     }
 }

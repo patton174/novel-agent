@@ -1,5 +1,6 @@
 package cn.novelstudio.module.auth.service;
 
+import cn.novelstudio.kernel.enums.ResultCode;
 import cn.novelstudio.kernel.exception.TooManyRequestsException;
 import cn.novelstudio.platform.security.SecurityRedisKeys;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -26,7 +27,7 @@ public class RateLimitService {
             redisTemplate.expire(key, window);
         }
         if (count != null && count > maxAttempts) {
-            throw new TooManyRequestsException("请求过于频繁，请稍后再试");
+            throw TooManyRequestsException.keyed(ResultCode.TOO_MANY_REQUESTS, "result.too_many_requests");
         }
     }
 
@@ -39,7 +40,7 @@ public class RateLimitService {
         String raw = redisTemplate.opsForValue().get(key);
         long count = raw == null ? 0L : Long.parseLong(raw);
         if (count >= maxAttempts) {
-            throw new TooManyRequestsException("请求过于频繁，请稍后再试");
+            throw TooManyRequestsException.keyed(ResultCode.TOO_MANY_REQUESTS, "result.too_many_requests");
         }
     }
 

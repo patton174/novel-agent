@@ -26,7 +26,7 @@ public class BlockingWebSupport {
             return mono(supplier).toFuture().get();
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
-            throw PyaiExceptions.internalError("请求被中断");
+            throw PyaiExceptions.internalError("agent.request.interrupted");
         } catch (ExecutionException ex) {
             Throwable cause = ex.getCause() == null ? ex : ex.getCause();
             if (cause instanceof BizException biz) {
@@ -35,7 +35,7 @@ public class BlockingWebSupport {
             if (cause instanceof RuntimeException runtime) {
                 throw runtime;
             }
-            throw PyaiExceptions.internalError("请求处理失败");
+            throw PyaiExceptions.internalError("agent.request.failed");
         }
     }
 }

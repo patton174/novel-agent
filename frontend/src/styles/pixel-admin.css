@@ -1,0 +1,35 @@
+/**
+ * 管理台 Pixel UI 语义 token — 明暗主题 + 聚焦环共用。
+ */
+:root {
+  --pixel-surface: var(--card);
+  --pixel-border: color-mix(in srgb, var(--border) 30%, transparent);
+  --pixel-border-strong: color-mix(in srgb, var(--border) 50%, transparent);
+  --pixel-head-bg: color-mix(in srgb, var(--muted) 62%, var(--card));
+  --pixel-head-fg: var(--foreground);
+  --pixel-row-hover: color-mix(in srgb, var(--muted) 72%, var(--card));
+  --pixel-row-stripe: color-mix(in srgb, var(--muted) 38%, var(--card));
+  --pixel-panel-bg: color-mix(in srgb, var(--muted) 36%, var(--card));
+  --pixel-code-bg: color-mix(in srgb, var(--muted) 52%, var(--card));
+  --pixel-code-fg: var(--foreground);
+  --pixel-tooltip-shadow: 0 6px 18px color-mix(in srgb, var(--foreground) 10%, transparent);
+  /* 图表：随页面主题，非强制黑底 */
+  --pixel-chart-axis: var(--muted-foreground);
+  --pixel-chart-grid-color: color-mix(in srgb, var(--border) 22%, transparent);
+  --pixel-chart-fill-top: 0.28;
+}
+
+.dark {
+  --pixel-border: color-mix(in srgb, var(--border) 20%, transparent);
+  --pixel-border-strong: color-mix(in srgb, var(--border) 34%, transparent);
+  --pixel-head-bg: color-mix(in srgb, var(--muted) 88%, var(--card));
+  --pixel-head-fg: var(--foreground);
+  --pixel-row-hover: color-mix(in srgb, var(--primary) 14%, var(--card));
+  --pixel-row-stripe: color-mix(in srgb, var(--muted) 58%, var(--card));
+  --pixel-panel-bg: color-mix(in srgb, var(--muted) 65%, var(--card));
+  --pixel-code-bg: color-mix(in srgb, var(--muted) 78%, var(--card));
+  --pixel-code-fg: var(--foreground);
+  --pixel-tooltip-shadow: 0 8px 28px color-mix(in srgb, black 52%, transparent);
+  --pixel-chart-grid-color: color-mix(in srgb, var(--border) 16%, transparent);
+  --pixel-chart-fill-top: 0.34;
+}

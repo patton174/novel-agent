@@ -12,7 +12,7 @@ public record CreateMemoryNodeRequest(
     String scope,
     String parentId,
     Integer sortOrder,
-    @NotBlank String title,
+    @NotBlank(message = "{validation.content.title_required}") String title,
     String nodeKind,
     String content,
     Map<String, Object> style,

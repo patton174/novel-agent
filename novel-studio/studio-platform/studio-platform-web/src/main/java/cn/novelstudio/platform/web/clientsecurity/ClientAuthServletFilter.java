@@ -19,6 +19,7 @@ import java.io.IOException;
 public class ClientAuthServletFilter extends OncePerRequestFilter {
 
     private final ClientAuthSupport clientAuthSupport;
+    private final ClientSecurityResponses securityResponses;
 
     @Override
     protected void doFilterInternal(
@@ -39,9 +40,9 @@ public class ClientAuthServletFilter extends OncePerRequestFilter {
             var principal = clientAuthSupport.resolvePrincipal(request);
             filterChain.doFilter(clientAuthSupport.injectUserHeaders(request, principal), response);
         } catch (AuthUnauthorizedException ex) {
-            ClientSecurityResponses.unauthorized(response, ex.getMessage());
+            securityResponses.unauthorized(response, ex.getMessage());
         } catch (NumberFormatException ex) {
-            ClientSecurityResponses.unauthorized(response, "登录已过期，请重新登录");
+            securityResponses.unauthorized(response, "result.auth.token_expired");
         }
     }
 }

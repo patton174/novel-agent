@@ -53,7 +53,7 @@ public class TurnstileVerificationService {
             return;
         }
         if (turnstileToken == null || turnstileToken.isBlank()) {
-            throw new ValidationException(ResultCode.CAPTCHA_INVALID, "请完成人机验证");
+            throw ValidationException.keyed(ResultCode.CAPTCHA_INVALID, "validation.captcha.turnstile_required");
         }
         verifyWithCloudflare(turnstileToken, remoteIp);
     }
@@ -78,18 +78,18 @@ public class TurnstileVerificationService {
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() != 200) {
                 log.warn("Turnstile siteverify HTTP {}", response.statusCode());
-                throw new ValidationException(ResultCode.CAPTCHA_INVALID, "人机验证失败，请重试");
+                throw ValidationException.keyed(ResultCode.CAPTCHA_INVALID, "validation.captcha.turnstile_retry");
             }
             JsonNode json = objectMapper.readTree(response.body());
             if (!json.path("success").asBoolean(false)) {
                 log.debug("Turnstile rejected: {}", json.path("error-codes"));
-                throw new ValidationException(ResultCode.CAPTCHA_INVALID, "人机验证失败，请重试");
+                throw ValidationException.keyed(ResultCode.CAPTCHA_INVALID, "validation.captcha.turnstile_retry");
             }
         } catch (ValidationException ex) {
             throw ex;
         } catch (Exception ex) {
             log.warn("Turnstile verify error: {}", ex.getMessage());
-            throw new ValidationException(ResultCode.CAPTCHA_INVALID, "人机验证服务暂不可用，请稍后重试");
+            throw ValidationException.keyed(ResultCode.CAPTCHA_INVALID, "validation.captcha.turnstile_unavailable");
         }
     }
 

@@ -1,5 +1,7 @@
 package cn.novelstudio.module.agent.support;
 
+import cn.novelstudio.kernel.exception.BizException;
+import cn.novelstudio.platform.i18n.ResultLocalizer;
 import org.springframework.http.CacheControl;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -60,11 +62,25 @@ public final class AgentStreamSupport {
         return frame.contains("\"type\":\"message.delta\"");
     }
 
-    public static List<String> errorFrames(Throwable ex) {
-        String msg = ex == null ? "stream error" : ex.getMessage();
-        if (msg == null) {
-            msg = "stream error";
+    public static String resolveStreamError(Throwable ex, ResultLocalizer localizer) {
+        if (localizer == null) {
+            return ex == null || ex.getMessage() == null ? "agent.stream.error" : ex.getMessage();
         }
+        if (ex instanceof BizException biz) {
+            return localizer.resolveException(biz);
+        }
+        if (ex == null || ex.getMessage() == null || ex.getMessage().isBlank()) {
+            return localizer.resolveLiteral("agent.stream.error");
+        }
+        return localizer.resolveLiteral(ex.getMessage());
+    }
+
+    public static List<String> errorFrames(Throwable ex) {
+        return errorFrames(ex == null || ex.getMessage() == null ? "agent.stream.error" : ex.getMessage());
+    }
+
+    public static List<String> errorFrames(String errorMessage) {
+        String msg = errorMessage == null || errorMessage.isBlank() ? "agent.stream.error" : errorMessage;
         msg = msg.replace("\r", " ").replace("\n", " ");
         String json = String.format(
             "{\"event_id\":\"evt_pyai_error\",\"type\":\"run.failed\",\"payload\":{\"error\":\"%s\"},\"source\":\"pyai\"}",

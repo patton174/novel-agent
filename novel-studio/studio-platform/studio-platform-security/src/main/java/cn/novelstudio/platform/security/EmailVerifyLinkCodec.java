@@ -17,7 +17,7 @@ public final class EmailVerifyLinkCodec {
 
     public static String signBase64(String token, long userId, long expEpochSec, String secret) {
         if (secret == null || secret.isBlank()) {
-            throw new IllegalStateException("email link secret not configured");
+            throw new IllegalStateException("auth.email_link.secret_not_configured");
         }
         try {
             Mac mac = Mac.getInstance("HmacSHA256");
@@ -25,7 +25,7 @@ public final class EmailVerifyLinkCodec {
             byte[] sig = mac.doFinal(canonical(token, userId, expEpochSec).getBytes(StandardCharsets.UTF_8));
             return Base64.getUrlEncoder().withoutPadding().encodeToString(sig);
         } catch (Exception ex) {
-            throw new IllegalStateException("email link sign failed", ex);
+            throw new IllegalStateException("auth.email_link.sign_failed", ex);
         }
     }
 

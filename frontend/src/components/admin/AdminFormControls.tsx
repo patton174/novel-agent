@@ -5,14 +5,17 @@ import type {
   SelectHTMLAttributes,
 } from 'react'
 import type { ComponentProps } from 'react'
-import { ChevronDown, Search } from 'lucide-react'
+import { Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import {
-  TableActionButton,
-  TableActionIconButton,
-} from '@/components/shared/TableActions'
+  PixelBadge,
+  PixelNativeSelect,
+  PixelTableActionButton,
+  PIXEL_FOCUS_RING,
+  PIXEL_INPUT,
+} from '@/components/pixel'
 import {
   adminNoticeClass,
   adminPanelPadding,
@@ -38,15 +41,15 @@ export function AdminField({
   return (
     <div
       className={cn(
-        'grid min-w-[140px] flex-1 gap-2',
-        isForm ? 'sm:max-w-none' : 'sm:max-w-xs',
+        'grid min-w-0 flex-1 gap-1.5',
+        isForm ? 'sm:max-w-none' : 'min-w-[140px] sm:max-w-xs',
         className,
       )}
     >
       <span
         className={cn(
           'font-medium text-foreground',
-          isForm ? 'text-sm' : 'text-xs',
+          isForm ? 'text-xs' : 'text-xs',
         )}
       >
         {label}
@@ -59,25 +62,18 @@ export function AdminField({
   )
 }
 
-const adminControlClass =
-  'h-9 w-full min-w-0 rounded-xl border border-border bg-background px-3 text-sm text-foreground shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50'
+const adminControlClass = PIXEL_INPUT
 
-/** 管理台下拉框（原生 select + 右侧 chevron） */
+/** 管理台下拉框（像素风原生 select） */
 export function AdminSelect({
   className,
   children,
   ...props
 }: SelectHTMLAttributes<HTMLSelectElement>) {
   return (
-    <div className="relative">
-      <select className={cn(adminControlClass, 'appearance-none pr-9', className)} {...props}>
-        {children}
-      </select>
-      <ChevronDown
-        className="pointer-events-none absolute top-1/2 right-2.5 size-4 -translate-y-1/2 text-muted-foreground"
-        aria-hidden
-      />
-    </div>
+    <PixelNativeSelect className={cn(adminControlClass, className)} {...props}>
+      {children}
+    </PixelNativeSelect>
   )
 }
 
@@ -105,14 +101,34 @@ export function AdminTextInput({
   return <Input className={cn(adminControlClass, className)} {...props} />
 }
 
-type AdminButtonProps = ComponentProps<typeof Button>
+type AdminActionSize = 'sm' | 'md' | 'lg'
+
+type AdminButtonProps = Omit<ComponentProps<typeof Button>, 'size' | 'variant'> & {
+  size?: AdminActionSize
+  /** @deprecated 管理台按钮统一映射为 shadcn variant，保留仅为兼容旧调用 */
+  variant?: 'primary' | 'secondary' | 'ghost' | 'danger'
+  loading?: boolean
+  leftIcon?: ReactNode
+  rightIcon?: ReactNode
+}
+
+type AdminButtonGhostProps = AdminButtonProps & Pick<ComponentProps<typeof Button>, 'asChild'>
+
+function mapAdminButtonSize(size: AdminActionSize): ComponentProps<typeof Button>['size'] {
+  if (size === 'lg') return 'lg'
+  if (size === 'md') return 'default'
+  return 'sm'
+}
+
+const adminActionButtonClass = 'gap-1.5 shadow-none'
 
 /** 主操作按钮（保存、创建等） */
-export function AdminButton({ className, size = 'lg', ...props }: AdminButtonProps) {
+export function AdminButton({ className, size = 'sm', variant: _variant, ...props }: AdminButtonProps) {
   return (
     <Button
-      size={size}
-      className={cn('min-w-[5.5rem] rounded-xl px-4', className)}
+      variant="default"
+      size={mapAdminButtonSize(size)}
+      className={cn(adminActionButtonClass, className)}
       {...props}
     />
   )
@@ -121,38 +137,65 @@ export function AdminButton({ className, size = 'lg', ...props }: AdminButtonPro
 /** 次要操作按钮（取消、测试连接等） */
 export function AdminButtonOutline({
   className,
-  size = 'lg',
-  variant = 'outline',
+  size = 'sm',
+  variant: _variant,
   ...props
 }: AdminButtonProps) {
   return (
     <Button
-      variant={variant}
-      size={size}
-      className={cn('min-w-[5.5rem] rounded-xl px-4', className)}
+      variant="outline"
+      size={mapAdminButtonSize(size)}
+      className={cn(adminActionButtonClass, className)}
       {...props}
     />
   )
 }
 
+const adminGhostLinkClass = cn(
+  'inline-flex h-7 items-center justify-center gap-1 rounded-md border border-transparent bg-transparent px-2 text-xs font-medium text-foreground hover:bg-muted hover:text-foreground',
+  PIXEL_FOCUS_RING,
+)
+
 /** 表格/列表行内操作 */
 export function AdminButtonGhost({
   className,
+  asChild,
+  variant,
+  size,
+  loading: _loading,
+  leftIcon: _leftIcon,
+  rightIcon: _rightIcon,
   ...props
-}: AdminButtonProps) {
-  return <TableActionButton className={className} {...props} />
+}: AdminButtonGhostProps) {
+  if (asChild) {
+    return <Button asChild className={cn(adminGhostLinkClass, className)} {...props} />
+  }
+  return (
+    <PixelTableActionButton
+      className={className}
+      variant={
+        variant === 'danger' ? 'danger' : variant === 'ghost' ? 'ghost' : undefined
+      }
+      {...props}
+    />
+  )
 }
 
 /** 图标按钮（刷新等） */
 export function AdminButtonIcon({
   className,
-  variant = 'outline',
+  variant: _variant,
+  size: _size,
+  loading: _loading,
+  leftIcon: _leftIcon,
+  rightIcon: _rightIcon,
   ...props
 }: AdminButtonProps) {
   return (
-    <TableActionIconButton
-      variant={variant}
-      className={cn('size-9 rounded-xl', className)}
+    <Button
+      variant="ghost"
+      size="icon-sm"
+      className={cn('shrink-0 text-muted-foreground hover:text-foreground', className)}
       {...props}
     />
   )
@@ -172,7 +215,7 @@ export function AdminFormActions({
     <div
       className={cn(
         'flex flex-wrap items-center gap-2 pt-1',
-        bordered && 'border-t border-border pt-4',
+        bordered && 'border-t border-border pt-3',
         className,
       )}
     >
@@ -194,13 +237,12 @@ export function AdminSummaryBar({
   return (
     <div
       className={cn(
-        'flex flex-wrap items-center gap-x-5 gap-y-2 rounded-xl border border-border bg-muted/30 text-sm text-muted-foreground',
-        adminPanelPadding,
+        'flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-lg border border-border bg-muted/20 px-3 py-2 text-xs text-muted-foreground',
         className,
       )}
     >
-      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-5 gap-y-2">{children}</div>
-      {actions ? <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div> : null}
+      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-4 gap-y-1.5">{children}</div>
+      {actions ? <div className="flex shrink-0 flex-wrap items-center gap-1.5">{actions}</div> : null}
     </div>
   )
 }
@@ -234,7 +276,7 @@ export function AdminTabTrigger({
     <button
       type="button"
       className={cn(
-        'inline-flex h-9 items-center gap-2 rounded-xl px-4 text-sm font-medium transition-colors',
+        'inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-medium transition-colors',
         active
           ? 'bg-primary text-primary-foreground shadow-xs'
           : 'text-muted-foreground hover:bg-muted hover:text-foreground',
@@ -257,23 +299,19 @@ export function AdminStatusBadge({
   tone?: 'success' | 'warning' | 'neutral' | 'info'
   className?: string
 }) {
-  const toneClass = {
-    success: 'bg-emerald-100 text-emerald-900',
-    warning: 'bg-amber-100 text-amber-900',
-    info: 'bg-sky-100 text-sky-900',
-    neutral: 'bg-muted text-muted-foreground',
-  }[tone]
+  const pixelTone =
+    tone === 'success'
+      ? 'success'
+      : tone === 'warning'
+        ? 'warning'
+        : tone === 'info'
+          ? 'info'
+          : 'muted'
 
   return (
-    <span
-      className={cn(
-        'inline-flex rounded-full px-2.5 py-0.5 font-mono text-xs font-semibold uppercase',
-        toneClass,
-        className,
-      )}
-    >
+    <PixelBadge tone={pixelTone} className={className}>
       {children}
-    </span>
+    </PixelBadge>
   )
 }
 

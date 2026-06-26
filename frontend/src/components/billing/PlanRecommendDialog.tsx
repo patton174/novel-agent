@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Check, Sparkles } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { fetchPlans, formatTokenCount, type PlanPublic } from '@/api/billingApi'
-import { PayCheckoutPanel } from '@/components/billing/PayCheckoutPanel'
 import { buildLoginHref } from '@/lib/authRedirect'
 import { cn } from '@/lib/utils'
 import { AppModalShell } from '@/components/ui/AppModalShell'
@@ -29,15 +28,14 @@ export function PlanRecommendDialog({
   reason = 'upgrade',
 }: PlanRecommendDialogProps) {
   const { t } = useTranslation(['marketing', 'dashboard'])
+  const navigate = useNavigate()
   const authReady = useAuthReady()
   const isLoggedIn = authReady && !!getAccessToken()
   const [plans, setPlans] = useState<PlanPublic[] | null>(null)
   const [loading, setLoading] = useState(false)
-  const [checkoutPlanCode, setCheckoutPlanCode] = useState<string | null>(null)
 
   useEffect(() => {
     if (!open) {
-      setCheckoutPlanCode(null)
       return
     }
     let cancelled = false
@@ -83,10 +81,11 @@ export function PlanRecommendDialog({
   const startCheckout = (planCode: string) => {
     if (!isLoggedIn) {
       onOpenChange(false)
-      window.location.href = buildLoginHref({ returnPath: `/pricing?plan=${encodeURIComponent(planCode)}` })
+      window.location.href = buildLoginHref({ returnPath: `/checkout?plan=${encodeURIComponent(planCode)}` })
       return
     }
-    setCheckoutPlanCode(planCode)
+    onOpenChange(false)
+    navigate(`/checkout?plan=${encodeURIComponent(planCode)}`)
   }
 
   return (
@@ -98,13 +97,7 @@ export function PlanRecommendDialog({
       title={t('marketing:recommend.title')}
       description={reasonText}
     >
-      {checkoutPlanCode && isLoggedIn ? (
-        <PayCheckoutPanel
-          layout="embedded"
-          planCode={checkoutPlanCode}
-          onCancel={() => setCheckoutPlanCode(null)}
-        />
-      ) : loading ? (
+      {loading ? (
         <div className="space-y-3 py-2">
           <Skeleton className="h-24 w-full rounded-xl" />
           <Skeleton className="h-24 w-full rounded-xl" />

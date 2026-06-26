@@ -36,8 +36,7 @@ public class QuotaBiz extends BaseBiz {
             && isWithinRunQuota(runsUsed, effective.runQuota());
 
         if (!allowed) {
-            throw BizException.of(ResultCode.BILLING_QUOTA_EXCEEDED,
-                "本月配额已用尽，请升级套餐或等待下月重置");
+            throw BizException.keyed(ResultCode.BILLING_QUOTA_EXCEEDED, "billing.quota.upgrade_hint");
         }
 
         usageReportBiz.recordRunStart(userId);

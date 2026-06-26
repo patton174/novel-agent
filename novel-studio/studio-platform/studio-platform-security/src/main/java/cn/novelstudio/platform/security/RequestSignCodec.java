@@ -76,7 +76,7 @@ public final class RequestSignCodec {
                 uri.getFragment()
             );
         } catch (Exception ex) {
-            throw new IllegalStateException("strip sign query failed", ex);
+            throw new IllegalStateException("security.sign.strip_query_failed", ex);
         }
     }
 
@@ -162,7 +162,7 @@ public final class RequestSignCodec {
             byte[] sig = mac.doFinal(canonical.getBytes(StandardCharsets.UTF_8));
             return Base64.getUrlEncoder().withoutPadding().encodeToString(sig);
         } catch (Exception ex) {
-            throw new IllegalStateException("sign failed", ex);
+            throw new IllegalStateException("security.sign.failed", ex);
         }
     }
 
@@ -191,7 +191,7 @@ public final class RequestSignCodec {
             }
             return sb.toString();
         } catch (Exception ex) {
-            throw new IllegalStateException("hash failed", ex);
+            throw new IllegalStateException("security.sign.hash_failed", ex);
         }
     }
 

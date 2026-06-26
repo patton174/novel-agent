@@ -25,19 +25,28 @@ export function LayoutOutletSkeleton() {
   if (pathname.startsWith('/admin/users')) {
     return <AdminTableContentSkeleton />
   }
-  if (pathname.startsWith('/admin/products') || pathname.startsWith('/admin/plans') || pathname.startsWith('/admin/payment-orders')) {
+  if (pathname.startsWith('/admin/billing') || pathname.startsWith('/admin/products') || pathname.startsWith('/admin/plans') || pathname.startsWith('/admin/payment-orders')) {
     return <AdminTableContentSkeleton />
   }
-  if (pathname.startsWith('/admin/revenue') || pathname.startsWith('/admin/stats')) {
+  if (pathname.startsWith('/admin/analytics') || pathname.startsWith('/admin/revenue') || pathname.startsWith('/admin/stats')) {
     return <AdminStatsContentSkeleton />
   }
-  if (pathname.startsWith('/admin/site-content') || pathname.startsWith('/admin/audit-log') || pathname.startsWith('/admin/system-settings')) {
+  if (
+    pathname.startsWith('/admin/content/legal') ||
+    pathname.startsWith('/admin/content/announcements') ||
+    pathname.startsWith('/admin/content/pages') ||
+    pathname.startsWith('/admin/content/site') ||
+    pathname.startsWith('/admin/site-content') ||
+    pathname.startsWith('/admin/audit-log') ||
+    pathname.startsWith('/admin/system/settings') ||
+    pathname.startsWith('/admin/system-settings')
+  ) {
     return <AdminTableContentSkeleton />
   }
-  if (pathname.startsWith('/admin/crawler')) {
+  if (pathname.startsWith('/admin/content/crawler') || pathname.startsWith('/admin/crawler')) {
     return <AdminCrawlerContentSkeleton />
   }
-  if (pathname.startsWith('/admin/catalog')) {
+  if (pathname.startsWith('/admin/content/catalog') || pathname.startsWith('/admin/catalog')) {
     return <AdminCatalogContentSkeleton />
   }
   if (pathname.startsWith('/admin')) {

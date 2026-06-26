@@ -24,7 +24,7 @@ public final class CaptchaTokenBinding {
             }
             return builder.toString();
         } catch (NoSuchAlgorithmException ex) {
-            throw new IllegalStateException("SHA-256 unavailable", ex);
+            throw new IllegalStateException("security.crypto.sha256_unavailable", ex);
         }
     }
 }

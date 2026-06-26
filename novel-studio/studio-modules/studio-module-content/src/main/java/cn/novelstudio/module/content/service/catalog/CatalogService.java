@@ -5,6 +5,7 @@ import cn.novelstudio.kernel.exception.NotFoundException;
 import cn.novelstudio.platform.messaging.catalog.CatalogIndexMessage;
 import cn.novelstudio.platform.messaging.constant.MqTopic;
 import cn.novelstudio.platform.messaging.producer.IMessageProducer;
+import cn.novelstudio.platform.i18n.StudioMessages;
 import cn.novelstudio.module.content.dto.CreateChapterRequest;
 import cn.novelstudio.module.content.dto.CreateNovelRequest;
 import cn.novelstudio.module.content.dto.NovelDTO;
@@ -50,6 +51,7 @@ public class CatalogService {
     private final NovelService novelService;
     private final ChapterService chapterService;
     private final ObjectProvider<IMessageProducer> messageProducerProvider;
+    private final StudioMessages messages;
 
     public Page<CatalogNovelDTO> pageCatalog(int pageCurrent, int pageSize) {
         int page = Math.max(0, pageCurrent - 1);
@@ -219,7 +221,7 @@ public class CatalogService {
         List<CrawlCatalogChapterEntity> chapters =
             catalogChapterRepository.findByCatalogNovelIdOrderBySortOrderAsc(catalogNovelId);
         if (chapters.isEmpty()) {
-            throw new NotFoundException(ResultCode.NOT_FOUND, "该书库作品尚无章节");
+            throw NotFoundException.keyed(ResultCode.NOT_FOUND, "content.catalog.no_chapters");
         }
         NovelDTO novel = novelService.createNovel(
             userId,
@@ -227,7 +229,7 @@ public class CatalogService {
                 catalog.getTitle(),
                 catalog.getDescription() != null
                     ? catalog.getDescription()
-                    : "来自书库：" + catalog.getSourceUrl(),
+                    : messages.get("content.catalog.from_source", catalog.getSourceUrl()),
                 null,
                 null,
                 3000
@@ -377,7 +379,7 @@ public class CatalogService {
 
     private CrawlCatalogNovelEntity findCatalog(String catalogNovelId) {
         return catalogNovelRepository.findById(catalogNovelId)
-            .orElseThrow(() -> new NotFoundException(ResultCode.NOT_FOUND, "书库作品不存在"));
+            .orElseThrow(() -> NotFoundException.keyed("content.catalog.work_not_found"));
     }
 
     public CrawlCatalogNovelEntity findCatalogEntity(String catalogNovelId) {
@@ -401,7 +403,7 @@ public class CatalogService {
     private CrawlCatalogChapterEntity findChapter(String catalogNovelId, String chapterId) {
         return catalogChapterRepository.findById(chapterId)
             .filter(ch -> catalogNovelId.equals(ch.getCatalogNovelId()))
-            .orElseThrow(() -> new NotFoundException(ResultCode.NOT_FOUND, "书库章节不存在"));
+            .orElseThrow(() -> NotFoundException.keyed("content.catalog.chapter_not_found"));
     }
 
     private CatalogChapterSummaryDTO toChapterSummary(CrawlCatalogChapterEntity entity) {

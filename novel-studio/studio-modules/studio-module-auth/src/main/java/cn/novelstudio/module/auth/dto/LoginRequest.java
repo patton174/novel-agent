@@ -8,10 +8,10 @@ import java.util.Map;
 @Data
 public class LoginRequest {
 
-    @NotBlank(message = "用户名不能为空")
+    @NotBlank(message = "{validation.auth.username_required}")
     private String username;
 
-    @NotBlank(message = "密码不能为空")
+    @NotBlank(message = "{validation.auth.password_required}")
     private String password;
 
     /** 浏览器指纹 SHA-256（Phase 0b） */

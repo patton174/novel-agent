@@ -7,11 +7,11 @@ import lombok.Data;
 @Data
 public class SendEmailCodeRequest {
 
-    @NotBlank(message = "邮箱不能为空")
-    @Email(message = "邮箱格式不正确")
+    @NotBlank(message = "{validation.auth.email_required}")
+    @Email(message = "{validation.auth.email_invalid}")
     private String email;
 
-    @NotBlank(message = "请先完成滑块验证")
+    @NotBlank(message = "{validation.auth.captcha_required}")
     private String captchaToken;
 
     private String fingerprint;

@@ -10,9 +10,21 @@ import {
   type CatalogNovelProgress,
 } from '@/api/catalogAdminApi'
 import { AppModalShell } from '@/components/ui/AppModalShell'
-import { Button } from '@/components/ui/button'
+import {
+  AdminButton,
+  AdminButtonOutline,
+  AdminField,
+  AdminTextInput,
+} from '@/components/admin/AdminFormControls'
+import {
+  PixelBadge,
+  PIXEL_INPUT,
+  PIXEL_PANEL,
+  PixelTableActionBar,
+  PixelTableActionButton,
+  PixelTableActionIconButton,
+} from '@/components/pixel'
 import { DialogDescription, DialogTitle } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { confirmAction } from '@/stores/appDialog'
 import { appToast } from '@/stores/appToastStore'
@@ -123,10 +135,10 @@ export function CatalogOverviewDialog({
             <img
               src={(coverUrl || novel.coverUrl) ?? undefined}
               alt=""
-              className="size-20 shrink-0 rounded-lg object-cover shadow-sm ring-1 ring-border"
+              className="size-20 shrink-0 rounded-md border border-[var(--pixel-border-strong)] object-cover"
             />
           ) : (
-            <div className="flex size-20 shrink-0 items-center justify-center rounded-lg bg-muted ring-1 ring-border">
+            <div className="flex size-20 shrink-0 items-center justify-center rounded-md border border-[var(--pixel-border-strong)] bg-muted">
               <BookOpen className="size-8 text-muted-foreground" />
             </div>
           )}
@@ -145,13 +157,19 @@ export function CatalogOverviewDialog({
         ) : progress ? (
           <div
             className={cn(
-              'rounded-lg border px-3 py-2.5 text-sm',
+              PIXEL_PANEL,
+              'text-sm',
               progress.complete
-                ? 'border-emerald-500/30 bg-emerald-500/5'
-                : 'border-amber-500/30 bg-amber-500/5',
+                ? 'border-success/35 bg-success/8'
+                : 'border-warning/35 bg-warning/8',
             )}
           >
-            <p className="font-medium">{progress.complete ? t('admin:catalog.crawlComplete') : t('admin:catalog.crawling')}</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="font-medium">{progress.complete ? t('admin:catalog.crawlComplete') : t('admin:catalog.crawling')}</p>
+              <PixelBadge tone={progress.complete ? 'success' : 'warning'}>
+                {progress.complete ? 'OK' : '…'}
+              </PixelBadge>
+            </div>
             <p className="mt-0.5 text-xs text-muted-foreground">
               {t('admin:catalog.crawledCount', { count: progress.chapterCount })}
               {progress.chaptersExpected != null
@@ -192,74 +210,54 @@ export function CatalogOverviewDialog({
           </>
         ) : (
           <div className="space-y-3">
-            <div>
-              <label className="mb-1 block text-xs text-muted-foreground">{t('admin:catalog.novelTitle')}</label>
-              <Input value={title} onChange={(e) => setTitle(e.target.value)} />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs text-muted-foreground">{t('admin:catalog.author')}</label>
-              <Input value={author} onChange={(e) => setAuthor(e.target.value)} />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs text-muted-foreground">{t('admin:catalog.coverUrl')}</label>
-              <Input value={coverUrl} onChange={(e) => setCoverUrl(e.target.value)} />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs text-muted-foreground">{t('admin:catalog.sourceUrl')}</label>
-              <Input value={sourceUrl} onChange={(e) => setSourceUrl(e.target.value)} />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs text-muted-foreground">{t('admin:catalog.description')}</label>
+            <AdminField layout="form" label={t('admin:catalog.novelTitle')}>
+              <AdminTextInput value={title} onChange={(e) => setTitle(e.target.value)} />
+            </AdminField>
+            <AdminField layout="form" label={t('admin:catalog.author')}>
+              <AdminTextInput value={author} onChange={(e) => setAuthor(e.target.value)} />
+            </AdminField>
+            <AdminField layout="form" label={t('admin:catalog.coverUrl')}>
+              <AdminTextInput value={coverUrl} onChange={(e) => setCoverUrl(e.target.value)} />
+            </AdminField>
+            <AdminField layout="form" label={t('admin:catalog.sourceUrl')}>
+              <AdminTextInput value={sourceUrl} onChange={(e) => setSourceUrl(e.target.value)} />
+            </AdminField>
+            <AdminField layout="form" label={t('admin:catalog.description')}>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={3}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                className={cn(PIXEL_INPUT, 'min-h-[5rem] resize-y py-2')}
               />
-            </div>
+            </AdminField>
           </div>
         )}
       </div>
 
-      <div className="flex items-center justify-between gap-3 border-t border-border bg-muted/20 px-5 py-3">
+      <div className="flex items-center justify-between gap-3 border-t-2 border-foreground/15 bg-muted/20 px-5 py-3">
         {!editing ? (
           <>
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="text-muted-foreground"
-                onClick={() => setEditing(true)}
-              >
-                <Pencil className="mr-1.5 size-3.5" />
+            <PixelTableActionBar>
+              <PixelTableActionButton variant="ghost" onClick={() => setEditing(true)}>
+                <Pencil className="size-3.5" />
                 {t('admin:catalog.edit')}
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="text-destructive hover:text-destructive"
+              </PixelTableActionButton>
+              <PixelTableActionIconButton
+                variant="danger"
                 disabled={deleting}
                 onClick={() => void handleDelete()}
               >
-                {deleting ? (
-                  <Loader2 className="size-3.5 animate-spin" />
-                ) : (
-                  <Trash2 className="size-3.5" />
-                )}
-              </Button>
-            </div>
-            <Button type="button" onClick={() => onRead?.(novel)}>
-              <BookOpen className="mr-2 size-4" />
+                {deleting ? <Loader2 className="size-3.5 animate-spin" /> : <Trash2 className="size-3.5" />}
+              </PixelTableActionIconButton>
+            </PixelTableActionBar>
+            <AdminButton size="sm" onClick={() => onRead?.(novel)}>
+              <BookOpen className="size-4" />
               {t('admin:catalog.readTOC')}
-            </Button>
+            </AdminButton>
           </>
         ) : (
           <>
-            <Button
-              type="button"
-              variant="ghost"
+            <AdminButtonOutline
               size="sm"
               onClick={() => {
                 resetForms(novel)
@@ -267,11 +265,11 @@ export function CatalogOverviewDialog({
               }}
             >
               {t('common:cta.cancel')}
-            </Button>
-            <Button type="button" size="sm" disabled={saving} onClick={() => void handleSave()}>
-              {saving ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
+            </AdminButtonOutline>
+            <AdminButton size="sm" disabled={saving} onClick={() => void handleSave()}>
+              {saving ? <Loader2 className="size-4 animate-spin" /> : null}
               {t('common:cta.save')}
-            </Button>
+            </AdminButton>
           </>
         )}
       </div>

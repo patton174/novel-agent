@@ -33,6 +33,10 @@
         </dependency>
         <dependency>
             <groupId>cn.novelstudio</groupId>
+            <artifactId>studio-module-upload</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>cn.novelstudio</groupId>
             <artifactId>studio-module-worker</artifactId>
         </dependency>
         <dependency>

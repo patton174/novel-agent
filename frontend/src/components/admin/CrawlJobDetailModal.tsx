@@ -1,27 +1,18 @@
+import { Loader2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { Loader2, Pause, Play, Square, Trash2 } from 'lucide-react'
 import type { CrawlJob } from '@/api/crawlAdminApi'
 import { parseCrawlJobGoal } from '@/api/crawlAdminApi'
+import { CrawlJobActions } from '@/components/admin/CrawlJobActions'
 import { CrawlLogTerminal } from '@/components/admin/CrawlLogTerminal'
+import { PixelBadge } from '@/components/pixel'
 import { AppModalShell } from '@/components/ui/AppModalShell'
-import { Button } from '@/components/ui/button'
 import {
-  CRAWL_JOB_ACTION_META,
-  type CrawlJobAction,
-  crawlJobActions,
   crawlJobProgressPercent,
-  crawlJobStatusClass,
   crawlJobStatusLabel,
+  crawlJobStatusTone,
   truncateError,
+  type CrawlJobAction,
 } from '@/pages/admin/crawlJobUi'
-import { cn } from '@/lib/utils'
-
-const ACTION_ICONS: Record<CrawlJobAction, typeof Play> = {
-  start: Play,
-  pause: Pause,
-  cancel: Square,
-  delete: Trash2,
-}
 
 interface CrawlJobDetailModalProps {
   job: CrawlJob | null
@@ -49,7 +40,6 @@ export function CrawlJobDetailModal({
   const goal = parseCrawlJobGoal(job.configJson)
   const percent = crawlJobProgressPercent(job)
   const errorPreview = truncateError(job.errorMessage, 2000)
-  const actions = crawlJobActions(job.status)
 
   return (
     <AppModalShell
@@ -62,14 +52,7 @@ export function CrawlJobDetailModal({
         <div className="space-y-3 border-b border-border px-6 py-4 text-left">
           <div className="flex flex-wrap items-center gap-2 pr-8">
             <h2 className="text-lg font-semibold">{job.title || t('admin:crawler.parsing')}</h2>
-            <span
-              className={cn(
-                'rounded-lg px-2 py-0.5 text-xs font-medium',
-                crawlJobStatusClass(job.status),
-              )}
-            >
-              {crawlJobStatusLabel(job.status)}
-            </span>
+            <PixelBadge tone={crawlJobStatusTone(job.status)}>{crawlJobStatusLabel(job.status)}</PixelBadge>
           </div>
           <div className="space-y-1 text-sm text-muted-foreground">
             <p className="break-all text-foreground/80">{job.sourceUrl}</p>
@@ -79,9 +62,9 @@ export function CrawlJobDetailModal({
               {job.catalogNovelId ? t('admin:crawler.catalogId', { id: job.catalogNovelId }) : ''}
             </p>
             {percent != null ? (
-              <div className="h-1.5 w-full max-w-md overflow-hidden rounded-full bg-muted">
+              <div className="h-1.5 w-full max-w-md overflow-hidden border border-foreground/30 bg-muted/30">
                 <div
-                  className="h-full rounded-full bg-primary transition-all duration-500"
+                  className="h-full bg-primary transition-all duration-500"
                   style={{ width: `${percent}%` }}
                 />
               </div>
@@ -106,33 +89,15 @@ export function CrawlJobDetailModal({
         />
       </div>
 
-      {actions.length > 0 ? (
-        <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 border-t border-border px-6 py-3">
-          {actions.map((action) => {
-            const meta = CRAWL_JOB_ACTION_META[action]
-            const Icon = ACTION_ICONS[action]
-            const busy = actingKey === `${job.id}:${action}`
-            const isDestructive = meta.variant === 'destructive'
-            return (
-              <Button
-                key={action}
-                type="button"
-                size="sm"
-                variant={isDestructive ? 'destructive' : action === 'cancel' ? 'outline' : 'default'}
-                disabled={actingKey != null && !busy}
-                onClick={() => onAction(job, action)}
-              >
-                {busy ? (
-                  <Loader2 className="mr-1.5 size-3.5 animate-spin" />
-                ) : (
-                  <Icon className="mr-1.5 size-3.5" />
-                )}
-                {meta.label()}
-              </Button>
-            )
-          })}
-        </div>
-      ) : null}
+      <div className="shrink-0 border-t-2 border-foreground/15 px-6 py-3">
+        <CrawlJobActions
+          job={job}
+          actingKey={actingKey}
+          onAction={onAction}
+          variant="labeled"
+          align="end"
+        />
+      </div>
     </AppModalShell>
   )
 }

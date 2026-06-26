@@ -5,6 +5,8 @@ import cn.novelstudio.module.content.entity.agent.AgentMessageEntity;
 import cn.novelstudio.module.content.entity.agent.AgentSessionEntity;
 import cn.novelstudio.module.content.repository.agent.AgentMessageRepository;
 import cn.novelstudio.module.content.repository.agent.AgentSessionRepository;
+import cn.novelstudio.module.content.support.ContentLegacyDefaults;
+import cn.novelstudio.platform.i18n.StudioMessages;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -22,6 +24,7 @@ public class AgentSessionPgService {
 
     private final AgentSessionRepository sessionRepository;
     private final AgentMessageRepository messageRepository;
+    private final StudioMessages messages;
 
     /** Avoid self-invocation skipping REQUIRES_NEW on upsertSession. */
     @Lazy
@@ -83,7 +86,7 @@ public class AgentSessionPgService {
         throw ex;
     }
 
-    private static void applySessionFields(
+    private void applySessionFields(
         AgentSessionEntity entity,
         String sessionId,
         Long userId,
@@ -92,7 +95,7 @@ public class AgentSessionPgService {
     ) {
         entity.setId(sessionId);
         entity.setUserId(userId);
-        entity.setTitle(title == null || title.isBlank() ? "新对话" : title);
+        entity.setTitle(resolveSessionTitle(title));
         if (novelId != null && !novelId.isBlank()) {
             entity.setNovelId(novelId);
         }
@@ -138,7 +141,7 @@ public class AgentSessionPgService {
         String runId
     ) {
         if (!isSessionOwnedByUser(userId, sessionId)) {
-            self.upsertSession(userId, sessionId, "新对话", null);
+            self.upsertSession(userId, sessionId, null, null);
         }
         AgentMessageEntity entity = messageRepository.findById(messageId).orElseGet(AgentMessageEntity::new);
         entity.setId(messageId);
@@ -174,9 +177,23 @@ public class AgentSessionPgService {
     private SessionDTO toDto(AgentSessionEntity entity) {
         return new SessionDTO(
             entity.getId(),
-            entity.getTitle(),
+            displaySessionTitle(entity.getTitle()),
             entity.getUpdatedAt().toEpochMilli(),
             entity.getNovelId()
         );
+    }
+
+    private String resolveSessionTitle(String title) {
+        if (ContentLegacyDefaults.isBlankOrLegacySessionTitle(title)) {
+            return null;
+        }
+        return title.trim();
+    }
+
+    private String displaySessionTitle(String title) {
+        if (ContentLegacyDefaults.isBlankOrLegacySessionTitle(title)) {
+            return messages.get("content.session.default_title");
+        }
+        return title;
     }
 }

@@ -51,6 +51,28 @@ public abstract class BaseBiz {
         }
     }
 
+    protected void notFoundKeyed(ResultCode code, String messageKey, Object... args) {
+        throw NotFoundException.keyed(code, messageKey, args);
+    }
+
+    protected void badRequestKeyed(String messageKey, Object... args) {
+        throw ValidationException.keyed(messageKey, args);
+    }
+
+    protected void badRequestKeyed(ResultCode code, String messageKey, Object... args) {
+        throw ValidationException.keyed(code, messageKey, args);
+    }
+
+    protected void forbiddenKeyed(ResultCode code, String messageKey, Object... args) {
+        throw ForbiddenException.keyed(code, messageKey, args);
+    }
+
+    protected void requireOwnerKeyed(Long userId, Long ownerId, ResultCode forbiddenCode, String messageKey, Object... args) {
+        if (!Objects.equals(userId, ownerId)) {
+            throw ForbiddenException.keyed(forbiddenCode, messageKey, args);
+        }
+    }
+
     protected void notFound(String message) {
         throw new NotFoundException(message);
     }
@@ -99,12 +121,12 @@ public abstract class BaseBiz {
 
     protected Long parseUserId(String userIdHeader) {
         if (userIdHeader == null || userIdHeader.isBlank()) {
-            throw new UnauthorizedException("未登录");
+            throw UnauthorizedException.keyed("result.framework.not_logged_in");
         }
         try {
             return Long.parseLong(userIdHeader.trim());
         } catch (NumberFormatException ex) {
-            throw new ValidationException("用户标识无效");
+            throw ValidationException.keyed("result.framework.invalid_user_id");
         }
     }
 }

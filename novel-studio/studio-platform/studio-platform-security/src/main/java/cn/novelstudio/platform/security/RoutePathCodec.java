@@ -17,7 +17,7 @@ public final class RoutePathCodec {
         String plain = codec.decryptFromBase64(fromBase64Url(ciphertextBase64Url));
         int pipe = plain.indexOf('|');
         if (pipe <= 0 || pipe >= plain.length() - 1) {
-            throw new IllegalArgumentException("invalid route payload");
+            throw new IllegalArgumentException("security.crypto.invalid_route_payload");
         }
         return new RouteSpec(plain.substring(0, pipe), plain.substring(pipe + 1));
     }

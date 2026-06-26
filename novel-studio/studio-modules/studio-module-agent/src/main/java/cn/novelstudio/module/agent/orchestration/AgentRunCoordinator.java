@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import cn.novelstudio.module.agent.service.ChapterSideEffectService;
 import cn.novelstudio.module.agent.service.PythonAgentRunClient;
+import cn.novelstudio.platform.i18n.ResultLocalizer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,6 +29,7 @@ public class AgentRunCoordinator {
     private final ObjectMapper objectMapper;
     private final ChapterSideEffectService chapterSideEffectService;
     private final Executor sideEffectExecutor;
+    private final ResultLocalizer resultLocalizer;
     private volatile Consumer<String> emitter;
     private volatile String llmStreamTool;
     private volatile CompletableFuture<Void> pendingSideEffect = CompletableFuture.completedFuture(null);
@@ -49,13 +51,15 @@ public class AgentRunCoordinator {
         PythonAgentRunClient runClient,
         ObjectMapper objectMapper,
         ChapterSideEffectService chapterSideEffectService,
-        Executor sideEffectExecutor
+        Executor sideEffectExecutor,
+        ResultLocalizer resultLocalizer
     ) {
         this.state = state;
         this.runClient = runClient;
         this.objectMapper = objectMapper;
         this.chapterSideEffectService = chapterSideEffectService;
         this.sideEffectExecutor = sideEffectExecutor;
+        this.resultLocalizer = resultLocalizer;
     }
 
     public String getRunId() {
@@ -123,7 +127,9 @@ public class AgentRunCoordinator {
                             try {
                                 applyChapterSideEffects();
                             } catch (Exception ex) {
-                                String detail = ex.getMessage() == null ? "chapter persist failed" : ex.getMessage();
+                                String detail = ex.getMessage() == null || ex.getMessage().isBlank()
+                                    ? resolveMessage("agent.chapter.persist_side_effect_failed")
+                                    : resolveMessage(ex.getMessage());
                                 if (completedStepId != null && !completedStepId.isBlank()) {
                                     pendingChapterPersistFailure = chapterPersistFailureFromPatch(
                                         completedStepId,
@@ -145,14 +151,16 @@ public class AgentRunCoordinator {
                 })
                 .doOnError(ex -> {
                     log.error("run stream error runId={}: {}", state.getRunId(), ex.getMessage());
-                    streamError.set(ex.getMessage() == null ? "run stream error" : ex.getMessage());
+                    streamError.set(ex.getMessage() == null || ex.getMessage().isBlank()
+                        ? "agent.run.stream_error"
+                        : ex.getMessage());
                 })
                 .blockLast();
 
             awaitPendingSideEffects();
 
             if (state.isAborted()) {
-                emit.accept(buildRunFailed("aborted by user"));
+                emit.accept(buildRunFailed("agent.run.aborted_by_user"));
             } else if (streamError.get() != null && !streamError.get().isBlank()) {
                 emit.accept(buildRunFailed(streamError.get()));
             } else {
@@ -238,7 +246,7 @@ public class AgentRunCoordinator {
         runClient.abortRun(state.getRunId());
         Consumer<String> emit = emitter;
         if (emit != null) {
-            emit.accept(buildRunFailed("aborted by user"));
+            emit.accept(buildRunFailed("agent.run.aborted_by_user"));
             emit.accept("event: stream-end\ndata: done\n\n");
         }
     }
@@ -339,12 +347,14 @@ public class AgentRunCoordinator {
         patch.put("user_interactions", log);
     }
 
-    private static String summarizeInteraction(Map<String, Object> interaction) {
+    private String summarizeInteraction(Map<String, Object> interaction) {
         Object answers = interaction.get("answers");
         if (answers instanceof Map<?, ?> answerMap && !answerMap.isEmpty()) {
-            StringBuilder sb = new StringBuilder("我的回答：\n");
+            String header = resolveMessage("agent.interaction.my_answers_header");
+            String kvSep = resolveMessage("agent.interaction.kv_separator");
+            StringBuilder sb = new StringBuilder(header);
             for (Map.Entry<?, ?> e : answerMap.entrySet()) {
-                sb.append(e.getKey()).append("：").append(String.valueOf(e.getValue())).append("\n");
+                sb.append(e.getKey()).append(kvSep).append(String.valueOf(e.getValue())).append("\n");
             }
             return sb.toString().trim();
         }
@@ -354,6 +364,7 @@ public class AgentRunCoordinator {
         }
         Object selected = interaction.get("selected");
         if (selected instanceof Iterable<?> iterable) {
+            String listSep = resolveMessage("agent.interaction.list_separator");
             StringBuilder sb = new StringBuilder();
             for (Object item : iterable) {
                 if (!(item instanceof Map<?, ?> map)) {
@@ -362,7 +373,7 @@ public class AgentRunCoordinator {
                 Object title = map.get("title");
                 if (title != null && !String.valueOf(title).isBlank()) {
                     if (sb.length() > 0) {
-                        sb.append("；");
+                        sb.append(listSep);
                     }
                     sb.append(String.valueOf(title).trim());
                 }
@@ -400,10 +411,10 @@ public class AgentRunCoordinator {
         );
     }
 
-    private String buildRunFailed(String error) {
+    private String buildRunFailed(String errorKeyOrMessage) {
         ObjectNode event = state.baseEvent(objectMapper, "run.failed", "step_" + state.getRunId());
         ObjectNode payload = objectMapper.createObjectNode();
-        payload.put("error", error);
+        payload.put("error", resolveMessage(errorKeyOrMessage));
         event.set("payload", payload);
         return SseEventCodec.encode(
             objectMapper,
@@ -411,10 +422,14 @@ public class AgentRunCoordinator {
         );
     }
 
+    private String resolveMessage(String keyOrMessage) {
+        return resultLocalizer == null ? keyOrMessage : resultLocalizer.resolveLiteral(keyOrMessage);
+    }
+
     private String buildRunPaused() {
         ObjectNode event = state.baseEvent(objectMapper, "run.paused", "step_" + state.getRunId());
         ObjectNode payload = objectMapper.createObjectNode();
-        payload.put("reason", "user pause");
+        payload.put("reason", resolveMessage("agent.run.paused_user"));
         event.set("payload", payload);
         return SseEventCodec.encode(
             objectMapper,

@@ -11,20 +11,21 @@ public final class PyaiRequestSupport {
 
     public static final String USER_ID_HEADER = "X-User-Id";
 
-    private PyaiRequestSupport() {}
+    private PyaiRequestSupport() {
+    }
 
     public static Long parseUserId(String userIdHeader) {
         if (userIdHeader == null || userIdHeader.isBlank()) {
-            throw new UnauthorizedException("未登录");
+            throw UnauthorizedException.keyed("result.framework.not_logged_in");
         }
         try {
             long userId = Long.parseLong(userIdHeader.trim());
             if (userId <= 0) {
-                throw new ValidationException("用户标识无效");
+                throw ValidationException.keyed("result.framework.invalid_user_id");
             }
             return userId;
         } catch (NumberFormatException ex) {
-            throw new ValidationException(ResultCode.BAD_REQUEST, "无效的用户标识");
+            throw ValidationException.keyed(ResultCode.BAD_REQUEST, "result.framework.invalid_user_id");
         }
     }
 }

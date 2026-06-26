@@ -42,7 +42,7 @@ public class AgentStreamBiz extends BaseBiz {
             return resumeRunStreamFrames(userId, resumeRunId, afterSequence, contentOnly);
         }
         if (request.message() == null || request.message().isBlank()) {
-            throw new ValidationException(ResultCode.BAD_REQUEST, "message is required");
+            throw ValidationException.keyed("agent.stream.message_required");
         }
         Flux<String> frames = agentBridgeService.stream(userId, request)
             .filter(frame -> !contentOnly || AgentStreamSupport.isContentFrame(frame));
@@ -67,7 +67,7 @@ public class AgentStreamBiz extends BaseBiz {
         }
         AgentRunDTO active = contentInternalClient.getActiveRunForSession(sessionId);
         if (active == null || active.getId() == null || active.getId().isBlank()) {
-            throw new ValidationException(ResultCode.BAD_REQUEST, "当前会话没有可重连的运行");
+            throw ValidationException.keyed(ResultCode.BAD_REQUEST, "agent.stream.no_resumable_run");
         }
         return active.getId();
     }
