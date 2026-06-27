@@ -60,6 +60,30 @@ jobs:
           DEPLOY_SCP_OPTS: -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes -o ConnectTimeout=60 -o BatchMode=yes
         run: bash novel-studio/deploy/ci/apply-content-migrations-remote.sh
 
+      - name: Apply auth PG migrations (V17)
+        env:
+          MW_HOST: ${{ secrets.MW_HOST }}
+          WORKER_HOST: ${{ secrets.WORKER_HOST }}
+          DEPLOY_SSH_OPTS: -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes -o ConnectTimeout=60 -o BatchMode=yes
+          DEPLOY_SCP_OPTS: -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes -o ConnectTimeout=60 -o BatchMode=yes
+        run: bash novel-studio/deploy/ci/apply-auth-migrations-remote.sh
+
+      - name: Apply notification PG migrations (V28)
+        env:
+          MW_HOST: ${{ secrets.MW_HOST }}
+          WORKER_HOST: ${{ secrets.WORKER_HOST }}
+          DEPLOY_SSH_OPTS: -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes -o ConnectTimeout=60 -o BatchMode=yes
+          DEPLOY_SCP_OPTS: -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes -o ConnectTimeout=60 -o BatchMode=yes
+        run: bash novel-studio/deploy/ci/apply-notification-migrations-remote.sh
+
+      - name: Apply studio PG migrations (V26)
+        env:
+          MW_HOST: ${{ secrets.MW_HOST }}
+          WORKER_HOST: ${{ secrets.WORKER_HOST }}
+          DEPLOY_SSH_OPTS: -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes -o ConnectTimeout=60 -o BatchMode=yes
+          DEPLOY_SCP_OPTS: -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes -o ConnectTimeout=60 -o BatchMode=yes
+        run: bash novel-studio/deploy/ci/apply-studio-migrations-remote.sh
+
       - name: Deploy novel-studio
         env:
           WORKER_HOST: ${{ secrets.WORKER_HOST }}
