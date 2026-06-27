@@ -14,7 +14,6 @@ const ADMIN_ROUTES = [
   '/admin/content/announcements',
   '/admin/billing/pricing',
   '/admin/system/settings',
-  '/admin/content/crawler',
   '/admin/content/catalog',
 ] as const
 
@@ -68,7 +67,7 @@ test.describe('admin CRM APIs', () => {
         waitUntil: 'domcontentloaded',
         timeout: 45_000,
       })
-      await page.waitForTimeout(route === '/admin/content/crawler' ? 5_000 : 2_500)
+      await page.waitForTimeout(2_500)
       expect(failures, `${route}:\n${failures.join('\n')}`).toEqual([])
     }
   })
@@ -117,7 +116,7 @@ test.describe('admin CRM APIs', () => {
     await page.getByRole('button', { name: /保存|Save/i }).click()
   })
 
-  test('爬虫页 5 秒内 CRM 请求不应超过 12 次', async ({ page }) => {
+  test('书库页 5 秒内 CRM 请求不应超过 12 次', async ({ page }) => {
     let adminApiCount = 0
 
     page.on('request', (request) => {
@@ -128,7 +127,7 @@ test.describe('admin CRM APIs', () => {
 
     await loginAsAdmin(page)
     adminApiCount = 0
-    await page.goto(`${PROD_URL}/admin/content/crawler`, { waitUntil: 'domcontentloaded', timeout: 45_000 })
+    await page.goto(`${PROD_URL}/admin/content/catalog`, { waitUntil: 'domcontentloaded', timeout: 45_000 })
     await page.waitForTimeout(5_000)
 
     expect(adminApiCount, `5s 内 ${adminApiCount} 次 CRM 请求`).toBeLessThanOrEqual(12)

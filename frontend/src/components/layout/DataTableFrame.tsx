@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 
 /** 管理台表格：横向滚动 + 统一边框 */
@@ -15,11 +16,12 @@ export function DataTableFrame({
   /** 移动端横滑提示 */
   scrollHint?: boolean
 }) {
+  const { t } = useTranslation('common')
   return (
     <div className={cn('relative', className)}>
       {scrollHint ? (
         <p className="px-4 pb-2 text-center text-[10px] font-medium text-muted-foreground md:hidden">
-          ← 左右滑动查看完整表格 →
+          {t('table.scrollHint')}
         </p>
       ) : null}
       <div

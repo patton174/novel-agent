@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   DEMO_MINI_CURSOR,
   DEMO_MINI_STREAM_LINE,
@@ -12,37 +13,29 @@ import {
 } from '@/lib/marketingDemoClasses'
 import { prefersReducedMotion } from '../scroll/useMarketingGsapEffect'
 
-const ORCH_STEPS = [
-  { name: 'ReadMemory', label: '读取角色记忆' },
-  { name: 'ReadChapter', label: '对齐第一章结尾' },
-  { name: 'plan', label: '规划第二章结构' },
-  { name: 'WriteChapter', label: '流式写入正文' },
-]
+type OrchStep = { name: string; label: string }
 
-const STREAM_TEXT =
-  '雨水顺着他的发梢滑落，每一滴都像是敲打在心上的钟声。他深吸一口气，握紧了拳头。'
-
-function OrchestrationLoop() {
+function OrchestrationLoop({ steps, title }: { steps: OrchStep[]; title: string }) {
   const [step, setStep] = useState(0)
 
   useEffect(() => {
     if (prefersReducedMotion()) {
-      setStep(ORCH_STEPS.length - 1)
+      setStep(steps.length - 1)
       return
     }
     const id = setInterval(() => {
-      setStep((s) => (s + 1) % ORCH_STEPS.length)
+      setStep((s) => (s + 1) % steps.length)
     }, 1400)
     return () => clearInterval(id)
-  }, [])
+  }, [steps.length])
 
   return (
     <>
       <button type="button" className={DEMO_ORCH_HEADER_STATIC} aria-expanded>
         <span className="chevron" />
-        <span className="title">执行中 · 续写第二章</span>
+        <span className="title">{title}</span>
       </button>
-      {ORCH_STEPS.map((item, i) => (
+      {steps.map((item, i) => (
         <div key={item.name} className={demoOrchLineClass(i <= step)}>
           <span className={demoStatusDotClass(i < step ? 'success' : i === step ? 'loading' : 'idle')} />
           <span className="name">{item.name}</span>
@@ -53,27 +46,27 @@ function OrchestrationLoop() {
   )
 }
 
-function StreamingLoop() {
+function StreamingLoop({ streamText }: { streamText: string }) {
   const [chars, setChars] = useState(0)
 
   useEffect(() => {
     if (prefersReducedMotion()) {
-      setChars(STREAM_TEXT.length)
+      setChars(streamText.length)
       return
     }
     let i = 0
     const id = setInterval(() => {
-      i = (i + 2) % (STREAM_TEXT.length + 12)
-      setChars(i > STREAM_TEXT.length ? STREAM_TEXT.length : i)
-      if (i > STREAM_TEXT.length + 8) {
+      i = (i + 2) % (streamText.length + 12)
+      setChars(i > streamText.length ? streamText.length : i)
+      if (i > streamText.length + 8) {
         i = 0
       }
     }, 45)
     return () => clearInterval(id)
-  }, [])
+  }, [streamText])
 
-  const visible = STREAM_TEXT.slice(0, chars)
-  const typing = chars < STREAM_TEXT.length
+  const visible = streamText.slice(0, chars)
+  const typing = chars < streamText.length
 
   return (
     <div className={DEMO_STREAM_BLOCK_FLAT}>
@@ -86,10 +79,19 @@ function StreamingLoop() {
 }
 
 export function MarketingCapabilityMiniDemo({ kind }: { kind: 'orchestrate' | 'stream' }) {
+  const { t } = useTranslation('marketing')
+  const steps = useMemo(
+    () => t('demo.capabilityMini.steps', { returnObjects: true }) as OrchStep[],
+    [t],
+  )
+  const orchTitle = t('demo.capabilityMini.orchTitle')
+  const streamArgs = t('demo.capabilityMini.streamArgs')
+  const streamText = t('demo.capabilityMini.streamText')
+
   if (kind === 'orchestrate') {
     return (
       <div className={DEMO_MINI_WRAP}>
-        <OrchestrationLoop />
+        <OrchestrationLoop steps={steps} title={orchTitle} />
       </div>
     )
   }
@@ -102,12 +104,12 @@ export function MarketingCapabilityMiniDemo({ kind }: { kind: 'orchestrate' | 's
           <div className="body">
             <div className="headline">
               <span className="name">WriteChapter</span>
-              <span className="args">流式输出</span>
+              <span className="args">{streamArgs}</span>
             </div>
           </div>
         </div>
       </div>
-      <StreamingLoop />
+      <StreamingLoop streamText={streamText} />
     </div>
   )
 }

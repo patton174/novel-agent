@@ -3,8 +3,11 @@ export {
   AdminButtonGhost,
   AdminButtonIcon,
   AdminButtonOutline,
+  AdminControlRow,
   AdminField,
   AdminFormActions,
+  AdminFormChip,
+  AdminFormStack,
   AdminNotice,
   AdminSearchInput,
   AdminSelect,
@@ -13,8 +16,14 @@ export {
   AdminTabList,
   AdminTabTrigger,
   AdminTextInput,
+  AdminToolbarButton,
+  AdminToolbarGroup,
+  AdminToolbarIconButton,
   adminPanelPadding,
   adminToolbarClass,
+  adminToolbarControlHeight,
+  adminFormRowClass,
+  adminFormStackClass,
 } from './AdminFormControls'
 
 export {
@@ -56,3 +65,6 @@ export {
   AdminResponsivePixelTable,
   type AdminResponsivePixelTableProps,
 } from './AdminResponsivePixelTable'
+
+export { AdminPageHeader, type AdminPageHeaderProps } from './AdminPageHeader'
+export { AdminPageHero, type AdminPageHeroProps } from './AdminPageHero'

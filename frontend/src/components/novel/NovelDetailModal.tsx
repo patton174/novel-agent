@@ -7,8 +7,8 @@ import { AppModalShell } from '@/components/ui/AppModalShell'
 import { Button } from '../ui/button'
 import { editorFieldClass, editorTextareaClass } from '@/lib/editorFieldClasses'
 import {
-  NOVEL_GENRE_OPTIONS,
-  NOVEL_TAG_PRESETS,
+  getNovelGenreOptions,
+  getNovelTagPresets,
   applyNovelDraftSuggestion,
   buildDraftPayload,
   draftFormToPayload,
@@ -270,7 +270,7 @@ export function NovelDetailModal({
                   className={editorFieldClass}
                 />
                 <datalist id="novel-detail-genre-options">
-                  {NOVEL_GENRE_OPTIONS.map((g) => (
+                  {getNovelGenreOptions().map((g) => (
                     <option key={g} value={g} />
                   ))}
                 </datalist>
@@ -301,7 +301,7 @@ export function NovelDetailModal({
                 className={editorFieldClass}
               />
               <div className="flex flex-wrap gap-1.5 pt-0.5">
-                {NOVEL_TAG_PRESETS.map((tag) => {
+                {getNovelTagPresets().map((tag) => {
                   const active = form.tags.split(/[\s,，、]+/).includes(tag)
                   return (
                     <button

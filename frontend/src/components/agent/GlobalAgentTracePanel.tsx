@@ -1,6 +1,6 @@
+import { useTranslation } from 'react-i18next'
 import { EditorButton } from '../ui/EditorButton'
 import type { AgentStepState } from '../../types/agent'
-import { stepStatusLabel } from '../../utils/agentLabels'
 import {
   GLOBAL_TRACE_EMPTY_HINT,
   GLOBAL_TRACE_LIVE_BADGE,
@@ -35,6 +35,7 @@ export function GlobalAgentTracePanel({
   expanded,
   onToggle,
 }: GlobalAgentTracePanelProps) {
+  const { t } = useTranslation('editor')
   if (!isStreaming && steps.length === 0) {
     return null
   }
@@ -52,16 +53,18 @@ export function GlobalAgentTracePanel({
       >
         <div className={GLOBAL_TRACE_TITLE_ROW}>
           <span className={globalTracePulseDotClass(isStreaming)} />
-          <span>全局链路追踪</span>
+          <span>{t('agent.timeline.globalTraceTitle')}</span>
           {runId ? <code className={GLOBAL_TRACE_RUN_ID}>#{runId.slice(-8)}</code> : null}
         </div>
         <div className={GLOBAL_TRACE_META}>
           {isStreaming ? (
             <span className={GLOBAL_TRACE_LIVE_BADGE}>
-              {activeToolCount > 0 ? `${activeToolCount} 个工具执行中` : 'Agent 运行中'}
+              {activeToolCount > 0
+                ? t('agent.timeline.toolsRunning', { count: activeToolCount })
+                : t('agent.timeline.agentRunning')}
             </span>
           ) : (
-            <span>{toolSteps.length} 步</span>
+            <span>{t('agent.timeline.stepCount', { count: toolSteps.length })}</span>
           )}
           <span className={globalTraceChevronClass(expanded)}>›</span>
         </div>
@@ -70,7 +73,7 @@ export function GlobalAgentTracePanel({
       {expanded && (
         <ol className={GLOBAL_TRACE_STEP_LIST} data-testid="global-trace-list">
           {toolSteps.length === 0 && isStreaming ? (
-            <li className={GLOBAL_TRACE_EMPTY_HINT}>等待工具事件…</li>
+            <li className={GLOBAL_TRACE_EMPTY_HINT}>{t('agent.timeline.waitingToolEvents')}</li>
           ) : null}
           {toolSteps.map((step) => (
             <li key={step.stepId} className={GLOBAL_TRACE_STEP_ROW} data-status={step.status}>
@@ -82,7 +85,9 @@ export function GlobalAgentTracePanel({
               />
               <div className={GLOBAL_TRACE_STEP_MAIN}>
                 <div className={GLOBAL_TRACE_STEP_TITLE}>{step.title}</div>
-                <div className={GLOBAL_TRACE_STEP_META}>{stepStatusLabel(step.status)}</div>
+                <div className={GLOBAL_TRACE_STEP_META}>
+                  {step.status === 'failed' ? t('agent.timeline.phaseFailed') : ''}
+                </div>
               </div>
             </li>
           ))}

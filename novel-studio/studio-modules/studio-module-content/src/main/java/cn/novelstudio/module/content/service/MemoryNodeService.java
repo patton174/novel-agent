@@ -1,7 +1,6 @@
 package cn.novelstudio.module.content.service;
 
-import cn.novelstudio.kernel.exception.NotFoundException;
-import cn.novelstudio.kernel.exception.ValidationException;
+import cn.novelstudio.module.content.support.ContentExceptions;
 import cn.novelstudio.kernel.tools.IdWorker;
 import cn.novelstudio.module.content.dto.CreateMemoryNodeRequest;
 import cn.novelstudio.module.content.dto.MemoryNodeDTO;
@@ -293,20 +292,20 @@ public class MemoryNodeService {
         String parentId = blankToNull(request.parentId());
         String title = request.title().trim();
         if (title.isBlank()) {
-            throw ValidationException.keyed("memory.title_required");
+            throw ContentExceptions.memory("memory.title_required");
         }
 
         String scopeNorm;
         if (parentId != null) {
             MemoryNodeEntity parent = requireNode(userId, novelId, parentId);
             if (isNestedNode(parent)) {
-                throw ValidationException.keyed("memory.two_level_only");
+                throw ContentExceptions.memory("memory.two_level_only");
             }
             scopeNorm = parent.getScope();
         } else {
             scopeNorm = scopeFromRootTitle(title);
             if (repository.existsByUserIdAndNovelIdAndScopeAndParentIdIsNull(userId, novelId, scopeNorm)) {
-                throw ValidationException.keyed("memory.scope_root_exists", scopeNorm);
+                throw ContentExceptions.memory("memory.scope_root_exists", scopeNorm);
             }
         }
 
@@ -349,7 +348,7 @@ public class MemoryNodeService {
                 String newScope = scopeFromRootTitle(newTitle);
                 if (!newScope.equals(oldScope)) {
                     if (repository.existsByUserIdAndNovelIdAndScopeAndParentIdIsNull(userId, novelId, newScope)) {
-                        throw ValidationException.keyed("memory.scope_root_exists", newScope);
+                        throw ContentExceptions.memory("memory.scope_root_exists", newScope);
                     }
                     renameScope(userId, novelId, oldScope, newScope);
                     entity.setScope(newScope);
@@ -385,17 +384,17 @@ public class MemoryNodeService {
             String newParent = blankToNull(request.parentId().orElse(null));
             if (newParent != null) {
                 if (newParent.equals(memoryId)) {
-                    throw ValidationException.keyed("memory.parent_self");
+                    throw ContentExceptions.memory("memory.parent_self");
                 }
                 MemoryNodeEntity parent = requireNode(userId, novelId, newParent);
                 if (isNestedNode(parent)) {
-                    throw ValidationException.keyed("memory.two_level_only");
+                    throw ContentExceptions.memory("memory.two_level_only");
                 }
                 if (!parent.getScope().equals(entity.getScope())) {
-                    throw ValidationException.keyed("memory.cross_scope_move");
+                    throw ContentExceptions.memory("memory.cross_scope_move");
                 }
             } else if (entity.getParentId() == null || entity.getParentId().isBlank()) {
-                throw ValidationException.keyed("memory.root_move_forbidden");
+                throw ContentExceptions.memory("memory.root_move_forbidden");
             }
             entity.setParentId(newParent);
             parentForSort = newParent;
@@ -417,7 +416,7 @@ public class MemoryNodeService {
         } else {
             long children = repository.countByUserIdAndNovelIdAndParentId(userId, novelId, memoryId);
             if (children > 0) {
-                throw ValidationException.keyed("memory.has_children");
+                throw ContentExceptions.memory("memory.has_children");
             }
         }
         repository.delete(entity);
@@ -492,7 +491,7 @@ public class MemoryNodeService {
 
     private MemoryNodeEntity requireNode(Long userId, String novelId, String memoryId) {
         return repository.findByUserIdAndNovelIdAndId(userId, novelId, memoryId)
-            .orElseThrow(() -> NotFoundException.keyed("memory.not_found", memoryId));
+            .orElseThrow(() -> ContentExceptions.memoryNotFound(memoryId));
     }
 
     private MemoryNodeDTO toDto(MemoryNodeEntity row, Long userId, String novelId) {
@@ -576,10 +575,10 @@ public class MemoryNodeService {
     private static String normalizeScope(String scope) {
         String norm = (scope == null ? "" : scope.trim());
         if (norm.isEmpty()) {
-            throw ValidationException.keyed("memory.scope_required");
+            throw ContentExceptions.memory("memory.scope_required");
         }
         if (norm.length() > MAX_SCOPE_LEN) {
-            throw ValidationException.keyed("memory.scope_too_long", MAX_SCOPE_LEN);
+            throw ContentExceptions.memory("memory.scope_too_long", MAX_SCOPE_LEN);
         }
         return norm.toLowerCase(Locale.ROOT);
     }
@@ -587,7 +586,7 @@ public class MemoryNodeService {
     private static String normalizeKind(String kind) {
         String norm = (kind == null || kind.isBlank()) ? "both" : kind.trim().toLowerCase(Locale.ROOT);
         if (!VALID_KINDS.contains(norm)) {
-            throw ValidationException.keyed("memory.unsupported_kind", kind);
+            throw ContentExceptions.memory("memory.unsupported_kind", kind);
         }
         return norm;
     }

@@ -22,7 +22,7 @@ export function BookstoreDesktop() {
         icon={BookMarked}
         action={
           <Button asChild variant="outline" className={APP_BTN_MD}>
-            <Link to="/dashboard/novels">{t('dashboard:bookstore.myNovels')}</Link>
+            <Link to="/dashboard/my-library">{t('dashboard:bookstore.myLibrary')}</Link>
           </Button>
         }
       />

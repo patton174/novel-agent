@@ -14,6 +14,10 @@ beforeAll(async () => {
     'editor',
     {
       timeline: {
+        phaseFailed: '失败',
+        phaseDone: '已完成',
+        phaseAwaiting: '等待回答',
+        phaseRunning: '进行中',
         toolTitles: {
           WriteChapter: {
             running: '正在写入章节…',
@@ -31,6 +35,16 @@ beforeAll(async () => {
             awaiting: '等待你的回复…',
             done: '已收到回复',
             failed: '提问失败',
+          },
+        },
+      },
+      agent: {
+        stream: {
+          timeline: {
+            phaseFailed: '失败',
+            phaseDone: '已完成',
+            phaseAwaiting: '等待回答',
+            phaseRunning: '运行中',
           },
         },
       },

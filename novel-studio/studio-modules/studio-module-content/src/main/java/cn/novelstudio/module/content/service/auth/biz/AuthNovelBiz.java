@@ -20,14 +20,21 @@ import cn.novelstudio.module.content.service.ContentSessionService;
 import cn.novelstudio.module.content.service.NovelCoverService;
 import cn.novelstudio.module.content.service.NovelDescriptionClient;
 import cn.novelstudio.module.content.service.NovelExportService;
+import cn.novelstudio.module.content.service.KgBackfillService;
+import cn.novelstudio.module.content.service.KgService;
 import cn.novelstudio.module.content.service.KnowledgeGraphClient;
 import cn.novelstudio.module.content.service.NovelService;
+import cn.novelstudio.platform.messaging.constant.MqTopic;
+import cn.novelstudio.platform.messaging.kg.KgBackfillMessage;
+import cn.novelstudio.platform.messaging.producer.IMessageProducer;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -42,6 +49,9 @@ public class AuthNovelBiz extends BaseBiz {
     private final ChapterService chapterService;
     private final ContentSessionService sessionService;
     private final KnowledgeGraphClient knowledgeGraphClient;
+    private final KgBackfillService kgBackfillService;
+    private final KgService kgService;
+    private final ObjectProvider<IMessageProducer> producerProvider;
 
     public Result<List<NovelDTO>> list(Long userId) {
         return ok(novelService.listNovels(userId));
@@ -59,12 +69,37 @@ public class AuthNovelBiz extends BaseBiz {
         return ok(novelService.updateNovel(userId, novelId, request));
     }
 
-    public Result<NovelDTO> generateCover(Long userId, String novelId, String prompt) {
-        return ok(novelCoverService.generateCover(userId, novelId, prompt));
+    public Result<NovelDTO> generateCover(
+        Long userId,
+        String novelId,
+        String prompt,
+        String stylePrompt,
+        String scenePrompt
+    ) {
+        return ok(novelCoverService.generateCover(userId, novelId, prompt, stylePrompt, scenePrompt));
     }
 
-    public Result<CoverPromptResponse> suggestCoverPrompt(Long userId, String novelId, String draft) {
-        return ok(novelCoverService.suggestCoverPrompt(userId, novelId, draft));
+    public Result<CoverPromptResponse> suggestCoverPrompt(
+        Long userId,
+        String novelId,
+        String styleDraft,
+        String sceneDraft,
+        String draft,
+        String mode
+    ) {
+        return ok(novelCoverService.suggestCoverPrompt(userId, novelId, styleDraft, sceneDraft, draft, mode));
+    }
+
+    public void streamCoverPrompt(
+        Long userId,
+        String novelId,
+        String styleDraft,
+        String sceneDraft,
+        String draft,
+        String mode,
+        OutputStream outputStream
+    ) {
+        novelCoverService.streamCoverPrompt(userId, novelId, styleDraft, sceneDraft, draft, mode, outputStream);
     }
 
     public Result<NovelDescriptionPromptResponse> suggestDescriptionPrompt(
@@ -158,6 +193,41 @@ public class AuthNovelBiz extends BaseBiz {
     public Result<Map<String, Object>> knowledgeGraph(Long userId, String novelId) {
         novelService.getNovel(userId, novelId);
         return ok(knowledgeGraphClient.getNovelGraph(novelId));
+    }
+
+    public Result<Map<String, Object>> backfillKg(Long userId, String novelId) {
+        novelService.getNovel(userId, novelId);
+        Map<String, Object> graph = knowledgeGraphClient.getNovelGraph(novelId);
+        if (!"empty".equals(graph.get("status"))) {
+            return ok(Map.of("status", "exists"));
+        }
+        Map<String, Object> prog = kgBackfillService.getProgress(novelId);
+        if ("in_progress".equals(prog.get("status"))) {
+            return ok(Map.of("status", "in_progress"));
+        }
+        IMessageProducer producer = producerProvider.getIfAvailable();
+        if (producer != null) {
+            producer.send(MqTopic.KG_BACKFILL, new KgBackfillMessage(novelId, userId));
+            return ok(Map.of("status", "started"));
+        }
+        kgBackfillService.backfill(novelId);
+        return ok(Map.of("status", "started_sync"));
+    }
+
+    public Result<Map<String, Object>> kgProgress(Long userId, String novelId) {
+        novelService.getNovel(userId, novelId);
+        return ok(kgBackfillService.getProgress(novelId));
+    }
+
+    public Result<List<Map<String, Object>>> kgErrors(Long userId, String novelId) {
+        novelService.getNovel(userId, novelId);
+        return ok(kgService.recentErrors(novelId).stream().map(e -> {
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("chapterId", e.getChapterId());
+            m.put("reason", e.getReason());
+            m.put("createdAt", e.getCreatedAt() == null ? null : e.getCreatedAt().toEpochMilli());
+            return m;
+        }).toList());
     }
 
     public Result<List<SessionDTO>> listSessions(String userId, String novelId, int limit) {

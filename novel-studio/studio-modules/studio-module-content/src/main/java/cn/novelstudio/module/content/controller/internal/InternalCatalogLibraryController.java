@@ -1,0 +1,28 @@
+package cn.novelstudio.module.content.controller.internal;
+
+import cn.novelstudio.module.content.service.catalog.CatalogService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Map;
+
+@RestController
+@RequestMapping("/internal/catalog")
+@RequiredArgsConstructor
+public class InternalCatalogLibraryController {
+
+    private final CatalogService catalogService;
+
+    @PostMapping("/{catalogNovelId}/summary")
+    public Map<String, Object> updateSummary(
+        @PathVariable String catalogNovelId,
+        @RequestBody Map<String, String> body
+    ) {
+        catalogService.updateSummary(catalogNovelId, body.get("summary"));
+        return Map.of("ok", true);
+    }
+}

@@ -19,7 +19,7 @@ export interface EditorCenterTabsProps {
 }
 
 export function EditorCenterTabs({ activeTab, onTabChange }: EditorCenterTabsProps) {
-  const { t } = useTranslation(['editor', 'common'])
+  const { t } = useTranslation(['editor'])
 
   const tabItems = useMemo(
     () => [

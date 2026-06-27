@@ -1,6 +1,7 @@
 import { Fragment } from 'react'
 import { Link } from 'react-router-dom'
 import { IconChevronRight } from '@tabler/icons-react'
+import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 
 export interface BreadcrumbItem {
@@ -14,8 +15,9 @@ export interface ProBreadcrumbProps {
 }
 
 export function ProBreadcrumb({ items, className }: ProBreadcrumbProps) {
+  const { t } = useTranslation('common')
   return (
-    <nav aria-label="breadcrumb" className={cn('flex items-center gap-1 text-sm text-muted-foreground', className)}>
+    <nav aria-label={t('a11y.breadcrumb')} className={cn('flex items-center gap-1 text-sm text-muted-foreground', className)}>
       {items.map((item, i) => {
         const last = i === items.length - 1
         return (

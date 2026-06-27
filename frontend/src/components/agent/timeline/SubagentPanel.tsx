@@ -1,4 +1,5 @@
 import { useId, useLayoutEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 import type { AgentSubagentState } from '../../../types/agent'
 import { deriveSubagentDisplayMeta } from '../../../utils/subagentDisplayMeta'
@@ -17,6 +18,7 @@ export function SubagentPanel({
   subagent: AgentSubagentState
   loading: boolean
 }) {
+  const { t } = useTranslation('editor')
   const [modalOpen, setModalOpen] = useState(false)
   const runActive = subagent.status === 'active' && loading
   const meta = deriveSubagentDisplayMeta(subagent, runActive)
@@ -50,7 +52,7 @@ export function SubagentPanel({
         : null
 
   const inlineResult = runActive
-    ? meta.currentStep ?? meta.turnHint ?? '子代理运行中…'
+    ? meta.currentStep ?? meta.turnHint ?? t('agent.timeline.subagentRunning')
     : toolStats
 
   const liveBranch = showLiveBody ? (

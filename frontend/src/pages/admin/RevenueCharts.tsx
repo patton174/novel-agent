@@ -14,6 +14,7 @@ import {
   pixelChartSeriesColors,
   pixelChartTooltipStyle,
 } from '@/components/pixel/charts/pixelChartTheme'
+import { adminFormatLocale } from '@/components/admin/adminUiTokens'
 import { mapUsageTrendPoints } from '@/components/pixel/charts/PixelUsageTrendChart'
 
 interface RevenueChartsProps {
@@ -25,7 +26,8 @@ export default function RevenueCharts({
   trends = [],
   modelBreakdown = [],
 }: RevenueChartsProps) {
-  const { t } = useTranslation(['admin'])
+  const { t, i18n } = useTranslation(['admin', 'dashboard'])
+  const dateLocale = adminFormatLocale(i18n.language)
   const tokenTrend = mapUsageTrendPoints(trends).map((p) => ({ date: p.date, count: p.tokens }))
   const costTrend = mapUsageTrendPoints(trends).map((p) => ({ date: p.date, count: p.cost }))
 
@@ -41,10 +43,10 @@ export default function RevenueCharts({
         <PixelLineChart
           data={tokenTrend}
           xKey="date"
-          series={[{ key: 'count', name: 'Tokens', color: pixelChartNeon.purple, fill: true }]}
+          series={[{ key: 'count', name: t('admin:stats.tokenCount'), color: pixelChartNeon.purple, fill: true }]}
           emptyText={t('admin:revenue.noData')}
           formatX={formatPixelChartDate}
-          formatY={(v) => v.toLocaleString('zh-CN')}
+          formatY={(v) => v.toLocaleString(dateLocale)}
         />
       </PixelChartCard>
 
@@ -100,7 +102,11 @@ export default function RevenueCharts({
                     formatter={(value, name, item) => {
                       const payload = item?.payload as { tokens?: number } | undefined
                       return [
-                        `${formatCostMicros(Number(value))} · ${(payload?.tokens ?? 0).toLocaleString('zh-CN')} tok`,
+                        t('admin:revenue.tooltipCostTokens', {
+                          cost: formatCostMicros(Number(value)),
+                          tokens: (payload?.tokens ?? 0).toLocaleString(dateLocale),
+                          unit: t('dashboard:billing.tokenAbbrev'),
+                        }),
                         String(name),
                       ]
                     }}

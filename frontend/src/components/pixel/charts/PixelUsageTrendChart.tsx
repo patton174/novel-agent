@@ -1,4 +1,5 @@
 import type { PlatformUsageTrendPoint } from '@/api/billingAdminApi'
+import { useTranslation } from 'react-i18next'
 import { PIXEL_CHART_HEIGHT } from '../pixelTokens'
 import { PixelLineChart, type PixelLineChartProps } from './PixelLineChart'
 import { pixelChartNeon } from './pixelChartTheme'
@@ -26,13 +27,16 @@ export interface PixelUsageTrendChartProps
 /** Token 面积 + 费用虚线（双 Y 轴），对齐参考「使用趋势」样式 */
 export function PixelUsageTrendChart({
   data,
-  tokensLabel = 'Tokens',
-  costLabel = '费用',
+  tokensLabel,
+  costLabel,
   heightClassName = PIXEL_CHART_HEIGHT,
-  formatY = (v) => v.toLocaleString('zh-CN'),
-  formatYRight = (v) => `¥${v.toFixed(2)}`,
+  formatY,
+  formatYRight,
   ...props
 }: PixelUsageTrendChartProps) {
+  const { t, i18n } = useTranslation('common')
+  const resolvedTokensLabel = tokensLabel ?? t('chart.tokens')
+  const resolvedCostLabel = costLabel ?? t('chart.cost')
   const mapped = mapUsageTrendPoints(data)
   return (
     <PixelLineChart
@@ -40,19 +44,19 @@ export function PixelUsageTrendChart({
       data={mapped}
       xKey="date"
       heightClassName={heightClassName}
-      formatY={formatY}
-      formatYRight={formatYRight}
+      formatY={formatY ?? ((v) => v.toLocaleString(i18n.language))}
+      formatYRight={formatYRight ?? ((v) => `¥${v.toFixed(2)}`)}
       showLegend
       series={[
         {
           key: 'tokens',
-          name: tokensLabel,
+          name: resolvedTokensLabel,
           color: pixelChartNeon.purple,
           fill: true,
         },
         {
           key: 'cost',
-          name: costLabel,
+          name: resolvedCostLabel,
           color: pixelChartNeon.red,
           dashed: true,
           yAxisId: 'right',

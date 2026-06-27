@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { NavLink } from 'react-router-dom'
+import { NavLink, useLocation } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { needsEmailVerification } from '@/api/userApi'
 import { useUserStore } from '@/stores/userStore'
@@ -13,24 +13,24 @@ interface DashboardSidebarFooterProps {
   collapsed?: boolean
 }
 
-/** 仪表盘侧栏底部：用户头像 + 邮箱状态 + 跳转账户设置。
- *  - 头像左上角小圆点：邮箱未验证时显示（sky-500）。
- *  - 整块为 NavLink → /dashboard/settings。 */
+/** 仪表盘侧栏底部：用户头像 + 邮箱状态 + 跳转个人资料。 */
 export function DashboardSidebarFooter({ onNavigate, collapsed = false }: DashboardSidebarFooterProps) {
   const { t } = useTranslation(['common'])
+  const { pathname } = useLocation()
   const profile = useUserStore((s) => s.profile)
   const unverified = needsEmailVerification(profile)
+  const settingsActive = pathname.startsWith('/dashboard/settings')
 
   return (
     <NavLink
-      to="/dashboard/settings"
+      to="/dashboard/settings/profile"
       onClick={onNavigate}
-      className={({ isActive }) =>
+      className={() =>
         cn(
           'flex w-full items-center rounded-xl text-left transition-colors hover:from-muted/65 hover:via-muted/40',
           collapsed ? 'justify-center px-2 py-2.5' : 'gap-3 px-3 py-2.5',
           'bg-gradient-to-r from-muted/50 via-muted/30 to-transparent ring-1 ring-border/40',
-          isActive && 'ring-2 ring-primary/25',
+          settingsActive && 'ring-2 ring-primary/25',
         )
       }
       title={t('common:nav.dashboardSettings')}

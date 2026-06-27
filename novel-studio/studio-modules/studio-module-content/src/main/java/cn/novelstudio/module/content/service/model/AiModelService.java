@@ -12,6 +12,8 @@ import cn.novelstudio.module.content.service.model.dto.AiModelDTO;
 import cn.novelstudio.module.content.service.model.dto.AiModelUpsertReq;
 import cn.novelstudio.module.content.service.model.dto.CredentialUpsertReq;
 import cn.novelstudio.module.content.support.ModelKeyCodec;
+import cn.novelstudio.platform.i18n.ResultLocalizer;
+import cn.novelstudio.platform.i18n.StudioMessages;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,6 +34,8 @@ public class AiModelService {
     private final AiModelCredentialService credentialService;
     private final ModelKeyCodec keyCodec;
     private final PythonModelTestClient pythonModelTestClient;
+    private final StudioMessages messages;
+    private final ResultLocalizer resultLocalizer;
 
     @Transactional
     public AiModelDTO create(AiModelUpsertReq req) {
@@ -226,7 +230,9 @@ public class AiModelService {
             result.putAll(remote);
         } catch (Exception ex) {
             result.put("ok", false);
-            result.put("error", ex.getMessage() != null ? ex.getMessage() : "model.connectivity_check_failed");
+            result.put("error", ex.getMessage() != null && !ex.getMessage().isBlank()
+                ? resultLocalizer.resolveLiteral(ex.getMessage())
+                : messages.get("model.connectivity_check_failed"));
         }
         result.put("latencyMs", System.currentTimeMillis() - start);
         return result;

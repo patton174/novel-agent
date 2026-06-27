@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { ChevronRight, Megaphone, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { fetchSiteContent, type SiteContent } from '@/api/billingApi'
+import { SiteContentLocaleFallback } from '@/components/content/SiteContentLocaleFallback'
 import { SiteMarkdown, markdownPlainPreview } from '@/components/content/SiteMarkdown'
 import { AppSheetModal } from '@/components/ui/AppSheetModal'
 import { Button } from '@/components/ui/button'
@@ -10,7 +11,7 @@ import { cn } from '@/lib/utils'
 const DISMISS_PREFIX = 'announcement-dismissed:'
 
 export function DashboardAnnouncementBanner() {
-  const { t } = useTranslation(['dashboard'])
+  const { t, i18n } = useTranslation(['dashboard'])
   const [announcement, setAnnouncement] = useState<SiteContent | null>(null)
   const [visible, setVisible] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
@@ -31,7 +32,7 @@ export function DashboardAnnouncementBanner() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [i18n.language])
 
   if (!visible || !announcement?.bodyMd?.trim()) return null
 
@@ -97,6 +98,7 @@ export function DashboardAnnouncementBanner() {
         modalClassName="sm:max-w-2xl"
         bodyClassName="px-6 py-5"
       >
+        <SiteContentLocaleFallback localeResolved={announcement.localeResolved} className="mb-3" />
         <SiteMarkdown text={announcement.bodyMd} />
       </AppSheetModal>
     </>

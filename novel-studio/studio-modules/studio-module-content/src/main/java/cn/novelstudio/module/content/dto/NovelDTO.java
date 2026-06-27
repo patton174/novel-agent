@@ -8,6 +8,8 @@ public record NovelDTO(
     String style,
     int targetChapterWords,
     String coverUrl,
+    String coverStorageKey,
+    boolean hasCover,
     long createdAt,
     long updatedAt
 ) {}

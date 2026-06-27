@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Menu } from 'lucide-react'
 import { AppSidebar } from '@/components/dashboard/AppSidebar'
 import { Button } from '@/components/ui/button'
@@ -6,6 +7,7 @@ import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/s
 import { MOBILE_DRAWER_SHEET_CLASS } from '@/lib/drawerLayout'
 
 export function MobileSidebarDrawer() {
+  const { t } = useTranslation('common')
   const [open, setOpen] = useState(false)
 
   return (
@@ -16,13 +18,13 @@ export function MobileSidebarDrawer() {
           variant="ghost"
           size="icon"
           className="md:hidden"
-          aria-label="打开导航菜单"
+          aria-label={t('a11y.openNavMenu')}
         >
           <Menu className="size-5" />
         </Button>
       </SheetTrigger>
       <SheetContent side="left" className={`gap-0 p-0 ${MOBILE_DRAWER_SHEET_CLASS}`}>
-        <SheetTitle className="sr-only">导航菜单</SheetTitle>
+        <SheetTitle className="sr-only">{t('a11y.navMenu')}</SheetTitle>
         <AppSidebar embedded onNavigate={() => setOpen(false)} />
       </SheetContent>
     </Sheet>

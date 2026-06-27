@@ -32,6 +32,7 @@ import {
 } from '@/components/layout/AdminDataLayout'
 import { ProPagination } from '@/components/pro/ProPagination'
 import { useMarkRouteSeen } from '@/hooks/useMarkRouteSeen'
+import { adminFormatLocale } from '@/components/admin/adminUiTokens'
 import { cn } from '@/lib/utils'
 import { appToast } from '@/stores/appToastStore'
 import { useTranslation } from 'react-i18next'
@@ -45,17 +46,22 @@ function orderStatusTone(status: string): 'success' | 'warning' | 'muted' | 'def
   return 'muted'
 }
 
+function orderStatusLabel(status: string, t: (key: string) => string): string {
+  return t(`admin:paymentOrders.status.${status}`)
+}
+
 export default function PaymentOrdersPage() {
-  const { t } = useTranslation(['admin'])
+  const { t, i18n } = useTranslation(['admin'])
+  const dateLocale = adminFormatLocale(i18n.language)
   useMarkRouteSeen()
   const [searchParams, setSearchParams] = useSearchParams()
 
   const STATUS_OPTIONS = [
     { value: '', label: t('admin:paymentOrders.statusAll') },
-    { value: 'NEW', label: 'NEW' },
-    { value: 'DONE', label: 'DONE' },
-    { value: 'EXPIRED', label: 'EXPIRED' },
-    { value: 'REFUND', label: 'REFUND' },
+    { value: 'NEW', label: t('admin:paymentOrders.status.NEW') },
+    { value: 'DONE', label: t('admin:paymentOrders.status.DONE') },
+    { value: 'EXPIRED', label: t('admin:paymentOrders.status.EXPIRED') },
+    { value: 'REFUND', label: t('admin:paymentOrders.status.REFUND') },
   ]
 
   const [orders, setOrders] = useState<AdminPaymentOrder[] | null>(null)
@@ -144,7 +150,7 @@ export default function PaymentOrdersPage() {
     return [
       {
         key: 'id',
-        header: 'ID',
+        header: t('admin:users.colId'),
         className: 'tabular-nums',
         render: (row) => <PixelCellMono>{row.id}</PixelCellMono>,
       },
@@ -190,7 +196,7 @@ export default function PaymentOrdersPage() {
                     : 'neutral'
             }
           >
-            {row.status}
+            {orderStatusLabel(row.status, t)}
           </AdminStatusBadge>
         ),
       },
@@ -199,7 +205,7 @@ export default function PaymentOrdersPage() {
         header: t('admin:paymentOrders.colCreated'),
         render: (row) => (
           <PixelCellMono className="whitespace-nowrap text-muted-foreground">
-            {new Date(row.createdAt).toLocaleString('zh-CN')}
+            {new Date(row.createdAt).toLocaleString(dateLocale)}
           </PixelCellMono>
         ),
       },
@@ -208,7 +214,7 @@ export default function PaymentOrdersPage() {
         header: t('admin:paymentOrders.colPaidAt'),
         render: (row) => (
           <PixelCellMono className="whitespace-nowrap text-muted-foreground">
-            {row.paidAt ? new Date(row.paidAt).toLocaleString('zh-CN') : '—'}
+            {row.paidAt ? new Date(row.paidAt).toLocaleString(dateLocale) : t('admin:jobs.duration.dash')}
           </PixelCellMono>
         ),
       },
@@ -223,7 +229,7 @@ export default function PaymentOrdersPage() {
         ),
       },
     ]
-  }, [openDetail, t])
+  }, [dateLocale, openDetail, t])
 
   return (
     <AdminDataPage>
@@ -268,7 +274,7 @@ export default function PaymentOrdersPage() {
           <AdminField label={t('admin:paymentOrders.userId')}>
             <AdminTextInput
               value={userIdInput}
-              placeholder="123"
+              placeholder={t('admin:paymentOrders.placeholderUserId')}
               onChange={(e) => {
                 setUserIdInput(e.target.value)
                 setPageCurrent(1)
@@ -278,7 +284,7 @@ export default function PaymentOrdersPage() {
           <AdminField label={t('admin:paymentOrders.filterPlan')}>
             <AdminTextInput
               value={planCode}
-              placeholder="pro"
+              placeholder={t('admin:paymentOrders.placeholderPlanCode')}
               onChange={(e) => {
                 setPlanCode(e.target.value)
                 setPageCurrent(1)
@@ -309,7 +315,7 @@ export default function PaymentOrdersPage() {
             <article className={cn(PIXEL_MOBILE_CARD, 'p-4')}>
               <div className="flex items-start justify-between gap-2">
                 <PixelCellMono>#{row.id}</PixelCellMono>
-                <PixelBadge tone={orderStatusTone(row.status)}>{row.status}</PixelBadge>
+                <PixelBadge tone={orderStatusTone(row.status)}>{orderStatusLabel(row.status, t)}</PixelBadge>
               </div>
               <p className="mt-1 truncate font-mono text-xs text-muted-foreground">{row.idrOrderId}</p>
               <PixelCellStack title={row.planName} subtitle={row.planCode} className="mt-1" />

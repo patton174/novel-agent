@@ -200,6 +200,7 @@ async def _try_autocompact(
         state.transcript,
         trigger="auto",
         run_usage=state.run_usage,
+        model_config=state.ctx.resolved_model,
     )
     if not ac.changed:
         if ac.error:

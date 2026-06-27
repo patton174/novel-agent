@@ -20,6 +20,12 @@ public class I18nProperties {
     /** Redis 缓存翻译结果 TTL（秒），0 表示仅用内存 */
     private long translationCacheSeconds = 86_400L;
 
+    /** 站点 CMS 自动翻译定时任务间隔（毫秒） */
+    private long siteContentSyncIntervalMs = 300_000L;
+
+    /** 站点 CMS 自动翻译每轮最多处理条数 */
+    private int siteContentSyncBatchSize = 20;
+
     public boolean isEnabled() {
         return enabled;
     }
@@ -58,6 +64,22 @@ public class I18nProperties {
 
     public void setTranslationCacheSeconds(long translationCacheSeconds) {
         this.translationCacheSeconds = translationCacheSeconds;
+    }
+
+    public long getSiteContentSyncIntervalMs() {
+        return siteContentSyncIntervalMs;
+    }
+
+    public void setSiteContentSyncIntervalMs(long siteContentSyncIntervalMs) {
+        this.siteContentSyncIntervalMs = siteContentSyncIntervalMs;
+    }
+
+    public int getSiteContentSyncBatchSize() {
+        return siteContentSyncBatchSize;
+    }
+
+    public void setSiteContentSyncBatchSize(int siteContentSyncBatchSize) {
+        this.siteContentSyncBatchSize = siteContentSyncBatchSize;
     }
 
     public boolean isTranslationConfigured() {

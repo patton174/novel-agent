@@ -14,6 +14,8 @@ public interface NovelRepository extends JpaRepository<NovelEntity, String> {
 
     long countByUserId(Long userId);
 
+    boolean existsByUserIdAndCoverStorageKey(Long userId, String coverStorageKey);
+
     @Query("SELECT COUNT(n) FROM NovelEntity n")
     long countAll();
 }

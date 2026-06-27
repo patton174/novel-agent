@@ -64,6 +64,7 @@ Return corrected input for {tool_name}."""
             [SystemMessage(content=system), HumanMessage(content=human)],
             tool.input_model,
             profile="default",
+            model_config=ctx.resolved_model,
         )
         repaired = parsed.model_dump(exclude_none=True)
         validated, err = tool.parse_input(repaired)

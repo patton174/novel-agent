@@ -27,4 +27,16 @@ public class BillingSettingsClient {
             return true;
         }
     }
+
+    public boolean isRegistrationRequireEmailVerify() {
+        if (!integrationProperties.getBilling().isEnabled()) {
+            return true;
+        }
+        try {
+            return siteSettingsBiz.isRegistrationRequireEmailVerify();
+        } catch (Exception ex) {
+            log.warn("billing settings fetch failed, require email verify: {}", ex.getMessage());
+            return true;
+        }
+    }
 }

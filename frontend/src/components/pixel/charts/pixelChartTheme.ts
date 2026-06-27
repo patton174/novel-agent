@@ -60,8 +60,9 @@ export const pixelChartLineProps = {
   },
 }
 
+/** SVG stopOpacity 须为数值；CSS 变量无法用于 Recharts gradient stop */
 export const pixelChartFillGradientStops = {
-  top: 'var(--pixel-chart-fill-top)',
+  top: 0.31,
   bottom: 0,
 } as const
 

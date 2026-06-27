@@ -53,7 +53,10 @@ public class AgentSessionListener {
     }
 
     private void upsertSession(long userId, String sessionId, String seed) {
-        String title = seed == null || seed.isBlank() ? "新对话" : (seed.length() > 18 ? seed.substring(0, 18) + "..." : seed);
+        // Blank title: ContentSessionService localizes via content.session.default_title on read.
+        String title = seed == null || seed.isBlank()
+            ? ""
+            : (seed.length() > 18 ? seed.substring(0, 18) + "..." : seed);
         sessionBiz.upsert(String.valueOf(userId), new UpsertSessionRequest(sessionId, title, null));
     }
 

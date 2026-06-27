@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import i18n from '@/i18n'
 
 export type AppDialogKind = 'confirm' | 'alert' | 'prompt'
 
@@ -20,20 +21,22 @@ interface AppDialogState extends AppDialogOptions {
   resolve: ((value: boolean | string | null) => void) | null
 }
 
-const defaults: AppDialogOptions = {
-  title: '提示',
-  confirmLabel: '确定',
-  cancelLabel: '取消',
-  danger: false,
-  defaultValue: '',
-  placeholder: '',
+export function defaultDialogLabels(): AppDialogOptions {
+  return {
+    title: i18n.t('common:dialog.title'),
+    confirmLabel: i18n.t('common:dialog.confirm'),
+    cancelLabel: i18n.t('common:dialog.cancel'),
+    danger: false,
+    defaultValue: '',
+    placeholder: '',
+  }
 }
 
 export const useAppDialogStore = create<AppDialogState>(() => ({
   open: false,
   kind: 'confirm',
   resolve: null,
-  ...defaults,
+  ...defaultDialogLabels(),
 }))
 
 function openDialog<T extends boolean | string | null>(
@@ -45,7 +48,7 @@ function openDialog<T extends boolean | string | null>(
       open: true,
       kind,
       resolve: resolve as (value: boolean | string | null) => void,
-      ...defaults,
+      ...defaultDialogLabels(),
       ...options,
     })
   })
@@ -61,7 +64,7 @@ export function alertDialog(
   options: Pick<AppDialogOptions, 'title' | 'description' | 'confirmLabel'>,
 ): Promise<void> {
   return openDialog<boolean>('alert', {
-    confirmLabel: '知道了',
+    confirmLabel: i18n.t('common:dialog.gotIt'),
     ...options,
   }).then(() => undefined)
 }
@@ -80,6 +83,6 @@ export function closeAppDialog(result: boolean | string | null) {
     open: false,
     resolve: null,
     kind: 'confirm',
-    ...defaults,
+    ...defaultDialogLabels(),
   })
 }

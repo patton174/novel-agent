@@ -1,3 +1,4 @@
+import i18n from '@/i18n'
 import { secureFetch } from '@/security/secureFetch'
 import { parseResultResponse, readApiErrorMessage } from '@/utils/resultApi'
 import type { UploadedFile } from '@/types/file'
@@ -12,11 +13,21 @@ export interface UploadCrmPage {
 async function parseResponse<T>(res: Response): Promise<T> {
   if (!res.ok) {
     if (res.status === 403) {
-      throw new Error('无管理权限')
+      throw new Error(i18n.t('admin:errors.noAdminPermission'))
     }
     throw new Error(await readApiErrorMessage(res))
   }
   return parseResultResponse<T>(res)
+}
+
+export async function uploadPublicCatalogFile(file: File): Promise<UploadedFile> {
+  const form = new FormData()
+  form.append('file', file)
+  const res = await secureFetch('/api/upload/crm/file', { method: 'POST', body: form })
+  if (!res.ok) {
+    throw new Error(i18n.t('admin:errors.uploadFail'))
+  }
+  return parseResponse<UploadedFile>(res)
 }
 
 export async function fetchUploadCrmFiles(params: {

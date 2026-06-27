@@ -1,4 +1,5 @@
 import type { ComponentProps, ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import { AppModalShell, type AppModalShellProps } from '@/components/ui/AppModalShell'
 import {
   Sheet,
@@ -49,6 +50,7 @@ export function AppSheetModal({
   modalClassName,
   modalBodyClassName,
 }: AppSheetModalProps) {
+  const { t } = useTranslation('common')
   const isMobile = useAppMobile()
 
   if (!isMobile) {
@@ -90,7 +92,7 @@ export function AppSheetModal({
             {title ? (
               <SheetTitle>{title}</SheetTitle>
             ) : (
-              <SheetTitle className="sr-only">面板</SheetTitle>
+              <SheetTitle className="sr-only">{t('a11y.sheet')}</SheetTitle>
             )}
             {description ? <SheetDescription>{description}</SheetDescription> : null}
           </SheetHeader>

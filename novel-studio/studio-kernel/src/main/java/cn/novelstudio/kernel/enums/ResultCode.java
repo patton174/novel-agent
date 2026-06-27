@@ -27,6 +27,7 @@ public enum ResultCode {
     AUTH_TOKEN_EXPIRED(1007, 401, "result.auth.token_expired", "登录已过期，请重新登录"),
     AUTH_ROLE_INVALID(1008, 400, "result.auth.role_invalid", "不支持的角色"),
     AUTH_REGISTRATION_DISABLED(1009, 503, "result.auth.registration_disabled", "注册功能暂时关闭，请稍后再试"),
+    AUTH_INVITE_INVALID(1010, 400, "result.auth.invite_invalid", "邀请码无效或不可用"),
 
     // captcha / 邮箱 1101-1199
     CAPTCHA_INVALID(1101, 400, "result.captcha.invalid", "验证码无效或已过期"),

@@ -11,7 +11,14 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @AutoConfiguration
 @EnableScheduling
 @EnableConfigurationProperties(StudioSchedulingProperties.class)
-@ComponentScan(basePackageClasses = {StudioJobRunner.class, StudioJobRegistrar.class, StudioJobCatalog.class, BatchJobHistoryStore.class})
+@ComponentScan(basePackageClasses = {
+    StudioJobRunner.class,
+    StudioJobRegistrar.class,
+    StudioJobCatalog.class,
+    JobManualRunner.class,
+    SchedulingInstanceId.class,
+    BatchJobHistoryStore.class
+})
 @Import(RabbitBatchJobDispatcher.class)
 public class StudioSchedulingAutoConfiguration {
 }

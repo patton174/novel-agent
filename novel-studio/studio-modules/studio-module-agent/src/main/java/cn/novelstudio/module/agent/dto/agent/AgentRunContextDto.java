@@ -25,5 +25,7 @@ public record AgentRunContextDto(
     String lastTool,
     String lastReason,
     Map<String, Object> contextPatch,
-    Map<String, Object> selectedChoice
+    Map<String, Object> selectedChoice,
+    List<Map<String, Object>> referencedBooks,
+    Map<String, Object> modelConfig
 ) {}

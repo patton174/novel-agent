@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { AgentMarkdown } from '../AgentMarkdown'
 import { useAppMobile } from '@/hooks/useMediaQuery'
 import { cn } from '@/lib/utils'
@@ -18,6 +19,7 @@ export function TimelineDeliveryBlock({
   streamLive?: boolean
   testId?: string
 }) {
+  const { t } = useTranslation('editor')
   const trimmed = text.trim()
   const isMobile = useAppMobile()
   const [expanded, setExpanded] = useState(false)
@@ -62,7 +64,7 @@ export function TimelineDeliveryBlock({
           onClick={() => setExpanded((open) => !open)}
           data-testid={collapsed ? `${testId}-expand` : `${testId}-collapse`}
         >
-          {collapsed ? '展开全文' : '收起'}
+          {collapsed ? t('agent.delivery.expand') : t('agent.delivery.collapse')}
         </button>
       ) : null}
     </div>

@@ -1,8 +1,10 @@
+import i18n from '@/i18n'
 import { secureFetch } from '../security/secureFetch'
 import { parseResultResponse } from '../utils/resultApi'
 
 export type CrawlJobStatus =
   | 'PENDING'
+  | 'QUEUED'
   | 'RUNNING'
   | 'PAUSED'
   | 'COMPLETED'
@@ -21,6 +23,11 @@ export interface CrawlJob {
   chaptersDone?: number | null
   configJson?: string | null
   errorMessage?: string | null
+  priority?: number
+  maxRetries?: number
+  retryCount?: number
+  scheduleCron?: string | null
+  nextRunAt?: number | null
   startedAt: number
   completedAt: number
   createdAt: number
@@ -67,7 +74,11 @@ export async function fetchCrawlJobs(pageCurrent = 1, pageSize = 20): Promise<Cr
     `/api/content/crm/crawl/jobs/page?pageCurrent=${pageCurrent}&pageSize=${pageSize}`,
   )
   if (!res.ok) {
-    throw new Error(res.status === 403 ? '无管理权限' : '加载爬虫任务失败')
+    throw new Error(
+      res.status === 403
+        ? i18n.t('admin:errors.noAdminPermission')
+        : i18n.t('admin:errors.loadCrawlJobsFail'),
+    )
   }
   return parseResponse<CrawlJobPage>(res)
 }
@@ -75,6 +86,9 @@ export async function fetchCrawlJobs(pageCurrent = 1, pageSize = 20): Promise<Cr
 export async function createCrawlJob(payload: {
   sourceUrl: string
   configJson?: string
+  priority?: number
+  maxRetries?: number
+  scheduleCron?: string
 }): Promise<CrawlJob> {
   const res = await secureFetch('/api/content/crm/crawl/jobs', {
     method: 'POST',
@@ -82,7 +96,7 @@ export async function createCrawlJob(payload: {
     body: JSON.stringify(payload),
   })
   if (!res.ok) {
-    throw new Error('创建爬虫任务失败')
+    throw new Error(i18n.t('admin:errors.createCrawlJobFail'))
   }
   return parseResponse<CrawlJob>(res)
 }
@@ -90,7 +104,7 @@ export async function createCrawlJob(payload: {
 export async function startCrawlJob(jobId: string): Promise<CrawlJob> {
   const res = await secureFetch(`/api/content/crm/crawl/jobs/${jobId}/start`, { method: 'POST' })
   if (!res.ok) {
-    throw new Error('启动任务失败')
+    throw new Error(i18n.t('admin:errors.startCrawlJobFail'))
   }
   return parseResponse<CrawlJob>(res)
 }
@@ -98,7 +112,7 @@ export async function startCrawlJob(jobId: string): Promise<CrawlJob> {
 export async function pauseCrawlJob(jobId: string): Promise<CrawlJob> {
   const res = await secureFetch(`/api/content/crm/crawl/jobs/${jobId}/pause`, { method: 'POST' })
   if (!res.ok) {
-    throw new Error('暂停任务失败')
+    throw new Error(i18n.t('admin:errors.pauseCrawlJobFail'))
   }
   return parseResponse<CrawlJob>(res)
 }
@@ -106,7 +120,7 @@ export async function pauseCrawlJob(jobId: string): Promise<CrawlJob> {
 export async function cancelCrawlJob(jobId: string): Promise<CrawlJob> {
   const res = await secureFetch(`/api/content/crm/crawl/jobs/${jobId}/cancel`, { method: 'POST' })
   if (!res.ok) {
-    throw new Error('取消任务失败')
+    throw new Error(i18n.t('admin:errors.cancelCrawlJobFail'))
   }
   return parseResponse<CrawlJob>(res)
 }
@@ -114,7 +128,7 @@ export async function cancelCrawlJob(jobId: string): Promise<CrawlJob> {
 export async function deleteCrawlJob(jobId: string): Promise<void> {
   const res = await secureFetch(`/api/content/crm/crawl/jobs/${jobId}`, { method: 'DELETE' })
   if (!res.ok) {
-    throw new Error('删除任务失败')
+    throw new Error(i18n.t('admin:errors.deleteCrawlJobFail'))
   }
   await parseResponse<null>(res)
 }
@@ -129,7 +143,7 @@ export async function previewCrawl(payload: {
     body: JSON.stringify(payload),
   })
   if (!res.ok) {
-    throw new Error('预览失败')
+    throw new Error(i18n.t('admin:errors.previewFail'))
   }
   return parseResponse<CrawlPreviewResult>(res)
 }
@@ -139,7 +153,7 @@ export async function fetchCrawlLogs(jobId: string, afterSeq = 0): Promise<Crawl
     `/api/content/crm/crawl/jobs/${encodeURIComponent(jobId)}/logs?afterSeq=${afterSeq}`,
   )
   if (!res.ok) {
-    throw new Error('加载日志失败')
+    throw new Error(i18n.t('admin:errors.loadLogsFail'))
   }
   return parseResponse<CrawlLogsResponse>(res)
 }

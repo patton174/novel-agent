@@ -3,7 +3,9 @@ package cn.novelstudio.module.content.controller.auth;
 import cn.novelstudio.kernel.base.Page;
 import cn.novelstudio.kernel.base.Result;
 import cn.novelstudio.platform.web.BaseController;
+import cn.novelstudio.module.content.dto.LibraryReindexResultDTO;
 import cn.novelstudio.module.content.dto.NovelDTO;
+import cn.novelstudio.module.content.dto.ReferencedBookDTO;
 import cn.novelstudio.module.content.service.auth.biz.AuthCatalogBiz;
 import cn.novelstudio.module.content.service.crawl.dto.CatalogChapterSummaryDTO;
 import cn.novelstudio.module.content.service.crawl.dto.CatalogNovelDTO;
@@ -66,5 +68,21 @@ public class AuthCatalogController extends BaseController {
         @PathVariable String catalogNovelId
     ) {
         return biz.collect(parseUserId(userId), catalogNovelId);
+    }
+
+    @GetMapping("/my-library/selectable")
+    public Result<List<ReferencedBookDTO>> myLibrarySelectable(
+        @RequestHeader("X-User-Id") String userId,
+        @RequestParam(required = false) String query
+    ) {
+        return biz.myLibrarySelectable(parseUserId(userId), query);
+    }
+
+    @PostMapping("/my-library/{catalogNovelId}/reindex")
+    public Result<LibraryReindexResultDTO> reindexLibrary(
+        @RequestHeader("X-User-Id") String userId,
+        @PathVariable String catalogNovelId
+    ) {
+        return biz.reindexLibrary(parseUserId(userId), catalogNovelId);
     }
 }

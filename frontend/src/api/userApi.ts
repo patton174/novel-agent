@@ -1,3 +1,4 @@
+import i18n from '@/i18n'
 import { secureFetch } from '../security/secureFetch'
 import { pixelAvatarFromUserInfo } from './pixelAvatarApi'
 import { parseResultResponse, readApiErrorMessage, resolveErrorMessage } from '../utils/resultApi'
@@ -102,7 +103,7 @@ export async function confirmEmailVerify(token: string, sig: string, exp: number
     body: JSON.stringify({ token, sig, exp }),
   })
   if (!res.ok) {
-    let message = '邮箱验证失败'
+    let message = i18n.t('auth:verify.confirmFail')
     try {
       const json = await res.json()
       if (json != null && typeof json === 'object') {

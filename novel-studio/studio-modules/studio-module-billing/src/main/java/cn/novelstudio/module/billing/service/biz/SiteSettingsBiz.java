@@ -15,7 +15,6 @@ import cn.novelstudio.kernel.exception.BizException;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,18 +30,12 @@ public class SiteSettingsBiz extends BaseBiz {
 
     static final Set<String> ALLOWED_KEYS = Set.of(
         "registration.enabled",
-        "registration.require_email_verify",
-        "agent.default_model",
-        "agent.max_tokens_per_run",
-        "crawl.max_concurrent_jobs"
+        "registration.require_email_verify"
     );
 
     private static final Map<String, Object> DEFAULTS = Map.of(
         "registration.enabled", true,
-        "registration.require_email_verify", true,
-        "agent.default_model", "deepseek-chat",
-        "agent.max_tokens_per_run", 4096,
-        "crawl.max_concurrent_jobs", 2
+        "registration.require_email_verify", true
     );
 
     private final SiteSettingRepository siteSettingRepository;
@@ -56,7 +49,6 @@ public class SiteSettingsBiz extends BaseBiz {
         refreshCache();
     }
 
-    @Scheduled(fixedRate = 60_000)
     public void refreshCacheScheduled() {
         refreshCache();
     }
@@ -75,6 +67,25 @@ public class SiteSettingsBiz extends BaseBiz {
 
     public boolean isRegistrationEnabled() {
         return readBoolean(effectiveSettings().get("registration.enabled"), true);
+    }
+
+    public boolean isRegistrationRequireEmailVerify() {
+        return readBoolean(effectiveSettings().get("registration.require_email_verify"), true);
+    }
+
+    public int getInt(String key, int defaultValue) {
+        Object v = effectiveSettings().get(key);
+        if (v == null) {
+            return defaultValue;
+        }
+        if (v instanceof Number n) {
+            return n.intValue();
+        }
+        try {
+            return Integer.parseInt(v.toString());
+        } catch (NumberFormatException e) {
+            return defaultValue;
+        }
     }
 
     @Transactional

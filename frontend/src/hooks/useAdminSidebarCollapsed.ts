@@ -1,19 +1,8 @@
-import { useCallback, useEffect, useState } from 'react'
-
-const STORAGE_KEY = 'novel-admin-sidebar-collapsed'
+import { useAdminSidebarStore } from '@/stores/adminSidebarStore'
 
 export function useAdminSidebarCollapsed() {
-  const [collapsed, setCollapsedState] = useState(() => {
-    if (typeof window === 'undefined') return false
-    return window.localStorage.getItem(STORAGE_KEY) === '1'
-  })
-
-  useEffect(() => {
-    window.localStorage.setItem(STORAGE_KEY, collapsed ? '1' : '0')
-  }, [collapsed])
-
-  const toggle = useCallback(() => setCollapsedState((v) => !v), [])
-  const setCollapsed = useCallback((value: boolean) => setCollapsedState(value), [])
-
+  const collapsed = useAdminSidebarStore((s) => s.collapsed)
+  const toggle = useAdminSidebarStore((s) => s.toggle)
+  const setCollapsed = useAdminSidebarStore((s) => s.setCollapsed)
   return { collapsed, toggle, setCollapsed }
 }

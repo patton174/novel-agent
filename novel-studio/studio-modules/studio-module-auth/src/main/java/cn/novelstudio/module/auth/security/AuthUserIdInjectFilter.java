@@ -75,6 +75,7 @@ public class AuthUserIdInjectFilter extends OncePerRequestFilter {
         "/api/billing/auth/settings/public",
         "/api/billing/auth/danmaku",
         "/api/billing/webhook/idatariver",
+        "/api/content/media/object",
         "/actuator/health"
     );
 

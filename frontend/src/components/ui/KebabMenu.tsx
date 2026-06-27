@@ -7,6 +7,7 @@ import {
   type CSSProperties,
 } from 'react'
 import { createPortal } from 'react-dom'
+import { useTranslation } from 'react-i18next'
 import { MotionPop, type MotionPopPlacement } from '../motion/MotionPop'
 import { motionInteractiveClass } from '@/lib/motionClasses'
 import {
@@ -48,8 +49,10 @@ export function KebabMenu({
   items,
   preferredPlacement = 'auto',
   triggerVariant = 'default',
-  'aria-label': ariaLabel = '更多操作',
+  'aria-label': ariaLabel,
 }: KebabMenuProps) {
+  const { t } = useTranslation('common')
+  const resolvedAriaLabel = ariaLabel ?? t('a11y.moreActions')
   const [open, setOpen] = useState(false)
   const [menuStyle, setMenuStyle] = useState<CSSProperties>({})
   const [menuPlacement, setMenuPlacement] = useState<MotionPopPlacement>('bottom')
@@ -139,11 +142,11 @@ export function KebabMenu({
         ref={triggerRef}
         type="button"
         className={`${triggerVariant === 'ghost' ? kebabTriggerGhostClass(open) : kebabTriggerClass(open)} ${motionInteractiveClass()}`}
-        aria-label={ariaLabel}
+        aria-label={resolvedAriaLabel}
         aria-expanded={open}
         aria-haspopup="menu"
         aria-controls={listId}
-        title={ariaLabel}
+        title={resolvedAriaLabel}
         onClick={(e) => {
           e.stopPropagation()
           setOpen((v) => {

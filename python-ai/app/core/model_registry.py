@@ -1,4 +1,4 @@
-"""活跃模型配置缓存（embedding/crawl/image）。失败→平台默认+报警。"""
+"""活跃模型配置缓存（embedding/image）。失败→平台默认+报警。"""
 
 from __future__ import annotations
 

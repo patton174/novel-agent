@@ -1,3 +1,13 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
-  <path fill="#E9B50B" d="M16 4L6 8.5l10 5.5 10-5.5L16 4Zm-10 11.5 10 5.5 10-5.5M6 21l10 5.5L26 21"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none" role="img" aria-label="Novel Agent">
+  <rect x="2" y="2" width="28" height="28" rx="5" fill="#FAFAF8" stroke="#141414" stroke-width="2"/>
+  <g fill="#141414">
+    <rect x="7" y="7" width="4" height="18"/>
+    <rect x="11" y="7" width="4" height="4"/>
+    <rect x="15" y="11" width="4" height="4"/>
+    <rect x="19" y="15" width="4" height="4"/>
+    <rect x="23" y="7" width="4" height="4"/>
+    <rect x="23" y="11" width="4" height="14"/>
+  </g>
+  <rect x="11" y="11" width="4" height="4" fill="#99FF00"/>
+  <rect x="22" y="21" width="5" height="5" fill="#FF4500"/>
 </svg>

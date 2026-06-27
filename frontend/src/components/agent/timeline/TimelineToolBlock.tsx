@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { AgentStepState } from '../../../types/agent'
 import { chapterWriteProgressHint } from '../../../utils/chapterProgress'
 import {
@@ -58,6 +59,7 @@ export function TimelineToolBlock({
   suppressStatus?: boolean
   children?: ReactNode
 }) {
+  const { t } = useTranslation('editor')
   const isAsk = isAskUserTool(step.toolName)
   const suppress = Boolean(suppressStatus)
   const readTool = isCollapsibleReadTool(step.toolName)
@@ -78,7 +80,7 @@ export function TimelineToolBlock({
     return (
       <CcToolRow
         testId={`timeline-tool-${step.stepId}`}
-        name={step.title?.trim() || step.detail?.trim() || '子代理'}
+        name={step.title?.trim() || step.detail?.trim() || t('agent.timeline.subagent')}
         phaseActive={loading}
         outcomeBadge={
           loading ? null : error ? 'error' : resolved ? 'success' : null
@@ -86,9 +88,9 @@ export function TimelineToolBlock({
         inlineResult={
           inlineResult ??
           (loading
-            ? '子代理运行中…'
+            ? t('agent.timeline.subagentRunning')
             : error
-              ? '子代理失败'
+              ? t('agent.timeline.subagentFailed')
               : resolved
                 ? step.outputSummary?.trim() || null
                 : null)
@@ -209,13 +211,13 @@ export function TimelineToolBlock({
 
   const awaitingUserInput = Boolean(showInteraction)
   const phase = loading
-    ? '运行中'
+    ? t('agent.timeline.phaseRunning')
     : error
-      ? '失败'
+      ? t('agent.timeline.phaseFailed')
       : awaitingUserInput && isAsk
-        ? '等待回答'
+        ? t('agent.timeline.phaseAwaiting')
         : resolved
-          ? '已完成'
+          ? t('agent.timeline.phaseDone')
           : undefined
 
   const branchLine = ccToolBranchStatus(step, {

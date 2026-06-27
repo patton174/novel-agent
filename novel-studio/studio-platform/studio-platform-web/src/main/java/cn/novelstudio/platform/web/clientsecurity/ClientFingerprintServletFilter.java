@@ -64,7 +64,7 @@ public class ClientFingerprintServletFilter extends OncePerRequestFilter {
                     properties.enforceFingerprint()
                 );
                 if (properties.enforceFingerprint()) {
-                    securityResponses.forbidden(response, "DEVICE_MISMATCH");
+                    securityResponses.forbidden(response, "security.client.device_mismatch");
                     return;
                 }
             }

@@ -56,7 +56,7 @@ public class SubscriptionBiz extends BaseBiz {
         ProductPlanEntity plan = planBiz.requirePlanById(sub.getPlanId());
         return ok(new SubscriptionResp(
             plan.getCode(),
-            plan.getName(),
+            planBiz.localizedPlanName(plan),
             sub.getStatus(),
             sub.getCurrentPeriodStart(),
             sub.getCurrentPeriodEnd()

@@ -7,6 +7,7 @@ import cn.novelstudio.module.content.dto.agent.*;
 import cn.novelstudio.module.content.entity.agent.*;
 import cn.novelstudio.kernel.tools.IdWorker;
 import cn.novelstudio.module.content.support.ContentExceptions;
+import cn.novelstudio.platform.i18n.StudioMessages;
 import cn.novelstudio.module.content.repository.agent.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -27,6 +28,7 @@ public class AgentRunService {
     private final AgentRunStateMachine stateMachine;
     private final ContentRuntimeProperties runtimeProperties;
     private final RunLivePublisher runLivePublisher;
+    private final StudioMessages messages;
 
     @Transactional
     public AgentRunDTO createRun(CreateAgentRunRequest request) {
@@ -121,7 +123,11 @@ public class AgentRunService {
     public AgentRunLeaseDTO tryLease(String runId, String workerId) {
         AgentRunEntity run = runRepository.findById(runId).orElse(null);
         if (run == null) {
-            return AgentRunLeaseDTO.builder().acquired(false).runId(runId).message("run not found").build();
+            return AgentRunLeaseDTO.builder()
+                .acquired(false)
+                .runId(runId)
+                .message(messages.get("agent.run.lease_not_found"))
+                .build();
         }
         Instant now = Instant.now();
         if (run.getLeaseExpiresAt() != null
@@ -133,7 +139,7 @@ public class AgentRunService {
                 .runId(runId)
                 .workerId(run.getWorkerId())
                 .leaseExpiresAt(toEpochMillis(run.getLeaseExpiresAt()))
-                .message("leased by other worker")
+                .message(messages.get("agent.run.leased_by_other"))
                 .build();
         }
 
@@ -165,7 +171,11 @@ public class AgentRunService {
     public AgentRunLeaseDTO renewLease(String runId, String workerId) {
         AgentRunEntity run = runRepository.findById(runId).orElse(null);
         if (run == null || run.getWorkerId() == null || !run.getWorkerId().equals(workerId)) {
-            return AgentRunLeaseDTO.builder().acquired(false).runId(runId).message("not lease owner").build();
+            return AgentRunLeaseDTO.builder()
+                .acquired(false)
+                .runId(runId)
+                .message(messages.get("agent.run.not_lease_owner"))
+                .build();
         }
         Instant leaseExpires = Instant.now().plusSeconds(runtimeProperties.leaseTtlSeconds());
         run.setLeaseExpiresAt(leaseExpires);

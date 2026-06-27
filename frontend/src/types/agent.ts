@@ -254,4 +254,6 @@ export interface AgentStreamRequestBody {
   run_id?: string
   /** 重连回放游标，默认 -1 */
   after_sequence?: number
+  /** @引用参考书目（catalogNovelId 列表） */
+  referenced_books?: Array<{ catalogNovelId: string }>
 }

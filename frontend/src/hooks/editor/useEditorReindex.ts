@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import i18n from '@/i18n'
 import { api } from '../../utils/api'
 import { alertDialog } from '../../stores/appDialog'
 
@@ -27,16 +28,19 @@ export function useEditorReindex(activeNovelId: string | null) {
       setReindexProgress(null)
       if (status.status === 'completed') {
         void alertDialog({
-          title: '索引重建完成',
-          description: `${status.indexed}/${status.chapters} 章已索引`,
+          title: i18n.t('editor:reindex.completeTitle'),
+          description: i18n.t('editor:reindex.completeDesc', {
+            indexed: status.indexed,
+            chapters: status.chapters,
+          }),
         })
       }
     } catch {
       setReindexing(false)
       setReindexProgress(null)
       void alertDialog({
-        title: '无法启动索引重建',
-        description: '请确认 content 与 python-ai 服务已启动',
+        title: i18n.t('editor:reindex.startFailTitle'),
+        description: i18n.t('editor:reindex.startFailDesc'),
       })
     }
   }, [activeNovelId, reindexing])
@@ -80,13 +84,16 @@ export function useEditorReindex(activeNovelId: string | null) {
         setReindexProgress(null)
         if (status.status === 'completed') {
           void alertDialog({
-            title: '索引重建完成',
-            description: `${status.indexed}/${status.chapters} 章已索引`,
+            title: i18n.t('editor:reindex.completeTitle'),
+            description: i18n.t('editor:reindex.completeDesc', {
+              indexed: status.indexed,
+              chapters: status.chapters,
+            }),
           })
         } else if (status.status === 'failed') {
           void alertDialog({
-            title: '索引重建失败',
-            description: status.error ?? '未知错误',
+            title: i18n.t('editor:reindex.failTitle'),
+            description: status.error ?? i18n.t('editor:reindex.unknownError'),
           })
         }
       } catch {

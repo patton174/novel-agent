@@ -372,6 +372,7 @@ async def invoke_step_result(
     messages: list[BaseMessage],
     *,
     step_kind: str,
+    model_config: dict | None = None,
 ) -> StepResult:
     """优先 forced StepResult tool；失败再回退文本 JSON 抽取。"""
     policy = llm_policy_for_tool(step_kind)
@@ -380,6 +381,7 @@ async def invoke_step_result(
             messages,
             StepResult,
             profile=policy.profile,
+            model_config=model_config,
             retry_feedback_prefix="StepResult schema validation failed",
         )
         if result.step_kind != step_kind:
@@ -392,7 +394,11 @@ async def invoke_step_result(
             struct_exc,
         )
 
-    llm = llm_provider.get_llm(profile=policy.profile)
+    llm = (
+        llm_provider.get_llm(profile=policy.profile, config=model_config)
+        if model_config
+        else llm_provider.get_llm(profile=policy.profile)
+    )
     raw = await llm.ainvoke(messages)
     content = _message_content(getattr(raw, "content", raw))
     data = normalize_step_result_dict(extract_json_object(content))

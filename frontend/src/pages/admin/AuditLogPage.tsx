@@ -25,12 +25,14 @@ import {
 } from '@/components/layout/AdminDataLayout'
 import { ProPagination } from '@/components/pro/ProPagination'
 import { useMarkRouteSeen } from '@/hooks/useMarkRouteSeen'
+import { adminFormatLocale } from '@/components/admin/adminUiTokens'
 import { appToast } from '@/stores/appToastStore'
 
 const PAGE_SIZE = 20
 
 export default function AuditLogPage() {
-  const { t } = useTranslation(['admin'])
+  const { t, i18n } = useTranslation(['admin'])
+  const dateLocale = adminFormatLocale(i18n.language)
   useMarkRouteSeen()
 
   const ACTION_OPTIONS = [
@@ -91,7 +93,7 @@ export default function AuditLogPage() {
         header: t('admin:auditLog.colTime'),
         render: (log) => (
           <PixelCellMono className="whitespace-nowrap text-muted-foreground">
-            {new Date(log.createdAt).toLocaleString('zh-CN')}
+            {new Date(log.createdAt).toLocaleString(dateLocale)}
           </PixelCellMono>
         ),
       },
@@ -111,7 +113,7 @@ export default function AuditLogPage() {
         header: t('admin:auditLog.colTarget'),
         render: (log) => (
           <PixelCellStack
-            title={log.targetType ?? '—'}
+            title={log.targetType ?? t('admin:jobs.duration.dash')}
             subtitle={log.targetId ? `#${log.targetId}` : undefined}
           />
         ),
@@ -125,7 +127,7 @@ export default function AuditLogPage() {
               {t('admin:auditLog.viewJson')}
             </PixelTableActionButton>
           ) : (
-            <span className="font-mono text-xs text-muted-foreground">—</span>
+            <span className="font-mono text-xs text-muted-foreground">{t('admin:jobs.duration.dash')}</span>
           ),
       },
     ]
@@ -177,7 +179,7 @@ export default function AuditLogPage() {
           renderMobileCard={(log) => (
             <article className={cn(PIXEL_MOBILE_CARD, 'p-4')}>
               <PixelCellMono className="text-muted-foreground">
-                {new Date(log.createdAt).toLocaleString('zh-CN')}
+                {new Date(log.createdAt).toLocaleString(dateLocale)}
               </PixelCellMono>
               <p className="mt-1 font-mono text-sm font-bold">{log.action}</p>
               <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-sm">

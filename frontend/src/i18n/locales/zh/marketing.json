@@ -10,7 +10,9 @@
     "demo": "产品演示",
     "capabilities": "核心能力",
     "menu": "打开菜单",
-    "close": "关闭菜单"
+    "close": "关闭菜单",
+    "mainNav": "主导航",
+    "brandHome": "{{brand}} 首页"
   },
   "footer": {
     "ctaTitle": "准备好开始你的下一章了吗？",
@@ -44,6 +46,9 @@
     },
     "feasibilityNote": "不确定是否适合？先看",
     "feasibilityLink": "适用场景与对比",
+    "applyUpgrade": "申请升级",
+    "redeemHint": "已有兑换码？",
+    "redeemLink": "前往创作台账单页兑换",
     "checkout": {
       "title": "确认订单",
       "pageTitle": "结账",
@@ -54,10 +59,16 @@
       "planLabel": "套餐",
       "amountLabel": "应付金额",
       "statusLabel": "订单状态",
+      "expiresLabel": "支付剩余",
+      "expired": "已过期，请返回重新下单",
       "selectMethod": "选择支付方式",
       "choosePlanHint": "选择上方套餐后，将跳转至结账页完成支付。",
       "missingParamsTitle": "缺少结账参数",
-      "missingParamsSubtitle": "请从定价页选择套餐后再进入结账。"
+      "missingParamsSubtitle": "请从定价页选择套餐后再进入结账。",
+      "couponLabel": "优惠码",
+      "couponPlaceholder": "输入优惠码",
+      "couponApply": "应用",
+      "couponHint": "请在支付前应用；如有需要将重新创建订单。"
     }
   },
   "recommend": {
@@ -276,6 +287,7 @@
       }
     },
     "danmaku": {
+      "sectionTag": "[ 创作者说 ]",
       "eyebrow": "创作者说",
       "title": "创作者真实反馈",
       "subtitle": "来自正在使用创作台的作者 — 滚动浏览，无需登录即可阅读。",
@@ -292,6 +304,177 @@
       "sent": "弹幕已发送",
       "sentGuest": "弹幕已发送，感谢分享",
       "sendError": "发送失败，请稍后再试"
+    }
+  },
+  "demo": {
+    "nav": {
+      "main": "主导航",
+      "home": "{{brand}} 首页"
+    },
+    "editor": {
+      "ariaLabel": "{{brand}} 编辑器 Agent 演示",
+      "novel": { "title": "诸天神祇有价", "meta": "玄幻 · 连载中" },
+      "chapters": [
+        { "idx": "01", "title": "天赋觉醒", "active": false },
+        { "idx": "02", "title": "银月森林首战", "active": true },
+        { "idx": "03", "title": "全服唯一", "active": false }
+      ],
+      "editorPrior": [
+        "唐云站在银月森林入口，背包里只有一把生锈的铁剑。",
+        "「继续第二章」——他盯着 Agent 面板，等待下一段爽点落下。"
+      ],
+      "editorStream": [
+        "雨水顺着他的发梢滑落，每一滴都像是敲打在心上的钟声。",
+        "他深吸一口气，握紧了拳头。十年了，他终于等到了这一天。",
+        "远处传来工作室杂乱的叫喊，而他只是低头看着背包里——"
+      ],
+      "thinkLines": [
+        "用户说「继续第二章」，前文停在天赋觉醒段，需衔接银月森林首战。",
+        "建议节奏：先 5 只小怪验证 100% 掉宝，再触发「全服唯一」强化石爽点。",
+        "风险：避免一次给太多神话装备，用「量」的堆积建立认知差。"
+      ],
+      "orchTools": [
+        { "name": "think", "args": "续写切入点分析", "status": "success", "excerpt": "" },
+        { "name": "ReadMemory", "args": "角色库 · 世界观", "status": "success", "excerpt": "命中 Tang_Yun、势力格局" },
+        { "name": "plan", "args": "第二章结构", "status": "success", "excerpt": "首战 → 掉宝 → 钩子" },
+        { "name": "WriteChapter", "args": "task: 天赋初验", "status": "loading", "excerpt": "" }
+      ],
+      "subagentTools": [
+        { "name": "ReadMemory", "args": "角色卡 Tang_Yun", "status": "success", "excerpt": "人设无冲突" },
+        { "name": "output", "args": "校对摘要", "status": "success", "excerpt": "已同步至记忆" }
+      ],
+      "streamTail": "剑尖挑起一道寒芒，直指苍穹。",
+      "editorTail": "那件从未在任何数据库中出现过的装备，在雨中泛着幽光。",
+      "userPrompt": "继续写第二章，衔接银月森林首战，要有掉宝爽点。",
+      "composerPlaceholder": "描述情节或指令…",
+      "browserUrl": "localhost:3000/editor?novel=诸天神祇有价",
+      "planTool": "plan",
+      "waitingVariants": {
+        "orchestrate": "（等待 WriteChapter 写入正文…）",
+        "default": "（Agent 运行中…）"
+      },
+      "labels": {
+        "thinking": "思考",
+        "inProgress": "进行中",
+        "planPrepareBefore": "准备调用 ",
+        "planPrepareAfter": " 生成步骤…",
+        "orchTitle": "执行中 · 续写第二章",
+        "memoryUpdateArgs": "角色一致性校验",
+        "subagentHead": "子代理 · 角色校对",
+        "streamLabel": "WriteChapter · 流式输出",
+        "editorTitle": "第二章 · 银月森林首战",
+        "agentChrome": "Agent 助手",
+        "browserLive": "Agent 运行中",
+        "session": "续写 · 第二章"
+      }
+    },
+    "capabilityMini": {
+      "orchTitle": "执行中 · 续写第二章",
+      "streamArgs": "流式输出",
+      "streamText": "雨水顺着他的发梢滑落，每一滴都像是敲打在心上的钟声。他深吸一口气，握紧了拳头。",
+      "steps": [
+        { "name": "ReadMemory", "label": "读取角色记忆" },
+        { "name": "ReadChapter", "label": "对齐第一章结尾" },
+        { "name": "plan", "label": "规划第二章结构" },
+        { "name": "WriteChapter", "label": "流式写入正文" }
+      ]
+    },
+    "cursor": {
+      "composerInput": "规划、续写、检索一切…",
+      "windowEditor": "编辑器",
+      "previewUrl": "localhost:3000 · 阅读",
+      "thinking": "Thinking {{seconds}}s",
+      "summaryLabel": "Summary",
+      "tasks": {
+        "continueCh2": { "name": "续写第二章", "time": "12m" },
+        "characterCheck": { "name": "分析角色一致性", "timeActive": "进行中" },
+        "planCh3": { "name": "规划第三章结构", "time": "队列" },
+        "subagentWorld": { "name": "子代理 · 世界观校对", "time": "并行" }
+      },
+      "prompts": {
+        "hero": "继续写第二章，衔接银月森林首战。",
+        "prd": "根据大纲续写第二章，银月森林首战要有掉宝爽点，人设对齐 Tang_Yun。",
+        "parallel": "同时校对角色卡并生成第二章正文，完成后更新记忆。"
+      },
+      "steps": {
+        "readChapter": "读取 chapter_01.md · 世界观记忆",
+        "searchCharacters": "检索角色库 Tang_Yun、势力格局",
+        "generatePlan": "生成 plan：首战 → 掉宝 → 章末钩子",
+        "spawnSubagent": "启动子代理 memory_update · 角色校对",
+        "readOutline": "读取 outline.md",
+        "callPlan": "调用 plan 生成步骤",
+        "writeChapter": "WriteChapter 流式写入",
+        "readMemoryFloat": "ReadMemory · 角色库",
+        "writeChapterFloat": "WriteChapter · 流式输出"
+      },
+      "narrative": "将先以 5 只小怪验证 100% 掉宝节奏，再抛出「全服唯一」强化石；正文流式写入编辑器，记忆自动回写。",
+      "fileChapter": "chapters/02_银月森林.md",
+      "fileChapterShort": "02_银月森林.md",
+      "subagentDone": "子代理已完成 · 2 个工具 · 14s",
+      "summaryText": "第二章正文已流式写入，共 1840 字；掉宝段落与大纲一致，已同步章节记忆。",
+      "floatPrompt": "继续第二章，要有掉宝爽点",
+      "outlineTitle": "第二章大纲",
+      "outlineLines": [
+        "1. 银月森林入口 · 氛围铺垫",
+        "2. 首战小怪 · 100% 掉宝验证",
+        "3. 全服唯一装备 · 章末钩子"
+      ],
+      "prdPrompt": "根据大纲续写第二章，银月森林首战要有掉宝爽点。",
+      "preview": {
+        "title": "诸天神祇有价 · 第二章",
+        "p1": "唐云踏入银月森林，雨水顺着发梢滑落。",
+        "p2Before": "每一滴都像是敲打在心上的钟声。他深吸一口气，握紧了拳头——",
+        "highlight": "背包里那件从未在数据库中出现过的装备，在雨中泛着幽光。",
+        "streamLine": "剑尖挑起一道寒芒，直指苍穹。"
+      },
+      "tabs": {
+        "outline": "outline.md",
+        "chapter": "chapter_02.md",
+        "memory": "memory/Tang_Yun"
+      },
+      "fileChipChapter": "chapter_02.md"
+    },
+    "storyScenes": {
+      "think": {
+        "tag": "第一幕 · 思维链",
+        "title": "思考过程透明，像对话一样可见",
+        "body": "续写前先推演剧情走向：意图识别、上下文对齐、节奏与爽点布局——全部在思考面板中流式呈现。",
+        "bullets": [
+          "think 工具独立展示，不挤占正文区",
+          "Markdown 结构化输出，扫读成本低",
+          "完成后自动收起，聚焦编排与成稿"
+        ]
+      },
+      "orchestrate": {
+        "tag": "第二幕 · 智能编排",
+        "title": "Plan 拆解步骤，工具依次就位",
+        "body": "从 ReadMemory 到 plan、WriteChapter，整条链路在编排层内一镜展开——滚动即分镜，创作即成片。",
+        "bullets": [
+          "工具状态实时：进行中 / 已完成",
+          "参数与摘要同屏，可追溯可复盘",
+          "长任务可托管，断线后继续同步"
+        ]
+      },
+      "subagent": {
+        "tag": "第三幕 · 子代理",
+        "title": "复杂任务拆分，子代理优雅执行",
+        "body": "角色校对、记忆回写等专项由子代理在嵌套面板中完成，主会话保持清晰，不互相刷屏。",
+        "bullets": [
+          "独立编排轮次与工具树",
+          "摘要去重，避免重复信息",
+          "失败可定位到具体子任务"
+        ]
+      },
+      "stream": {
+        "tag": "第四幕 · 流式成稿",
+        "title": "章节正文丝滑流出，所见即所得",
+        "body": "WriteChapter 将长篇正文以流式写入编辑器：字句逐行生长，可随时暂停、追问或改写。",
+        "bullets": [
+          "SSE 推送，低延迟可见输出",
+          "支持 diff 对比与一键采纳",
+          "成稿后自动回写章节记忆"
+        ]
+      }
     }
   },
   "generic": {

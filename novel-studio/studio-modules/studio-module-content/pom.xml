@@ -36,6 +36,10 @@
         </dependency>
         <dependency>
             <groupId>cn.novelstudio</groupId>
+            <artifactId>studio-platform-storage</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>cn.novelstudio</groupId>
             <artifactId>studio-module-upload</artifactId>
         </dependency>
         <dependency>

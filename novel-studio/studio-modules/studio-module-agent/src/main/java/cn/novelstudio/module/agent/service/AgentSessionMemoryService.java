@@ -6,7 +6,7 @@ import cn.novelstudio.module.content.dto.ContentMessageDTO;
 import cn.novelstudio.module.content.dto.SessionDTO;
 import cn.novelstudio.module.content.dto.UpsertSessionRequest;
 import cn.novelstudio.module.content.service.auth.biz.AuthContentSessionBiz;
-import cn.novelstudio.platform.i18n.StudioMessages;
+import cn.novelstudio.module.agent.support.AgentLocaleMarkers;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -19,11 +19,11 @@ public class AgentSessionMemoryService {
     private static final int DEFAULT_LIMIT = 24;
 
     private final AuthContentSessionBiz sessionBiz;
-    private final StudioMessages messages;
+    private final AgentLocaleMarkers localeMarkers;
 
-    public AgentSessionMemoryService(AuthContentSessionBiz sessionBiz, StudioMessages messages) {
+    public AgentSessionMemoryService(AuthContentSessionBiz sessionBiz, AgentLocaleMarkers localeMarkers) {
         this.sessionBiz = sessionBiz;
-        this.messages = messages;
+        this.localeMarkers = localeMarkers;
     }
 
     public List<HistoryTurn> loadHistory(Long userId, String sessionId, int limit) {
@@ -117,15 +117,11 @@ public class AgentSessionMemoryService {
     }
 
     private String defaultSessionTitle() {
-        return messages.get("content.session.default_title");
+        return localeMarkers.truncateSessionTitle("");
     }
 
     private String inferTitle(String content) {
-        if (content == null || content.isBlank()) {
-            return defaultSessionTitle();
-        }
-        String clean = content.replaceAll("\\s+", " ").trim();
-        return clean.length() > 18 ? clean.substring(0, 18) + "..." : clean;
+        return localeMarkers.truncateSessionTitle(content);
     }
 
     private HistoryTurn parseMessage(ContentMessageDTO item) {

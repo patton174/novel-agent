@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import { PixelTable, type PixelTableProps } from '@/components/pixel'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAppMobile } from '@/hooks/useMediaQuery'
@@ -37,11 +38,13 @@ export function AdminResponsivePixelTable<T>({
   mobileLoadingCount = 4,
   mobileListClassName,
   renderMobileEmpty,
-  emptyText = '暂无数据',
+  emptyText,
   skeletonRows = 8,
   className,
   ...tableProps
 }: AdminResponsivePixelTableProps<T>) {
+  const { t } = useTranslation('common')
+  const resolvedEmptyText = emptyText ?? t('table.empty')
   const isMobile = useAppMobile()
 
   if (initialLoading) {
@@ -60,7 +63,7 @@ export function AdminResponsivePixelTable<T>({
             ))
           : data.length === 0
             ? (renderMobileEmpty ?? (
-                <p className="py-10 text-center font-mono text-sm text-muted-foreground">{emptyText}</p>
+                <p className="py-10 text-center font-mono text-sm text-muted-foreground">{resolvedEmptyText}</p>
               ))
             : data.map((row, index) => (
                 <div key={resolveRowKey(row, tableProps.rowKey, index)}>
@@ -77,7 +80,7 @@ export function AdminResponsivePixelTable<T>({
       data={data}
       loading={loading}
       skeletonRows={skeletonRows}
-      emptyText={emptyText}
+      emptyText={resolvedEmptyText}
       className={className}
     />
   )

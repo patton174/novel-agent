@@ -79,16 +79,6 @@ public class NovelService {
     }
 
     private NovelDTO toDto(NovelEntity entity) {
-        return new NovelDTO(
-            entity.getId(),
-            entity.getTitle(),
-            entity.getDescription(),
-            entity.getGenre(),
-            entity.getStyle(),
-            entity.getTargetChapterWords() == null ? 3000 : entity.getTargetChapterWords(),
-            entity.getCoverUrl(),
-            entity.getCreatedAt().toEpochMilli(),
-            entity.getUpdatedAt().toEpochMilli()
-        );
+        return NovelCoverService.toDto(entity);
     }
 }

@@ -50,7 +50,7 @@ export function EditorSidebarDesktop({
   memoryTabs,
   storySection,
 }: EditorSidebarCommonProps) {
-  const { t } = useTranslation(['common', 'editor'])
+  const { t } = useTranslation(['editor'])
   const [hintDismissed, setHintDismissed] = useState(
     () => localStorage.getItem(EDITOR_SIDEBAR_HINT_KEY) === '1',
   )
@@ -77,14 +77,14 @@ export function EditorSidebarDesktop({
       <aside className={cn(EDITOR_PIXEL_SIDEBAR, 'fixed left-0 top-0 z-[100] h-screen max-md:hidden')}>
         <div className="flex min-h-[52px] shrink-0 items-center justify-between border-b-2 border-foreground px-3.5">
           <span className="font-mono text-xs font-bold uppercase tracking-widest text-foreground">
-            {isStory ? t('editor:outline.catalog') : t('nav.editorMyNovels')}
+            {isStory ? t('editor:outline.catalog') : t('editor:sidebar.myNovels')}
           </span>
           {!isStory ? (
             <EditorButton
               variant="icon"
               onClick={onNewNovel}
-              title={t('nav.editorNewNovel')}
-              aria-label={t('nav.editorNewNovel')}
+              title={t('editor:sidebar.newNovel')}
+              aria-label={t('editor:sidebar.newNovel')}
             >
               <EditorIcons.Plus />
             </EditorButton>
@@ -103,12 +103,12 @@ export function EditorSidebarDesktop({
                     'relative mb-2 shrink-0 px-2.5 py-2 pr-8 font-mono text-xs leading-snug',
                   )}
                 >
-                  <p className="font-bold uppercase text-foreground">{t('nav.editorQuickStart')}</p>
-                  <p className="mt-0.5 text-muted-foreground">{t('nav.editorQuickStartDesc')}</p>
+                  <p className="font-bold uppercase text-foreground">{t('editor:sidebar.quickStart')}</p>
+                  <p className="mt-0.5 text-muted-foreground">{t('editor:sidebar.quickStartDesc')}</p>
                   <button
                     type="button"
                     className="absolute right-1.5 top-1.5 border-2 border-transparent p-0.5 text-muted-foreground hover:border-foreground hover:bg-neon/20 hover:text-foreground"
-                    aria-label={t('nav.editorCloseHint')}
+                    aria-label={t('editor:sidebar.closeHint')}
                     onClick={() => {
                       localStorage.setItem(EDITOR_SIDEBAR_HINT_KEY, '1')
                       setHintDismissed(true)
@@ -122,7 +122,7 @@ export function EditorSidebarDesktop({
               <div className="mb-1 max-h-[38%] shrink-0 overflow-y-auto">
                 {novelSessionGroups.length === 0 ? (
                   <div className="px-0.5 py-1.5 text-xs leading-snug text-muted-foreground/80">
-                    {t('nav.editorNoNovels')}
+                    {t('editor:sidebar.noNovels')}
                   </div>
                 ) : (
                   novelSessionGroups.map(({ novel, sessions }) => (
@@ -130,7 +130,7 @@ export function EditorSidebarDesktop({
                       <NovelSidebarCard
                         novel={novel}
                         sessionCount={sessions.length}
-                        sessionCountLabel={t('nav.editorSessionCount', { count: sessions.length })}
+                        sessionCountLabel={t('editor:sidebar.sessionCount', { count: sessions.length })}
                         isActive={novel.id === activeNovelId}
                         isExpanded={expandedNovelIds.has(novel.id)}
                         showExpand
@@ -178,7 +178,7 @@ export function EditorSidebarDesktop({
           {activeNovelId && !isStory ? (
             <EditorButton variant="secondary" fullWidth onClick={() => onNewChatForNovel(activeNovelId)}>
               <EditorIcons.Plus />
-              <span>{t('nav.editorNewChat')}</span>
+              <span>{t('editor:sidebar.newChat')}</span>
             </EditorButton>
           ) : null}
 

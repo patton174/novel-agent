@@ -130,7 +130,7 @@ export function IdrSkuInventoryModal({
               type="number"
               min={1}
               max={500}
-              placeholder="100"
+              placeholder={t('admin:products.placeholderQuantity')}
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
             />
@@ -138,8 +138,8 @@ export function IdrSkuInventoryModal({
 
           <AdminField layout="form" label={t('admin:products.inventoryStatus')}>
             <AdminSelect value={status} onChange={(e) => setStatus(e.target.value as 'ONLINE' | 'OFFLINE')}>
-              <option value="ONLINE">ONLINE</option>
-              <option value="OFFLINE">OFFLINE</option>
+              <option value="ONLINE">{t('admin:products.statusOnline')}</option>
+              <option value="OFFLINE">{t('admin:products.statusOffline')}</option>
             </AdminSelect>
           </AdminField>
         </div>

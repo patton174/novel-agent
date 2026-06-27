@@ -40,6 +40,7 @@ public class ClientAuthSupport {
         "/api/billing/auth/settings/public",
         "/api/billing/auth/danmaku",
         "/api/billing/webhook/idatariver",
+        "/api/content/media/object",
         "/actuator/health"
     );
 
@@ -49,6 +50,7 @@ public class ClientAuthSupport {
         "/api/auth/api/captcha/config",
         "/api/agent/run/ws",
         "/api/agent/chat/status/ws",
+        "/api/content/media/object",
         "/internal/"
     );
 
@@ -80,6 +82,16 @@ public class ClientAuthSupport {
 
     public boolean isCryptoExemptPath(String path) {
         return CRYPTO_EXEMPT.stream().anyMatch(path::startsWith);
+    }
+
+    /** 模块间 {@code /internal/*} 调用：校验 {@link #INTERNAL_KEY_HEADER}。 */
+    public boolean isTrustedService(HttpServletRequest request) {
+        try {
+            internalServiceGuard.requireValidKey(request.getHeader(INTERNAL_KEY_HEADER));
+            return true;
+        } catch (RuntimeException ex) {
+            return false;
+        }
     }
 
     /**

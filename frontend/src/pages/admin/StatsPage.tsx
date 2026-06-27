@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next'
+import i18n from '@/i18n'
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import {
   fetchContentStats,
@@ -51,6 +52,7 @@ function sumUsageCost(points: PlatformUsageTrendPoint[]): number {
 
 export default function StatsPage() {
   const { t } = useTranslation(['admin'])
+  const dateLocale = i18n.language === 'zh' ? 'zh-CN' : 'en-US'
   useMarkRouteSeen()
   const [days, setDays] = useState(30)
   const [platform, setPlatform] = useState<PlatformStats | null>(null)
@@ -113,22 +115,22 @@ export default function StatsPage() {
       <AdminStatStrip
         loading={summaryLoading}
         items={[
-          { label: t('admin:home.totalUsers'), value: platform?.totalUsers.toLocaleString('zh-CN') ?? '—' },
+          { label: t('admin:home.totalUsers'), value: platform?.totalUsers.toLocaleString(dateLocale) ?? '—' },
           {
             label: t('admin:stats.periodRegistrations', { range: rangeLabel }),
-            value: periodRegistrations.toLocaleString('zh-CN'),
+            value: periodRegistrations.toLocaleString(dateLocale),
           },
           {
             label: t('admin:stats.periodAgentRuns', { range: rangeLabel }),
-            value: periodAgentRuns.toLocaleString('zh-CN'),
+            value: periodAgentRuns.toLocaleString(dateLocale),
           },
-          { label: t('admin:home.activeUsers'), value: platform?.activeUsers.toLocaleString('zh-CN') ?? '—' },
+          { label: t('admin:home.activeUsers'), value: platform?.activeUsers.toLocaleString(dateLocale) ?? '—' },
           { label: t('admin:stats.periodTokens', { range: rangeLabel }), value: formatTokenQuota(periodTokens) },
           { label: t('admin:stats.periodCost', { range: rangeLabel }), value: formatCostMicros(periodCost) },
-          { label: t('admin:home.totalNovels'), value: content?.totalNovels.toLocaleString('zh-CN') ?? '—' },
+          { label: t('admin:home.totalNovels'), value: content?.totalNovels.toLocaleString(dateLocale) ?? '—' },
           {
             label: t('admin:home.totalAgentRuns'),
-            value: content?.totalAgentRuns.toLocaleString('zh-CN') ?? '—',
+            value: content?.totalAgentRuns.toLocaleString(dateLocale) ?? '—',
           },
         ]}
       />

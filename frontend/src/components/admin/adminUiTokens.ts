@@ -1,9 +1,13 @@
 /** 管理后台列表/表单页统一间距与表格样式 token */
 
+export function adminFormatLocale(language: string): string {
+  return language.startsWith('en') ? 'en-US' : 'zh-CN'
+}
+
 export const adminPanelPadding = 'px-4 py-3'
 
 export const adminToolbarClass =
-  'flex flex-wrap items-end gap-3 border-b border-border bg-background px-4 py-3'
+  'flex flex-wrap items-center gap-3 border-b border-border bg-background px-4 py-3'
 
 export const adminTableClass = 'w-full min-w-0 text-left text-sm'
 

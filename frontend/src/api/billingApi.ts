@@ -1,3 +1,5 @@
+import i18n from '@/i18n'
+import type { UpgradeRequest } from '@/types/billing'
 import { secureFetch } from '../security/secureFetch'
 import { parseResultResponse, readApiErrorMessage } from '../utils/resultApi'
 
@@ -38,6 +40,16 @@ export interface UsageTrendPoint {
   costMicros: number
 }
 
+export interface UsageModelTrendPoint {
+  date: string
+  tokensByModel: Record<string, number>
+}
+
+export interface UsageModelTrends {
+  models: string[]
+  points: UsageModelTrendPoint[]
+}
+
 export interface UsageEventItem {
   id: number
   runId: string | null
@@ -71,7 +83,7 @@ export interface SubscriptionInfo {
 export async function fetchPlans(): Promise<PlanPublic[]> {
   const res = await secureFetch('/api/billing/auth/plans')
   if (!res.ok) {
-    throw new Error('加载套餐失败')
+    throw new Error(i18n.t('dashboard:billing.errors.loadPlans'))
   }
   const data = await parseResultResponse<PlanPublic[]>(res)
   return Array.isArray(data) ? data : []
@@ -80,7 +92,7 @@ export async function fetchPlans(): Promise<PlanPublic[]> {
 export async function fetchUsageCurrent(): Promise<UsageCurrent> {
   const res = await secureFetch('/api/billing/auth/usage/current')
   if (!res.ok) {
-    throw new Error('加载用量失败')
+    throw new Error(i18n.t('dashboard:billing.errors.loadUsage'))
   }
   return parseResultResponse<UsageCurrent>(res)
 }
@@ -92,6 +104,18 @@ export async function fetchUsageTrends(days = 30): Promise<UsageTrendPoint[]> {
   }
   const data = await parseResultResponse<{ points: UsageTrendPoint[] }>(res)
   return Array.isArray(data?.points) ? data.points : []
+}
+
+export async function fetchUsageModelTrends(days = 30): Promise<UsageModelTrends> {
+  const res = await secureFetch(`/api/billing/auth/usage/trends/by-model?days=${days}`)
+  if (!res.ok) {
+    throw new Error(i18n.t('dashboard:billing.errors.loadUsageModelTrends'))
+  }
+  const data = await parseResultResponse<UsageModelTrends>(res)
+  return {
+    models: Array.isArray(data?.models) ? data.models : [],
+    points: Array.isArray(data?.points) ? data.points : [],
+  }
 }
 
 export async function fetchUsageEvents(params: {
@@ -108,7 +132,7 @@ export async function fetchUsageEvents(params: {
   }
   const res = await secureFetch(`/api/billing/auth/usage/events?${search.toString()}`)
   if (!res.ok) {
-    throw new Error('加载用量明细失败')
+    throw new Error(i18n.t('dashboard:billing.errors.loadUsageEvents'))
   }
   const data = await parseResultResponse<UsageEventsPage>(res)
   return {
@@ -125,6 +149,54 @@ export async function fetchSubscription(): Promise<SubscriptionInfo | null> {
     return null
   }
   return parseResultResponse<SubscriptionInfo>(res)
+}
+
+export async function getBalance(): Promise<{ balanceMicros: number }> {
+  const res = await secureFetch('/api/billing/auth/balance')
+  if (!res.ok) {
+    throw new Error(i18n.t('dashboard:billing.errors.loadBalance'))
+  }
+  const data = await parseResultResponse<{ balanceMicros: number }>(res)
+  return { balanceMicros: data?.balanceMicros ?? 0 }
+}
+
+export async function redeemCode(code: string): Promise<{ applied: string }> {
+  const res = await secureFetch('/api/billing/auth/redeem', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code: code.trim() }),
+  })
+  if (!res.ok) {
+    throw new Error(await readApiErrorMessage(res))
+  }
+  const data = await parseResultResponse<{ applied: string }>(res)
+  return { applied: data?.applied ?? '' }
+}
+
+export async function createUpgradeRequest(req: {
+  requestType: string
+  targetValue: string
+  reason?: string
+}): Promise<{ id: string }> {
+  const res = await secureFetch('/api/billing/auth/upgrade-request', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(req),
+  })
+  if (!res.ok) {
+    throw new Error(i18n.t('dashboard:billing.errors.submitUpgrade'))
+  }
+  const data = await parseResultResponse<{ id: string }>(res)
+  return { id: data?.id ?? '' }
+}
+
+export async function fetchMyUpgradeRequests(): Promise<UpgradeRequest[]> {
+  const res = await secureFetch('/api/billing/auth/upgrade-requests')
+  if (!res.ok) {
+    throw new Error(i18n.t('dashboard:billing.errors.loadUpgradeRequests'))
+  }
+  const data = await parseResultResponse<UpgradeRequest[]>(res)
+  return Array.isArray(data) ? data : []
 }
 
 export interface PayMethodOption {
@@ -144,6 +216,7 @@ export interface PayCheckoutResult {
   currency: string | null
   payments: PayMethodOption[]
   alipayHint: string | null
+  expiresAt?: string | null
   resumed?: boolean
 }
 
@@ -175,13 +248,26 @@ export interface PayPendingOrder {
 export async function payCheckout(params: {
   planCode?: string | null
   orderId?: string | null
+  couponCode?: string | null
+  affCode?: string | null
 }): Promise<PayCheckoutResult> {
-  const body: { planCode?: string; orderId?: string } = {}
+  const body: {
+    planCode?: string
+    orderId?: string
+    couponCode?: string
+    affCode?: string
+  } = {}
   if (params.planCode?.trim()) {
     body.planCode = params.planCode.trim()
   }
   if (params.orderId?.trim()) {
     body.orderId = params.orderId.trim()
+  }
+  if (params.couponCode?.trim()) {
+    body.couponCode = params.couponCode.trim()
+  }
+  if (params.affCode?.trim()) {
+    body.affCode = params.affCode.trim()
   }
   const res = await secureFetch('/api/billing/auth/pay/checkout', {
     method: 'POST',
@@ -236,6 +322,12 @@ export interface SiteContent {
   bodyMd: string
   locale: string
   updatedAt: string
+  /** Requested locale from Accept-Language / X-App-Locale */
+  requestedLocale?: string
+  /** Locale of the row actually served (may differ when EN falls back to zh-CN) */
+  resolvedLocale?: string
+  /** True when requestedLocale !== resolvedLocale */
+  localeResolved?: boolean
 }
 
 export interface SiteDanmaku {
@@ -245,6 +337,9 @@ export interface SiteDanmaku {
   region: string | null
   userId: number | null
   createdAt: string
+  requestedLocale?: string
+  resolvedLocale?: string
+  localeResolved?: boolean
 }
 
 export interface PublicSiteSettings {
@@ -286,7 +381,7 @@ export async function fetchDanmakuPage(params?: {
   }
   const res = await secureFetch(`/api/billing/auth/danmaku?${search.toString()}`)
   if (!res.ok) {
-    throw new Error('加载弹幕失败')
+    throw new Error(i18n.t('dashboard:billing.errors.loadDanmaku'))
   }
   const data = await parseResultResponse<SiteDanmakuPage>(res)
   return {
@@ -300,6 +395,64 @@ export async function fetchDanmakuPage(params?: {
 export async function fetchDanmakuList(): Promise<SiteDanmaku[]> {
   const page = await fetchDanmakuPage({ pageSize: 120 })
   return page.list
+}
+
+export interface UserReferralInfo {
+  code: string
+  referralLink: string | null
+  referralCount: number
+  paidCount: number
+}
+
+export interface ReferralConversionItem {
+  id: number
+  userLabel: string
+  registeredAt: string
+  converted: boolean
+}
+
+export async function fetchUserReferral(): Promise<UserReferralInfo> {
+  const res = await secureFetch('/api/billing/auth/referral')
+  if (!res.ok) {
+    throw new Error(i18n.t('dashboard:referral.loadFail'))
+  }
+  const data = await parseResultResponse<UserReferralInfo>(res)
+  return {
+    code: data?.code ?? '',
+    referralLink: data?.referralLink ?? null,
+    referralCount: data?.referralCount ?? 0,
+    paidCount: data?.paidCount ?? 0,
+  }
+}
+
+export async function fetchReferralConversions(): Promise<ReferralConversionItem[]> {
+  const res = await secureFetch('/api/billing/auth/referral/conversions')
+  if (!res.ok) {
+    throw new Error(i18n.t('dashboard:referral.conversionsLoadFail'))
+  }
+  const data = await parseResultResponse<{ items?: ReferralConversionItem[] }>(res)
+  return Array.isArray(data?.items) ? data.items : []
+}
+
+export interface GiftRedeemResult {
+  giftType: string
+  message: string | null
+}
+
+export async function redeemGiftCode(code: string): Promise<GiftRedeemResult> {
+  const res = await secureFetch('/api/billing/auth/gift/redeem', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code: code.trim() }),
+  })
+  if (!res.ok) {
+    throw new Error(await readApiErrorMessage(res))
+  }
+  const data = await parseResultResponse<GiftRedeemResult>(res)
+  return {
+    giftType: data?.giftType ?? '',
+    message: data?.message ?? null,
+  }
 }
 
 export async function postDanmaku(message: string): Promise<SiteDanmaku> {

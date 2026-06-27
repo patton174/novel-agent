@@ -205,6 +205,7 @@ async def autocompact_conversation(
     *,
     trigger: str = "auto",
     run_usage: object | None = None,
+    model_config: dict | None = None,
 ) -> AutocompactResult:
     """
     Summarize middle of message list via LLM; insert compact_boundary + summary user message.
@@ -222,7 +223,11 @@ async def autocompact_conversation(
     prompt = f"{_NO_TOOLS_PREAMBLE}{_COMPACT_PROMPT}\n\n---\n\n{serialized}"
 
     try:
-        llm = llm_provider.get_llm(profile="fast")
+        llm = (
+            llm_provider.get_llm(profile="fast", config=model_config)
+            if model_config
+            else llm_provider.get_llm(profile="fast")
+        )
         response = await llm.ainvoke(
             [
                 SystemMessage(content="You produce conversation summaries only."),

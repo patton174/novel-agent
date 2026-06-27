@@ -1,20 +1,21 @@
+import i18n from '@/i18n'
 import { appToast } from '../stores/appToastStore'
 
 export async function copyToClipboard(
   text: string,
-  successMessage = '已复制到剪贴板',
+  successMessage?: string,
 ): Promise<boolean> {
   const value = text ?? ''
   if (!value.trim()) {
-    appToast.info('没有可复制的内容')
+    appToast.info(i18n.t('common:clipboard.empty'))
     return false
   }
   try {
     await navigator.clipboard.writeText(value)
-    appToast.success(successMessage)
+    appToast.success(successMessage ?? i18n.t('common:clipboard.copied'))
     return true
   } catch {
-    appToast.error('复制失败')
+    appToast.error(i18n.t('common:clipboard.fail'))
     return false
   }
 }

@@ -20,7 +20,11 @@ public class RegisterRequest {
     @Email(message = "{validation.auth.email_invalid}")
     private String email;
 
-    @NotBlank(message = "{validation.auth.email_code_required}")
+    /** Six-digit code; required only when registration.require_email_verify is enabled. */
     @Size(min = 6, max = 6, message = "{validation.auth.email_code_size}")
     private String emailCode;
+
+    /** Optional invite code (NA-INV-XXXX). */
+    @Size(max = 32, message = "{validation.auth.invite_code_size}")
+    private String inviteCode;
 }

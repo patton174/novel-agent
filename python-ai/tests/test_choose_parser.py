@@ -1,6 +1,6 @@
 """Tests for choose tool output parsing."""
 
-from app.agents.choose_parser import parse_choose_options
+from app.agent.tools.choose_parser import parse_choose_options
 
 
 def test_parse_inline_title_and_description():

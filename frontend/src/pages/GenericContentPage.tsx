@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { fetchSiteContent } from '@/api/billingApi'
+import { SiteContentLocaleFallback } from '@/components/content/SiteContentLocaleFallback'
 import { SiteMarkdown } from '@/components/content/SiteMarkdown'
 import { MarketingPageLayout } from '@/components/marketing/MarketingPageLayout'
 import { MarketingSubpageHero } from '@/components/marketing/MarketingSubpageHero'
@@ -9,26 +10,30 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 
 interface GenericContentPageProps {
-  contentKey: string
-  fallbackTitle: string
+  contentKey: 'privacy' | 'terms' | 'contact'
 }
 
-export default function GenericContentPage({ contentKey, fallbackTitle }: GenericContentPageProps) {
-  const { t } = useTranslation('marketing')
+export default function GenericContentPage({ contentKey }: GenericContentPageProps) {
+  const { t, i18n } = useTranslation('marketing')
+  const fallbackTitle = t(`footer.${contentKey}`)
   const [title, setTitle] = useState(fallbackTitle)
   const [bodyMd, setBodyMd] = useState<string | null>(null)
+  const [localeResolved, setLocaleResolved] = useState(false)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     let cancelled = false
+    setLoading(true)
     void fetchSiteContent(contentKey)
       .then((data) => {
         if (cancelled) return
         if (data) {
           setTitle(data.title || fallbackTitle)
           setBodyMd(data.bodyMd)
+          setLocaleResolved(Boolean(data.localeResolved))
         } else {
           setBodyMd('')
+          setLocaleResolved(false)
         }
       })
       .finally(() => {
@@ -37,7 +42,7 @@ export default function GenericContentPage({ contentKey, fallbackTitle }: Generi
     return () => {
       cancelled = true
     }
-  }, [contentKey, fallbackTitle])
+  }, [contentKey, fallbackTitle, i18n.language])
 
   const eyebrow =
     contentKey === 'contact' ? t('generic.eyebrowSupport') : t('generic.eyebrowLegal')
@@ -65,7 +70,10 @@ export default function GenericContentPage({ contentKey, fallbackTitle }: Generi
                   <Skeleton className="h-4 w-3/4" />
                 </div>
               ) : bodyMd?.trim() ? (
-                <SiteMarkdown text={bodyMd} />
+                <>
+                  <SiteContentLocaleFallback localeResolved={localeResolved} className="mb-4" />
+                  <SiteMarkdown text={bodyMd} />
+                </>
               ) : (
                 <div className="py-4 text-center">
                   <p className="font-mono text-base font-bold text-foreground">{t('generic.emptyTitle')}</p>

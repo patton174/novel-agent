@@ -36,6 +36,7 @@ def sse_tool_result_title_only(tool: str | None) -> bool:
         return False
     return True
 
+# Chinese labels are stable wire keys; frontend maps via editor:tools.* (see AGENTS.md § SSE i18n).
 TOOL_DISPLAY_NAMES: dict[str, str] = {
     "ListChapters": "列举章节",
     "ReadChapter": "阅读章节",

@@ -88,8 +88,11 @@ export default function PricingPage() {
       )
     }
     return (
-      <Link to="/contact" className={ctaClass}>
-        {tier.cta}
+      <Link
+        to={isLoggedIn ? '/dashboard/billing' : buildLoginHref({ returnPath: '/dashboard/billing' })}
+        className={ctaClass}
+      >
+        {t('marketing:pricing.applyUpgrade')}
       </Link>
     )
   }
@@ -212,6 +215,12 @@ export default function PricingPage() {
           </div>
 
           <div className="mx-auto max-w-2xl">
+            <p className="mb-8 text-center text-sm text-muted-foreground">
+              {t('marketing:pricing.redeemHint')}{' '}
+              <Link to="/dashboard/billing" className="font-medium text-primary hover:underline">
+                {t('marketing:pricing.redeemLink')}
+              </Link>
+            </p>
             <h2 className="mb-6 text-center font-mono text-lg font-bold uppercase tracking-wide text-foreground md:text-xl">
               {t('pricing.faqTitle')}
             </h2>

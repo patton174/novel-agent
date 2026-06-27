@@ -83,7 +83,7 @@ public class AgentModelResolver {
             }
             if (um.getPublicModelId() != null) {
                 AiModelEntity m = aiRepo.findById(um.getPublicModelId())
-                    .orElseThrow(() -> new IllegalStateException("model.public_ref_missing"));
+                    .orElseThrow(() -> ValidationException.keyed("model.public_ref_missing"));
                 assertAllowed(userId, m);
                 ModelPriceTier.Tier tier = ModelPriceTier.tierOf(m.getPriceMultiplier());
                 if (tier != null) {
@@ -93,7 +93,7 @@ public class AgentModelResolver {
             }
         }
         AiModelEntity pd = aiRepo.findFirstByModelTypeAndIsDefaultTrueAndActiveTrue("llm")
-            .orElseThrow(() -> new IllegalStateException("model.no_default_llm"));
+            .orElseThrow(() -> ValidationException.keyed("model.no_default_llm"));
         ModelPriceTier.Tier tier = ModelPriceTier.tierOf(pd.getPriceMultiplier());
         if (tier != null) {
             return resolveTier(userId, tier, message, "platform_default");
@@ -139,7 +139,7 @@ public class AgentModelResolver {
         return allowed.stream()
             .min(Comparator.comparing(m -> tierDistance(tier, m.getPriceMultiplier())))
             .orElseGet(() -> aiRepo.findFirstByModelTypeAndIsDefaultTrueAndActiveTrue("llm")
-                .orElseThrow(() -> new IllegalStateException("model.no_llm_available")));
+                .orElseThrow(() -> ValidationException.keyed("model.no_llm_available")));
     }
 
     private List<AiModelEntity> allowedPublicModels(Long userId, String modelType) {
@@ -206,7 +206,7 @@ public class AgentModelResolver {
         String apiKey;
         if (e.getCredentialId() != null && !e.getCredentialId().isBlank()) {
             AiModelCredentialEntity cred = aiCredentialRepo.findById(e.getCredentialId())
-                .orElseThrow(() -> new IllegalStateException("model.credential_not_found"));
+                .orElseThrow(() -> ValidationException.keyed("model.credential_not_found"));
             apiKey = keyCodec.decrypt(cred.getApiKeyEnc());
         } else {
             apiKey = keyCodec.decrypt(e.getApiKeyEnc());

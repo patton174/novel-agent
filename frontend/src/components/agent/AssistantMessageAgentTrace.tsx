@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { EditorButton } from '../ui/EditorButton'
 import type {
   AgentAssistantStreamPhase,
@@ -55,6 +56,7 @@ export function AssistantMessageAgentTrace({
   onSelectChoice,
   onSubmitInteraction,
 }: AssistantMessageAgentTraceProps) {
+  const { t } = useTranslation('editor')
   const [multiSelectDrafts, setMultiSelectDrafts] = useState<Record<string, AgentChoiceOption[]>>({})
   const toolSteps = stepStates.filter(
     (s) => s.type === 'tool' && s.toolName !== 'output' && !isHiddenUiTool(s.toolName),
@@ -103,7 +105,7 @@ export function AssistantMessageAgentTrace({
   }
 
   return (
-    <div className={ASSISTANT_TRACE_TIMELINE} data-testid="agent-activity-timeline" aria-label="助手活动">
+    <div className={ASSISTANT_TRACE_TIMELINE} data-testid="agent-activity-timeline" aria-label={t('agent.timeline.assistantActivity')}>
       {thinkPanelActive ? (
         <AgentThinkPanel
           text={thinkText ?? ''}
@@ -131,12 +133,12 @@ export function AssistantMessageAgentTrace({
             <span className={ASSISTANT_TRACE_ACTIVITY_LABEL} data-testid="agent-trace-step-title">
               {step.title}
             </span>
-            {step.status === 'failed' && <span className={ASSISTANT_TRACE_FAIL_BADGE}>失败</span>}
+            {step.status === 'failed' && <span className={ASSISTANT_TRACE_FAIL_BADGE}>{t('agent.timeline.phaseFailed')}</span>}
             {step.status === 'started' && step.detail && (
               <span className={ASSISTANT_TRACE_PROGRESS_HINT}>{step.detail}</span>
             )}
             {step.status === 'completed' && !step.choices?.length && (
-              <span className={ASSISTANT_TRACE_DONE_HINT}>完成</span>
+              <span className={ASSISTANT_TRACE_DONE_HINT}>{t('agent.timeline.statusDone')}</span>
             )}
           </div>
 
@@ -190,7 +192,9 @@ export function AssistantMessageAgentTrace({
               {step.interaction?.type === 'multi_select' && (
                 <div className={ASSISTANT_TRACE_MULTI_ACTIONS}>
                   <span className={ASSISTANT_TRACE_MULTI_HINT}>
-                    已选 {(multiSelectDrafts[step.stepId] ?? []).length} 项
+                    {t('agent.timeline.multiSelectCount', {
+                      count: (multiSelectDrafts[step.stepId] ?? []).length,
+                    })}
                   </span>
                   <EditorButton
                     variant="tool"
@@ -203,7 +207,7 @@ export function AssistantMessageAgentTrace({
                       })
                     }
                   >
-                    提交选择
+                    {t('agent.timeline.submitChoices')}
                   </EditorButton>
                 </div>
               )}
@@ -213,7 +217,7 @@ export function AssistantMessageAgentTrace({
             step.interaction &&
             (!step.choices || step.choices.length === 0) && (
               <p className={assistantTraceStepDetailClass()}>
-                {step.interaction.prompt ?? '请继续提供输入'}
+                {step.interaction.prompt ?? t('agent.timeline.continueInput')}
                 {step.interaction.free_text_hint ? `（${step.interaction.free_text_hint}）` : ''}
               </p>
             )}

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import type { AgentTimelineBlock } from '../../../types/agent'
 import {
   SELECTED_BADGE,
@@ -7,22 +8,24 @@ import {
 } from '@/lib/timelineClasses'
 
 function stripAnswerPrefix(title: string): string {
-  return title.replace(/^我的回答[：:]\s*/i, '').trim()
+  return title.replace(/^(我的回答|My answer)[：:]\s*/i, '').trim()
 }
 
 /** 已选答案摘要（无额外树形符号；询问仅展示「你的回答」+ 正文） */
 export function SelectedChoiceSummary({
   selection,
-  badge = '你的选择',
+  badge,
 }: {
   selection: Extract<AgentTimelineBlock, { kind: 'choice_selected' }>
   badge?: string
 }) {
+  const { t } = useTranslation('editor')
+  const resolvedBadge = badge ?? t('agent.timeline.yourChoice')
   const body = stripAnswerPrefix(selection.title)
   const lines = body.split('\n').filter(Boolean)
   return (
     <div className={SELECTED_CHOICE_ROW} data-testid="timeline-choice-selected">
-      <span className={SELECTED_BADGE}>{badge}</span>
+      <span className={SELECTED_BADGE}>{resolvedBadge}</span>
       {lines.length > 1 ? (
         lines.map((line) => (
           <span key={line} className={SELECTED_TITLE}>

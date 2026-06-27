@@ -1,3 +1,4 @@
+import i18n from '@/i18n'
 import type { AgentStreamUiState } from '../types/agent'
 
 /** SSE 断开后是否应走 status WS 追事件 */
@@ -5,15 +6,34 @@ export function shouldAttachStreamRecovery(state: AgentStreamUiState): boolean {
   return Boolean(state.runId) && !state.runTerminalAck && !state.isStreamEnded
 }
 
-export const STREAM_RECOVERY_BANNER =
-  '连接中断，正在重连 SSE…'
+export function getStreamRecoveryBanner(): string {
+  return i18n.t('editor:agent.stream.recoveryBanner')
+}
+
+export function getHostDetachBanner(): string {
+  return i18n.t('editor:agent.stream.hostDetach')
+}
+
+/** @deprecated Prefer getStreamRecoveryBanner() — kept for tests importing the symbol */
+export const STREAM_RECOVERY_BANNER = getStreamRecoveryBanner()
+
+function localizedRecoveryBanners(): string[] {
+  return ['zh', 'en'].map((lng) => i18n.t('editor:agent.stream.recoveryBanner', { lng }))
+}
+
+function localizedHostDetachBanners(): string[] {
+  return ['zh', 'en'].map((lng) => i18n.t('editor:agent.stream.hostDetach', { lng }))
+}
 
 export function isStreamRecoveryBanner(message?: string): boolean {
   const text = (message ?? '').trim()
   if (!text) {
     return false
   }
-  return text === STREAM_RECOVERY_BANNER || text.includes('正在重连 SSE')
+  return (
+    localizedRecoveryBanners().some((banner) => text === banner) ||
+    /reconnecting SSE|正在重连 SSE|断线重连/i.test(text)
+  )
 }
 
 export function isHostDetachMessage(message?: string): boolean {
@@ -23,7 +43,10 @@ export function isHostDetachMessage(message?: string): boolean {
   }
   return (
     isStreamRecoveryBanner(text) ||
+    localizedHostDetachBanners().some((banner) => text === banner) ||
     text.includes('任务在 Worker 继续') ||
+    text.includes('任务在后台继续') ||
+    text.toLowerCase().includes('host channel') ||
     text.includes('状态通道')
   )
 }

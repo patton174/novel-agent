@@ -7,6 +7,7 @@ import { useThemeStore, type ThemeMode } from '@/stores/themeStore'
 import { logout } from '@/utils/authApi'
 import { runUiTransition } from '@/lib/uiTransition'
 import { LOCALE_STORAGE_KEY } from '@/lib/appSessionState'
+import { NotificationBell } from '@/components/notification/NotificationBell'
 
 const THEME_ORDER: ThemeMode[] = ['light', 'dark', 'system']
 
@@ -51,6 +52,7 @@ export function AppShellToolbar() {
 
   return (
     <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+      <NotificationBell />
       <button
         type="button"
         onClick={cycleTheme}

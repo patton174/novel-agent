@@ -1,99 +1,113 @@
-import { fetchPlatformStats } from './adminApi'
-import { fetchWorkerJobsOverview } from './systemJobsApi'
+import i18n from '@/i18n'
+import { secureFetch } from '@/security/secureFetch'
+import { parseResultResponse, readApiErrorMessage } from '@/utils/resultApi'
 
 export type ProbeStatus = 'up' | 'degraded' | 'down'
 
-export interface ServiceProbeResult {
+export interface HostMetrics {
+  cpuPercent: number | null
+  memoryUsedMb: number | null
+  memoryTotalMb: number | null
+  diskUsedGb: number | null
+  diskTotalGb: number | null
+  uptimeSeconds: number | null
+}
+
+export interface JvmMetrics {
+  heapUsedMb: number
+  heapMaxMb: number
+  threads: number
+  uptimeSeconds: number
+}
+
+export interface ServiceProbe {
   id: string
-  label: string
-  endpoint: string
-  kind: 'frontend' | 'backend'
   status: ProbeStatus
-  latencyMs?: number
-  detail?: string
+  latencyMs?: number | null
 }
 
-async function timedFetch(url: string, init?: RequestInit): Promise<{ ok: boolean; status: number; latencyMs: number; body?: string }> {
-  const started = performance.now()
-  try {
-    const res = await fetch(url, { ...init, credentials: 'same-origin' })
-    const latencyMs = Math.round(performance.now() - started)
-    const body = res.ok ? await res.text().catch(() => undefined) : undefined
-    return { ok: res.ok, status: res.status, latencyMs, body }
-  } catch {
-    return { ok: false, status: 0, latencyMs: Math.round(performance.now() - started) }
+export interface MonitoringSnapshot {
+  host: HostMetrics
+  services: ServiceProbe[]
+  jvm: JvmMetrics
+}
+
+async function parseResponse<T>(res: Response): Promise<T> {
+  if (!res.ok) {
+    if (res.status === 403) {
+      throw new Error(i18n.t('admin:errors.noAdminPermission'))
+    }
+    throw new Error(await readApiErrorMessage(res))
+  }
+  return parseResultResponse<T>(res)
+}
+
+export async function fetchMonitoringSnapshot(): Promise<MonitoringSnapshot> {
+  const res = await secureFetch('/api/worker/crm/monitoring/snapshot')
+  const data = await parseResponse<MonitoringSnapshot>(res)
+  return {
+    host: data.host ?? {
+      cpuPercent: null,
+      memoryUsedMb: null,
+      memoryTotalMb: null,
+      diskUsedGb: null,
+      diskTotalGb: null,
+      uptimeSeconds: null,
+    },
+    services: Array.isArray(data.services) ? data.services : [],
+    jvm: data.jvm ?? { heapUsedMb: 0, heapMaxMb: 0, threads: 0, uptimeSeconds: 0 },
   }
 }
 
-export async function probeServiceHealth(): Promise<ServiceProbeResult[]> {
-  const results: ServiceProbeResult[] = []
-
-  results.push({
-    id: 'frontend',
-    label: 'Frontend',
-    endpoint: window.location.origin,
-    kind: 'frontend',
-    status: 'up',
-    detail: navigator.onLine ? 'Browser online' : 'Browser offline',
-  })
-
-  const actuator = await timedFetch('/actuator/health')
-  results.push({
-    id: 'novel-studio-actuator',
-    label: 'novel-studio (Actuator)',
-    endpoint: '/actuator/health',
-    kind: 'backend',
-    status: actuator.ok ? 'up' : actuator.status === 503 ? 'degraded' : 'down',
-    latencyMs: actuator.latencyMs,
-    detail: actuator.ok ? actuator.body?.slice(0, 120) : `HTTP ${actuator.status || 'ERR'}`,
-  })
-
-  const adminApiStarted = performance.now()
-  try {
-    await fetchPlatformStats()
-    results.push({
-      id: 'novel-studio-admin',
-      label: 'novel-studio (Auth CRM)',
-      endpoint: '/api/auth/crm/stats/overview',
-      kind: 'backend',
-      status: 'up',
-      latencyMs: Math.round(performance.now() - adminApiStarted),
-    })
-  } catch (err) {
-    results.push({
-      id: 'novel-studio-admin',
-      label: 'novel-studio (Auth CRM)',
-      endpoint: '/api/auth/crm/stats/overview',
-      kind: 'backend',
-      status: 'down',
-      latencyMs: Math.round(performance.now() - adminApiStarted),
-      detail: err instanceof Error ? err.message : 'Request failed',
-    })
+export function formatPercent(value: number | null | undefined): string {
+  if (value == null || Number.isNaN(value)) {
+    return '—'
   }
+  return `${value.toFixed(1)}%`
+}
 
-  const jobsApiStarted = performance.now()
-  try {
-    const jobs = await fetchWorkerJobsOverview()
-    results.push({
-      id: 'novel-studio-jobs',
-      label: 'novel-studio (Jobs API)',
-      endpoint: '/api/worker/crm/jobs/overview',
-      kind: 'backend',
-      status: 'up',
-      latencyMs: Math.round(performance.now() - jobsApiStarted),
-      detail: `${jobs.scheduled.length} scheduled · ${jobs.mqConsumers.length} mq`,
-    })
-  } catch (err) {
-    results.push({
-      id: 'novel-studio-jobs',
-      label: 'novel-studio (Jobs API)',
-      endpoint: '/api/worker/crm/jobs/overview',
-      kind: 'backend',
-      status: 'down',
-      latencyMs: Math.round(performance.now() - jobsApiStarted),
-      detail: err instanceof Error ? err.message : 'Request failed',
-    })
+export function formatMb(used: number | null | undefined, total: number | null | undefined): string {
+  if (used == null && total == null) {
+    return '—'
   }
+  if (total != null && used != null) {
+    return `${used} / ${total} MB`
+  }
+  if (used != null) {
+    return `${used} MB`
+  }
+  return `${total} MB`
+}
 
-  return results
+export function formatGb(used: number | null | undefined, total: number | null | undefined): string {
+  if (used == null && total == null) {
+    return '—'
+  }
+  if (total != null && used != null) {
+    return `${used} / ${total} GB`
+  }
+  if (used != null) {
+    return `${used} GB`
+  }
+  return `${total} GB`
+}
+
+export function formatUptime(seconds: number | null | undefined): string {
+  if (seconds == null || seconds < 0) {
+    return '—'
+  }
+  const days = Math.floor(seconds / 86_400)
+  const hours = Math.floor((seconds % 86_400) / 3_600)
+  const mins = Math.floor((seconds % 3_600) / 60)
+  if (days > 0) {
+    return `${days}d ${hours}h`
+  }
+  if (hours > 0) {
+    return `${hours}h ${mins}m`
+  }
+  return `${mins}m`
+}
+
+export function serviceLabelKey(id: string): string {
+  return `admin:monitoring.services.${id}`
 }

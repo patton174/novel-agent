@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import i18n from '@/i18n'
 import { fetchNovels, generateNovelCover, type DashboardNovel } from '@/api/dashboardApi'
+import type { CoverGeneratePayload } from '@/components/dashboard/CoverGenerateDialog'
+import { invalidateStoragePresign } from '@/api/storageApi'
 import { dashboardCache } from '@/stores/dashboardCacheStore'
 import { appToast } from '@/stores/appToastStore'
 
@@ -9,15 +12,22 @@ export const NOVELS_PAGE_SIZE = 10
 
 /** 小说更新时间格式化（沿用原 NovelsPage 行为） */
 export function formatNovelDate(ts: number): string {
+  const dateLocale = i18n.language === 'zh' ? 'zh-CN' : 'en-US'
   const date = new Date(ts)
   if (Number.isNaN(date.getTime())) {
     return '—'
   }
-  return date.toLocaleDateString('zh-CN', {
+  return date.toLocaleDateString(dateLocale, {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
   })
+}
+
+function isFeatureNotAvailable(message: string): boolean {
+  return (['zh', 'en'] as const).some((lng) =>
+    message.includes(i18n.t('dashboard:billing.errors.featureNotAvailable', { lng })),
+  )
 }
 
 export interface UseNovelsPageResult {
@@ -35,7 +45,7 @@ export interface UseNovelsPageResult {
   generatingId: string | null
   dialogNovel: DashboardNovel | null
   setDialogNovel: (novel: DashboardNovel | null) => void
-  handleGenerateCover: (novelId: string, prompt: string) => Promise<void>
+  handleGenerateCover: (novelId: string, payload: CoverGeneratePayload) => void
 }
 
 /**
@@ -79,24 +89,33 @@ export function useNovelsPage(): UseNovelsPageResult {
   }, [load])
 
   const handleGenerateCover = useCallback(
-    async (novelId: string, prompt: string) => {
+    (novelId: string, payload: CoverGeneratePayload) => {
       setGeneratingId(novelId)
-      try {
-        const updated = await generateNovelCover(novelId, prompt)
-        if (updated) {
-          setNovels((prev) =>
-            prev ? prev.map((n) => (n.id === novelId ? { ...n, ...updated } : n)) : prev,
+      setDialogNovel(null)
+      void generateNovelCover(novelId, payload)
+        .then((updated) => {
+          if (updated) {
+            if (updated.coverStorageKey) {
+              invalidateStoragePresign(updated.coverStorageKey)
+            }
+            setNovels((prev) => {
+              if (!prev) return prev
+              const next = prev.map((n) => (n.id === novelId ? { ...n, ...updated } : n))
+              dashboardCache.setNovels(next)
+              return next
+            })
+            appToast.success(t('dashboard:novels.coverSuccess'))
+          }
+        })
+        .catch((err) => {
+          const message = err instanceof Error ? err.message : t('dashboard:novels.coverFail')
+          appToast.error(
+            isFeatureNotAvailable(message) ? `${message}${t('dashboard:novels.upgradeHint')}` : message,
           )
-          appToast.success(t('dashboard:novels.coverSuccess'))
-        }
-      } catch (err) {
-        const message = err instanceof Error ? err.message : t('dashboard:novels.coverFail')
-        appToast.error(
-          message.includes('套餐') ? `${message}${t('dashboard:novels.upgradeHint')}` : message,
-        )
-      } finally {
-        setGeneratingId(null)
-      }
+        })
+        .finally(() => {
+          setGeneratingId(null)
+        })
     },
     [t],
   )

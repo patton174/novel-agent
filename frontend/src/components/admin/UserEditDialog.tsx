@@ -17,6 +17,7 @@ import { AppModalShell } from '@/components/ui/AppModalShell'
 import {
   AdminButton,
   AdminButtonOutline,
+  AdminControlRow,
   AdminField,
   AdminSelect,
   AdminTabList,
@@ -32,14 +33,8 @@ import {
   type PixelColumn,
 } from '@/components/pixel'
 import { DialogFooter } from '@/components/ui/dialog'
+import { adminFormatLocale } from '@/components/admin/adminUiTokens'
 import { cn } from '@/lib/utils'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import {
   Sheet,
   SheetContent,
@@ -66,7 +61,7 @@ export function UserEditDialog({
   onOpenChange,
   onSaved,
 }: UserEditDialogProps) {
-  const { t } = useTranslation(['admin'])
+  const { t, i18n } = useTranslation(['admin'])
   const [tab, setTab] = useState<TabKey>('account')
   const [role, setRole] = useState<UserRole>('user')
   const [isActive, setIsActive] = useState(true)
@@ -183,10 +178,10 @@ export function UserEditDialog({
       },
       {
         key: 'tokens',
-        header: 'Tokens',
+        header: t('admin:userEdit.colTokens'),
         align: 'right',
         render: (ev) => (
-          <PixelCellMono>{ev.totalTokens.toLocaleString('zh-CN')}</PixelCellMono>
+          <PixelCellMono>{ev.totalTokens.toLocaleString(adminFormatLocale(i18n.language))}</PixelCellMono>
         ),
       },
       {
@@ -194,24 +189,24 @@ export function UserEditDialog({
         header: t('admin:auditLog.colTime'),
         render: (ev) => (
           <PixelCellMono className="whitespace-nowrap text-muted-foreground">
-            {new Date(ev.createdAt).toLocaleString('zh-CN')}
+            {new Date(ev.createdAt).toLocaleString(adminFormatLocale(i18n.language))}
           </PixelCellMono>
         ),
       },
       {
         key: 'run',
-        header: 'Run',
+        header: t('admin:userEdit.colRunId'),
         render: (ev) =>
           ev.runId ? (
             <PixelCellMono className="max-w-[120px] truncate">
               <span title={ev.runId}>{ev.runId}</span>
             </PixelCellMono>
           ) : (
-            '—'
+            t('admin:jobs.duration.dash')
           ),
       },
     ]
-  }, [t])
+  }, [i18n.language, t])
 
   return (
     <>
@@ -224,9 +219,9 @@ export function UserEditDialog({
         description={
           user ? (
             <>
-              {user.username}（{user.email}）
+              {t('admin:userEdit.userDescription', { username: user.username, email: user.email })}
               <span className="mt-1 block font-mono text-[11px] text-muted-foreground">
-                userId: {user.id}
+                {t('admin:userEdit.userIdLabel', { id: user.id })}
               </span>
             </>
           ) : undefined
@@ -252,21 +247,15 @@ export function UserEditDialog({
 
         {tab === 'account' ? (
           <div className="space-y-4 py-2">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">{t('admin:userEdit.roleLabel')}</label>
-              <Select value={role} onValueChange={(v) => setRole(v as UserRole)}>
-                <SelectTrigger>
-                  <SelectValue placeholder={t('admin:userEdit.rolePlaceholder')} />
-                </SelectTrigger>
-                <SelectContent>
-                  {ROLES.map((item) => (
-                    <SelectItem key={item.value} value={item.value}>
-                      {item.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <AdminField layout="form" label={t('admin:userEdit.roleLabel')}>
+              <AdminSelect value={role} onChange={(e) => setRole(e.target.value as UserRole)}>
+                {ROLES.map((item) => (
+                  <option key={item.value} value={item.value}>
+                    {item.label}
+                  </option>
+                ))}
+              </AdminSelect>
+            </AdminField>
 
             <div className="flex items-center justify-between gap-4">
               <div>
@@ -282,8 +271,8 @@ export function UserEditDialog({
               <p className="text-sm text-muted-foreground">{t('admin:userEdit.loadingBilling')}</p>
             ) : usage ? (
               <>
-                <div className="space-y-2">
-                  <AdminField layout="form" label={t('admin:userEdit.currentPlan')}>
+                <AdminControlRow className="items-end">
+                  <AdminField layout="form" label={t('admin:userEdit.currentPlan')} className="min-w-0 flex-1">
                     <AdminSelect value={planCode} onChange={(e) => setPlanCode(e.target.value)}>
                       {plans.map((p) => (
                         <option key={p.code} value={p.code}>
@@ -292,17 +281,20 @@ export function UserEditDialog({
                       ))}
                     </AdminSelect>
                   </AdminField>
-                  <AdminButtonOutline size="sm" disabled={saving} onClick={() => void handleSaveSubscription()}>
+                  <AdminButtonOutline disabled={saving} onClick={() => void handleSaveSubscription()}>
                     {t('admin:userEdit.savePlan')}
                   </AdminButtonOutline>
-                </div>
+                </AdminControlRow>
 
                 <div className={cn(PIXEL_PANEL, 'text-sm')}>
                   <p className="font-medium">{usage.planName} · {usage.periodYyyyMm}</p>
                   <div className="mt-2 space-y-1 font-mono text-xs text-muted-foreground">
                     <p>
-                      Tokens: {formatTokenQuota(usage.tokensUsed)} /{' '}
-                      {formatTokenQuota(usage.tokenQuota)}（{usage.percentUsed.toFixed(1)}%）
+                      {t('admin:userEdit.usageTokensLine', {
+                        used: formatTokenQuota(usage.tokensUsed),
+                        quota: formatTokenQuota(usage.tokenQuota),
+                        percent: usage.percentUsed.toFixed(1),
+                      })}
                     </p>
                     <div className="h-1.5 overflow-hidden rounded-full bg-muted/50">
                       <div
@@ -311,8 +303,13 @@ export function UserEditDialog({
                       />
                     </div>
                     <p>
-                      Runs: {usage.runsUsed}
-                      {usage.runQuota != null ? ` / ${usage.runQuota}` : ` / ${t('admin:userEdit.unlimited')}`}
+                      {t('admin:userEdit.usageRunsLine', {
+                        used: usage.runsUsed,
+                        quotaSuffix:
+                          usage.runQuota != null
+                            ? ` / ${usage.runQuota}`
+                            : ` / ${t('admin:userEdit.unlimited')}`,
+                      })}
                     </p>
                     <p>{t('admin:userEdit.estCost')}: {formatCostMicros(usage.costMicros)}</p>
                   </div>
@@ -356,9 +353,11 @@ export function UserEditDialog({
                     value={overrideReason}
                     onChange={(e) => setOverrideReason(e.target.value)}
                   />
-                  <AdminButtonOutline size="sm" disabled={saving} onClick={() => void handleAddOverride()}>
-                    {t('admin:userEdit.addOverrideBtn')}
-                  </AdminButtonOutline>
+                  <AdminControlRow className="items-end">
+                    <AdminButtonOutline disabled={saving} onClick={() => void handleAddOverride()}>
+                      {t('admin:userEdit.addOverrideBtn')}
+                    </AdminButtonOutline>
+                  </AdminControlRow>
                 </div>
               </>
             ) : (

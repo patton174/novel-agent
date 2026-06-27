@@ -76,8 +76,6 @@ INTERACTION_TOOLS = [
         # 子 Agent 会写章/写记忆，与任何工具（含其他 Agent、Read）并行都可能竞态。
         # 强制串行：每个 Agent 独占一批，只读工具不与 Agent 合批。
         is_concurrency_safe=lambda _i: False,
-        user_facing_name=lambda inp: (
-            f"子任务：{(inp.description or '子任务')[:32]}" if inp else "子任务"
-        ),
+        # SSE display_name: cc_visibility.TOOL_DISPLAY_NAMES["Agent"]; description → tool_input
     ),
 ]

@@ -40,9 +40,13 @@ public class NovelEntity {
     @Column(name = "target_chapter_words")
     private Integer targetChapterWords;
 
-    /** AI 生成的封面图 URL（Agnes 返回的公网地址） */
+    /** 遗留：外部封面 URL（迁移前 Agnes 直链） */
     @Column(name = "cover_url", length = 1024)
     private String coverUrl;
+
+    /** 落盘存储 key（covers/{userId}/{novelId}/...） */
+    @Column(name = "cover_storage_key", length = 512)
+    private String coverStorageKey;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;

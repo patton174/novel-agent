@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
+import i18n from '@/i18n'
 import { confirmAction, promptDialog } from '../../stores/appDialog'
 import {
   deleteSession,
@@ -94,7 +95,7 @@ export function useEditorSessions({
       remote.forEach((s) => {
         upsertSession({
           id: s.id,
-          title: s.title || '新对话',
+          title: s.title || i18n.t('editor:session.defaultTitle'),
           updatedAt: new Date(s.updatedAt).toISOString(),
           novelId,
         })
@@ -114,7 +115,7 @@ export function useEditorSessions({
     closeStreamSockets()
     agentSessionIdRef.current = nextSessionId
     setActiveSession(nextSessionId)
-    ensureSession(nextSessionId, '新对话', activeNovelId ?? undefined)
+    ensureSession(nextSessionId, i18n.t('editor:session.defaultTitle'), activeNovelId ?? undefined)
     if (activeNovelId) {
       setExpandedNovelIds(new Set([activeNovelId]))
     }
@@ -123,7 +124,7 @@ export function useEditorSessions({
     persistMessages(nextSessionId, initial)
     refreshSessions(activeNovelId)
     onNewChatResetMemory()
-    void api.upsertContentSession(nextSessionId, '新对话', activeNovelId ?? undefined).catch(() => {})
+    void api.upsertContentSession(nextSessionId, i18n.t('editor:session.defaultTitle'), activeNovelId ?? undefined).catch(() => {})
   }, [
     abortActiveStream,
     setIsLoading,
@@ -173,22 +174,22 @@ export function useEditorSessions({
   const handleRenameSession = (sessionId: string, currentTitle: string) => {
     void (async () => {
       const value = await promptDialog({
-        title: '重命名对话',
+        title: i18n.t('editor:session.renameTitle'),
         defaultValue: currentTitle,
-        placeholder: '输入对话名称',
-        confirmLabel: '保存',
+        placeholder: i18n.t('editor:session.renamePlaceholder'),
+        confirmLabel: i18n.t('common:save'),
       })
       if (value == null || !value.trim()) return
       const updated = renameSession(sessionId, value.trim())
       if (!updated) {
-        appToast.error('重命名失败')
+        appToast.error(i18n.t('editor:session.renameFail'))
         return
       }
       refreshSessions(activeNovelId)
       void api
         .upsertContentSession(sessionId, updated.title, activeNovelId ?? undefined)
-        .catch(() => appToast.info('本地已更新，同步到云端失败'))
-      appToast.success('对话已重命名')
+        .catch(() => appToast.info(i18n.t('editor:session.syncCloudFail')))
+      appToast.success(i18n.t('editor:session.renameSuccess'))
     })()
   }
 
@@ -196,9 +197,9 @@ export function useEditorSessions({
     void (async () => {
       if (
         !(await confirmAction({
-          title: '删除对话',
-          description: '本地消息将一并清除，此操作不可撤销。',
-          confirmLabel: '删除',
+          title: i18n.t('editor:session.deleteTitle'),
+          description: i18n.t('editor:session.deleteDesc'),
+          confirmLabel: i18n.t('common:delete'),
           danger: true,
         }))
       ) {
@@ -208,14 +209,14 @@ export function useEditorSessions({
         await api.deleteContentSession(sessionId)
         deleteSession(sessionId)
         refreshSessions(activeNovelId)
-        appToast.success('对话已删除')
+        appToast.success(i18n.t('editor:session.deleteSuccess'))
         if (sessionId === activeSession) {
           handleNewChat()
           return
         }
         setSessions((prev) => prev.filter((s) => s.id !== sessionId))
       } catch {
-        appToast.error('删除对话失败')
+        appToast.error(i18n.t('editor:session.deleteFail'))
       }
     })()
   }
@@ -232,7 +233,7 @@ export function useEditorSessions({
   }, [])
 
   const performDeleteNovel = async (novelId: string) => {
-    const title = novels.find((n) => n.id === novelId)?.title ?? '小说'
+    const title = novels.find((n) => n.id === novelId)?.title ?? i18n.t('editor:session.novelFallback')
     try {
       await onDeleteNovel(novelId)
       refreshSessions(null)
@@ -241,9 +242,9 @@ export function useEditorSessions({
         next.delete(novelId)
         return next
       })
-      appToast.success(`已删除小说「${title}」`)
+      appToast.success(i18n.t('editor:session.novelDeleted', { title }))
     } catch {
-      appToast.error('删除小说失败')
+      appToast.error(i18n.t('editor:session.novelDeleteFail'))
       throw new Error('delete novel failed')
     }
   }
@@ -270,7 +271,7 @@ export function useEditorSessions({
         if (!remote) return
         upsertSession({
           id: remote.id,
-          title: remote.title || '新对话',
+          title: remote.title || i18n.t('editor:session.defaultTitle'),
           updatedAt: new Date(remote.updatedAt).toISOString(),
           novelId: remote.novelId ?? activeNovelId ?? undefined,
         })
@@ -305,7 +306,7 @@ export function useEditorSessions({
   }, [sessions, activeNovelId])
 
   const activeSessionTitle = useMemo(() => {
-    return novelSessions.find((s) => s.id === activeSession)?.title ?? '新对话'
+    return novelSessions.find((s) => s.id === activeSession)?.title ?? i18n.t('editor:session.defaultTitle')
   }, [novelSessions, activeSession])
 
   const novelSessionGroups = useMemo((): NovelSessionGroup[] => {
@@ -323,7 +324,7 @@ export function useEditorSessions({
     const currentId = agentSessionIdRef.current
     const existing = listSessions()
     if (existing.length === 0) {
-      ensureSession(currentId, '新对话')
+      ensureSession(currentId, i18n.t('editor:session.defaultTitle'))
     }
     setSessions(
       listSessions().map((s) => ({

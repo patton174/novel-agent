@@ -183,8 +183,16 @@ export async function register(
 
   emailCode: string,
 
+  inviteCode?: string,
+
 ): Promise<void> {
   await ensureCryptoRuntime(true)
+
+  const payload: Record<string, string> = { username, password, email, emailCode }
+  const trimmedInvite = inviteCode?.trim()
+  if (trimmedInvite) {
+    payload.inviteCode = trimmedInvite
+  }
 
   const response = await secureFetch('/api/auth/api/register', {
 
@@ -194,7 +202,7 @@ export async function register(
 
     headers: { 'Content-Type': 'application/json' },
 
-    body: JSON.stringify({ username, password, email, emailCode }),
+    body: JSON.stringify(payload),
 
   })
 

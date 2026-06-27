@@ -925,7 +925,8 @@ export function applyAgentEvent(
     const allowProgressSummary =
       canonicalTool === 'WriteChapter' ||
       canonicalTool === 'EditChapter' ||
-      canonicalTool === 'Agent'
+      canonicalTool === 'Agent' ||
+      toolName === 'output'
     if (toolName === 'output' && next.messageContent.trim()) {
       return next
     }

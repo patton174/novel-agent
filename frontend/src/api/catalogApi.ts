@@ -1,6 +1,9 @@
+import i18n from '@/i18n'
 import { secureFetch } from '../security/secureFetch'
 import { parseResultResponse } from '../utils/resultApi'
 import type { Novel } from '../types/novel'
+
+export type LibraryIndexStatus = 'pending' | 'indexing' | 'indexed' | 'failed'
 
 export interface CatalogNovel {
   id: string
@@ -12,6 +15,7 @@ export interface CatalogNovel {
   chapterCount: number
   createdAt: number
   updatedAt: number
+  indexStatus?: LibraryIndexStatus | string | null
 }
 
 export interface CatalogChapterSummary {
@@ -35,7 +39,7 @@ export async function fetchCatalogNovels(pageCurrent = 1, pageSize = 20): Promis
     `/api/content/auth/catalog/novels?pageCurrent=${pageCurrent}&pageSize=${pageSize}`,
   )
   if (!res.ok) {
-    throw new Error('加载书库失败')
+    throw new Error(i18n.t('dashboard:bookstore.loadFail'))
   }
   return parseResultResponse<CatalogNovelPage>(res)
 }
@@ -43,7 +47,7 @@ export async function fetchCatalogNovels(pageCurrent = 1, pageSize = 20): Promis
 export async function fetchCatalogNovel(catalogNovelId: string): Promise<CatalogNovel> {
   const res = await secureFetch(`/api/content/auth/catalog/novels/${catalogNovelId}`)
   if (!res.ok) {
-    throw new Error('加载作品详情失败')
+    throw new Error(i18n.t('dashboard:bookstore.loadDetailFail'))
   }
   return parseResultResponse<CatalogNovel>(res)
 }
@@ -51,7 +55,7 @@ export async function fetchCatalogNovel(catalogNovelId: string): Promise<Catalog
 export async function fetchCatalogChapters(catalogNovelId: string): Promise<CatalogChapterSummary[]> {
   const res = await secureFetch(`/api/content/auth/catalog/novels/${catalogNovelId}/chapters`)
   if (!res.ok) {
-    throw new Error('加载章节目录失败')
+    throw new Error(i18n.t('dashboard:bookstore.loadChaptersFail'))
   }
   const data = await parseResultResponse<CatalogChapterSummary[]>(res)
   return Array.isArray(data) ? data : []
@@ -62,7 +66,7 @@ export async function addCatalogToLibrary(catalogNovelId: string): Promise<Novel
     method: 'POST',
   })
   if (!res.ok) {
-    throw new Error('添加到我的作品失败')
+    throw new Error(i18n.t('dashboard:bookstore.addToLibraryFail'))
   }
   return parseResultResponse<Novel>(res)
 }

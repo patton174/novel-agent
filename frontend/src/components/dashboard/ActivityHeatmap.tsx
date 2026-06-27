@@ -8,7 +8,9 @@ import i18n from '@/i18n'
 export type ActivityMode = 'all' | 'writing' | 'agent'
 
 const MAX_WEEKS = 13
+const MAX_WEEKS_EXPANDED = 26
 const MIN_WEEKS = 4
+const MIN_WEEKS_EXPANDED = 8
 const WEEKDAY_COL_REM = 1.25
 const GRID_GAP_REM = 0.1875 // 3px in rem
 
@@ -141,20 +143,23 @@ function formatTooltip(
     day: 'numeric',
     timeZone: 'UTC',
   })
-  if (value <= 0) return `${label}：${t('dashboard:heatmap.tooltipNoActivity')}`
-  if (mode === 'agent') return `${label}：${value} ${t('dashboard:heatmap.tooltipAgent')}`
+  const sep = i18n.language === 'zh' ? '：' : ': '
+  if (value <= 0) return `${label}${sep}${t('dashboard:heatmap.tooltipNoActivity')}`
+  if (mode === 'agent') return `${label}${sep}${value} ${t('dashboard:heatmap.tooltipAgent')}`
   if (mode === 'writing') {
-    return `${label}：${value.toLocaleString(dateLocale)} ${t('dashboard:heatmap.tooltipWriting')}`
+    return `${label}${sep}${value.toLocaleString(dateLocale)} ${t('dashboard:heatmap.tooltipWriting')}`
   }
-  return `${label}：${t('dashboard:heatmap.tooltipAll')} ${value.toLocaleString(dateLocale)}`
+  return `${label}${sep}${t('dashboard:heatmap.tooltipAll')} ${value.toLocaleString(dateLocale)}`
 }
 
 interface ActivityHeatmapProps {
   activity: DashboardActivity | null
   loading?: boolean
+  /** 桌面端展示约双倍周数 */
+  expanded?: boolean
 }
 
-export function ActivityHeatmap({ activity, loading }: ActivityHeatmapProps) {
+export function ActivityHeatmap({ activity, loading, expanded = false }: ActivityHeatmapProps) {
   const { t } = useTranslation(['dashboard'])
   const [mode, setMode] = useState<ActivityMode>('all')
   const days = activity?.days ?? []
@@ -162,15 +167,24 @@ export function ActivityHeatmap({ activity, loading }: ActivityHeatmapProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [containerWidth, setContainerWidth] = useState(0)
 
+  const maxWeeksCap = expanded ? MAX_WEEKS_EXPANDED : MAX_WEEKS
+  const minWeeks = expanded ? MIN_WEEKS_EXPANDED : MIN_WEEKS
+
   // Calculate how many weeks fit based on container width
-  const calcWeeksAndCellSize = useCallback((width: number) => {
-    const availableWidth = width - WEEKDAY_COL_REM - GRID_GAP_REM
-    const minCellRem = 0.55
-    const maxWeeks = Math.min(MAX_WEEKS, Math.max(MIN_WEEKS, Math.floor(availableWidth / (minCellRem + GRID_GAP_REM))))
-    const rawCellSize = (availableWidth - maxWeeks * GRID_GAP_REM) / maxWeeks
-    const cellSize = Math.min(1.2, Math.max(minCellRem, rawCellSize))
-    return { weeks: maxWeeks, cellSize }
-  }, [])
+  const calcWeeksAndCellSize = useCallback(
+    (width: number) => {
+      const availableWidth = width - WEEKDAY_COL_REM - GRID_GAP_REM
+      const minCellRem = 0.55
+      const maxWeeks = Math.min(
+        maxWeeksCap,
+        Math.max(minWeeks, Math.floor(availableWidth / (minCellRem + GRID_GAP_REM))),
+      )
+      const rawCellSize = (availableWidth - maxWeeks * GRID_GAP_REM) / maxWeeks
+      const cellSize = Math.min(1.2, Math.max(minCellRem, rawCellSize))
+      return { weeks: maxWeeks, cellSize }
+    },
+    [maxWeeksCap, minWeeks],
+  )
 
   // Listen to container width changes
   useEffect(() => {
@@ -188,9 +202,11 @@ export function ActivityHeatmap({ activity, loading }: ActivityHeatmapProps) {
   }, [])
 
   const { weeks: visibleWeeks, cellSize } = useMemo(() => {
-    if (containerWidth === 0) return { weeks: MAX_WEEKS, cellSize: 0.65 }
+    if (containerWidth === 0) {
+      return { weeks: maxWeeksCap, cellSize: expanded ? 0.5 : 0.65 }
+    }
     return calcWeeksAndCellSize(containerWidth)
-  }, [containerWidth, calcWeeksAndCellSize])
+  }, [containerWidth, calcWeeksAndCellSize, maxWeeksCap, expanded])
 
   const MODE_OPTIONS: { id: ActivityMode; label: string }[] = useMemo(
     () => [
@@ -202,11 +218,16 @@ export function ActivityHeatmap({ activity, loading }: ActivityHeatmapProps) {
   )
 
   const WEEKDAY_LABELS = useMemo(
-    () =>
-      i18n.language === 'zh'
-        ? ['日', '一', '二', '三', '四', '五', '六']
-        : ['S', 'M', 'T', 'W', 'T', 'F', 'S'],
-    [i18n.language],
+    () => [
+      t('dashboard:heatmap.sun'),
+      t('dashboard:heatmap.mon'),
+      t('dashboard:heatmap.tue'),
+      t('dashboard:heatmap.wed'),
+      t('dashboard:heatmap.thu'),
+      t('dashboard:heatmap.fri'),
+      t('dashboard:heatmap.sat'),
+    ],
+    [t],
   )
 
   const { weeks, maxValue, monthLabels } = useMemo(
@@ -226,18 +247,9 @@ export function ActivityHeatmap({ activity, loading }: ActivityHeatmapProps) {
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-start justify-between gap-3 border-b border-border/60 px-4 py-3">
-        <div className="flex min-w-0 flex-col gap-2">
-          <h2 className="text-base font-semibold text-foreground">
-            {t('dashboard:home.heatmapTitle')}
-          </h2>
-          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-            <span>{t('dashboard:heatmap.less')}</span>
-            {LEVEL_CLASSES.map((cls, i) => (
-              <div key={i} className={cn('size-3 rounded-[2px]', cls)} />
-            ))}
-            <span>{t('dashboard:heatmap.more')}</span>
-          </div>
-        </div>
+        <h2 className="text-base font-semibold text-foreground">
+          {t('dashboard:home.heatmapTitle')}
+        </h2>
         <div className="flex shrink-0 rounded-lg bg-muted p-0.5">
           {MODE_OPTIONS.map((option) => (
             <button
@@ -308,6 +320,14 @@ export function ActivityHeatmap({ activity, loading }: ActivityHeatmapProps) {
                     })}
                   </Fragment>
                 ))}
+              </div>
+
+              <div className="mt-3 flex items-center justify-end gap-1.5 text-[10px] text-muted-foreground">
+                <span>{t('dashboard:heatmap.less')}</span>
+                {LEVEL_CLASSES.map((cls, i) => (
+                  <div key={i} className={cn('size-3 rounded-[2px]', cls)} />
+                ))}
+                <span>{t('dashboard:heatmap.more')}</span>
               </div>
             </div>
           )}

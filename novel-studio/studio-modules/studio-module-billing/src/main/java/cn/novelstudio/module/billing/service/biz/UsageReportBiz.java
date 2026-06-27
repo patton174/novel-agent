@@ -5,8 +5,10 @@ import cn.novelstudio.module.billing.entity.ProductPlanEntity;
 import cn.novelstudio.module.billing.entity.UsageEventEntity;
 import cn.novelstudio.module.billing.entity.UsagePeriodSummaryEntity;
 import cn.novelstudio.module.billing.entity.UsagePeriodSummaryId;
+import cn.novelstudio.module.billing.entity.UserBalanceEntity;
 import cn.novelstudio.module.billing.repository.UsageEventRepository;
 import cn.novelstudio.module.billing.repository.UsagePeriodSummaryRepository;
+import cn.novelstudio.module.billing.repository.UserBalanceRepository;
 import cn.novelstudio.kernel.exception.ValidationException;
 import cn.novelstudio.module.billing.support.BillingPeriodSupport;
 import cn.novelstudio.module.billing.support.BillingRedisKeys;
@@ -29,6 +31,7 @@ public class UsageReportBiz extends BaseBiz {
     private final UsagePeriodSummaryRepository usagePeriodSummaryRepository;
     private final SubscriptionBiz subscriptionBiz;
     private final StringRedisTemplate redisTemplate;
+    private final UserBalanceRepository userBalanceRepo;
 
     @Transactional
     public void persistReport(UsageReportRequest request) {
@@ -70,18 +73,58 @@ public class UsageReportBiz extends BaseBiz {
         }
 
         String period = BillingPeriodSupport.currentPeriodYyyyMm();
-        upsertPeriodSummary(request.userId(), period, tokenDelta, cost, false);
+        long overageDelta = resolveOverageDelta(request, tokenDelta, cost, period);
+        upsertPeriodSummary(request.userId(), period, tokenDelta, cost, false, overageDelta);
         incrementRedis(request.userId(), period, tokenDelta, 0);
     }
 
     @Transactional
     public void recordRunStart(long userId) {
         String period = BillingPeriodSupport.currentPeriodYyyyMm();
-        upsertPeriodSummary(userId, period, 0L, 0L, true);
+        upsertPeriodSummary(userId, period, 0L, 0L, true, 0L);
         incrementRedis(userId, period, 0L, 1);
     }
 
-    private void upsertPeriodSummary(long userId, String period, long tokenDelta, long costDelta, boolean runInc) {
+    private long resolveOverageDelta(
+        UsageReportRequest request,
+        long tokenDelta,
+        long cost,
+        String period
+    ) {
+        if (cost <= 0 || Boolean.TRUE.equals(request.byok())) {
+            return 0L;
+        }
+        ProductPlanEntity plan = subscriptionBiz.resolvePlanForUser(request.userId());
+        if (!"overage".equals(plan.getOveragePolicy())) {
+            return 0L;
+        }
+        long tokensUsed = readRedisLong(BillingRedisKeys.usageTokensKey(request.userId(), period));
+        Long quota = plan.getMonthlyTokenQuota();
+        if (quota != null && (tokensUsed + tokenDelta) <= quota) {
+            return 0L;
+        }
+        int affected = userBalanceRepo.deduct(request.userId(), cost);
+        if (affected == 0) {
+            UserBalanceEntity balance = new UserBalanceEntity();
+            balance.setUserId(request.userId());
+            balance.setBalanceMicros(-cost);
+            try {
+                userBalanceRepo.save(balance);
+            } catch (Exception ignored) {
+                // concurrent insert — deduct retry on next report
+            }
+        }
+        return cost;
+    }
+
+    private void upsertPeriodSummary(
+        long userId,
+        String period,
+        long tokenDelta,
+        long costDelta,
+        boolean runInc,
+        long overageDelta
+    ) {
         ProductPlanEntity plan = subscriptionBiz.resolvePlanForUser(userId);
         UsagePeriodSummaryId id = new UsagePeriodSummaryId();
         id.setUserId(userId);
@@ -102,6 +145,9 @@ public class UsageReportBiz extends BaseBiz {
         if (runInc) {
             summary.setRunsUsed(summary.getRunsUsed() + 1);
         }
+        if (overageDelta > 0) {
+            summary.setOverageMicros(summary.getOverageMicros() + overageDelta);
+        }
         summary.setQuotaTokens(plan.getMonthlyTokenQuota());
         summary.setQuotaRuns(plan.getMonthlyRunQuota());
         usagePeriodSummaryRepository.save(summary);
@@ -117,6 +163,18 @@ public class UsageReportBiz extends BaseBiz {
             String key = BillingRedisKeys.usageRunsKey(userId, period);
             redisTemplate.opsForValue().increment(key, runDelta);
             redisTemplate.expire(key, REDIS_TTL);
+        }
+    }
+
+    private long readRedisLong(String key) {
+        String raw = redisTemplate.opsForValue().get(key);
+        if (raw == null || raw.isBlank()) {
+            return 0L;
+        }
+        try {
+            return Long.parseLong(raw);
+        } catch (NumberFormatException ex) {
+            return 0L;
         }
     }
 

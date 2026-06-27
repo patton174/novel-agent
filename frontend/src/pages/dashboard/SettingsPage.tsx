@@ -1,19 +1,26 @@
 import { lazy, Suspense } from 'react'
-import { useIsDesktop } from '@/components/pro/useIsDesktop'
+import { Navigate, useParams } from 'react-router-dom'
 import { LayoutOutletSkeleton } from '@/components/loading/LayoutOutletSkeleton'
+import {
+  isSettingsSection,
+  SETTINGS_DEFAULT_SECTION,
+} from './settings/settingsSections'
 
-const Desktop = lazy(() =>
-  import('./settings/SettingsDesktop').then((m) => ({ default: m.SettingsDesktop })),
-)
-const Mobile = lazy(() =>
-  import('./settings/SettingsMobile').then((m) => ({ default: m.SettingsMobile })),
+const SettingsSectionPage = lazy(() =>
+  import('./settings/SettingsSectionPage').then((m) => ({ default: m.SettingsSectionPage })),
 )
 
 export default function SettingsPage() {
-  const isDesktop = useIsDesktop()
+  const { section: sectionParam } = useParams<{ section: string }>()
+  const section = isSettingsSection(sectionParam) ? sectionParam : null
+
+  if (!section) {
+    return <Navigate to={`/dashboard/settings/${SETTINGS_DEFAULT_SECTION}`} replace />
+  }
+
   return (
     <Suspense fallback={<LayoutOutletSkeleton />}>
-      {isDesktop ? <Desktop /> : <Mobile />}
+      <SettingsSectionPage section={section} />
     </Suspense>
   )
 }

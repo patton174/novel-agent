@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { StoredMediaPreview } from '@/components/media/StoredMediaPreview'
 import { ActivityHeatmap } from '@/components/dashboard/ActivityHeatmap'
 import { DashboardActivityTrendChart } from '@/components/dashboard/DashboardActivityTrendChart'
 import { ProChartKpi } from '@/components/pro/ProChartKpi'
@@ -165,13 +166,17 @@ export function DashboardHomeMobile() {
                 key={novel.novelId}
                 className="flex items-center gap-3 py-3 transition-colors hover:bg-surface-hover"
               >
-                {novel.coverUrl ? (
-                  <img
-                    src={novel.coverUrl}
-                    alt=""
-                    className="size-10 shrink-0 rounded-md object-cover ring-1 ring-border"
-                    loading="lazy"
-                  />
+                {novel.hasCover || novel.coverStorageKey || novel.coverUrl ? (
+                  <div className="size-10 shrink-0 overflow-hidden rounded-md ring-1 ring-border">
+                    <StoredMediaPreview
+                      storageKey={novel.coverStorageKey}
+                      fallbackUrl={novel.coverUrl}
+                      alt=""
+                      animateReveal={false}
+                      className="size-full"
+                      loadingClassName="size-10"
+                    />
+                  </div>
                 ) : (
                   <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary ring-1 ring-border">
                     <ProIconNovel size={16} />

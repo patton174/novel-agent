@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from typing import Any, Literal
 
 from app.agent.backend.memory_catalog import (
@@ -36,6 +37,57 @@ _DIALOGUE_MAX = 1600
 _THINK_SUMMARY_MAX = 1200
 _CHAPTER_FOCUS_MIN = 12
 _TRANSCRIPT_TAIL = 40
+
+LIBRARY_BLOCK_MAX_CHARS = 6000
+MAX_CHAPTER_TITLES = 80
+SUMMARY_MAX_CHARS = 800
+_LIBRARY_HINT = (
+    "用户 @引用的参考书目。需要书中细节时，用 SearchKnowledge 工具并设 scope=book:<catalog_novel_id> 检索。"
+)
+
+
+def _truncate_summary(summary: str) -> str:
+    text = str(summary or "")
+    if len(text) <= SUMMARY_MAX_CHARS:
+        return text
+    return text[:SUMMARY_MAX_CHARS] + "…"
+
+
+def _truncate_chapter_titles(titles: list[Any]) -> list[Any]:
+    clean = [str(title) for title in titles if str(title).strip()]
+    if len(clean) <= MAX_CHAPTER_TITLES:
+        return clean
+    extra = len(clean) - MAX_CHAPTER_TITLES
+    return clean[:MAX_CHAPTER_TITLES] + [f"…(+{extra} more)"]
+
+
+def _format_referenced_book(book: dict[str, Any]) -> dict[str, Any]:
+    titles = book.get("chapterTitles") or book.get("chapter_titles") or []
+    chapter_titles = _truncate_chapter_titles(titles if isinstance(titles, list) else [])
+    return {
+        "title": book.get("title", ""),
+        "summary": _truncate_summary(str(book.get("summary", ""))),
+        "chapter_titles": chapter_titles,
+        "catalog_novel_id": book.get("catalogNovelId")
+        or book.get("catalog_novel_id")
+        or "",
+        "index_status": book.get("indexStatus") or book.get("index_status") or "",
+    }
+
+
+def _build_library_block(referenced_books: list[dict[str, Any]]) -> dict[str, Any]:
+    books: list[dict[str, Any]] = []
+    base = {"books": books, "hint": _LIBRARY_HINT}
+    base_len = len(json.dumps(base, ensure_ascii=False))
+    for book in referenced_books:
+        if not isinstance(book, dict):
+            continue
+        formatted = _format_referenced_book(book)
+        candidate = {"books": books + [formatted], "hint": _LIBRARY_HINT}
+        if len(json.dumps(candidate, ensure_ascii=False)) > LIBRARY_BLOCK_MAX_CHARS:
+            break
+        books.append(formatted)
+    return base
 
 
 def assemble_agent_context(
@@ -149,6 +201,11 @@ def assemble_agent_context(
             memory["create_memory_ok_count"] = ok_creates
     if memory:
         out["memory"] = memory
+
+    if ctx.referenced_books:
+        out["library"] = _build_library_block(
+            [b for b in ctx.referenced_books if isinstance(b, dict)]
+        )
 
     session: dict[str, Any] = {}
     think = think_text_from_rows(

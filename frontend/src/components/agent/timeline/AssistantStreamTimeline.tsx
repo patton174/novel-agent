@@ -1,4 +1,5 @@
 import { Fragment, useMemo, useState, type ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import type {
   AgentChoiceOption,
   AgentStepState,
@@ -71,6 +72,7 @@ export function AssistantStreamTimeline({
   streamingMessageContent,
   segmentOpen = false,
 }: AssistantStreamTimelineProps) {
+  const { t } = useTranslation('editor')
   const isMobile = useAppMobile()
   const [multiSelectDrafts, setMultiSelectDrafts] = useState<Record<string, AgentChoiceOption[]>>({})
   const [singleSelectDrafts, setSingleSelectDrafts] = useState<Record<string, AgentChoiceOption | undefined>>({})
@@ -440,7 +442,7 @@ export function AssistantStreamTimeline({
             stepId: block.stepId,
             type: 'tool',
             status: 'started',
-            title: '执行中…',
+            title: t('agent.timeline.executing'),
           }
         }
       }
@@ -521,7 +523,9 @@ export function AssistantStreamTimeline({
               {!showAskUser && step.interaction?.type === 'multi_select' && showChoices && (
                 <div className={MULTI_SELECT_ACTIONS}>
                   <span className={MULTI_SELECT_HINT}>
-                    已选 {(multiSelectDrafts[step.stepId] ?? []).length} 项
+                    {t('agent.timeline.multiSelectCount', {
+                      count: (multiSelectDrafts[step.stepId] ?? []).length,
+                    })}
                   </span>
                   <EditorButton
                     variant="tool"
@@ -534,13 +538,13 @@ export function AssistantStreamTimeline({
                       })
                     }
                   >
-                    提交选择
+                    {t('agent.timeline.submitChoices')}
                   </EditorButton>
                 </div>
               )}
               {!showAskUser && step.interaction?.type === 'single_select' && showChoices && (
                 <div className={MULTI_SELECT_ACTIONS}>
-                  <span className={MULTI_SELECT_HINT}>点选一项即可继续</span>
+                  <span className={MULTI_SELECT_HINT}>{t('agent.timeline.singleSelectHint')}</span>
                 </div>
               )}
               {!showAskUser && (showUserInputOnly || step.interaction?.allow_custom) && (
@@ -552,7 +556,7 @@ export function AssistantStreamTimeline({
                     type="text"
                     className={CUSTOM_INPUT}
                     value={customDrafts[step.stepId] ?? ''}
-                    placeholder="输入你的创作方向或补充说明…"
+                    placeholder={t('agent.timeline.customInputPlaceholder')}
                     onChange={(e) =>
                       setCustomDrafts((prev) => ({
                         ...prev,
@@ -571,7 +575,7 @@ export function AssistantStreamTimeline({
                       onSubmitInteraction?.(step.interaction, { customText: text })
                     }}
                   >
-                    提交自定义方向
+                    {t('agent.timeline.submitCustom')}
                   </EditorButton>
                 </div>
               )}
@@ -582,8 +586,8 @@ export function AssistantStreamTimeline({
               selection={resolvedSelection}
               badge={
                 isAskUserTool(step.toolName) || step.interaction?.type === 'ask_user'
-                  ? '你的回答'
-                  : '你的选择'
+                  ? t('agent.timeline.yourAnswer')
+                  : t('agent.timeline.yourChoice')
               }
             />
           ) : null}

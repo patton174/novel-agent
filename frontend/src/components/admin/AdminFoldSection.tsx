@@ -2,12 +2,14 @@ import { useState, type ReactNode } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-/** 管理端折叠区块：桌面/移动端均可收起，节省纵向空间 */
+/** 管理端折叠区块：支持受控模式（手风琴） */
 export function AdminFoldSection({
   title,
   description,
   action,
   defaultOpen = false,
+  open: openProp,
+  onOpenChange,
   badge,
   className,
   bodyClassName,
@@ -17,12 +19,21 @@ export function AdminFoldSection({
   description?: string
   action?: ReactNode
   defaultOpen?: boolean
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
   badge?: ReactNode
   className?: string
   bodyClassName?: string
   children: ReactNode
 }) {
-  const [open, setOpen] = useState(defaultOpen)
+  const [internalOpen, setInternalOpen] = useState(defaultOpen)
+  const controlled = openProp !== undefined
+  const open = controlled ? openProp : internalOpen
+
+  const setOpen = (next: boolean) => {
+    if (!controlled) setInternalOpen(next)
+    onOpenChange?.(next)
+  }
 
   return (
     <div className={cn('overflow-hidden rounded-lg border border-border bg-white shadow-sm', className)}>
@@ -32,10 +43,10 @@ export function AdminFoldSection({
             type="button"
             className="flex min-w-0 flex-1 items-center gap-1.5 text-left"
             aria-expanded={open}
-            onClick={() => setOpen((v) => !v)}
+            onClick={() => setOpen(!open)}
           >
             <ChevronDown
-              className={cn('size-3.5 shrink-0 text-muted-foreground transition-transform', open && 'rotate-180')}
+              className={cn('size-3.5 shrink-0 text-muted-foreground transition-transform duration-300', open && 'rotate-180')}
             />
             <span className="truncate text-sm font-semibold">{title}</span>
             {badge ? <span className="shrink-0">{badge}</span> : null}
@@ -48,7 +59,16 @@ export function AdminFoldSection({
         </div>
         {open && description ? <p className="mt-1 pl-5 text-xs leading-snug text-muted-foreground">{description}</p> : null}
       </div>
-      {open ? <div className={cn('px-3.5 py-3', bodyClassName)}>{children}</div> : null}
+      <div
+        className={cn(
+          'grid transition-[grid-template-rows] duration-300 ease-in-out',
+          open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]',
+        )}
+      >
+        <div className="overflow-hidden">
+          <div className={cn('px-3.5 py-3', bodyClassName)}>{children}</div>
+        </div>
+      </div>
     </div>
   )
 }

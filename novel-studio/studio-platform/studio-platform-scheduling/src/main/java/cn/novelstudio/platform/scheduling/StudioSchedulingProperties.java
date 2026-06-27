@@ -14,4 +14,7 @@ public class StudioSchedulingProperties {
 
     /** 默认任务锁 TTL（秒），应大于单次任务最长执行时间。 */
     private long defaultLockSeconds = 300;
+
+    /** 实例标识；空则回退 HOSTNAME / 本机 hostname。 */
+    private String instanceId;
 }

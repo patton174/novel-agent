@@ -34,10 +34,6 @@ public class ModelBootstrap {
                 env.getProperty("OPENAI_MODEL", "deepseek-chat"),
                 env.getProperty("OPENAI_BASE_URL", ""),
                 env.getProperty("OPENAI_API_KEY", ""));
-            seed("crawl", "platform-crawl", messages.get("model.bootstrap.platform_crawl"), "openai", "openai",
-                env.getProperty("CRAWL_LLM_MODEL", "agnes-2.0-flash"),
-                env.getProperty("CRAWL_LLM_BASE_URL", ""),
-                env.getProperty("CRAWL_LLM_API_KEY", ""));
             seed("embedding", "platform-embed", messages.get("model.bootstrap.platform_embedding"), "openai", "openai",
                 env.getProperty("RAG_EMBED_MODEL", "text-embedding-3-small"),
                 env.getProperty("RAG_EMBED_BASE_URL", ""),

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Search } from 'lucide-react'
+import { AdminSearchInput } from '@/components/admin/AdminFormControls'
 import {
   adminCreateCredential,
   adminCreateModel,
@@ -15,9 +15,8 @@ import {
   adminUpdateCredential,
   adminUpdateModel,
 } from '@/api/modelApi'
-import { AppPageIntro, AppPageStack } from '@/components/layout/AppPageStack'
+import { AppPageStack } from '@/components/layout/AppPageStack'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { AppModalShell } from '@/components/ui/AppModalShell'
 import { DialogFooter } from '@/components/ui/dialog'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -27,7 +26,6 @@ import { confirmAction } from '@/stores/appDialog'
 import { cn } from '@/lib/utils'
 import { MODEL_PROTOCOL } from '@/config/modelProviderPresets'
 import type { AiModel, ModelCredential, ModelType } from '@/types/model'
-import { ProIconAdminSystem } from '@/components/pro/icons/proIcons'
 import { ModelAdminCard, type ModelTestResult } from '@/components/model/ModelAdminCard'
 import { ModelAdminSortableList } from '@/components/model/ModelAdminSortableList'
 import {
@@ -47,7 +45,7 @@ import { ModelCredentialCard } from '@/components/model/ModelCredentialCard'
 import { filterAiModels } from '@/utils/modelSelection'
 import { modelPixelActionBtnClass } from '@/lib/modelPixelClasses'
 
-const TYPES: ModelType[] = ['llm', 'embedding', 'crawl', 'image']
+const TYPES: ModelType[] = ['llm', 'embedding', 'image']
 
 export default function AdminModelsPage() {
   useMarkRouteSeen()
@@ -395,10 +393,13 @@ export default function AdminModelsPage() {
     }
   }
 
-  const renderModelCard = (m: AiModel) => (
+  const renderModelCard = (m: AiModel, grouped = false) => (
     <ModelAdminCard
       key={m.id}
       model={m}
+      compact={grouped}
+      hideApiKey={grouped}
+      hideProviderIcon={grouped}
       busy={busy === m.id}
       testing={testingId === m.id}
       testResult={testResults[m.id]}
@@ -412,13 +413,6 @@ export default function AdminModelsPage() {
 
   return (
     <AppPageStack>
-      <AppPageIntro
-        eyebrow={t('common:nav.adminModels')}
-        title={t('model.title')}
-        icon={ProIconAdminSystem}
-      />
-      <p className="font-mono text-sm text-muted-foreground">{t('model.description')}</p>
-
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-2">
           {TYPES.map((ty) => (
@@ -446,21 +440,18 @@ export default function AdminModelsPage() {
       </div>
 
       {models && models.length > 0 ? (
-        <div className="relative max-w-md">
-          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={t('model.searchPlaceholder')}
-            className="border-2 border-black pl-9 font-mono text-sm shadow-soft"
-          />
-        </div>
+        <AdminSearchInput
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder={t('model.searchPlaceholder')}
+          className="max-w-md"
+        />
       ) : null}
 
       {models === null ? (
         <div className="space-y-2">
-          <Skeleton className="h-20 w-full" />
-          <Skeleton className="h-20 w-full" />
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-12 w-full" />
         </div>
       ) : models.length === 0 && credentials.length === 0 ? (
         <div className="flex flex-col items-start gap-3 border-2 border-dashed border-black/40 bg-muted/20 px-4 py-8">
@@ -475,11 +466,11 @@ export default function AdminModelsPage() {
           </div>
         </div>
       ) : showGrouped ? (
-        <div className="space-y-3">
+        <div className="space-y-2">
           {credentials.map((cred) => {
             const credModels = modelsByCredential.get(cred.id) ?? []
             return (
-              <div key={cred.id} className="space-y-2">
+              <div key={cred.id} className="space-y-1">
                 <ModelCredentialCard
                   credential={cred}
                   addModelLabel={t('dashboard:model.credentialAddModel')}
@@ -491,18 +482,18 @@ export default function AdminModelsPage() {
                   onDelete={() => void handleDeleteCredential(cred)}
                 />
                 {credModels.length > 0 ? (
-                  <div className="ml-3 space-y-2 border-l-2 border-foreground/20 pl-3">
-                    {credModels.map(renderModelCard)}
+                  <div className="ml-2 space-y-1 border-l-2 border-foreground/15 pl-2">
+                    {credModels.map((m) => renderModelCard(m, true))}
                   </div>
                 ) : (
-                  <div className="ml-3 flex flex-wrap items-center gap-2 border-l-2 border-dashed border-foreground/15 pl-3">
-                    <p className="font-mono text-[11px] text-muted-foreground">
+                  <div className="ml-2 flex flex-wrap items-center gap-2 border-l-2 border-dashed border-foreground/15 pl-2 py-0.5">
+                    <p className="font-mono text-[10px] text-muted-foreground">
                       {t('dashboard:model.credentialNoModels')}
                     </p>
                     <button
                       type="button"
                       onClick={() => openCreateModel(cred.id)}
-                      className={modelPixelActionBtnClass('h-7 px-2')}
+                      className={modelPixelActionBtnClass()}
                     >
                       {t('dashboard:model.credentialAddModel')}
                     </button>
@@ -518,7 +509,7 @@ export default function AdminModelsPage() {
                 {t('dashboard:model.byokLegacyGroup')}
               </p>
               {search.trim() ? (
-                <div className="space-y-3">{legacyModels.map(renderModelCard)}</div>
+                <div className="space-y-1.5">{legacyModels.map((m) => renderModelCard(m))}</div>
               ) : (
                 <ModelAdminSortableList
                   models={legacyModels}
@@ -547,7 +538,7 @@ export default function AdminModelsPage() {
           {t('model.searchEmpty')}
         </div>
       ) : (
-        <div className="space-y-3">{filteredModels.map(renderModelCard)}</div>
+        <div className="space-y-1.5">{filteredModels.map((m) => renderModelCard(m))}</div>
       )}
 
       <AppModalShell

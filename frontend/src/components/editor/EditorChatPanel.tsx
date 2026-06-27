@@ -1,7 +1,7 @@
 import { useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useComposerSafeInset } from '../../hooks/editor/useComposerSafeInset'
-import { ChatComposer } from '../chat/ChatComposer'
+import { ChatComposer, type ReferencedBookChip } from '../chat/ChatComposer'
 import type {
   AgentChoiceOption,
   AgentContextUsage,
@@ -56,6 +56,8 @@ export interface EditorChatPanelProps {
   hideComposer?: boolean
   /** 移动端底部 TabBar 占位（px） */
   mobileBottomInset?: number
+  referencedBooks?: ReferencedBookChip[]
+  onReferencedBooksChange?: (books: ReferencedBookChip[]) => void
 }
 
 export function EditorChatPanel({
@@ -87,6 +89,8 @@ export function EditorChatPanel({
   marketingPinOrchestration = false,
   hideComposer = false,
   mobileBottomInset = 0,
+  referencedBooks = [],
+  onReferencedBooksChange,
 }: EditorChatPanelProps) {
   const { t } = useTranslation(['editor'])
   const isInitial = isInitialChatView(messages, activeNovel)
@@ -183,6 +187,8 @@ export function EditorChatPanel({
                   onStreamPause={onStreamPause}
                   onStreamAbort={onStreamAbort}
                   contextUsage={contextUsage}
+                  referencedBooks={referencedBooks}
+                  onReferencedBooksChange={onReferencedBooksChange}
                 />
               </div>
             ) : null}
@@ -223,6 +229,8 @@ export function EditorChatPanel({
                 onStreamPause={onStreamPause}
                 onStreamAbort={onStreamAbort}
                 contextUsage={contextUsage}
+                referencedBooks={referencedBooks}
+                onReferencedBooksChange={onReferencedBooksChange}
               />
             </div>
           </div>

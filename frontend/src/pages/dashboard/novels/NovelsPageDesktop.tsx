@@ -1,18 +1,27 @@
 import { Link } from 'react-router-dom'
-import { BookOpen, ImagePlus, Plus, Sparkles } from 'lucide-react'
-import { AppEmptyState, AppPageIntro, AppPageStack } from '@/components/layout/AppPageStack'
+import { Plus, Sparkles } from 'lucide-react'
+import {
+  AppEmptyState,
+  AppPageIntro,
+  AppPageStack,
+  AppShellCard,
+  AppShellCardBody,
+  AppShellCardHeader,
+} from '@/components/layout/AppPageStack'
 import { CoverGenerateDialog } from '@/components/dashboard/CoverGenerateDialog'
+import { NovelWorkCard, NovelWorkCardSkeleton } from '@/components/dashboard/NovelWorkCard'
 import { Button } from '@/components/ui/button'
 import { InlineTitleSkeleton } from '@/components/loading/PageSkeletons'
-import { TableActionBar, TableActionButton } from '@/components/shared/TableActions'
 import { ProPagination } from '@/components/pro/ProPagination'
-import { ProColumn, ProTable } from '@/components/pro/ProTable'
 import { useMarkRouteSeen } from '@/hooks/useMarkRouteSeen'
 import { useTranslation } from 'react-i18next'
-import { APP_BTN_MD, APP_BTN_OUTLINE_FULL } from '@/lib/appButtonTokens'
-import { EDITOR_CREATE_HREF, editorNovelHref } from '@/lib/editorRoutes'
-import { type DashboardNovel } from '@/api/dashboardApi'
-import { formatNovelDate, useNovelsPage } from './useNovelsPage'
+import { APP_BTN_MD } from '@/lib/appButtonTokens'
+import { cn } from '@/lib/utils'
+import { EDITOR_CREATE_HREF } from '@/lib/editorRoutes'
+import { useNovelsPage } from './useNovelsPage'
+
+const CARD_GRID_CLASS =
+  'grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
 
 export function NovelsPageDesktop() {
   const { t } = useTranslation(['dashboard'])
@@ -31,68 +40,8 @@ export function NovelsPageDesktop() {
     handleGenerateCover,
   } = useNovelsPage()
 
-  // DashboardNovel 不携带章节数字段（fetchNovels 不返回），列保留占位以贴合表头约定
-  const columns: ProColumn<DashboardNovel>[] = [
-    {
-      key: 'title',
-      header: t('dashboard:novels.colTitle'),
-      render: (novel) => (
-        <span className="line-clamp-1 font-medium text-foreground" title={novel.title}>
-          {novel.title}
-        </span>
-      ),
-    },
-    {
-      key: 'genre',
-      header: t('dashboard:novels.colGenre'),
-      render: (novel) =>
-        novel.genre ? (
-          <span className="inline-flex w-fit rounded-full bg-muted px-2.5 py-0.5 text-ui-sm font-medium text-foreground/70">
-            {novel.genre}
-          </span>
-        ) : (
-          <span className="text-muted-foreground">—</span>
-        ),
-    },
-    {
-      key: 'chapters',
-      header: t('dashboard:novels.colChapters'),
-      render: () => <span className="text-muted-foreground">—</span>,
-    },
-    {
-      key: 'updatedAt',
-      header: t('dashboard:novels.colUpdatedAt'),
-      render: (novel) => (
-        <span className="text-muted-foreground">{formatNovelDate(novel.updatedAt)}</span>
-      ),
-    },
-    {
-      key: 'actions',
-      header: t('dashboard:novels.colActions'),
-      align: 'right',
-      render: (novel) => {
-        const isGenerating = generatingId === novel.id
-        return (
-          <TableActionBar align="end">
-            <TableActionButton
-              type="button"
-              disabled={isGenerating}
-              onClick={() => setDialogNovel(novel)}
-            >
-              <ImagePlus className="size-4" />
-              {isGenerating ? '…' : novel.coverUrl ? t('dashboard:novels.regenCover') : t('dashboard:novels.genCover')}
-            </TableActionButton>
-            <TableActionButton asChild>
-              <Link to={editorNovelHref(novel.id)}>{t('dashboard:novels.continueWriting')}</Link>
-            </TableActionButton>
-          </TableActionBar>
-        )
-      },
-    },
-  ]
-
   return (
-    <AppPageStack>
+    <AppPageStack className="gap-8">
       <CoverGenerateDialog
         open={dialogNovel != null}
         novelId={dialogNovel?.id ?? null}
@@ -102,11 +51,9 @@ export function NovelsPageDesktop() {
             setDialogNovel(null)
           }
         }}
-        onConfirm={async (prompt) => {
-          if (!dialogNovel) {
-            return
-          }
-          await handleGenerateCover(dialogNovel.id, prompt)
+        onGenerate={(payload) => {
+          if (!dialogNovel) return
+          handleGenerateCover(dialogNovel.id, payload)
         }}
       />
 
@@ -116,12 +63,11 @@ export function NovelsPageDesktop() {
           loading ? (
             <InlineTitleSkeleton className="h-8 w-40" />
           ) : (
-            t('dashboard:novels.titleCount', { count: total })
+            t('dashboard:novels.pageTitle')
           )
         }
-        icon={BookOpen}
         action={
-          <Button asChild className={`px-5 ${APP_BTN_MD}`}>
+          <Button asChild className={cn('px-5', APP_BTN_MD)}>
             <Link to={EDITOR_CREATE_HREF}>
               <Plus className="mr-2 size-4" />
               {t('dashboard:novels.createNovel')}
@@ -131,7 +77,11 @@ export function NovelsPageDesktop() {
       />
 
       {loading ? (
-        <ProTable columns={columns} data={[]} rowKey="id" loading skeletonRows={5} />
+        <div className={CARD_GRID_CLASS}>
+          {Array.from({ length: 10 }).map((_, i) => (
+            <NovelWorkCardSkeleton key={i} />
+          ))}
+        </div>
       ) : total === 0 ? (
         <AppEmptyState
           icon={Sparkles}
@@ -141,12 +91,9 @@ export function NovelsPageDesktop() {
           }
           action={
             !error ? (
-              <Button
-                asChild
-                className={`${APP_BTN_OUTLINE_FULL} text-foreground hover:border-primary/40 hover:bg-primary/5 hover:text-primary`}
-              >
+              <Button asChild className={APP_BTN_MD}>
                 <Link to={EDITOR_CREATE_HREF}>
-                  <Plus className="mr-2 size-5" />
+                  <Plus className="mr-2 size-4" />
                   {t('dashboard:novels.createFirst')}
                 </Link>
               </Button>
@@ -154,20 +101,33 @@ export function NovelsPageDesktop() {
           }
         />
       ) : (
-        <>
-          <ProTable
-            columns={columns}
-            data={pagedNovels}
-            rowKey="id"
-            emptyText={t('dashboard:novels.emptyTitle')}
+        <AppShellCard>
+          <AppShellCardHeader
+            title={t('dashboard:novels.pageTitle')}
+            description={t('dashboard:novels.listDesc', { count: total })}
           />
-          <ProPagination
-            page={page}
-            pageSize={pageSize}
-            total={total}
-            onPageChange={setPage}
-          />
-        </>
+          <AppShellCardBody className="space-y-4">
+            <div className={CARD_GRID_CLASS}>
+              {pagedNovels.map((novel) => (
+                <NovelWorkCard
+                  key={novel.id}
+                  novel={novel}
+                  isGenerating={generatingId === novel.id}
+                  onGenerateCover={() => setDialogNovel(novel)}
+                />
+              ))}
+            </div>
+            <div className="border-t-2 border-black pt-2">
+              <ProPagination
+                page={page}
+                pageSize={pageSize}
+                total={total}
+                onPageChange={setPage}
+                className="px-0"
+              />
+            </div>
+          </AppShellCardBody>
+        </AppShellCard>
       )}
     </AppPageStack>
   )

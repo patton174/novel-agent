@@ -1,6 +1,7 @@
 import { PixelIcons } from '@/components/icons/PixelIcons'
 import { cn } from '@/lib/utils'
 import { editorPixelIconButtonClass } from '@/lib/editorPixelClasses'
+import { useTranslation } from 'react-i18next'
 import { useThemeStore, type ThemeMode } from '@/stores/themeStore'
 
 const ORDER: ThemeMode[] = ['light', 'dark', 'system']
@@ -18,6 +19,7 @@ interface MarketingThemeToggleProps {
 
 /** 营销顶栏：点击循环 浅色 → 深色 → 跟随系统 */
 export function MarketingThemeToggle({ compact = false, className }: MarketingThemeToggleProps) {
+  const { t } = useTranslation('common')
   const theme = useThemeStore((s) => s.theme)
   const setTheme = useThemeStore((s) => s.setTheme)
   const Icon = ICONS[theme] ?? PixelIcons.Monitor
@@ -28,14 +30,18 @@ export function MarketingThemeToggle({ compact = false, className }: MarketingTh
   }
 
   const label =
-    theme === 'light' ? '浅色' : theme === 'dark' ? '深色' : '跟随系统'
+    theme === 'light'
+      ? t('theme.light')
+      : theme === 'dark'
+        ? t('theme.dark')
+        : t('theme.system')
 
   return (
     <button
       type="button"
       onClick={cycle}
-      aria-label={`主题：${label}`}
-      title={`主题：${label}`}
+      aria-label={t('theme.label', { mode: label })}
+      title={t('theme.label', { mode: label })}
       className={cn(
         editorPixelIconButtonClass(),
         compact ? 'size-8' : 'h-9 gap-1.5 px-3 text-sm font-medium normal-case text-foreground',

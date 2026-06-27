@@ -86,7 +86,10 @@ export default function RevenuePage() {
           { label: t('admin:revenue.monthRevenue'), value: formatCostMicros(overview.monthRevenueMicros) },
           {
             label: t('admin:revenue.activeSubs'),
-            value: subsSummary || t('admin:revenue.noSubs'),
+            value: Object.values(overview.activeSubscriptions)
+              .reduce((a, b) => a + b, 0)
+              .toLocaleString(),
+            hint: subsSummary || t('admin:revenue.noSubs'),
           },
         ]}
       />

@@ -78,7 +78,13 @@ async def embed_texts(texts: Sequence[str]) -> list[list[float]]:
 
     if provider in {"minimax", "minimaxi"}:
         try:
-            return await _embed_minimax(list(texts), embed_type="db")
+            return await _embed_minimax(
+                list(texts),
+                embed_type="db",
+                api_key=(embed_cfg or {}).get("api_key"),
+                model=(embed_cfg or {}).get("model_name"),
+                base_url=(embed_cfg or {}).get("base_url"),
+            )
         except Exception as exc:
             logger.error("embedding provider failed: %s", exc)
             if settings.rag_embed_fail_fast:
@@ -119,11 +125,13 @@ async def _embed_minimax(
     *,
     embed_type: str,
     base_url: str | None = None,
+    api_key: str | None = None,
+    model: str | None = None,
 ) -> list[list[float]]:
     import httpx
 
-    api_key = _resolve_embed_api_key()
-    if not api_key:
+    resolved_key = (api_key or _resolve_embed_api_key()).strip()
+    if not resolved_key:
         raise RuntimeError("RAG_EMBED_API_KEY not configured")
 
     url = _resolve_minimax_embed_url(base_url or _resolve_embed_base_url())
@@ -139,9 +147,9 @@ async def _embed_minimax(
     async with httpx.AsyncClient(timeout=30.0) as client:
         response = await client.post(
             url,
-            headers={"Authorization": f"Bearer {api_key}"},
+            headers={"Authorization": f"Bearer {resolved_key}"},
             json={
-                "model": _resolve_minimax_model(),
+                "model": (model or _resolve_minimax_model()).strip(),
                 "type": embed_type,
                 "texts": texts,
             },

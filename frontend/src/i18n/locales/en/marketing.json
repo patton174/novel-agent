@@ -10,7 +10,9 @@
     "demo": "Product Demo",
     "capabilities": "Core Capabilities",
     "menu": "Open Menu",
-    "close": "Close Menu"
+    "close": "Close Menu",
+    "mainNav": "Main navigation",
+    "brandHome": "{{brand}} home"
   },
   "footer": {
     "ctaTitle": "Ready to Start Your Next Chapter?",
@@ -44,6 +46,9 @@
     },
     "feasibilityNote": "Not sure if it's right for you? Check out",
     "feasibilityLink": "Use Cases & Comparisons",
+    "applyUpgrade": "Request upgrade",
+    "redeemHint": "Have a redemption code?",
+    "redeemLink": "Redeem on the billing page",
     "checkout": {
       "title": "Confirm order",
       "pageTitle": "Checkout",
@@ -54,10 +59,16 @@
       "planLabel": "Plan",
       "amountLabel": "Amount due",
       "statusLabel": "Status",
+      "expiresLabel": "Time left",
+      "expired": "Expired — return to place a new order",
       "selectMethod": "Payment method",
       "choosePlanHint": "Select a plan above to open the checkout page.",
       "missingParamsTitle": "Missing checkout parameters",
-      "missingParamsSubtitle": "Please choose a plan on the pricing page first."
+      "missingParamsSubtitle": "Please choose a plan on the pricing page first.",
+      "couponLabel": "Coupon code",
+      "couponPlaceholder": "Enter coupon code",
+      "couponApply": "Apply",
+      "couponHint": "Apply before paying. A new order will be created if needed."
     }
   },
   "recommend": {
@@ -276,6 +287,7 @@
       }
     },
     "danmaku": {
+      "sectionTag": "[ VOICES ]",
       "eyebrow": "Creator Voices",
       "title": "Real feedback from authors",
       "subtitle": "Comments from people using the workspace — scroll to read, no login required.",
@@ -292,6 +304,177 @@
       "sent": "Comment sent",
       "sentGuest": "Comment sent, thanks for sharing",
       "sendError": "Failed to send, please try again later"
+    }
+  },
+  "demo": {
+    "nav": {
+      "main": "Main navigation",
+      "home": "{{brand}} home"
+    },
+    "editor": {
+      "ariaLabel": "{{brand}} editor Agent demo",
+      "novel": { "title": "Gods Have a Price", "meta": "Fantasy · Serializing" },
+      "chapters": [
+        { "idx": "01", "title": "Awakening", "active": false },
+        { "idx": "02", "title": "Silver Moon Forest", "active": true },
+        { "idx": "03", "title": "Server-Unique", "active": false }
+      ],
+      "editorPrior": [
+        "Tang Yun stood at the Silver Moon Forest gate with only a rusty iron sword in his pack.",
+        "\"Continue Chapter 2\" — he stared at the Agent panel, waiting for the next payoff beat."
+      ],
+      "editorStream": [
+        "Rain slid from his hair; each drop rang like a bell against his heart.",
+        "He breathed deep and clenched his fists. Ten years — he'd finally waited for this day.",
+        "Shouts from the studio drifted in the distance while he looked down into his pack —"
+      ],
+      "thinkLines": [
+        "The user said \"continue Chapter 2\"; the prior text stopped at Awakening — bridge into Silver Moon Forest.",
+        "Suggested pacing: five mobs for guaranteed drops, then the server-unique enhancement stone payoff.",
+        "Risk: don't hand out too many mythic items at once — build contrast through volume."
+      ],
+      "orchTools": [
+        { "name": "think", "args": "Continuation entry analysis", "status": "success", "excerpt": "" },
+        { "name": "ReadMemory", "args": "Character bible · world", "status": "success", "excerpt": "Matched Tang_Yun, factions" },
+        { "name": "plan", "args": "Chapter 2 structure", "status": "success", "excerpt": "Opener → loot → hook" },
+        { "name": "WriteChapter", "args": "task: talent trial", "status": "loading", "excerpt": "" }
+      ],
+      "subagentTools": [
+        { "name": "ReadMemory", "args": "Card Tang_Yun", "status": "success", "excerpt": "No persona conflicts" },
+        { "name": "output", "args": "Proofread summary", "status": "success", "excerpt": "Synced to memory" }
+      ],
+      "streamTail": "The blade tip caught cold light, aimed at the sky.",
+      "editorTail": "Gear that had never appeared in any database glowed in the rain.",
+      "userPrompt": "Continue Chapter 2 into Silver Moon Forest — include a loot payoff beat.",
+      "composerPlaceholder": "Describe the scene or give an instruction…",
+      "browserUrl": "localhost:3000/editor?novel=Gods_Have_a_Price",
+      "planTool": "plan",
+      "waitingVariants": {
+        "orchestrate": "(Waiting for WriteChapter to stream prose…)",
+        "default": "(Agent running…)"
+      },
+      "labels": {
+        "thinking": "Thinking",
+        "inProgress": "In progress",
+        "planPrepareBefore": "About to call ",
+        "planPrepareAfter": " to generate steps…",
+        "orchTitle": "Running · Continue Chapter 2",
+        "memoryUpdateArgs": "Character consistency check",
+        "subagentHead": "Sub-agent · Character check",
+        "streamLabel": "WriteChapter · Streaming",
+        "editorTitle": "Chapter 2 · Silver Moon Forest",
+        "agentChrome": "Agent assistant",
+        "browserLive": "Agent running",
+        "session": "Continue · Chapter 2"
+      }
+    },
+    "capabilityMini": {
+      "orchTitle": "Running · Continue Chapter 2",
+      "streamArgs": "Streaming output",
+      "streamText": "Rain slid from his hair; each drop rang like a bell against his heart. He breathed deep and clenched his fists.",
+      "steps": [
+        { "name": "ReadMemory", "label": "Read character memory" },
+        { "name": "ReadChapter", "label": "Align Chapter 1 ending" },
+        { "name": "plan", "label": "Plan Chapter 2 structure" },
+        { "name": "WriteChapter", "label": "Stream prose into editor" }
+      ]
+    },
+    "cursor": {
+      "composerInput": "Plan, continue, retrieve anything…",
+      "windowEditor": "Editor",
+      "previewUrl": "localhost:3000 · Read",
+      "thinking": "Thinking {{seconds}}s",
+      "summaryLabel": "Summary",
+      "tasks": {
+        "continueCh2": { "name": "Continue Chapter 2", "time": "12m" },
+        "characterCheck": { "name": "Check character consistency", "timeActive": "In progress" },
+        "planCh3": { "name": "Plan Chapter 3 structure", "time": "Queued" },
+        "subagentWorld": { "name": "Sub-agent · World check", "time": "Parallel" }
+      },
+      "prompts": {
+        "hero": "Continue Chapter 2 into Silver Moon Forest.",
+        "prd": "From the outline, continue Chapter 2 — Silver Moon opener needs loot payoff; align Tang_Yun persona.",
+        "parallel": "Proofread character cards and draft Chapter 2, then update memory."
+      },
+      "steps": {
+        "readChapter": "Read chapter_01.md · world memory",
+        "searchCharacters": "Search character bible Tang_Yun, factions",
+        "generatePlan": "Generate plan: opener → loot → cliffhanger",
+        "spawnSubagent": "Spawn sub-agent memory_update · character check",
+        "readOutline": "Read outline.md",
+        "callPlan": "Invoke plan to generate steps",
+        "writeChapter": "WriteChapter streaming write",
+        "readMemoryFloat": "ReadMemory · character bible",
+        "writeChapterFloat": "WriteChapter · streaming output"
+      },
+      "narrative": "Five mobs first to validate 100% drop pacing, then the server-unique stone; prose streams into the editor and memory writes back.",
+      "fileChapter": "chapters/02_silver_moon.md",
+      "fileChapterShort": "02_silver_moon.md",
+      "subagentDone": "Sub-agent finished · 2 tools · 14s",
+      "summaryText": "Chapter 2 streamed in — 1,840 words; loot beat matches outline; chapter memory synced.",
+      "floatPrompt": "Continue Chapter 2 with a loot payoff",
+      "outlineTitle": "Chapter 2 outline",
+      "outlineLines": [
+        "1. Silver Moon Forest gate · atmosphere",
+        "2. First skirmish · 100% drop validation",
+        "3. Server-unique gear · cliffhanger"
+      ],
+      "prdPrompt": "From the outline, continue Chapter 2 — Silver Moon opener needs loot payoff.",
+      "preview": {
+        "title": "Gods Have a Price · Chapter 2",
+        "p1": "Tang Yun entered Silver Moon Forest as rain slid from his hair.",
+        "p2Before": "Each drop rang like a bell against his heart. He breathed deep and clenched his fists —",
+        "highlight": "gear in his pack that had never appeared in any database glowed in the rain.",
+        "streamLine": "The blade tip caught cold light, aimed at the sky."
+      },
+      "tabs": {
+        "outline": "outline.md",
+        "chapter": "chapter_02.md",
+        "memory": "memory/Tang_Yun"
+      },
+      "fileChipChapter": "chapter_02.md"
+    },
+    "storyScenes": {
+      "think": {
+        "tag": "Act I · Thinking chain",
+        "title": "Transparent thinking, visible like chat",
+        "body": "Before continuing, reason through plot: intent, context alignment, pacing and payoff — all streamed in the thinking panel.",
+        "bullets": [
+          "think tool in its own panel, not crowding the manuscript",
+          "Structured Markdown output, easy to scan",
+          "Auto-collapses when done — focus on orchestration and drafting"
+        ]
+      },
+      "orchestrate": {
+        "tag": "Act II · Orchestration",
+        "title": "Plan breaks down steps; tools line up",
+        "body": "From ReadMemory through plan to WriteChapter — the whole chain unfolds in one orchestration layer: scroll as storyboard, creation as footage.",
+        "bullets": [
+          "Live tool status: in progress / done",
+          "Args and summaries on one screen — traceable and reviewable",
+          "Long tasks can be hosted; resume syncs after disconnect"
+        ]
+      },
+      "subagent": {
+        "tag": "Act III · Sub-agents",
+        "title": "Split complex work; sub-agents run cleanly",
+        "body": "Character proofreading and memory writeback run in nested panels while the main chat stays clear — no cross-spam.",
+        "bullets": [
+          "Independent orchestration turns and tool trees",
+          "Deduped summaries, less repetition",
+          "Failures pinpoint to the sub-task"
+        ]
+      },
+      "stream": {
+        "tag": "Act IV · Streaming draft",
+        "title": "Chapter prose flows smoothly — WYSIWYG",
+        "body": "WriteChapter streams longform into the editor line by line; pause, follow up, or rewrite anytime.",
+        "bullets": [
+          "SSE push — low-latency visible output",
+          "Diff compare and one-click accept",
+          "Auto write-back to chapter memory when done"
+        ]
+      }
     }
   },
   "generic": {

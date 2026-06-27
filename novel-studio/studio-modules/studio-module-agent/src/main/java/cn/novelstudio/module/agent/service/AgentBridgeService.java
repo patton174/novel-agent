@@ -17,6 +17,8 @@ import cn.novelstudio.module.agent.mq.AgentRunMqPublisher;
 import cn.novelstudio.module.agent.orchestration.HostModeEventFanout;
 import cn.novelstudio.module.agent.orchestration.PgRunEventFanout;
 import cn.novelstudio.module.agent.orchestration.SseEventCodec;
+import cn.novelstudio.kernel.exception.BizException;
+import cn.novelstudio.module.agent.support.AgentLocaleMarkers;
 import cn.novelstudio.module.agent.util.AgentTextSanitizer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,6 +58,7 @@ public class AgentBridgeService {
     private final AgentModelResolver modelResolver;
     private final cn.novelstudio.platform.i18n.StudioMessages messages;
     private final cn.novelstudio.platform.i18n.ResultLocalizer resultLocalizer;
+    private final AgentLocaleMarkers localeMarkers;
 
     public AgentBridgeService(
         PythonAgentRunClient runClient,
@@ -77,7 +80,8 @@ public class AgentBridgeService {
         QuotaGateService quotaGateService,
         AgentModelResolver modelResolver,
         cn.novelstudio.platform.i18n.StudioMessages messages,
-        cn.novelstudio.platform.i18n.ResultLocalizer resultLocalizer
+        cn.novelstudio.platform.i18n.ResultLocalizer resultLocalizer,
+        AgentLocaleMarkers localeMarkers
     ) {
         this.runClient = runClient;
         this.contextAssembler = contextAssembler;
@@ -98,6 +102,7 @@ public class AgentBridgeService {
         this.modelResolver = modelResolver;
         this.messages = messages;
         this.resultLocalizer = resultLocalizer;
+        this.localeMarkers = localeMarkers;
     }
 
     public Flux<String> stream(Long userId, AgentStreamRequest request) {
@@ -110,7 +115,7 @@ public class AgentBridgeService {
         String messageId = AgentRunState.newMessageId();
         log.info("开始步进编排 userId={}, sessionId={}, runId={}, mode={}", userId, sessionId, runId, mode);
 
-        AssistantPersistCollector assistantCollector = new AssistantPersistCollector();
+        AssistantPersistCollector assistantCollector = new AssistantPersistCollector(localeMarkers.uiLineLabelAlternation());
         AtomicBoolean persisted = new AtomicBoolean(false);
         String finalSessionId = sessionId;
         boolean pgRun = runtimeProperties.isPgRunEnabled();
@@ -158,6 +163,7 @@ public class AgentBridgeService {
                 Map<String, Object> context = contextFuture.join();
                 context.put("model_config", modelConfig);
                 state = new AgentRunState(userId, finalSessionId, runId, messageId, request, context);
+                state.setInteractionLineFilter(line -> !localeMarkers.isNonPersistableInteractionLine(line));
                 if (pgRun) {
                     bootstrapPgRun(userId, finalSessionId, runId, messageId, request.message(), mode);
                 }
@@ -221,7 +227,7 @@ public class AgentBridgeService {
                     mode,
                     sanitizeAssistantText(assistantCollector.buildSanitized()),
                     "failed",
-                    ex.getMessage()
+                    resolvePersistError(ex)
                 );
             } finally {
                 runRegistry.unregister(runId);
@@ -334,10 +340,24 @@ public class AgentBridgeService {
     }
 
     private String sanitizeAssistantText(String raw) {
-        String clean = AgentTextSanitizer.sanitizeAssistantVisibleText(raw);
+        String clean = AgentTextSanitizer.sanitizeAssistantVisibleText(raw, localeMarkers.uiLineLabelAlternation());
         if (clean.isBlank()) {
             return messages.get("agent.stream.empty_assistant");
         }
         return clean;
+    }
+
+    private String resolvePersistError(Throwable ex) {
+        if (ex == null) {
+            return "agent.run.stream_error";
+        }
+        if (ex instanceof BizException biz && biz.hasMessageKey()) {
+            return biz.getMessageKey();
+        }
+        String msg = ex.getMessage();
+        if (msg != null && msg.matches("^[a-z][a-z0-9_.]*$")) {
+            return msg;
+        }
+        return "agent.run.stream_error";
     }
 }

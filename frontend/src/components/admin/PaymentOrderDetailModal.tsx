@@ -23,6 +23,7 @@ import {
   PixelTableActionButton,
 } from '@/components/pixel'
 import { AppSheetModal } from '@/components/ui/AppSheetModal'
+import { adminFormatLocale } from '@/components/admin/adminUiTokens'
 import { cn } from '@/lib/utils'
 import { appToast } from '@/stores/appToastStore'
 import { confirmAction } from '@/stores/appDialog'
@@ -41,7 +42,7 @@ export function PaymentOrderDetailModal({
   onClose,
   onUpdated,
 }: PaymentOrderDetailModalProps) {
-  const { t } = useTranslation(['admin'])
+  const { t, i18n } = useTranslation(['admin'])
   const [reason, setReason] = useState('')
   const [acting, setActing] = useState(false)
 
@@ -116,18 +117,18 @@ export function PaymentOrderDetailModal({
               </AdminStatusBadge>
               {order.remoteStatus && order.remoteStatus !== order.status ? (
                 <PixelBadge tone="muted" className="ml-2">
-                  remote: {order.remoteStatus}
+                  {t('admin:paymentOrders.remoteStatus', { status: order.remoteStatus })}
                 </PixelBadge>
               ) : null}
             </InfoRow>
-            <InfoRow label={t('admin:paymentOrders.colPayMethod')}>{order.payMethod ?? '—'}</InfoRow>
+            <InfoRow label={t('admin:paymentOrders.colPayMethod')}>{order.payMethod ?? t('admin:jobs.duration.dash')}</InfoRow>
             <InfoRow label={t('admin:paymentOrders.colCreated')}>
-              {new Date(order.createdAt).toLocaleString('zh-CN')}
+              {new Date(order.createdAt).toLocaleString(adminFormatLocale(i18n.language))}
             </InfoRow>
             <InfoRow label={t('admin:paymentOrders.colPaidAt')}>
-              {order.paidAt ? new Date(order.paidAt).toLocaleString('zh-CN') : '—'}
+              {order.paidAt ? new Date(order.paidAt).toLocaleString(adminFormatLocale(i18n.language)) : t('admin:jobs.duration.dash')}
             </InfoRow>
-            <InfoRow label={t('admin:paymentOrders.contactInfo')}>{order.contactInfo || '—'}</InfoRow>
+            <InfoRow label={t('admin:paymentOrders.contactInfo')}>{order.contactInfo || t('admin:jobs.duration.dash')}</InfoRow>
             <InfoRow label={t('admin:paymentOrders.colPlan')}>
               {order.planId ? (
                 <Link to={`/admin/billing/orders?planId=${order.planId}`} className="text-primary hover:underline">

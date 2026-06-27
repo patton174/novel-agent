@@ -1,4 +1,5 @@
 import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react'
+import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 
 export interface ProPaginationProps {
@@ -12,6 +13,7 @@ export interface ProPaginationProps {
 }
 
 export function ProPagination({ page, pageSize, total, onPageChange, className, disabled }: ProPaginationProps) {
+  const { t } = useTranslation('common')
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
   const start = total === 0 ? 0 : (page - 1) * pageSize + 1
   const end = Math.min(page * pageSize, total)
@@ -23,7 +25,7 @@ export function ProPagination({ page, pageSize, total, onPageChange, className, 
       <div className="flex items-center gap-1">
         <button
           type="button"
-          aria-label="上一页"
+          aria-label={t('a11y.paginationPrev')}
           disabled={prevDisabled}
           onClick={() => onPageChange(page - 1)}
           className={cn('inline-flex size-8 items-center justify-center rounded-lg border border-border/60 text-foreground transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-40')}
@@ -33,7 +35,7 @@ export function ProPagination({ page, pageSize, total, onPageChange, className, 
         <span className="min-w-[3rem] text-center tabular-nums text-foreground">{page} / {totalPages}</span>
         <button
           type="button"
-          aria-label="下一页"
+          aria-label={t('a11y.paginationNext')}
           disabled={nextDisabled}
           onClick={() => onPageChange(page + 1)}
           className={cn('inline-flex size-8 items-center justify-center rounded-lg border border-border/60 text-foreground transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-40')}

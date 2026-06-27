@@ -76,7 +76,7 @@ mail:
   brand:
     primary: "#4f46e5"
     product-name: Novel Agent
-    tagline: 理解你的笔触与灵感
+    # tagline resolved from mail.brand.tagline i18n key at send time
     frontend-base-url: ${AUTH_FRONTEND_BASE_URL:http://localhost:5173}
 
 agent:

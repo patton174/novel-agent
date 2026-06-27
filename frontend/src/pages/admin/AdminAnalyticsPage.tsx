@@ -1,6 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useSearchParams } from 'react-router-dom'
+import { Navigate, useParams } from 'react-router-dom'
+import i18n from '@/i18n'
 import {
   fetchContentStats,
   fetchPlatformStats,
@@ -17,12 +18,11 @@ import {
   type PlatformUsageOverview,
   type PlatformUsageTrendPoint,
 } from '@/api/billingAdminApi'
-import { AdminField, AdminSelect, AdminTabList, AdminTabTrigger } from '@/components/admin/AdminFormControls'
+import { AdminField, AdminSelect } from '@/components/admin/AdminFormControls'
 import {
   AdminDataPage,
   AdminDataPanel,
   AdminDataPanelBody,
-  AdminDataPanelHeader,
   AdminStatStrip,
 } from '@/components/layout/AdminDataLayout'
 import { useMarkRouteSeen } from '@/hooks/useMarkRouteSeen'
@@ -42,7 +42,9 @@ const chartFallback = (
   </div>
 )
 
-type AnalyticsTab = 'platform' | 'revenue' | 'content'
+type AnalyticsSection = 'platform' | 'revenue' | 'content'
+
+const SECTIONS: AnalyticsSection[] = ['platform', 'revenue', 'content']
 
 function sumTrend(points: TrendPoint[]): number {
   return points.reduce((acc, p) => acc + p.count, 0)
@@ -57,10 +59,22 @@ function sumUsageCost(points: PlatformUsageTrendPoint[]): number {
 }
 
 export default function AdminAnalyticsPage() {
+  const { section: sectionParam } = useParams<{ section: string }>()
+  const section = SECTIONS.includes(sectionParam as AnalyticsSection)
+    ? (sectionParam as AnalyticsSection)
+    : null
+
+  if (!section) {
+    return <Navigate to="/admin/analytics/platform" replace />
+  }
+
+  return <AdminAnalyticsSectionPage section={section} />
+}
+
+function AdminAnalyticsSectionPage({ section }: { section: AnalyticsSection }) {
   const { t } = useTranslation(['admin'])
+  const dateLocale = i18n.language === 'zh' ? 'zh-CN' : 'en-US'
   useMarkRouteSeen()
-  const [searchParams, setSearchParams] = useSearchParams()
-  const tab = (searchParams.get('tab') as AnalyticsTab | null) ?? 'platform'
 
   const [days, setDays] = useState(30)
   const [platform, setPlatform] = useState<PlatformStats | null>(null)
@@ -111,15 +125,11 @@ export default function AdminAnalyticsPage() {
   const periodTokens = useMemo(() => sumUsageTokens(usageTrend ?? []), [usageTrend])
   const periodCost = useMemo(() => sumUsageCost(usageTrend ?? []), [usageTrend])
 
-  const setTab = (next: AnalyticsTab) => {
-    setSearchParams({ tab: next }, { replace: true })
-  }
-
   const platformStats = [
-    { label: t('admin:home.totalUsers'), value: platform?.totalUsers.toLocaleString('zh-CN') ?? '—' },
-    { label: t('admin:stats.periodRegistrations', { range: rangeLabel }), value: periodRegistrations.toLocaleString('zh-CN') },
-    { label: t('admin:stats.periodAgentRuns', { range: rangeLabel }), value: periodAgentRuns.toLocaleString('zh-CN') },
-    { label: t('admin:home.activeUsers'), value: platform?.activeUsers.toLocaleString('zh-CN') ?? '—' },
+    { label: t('admin:home.totalUsers'), value: platform?.totalUsers.toLocaleString(dateLocale) ?? '—' },
+    { label: t('admin:stats.periodRegistrations', { range: rangeLabel }), value: periodRegistrations.toLocaleString(dateLocale) },
+    { label: t('admin:stats.periodAgentRuns', { range: rangeLabel }), value: periodAgentRuns.toLocaleString(dateLocale) },
+    { label: t('admin:home.activeUsers'), value: platform?.activeUsers.toLocaleString(dateLocale) ?? '—' },
   ]
 
   const revenueStats = overview
@@ -133,23 +143,21 @@ export default function AdminAnalyticsPage() {
     : [{ label: t('admin:revenue.mrr'), value: '—' }]
 
   const contentStats = [
-    { label: t('admin:home.totalNovels'), value: content?.totalNovels.toLocaleString('zh-CN') ?? '—' },
-    { label: t('admin:home.totalChapters'), value: content?.totalChapters.toLocaleString('zh-CN') ?? '—' },
-    { label: t('admin:home.totalAgentRuns'), value: content?.totalAgentRuns.toLocaleString('zh-CN') ?? '—' },
-    { label: t('admin:stats.periodAgentRuns', { range: rangeLabel }), value: periodAgentRuns.toLocaleString('zh-CN') },
+    { label: t('admin:home.totalNovels'), value: content?.totalNovels.toLocaleString(dateLocale) ?? '—' },
+    { label: t('admin:home.totalChapters'), value: content?.totalChapters.toLocaleString(dateLocale) ?? '—' },
+    { label: t('admin:home.totalAgentRuns'), value: content?.totalAgentRuns.toLocaleString(dateLocale) ?? '—' },
+    { label: t('admin:stats.periodAgentRuns', { range: rangeLabel }), value: periodAgentRuns.toLocaleString(dateLocale) },
   ]
 
-  const statItems = tab === 'revenue' ? revenueStats : tab === 'content' ? contentStats : platformStats
+  const statItems = section === 'revenue' ? revenueStats : section === 'content' ? contentStats : platformStats
 
   return (
     <AdminDataPage>
       <AdminStatStrip loading={loading} items={statItems} />
 
       <AdminDataPanel>
-        <AdminDataPanelHeader
-          title={t('admin:analytics.title')}
-          description={t('admin:analytics.desc')}
-          action={
+        <AdminDataPanelBody className="py-3">
+          <div className="mb-4 flex justify-end">
             <AdminField label={t('admin:stats.dateRange')} className="min-w-[10rem] sm:max-w-none">
               <AdminSelect
                 value={days}
@@ -164,33 +172,19 @@ export default function AdminAnalyticsPage() {
                 ))}
               </AdminSelect>
             </AdminField>
-          }
-        />
-        <AdminDataPanelBody className="space-y-4 py-3">
-          <AdminTabList>
-            <AdminTabTrigger active={tab === 'platform'} onClick={() => setTab('platform')}>
-              {t('admin:analytics.tabPlatform')}
-            </AdminTabTrigger>
-            <AdminTabTrigger active={tab === 'revenue'} onClick={() => setTab('revenue')}>
-              {t('admin:analytics.tabRevenue')}
-            </AdminTabTrigger>
-            <AdminTabTrigger active={tab === 'content'} onClick={() => setTab('content')}>
-              {t('admin:analytics.tabContent')}
-            </AdminTabTrigger>
-          </AdminTabList>
-
+          </div>
           {loading || agentRunTrend === null ? (
             chartFallback
           ) : (
             <Suspense fallback={chartFallback}>
-              {tab === 'platform' ? (
+              {section === 'platform' ? (
                 <StatsOverviewCharts
                   agentRunTrend={agentRunTrend}
                   registrationTrend={registrationTrend ?? []}
                   usageTrend={usageTrend ?? []}
                   rangeLabel={rangeLabel}
                 />
-              ) : tab === 'revenue' ? (
+              ) : section === 'revenue' ? (
                 <RevenueCharts trends={usageTrend ?? []} modelBreakdown={overview?.modelBreakdown ?? []} />
               ) : (
                 <StatsTrendCharts

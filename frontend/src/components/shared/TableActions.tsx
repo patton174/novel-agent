@@ -1,10 +1,14 @@
 import type { ComponentProps, ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { formButtonOutlineClass } from '@/components/shared/formControlTokens'
 
 /** 表格行内文字按钮统一样式（管理端 + 仪表盘） */
 export const tableActionButtonClass =
   'h-7 gap-1 rounded-md px-2.5 text-xs font-medium shadow-none'
+
+/** 与表单控件同高的表格内按钮（绑定行、内联控件等） */
+export const tableFormActionButtonClass = formButtonOutlineClass
 
 /** 表格行内图标按钮统一样式 */
 export const tableActionIconButtonClass = 'size-7 shrink-0 rounded-md shadow-none'
@@ -100,6 +104,8 @@ type TableActionButtonProps = Omit<ComponentProps<typeof Button>, 'size' | 'vari
   tone?: TableActionTone
   variant?: TableActionLegacyVariant | ComponentProps<typeof Button>['variant']
   size?: 'sm' | 'md' | 'lg' | 'icon'
+  /** compact=h-7 行内链接；form=h-9 与输入框对齐 */
+  density?: 'compact' | 'form'
 }
 
 export function TableActionButton({
@@ -107,8 +113,23 @@ export function TableActionButton({
   tone,
   variant,
   size: _size,
+  density = 'compact',
   ...props
 }: TableActionButtonProps) {
+  if (density === 'form') {
+    const resolved = resolveTableActionTone(
+      tone ?? (isLegacyTableActionVariant(variant) ? mapLegacyTableActionVariant(variant) : 'default'),
+    )
+    return (
+      <Button
+        variant={resolved.variant}
+        size="lg"
+        className={cn(tableFormActionButtonClass, resolved.className, className)}
+        {...props}
+      />
+    )
+  }
+
   if (tone || isLegacyTableActionVariant(variant)) {
     const resolved = resolveTableActionTone(tone ?? mapLegacyTableActionVariant(variant as TableActionLegacyVariant))
     return (

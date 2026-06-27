@@ -1,6 +1,6 @@
 import { Flame } from 'lucide-react'
 
-export function BreathingHotBadge({ label = '热门推荐' }: { label?: string }) {
+export function BreathingHotBadge({ label }: { label: string }) {
   return (
     <span className="relative inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 px-3 py-1 text-xs font-semibold text-white shadow-lg shadow-orange-500/30">
       <span

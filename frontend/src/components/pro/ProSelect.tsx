@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { ProIconChevronDown } from '@/components/pro/icons/proIcons'
 import { cn } from '@/lib/utils'
@@ -24,12 +25,14 @@ export function ProSelect({
   value,
   options,
   onChange,
-  placeholder = '请选择',
+  placeholder,
   className,
   variant = 'default',
   id,
   'aria-label': ariaLabel,
 }: ProSelectProps) {
+  const { t } = useTranslation('common')
+  const resolvedPlaceholder = placeholder ?? t('select.placeholder')
   const [open, setOpen] = useState(false)
   const current = options.find((o) => o.value === value)
   const isPixel = variant === 'pixel'
@@ -50,7 +53,7 @@ export function ProSelect({
           )}
         >
           <span className={cn('truncate text-left', !current && 'text-muted-foreground')}>
-            {current?.label ?? placeholder}
+            {current?.label ?? resolvedPlaceholder}
           </span>
           <ProIconChevronDown size={16} className="shrink-0 text-muted-foreground" aria-hidden />
         </button>

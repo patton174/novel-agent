@@ -92,11 +92,11 @@ export default function PayCheckoutPage() {
         (prev) => {
           const next = new URLSearchParams(prev)
           let changed = false
-          if (prev.get('order') !== checkout.orderId) {
+          if (!prev.get('order')) {
             next.set('order', checkout.orderId)
             changed = true
           }
-          if (checkout.planCode && prev.get('plan') !== checkout.planCode) {
+          if (checkout.planCode && !prev.get('plan')) {
             next.set('plan', checkout.planCode)
             changed = true
           }

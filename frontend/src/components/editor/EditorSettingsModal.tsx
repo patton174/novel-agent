@@ -57,7 +57,7 @@ export function EditorSettingsModal({
 
       <div className="border-t border-border/60 pt-4">
         <Link
-          to="/dashboard/settings"
+          to="/dashboard/settings/profile"
           onClick={onClose}
           className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline"
         >

@@ -17,6 +17,8 @@ import { ensureSessionAndHeartbeat } from './security/heartbeat'
 import { startSessionBootstrap } from './security/sessionBootstrap'
 import { useUserStore } from './stores/userStore'
 import { useAppSessionRestore } from './hooks/useAppSessionRestore'
+import { useReferralCapture } from './hooks/useReferralCapture'
+import { useDocumentMeta } from './hooks/useDocumentMeta'
 import { PageTransition } from './components/PageTransition'
 import { initializeTheme } from './stores/themeStore'
 
@@ -33,6 +35,7 @@ const DashboardHomePage = lazy(() => import('./pages/dashboard/DashboardHomePage
 const NovelsPage = lazy(() => import('./pages/dashboard/NovelsPage'))
 const BookstorePage = lazy(() => import('./pages/dashboard/BookstorePage'))
 const MyLibraryPage = lazy(() => import('./pages/dashboard/MyLibraryPage'))
+const UsagePage = lazy(() => import('./pages/dashboard/UsagePage'))
 const BillingPage = lazy(() => import('./pages/dashboard/BillingPage'))
 const SettingsPage = lazy(() => import('./pages/dashboard/SettingsPage'))
 const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'))
@@ -41,7 +44,6 @@ const VerifyEmailPage = lazy(() => import('./pages/VerifyEmailPage'))
 const ThinkRailFixturePage = lazy(() => import('./pages/dev/ThinkRailFixturePage'))
 const AdminHomePage = lazy(() => import('./pages/admin/AdminHomePage'))
 const UsersPage = lazy(() => import('./pages/admin/UsersPage'))
-const CrawlerPage = lazy(() => import('./pages/admin/CrawlerPage'))
 const CatalogPage = lazy(() => import('./pages/admin/CatalogPage'))
 const PlansPage = lazy(() => import('./pages/admin/PlansPage'))
 const PaymentOrdersPage = lazy(() => import('./pages/admin/PaymentOrdersPage'))
@@ -56,6 +58,11 @@ const AdminUserPermissionsPage = lazy(() => import('./pages/admin/UserPermission
 const AdminUserMembershipPage = lazy(() => import('./pages/admin/UserMembershipPage'))
 const AdminSystemJobsPage = lazy(() => import('./pages/admin/SystemJobsPage'))
 const AdminUploadOpsPage = lazy(() => import('./pages/admin/UploadOpsPage'))
+const NotificationBroadcastPage = lazy(() => import('./pages/admin/NotificationBroadcastPage'))
+const AdminReferralStatsPage = lazy(() => import('./pages/admin/ReferralStatsPage'))
+const InviteCodesPage = lazy(() => import('./pages/admin/InviteCodesPage'))
+const GiftCampaignsPage = lazy(() => import('./pages/admin/GiftCampaignsPage'))
+const AdminBillingPage = lazy(() => import('./pages/admin/AdminBillingPage'))
 const AdminLegalContentPage = lazy(() =>
   import('./pages/admin/AdminContentPages').then((m) => ({ default: m.AdminLegalContentPage })),
 )
@@ -87,9 +94,9 @@ function AppRouteTree() {
         <Route path="/about" element={<AboutPage />} />
         <Route path="/features" element={<Navigate to="/guide" replace />} />
         <Route path="/testimonials" element={<Navigate to="/about" replace />} />
-        <Route path="/privacy" element={<GenericContentPage contentKey="privacy" fallbackTitle="隐私政策" />} />
-        <Route path="/terms" element={<GenericContentPage contentKey="terms" fallbackTitle="用户协议" />} />
-        <Route path="/contact" element={<GenericContentPage contentKey="contact" fallbackTitle="联系我们" />} />
+        <Route path="/privacy" element={<GenericContentPage contentKey="privacy" />} />
+        <Route path="/terms" element={<GenericContentPage contentKey="terms" />} />
+        <Route path="/contact" element={<GenericContentPage contentKey="contact" />} />
 
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
@@ -113,7 +120,9 @@ function AppRouteTree() {
           <Route path="bookstore" element={<BookstorePage />} />
           <Route path="my-library" element={<MyLibraryPage />} />
           <Route path="billing" element={<BillingPage />} />
-          <Route path="settings" element={<SettingsPage />} />
+          <Route path="usage" element={<UsagePage />} />
+          <Route path="settings" element={<Navigate to="/dashboard/settings/profile" replace />} />
+          <Route path="settings/:section" element={<SettingsPage />} />
         </Route>
 
         <Route
@@ -125,10 +134,15 @@ function AppRouteTree() {
           }
         >
           <Route index element={<AdminHomePage />} />
-          <Route path="analytics" element={<AdminAnalyticsPage />} />
+          <Route path="analytics" element={<Navigate to="/admin/analytics/platform" replace />} />
+          <Route path="analytics/:section" element={<AdminAnalyticsPage />} />
+          <Route path="billing" element={<Navigate to="/admin/billing/cdk" replace />} />
+          <Route path="billing/:section" element={<AdminBillingPage />} />
           <Route path="billing/plans" element={<PlansPage />} />
           <Route path="billing/payment" element={<PaymentProductsPage view="all" />} />
           <Route path="billing/orders" element={<PaymentOrdersPage />} />
+          <Route path="billing/referrals" element={<AdminReferralStatsPage />} />
+          <Route path="billing/gift-campaigns" element={<GiftCampaignsPage />} />
           <Route path="billing/platform" element={<Navigate to="/admin/billing/payment" replace />} />
           <Route path="billing/products" element={<Navigate to="/admin/billing/payment" replace />} />
           <Route path="billing/inventory" element={<Navigate to="/admin/billing/payment" replace />} />
@@ -138,10 +152,11 @@ function AppRouteTree() {
           <Route path="users/roles" element={<AdminUserRolesPage />} />
           <Route path="users/permissions" element={<AdminUserPermissionsPage />} />
           <Route path="users/membership" element={<AdminUserMembershipPage />} />
+          <Route path="users/invite-codes" element={<InviteCodesPage />} />
           <Route path="content/legal" element={<AdminLegalContentPage />} />
           <Route path="content/announcements" element={<AdminAnnouncementsContentPage />} />
+          <Route path="notification" element={<NotificationBroadcastPage />} />
           <Route path="content/pages" element={<AdminSitePagesContentPage />} />
-          <Route path="content/crawler" element={<CrawlerPage />} />
           <Route path="content/catalog" element={<CatalogPage />} />
           <Route path="content/uploads" element={<AdminUploadOpsPage />} />
           <Route path="system/models" element={<AdminModelsPage />} />
@@ -150,14 +165,13 @@ function AppRouteTree() {
           <Route path="system/settings" element={<SystemSettingsPage />} />
           <Route path="audit-log" element={<AuditLogPage />} />
           {/* Legacy redirects */}
-          <Route path="stats" element={<Navigate to="/admin/analytics" replace />} />
-          <Route path="revenue" element={<Navigate to="/admin/analytics?tab=revenue" replace />} />
+          <Route path="stats" element={<Navigate to="/admin/analytics/platform" replace />} />
+          <Route path="revenue" element={<Navigate to="/admin/analytics/revenue" replace />} />
           <Route path="products" element={<Navigate to="/admin/billing/payment" replace />} />
           <Route path="plans" element={<Navigate to="/admin/billing/plans" replace />} />
           <Route path="payment-orders" element={<Navigate to="/admin/billing/orders" replace />} />
           <Route path="site-content" element={<Navigate to="/admin/content/legal" replace />} />
           <Route path="content/site" element={<Navigate to="/admin/content/legal" replace />} />
-          <Route path="crawler" element={<Navigate to="/admin/content/crawler" replace />} />
           <Route path="catalog" element={<Navigate to="/admin/content/catalog" replace />} />
           <Route path="models" element={<Navigate to="/admin/system/models" replace />} />
           <Route path="system-settings" element={<Navigate to="/admin/system/settings" replace />} />
@@ -170,6 +184,8 @@ function AppRouteTree() {
 function AppRoutes() {
   const location = useLocation()
   useAppSessionRestore()
+  useReferralCapture()
+  useDocumentMeta()
 
   const routeTree = (
     <Suspense fallback={<RouteSuspenseFallback />}>

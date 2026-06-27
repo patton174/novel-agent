@@ -6,6 +6,8 @@ export interface Novel {
   style?: string | null
   targetChapterWords: number
   coverUrl?: string | null
+  coverStorageKey?: string | null
+  hasCover?: boolean
   createdAt: number
   updatedAt: number
 }

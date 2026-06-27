@@ -17,6 +17,11 @@ def test_continuer_module_removed():
         importlib.import_module("app.agents.continuer")
 
 
+def test_agents_package_removed():
+    with pytest.raises(ModuleNotFoundError):
+        importlib.import_module("app.agents")
+
+
 def test_generation_service_removed():
     with pytest.raises(ModuleNotFoundError):
         importlib.import_module("app.services.generation")

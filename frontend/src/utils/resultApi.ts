@@ -1,3 +1,4 @@
+import i18n from '@/i18n'
 import { parseJsonWithSafeIds } from './jsonSafeIds'
 
 export interface ApiResult<T> {
@@ -7,17 +8,22 @@ export interface ApiResult<T> {
   success?: boolean
 }
 
-/** Gateway 安全层 400 使用 message 字段，映射为可读中文 */
-const GATEWAY_SECURITY_MESSAGES: Record<string, string> = {
-  REPLAY_NONCE: '请求重复提交，请稍候再试',
-  REPLAY_WINDOW: '请求已过期，请刷新页面后重试',
-  'request sign required': '请求签名缺失，请刷新页面后重试',
-  'AES envelope required': '请求加密异常，请刷新页面后重试',
-  'decrypt failed': '请求解密失败，请刷新页面后重试',
-  'unknown key id': '加密密钥已更新，请刷新页面后重试',
-  'route prefix stale': '页面加密配置已过期，请刷新页面后重试',
-  'invalid route cipher': '页面加密配置已过期，请刷新页面后重试',
-  'bootstrap runtime missing': '页面加密配置缺失，请刷新页面后重试',
+/** Gateway 安全层 400 使用 message 字段，映射为 i18n 键 */
+const GATEWAY_SECURITY_CODES: Record<string, string> = {
+  REPLAY_NONCE: 'errors.api.gateway.REPLAY_NONCE',
+  REPLAY_WINDOW: 'errors.api.gateway.REPLAY_WINDOW',
+  'request sign required': 'errors.api.gateway.requestSignRequired',
+  'AES envelope required': 'errors.api.gateway.aesEnvelopeRequired',
+  'decrypt failed': 'errors.api.gateway.decryptFailed',
+  'unknown key id': 'errors.api.gateway.unknownKeyId',
+  'route prefix stale': 'errors.api.gateway.routePrefixStale',
+  'invalid route cipher': 'errors.api.gateway.invalidRouteCipher',
+  'bootstrap runtime missing': 'errors.api.gateway.bootstrapRuntimeMissing',
+}
+
+function translateGatewayCode(raw: string): string | undefined {
+  const key = GATEWAY_SECURITY_CODES[raw]
+  return key ? i18n.t(key) : undefined
 }
 
 function isResultFailed(result: ApiResult<unknown>): boolean {
@@ -37,13 +43,13 @@ function mapGatewayMessage(raw: string): string {
       const parsed = JSON.parse(trimmed) as { msg?: string; message?: string }
       const inner = parsed.msg || parsed.message
       if (inner) {
-        return GATEWAY_SECURITY_MESSAGES[inner] ?? inner
+        return translateGatewayCode(inner) ?? inner
       }
     } catch {
       // fall through
     }
   }
-  return GATEWAY_SECURITY_MESSAGES[trimmed] ?? trimmed
+  return translateGatewayCode(trimmed) ?? trimmed
 }
 
 export function resolveErrorMessage(json: unknown, httpStatus: number): string {
@@ -54,13 +60,13 @@ export function resolveErrorMessage(json: unknown, httpStatus: number): string {
       return mapGatewayMessage(String(raw))
     }
     if ('code' in body && typeof body.code === 'number') {
-      return `请求失败 (${body.code})`
+      return i18n.t('errors.api.requestFailed', { code: body.code })
     }
   }
   if (typeof json === 'string' && json.trim()) {
     return mapGatewayMessage(json)
   }
-  return `请求失败 (${httpStatus})`
+  return i18n.t('errors.api.requestFailed', { code: httpStatus })
 }
 
 export async function readApiErrorMessage(response: Response): Promise<string> {
@@ -81,7 +87,7 @@ export function unwrapResult<T>(json: unknown, httpStatus?: number): T {
     }
     return result.data
   }
-  throw new Error(`API Error: ${httpStatus ?? 'unknown'}`)
+  throw new Error(i18n.t('errors.api.apiError', { status: httpStatus ?? 'unknown' }))
 }
 
 /** 非 Result 成功体（如 PyAI memory map）仅解析错误响应 */

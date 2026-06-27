@@ -1,17 +1,9 @@
-/** Placeholder session titles that should be replaced by async LLM naming. */
-const PLACEHOLDER_TITLES = new Set(['', '新对话', '新会话', '未命名对话'])
+import i18n from '@/i18n'
 
-const GENERIC_USER_MESSAGES = new Set([
-  '继续',
-  '继续写',
-  '继续优化',
-  '好',
-  '好的',
-  '嗯',
-  '是的',
-  'ok',
-  'OK',
-])
+/** Legacy placeholders persisted before i18n migration */
+const LEGACY_PLACEHOLDER_TITLES = ['', '新对话', '新会话', '未命名对话'] as const
+
+const LEGACY_GENERATING_TITLE = '生成标题…'
 
 /** Assistant / system lines that must not drive session titles. */
 const BOILERPLATE_SNIPPET_PATTERNS: RegExp[] = [
@@ -31,11 +23,41 @@ const BOILERPLATE_TITLE_PATTERNS: RegExp[] = [
   /^\*\*删除完成/,
 ]
 
+function placeholderTitles(): Set<string> {
+  return new Set([
+    ...LEGACY_PLACEHOLDER_TITLES,
+    i18n.t('dashboard:session.defaultTitle'),
+    i18n.t('dashboard:session.altTitle'),
+    i18n.t('dashboard:session.unnamedTitle'),
+  ])
+}
+
+function genericUserMessages(): Set<string> {
+  return new Set([
+    i18n.t('dashboard:session.genericContinue'),
+    i18n.t('dashboard:session.genericContinueWrite'),
+    i18n.t('dashboard:session.genericOptimize'),
+    i18n.t('dashboard:session.genericOk'),
+    i18n.t('dashboard:session.genericYes'),
+    '继续',
+    '继续写',
+    '继续优化',
+    '好',
+    '好的',
+    '嗯',
+    '是的',
+    'ok',
+    'OK',
+  ])
+}
+
 export function sessionNeedsGeneratedTitle(title: string | undefined | null): boolean {
   const t = (title ?? '').trim()
   if (!t) return true
-  if (PLACEHOLDER_TITLES.has(t)) return true
-  if (t === '生成标题…') return true
+  if (placeholderTitles().has(t)) return true
+  if (t === i18n.t('dashboard:session.generatingTitle') || t === LEGACY_GENERATING_TITLE) {
+    return true
+  }
   if (isBoilerplateSessionTitle(t)) return true
   return false
 }
@@ -62,19 +84,23 @@ export function buildSessionTitleFallback(options: {
   const user = options.userMessage.trim()
   const novel = (options.novelTitle ?? '').trim()
   const now = options.now ?? new Date()
+  const generic = genericUserMessages()
   const isGeneric =
-    !user || GENERIC_USER_MESSAGES.has(user) || (user.length <= 4 && !/[章节第\d]/.test(user))
+    !user || generic.has(user) || (user.length <= 4 && !/[章节第\d]/.test(user))
 
   if (isGeneric) {
     const novelShort = novel.length > 12 ? `${novel.slice(0, 12)}…` : novel
     const stamp = `${now.getMonth() + 1}/${now.getDate()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
     if (novelShort) {
-      const base = user && !GENERIC_USER_MESSAGES.has(user) ? `${user} · ${novelShort}` : `续写 · ${novelShort}`
+      const base =
+        user && !generic.has(user)
+          ? `${user} · ${novelShort}`
+          : i18n.t('dashboard:session.continueNovel', { novel: novelShort })
       return base.length > 24 ? `${base.slice(0, 23)}…` : base
     }
-    return `新对话 ${stamp}`
+    return i18n.t('dashboard:session.newChatWithStamp', { stamp })
   }
 
   if (user.length > 18) return `${user.slice(0, 18)}…`
-  return user || '新对话'
+  return user || i18n.t('dashboard:session.defaultTitle')
 }

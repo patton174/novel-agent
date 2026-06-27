@@ -116,7 +116,7 @@ export default function VerifyEmailPage() {
                   {t('auth:verify.backToLogin')}
                 </Link>
                 {isLoggedIn ? (
-                  <Link to="/dashboard/settings" className={MKT_CTA_AUTH_OUTLINE}>
+                  <Link to="/dashboard/settings/profile" className={MKT_CTA_AUTH_OUTLINE}>
                     {t('auth:verify.resend')}
                   </Link>
                 ) : (

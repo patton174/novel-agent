@@ -131,9 +131,14 @@ async def invoke_structured(
     model: type[T],
     *,
     profile: str | None = None,
+    model_config: dict | None = None,
 ) -> T:
     """Single LLM call with forced tool matching `model` schema."""
-    llm = llm_provider.get_llm(profile=profile or "default")
+    llm = (
+        llm_provider.get_llm(profile=profile or "default", config=model_config)
+        if model_config
+        else llm_provider.get_llm(profile=profile or "default")
+    )
     chain = llm.with_structured_output(
         model,
         include_raw=True,
@@ -160,6 +165,7 @@ async def invoke_structured_with_retry(
     model: type[T],
     *,
     profile: str | None = None,
+    model_config: dict | None = None,
     max_attempts: int | None = None,
     retry_feedback_prefix: str | None = None,
     use_retry_json: bool = False,
@@ -200,7 +206,9 @@ async def invoke_structured_with_retry(
                     )
                 )
         try:
-            return await invoke_structured(attempt_messages, model, profile=profile)
+            return await invoke_structured(
+                attempt_messages, model, profile=profile, model_config=model_config
+            )
         except Exception as exc:
             last_exc = exc
             logger.warning(
@@ -223,9 +231,12 @@ async def try_invoke_structured(
     model: type[T],
     *,
     profile: str | None = None,
+    model_config: dict | None = None,
 ) -> T | None:
     try:
-        return await invoke_structured_with_retry(messages, model, profile=profile)
+        return await invoke_structured_with_retry(
+            messages, model, profile=profile, model_config=model_config
+        )
     except Exception as exc:
         logger.info(
             "structured %s skipped profile=%s: %s",

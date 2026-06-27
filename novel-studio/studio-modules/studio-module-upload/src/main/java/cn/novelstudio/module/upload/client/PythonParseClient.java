@@ -1,6 +1,7 @@
 package cn.novelstudio.module.upload.client;
 
 import cn.novelstudio.module.upload.config.UploadRuntimeProperties;
+import cn.novelstudio.module.upload.support.UploadExceptions;
 import cn.novelstudio.platform.storage.StorageBackend;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.MediaType;
@@ -38,7 +39,7 @@ public class PythonParseClient {
         try (InputStream in = storage.load(storageKey)) {
             bytes = StreamUtils.copyToByteArray(in);
         } catch (Exception e) {
-            throw new IllegalStateException("upload.read_failed");
+            throw UploadExceptions.readFailed(e);
         }
 
         MultipartBodyBuilder builder = new MultipartBodyBuilder();

@@ -15,6 +15,7 @@ public record UsageReportRequest(
     Integer cacheWriteTokens,
     Long totalCostMicros,
     String idempotencyKey,
-    Map<String, Object> metadata
+    Map<String, Object> metadata,
+    Boolean byok
 ) {
 }

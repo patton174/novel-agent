@@ -1,3 +1,4 @@
+import i18n from '@/i18n'
 import { secureFetch } from '../security/secureFetch'
 import { parseResultResponse } from '../utils/resultApi'
 
@@ -13,6 +14,8 @@ export interface RecentNovel {
   title: string
   lastChapterId?: string | null
   coverUrl?: string | null
+  coverStorageKey?: string | null
+  hasCover?: boolean
   updatedAt: string | number
 }
 
@@ -65,6 +68,8 @@ export interface DashboardNovel {
   style?: string | null
   targetChapterWords: number
   coverUrl?: string | null
+  coverStorageKey?: string | null
+  hasCover?: boolean
   createdAt: number
   updatedAt: number
 }
@@ -152,46 +157,30 @@ export async function suggestNovelDescriptionPrompt(payload: {
   }
 }
 
-export async function suggestNovelCoverPrompt(
-  novelId: string,
-  draft?: string,
-): Promise<string | null> {
-  try {
-    const res = await secureFetch(`/api/content/auth/novels/${novelId}/cover/prompt`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ draft: draft ?? '' }),
-    })
-    if (!res.ok) {
-      return null
-    }
-    const data = await parseResultResponse<{ prompt?: string }>(res)
-    return data?.prompt?.trim() || null
-  } catch {
-    return null
-  }
-}
-
 export async function generateNovelCover(
   novelId: string,
-  prompt?: string,
+  payload?: { prompt?: string; stylePrompt?: string; scenePrompt?: string },
 ): Promise<DashboardNovel | null> {
   try {
     const res = await secureFetch(`/api/content/auth/novels/${novelId}/cover/generate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt: prompt ?? '' }),
+      body: JSON.stringify({
+        prompt: payload?.prompt ?? '',
+        stylePrompt: payload?.stylePrompt ?? '',
+        scenePrompt: payload?.scenePrompt ?? '',
+      }),
     })
     if (!res.ok) {
       const errBody = await res.json().catch(() => null) as { msg?: string } | null
-      throw new Error(errBody?.msg || '封面生成失败')
+      throw new Error(errBody?.msg || i18n.t('dashboard:novels.coverFail'))
     }
     return parseResultResponse<DashboardNovel>(res)
   } catch (err) {
     if (err instanceof Error) {
       throw err
     }
-    throw new Error('封面生成失败')
+    throw new Error(i18n.t('dashboard:novels.coverFail'))
   }
 }
 

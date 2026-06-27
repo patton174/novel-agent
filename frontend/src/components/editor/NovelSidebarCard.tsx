@@ -1,5 +1,7 @@
+import { useTranslation } from 'react-i18next'
 import { ChevronRight } from 'lucide-react'
 import type { Novel } from '../../types/novel'
+import { StoredMediaPreview } from '@/components/media/StoredMediaPreview'
 import { EditorIcons } from './icons'
 import { cn } from '@/lib/utils'
 import {
@@ -28,6 +30,8 @@ export function NovelSidebarCard({
   onToggleExpand: () => void
   showExpand?: boolean
 }) {
+  const { t } = useTranslation(['editor'])
+
   return (
     <div
       className={cn(
@@ -38,8 +42,14 @@ export function NovelSidebarCard({
       )}
     >
       <div className={cn(SIDEBAR_ICON_CELL, 'overflow-hidden border-2 border-foreground bg-muted/50')}>
-        {novel.coverUrl ? (
-          <img src={novel.coverUrl} alt="" className="size-full object-cover" />
+        {novel.hasCover || novel.coverStorageKey || novel.coverUrl ? (
+          <StoredMediaPreview
+            storageKey={novel.coverStorageKey}
+            fallbackUrl={novel.coverUrl}
+            alt={novel.title}
+            animateReveal={false}
+            className="size-full"
+          />
         ) : (
           <span className="[&_svg]:size-3.5 [&_svg]:text-muted-foreground">
             <EditorIcons.BookOpen />
@@ -69,7 +79,7 @@ export function NovelSidebarCard({
         <button
           type="button"
           aria-expanded={isExpanded}
-          aria-label={isExpanded ? '收起对话' : '展开对话'}
+          aria-label={isExpanded ? t('editor:sidebar.collapseSessions') : t('editor:sidebar.expandSessions')}
           className={cn(
             'inline-flex size-7 shrink-0 items-center justify-center border-none bg-transparent text-muted-foreground/70',
             'opacity-0 transition-all duration-200 group-hover/novel:opacity-100 group-focus-within/novel:opacity-100',

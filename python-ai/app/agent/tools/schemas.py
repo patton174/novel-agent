@@ -445,6 +445,10 @@ class DeleteMemoryInput(BaseModel):
 class SearchKnowledgeInput(BaseModel):
     query: str = Field(..., min_length=1)
     top_k: int = Field(5, ge=1, le=20)
+    scope: str | None = Field(
+        None,
+        description="检索范围: novel(默认) | book:<catalogNovelId>（@引用书目）",
+    )
 
 
 class GetCharacterGraphInput(BaseModel):

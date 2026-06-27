@@ -16,10 +16,11 @@ import cn.novelstudio.module.billing.entity.PaymentOrderEntity;
 import cn.novelstudio.module.billing.entity.ProductPlanEntity;
 import cn.novelstudio.module.billing.integration.idatariver.IDataRiverClient;
 import cn.novelstudio.module.billing.integration.idatariver.IdrOrderSnapshot;
+import java.time.Instant;
 import cn.novelstudio.platform.idr.model.PayOrderResult;
 import cn.novelstudio.module.billing.repository.PaymentOrderRepository;
 import cn.novelstudio.module.billing.service.PaymentOrderSyncService;
-import cn.novelstudio.module.billing.service.PaymentUserResolver;
+import cn.novelstudio.module.billing.service.PaymentUserLookup;
 import cn.novelstudio.module.billing.support.PlanPaymentSupport;
 import cn.novelstudio.platform.i18n.StudioMessages;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -39,6 +40,8 @@ import java.util.Optional;
 public class IDataRiverPaymentBiz extends BaseBiz {
 
     private static final Logger log = LoggerFactory.getLogger(IDataRiverPaymentBiz.class);
+    /** iDataRiver 未返回 expiredInterval 时，用本地 createdAt + 30 分钟估算 */
+    private static final long DEFAULT_ORDER_EXPIRE_SECONDS = 1800L;
 
     private final IDataRiverConfigService configService;
     private final IDataRiverProperties envProperties;
@@ -47,7 +50,7 @@ public class IDataRiverPaymentBiz extends BaseBiz {
     private final PlanBiz planBiz;
     private final PaymentOrderSyncService paymentOrderSyncService;
     private final StudioMessages messages;
-    private final PaymentUserResolver paymentUserResolver;
+    private final PaymentUserLookup paymentUserLookup;
 
     @Transactional
     public Result<PayCheckoutResp> checkout(long userId, PayCheckoutReq req) {
@@ -62,25 +65,26 @@ public class IDataRiverPaymentBiz extends BaseBiz {
             throw ValidationException.keyed(ResultCode.BAD_REQUEST, "validation.billing.plan_code_required");
         }
 
-        Optional<PaymentOrderEntity> pending = paymentOrderRepository
-            .findFirstByUserIdAndStatusOrderByCreatedAtDesc(userId, "NEW");
-        if (pending.isPresent()) {
-            PayCheckoutResp resumed = tryResumeCheckout(userId, pending.get());
-            if (resumed != null) {
-                return ok(resumed);
+        boolean skipPendingResume = req.couponCode() != null && !req.couponCode().isBlank();
+        if (!skipPendingResume) {
+            Optional<PaymentOrderEntity> pending = paymentOrderRepository
+                .findFirstByUserIdAndStatusOrderByCreatedAtDesc(userId, "NEW");
+            if (pending.isPresent()) {
+                PayCheckoutResp resumed = tryResumeCheckout(userId, pending.get());
+                if (resumed != null) {
+                    return ok(resumed);
+                }
             }
         }
 
-        return ok(createNewCheckout(userId, req.planCode()));
+        return ok(createNewCheckout(userId, req));
     }
 
     private PayCheckoutResp tryResumeCheckout(long userId, PaymentOrderEntity entity) {
         if (!entity.getUserId().equals(userId)) {
             return null;
         }
-        JsonNode remote = client.getOrderInfo(entity.getIdrOrderId());
-        syncFromRemote(entity, remote);
-        paymentOrderRepository.save(entity);
+        JsonNode remote = refreshOrderFromRemote(entity);
         if (isTerminalUnpaidStatus(entity.getStatus())) {
             return null;
         }
@@ -94,9 +98,7 @@ public class IDataRiverPaymentBiz extends BaseBiz {
         if (!entity.getUserId().equals(userId)) {
             throw ValidationException.keyed(ResultCode.FORBIDDEN, "payment.order.forbidden");
         }
-        JsonNode remote = client.getOrderInfo(idrOrderId);
-        syncFromRemote(entity, remote);
-        paymentOrderRepository.save(entity);
+        JsonNode remote = refreshOrderFromRemote(entity);
         if (isTerminalUnpaidStatus(entity.getStatus())) {
             throw ValidationException.keyed(ResultCode.BAD_REQUEST, "payment.order.expired");
         }
@@ -104,7 +106,23 @@ public class IDataRiverPaymentBiz extends BaseBiz {
         return toCheckoutResp(entity, plan, remote, resumed);
     }
 
-    private PayCheckoutResp createNewCheckout(long userId, String planCode) {
+    private JsonNode refreshOrderFromRemote(PaymentOrderEntity entity) {
+        if (!client.isConfigured()) {
+            return null;
+        }
+        try {
+            JsonNode remote = client.getOrderInfo(entity.getIdrOrderId());
+            syncFromRemote(entity, remote);
+            paymentOrderRepository.save(entity);
+            return remote;
+        } catch (Exception ex) {
+            log.warn("refresh order {} failed, using local snapshot: {}", entity.getIdrOrderId(), ex.getMessage());
+            return null;
+        }
+    }
+
+    private PayCheckoutResp createNewCheckout(long userId, PayCheckoutReq req) {
+        String planCode = req.planCode();
         ProductPlanEntity plan = planBiz.requireActivePlanByCode(planCode);
         if (plan.getPriceCents() == null || plan.getPriceCents() <= 0) {
             throw ValidationException.keyed(ResultCode.BAD_REQUEST, "payment.plan.no_online_payment");
@@ -112,15 +130,15 @@ public class IDataRiverPaymentBiz extends BaseBiz {
         String projectId = PlanPaymentSupport.resolveProjectId(plan, configService.effective());
         String skuId = PlanPaymentSupport.resolveSkuId(plan, envProperties);
         if (projectId.isBlank() || skuId.isBlank()) {
-            throw new IllegalStateException("payment.plan.idr_not_configured");
+            throw ValidationException.keyed(ResultCode.BAD_REQUEST, "payment.plan.idr_not_configured");
         }
 
         String contactInfo = buildContactInfo(userId);
         Map<String, Object> orderInfo = new LinkedHashMap<>();
         orderInfo.put("quantity", 1);
-        orderInfo.put("coupon", "");
+        orderInfo.put("coupon", normalizeOptionalCode(req.couponCode()));
         orderInfo.put("contactInfo", contactInfo);
-        orderInfo.put("affCode", "");
+        orderInfo.put("affCode", normalizeOptionalCode(req.affCode()));
 
         String idrOrderId = client.createOrder(projectId, skuId, orderInfo);
         JsonNode remote = client.getOrderInfo(idrOrderId);
@@ -185,7 +203,7 @@ public class IDataRiverPaymentBiz extends BaseBiz {
         return ok(new PayPendingResp(
             entity.getIdrOrderId(),
             entity.getPlanCode(),
-            entity.getPlanName(),
+            planBiz.localizedPlanName(entity.getPlanCode(), entity.getPlanName()),
             entity.getStatus(),
             entity.getAmountCents(),
             entity.getCurrency()
@@ -281,7 +299,7 @@ public class IDataRiverPaymentBiz extends BaseBiz {
     /** 独立站 theme-basic 下单：本地无 PaymentOrder 时按 SKU + 联系邮箱导入并履约。 */
     private PaymentOrderEntity importStandaloneOrder(String orderId, JsonNode remote) {
         String contact = IdrOrderSnapshot.contactInfo(remote);
-        long userId = paymentUserResolver.resolveUserId(contact);
+        long userId = paymentUserLookup.resolveUserId(contact);
         String skuId = IdrOrderSnapshot.skuId(remote);
         if (skuId == null || skuId.isBlank()) {
             throw ValidationException.keyed(ResultCode.BAD_REQUEST, "payment.webhook.sku_required");
@@ -317,27 +335,41 @@ public class IDataRiverPaymentBiz extends BaseBiz {
         JsonNode remote,
         boolean resumed
     ) {
-        List<PayCheckoutResp.PayMethodOption> payments = client.parsePaymentMethods(remote).stream()
-            .map(m -> new PayCheckoutResp.PayMethodOption(m.method, m.name, m.desc, m.platform))
-            .toList();
+        List<PayCheckoutResp.PayMethodOption> payments = resolvePaymentMethods(remote);
         boolean alipayAvailable = payments.stream().anyMatch(p -> isAlipayLike(p.method()));
         return new PayCheckoutResp(
             entity.getId(),
             entity.getIdrOrderId(),
             plan.getId(),
             plan.getCode(),
-            plan.getName(),
+            planBiz.localizedPlanName(plan),
             entity.getStatus(),
             entity.getAmountCents(),
             entity.getCurrency(),
             payments,
             alipayAvailable ? messages.get("payment.alipay.vpn_hint") : null,
+            resolveExpiresAt(entity, remote),
             resumed
         );
     }
 
+    private Instant resolveExpiresAt(PaymentOrderEntity entity, JsonNode remote) {
+        Instant fromRemote = IdrOrderSnapshot.expiresAt(remote);
+        if (fromRemote != null) {
+            return fromRemote;
+        }
+        if (entity.getCreatedAt() != null) {
+            return entity.getCreatedAt().plusSeconds(DEFAULT_ORDER_EXPIRE_SECONDS);
+        }
+        return null;
+    }
+
     private static String buildContactInfo(long userId) {
         return "na-u-" + userId;
+    }
+
+    private static String normalizeOptionalCode(String value) {
+        return value == null ? "" : value.trim();
     }
 
     private static String extractOrderId(Map<String, Object> payload) {
@@ -346,6 +378,25 @@ public class IDataRiverPaymentBiz extends BaseBiz {
             id = payload.get("orderId");
         }
         return id == null ? null : String.valueOf(id);
+    }
+
+    private List<PayCheckoutResp.PayMethodOption> resolvePaymentMethods(JsonNode remote) {
+        if (remote != null && !remote.isMissingNode()) {
+            List<PayCheckoutResp.PayMethodOption> parsed = client.parsePaymentMethods(remote).stream()
+                .map(m -> new PayCheckoutResp.PayMethodOption(m.method, m.name, m.desc, m.platform))
+                .toList();
+            if (!parsed.isEmpty()) {
+                return parsed;
+            }
+        }
+        return defaultPaymentMethods();
+    }
+
+    private List<PayCheckoutResp.PayMethodOption> defaultPaymentMethods() {
+        return List.of(
+            new PayCheckoutResp.PayMethodOption("alipay", "alipay", "", true),
+            new PayCheckoutResp.PayMethodOption("wxpay", "wxpay", "", true)
+        );
     }
 
     private static boolean isAlipayLike(String method) {
@@ -362,7 +413,7 @@ public class IDataRiverPaymentBiz extends BaseBiz {
 
     private void requireConfigured() {
         if (!client.isConfigured()) {
-            throw new IllegalStateException("payment.not_configured");
+            throw ValidationException.keyed(ResultCode.BAD_REQUEST, "payment.not_configured");
         }
     }
 }

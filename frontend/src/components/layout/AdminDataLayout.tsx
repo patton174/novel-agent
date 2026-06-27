@@ -66,11 +66,14 @@ export function AdminDataPanelHeader({
 export function AdminDataPanelBody({
   children,
   className,
+  flush,
 }: {
   children: ReactNode
   className?: string
+  /** 表格等内容贴边，避免与面板双边框 */
+  flush?: boolean
 }) {
-  return <div className={cn(adminPanelPadding, className)}>{children}</div>
+  return <div className={cn(flush ? 'overflow-hidden' : adminPanelPadding, className)}>{children}</div>
 }
 
 /** 筛选条 */
@@ -88,9 +91,11 @@ export type AdminStatItem = {
   label: string
   value: ReactNode
   emphasis?: boolean
+  /** 次要说明（如订阅分布摘要） */
+  hint?: string
 }
 
-/** KPI 小卡片网格（比概览大屏紧凑，比单行 stat strip 可读） */
+/** KPI 单行统计条：4–8 项等分一行，窄屏横向滚动 */
 export function AdminStatStrip({
   items,
   loading,
@@ -100,26 +105,39 @@ export function AdminStatStrip({
   loading?: boolean
   className?: string
 }) {
+  const colCount = Math.min(Math.max(items.length, 1), 8)
+
   return (
-    <div className={cn('grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4', className)}>
+    <div
+      className={cn(
+        'grid gap-3 overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]',
+        className,
+      )}
+      style={{ gridTemplateColumns: `repeat(${colCount}, minmax(7.25rem, 1fr))` }}
+    >
       {items.map((item) => (
         <div
           key={item.label}
-          className="rounded-xl border border-border bg-white px-5 py-4 shadow-sm"
+          className="min-w-0 rounded-xl border border-border bg-white px-3 py-2.5 shadow-sm sm:px-4 sm:py-3"
         >
-          <p className="text-xs font-medium text-muted-foreground">{item.label}</p>
+          <p className="truncate text-[11px] font-medium text-muted-foreground sm:text-xs">{item.label}</p>
           {loading ? (
-            <Skeleton className="mt-2.5 h-7 w-24" />
+            <Skeleton className="mt-1.5 h-6 w-20 sm:mt-2 sm:h-7" />
           ) : (
             <p
               className={cn(
-                'mt-1.5 text-xl font-semibold tabular-nums tracking-tight text-foreground',
+                'mt-1 truncate text-lg font-semibold tabular-nums tracking-tight text-foreground sm:mt-1.5 sm:text-xl',
                 item.emphasis && 'text-primary',
               )}
             >
               {item.value}
             </p>
           )}
+          {item.hint && !loading ? (
+            <p className="mt-0.5 truncate text-[10px] text-muted-foreground sm:text-[11px]" title={item.hint}>
+              {item.hint}
+            </p>
+          ) : null}
         </div>
       ))}
     </div>

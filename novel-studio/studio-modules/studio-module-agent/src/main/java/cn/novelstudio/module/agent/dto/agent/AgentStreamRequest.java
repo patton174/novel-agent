@@ -20,8 +20,12 @@ public record AgentStreamRequest(
     /** 重连时仅回放 sequence 大于该值的事件，默认 -1 */
     Integer afterSequence,
     /** 临时模型覆盖：user_model id 或 pub:ai_model id */
-    String modelOverride
+    String modelOverride,
+    List<ReferencedBookRef> referencedBooks
 ) {
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     public record HistoryTurn(String role, String content) {}
+
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    public record ReferencedBookRef(String catalogNovelId) {}
 }

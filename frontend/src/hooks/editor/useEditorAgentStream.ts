@@ -1,3 +1,4 @@
+import i18n from '@/i18n'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type {
   AgentChoiceOption,
@@ -33,10 +34,11 @@ import {
 } from '../../utils/agentActiveRunResume'
 import {
   clearStreamRecoveryBanner,
+  getHostDetachBanner,
+  getStreamRecoveryBanner,
   isPeerDroppedStreamError,
   resolveAgentHostGuardMessage,
   shouldAttachStreamRecovery,
-  STREAM_RECOVERY_BANNER,
 } from '../../utils/agentStreamRecovery'
 import { shouldOpenRecoverySse } from '../../utils/agentStreamLease'
 import { createStreamPersistDebouncer } from '../../utils/streamPersist'
@@ -57,6 +59,7 @@ import {
 import { listSessions, listSessionsByNovel, loadSessionMessages } from '../../utils/chatSessionStore'
 import { sessionNeedsGeneratedTitle } from '../../utils/sessionTitle'
 import type { EditorCenterTab } from '../../components/editor/EditorCenterTabs'
+import type { ReferencedBookChip } from '../../components/chat/ChatComposer'
 import type { Novel } from '../../types/novel'
 import { useNovelStore } from '../../stores/novelStore'
 export interface UseEditorAgentStreamOptions {
@@ -127,6 +130,8 @@ export function useEditorAgentStream({
   const chapterWriteFinalizedRef = useRef(false)
   const [isLoading, setIsLoading] = useState(false)
   const [isSseRecovering, setIsSseRecovering] = useState(false)
+  const [referencedBooks, setReferencedBooks] = useState<ReferencedBookChip[]>([])
+  const referencedBooksRef = useRef<ReferencedBookChip[]>([])
   const [activeStreamMessageId, setActiveStreamMessageId] = useState<string | null>(null)
   const [thinkPanelOpen, setThinkPanelOpen] = useState<Record<string, boolean>>({})
 
@@ -159,6 +164,10 @@ export function useEditorAgentStream({
   useEffect(() => {
     messagesRef.current = messages
   }, [messages])
+
+  useEffect(() => {
+    referencedBooksRef.current = referencedBooks
+  }, [referencedBooks])
 
   const abortActiveStream = useCallback(() => {
     streamAbortRef.current?.abort()
@@ -316,7 +325,7 @@ export function useEditorAgentStream({
       setIsSseRecovering(true)
       live.state = {
         ...live.state,
-        hostGuardMessage: banner ?? live.state.hostGuardMessage ?? STREAM_RECOVERY_BANNER,
+        hostGuardMessage: banner ?? live.state.hostGuardMessage ?? getStreamRecoveryBanner(),
         streamError: undefined,
       }
       streamSyncRef.current?.()
@@ -388,7 +397,7 @@ export function useEditorAgentStream({
     const userText = rawText.trim()
     const sessionIdAtSend = agentSessionIdRef.current
     const localSessions = activeNovelId ? listSessionsByNovel(activeNovelId) : listSessions()
-    const titleAtSend = localSessions.find((s) => s.id === sessionIdAtSend)?.title ?? '新对话'
+    const titleAtSend = localSessions.find((s) => s.id === sessionIdAtSend)?.title ?? i18n.t('editor:session.defaultTitle')
     if (userText && sessionNeedsGeneratedTitle(titleAtSend)) {
       markSessionTitlePending?.(sessionIdAtSend)
     }
@@ -410,6 +419,7 @@ export function useEditorAgentStream({
     })
     if (!overrideText) {
       setInputValue('')
+      setReferencedBooks([])
     }
     const pausedMessageId = activeStreamMessageId
     if (pausedMessageId) {
@@ -605,7 +615,7 @@ export function useEditorAgentStream({
             statusWsFollowRunRef.current = true
             scheduleRunEventPoll(500)
             if (shouldOpenRecoverySse(streamAbortRef.current)) {
-              attachRecoveryRef.current(STREAM_RECOVERY_BANNER, true)
+              attachRecoveryRef.current(getStreamRecoveryBanner(), true)
             }
           }
           if (typeof parsed.sequence === 'number') {
@@ -616,7 +626,7 @@ export function useEditorAgentStream({
           }
           if (parsed.type === 'chapter.stream.started') {
             const title =
-              typeof parsed.payload?.title === 'string' ? parsed.payload.title : '章节'
+              typeof parsed.payload?.title === 'string' ? parsed.payload.title : i18n.t('editor:agent.stream.defaultChapter')
             const chapterId =
               typeof parsed.payload?.chapter_id === 'string'
                 ? parsed.payload.chapter_id
@@ -725,8 +735,7 @@ export function useEditorAgentStream({
               liveBox.state = {
                 ...liveBox.state,
                 streamError: undefined,
-                hostGuardMessage:
-                  '连接中断，任务在后台继续；正在通过托管通道同步进度…',
+                hostGuardMessage: getHostDetachBanner(),
               }
             }
           }
@@ -841,7 +850,7 @@ export function useEditorAgentStream({
         statusWsFollowRunRef.current = true
         scheduleRunEventPoll(500)
         if (shouldOpenRecoverySse(streamAbortRef.current)) {
-          attachRecoveryRef.current(STREAM_RECOVERY_BANNER, true)
+          attachRecoveryRef.current(getStreamRecoveryBanner(), true)
         }
       }
       handleAgentEvent(eventName, rawData)
@@ -916,6 +925,10 @@ export function useEditorAgentStream({
           novel_id: activeNovelId ?? undefined,
           chapter_id: activeChapterId ?? undefined,
           history,
+          referenced_books:
+            referencedBooksRef.current.length > 0
+              ? referencedBooksRef.current.map((b) => ({ catalogNovelId: b.catalogNovelId }))
+              : undefined,
         },
         handleAgentEvent,
         { signal: abortController.signal },
@@ -940,7 +953,7 @@ export function useEditorAgentStream({
         sseDisconnectedEarly = true
         liveBox.state = {
           ...liveBox.state,
-          hostGuardMessage: STREAM_RECOVERY_BANNER,
+          hostGuardMessage: getStreamRecoveryBanner(),
           streamError: undefined,
         }
         syncStreamState()
@@ -948,7 +961,7 @@ export function useEditorAgentStream({
         sseDisconnectedEarly = true
         liveBox.state = {
           ...liveBox.state,
-          hostGuardMessage: STREAM_RECOVERY_BANNER,
+          hostGuardMessage: getStreamRecoveryBanner(),
           streamError: undefined,
         }
         syncStreamState()
@@ -956,7 +969,7 @@ export function useEditorAgentStream({
         const message =
           error instanceof Error
             ? error.message
-            : 'AI 服务暂时不可用，请确认本机 Python（:8000）与 PyAI（:8082）已启动，并已登录。'
+            : i18n.t('editor:agent.stream.serviceUnavailable')
         setMessages((prev) => {
           const next = prev.map((m) =>
             m.id === assistantMessageId
@@ -1013,12 +1026,12 @@ export function useEditorAgentStream({
         if (!liveBox.state.hostGuardMessage) {
           liveBox.state = {
             ...liveBox.state,
-            hostGuardMessage: STREAM_RECOVERY_BANNER,
+            hostGuardMessage: getStreamRecoveryBanner(),
             streamError: undefined,
           }
           syncStreamState()
         }
-        startRunSseRecovery(STREAM_RECOVERY_BANNER)
+        startRunSseRecovery(getStreamRecoveryBanner())
       } else {
         finishStreamRecovery()
         endRunLiveFollow()
@@ -1138,7 +1151,7 @@ export function useEditorAgentStream({
       return
     }
     if (isLoading) return
-    void handleSend(`我选择「${choice.title}」`)
+    void handleSend(i18n.t('editor:agent.stream.chooseSingle', { title: choice.title }))
   }
 
   const handleInteractionSubmit = (
@@ -1176,7 +1189,7 @@ export function useEditorAgentStream({
       const selected = payload.choice
       if (interaction.type === 'confirm') {
         if (isLoading) return
-        void handleSend(selected.id === 'yes' ? '确认' : '取消')
+        void handleSend(selected.id === 'yes' ? i18n.t('editor:agent.stream.confirm') : i18n.t('editor:agent.stream.cancel'))
         return
       }
       if (
@@ -1193,7 +1206,7 @@ export function useEditorAgentStream({
         return
       }
       if (isLoading) return
-      void handleSend(`我选择「${selected.title}」`)
+      void handleSend(i18n.t('editor:agent.stream.chooseSingle', { title: selected.title }))
       return
     }
     if (interaction.type === 'multi_select' && payload?.selected && payload.selected.length > 0) {
@@ -1218,7 +1231,7 @@ export function useEditorAgentStream({
       }
       if (isLoading) return
       const quoted = payload.selected.map((item) => `「${item.title}」`).join('、')
-      void handleSend(`我选择${quoted}`)
+      void handleSend(i18n.t('editor:agent.stream.chooseMultiple', { titles: quoted }))
       return
     }
     const customText = payload?.customText?.trim()
@@ -1389,7 +1402,7 @@ export function useEditorAgentStream({
             agentTimeline: streamState.timeline.length > 0 ? streamState.timeline : undefined,
             agentTodos: streamState.todos?.length ? streamState.todos : undefined,
             agentRunId: active.id,
-            agentHostGuardMessage: STREAM_RECOVERY_BANNER,
+            agentHostGuardMessage: getStreamRecoveryBanner(),
             agentStreamPhase: deriveAssistantStreamPhase(streamState),
             agentAwaitingInteraction: streamState.awaitingInteraction,
           }
@@ -1398,7 +1411,7 @@ export function useEditorAgentStream({
           }
           return [...prev, resumed]
         })
-        startRunSseRecovery(STREAM_RECOVERY_BANNER)
+        startRunSseRecovery(getStreamRecoveryBanner())
       } catch {
         resumeCheckedSessionRef.current = null
       }
@@ -1435,6 +1448,8 @@ export function useEditorAgentStream({
     liveStreamMessage,
     composerContextUsage,
     composerSpinnerMode,
+    referencedBooks,
+    setReferencedBooks,
     streamAbortRef,
     runWsRef,
   }

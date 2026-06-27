@@ -5,17 +5,34 @@ import type {
   SelectHTMLAttributes,
 } from 'react'
 import type { ComponentProps } from 'react'
-import { Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import {
   PixelBadge,
-  PixelNativeSelect,
   PixelTableActionButton,
-  PIXEL_FOCUS_RING,
-  PIXEL_INPUT,
 } from '@/components/pixel'
+import {
+  FormChip,
+  FormControlRow,
+  FormInput,
+  FormSelect,
+} from '@/components/shared/FormControls'
+import {
+  formActionsClass,
+  formButtonOutlineClass,
+  formButtonPrimaryClass,
+  formControlRowClass,
+  formFieldStackClass,
+  formInputClass,
+  formLabelClass,
+} from '@/components/shared/formControlTokens'
+import {
+  ToolbarButton,
+  ToolbarGroup,
+  ToolbarIconButton,
+  ToolbarSearchInput,
+} from '@/components/shared/ToolbarControls'
 import {
   adminNoticeClass,
   adminPanelPadding,
@@ -29,6 +46,7 @@ export function AdminField({
   children,
   className,
   layout = 'toolbar',
+  htmlFor,
 }: {
   label: string
   hint?: string
@@ -36,24 +54,22 @@ export function AdminField({
   className?: string
   /** toolbar：筛选条；form：弹窗/配置表单 */
   layout?: 'toolbar' | 'form'
+  htmlFor?: string
 }) {
   const isForm = layout === 'form'
   return (
     <div
       className={cn(
-        'grid min-w-0 flex-1 gap-1.5',
-        isForm ? 'sm:max-w-none' : 'min-w-[140px] sm:max-w-xs',
+        formFieldStackClass,
+        isForm ? 'w-full' : 'min-w-[140px] flex-1 sm:max-w-xs',
         className,
       )}
     >
-      <span
-        className={cn(
-          'font-medium text-foreground',
-          isForm ? 'text-xs' : 'text-xs',
-        )}
-      >
-        {label}
-      </span>
+      {label ? (
+        <label htmlFor={htmlFor} className={formLabelClass}>
+          {label}
+        </label>
+      ) : null}
       {children}
       {hint ? (
         <span className="text-xs leading-snug text-muted-foreground">{hint}</span>
@@ -62,50 +78,104 @@ export function AdminField({
   )
 }
 
-const adminControlClass = PIXEL_INPUT
+const adminControlClass = formInputClass
 
-/** 管理台下拉框（像素风原生 select） */
+/** 并排控件行（输入 + 按钮等同高） */
+export const AdminControlRow = FormControlRow
+
+/** 工具栏控件行（搜索 + 刷新等） */
+export const AdminToolbarGroup = ToolbarGroup
+
+/** 工具栏文字按钮，与输入框同高 */
+export const AdminToolbarButton = ToolbarButton
+
+/** 工具栏图标按钮，与输入框同高 */
+export const AdminToolbarIconButton = ToolbarIconButton
+
+/** 管理台搜索框 */
+export function AdminSearchInput({
+  className,
+  inputClassName,
+  ...props
+}: InputHTMLAttributes<HTMLInputElement> & { inputClassName?: string }) {
+  return (
+    <ToolbarSearchInput className={className} inputClassName={inputClassName} {...props} />
+  )
+}
+
+/** 管理台下拉框 */
 export function AdminSelect({
   className,
   children,
   ...props
 }: SelectHTMLAttributes<HTMLSelectElement>) {
   return (
-    <PixelNativeSelect className={cn(adminControlClass, className)} {...props}>
+    <FormSelect className={className} {...props}>
       {children}
-    </PixelNativeSelect>
+    </FormSelect>
   )
 }
 
-/** 管理台搜索框 */
-export function AdminSearchInput({
-  className,
-  ...props
-}: InputHTMLAttributes<HTMLInputElement>) {
-  return (
-    <div className="relative">
-      <Search
-        className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
-        aria-hidden
-      />
-      <Input className={cn(adminControlClass, 'pl-9', className)} {...props} />
-    </div>
-  )
-}
-
-/** 管理台文本输入（与 Select 同高同圆角） */
+/** 管理台文本输入 */
 export function AdminTextInput({
   className,
   ...props
 }: InputHTMLAttributes<HTMLInputElement>) {
-  return <Input className={cn(adminControlClass, className)} {...props} />
+  return <FormInput className={className} {...props} />
 }
+
+/** 日期时间输入 */
+export function AdminDateTimeInput({
+  className,
+  ...props
+}: InputHTMLAttributes<HTMLInputElement>) {
+  return (
+    <Input
+      type="datetime-local"
+      className={cn(
+        adminControlClass,
+        'py-0 leading-9',
+        '[&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-70',
+        className,
+      )}
+      {...props}
+    />
+  )
+}
+
+/** 多选 Chip（套餐功能项等） */
+export const AdminFormChip = FormChip
+
+/** 弹窗表单垂直间距 */
+export const adminFormStackClass = 'grid gap-4 py-2'
+
+export function AdminFormStack({
+  children,
+  className,
+}: {
+  children: ReactNode
+  className?: string
+}) {
+  return <div className={cn(adminFormStackClass, className)}>{children}</div>
+}
+
+/** 弹窗两列字段行 — 顶对齐，避免左列 hint 撑高导致错位 */
+export const adminFormRowClass = 'grid grid-cols-1 gap-3 sm:grid-cols-2 sm:items-start'
+
+/** 表单网格：四列等宽字段 */
+export const adminFormGridClass = 'grid gap-3 sm:grid-cols-2 lg:grid-cols-4 items-start'
+
+/** 表单网格：两列 */
+export const adminFormRowWideClass = 'grid grid-cols-1 gap-3 sm:grid-cols-2 items-start'
+
+/** @deprecated 使用 adminFormRowWideClass */
+export const adminFormGridWideClass = adminFormRowWideClass
 
 type AdminActionSize = 'sm' | 'md' | 'lg'
 
 type AdminButtonProps = Omit<ComponentProps<typeof Button>, 'size' | 'variant'> & {
   size?: AdminActionSize
-  /** @deprecated 管理台按钮统一映射为 shadcn variant，保留仅为兼容旧调用 */
+  /** @deprecated 管理台按钮统一 h-9，保留仅为兼容旧调用 */
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger'
   loading?: boolean
   leftIcon?: ReactNode
@@ -114,21 +184,13 @@ type AdminButtonProps = Omit<ComponentProps<typeof Button>, 'size' | 'variant'> 
 
 type AdminButtonGhostProps = AdminButtonProps & Pick<ComponentProps<typeof Button>, 'asChild'>
 
-function mapAdminButtonSize(size: AdminActionSize): ComponentProps<typeof Button>['size'] {
-  if (size === 'lg') return 'lg'
-  if (size === 'md') return 'default'
-  return 'sm'
-}
-
-const adminActionButtonClass = 'gap-1.5 shadow-none'
-
 /** 主操作按钮（保存、创建等） */
-export function AdminButton({ className, size = 'sm', variant: _variant, ...props }: AdminButtonProps) {
+export function AdminButton({ className, size: _size, variant: _variant, ...props }: AdminButtonProps) {
   return (
     <Button
       variant="default"
-      size={mapAdminButtonSize(size)}
-      className={cn(adminActionButtonClass, className)}
+      size="lg"
+      className={cn(formButtonPrimaryClass, className)}
       {...props}
     />
   )
@@ -137,26 +199,21 @@ export function AdminButton({ className, size = 'sm', variant: _variant, ...prop
 /** 次要操作按钮（取消、测试连接等） */
 export function AdminButtonOutline({
   className,
-  size = 'sm',
+  size: _size,
   variant: _variant,
   ...props
 }: AdminButtonProps) {
   return (
     <Button
       variant="outline"
-      size={mapAdminButtonSize(size)}
-      className={cn(adminActionButtonClass, className)}
+      size="lg"
+      className={cn(formButtonOutlineClass, className)}
       {...props}
     />
   )
 }
 
-const adminGhostLinkClass = cn(
-  'inline-flex h-7 items-center justify-center gap-1 rounded-md border border-transparent bg-transparent px-2 text-xs font-medium text-foreground hover:bg-muted hover:text-foreground',
-  PIXEL_FOCUS_RING,
-)
-
-/** 表格/列表行内操作 */
+/** 表格/列表行内操作 — 保持紧凑 h-7 */
 export function AdminButtonGhost({
   className,
   asChild,
@@ -168,7 +225,16 @@ export function AdminButtonGhost({
   ...props
 }: AdminButtonGhostProps) {
   if (asChild) {
-    return <Button asChild className={cn(adminGhostLinkClass, className)} {...props} />
+    return (
+      <Button
+        asChild
+        className={cn(
+          'inline-flex h-7 items-center justify-center gap-1 rounded-lg border border-transparent bg-transparent px-2 text-xs font-medium text-foreground hover:bg-muted/55',
+          className,
+        )}
+        {...props}
+      />
+    )
   }
   return (
     <PixelTableActionButton
@@ -181,7 +247,7 @@ export function AdminButtonGhost({
   )
 }
 
-/** 图标按钮（刷新等） */
+/** 图标按钮（刷新等）— 工具栏场景请用 AdminToolbarIconButton */
 export function AdminButtonIcon({
   className,
   variant: _variant,
@@ -192,10 +258,9 @@ export function AdminButtonIcon({
   ...props
 }: AdminButtonProps) {
   return (
-    <Button
+    <ToolbarIconButton
       variant="ghost"
-      size="icon-sm"
-      className={cn('shrink-0 text-muted-foreground hover:text-foreground', className)}
+      className={cn('text-muted-foreground hover:text-foreground', className)}
       {...props}
     />
   )
@@ -214,8 +279,8 @@ export function AdminFormActions({
   return (
     <div
       className={cn(
-        'flex flex-wrap items-center gap-2 pt-1',
-        bordered && 'border-t border-border pt-3',
+        formActionsClass,
+        bordered && 'border-t border-border/80 pt-3',
         className,
       )}
     >
@@ -237,12 +302,12 @@ export function AdminSummaryBar({
   return (
     <div
       className={cn(
-        'flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-lg border border-border bg-muted/20 px-3 py-2 text-xs text-muted-foreground',
+        'flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-lg border border-border/80 bg-muted/15 px-3 py-2 text-xs text-muted-foreground shadow-[0_1px_2px_rgba(0,0,0,0.03)]',
         className,
       )}
     >
       <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-4 gap-y-1.5">{children}</div>
-      {actions ? <div className="flex shrink-0 flex-wrap items-center gap-1.5">{actions}</div> : null}
+      {actions ? <div className={cn(formControlRowClass, 'shrink-0')}>{actions}</div> : null}
     </div>
   )
 }
@@ -258,9 +323,9 @@ export function AdminTabList({
   trailing?: ReactNode
 }) {
   return (
-    <nav className={cn('flex flex-wrap items-center gap-1.5 border-b border-border pb-3', className)}>
+    <nav className={cn('flex flex-wrap items-center gap-1.5 border-b border-border/80 pb-3', className)}>
       {children}
-      {trailing ? <div className="ml-auto flex items-center gap-2">{trailing}</div> : null}
+      {trailing ? <div className={cn(formControlRowClass, 'ml-auto')}>{trailing}</div> : null}
     </nav>
   )
 }
@@ -276,10 +341,10 @@ export function AdminTabTrigger({
     <button
       type="button"
       className={cn(
-        'inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-xs font-medium transition-colors',
+        'inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-xs font-medium transition-colors duration-200',
         active
-          ? 'bg-primary text-primary-foreground shadow-xs'
-          : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+          ? 'bg-primary text-primary-foreground shadow-[0_1px_3px_rgba(0,0,0,0.08)]'
+          : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground',
         className,
       )}
       {...props}
@@ -328,3 +393,6 @@ export function AdminNotice({
 
 /** 复用 toolbar 样式（若需单独引用） */
 export { adminToolbarClass, adminPanelPadding }
+export { FORM_CONTROL_HEIGHT as adminToolbarControlHeight } from '@/components/shared/formControlTokens'
+
+export { FormField as AdminFormField } from '@/components/shared/FormControls'

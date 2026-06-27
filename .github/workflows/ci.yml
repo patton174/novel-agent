@@ -87,4 +87,9 @@ jobs:
           distribution: temurin
           java-version: 21
           cache: maven
+      - run: >-
+          mvn -B
+          -pl studio-modules/studio-module-notification,studio-modules/studio-module-auth,studio-modules/studio-module-billing,studio-modules/studio-module-worker,studio-modules/studio-module-upload,studio-platform/studio-platform-scheduling
+          -am test
+          -Dsurefire.failIfNoSpecifiedTests=false
       - run: mvn -B -pl studio-app -am verify -DskipTests

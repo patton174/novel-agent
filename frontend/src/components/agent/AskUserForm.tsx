@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { EditorButton } from '../ui/EditorButton'
 import { EDITOR_PIXEL_INPUT } from '@/lib/editorPixelClasses'
 import { ASK_USER_FORM_WRAP, ccChoiceButtonClass } from '@/lib/timelineClasses'
@@ -24,6 +25,7 @@ function isQuestionAnswered(q: AskUserQuestion, answers: AskUserAnswers): boolea
 }
 
 export function AskUserForm({ interaction, onSubmit }: AskUserFormProps) {
+  const { t } = useTranslation('editor')
   const questions = interaction.questions ?? []
   const [answers, setAnswers] = useState<AskUserAnswers>({})
   const [stepIndex, setStepIndex] = useState(0)
@@ -101,7 +103,7 @@ export function AskUserForm({ interaction, onSubmit }: AskUserFormProps) {
 
       <div className="flex flex-col gap-1.5">
         <div className="font-mono text-[0.68rem] font-bold uppercase tracking-wide text-muted-foreground">
-          第 {stepIndex + 1} / {total} 题
+          {t('agent.askUser.progress', { current: stepIndex + 1, total })}
         </div>
         <div className="h-1 overflow-hidden border border-foreground bg-background" aria-hidden>
           <div
@@ -121,7 +123,7 @@ export function AskUserForm({ interaction, onSubmit }: AskUserFormProps) {
             <input
               className={EDITOR_PIXEL_INPUT}
               value={answers[current.id]?.input ?? ''}
-              placeholder={current.free_text_hint ?? interaction.free_text_hint ?? '请输入…'}
+              placeholder={current.free_text_hint ?? interaction.free_text_hint ?? t('agent.askUser.inputPlaceholder')}
               autoFocus
               onChange={(e) =>
                 setAnswers((prev) => ({ ...prev, [current.id]: { input: e.target.value } }))
@@ -132,7 +134,7 @@ export function AskUserForm({ interaction, onSubmit }: AskUserFormProps) {
               stepIndex={stepIndex}
               onPrev={() => setStepIndex((i) => Math.max(0, i - 1))}
               disabled={!currentAnswered}
-              label={isLast ? '提交' : '下一题'}
+              label={isLast ? t('agent.askUser.submit') : t('agent.askUser.next')}
               onAction={() => advanceOrSubmit(answers)}
             />
           </>
@@ -161,14 +163,14 @@ export function AskUserForm({ interaction, onSubmit }: AskUserFormProps) {
             stepIndex={stepIndex}
             onPrev={() => setStepIndex((i) => Math.max(0, i - 1))}
             disabled={!canAdvanceSingle}
-            label={isLast ? '提交' : '下一题'}
+            label={isLast ? t('agent.askUser.submit') : t('agent.askUser.next')}
             onAction={() => advanceOrSubmit(answers)}
           />
         ) : null}
 
         {effectiveType === 'multi_select' ? (
           <>
-            <div className="text-[11px] text-muted-foreground">可多选，选完后点「下一题」</div>
+            <div className="text-[11px] text-muted-foreground">{t('agent.askUser.multiSelectHint')}</div>
             {selectOptions.map((opt) => {
               const selected = answers[current.id]?.selected?.some((c) => c.id === opt.id)
               return (
@@ -193,8 +195,12 @@ export function AskUserForm({ interaction, onSubmit }: AskUserFormProps) {
               disabled={!canAdvanceMulti}
               label={
                 isLast
-                  ? `提交${multiCount > 0 ? ` (${multiCount})` : ''}`
-                  : `下一题${multiCount > 0 ? ` (${multiCount})` : ''}`
+                  ? multiCount > 0
+                    ? t('agent.askUser.submitWithCount', { count: multiCount })
+                    : t('agent.askUser.submit')
+                  : multiCount > 0
+                    ? t('agent.askUser.nextWithCount', { count: multiCount })
+                    : t('agent.askUser.next')
               }
               onAction={() => advanceOrSubmit(answers)}
             />
@@ -218,11 +224,12 @@ function ActionRow({
   label: string
   onAction: () => void
 }) {
+  const { t } = useTranslation('editor')
   return (
     <div className="mt-1 flex items-center justify-between gap-2 max-md:mt-0.5 max-md:gap-1.5">
       {stepIndex > 0 ? (
         <EditorButton variant="tool" type="button" size="sm" onClick={onPrev}>
-          上一题
+          {t('agent.askUser.prev')}
         </EditorButton>
       ) : (
         <span />

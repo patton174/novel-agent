@@ -12,6 +12,7 @@ public record PlanCrmResp(
     Long monthlyTokenQuota,
     Integer monthlyRunQuota,
     Integer rateLimitRpm,
+    String overagePolicy,
     boolean isActive,
     boolean isFeatured,
     int sortOrder,

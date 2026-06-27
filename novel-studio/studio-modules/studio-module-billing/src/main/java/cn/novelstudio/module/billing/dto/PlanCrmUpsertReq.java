@@ -13,6 +13,7 @@ public record PlanCrmUpsertReq(
     Long monthlyTokenQuota,
     Integer monthlyRunQuota,
     Integer rateLimitRpm,
+    String overagePolicy,
     Boolean isFeatured,
     Integer sortOrder,
     List<String> features,

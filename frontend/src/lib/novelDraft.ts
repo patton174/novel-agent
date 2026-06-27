@@ -1,5 +1,6 @@
 /** Fanqie-style create-novel draft fields + assembly for stored description. */
 
+import i18n from '@/i18n'
 import type { CreateNovelPayload } from '@/types/novel'
 
 export interface NovelDraftForm {
@@ -19,30 +20,75 @@ export interface NovelDraftSuggestion extends NovelDraftForm {
   description: string
 }
 
-export const NOVEL_GENRE_OPTIONS = [
-  '玄幻',
-  '奇幻',
-  '仙侠',
-  '都市',
-  '科幻',
-  '悬疑',
-  '历史',
-  '游戏',
-  '体育',
-  '诸天无限',
+export const NOVEL_GENRE_KEYS = [
+  'xuanhuan',
+  'qihuan',
+  'xianxia',
+  'dushi',
+  'kehuan',
+  'xuanyi',
+  'lishi',
+  'youxi',
+  'tiyu',
+  'zhutian',
 ] as const
 
-export const NOVEL_TAG_PRESETS = [
-  '爽文',
-  '单女主',
-  '单男主',
-  '系统',
-  '重生',
-  '穿越',
-  '全民求生',
-  '无敌流',
-  '快节奏',
+export type NovelGenreKey = (typeof NOVEL_GENRE_KEYS)[number]
+
+export const NOVEL_TAG_KEYS = [
+  'shuangwen',
+  'singleHeroine',
+  'singleHero',
+  'system',
+  'rebirth',
+  'transmigration',
+  'survival',
+  'invincible',
+  'fastPaced',
 ] as const
+
+export type NovelTagKey = (typeof NOVEL_TAG_KEYS)[number]
+
+const NOVEL_DRAFT_SECTION_KEYS = [
+  'hook',
+  'synopsis',
+  'worldview',
+  'protagonist',
+  'sellingPoints',
+] as const
+
+type NovelDraftSectionKey = (typeof NOVEL_DRAFT_SECTION_KEYS)[number]
+
+/** Legacy Chinese section labels for parsing stored descriptions */
+const LEGACY_SECTION_LABELS: Record<NovelDraftSectionKey, readonly string[]> = {
+  hook: ['一句话卖点'],
+  synopsis: ['简介'],
+  worldview: ['世界观'],
+  protagonist: ['主角'],
+  sellingPoints: ['卖点'],
+}
+
+export function novelGenreLabel(key: string): string {
+  return i18n.t(`dashboard:novelDraft.genres.${key}`, { defaultValue: key })
+}
+
+export function novelTagLabel(key: string): string {
+  return i18n.t(`dashboard:novelDraft.tags.${key}`, { defaultValue: key })
+}
+
+export function getNovelGenreOptions(): readonly string[] {
+  return NOVEL_GENRE_KEYS.map((key) => novelGenreLabel(key))
+}
+
+export function getNovelTagPresets(): readonly string[] {
+  return NOVEL_TAG_KEYS.map((key) => novelTagLabel(key))
+}
+
+/** @deprecated use getNovelGenreOptions() */
+export const NOVEL_GENRE_OPTIONS = NOVEL_GENRE_KEYS
+
+/** @deprecated use getNovelTagPresets() */
+export const NOVEL_TAG_PRESETS = NOVEL_TAG_KEYS
 
 export function emptyNovelDraftForm(): NovelDraftForm {
   return {
@@ -59,16 +105,21 @@ export function emptyNovelDraftForm(): NovelDraftForm {
   }
 }
 
-export function assembleNovelDescription(form: Pick<
-  NovelDraftForm,
-  'hook' | 'synopsis' | 'worldview' | 'protagonist' | 'sellingPoints'
->): string {
+function sectionMarker(key: NovelDraftSectionKey): string {
+  return i18n.t(`dashboard:novelDraft.sectionMarkers.${key}`)
+}
+
+export function assembleNovelDescription(
+  form: Pick<NovelDraftForm, 'hook' | 'synopsis' | 'worldview' | 'protagonist' | 'sellingPoints'>,
+): string {
   const parts: string[] = []
-  if (form.hook.trim()) parts.push(`【一句话卖点】${form.hook.trim()}`)
-  if (form.synopsis.trim()) parts.push(`【简介】\n${form.synopsis.trim()}`)
-  if (form.worldview.trim()) parts.push(`【世界观】${form.worldview.trim()}`)
-  if (form.protagonist.trim()) parts.push(`【主角】${form.protagonist.trim()}`)
-  if (form.sellingPoints.trim()) parts.push(`【卖点】${form.sellingPoints.trim()}`)
+  if (form.hook.trim()) parts.push(`【${sectionMarker('hook')}】${form.hook.trim()}`)
+  if (form.synopsis.trim()) parts.push(`【${sectionMarker('synopsis')}】\n${form.synopsis.trim()}`)
+  if (form.worldview.trim()) parts.push(`【${sectionMarker('worldview')}】${form.worldview.trim()}`)
+  if (form.protagonist.trim()) parts.push(`【${sectionMarker('protagonist')}】${form.protagonist.trim()}`)
+  if (form.sellingPoints.trim()) {
+    parts.push(`【${sectionMarker('sellingPoints')}】${form.sellingPoints.trim()}`)
+  }
   return parts.join('\n\n')
 }
 
@@ -121,10 +172,20 @@ export function buildDraftPayload(form: NovelDraftForm, mode: 'generate' | 'opti
   }
 }
 
-function extractSection(desc: string, label: string): string {
-  const re = new RegExp(`【${label}】\\s*([\\s\\S]*?)(?=\\n\\n【|$)`)
-  const match = desc.match(re)
-  return match?.[1]?.trim() ?? ''
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+function extractSection(desc: string, key: NovelDraftSectionKey): string {
+  const labels = [sectionMarker(key), ...LEGACY_SECTION_LABELS[key]]
+  for (const label of labels) {
+    const re = new RegExp(`【${escapeRegExp(label)}】\\s*([\\s\\S]*?)(?=\\n\\n【|$)`)
+    const match = desc.match(re)
+    if (match?.[1]?.trim()) {
+      return match[1].trim()
+    }
+  }
+  return ''
 }
 
 /** 将已存储小说字段还原为创建/编辑表单 */
@@ -151,11 +212,11 @@ export function novelToDraftForm(novel: {
 
   const desc = novel.description?.trim() ?? ''
   if (desc) {
-    form.hook = extractSection(desc, '一句话卖点')
-    form.synopsis = extractSection(desc, '简介')
-    form.worldview = extractSection(desc, '世界观')
-    form.protagonist = extractSection(desc, '主角')
-    form.sellingPoints = extractSection(desc, '卖点')
+    form.hook = extractSection(desc, 'hook')
+    form.synopsis = extractSection(desc, 'synopsis')
+    form.worldview = extractSection(desc, 'worldview')
+    form.protagonist = extractSection(desc, 'protagonist')
+    form.sellingPoints = extractSection(desc, 'sellingPoints')
     if (!form.synopsis && !form.hook && !form.worldview) {
       form.synopsis = desc
     }

@@ -1,3 +1,5 @@
+import i18n from '@/i18n'
+
 export type ChapterExportFormat = 'txt' | 'md' | 'json'
 
 function sanitizeFilename(name: string): string {
@@ -16,7 +18,7 @@ export function exportChapterContent(
   let ext = 'txt'
 
   if (format === 'md') {
-    body = `# ${title.trim() || 'Chapter'}\n\n${content}`
+    body = `# ${title.trim() || i18n.t('dashboard:novels.defaultChapterTitle')}\n\n${content}`
     mime = 'text/markdown;charset=utf-8'
     ext = 'md'
   } else if (format === 'json') {

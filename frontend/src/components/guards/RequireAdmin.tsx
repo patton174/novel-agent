@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
 import { Navigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { BrandLoader } from '@/components/loading/BrandLoader'
 import { fetchUserInfo } from '../../api/userApi'
 import { useUserStore } from '../../stores/userStore'
 import { RequireAuth } from './RequireAuth'
 
 export function RequireAdmin({ children }: { children: React.ReactNode }) {
+  const { t } = useTranslation('common')
   const profile = useUserStore((s) => s.profile)
   const setProfile = useUserStore((s) => s.setProfile)
   const [profileReady, setProfileReady] = useState(Boolean(profile))
@@ -16,7 +18,7 @@ export function RequireAdmin({ children }: { children: React.ReactNode }) {
       if (profile.role === 'admin') {
         void import('../../pages/admin/AdminHomePage')
         void import('../../pages/admin/UsersPage')
-        void import('../../pages/admin/CrawlerPage')
+        void import('../../pages/admin/CatalogPage')
       }
       return
     }
@@ -41,7 +43,7 @@ export function RequireAdmin({ children }: { children: React.ReactNode }) {
   return (
     <RequireAuth>
       {!profileReady ? (
-        <BrandLoader label="正在加载管理权限" fullScreen />
+        <BrandLoader label={t('loading.adminPermissions')} fullScreen />
       ) : profile?.role === 'admin' ? (
         children
       ) : (

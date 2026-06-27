@@ -96,12 +96,22 @@ export function IdrProjectSkuPicker({
   }
 
   return (
-    <div className={cn(compact ? 'grid gap-2' : 'grid gap-3 sm:grid-cols-2', className)}>
+    <div
+      className={cn(
+        compact ? 'grid min-w-[280px] grid-cols-2 items-center gap-2' : 'grid gap-3 sm:grid-cols-2 sm:items-start',
+        className,
+      )}
+    >
       {!hideProject ? (
-        <AdminField label={t('admin:products.pickProject')} className="sm:max-w-none">
+        <AdminField
+          label={compact ? '' : t('admin:products.pickProject')}
+          layout="form"
+          className="min-w-0 sm:max-w-none"
+        >
           <AdminSelect
             value={projectId ?? ''}
             disabled={disabled || loadingProjects}
+            aria-label={t('admin:products.pickProject')}
             onChange={(e) => handleProjectChange(e.target.value)}
           >
             <option value="">{t('admin:products.pickProjectPlaceholder')}</option>
@@ -113,23 +123,19 @@ export function IdrProjectSkuPicker({
           </AdminSelect>
           {!compact && catalogError ? (
             <p className="text-xs text-destructive">{catalogError}</p>
-          ) : !compact ? (
-            <button
-              type="button"
-              className="text-left text-xs text-primary hover:underline disabled:opacity-50"
-              disabled={loadingProjects}
-              onClick={() => void loadProjects()}
-            >
-              {loadingProjects ? t('admin:products.catalogLoading') : t('admin:products.catalogRefresh')}
-            </button>
           ) : null}
         </AdminField>
       ) : null}
       {!hideSku ? (
-        <AdminField label={t('admin:products.pickSku')} className="sm:max-w-none">
+        <AdminField
+          label={compact ? '' : t('admin:products.pickSku')}
+          layout="form"
+          className="min-w-0 sm:max-w-none"
+        >
           <AdminSelect
             value={skuId ?? ''}
             disabled={disabled || !projectId || loadingSkus}
+            aria-label={t('admin:products.pickSku')}
             onChange={(e) => onSkuChange(e.target.value || null)}
           >
             <option value="">{t('admin:products.pickSkuPlaceholder')}</option>
@@ -143,6 +149,18 @@ export function IdrProjectSkuPicker({
             <span className="text-xs text-muted-foreground">{t('admin:products.noSkus')}</span>
           ) : null}
         </AdminField>
+      ) : null}
+      {!compact && !hideProject ? (
+        <div className="sm:col-span-2">
+          <button
+            type="button"
+            className="text-left text-xs text-primary hover:underline disabled:opacity-50"
+            disabled={loadingProjects}
+            onClick={() => void loadProjects()}
+          >
+            {loadingProjects ? t('admin:products.catalogLoading') : t('admin:products.catalogRefresh')}
+          </button>
+        </div>
       ) : null}
     </div>
   )

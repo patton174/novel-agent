@@ -1,4 +1,4 @@
-export type ModelType = 'llm' | 'embedding' | 'crawl' | 'image'
+export type ModelType = 'llm' | 'embedding' | 'image'
 
 export interface AiModel {
   id: string

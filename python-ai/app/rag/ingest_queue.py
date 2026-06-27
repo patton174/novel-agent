@@ -52,7 +52,9 @@ async def index_with_retry(
             )
             if settings.kg_enabled and (content or "").strip():
                 asyncio.create_task(
-                    _ingest_kg_background(novel_id=novel_id, content=content)
+                    _ingest_kg_background(
+                        novel_id=novel_id, chapter_id=chapter_id, content=content
+                    )
                 )
             return count
         except Exception as exc:
@@ -72,10 +74,17 @@ async def index_with_retry(
     raise last_exc
 
 
-async def _ingest_kg_background(*, novel_id: str, content: str) -> None:
+async def _ingest_kg_background(*, novel_id: str, chapter_id: str, content: str) -> None:
     try:
         from app.kg.pipeline import ingest_chapter_kg
 
-        await ingest_chapter_kg(novel_id=novel_id, content=content)
+        await ingest_chapter_kg(
+            novel_id=novel_id, chapter_id=chapter_id, content=content
+        )
     except Exception as exc:
-        logger.warning("kg background ingest failed novel=%s: %s", novel_id, exc)
+        logger.warning(
+            "kg background ingest failed novel=%s ch=%s: %s",
+            novel_id,
+            chapter_id,
+            exc,
+        )

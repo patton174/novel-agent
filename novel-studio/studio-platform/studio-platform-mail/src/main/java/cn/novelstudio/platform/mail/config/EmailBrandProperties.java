@@ -23,7 +23,8 @@ public class EmailBrandProperties {
     private String muted = "#666666";
     private String border = "#000000";
     private String productName = "Novel Agent";
-    private String tagline = "理解你的笔触与灵感";
+    /** 运行时由 {@link cn.novelstudio.platform.mail.template.EmailTemplateRenderer} 用 mail.brand.tagline 覆盖。 */
+    private String tagline = "";
     private String logoUrl = "https://www.novel-agent.cn/favicon.svg";
     private String supportEmail = "hello@noreply.novel-agent.cn";
     private String frontendBaseUrl = "https://www.novel-agent.cn";

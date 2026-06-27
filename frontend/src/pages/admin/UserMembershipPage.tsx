@@ -24,11 +24,13 @@ import {
   type PixelColumn,
 } from '@/components/pixel'
 import { useMarkRouteSeen } from '@/hooks/useMarkRouteSeen'
+import { adminFormatLocale } from '@/components/admin/adminUiTokens'
 import { appToast } from '@/stores/appToastStore'
 import { Skeleton } from '@/components/ui/skeleton'
 
 export default function UserMembershipPage() {
-  const { t } = useTranslation(['admin'])
+  const { t, i18n } = useTranslation(['admin', 'dashboard'])
+  const dateLocale = adminFormatLocale(i18n.language)
   useMarkRouteSeen()
   const [plans, setPlans] = useState<AdminPlan[] | null>(null)
   const [overview, setOverview] = useState<PlatformUsageOverview | null>(null)
@@ -71,7 +73,8 @@ export default function UserMembershipPage() {
       header: t('admin:membership.colQuota'),
       render: (plan) => (
         <span className="font-mono text-xs tabular-nums">
-          {plan.monthlyTokenQuota != null ? plan.monthlyTokenQuota.toLocaleString('zh-CN') : '—'} tok
+          {plan.monthlyTokenQuota != null ? plan.monthlyTokenQuota.toLocaleString(dateLocale) : t('admin:jobs.duration.dash')}{' '}
+          {t('dashboard:billing.tokenAbbrev')}
         </span>
       ),
     },
@@ -80,7 +83,7 @@ export default function UserMembershipPage() {
       header: t('admin:membership.colActiveSubs'),
       render: (plan) => {
         const count = overview?.activeSubscriptions[plan.code]
-        return count != null ? count.toLocaleString('zh-CN') : '—'
+        return count != null ? count.toLocaleString(dateLocale) : t('admin:jobs.duration.dash')
       },
     },
     {
@@ -99,8 +102,8 @@ export default function UserMembershipPage() {
       <AdminStatStrip
         loading={plans === null}
         items={[
-          { label: t('admin:membership.statPlans'), value: plans?.length.toLocaleString('zh-CN') ?? '—' },
-          { label: t('admin:membership.statActiveSubs'), value: activeTotal?.toLocaleString('zh-CN') ?? '—' },
+          { label: t('admin:membership.statPlans'), value: plans?.length.toLocaleString(dateLocale) ?? '—' },
+          { label: t('admin:membership.statActiveSubs'), value: activeTotal?.toLocaleString(dateLocale) ?? '—' },
           {
             label: t('admin:revenue.mrr'),
             value: overview ? `¥${(overview.mrrCents / 100).toFixed(0)}` : '—',

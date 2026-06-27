@@ -1,5 +1,6 @@
 package cn.novelstudio.module.agent.service;
 
+import cn.novelstudio.module.agent.support.AgentLocaleMarkers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -13,13 +14,16 @@ public class SessionTitleService {
 
     private final PythonSessionTitleClient titleClient;
     private final AgentSessionMemoryService sessionMemoryService;
+    private final AgentLocaleMarkers localeMarkers;
 
     public SessionTitleService(
         PythonSessionTitleClient titleClient,
-        AgentSessionMemoryService sessionMemoryService
+        AgentSessionMemoryService sessionMemoryService,
+        AgentLocaleMarkers localeMarkers
     ) {
         this.titleClient = titleClient;
         this.sessionMemoryService = sessionMemoryService;
+        this.localeMarkers = localeMarkers;
     }
 
     public void maybeGenerateTitleAsync(
@@ -39,7 +43,7 @@ public class SessionTitleService {
         CompletableFuture.runAsync(() -> {
             try {
                 String current = sessionMemoryService.getSessionTitle(userId, sessionId);
-                if (!SessionTitleRules.needsGeneratedTitle(current)) {
+                if (!localeMarkers.needsGeneratedSessionTitle(current)) {
                     return;
                 }
                 String title = titleClient.generateTitle(seed, assistantSnippet, novelTitle);

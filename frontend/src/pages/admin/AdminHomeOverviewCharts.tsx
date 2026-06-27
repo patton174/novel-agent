@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next'
+import i18n from '@/i18n'
 import type { TrendPoint } from '@/api/adminApi'
 import type { PlatformUsageTrendPoint } from '@/api/billingAdminApi'
 import { PixelChartCard, PixelLineChart } from '@/components/pixel'
@@ -17,6 +18,7 @@ export default function AdminHomeOverviewCharts({
   rangeLabel,
 }: AdminHomeOverviewChartsProps) {
   const { t } = useTranslation(['admin'])
+  const dateLocale = i18n.language === 'zh' ? 'zh-CN' : 'en-US'
   const tokenTrend = mapUsageTrendPoints(usageTrend).map((p) => ({ date: p.date, count: p.tokens }))
   const costTrend = mapUsageTrendPoints(usageTrend).map((p) => ({ date: p.date, count: p.cost }))
 
@@ -29,10 +31,10 @@ export default function AdminHomeOverviewCharts({
         <PixelLineChart
           data={tokenTrend}
           xKey="date"
-          series={[{ key: 'count', name: 'Tokens', color: pixelChartNeon.purple, fill: true }]}
+          series={[{ key: 'count', name: t('admin:stats.tokenCount'), color: pixelChartNeon.purple, fill: true }]}
           emptyText={t('admin:revenue.noData')}
           formatX={formatPixelChartDate}
-          formatY={(v) => v.toLocaleString('zh-CN')}
+          formatY={(v) => v.toLocaleString(dateLocale)}
         />
       </PixelChartCard>
 

@@ -25,6 +25,7 @@ async def submit_step_after_stream(
     step_kind: str,
     visible_markdown: str,
     profile: str | None = None,
+    model_config: dict | None = None,
     fallback: Callable[[], StepResult],
     merge: Callable[[StepResult, str], StepResult] | None = None,
 ) -> StepResult:
@@ -35,6 +36,7 @@ async def submit_step_after_stream(
             submit_messages,
             StepResult,
             profile=profile,
+            model_config=model_config,
             retry_feedback_prefix="StepResult schema validation failed",
             use_retry_json=True,
         )

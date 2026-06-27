@@ -8,5 +8,8 @@ public record SiteDanmakuResp(
     String authorName,
     String region,
     Long userId,
-    Instant createdAt
+    Instant createdAt,
+    String requestedLocale,
+    String resolvedLocale,
+    boolean localeResolved
 ) {}

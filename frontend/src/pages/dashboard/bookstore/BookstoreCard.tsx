@@ -4,11 +4,12 @@ import type { CatalogNovel } from '@/api/catalogApi'
 import { useTranslation } from 'react-i18next'
 
 function CatalogCover({ novel }: { novel: CatalogNovel }) {
+  const { t } = useTranslation(['dashboard'])
   if (novel.coverUrl) {
     return (
       <img
         src={novel.coverUrl}
-        alt={`${novel.title} 封面`}
+        alt={t('dashboard:novels.coverAlt', { title: novel.title })}
         className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
         loading="lazy"
       />

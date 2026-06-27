@@ -55,7 +55,7 @@ public class ClientHeartbeatServletFilter extends OncePerRequestFilter {
                     properties.enforceHeartbeat()
                 );
                 if (properties.enforceHeartbeat()) {
-                    securityResponses.unauthorized(response, "HEARTBEAT_REQUIRED");
+                    securityResponses.unauthorized(response, "security.client.heartbeat_required");
                     return;
                 }
             }

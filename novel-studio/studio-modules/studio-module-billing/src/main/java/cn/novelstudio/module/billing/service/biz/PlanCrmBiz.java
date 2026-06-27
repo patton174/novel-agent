@@ -161,6 +161,9 @@ public class PlanCrmBiz extends BaseBiz {
         if (req.rateLimitRpm() != null) {
             plan.setRateLimitRpm(req.rateLimitRpm());
         }
+        if (req.overagePolicy() != null && !req.overagePolicy().isBlank()) {
+            plan.setOveragePolicy(req.overagePolicy());
+        }
         if (req.isFeatured() != null) {
             plan.setIsFeatured(req.isFeatured());
         }
@@ -215,6 +218,7 @@ public class PlanCrmBiz extends BaseBiz {
             plan.getMonthlyTokenQuota(),
             plan.getMonthlyRunQuota(),
             plan.getRateLimitRpm(),
+            plan.getOveragePolicy(),
             Boolean.TRUE.equals(plan.getIsActive()),
             Boolean.TRUE.equals(plan.getIsFeatured()),
             plan.getSortOrder() == null ? 0 : plan.getSortOrder(),

@@ -88,8 +88,37 @@ public class AuthNovelController extends BaseController {
         @PathVariable String novelId,
         @RequestBody(required = false) CoverPromptRequest request
     ) {
-        String draft = request == null ? null : request.draft();
-        return biz.suggestCoverPrompt(parseUserId(userId), novelId, draft);
+        return biz.suggestCoverPrompt(
+            parseUserId(userId),
+            novelId,
+            request == null ? null : request.styleDraft(),
+            request == null ? null : request.sceneDraft(),
+            request == null ? null : request.draft(),
+            request == null ? null : request.mode()
+        );
+    }
+
+    @PostMapping(value = "/{novelId}/cover/prompt/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public ResponseEntity<StreamingResponseBody> streamCoverPrompt(
+        @RequestHeader("X-User-Id") String userId,
+        @PathVariable String novelId,
+        @RequestBody(required = false) CoverPromptRequest request
+    ) {
+        Long uid = parseUserId(userId);
+        StreamingResponseBody body = outputStream -> biz.streamCoverPrompt(
+            uid,
+            novelId,
+            request == null ? null : request.styleDraft(),
+            request == null ? null : request.sceneDraft(),
+            request == null ? null : request.draft(),
+            request != null && request.mode() != null && !request.mode().isBlank() ? request.mode() : "generate",
+            outputStream
+        );
+        return ResponseEntity.ok()
+            .contentType(MediaType.TEXT_EVENT_STREAM)
+            .header(HttpHeaders.CACHE_CONTROL, "no-cache")
+            .header("X-Accel-Buffering", "no")
+            .body(body);
     }
 
     @PostMapping("/{novelId}/cover/generate")
@@ -98,8 +127,13 @@ public class AuthNovelController extends BaseController {
         @PathVariable String novelId,
         @RequestBody(required = false) GenerateCoverRequest request
     ) {
-        String prompt = request == null ? null : request.prompt();
-        return biz.generateCover(parseUserId(userId), novelId, prompt);
+        return biz.generateCover(
+            parseUserId(userId),
+            novelId,
+            request == null ? null : request.prompt(),
+            request == null ? null : request.stylePrompt(),
+            request == null ? null : request.scenePrompt()
+        );
     }
 
     @GetMapping("/{novelId}/export/txt")
@@ -244,6 +278,30 @@ public class AuthNovelController extends BaseController {
         @PathVariable String novelId
     ) {
         return biz.knowledgeGraph(parseUserId(userId), novelId);
+    }
+
+    @PostMapping("/{novelId}/knowledge-graph/backfill")
+    public Result<Map<String, Object>> backfillKg(
+        @RequestHeader("X-User-Id") String userId,
+        @PathVariable String novelId
+    ) {
+        return biz.backfillKg(parseUserId(userId), novelId);
+    }
+
+    @GetMapping("/{novelId}/knowledge-graph/progress")
+    public Result<Map<String, Object>> kgProgress(
+        @RequestHeader("X-User-Id") String userId,
+        @PathVariable String novelId
+    ) {
+        return biz.kgProgress(parseUserId(userId), novelId);
+    }
+
+    @GetMapping("/{novelId}/knowledge-graph/errors")
+    public Result<List<Map<String, Object>>> kgErrors(
+        @RequestHeader("X-User-Id") String userId,
+        @PathVariable String novelId
+    ) {
+        return biz.kgErrors(parseUserId(userId), novelId);
     }
 
     @GetMapping("/{novelId}/sessions")

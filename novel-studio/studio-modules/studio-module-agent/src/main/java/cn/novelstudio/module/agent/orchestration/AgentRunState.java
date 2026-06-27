@@ -16,6 +16,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
 
 public class AgentRunState {
 
@@ -44,6 +45,7 @@ public class AgentRunState {
 
     private volatile CompletableFuture<Map<String, Object>> pendingInteraction = new CompletableFuture<>();
     private volatile CompletableFuture<Void> resumeSignal = new CompletableFuture<>();
+    private Predicate<String> interactionLineFilter = AgentRunState::defaultIsPersistableUserInteractionLine;
 
     public AgentRunState(
         Long userId,
@@ -63,6 +65,12 @@ public class AgentRunState {
         this.stepIndex = 0;
         this.currentTool = null;
         this.currentToolInput = Map.of();
+    }
+
+    public void setInteractionLineFilter(Predicate<String> filter) {
+        if (filter != null) {
+            this.interactionLineFilter = filter;
+        }
     }
 
     public static String newRunId() {
@@ -109,6 +117,18 @@ public class AgentRunState {
             patchForPython.put("memory_tree_index", memoryTreeIndex);
         }
 
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> referencedBooks =
+            (List<Map<String, Object>>) assembledContext.get("referenced_books");
+        if (referencedBooks == null) {
+            referencedBooks = List.of();
+        }
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> modelConfig = assembledContext.get("model_config") instanceof Map<?, ?> modelMap
+            ? (Map<String, Object>) modelMap
+            : null;
+
         return new AgentRunContextDto(
             runId,
             sessionId,
@@ -127,7 +147,9 @@ public class AgentRunState {
             lastTool,
             lastReason,
             patchForPython,
-            selectedChoice
+            selectedChoice,
+            referencedBooks,
+            modelConfig
         );
     }
 
@@ -320,7 +342,7 @@ public class AgentRunState {
                     continue;
                 }
                 String line = String.valueOf(text).trim();
-                if (!isPersistableUserInteractionLine(line)) {
+                if (!interactionLineFilter.test(line)) {
                     continue;
                 }
                 if (sb.indexOf(line) >= 0) {
@@ -335,21 +357,14 @@ public class AgentRunState {
         return sb.toString();
     }
 
-    private static boolean isPersistableUserInteractionLine(String line) {
+    private static boolean defaultIsPersistableUserInteractionLine(String line) {
         if (line.isBlank()) {
-            return false;
-        }
-        if (line.contains("等待你的回复") || line.toLowerCase().contains("waiting for your reply")) {
             return false;
         }
         if (line.startsWith("AskUser") || line.startsWith("ask_user")) {
             return false;
         }
-        // Tool trace summaries like "Glob：…" / "Read：…" must not land in the user bubble.
-        if (line.matches("^[A-Za-z][A-Za-z0-9_\\-]{0,31}：.+")) {
-            return false;
-        }
-        return true;
+        return !line.matches("^[A-Za-z][A-Za-z0-9_\\-]{0,31}：.+");
     }
 
     public String getCurrentTool() {

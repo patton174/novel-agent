@@ -6,6 +6,7 @@ import cn.novelstudio.module.content.entity.NovelEntity;
 import cn.novelstudio.module.content.repository.ChapterRepository;
 import cn.novelstudio.module.content.repository.NovelRepository;
 import cn.novelstudio.module.content.support.ContentExceptions;
+import cn.novelstudio.platform.i18n.StudioMessages;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -18,6 +19,7 @@ public class NovelExportService {
     private final NovelRepository novelRepository;
     private final ChapterRepository chapterRepository;
     private final BillingFeatureClient billingFeatureClient;
+    private final StudioMessages messages;
 
     public ExportPayload exportTxt(long userId, String novelId) {
         billingFeatureClient.assertFeature(userId, "txt_export");
@@ -44,7 +46,7 @@ public class NovelExportService {
         }
         String safeName = novel.getTitle().replaceAll("[\\\\/:*?\"<>|]", "_").trim();
         if (safeName.isBlank()) {
-            safeName = "novel";
+            safeName = messages.get("content.novel.unnamed").replaceAll("[\\\\/:*?\"<>|]", "_").trim();
         }
         return new ExportPayload(body.toString(), safeName + "." + ext);
     }

@@ -1,4 +1,5 @@
 import type { AuditLogItem } from '@/api/billingAdminApi'
+import { useTranslation } from 'react-i18next'
 import { PIXEL_CODE_BLOCK, PIXEL_LABEL, PixelTableActionButton } from '@/components/pixel'
 import { AppSheetModal } from '@/components/ui/AppSheetModal'
 import { copyToClipboard } from '@/utils/copyToClipboard'
@@ -11,12 +12,13 @@ interface AuditLogDetailModalProps {
 }
 
 export function AuditLogDetailModal({ log, onClose }: AuditLogDetailModalProps) {
+  const { t, i18n } = useTranslation('common')
   const beforeFormatted = log?.beforeJson ? formatJson(log.beforeJson) : null
   const afterFormatted = log?.afterJson ? formatJson(log.afterJson) : null
 
   const handleCopy = (label: string, text: string) => {
-    void copyToClipboard(text, `${label}已复制`).catch(() => {
-      appToast.error('复制失败')
+    void copyToClipboard(text, t('audit.copySuccess', { label })).catch(() => {
+      appToast.error(t('audit.copyFailed'))
     })
   }
 
@@ -29,7 +31,14 @@ export function AuditLogDetailModal({ log, onClose }: AuditLogDetailModalProps) 
       title={log ? <span className="font-mono text-sm font-bold">{log.action}</span> : undefined}
       description={
         log
-          ? `${new Date(log.createdAt).toLocaleString('zh-CN')} · 操作者 ${log.actorId} · 目标 ${log.targetType ?? '—'}${log.targetId ? ` #${log.targetId}` : ''}`
+          ? t('audit.meta', {
+              time: new Date(log.createdAt).toLocaleString(
+                i18n.language === 'en' ? 'en-US' : 'zh-CN',
+              ),
+              actorId: log.actorId,
+              targetType: log.targetType ?? t('audit.targetNone'),
+              targetId: log.targetId ? ` #${log.targetId}` : '',
+            })
           : undefined
       }
       className="sm:max-w-2xl"
@@ -39,22 +48,24 @@ export function AuditLogDetailModal({ log, onClose }: AuditLogDetailModalProps) 
         <>
           {beforeFormatted ? (
             <JsonBlock
-              label="变更前"
+              label={t('audit.before')}
               tone="before"
               text={beforeFormatted}
-              onCopy={() => handleCopy('变更前 JSON', beforeFormatted)}
+              onCopy={() => handleCopy(t('audit.before'), beforeFormatted)}
             />
           ) : null}
           {afterFormatted ? (
             <JsonBlock
-              label="变更后"
+              label={t('audit.after')}
               tone="after"
               text={afterFormatted}
-              onCopy={() => handleCopy('变更后 JSON', afterFormatted)}
+              onCopy={() => handleCopy(t('audit.after'), afterFormatted)}
             />
           ) : null}
           {!beforeFormatted && !afterFormatted ? (
-            <p className="py-6 text-center font-mono text-sm text-muted-foreground">此记录无 JSON 变更载荷</p>
+            <p className="py-6 text-center font-mono text-sm text-muted-foreground">
+              {t('audit.noJsonPayload')}
+            </p>
           ) : null}
         </>
       ) : null}
@@ -73,6 +84,7 @@ function JsonBlock({
   text: string
   onCopy: () => void
 }) {
+  const { t } = useTranslation('common')
   return (
     <div>
       <div className="mb-1.5 flex items-center justify-between gap-2">
@@ -85,7 +97,7 @@ function JsonBlock({
           {label}
         </p>
         <PixelTableActionButton variant="ghost" onClick={onCopy}>
-          复制
+          {t('audit.copy')}
         </PixelTableActionButton>
       </div>
       <pre className={cn('max-h-[min(42vh,320px)]', PIXEL_CODE_BLOCK)}>

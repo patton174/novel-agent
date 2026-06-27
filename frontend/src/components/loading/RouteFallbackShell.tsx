@@ -1,4 +1,5 @@
 import { useLocation } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import {
   AdminShellSkeleton,
   AuthPageSkeleton,
@@ -9,6 +10,7 @@ import {
 
 /** 独立 route-shells chunk，勿在主包静态 import */
 export default function RouteFallbackShell() {
+  const { t } = useTranslation('common')
   const { pathname } = useLocation()
 
   if (pathname.startsWith('/admin')) {
@@ -25,7 +27,7 @@ export default function RouteFallbackShell() {
     return <AuthPageSkeleton />
   }
   if (pathname.startsWith('/editor')) {
-    return <BrandLoaderLite label="正在打开编辑器" />
+    return <BrandLoaderLite label={t('loading.openingEditor')} />
   }
   if (
     pathname === '/' ||
@@ -36,5 +38,5 @@ export default function RouteFallbackShell() {
     return <MarketingPageSkeleton />
   }
 
-  return <BrandLoaderLite label="正在加载页面" />
+  return <BrandLoaderLite label={t('loading.page')} />
 }

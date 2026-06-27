@@ -7,11 +7,15 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface CrawlCatalogNovelRepository extends JpaRepository<CrawlCatalogNovelEntity, String> {
 
     Page<CrawlCatalogNovelEntity> findAllByOrderByUpdatedAtDesc(Pageable pageable);
+
+    /** 公共书库（owner_id 为空，含管理员上传解析入库）。 */
+    Page<CrawlCatalogNovelEntity> findByOwnerIdIsNullOrderByUpdatedAtDesc(Pageable pageable);
 
     @Query("""
         SELECT n FROM CrawlCatalogNovelEntity n
@@ -22,6 +26,8 @@ public interface CrawlCatalogNovelRepository extends JpaRepository<CrawlCatalogN
 
     /** 用户私人书库（上传入库）按更新时间倒序。 */
     Page<CrawlCatalogNovelEntity> findByOwnerIdOrderByUpdatedAtDesc(Long ownerId, Pageable pageable);
+
+    List<CrawlCatalogNovelEntity> findByOwnerId(Long ownerId);
 
     boolean existsByUploaderFileId(String uploaderFileId);
 

@@ -190,7 +190,7 @@ public class ClientCryptoServletFilter extends OncePerRequestFilter {
                 long now = Instant.now().toEpochMilli();
                 if (Math.abs(now - ts) > windowMs) {
                     log.warn("replay window exceeded ts={} now={}", ts, now);
-                    securityResponses.badRequest(response, "REPLAY_WINDOW");
+                    securityResponses.badRequest(response, "security.client.replay_window");
                     return;
                 }
                 String nonce = String.valueOf(nonceObj);
@@ -201,7 +201,7 @@ public class ClientCryptoServletFilter extends OncePerRequestFilter {
                     }
                     if (!nonceStoreSupport.tryConsume(nonce, NONCE_TTL_SECONDS)) {
                         log.warn("duplicate nonce={}", nonce);
-                        securityResponses.badRequest(response, "REPLAY_NONCE");
+                        securityResponses.badRequest(response, "security.client.replay_nonce");
                         return;
                     }
                     current.setAttribute(ClientSecurityAttributes.REPLAY_GUARD_PASSED, Boolean.TRUE);

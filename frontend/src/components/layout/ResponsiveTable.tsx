@@ -1,4 +1,5 @@
 import type { MouseEvent, ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import { DataTableFrame } from '@/components/layout/DataTableFrame'
 import { AppShellCard } from '@/components/layout/AppPageStack'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -76,7 +77,9 @@ export function ResponsiveTable<TRow>({
   renderDesktopContainer,
   renderDesktopCustom,
 }: ResponsiveTableProps<TRow>) {
+  const { t } = useTranslation('common')
   const isMobile = useAppMobile()
+  const defaultEmpty = <p className="py-8 text-center text-sm text-muted-foreground">{t('table.empty')}</p>
 
   if (!loading && rows.length === 0 && emptyState) {
     return <>{emptyState}</>
@@ -84,7 +87,11 @@ export function ResponsiveTable<TRow>({
 
   if (isMobile) {
     return (
-      <div className={cn('space-y-3', mobileListClassName)}>
+      <div
+        className={cn('space-y-3', mobileListClassName)}
+        aria-busy={loading || undefined}
+        aria-label={loading ? t('a11y.loadingTable') : undefined}
+      >
         {loading
           ? Array.from({ length: loadingCardCount }).map((_, index) =>
               renderLoadingMobileCard ? (
@@ -103,7 +110,10 @@ export function ResponsiveTable<TRow>({
   }
 
   const desktopTableContent = (
-    <>
+    <div
+      aria-busy={loading || undefined}
+      aria-label={loading ? t('a11y.loadingTable') : undefined}
+    >
       <DataTableFrame
         embedded={desktopEmbedded}
         scrollHint={desktopScrollHint}
@@ -134,9 +144,7 @@ export function ResponsiveTable<TRow>({
                 ? (
                     <TableRow>
                       <TableCell colSpan={columns.length}>
-                        {renderDesktopEmpty ?? (
-                          <p className="py-8 text-center text-sm text-muted-foreground">暂无数据</p>
-                        )}
+                        {renderDesktopEmpty ?? defaultEmpty}
                       </TableCell>
                     </TableRow>
                   )
@@ -160,7 +168,7 @@ export function ResponsiveTable<TRow>({
           </TableBody>
         </Table>
       </DataTableFrame>
-    </>
+    </div>
   )
 
   const baseDesktopContent = renderDesktopCustom ? renderDesktopCustom(rows) : desktopTableContent

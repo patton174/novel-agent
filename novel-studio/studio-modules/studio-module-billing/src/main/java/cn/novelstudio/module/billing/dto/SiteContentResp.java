@@ -7,6 +7,9 @@ public record SiteContentResp(
     String title,
     String bodyMd,
     String locale,
-    Instant updatedAt
+    Instant updatedAt,
+    String requestedLocale,
+    String resolvedLocale,
+    boolean localeResolved
 ) {
 }

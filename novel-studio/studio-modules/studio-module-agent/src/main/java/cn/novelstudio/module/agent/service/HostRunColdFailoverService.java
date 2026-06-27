@@ -14,6 +14,7 @@ import cn.novelstudio.module.content.dto.agent.AgentCheckpointDTO;
 import cn.novelstudio.module.agent.client.ContentInternalClient;
 import cn.novelstudio.module.content.dto.agent.AgentRunDTO;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import cn.novelstudio.module.agent.support.AgentLocaleMarkers;
 import cn.novelstudio.platform.i18n.ResultLocalizer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,6 +53,7 @@ public class HostRunColdFailoverService {
     private final AgentRunMqPublisher runMqPublisher;
     private final AgentRuntimeProperties runtimeProperties;
     private final ResultLocalizer resultLocalizer;
+    private final AgentLocaleMarkers localeMarkers;
 
     public HostRunColdFailoverService(
         ContentInternalClient contentInternalClient,
@@ -68,7 +70,8 @@ public class HostRunColdFailoverService {
         @Qualifier(AgentSideEffectExecutorConfig.BEAN_NAME) Executor sideEffectExecutor,
         AgentRunMqPublisher runMqPublisher,
         AgentRuntimeProperties runtimeProperties,
-        ResultLocalizer resultLocalizer
+        ResultLocalizer resultLocalizer,
+        AgentLocaleMarkers localeMarkers
     ) {
         this.contentInternalClient = contentInternalClient;
         this.contextBuilder = contextBuilder;
@@ -85,6 +88,7 @@ public class HostRunColdFailoverService {
         this.runMqPublisher = runMqPublisher;
         this.runtimeProperties = runtimeProperties;
         this.resultLocalizer = resultLocalizer;
+        this.localeMarkers = localeMarkers;
     }
 
     public Flux<String> resumeWithDirectPython(
@@ -142,6 +146,7 @@ public class HostRunColdFailoverService {
                     null,
                     runId,
                     null,
+                    null,
                     null
                 );
                 AgentRunState state = new AgentRunState(
@@ -153,6 +158,7 @@ public class HostRunColdFailoverService {
                     assembled
                 );
                 state.restoreFromCheckpoint(ctxDto);
+                state.setInteractionLineFilter(line -> !localeMarkers.isNonPersistableInteractionLine(line));
                 AgentRunCoordinator coordinator = new AgentRunCoordinator(
                     state,
                     runClient,
@@ -168,7 +174,9 @@ public class HostRunColdFailoverService {
                 PgRunEventFanout pgFanout = runtimeProperties.isPgRunEnabled()
                     ? new PgRunEventFanout(runMqPublisher, run.getSessionId(), runId)
                     : null;
-                AssistantPersistCollector assistantCollector = new AssistantPersistCollector();
+                AssistantPersistCollector assistantCollector = new AssistantPersistCollector(
+                    localeMarkers.uiLineLabelAlternation()
+                );
                 log.info("cold host restart coordinator runId={}", runId);
                 coordinator.run(frame -> {
                     assistantCollector.onFrame(frame, objectMapper);

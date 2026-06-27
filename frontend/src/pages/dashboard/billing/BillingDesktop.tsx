@@ -1,174 +1,57 @@
 import { Link } from 'react-router-dom'
-import { X } from 'lucide-react'
-import { AppPageStack } from '@/components/layout/AppPageStack'
+import { Receipt } from 'lucide-react'
+import { AppPageIntro, AppPageStack, AppShellCard, AppShellCardBody, AppShellCardHeader } from '@/components/layout/AppPageStack'
 import { Button } from '@/components/ui/button'
-import { ProTabs } from '@/components/pro/ProTabs'
-import { ProTable, type ProColumn } from '@/components/pro/ProTable'
-import type { UsageEventItem } from '@/api/billingApi'
-import { UsageModelCell } from '@/components/billing/UsageModelCell'
+import { PendingPayOrderBanner } from '@/components/billing/PendingPayOrderBanner'
 import { useTranslation } from 'react-i18next'
-import { useBilling } from './useBilling'
-import { BillingBillContent, BillingUsageContent } from './BillingSections'
+import { APP_BTN_MD } from '@/lib/appButtonTokens'
+import { useBillingBills } from './useBillingBills'
+import { BillingBillContent } from './BillingSections'
+import { BillingWalletCard } from '@/components/billing/BillingWalletCard'
 
-function UsageEventRelatedCell({
-  ev,
-  runFilter,
-  onPickRun,
-}: {
-  ev: UsageEventItem
-  runFilter: string
-  onPickRun: (next: string) => void
-}) {
-  const { t } = useTranslation(['dashboard'])
-  return (
-    <div className="flex flex-wrap items-center gap-2">
-      {ev.runId ? (
-        runFilter ? (
-          <span className="max-w-[160px] truncate font-mono text-muted-foreground" title={ev.runId}>
-            {ev.runId}
-          </span>
-        ) : (
-          <button
-            type="button"
-            className="font-mono text-primary hover:underline"
-            title={ev.runId}
-            onClick={() => onPickRun(ev.runId!)}
-          >
-            {ev.runId.slice(0, 10)}…
-          </button>
-        )
-      ) : null}
-      {ev.sessionId ? (
-        <Link to={`/editor/${ev.sessionId}`} className="text-primary hover:underline">
-          {t('dashboard:billing.openSession')}
-        </Link>
-      ) : null}
-    </div>
-  )
-}
-
-/** 账单 — 桌面：ProTabs（用量 / 账单 / 明细），明细用 ProTable。 */
+/** 我的账单 — 桌面：费用概览 + 钱包。 */
 export function BillingDesktop() {
   const { t } = useTranslation(['dashboard'])
-  const { usage, events, loading, runFilter, setRunFilter, tokenPercent, payReturnChecking } =
-    useBilling()
-
-  const eventColumns: ProColumn<UsageEventItem>[] = [
-    {
-      key: 'eventType',
-      header: t('dashboard:billing.colType'),
-      render: (ev) => <span className="font-medium text-foreground">{ev.eventType}</span>,
-    },
-    {
-      key: 'tokens',
-      header: 'Tokens',
-      align: 'right',
-      render: (ev) => (
-        <span className="tabular-nums text-muted-foreground">
-          {ev.totalTokens.toLocaleString('zh-CN')}
-        </span>
-      ),
-    },
-    {
-      key: 'model',
-      header: t('dashboard:billing.colModel'),
-      render: (ev) => <UsageModelCell ev={ev} />,
-    },
-    {
-      key: 'time',
-      header: t('dashboard:billing.colTime'),
-      render: (ev) => (
-        <span className="whitespace-nowrap text-xs text-muted-foreground">
-          {new Date(ev.createdAt).toLocaleString('zh-CN')}
-        </span>
-      ),
-    },
-    {
-      key: 'related',
-      header: t('dashboard:billing.colRelated'),
-      render: (ev) => (
-        <UsageEventRelatedCell ev={ev} runFilter={runFilter} onPickRun={setRunFilter} />
-      ),
-    },
-  ]
+  const { usage, costTrends, loading, payReturnChecking } = useBillingBills()
 
   return (
-    <AppPageStack>
-      <ProTabs
-        tabs={[
-          {
-            key: 'usage',
-            label: t('dashboard:billing.usageTitle'),
-            content: (
-              <div className="max-w-2xl space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  {usage
-                    ? `${usage.planName}（${usage.periodYyyyMm}）`
-                    : t('dashboard:billing.usageDesc')}
-                </p>
-                <BillingUsageContent
-                  usage={usage}
-                  loading={loading}
-                  tokenPercent={tokenPercent}
-                />
-              </div>
-            ),
-          },
-          {
-            key: 'bill',
-            label: t('dashboard:billing.billTitle'),
-            content: (
-              <div className="max-w-2xl space-y-4">
-                <p className="text-sm text-muted-foreground">{t('dashboard:billing.billDesc')}</p>
-                <BillingBillContent
-                  usage={usage}
-                  loading={loading}
-                  payReturnChecking={payReturnChecking}
-                />
-              </div>
-            ),
-          },
-          {
-            key: 'events',
-            label: t('dashboard:billing.recentUsageTitle'),
-            content: (
-              <div>
-                {runFilter ? (
-                  <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                    <p className="text-sm text-muted-foreground">
-                      {t('dashboard:billing.runUsageDesc', { id: runFilter })}
-                    </p>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setRunFilter('')}
-                    >
-                      <X className="mr-1 size-3.5" />
-                      {t('dashboard:billing.clearFilter')}
-                    </Button>
-                  </div>
-                ) : (
-                  <p className="mb-3 text-sm text-muted-foreground">
-                    {t('dashboard:billing.recentUsageDesc')}
-                  </p>
-                )}
-                <ProTable
-                  columns={eventColumns}
-                  data={events}
-                  rowKey="id"
-                  loading={loading}
-                  emptyText={
-                    runFilter
-                      ? t('dashboard:billing.emptyRun')
-                      : t('dashboard:billing.emptyRecent')
-                  }
-                />
-              </div>
-            ),
-          },
-        ]}
+    <AppPageStack className="gap-8">
+      <AppPageIntro
+        eyebrow={t('dashboard:billing.billsEyebrow')}
+        title={t('dashboard:billing.billsTitle')}
+        action={
+          <Button asChild variant="outline" className={APP_BTN_MD}>
+            <Link to="/pricing">
+              <Receipt className="mr-2 size-4" />
+              {t('dashboard:billing.viewPlans')}
+            </Link>
+          </Button>
+        }
       />
+
+      <div className="grid gap-6 lg:grid-cols-2 lg:items-stretch">
+        <AppShellCard className="flex h-full flex-col">
+          <AppShellCardHeader title={t('dashboard:billing.billTitle')} />
+          <AppShellCardBody className="flex flex-1 flex-col">
+            <BillingBillContent
+              usage={usage}
+              costTrends={costTrends}
+              loading={loading}
+              payReturnChecking={payReturnChecking}
+              billsPage
+              embedded
+            />
+          </AppShellCardBody>
+        </AppShellCard>
+        <AppShellCard className="flex h-full flex-col">
+          <AppShellCardHeader title={t('dashboard:billing.walletTitle')} />
+          <AppShellCardBody className="flex flex-1 flex-col">
+            <BillingWalletCard />
+          </AppShellCardBody>
+        </AppShellCard>
+      </div>
+
+      <PendingPayOrderBanner layout="row" />
     </AppPageStack>
   )
 }

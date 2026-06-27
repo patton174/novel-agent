@@ -7,22 +7,15 @@ import cn.novelstudio.module.content.service.crawl.dto.CatalogChapterDetailDTO;
 import cn.novelstudio.module.content.service.crawl.dto.CatalogChapterSummaryDTO;
 import cn.novelstudio.module.content.service.crawl.dto.CatalogNovelDTO;
 import cn.novelstudio.module.content.service.crawl.dto.CatalogNovelProgressDTO;
-import cn.novelstudio.module.content.service.crawl.dto.CrawlOrchestratorStateDTO;
-import cn.novelstudio.module.content.service.crawl.dto.OrchestratorDecisionsDTO;
-import cn.novelstudio.module.content.service.crawl.dto.SetOrchestratorGoalRequest;
 import cn.novelstudio.module.content.service.crawl.dto.UpdateCatalogChapterRequest;
 import cn.novelstudio.module.content.service.crawl.dto.UpdateCatalogNovelRequest;
 import cn.novelstudio.module.content.service.crm.biz.CrmCatalogBiz;
-import cn.novelstudio.module.content.service.crm.biz.CrmCrawlBiz;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -34,7 +27,6 @@ import java.util.Map;
 public class CrmCatalogController extends BaseController {
 
     private final CrmCatalogBiz catalogBiz;
-    private final CrmCrawlBiz crawlBiz;
 
     @GetMapping("/api/content/crm/catalog/novels/page")
     public Result<Page<CatalogNovelDTO>> pageNovels(
@@ -48,7 +40,7 @@ public class CrmCatalogController extends BaseController {
     public Result<List<CatalogNovelProgressDTO>> listIncomplete(
         @RequestParam(defaultValue = "50") int limit
     ) {
-        return catalogBiz.listIncomplete(limit);
+        return catalogBiz.listMissingCover(limit);
     }
 
     @GetMapping("/api/content/crm/catalog/novels/{catalogNovelId}")
@@ -110,35 +102,5 @@ public class CrmCatalogController extends BaseController {
     @DeleteMapping("/api/content/crm/catalog/novels/{catalogNovelId}")
     public Result<Void> deleteNovel(@PathVariable String catalogNovelId) {
         return catalogBiz.deleteNovel(catalogNovelId);
-    }
-
-    @GetMapping("/api/content/crm/crawl/orchestrator")
-    public Result<CrawlOrchestratorStateDTO> getOrchestrator() {
-        return crawlBiz.getOrchestratorState();
-    }
-
-    @PutMapping("/api/content/crm/crawl/orchestrator/goal")
-    public Result<CrawlOrchestratorStateDTO> setOrchestratorGoal(
-        @Valid @RequestBody SetOrchestratorGoalRequest request
-    ) {
-        return crawlBiz.setOrchestratorGoal(request);
-    }
-
-    @PostMapping("/api/content/crm/crawl/orchestrator/wake")
-    public Result<CrawlOrchestratorStateDTO> wakeOrchestrator() {
-        return crawlBiz.wakeOrchestrator();
-    }
-
-    @PostMapping("/api/content/crm/crawl/orchestrator/clear")
-    public Result<CrawlOrchestratorStateDTO> clearOrchestratorGoal() {
-        return crawlBiz.clearOrchestratorGoal();
-    }
-
-    @GetMapping("/api/content/crm/crawl/orchestrator/decisions")
-    public Result<OrchestratorDecisionsDTO> listOrchestratorDecisions(
-        @RequestParam(defaultValue = "0") long afterSeq,
-        @RequestParam(defaultValue = "100") int limit
-    ) {
-        return crawlBiz.listOrchestratorDecisions(afterSeq, limit);
     }
 }

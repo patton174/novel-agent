@@ -1,0 +1,31 @@
+{
+  "bell": {
+    "label": "Notifications",
+    "unread": "{{count}} unread"
+  },
+  "drawer": {
+    "title": "Notifications",
+    "markAllRead": "Mark all read",
+    "loadMore": "Load more",
+    "loading": "Loading…",
+    "emptyTitle": "No messages yet",
+    "emptyDesc": "System, billing, and agent updates will appear here."
+  },
+  "category": {
+    "system": "System",
+    "billing": "Billing",
+    "agent": "Agent",
+    "marketing": "Promo"
+  },
+  "broadcast": {
+    "nav": "Broadcast",
+    "title": "Broadcast notification",
+    "desc": "Send a plain-text in-app message to all users.",
+    "titleLabel": "Title",
+    "bodyLabel": "Body",
+    "categoryLabel": "Category",
+    "submit": "Send",
+    "success": "Broadcast submitted",
+    "fail": "Send failed"
+  }
+}

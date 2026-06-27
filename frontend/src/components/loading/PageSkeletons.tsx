@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { BrandLoader } from '@/components/loading/BrandLoader'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
@@ -247,8 +248,9 @@ export function PanelLoadingSkeleton({
   rows?: number
   className?: string
 }) {
+  const { t } = useTranslation('common')
   return (
-    <div className={className} role="status" aria-live="polite" aria-label="加载中">
+    <div className={className} role="status" aria-live="polite" aria-label={t('a11y.loading')}>
       <div className="space-y-2">
         {Array.from({ length: rows }).map((_, i) => (
           <Skeleton key={i} className="h-9 w-full rounded-lg" />
@@ -259,18 +261,20 @@ export function PanelLoadingSkeleton({
 }
 
 export function InlineTitleSkeleton({ className }: { className?: string }) {
+  const { t } = useTranslation('common')
   return (
     <Skeleton
       className={cn('h-7 w-36 rounded-md', className)}
       role="status"
-      aria-label="加载中"
+      aria-label={t('a11y.loading')}
     />
   )
 }
 
 /** route-shells chunk 内使用的品牌 Loading（与主包 BrandLoader 视觉一致） */
-export function BrandLoaderLite({ label = '正在加载' }: { label?: string }) {
-  return <BrandLoader label={label} />
+export function BrandLoaderLite({ label }: { label?: string }) {
+  const { t } = useTranslation('common')
+  return <BrandLoader label={label ?? t('loading.default')} />
 }
 
 export { BrandLoader, InlineBrandLoader } from '@/components/loading/BrandLoader'

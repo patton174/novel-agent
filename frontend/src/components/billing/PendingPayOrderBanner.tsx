@@ -5,8 +5,9 @@ import { fetchPendingPayOrder, type PayPendingOrder } from '@/api/billingApi'
 import { formatPayPrice } from '@/components/billing/usePayCheckout'
 import { Button } from '@/components/ui/button'
 import { APP_BTN_MD } from '@/lib/appButtonTokens'
+import { cn } from '@/lib/utils'
 
-export function PendingPayOrderBanner() {
+export function PendingPayOrderBanner({ layout = 'stack' }: { layout?: 'stack' | 'row' }) {
   const { t } = useTranslation(['dashboard'])
   const [pending, setPending] = useState<PayPendingOrder | null>(null)
 
@@ -31,17 +32,24 @@ export function PendingPayOrderBanner() {
   const checkoutHref = `/checkout?order=${encodeURIComponent(pending.orderId)}&plan=${encodeURIComponent(pending.planCode)}`
 
   return (
-    <div className="rounded-xl border border-amber-300/80 bg-amber-50 px-4 py-3 dark:border-amber-700/60 dark:bg-amber-950/40">
-      <p className="text-sm font-medium text-amber-950 dark:text-amber-100">
-        {t('dashboard:billing.pendingOrderTitle')}
-      </p>
-      <p className="mt-1 text-xs text-amber-900/90 dark:text-amber-100/80">
-        {t('dashboard:billing.pendingOrderDesc', {
-          plan: pending.planName,
-          amount: formatPayPrice(pending.amountCents, pending.currency),
-        })}
-      </p>
-      <Button className={`mt-3 ${APP_BTN_MD}`} size="sm" asChild>
+    <div
+      className={cn(
+        'rounded-xl border-2 border-black bg-amber-50 px-5 py-4 shadow-soft dark:bg-amber-950/40',
+        layout === 'row' && 'flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between',
+      )}
+    >
+      <div className="min-w-0">
+        <p className="font-mono text-xs font-bold uppercase tracking-widest text-amber-900 dark:text-amber-100">
+          {t('dashboard:billing.pendingOrderTitle')}
+        </p>
+        <p className="mt-1.5 text-sm text-amber-950/90 dark:text-amber-100/85">
+          {t('dashboard:billing.pendingOrderDesc', {
+            plan: pending.planName,
+            amount: formatPayPrice(pending.amountCents, pending.currency),
+          })}
+        </p>
+      </div>
+      <Button className={cn('shrink-0', APP_BTN_MD)} asChild>
         <Link to={checkoutHref}>{t('dashboard:billing.pendingOrderContinue')}</Link>
       </Button>
     </div>

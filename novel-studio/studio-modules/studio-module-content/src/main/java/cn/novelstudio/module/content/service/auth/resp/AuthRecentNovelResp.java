@@ -5,5 +5,7 @@ public record AuthRecentNovelResp(
     String title,
     String lastChapterId,
     String coverUrl,
+    String coverStorageKey,
+    boolean hasCover,
     long updatedAt
 ) {}

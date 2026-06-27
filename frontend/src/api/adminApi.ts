@@ -1,3 +1,4 @@
+import i18n from '@/i18n'
 import { secureFetch } from '../security/secureFetch'
 import { parseResultResponse, readApiErrorMessage } from '../utils/resultApi'
 import type { UserRole } from '../stores/userStore'
@@ -48,7 +49,7 @@ export interface AdminUserUpdatePayload {
 async function parseResponse<T>(res: Response): Promise<T> {
   if (!res.ok) {
     if (res.status === 403) {
-      throw new Error('无管理权限')
+      throw new Error(i18n.t('admin:errors.noAdminPermission'))
     }
     throw new Error(await readApiErrorMessage(res))
   }

@@ -1,10 +1,13 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { AgentContextUsage } from '../../types/agent'
 import type { ComposerSpinnerMode } from '../../utils/deriveComposerSpinnerMode'
 import { ModelSelector } from '@/components/model/ModelSelector'
 import { EditorButton, EditorSendIconLayer } from '../ui/EditorButton'
 import { ComposerStatusBar } from './ComposerStatusBar'
+import { ReferenceBookPicker } from '../editor/ReferenceBookPicker'
+import type { SelectableBook } from '@/api/libraryApi'
+import { FEATURE_LIBRARY_REF } from '@/config/features'
 import { cn } from '@/lib/utils'
 import { editorPixelIconButtonClass } from '@/lib/editorPixelClasses'
 import { appToast } from '@/stores/appToastStore'
@@ -37,6 +40,11 @@ const Icons = {
   ),
 }
 
+export interface ReferencedBookChip {
+  catalogNovelId: string
+  title: string
+}
+
 export interface ChatComposerProps {
   value: string
   onChange: (value: string) => void
@@ -49,6 +57,8 @@ export interface ChatComposerProps {
   onStreamPause?: () => void
   onStreamAbort?: () => void
   contextUsage?: AgentContextUsage | null
+  referencedBooks?: ReferencedBookChip[]
+  onReferencedBooksChange?: (books: ReferencedBookChip[]) => void
 }
 
 export function ChatComposer({
@@ -63,9 +73,13 @@ export function ChatComposer({
   onStreamPause,
   onStreamAbort,
   contextUsage,
+  referencedBooks = [],
+  onReferencedBooksChange,
 }: ChatComposerProps) {
   const { t } = useTranslation(['editor'])
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const [pickerQuery, setPickerQuery] = useState('')
   const streaming = streamActive || isLoading
 
   useEffect(() => {
@@ -102,26 +116,87 @@ export function ChatComposer({
     appToast.info(t('editor:chat.attachSoon'))
   }
 
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const v = e.target.value
+    onChange(v)
+    if (!FEATURE_LIBRARY_REF) {
+      setPickerOpen(false)
+      return
+    }
+    const lastAt = v.lastIndexOf('@')
+    if (lastAt >= 0 && v.slice(lastAt + 1).indexOf(' ') < 0) {
+      setPickerQuery(v.slice(lastAt + 1))
+      setPickerOpen(true)
+    } else {
+      setPickerOpen(false)
+    }
+  }
+
+  const handlePick = (book: SelectableBook) => {
+    const lastAt = value.lastIndexOf('@')
+    if (lastAt < 0) return
+    const newVal =
+      value.slice(0, lastAt) + `【${book.title}】` + value.slice(lastAt + 1 + pickerQuery.length)
+    onChange(newVal)
+    onReferencedBooksChange?.([
+      ...referencedBooks.filter((b) => b.catalogNovelId !== book.catalogNovelId),
+      { catalogNovelId: book.catalogNovelId, title: book.title },
+    ])
+    setPickerOpen(false)
+  }
+
   return (
     <footer data-testid="chat-composer" className="w-full min-w-0">
       <div className={cn(EDITOR_PIXEL_COMPOSER_WRAP, 'flex w-full min-w-0 flex-col gap-1.5')}>
-        <textarea
-          ref={textareaRef}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder={t('editor:chat.placeholder')}
-          rows={1}
-          disabled={isLoading && !streamActive}
-          aria-label={t('editor:chat.placeholder')}
-          style={{ minHeight: COMPOSER_TEXT_MIN_PX, maxHeight: COMPOSER_TEXT_MAX_PX }}
-          className={cn(
-            EDITOR_PIXEL_COMPOSER_TEXT,
-            'w-full resize-none border-none bg-transparent outline-none',
-            'placeholder:text-muted-foreground',
-            'disabled:cursor-not-allowed disabled:opacity-65',
-          )}
-        />
+        {FEATURE_LIBRARY_REF && referencedBooks.length > 0 ? (
+          <div className="flex flex-wrap gap-1 px-2 py-1">
+            {referencedBooks.map((b, i) => (
+              <span
+                key={b.catalogNovelId}
+                className="inline-flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 text-xs"
+              >
+                📖{b.title}
+                <button
+                  type="button"
+                  className="text-muted-foreground hover:text-foreground"
+                  aria-label={t('editor:reference.remove', { title: b.title })}
+                  onClick={() =>
+                    onReferencedBooksChange?.(referencedBooks.filter((_, j) => j !== i))
+                  }
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          </div>
+        ) : null}
+        <div className="relative">
+          <textarea
+            ref={textareaRef}
+            value={value}
+            onChange={handleChange}
+            onKeyDown={handleKeyDown}
+            placeholder={t('editor:chat.placeholder')}
+            rows={1}
+            disabled={isLoading && !streamActive}
+            aria-label={t('editor:chat.placeholder')}
+            style={{ minHeight: COMPOSER_TEXT_MIN_PX, maxHeight: COMPOSER_TEXT_MAX_PX }}
+            className={cn(
+              EDITOR_PIXEL_COMPOSER_TEXT,
+              'w-full resize-none border-none bg-transparent outline-none',
+              'placeholder:text-muted-foreground',
+              'disabled:cursor-not-allowed disabled:opacity-65',
+            )}
+          />
+          {FEATURE_LIBRARY_REF ? (
+            <ReferenceBookPicker
+              open={pickerOpen}
+              query={pickerQuery}
+              onPick={handlePick}
+              onClose={() => setPickerOpen(false)}
+            />
+          ) : null}
+        </div>
 
         <div className="flex w-full min-w-0 items-center justify-between gap-2 max-md:gap-1.5">
           <div className="flex min-w-0 flex-1 items-center gap-1.5">

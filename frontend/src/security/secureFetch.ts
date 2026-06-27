@@ -13,6 +13,7 @@ import {
   isSecurityCryptoEnabled,
   isStreamUrl,
 } from './requestCrypto'
+import i18n from '@/i18n'
 import { apiLocaleHeaders } from '@/i18n/localeHeader'
 
 const ENC_CONTENT_TYPE = 'application/vnd.novel-agent.enc+json'
@@ -89,7 +90,7 @@ async function buildRequest(
   }
 
   if (isSecurityCryptoEnabled() && !material) {
-    throw new Error('签名密钥未就绪，请刷新页面后重试')
+    throw new Error(i18n.t('common:errors.secureFetch.signKeyNotReady'))
   }
 
   // SSE stream 走扁平 JSON，避免 __sec 字段体在网关未展开时导致 message 校验失败
@@ -112,7 +113,7 @@ async function buildRequest(
       headers['Content-Type'] = ENC_CONTENT_TYPE
       signEmbeddedInBody = true
     } else if (isSecurityCryptoEnabled()) {
-      throw new Error('加密密钥缺失，正在热更新…')
+      throw new Error(i18n.t('common:errors.secureFetch.encryptKeyMissing'))
     }
   } else if (body != null && !headers['Content-Type'] && !headers['content-type']) {
     headers['Content-Type'] = 'application/json'

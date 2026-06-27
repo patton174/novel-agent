@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { fetchPublicSiteSettings } from '@/api/billingApi'
 import { register, sendEmailCode } from '../utils/authApi'
 import TurnstileModal from '../components/auth/TurnstileModal'
@@ -17,26 +17,35 @@ import { PixelText } from '@/components/marketing/pixel/PixelText'
 import { useFormDraft } from '../hooks/useJourneyTracker'
 import { cn } from '@/lib/utils'
 import { useTranslation } from 'react-i18next'
+import i18n from '@/i18n'
 import { remainingEmailCooldownSec, writeEmailCooldown } from '../utils/registerEmailCooldown'
 
-type RegisterField = 'username' | 'email' | 'password' | 'confirmPassword' | 'emailCode'
+type RegisterField = 'username' | 'email' | 'password' | 'confirmPassword' | 'emailCode' | 'inviteCode'
 type RegisterErrors = Partial<Record<RegisterField, string>>
 type Step = 1 | 2 | 3
+
+function messageMatchesKeywords(message: string, keywordsPipe: string): boolean {
+  const lower = message.toLowerCase()
+  return keywordsPipe.split('|').some((kw) => {
+    const k = kw.trim()
+    if (!k) return false
+    return /[\u4e00-\u9fff]/.test(k) ? message.includes(k) : lower.includes(k)
+  })
+}
 
 function mapRegisterServerError(message: string): RegisterErrors {
   const text = message.trim()
   if (!text) return {}
-  const lower = text.toLowerCase()
-  if (text.includes('验证码') || lower.includes('code') || lower.includes('captcha')) {
+  if (messageMatchesKeywords(text, i18n.t('auth:register.errorKeywords.emailCode'))) {
     return { emailCode: text }
   }
-  if (text.includes('邮箱') || lower.includes('email')) {
+  if (messageMatchesKeywords(text, i18n.t('auth:register.errorKeywords.email'))) {
     return { email: text }
   }
-  if (text.includes('用户名') || lower.includes('username')) {
+  if (messageMatchesKeywords(text, i18n.t('auth:register.errorKeywords.username'))) {
     return { username: text }
   }
-  if (text.includes('密码') || lower.includes('password')) {
+  if (messageMatchesKeywords(text, i18n.t('auth:register.errorKeywords.password'))) {
     return { password: text }
   }
   return {}
@@ -45,12 +54,14 @@ function mapRegisterServerError(message: string): RegisterErrors {
 const RegisterPage: React.FC = () => {
   const { t } = useTranslation(['common', 'auth'])
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [formData, setFormData, clearDraft] = useFormDraft('register_form', {
     username: '',
     email: '',
     password: '',
     confirmPassword: '',
     emailCode: '',
+    inviteCode: '',
   })
   const [step, setStep] = useState<Step>(1)
   const [submitting, setSubmitting] = useState(false)
@@ -59,14 +70,26 @@ const RegisterPage: React.FC = () => {
   const [codeSent, setCodeSent] = useState(false)
   const [cooldown, setCooldown] = useState(0)
   const [registrationClosed, setRegistrationClosed] = useState(false)
+  const [emailVerifyRequired, setEmailVerifyRequired] = useState(true)
   const [fieldErrors, setFieldErrors] = useState<RegisterErrors>({})
   const isMobile = useAppMobile()
 
   useEffect(() => {
+    const inviteFromUrl = searchParams.get('invite')?.trim()
+    if (inviteFromUrl && !formData.inviteCode.trim()) {
+      setFormData({ ...formData, inviteCode: inviteFromUrl })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- prefill once from URL
+  }, [searchParams])
+
+  useEffect(() => {
     let cancelled = false
     void fetchPublicSiteSettings().then((settings) => {
-      if (!cancelled && !settings.registrationEnabled) {
-        setRegistrationClosed(true)
+      if (!cancelled) {
+        if (!settings.registrationEnabled) {
+          setRegistrationClosed(true)
+        }
+        setEmailVerifyRequired(settings.registrationRequireEmailVerify)
       }
     })
     return () => {
@@ -163,17 +186,25 @@ const RegisterPage: React.FC = () => {
     }
   }
 
-  // 步骤切换：进入下一步前做对应校验；步骤 2 要求验证码已发送
+  const totalSteps = emailVerifyRequired ? 3 : 2
+  const passwordStep = emailVerifyRequired ? 3 : 2
+  const verifyStep = emailVerifyRequired ? 2 : null
+
+  // 步骤切换：进入下一步前做对应校验；开启邮箱验证时步骤 2 要求验证码已发送
   const goNext = () => {
     if (step === 1) {
       if (!validateStep1()) return
-      if (!codeSent) {
-        setFieldErrors((prev) => ({ ...prev, email: t('auth:register.emailCodeReq') }))
-        appToast.info(t('auth:register.getCode'))
-        return
+      if (emailVerifyRequired) {
+        if (!codeSent) {
+          setFieldErrors((prev) => ({ ...prev, email: t('auth:register.emailCodeReq') }))
+          appToast.info(t('auth:register.getCode'))
+          return
+        }
+        setStep(2)
+      } else {
+        setStep(2 as Step)
       }
-      setStep(2)
-    } else if (step === 2) {
+    } else if (verifyStep != null && step === verifyStep) {
       if (!validateStep2()) return
       setStep(3)
     }
@@ -186,10 +217,16 @@ const RegisterPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!validateStep3()) return
-    const { username, email, password, emailCode } = formData
+    const { username, email, password, emailCode, inviteCode } = formData
     setSubmitting(true)
     try {
-      await register(username.trim(), password, email.trim(), emailCode.trim())
+      await register(
+        username.trim(),
+        password,
+        email.trim(),
+        emailVerifyRequired ? emailCode.trim() : '',
+        inviteCode.trim() || undefined,
+      )
       clearDraft()
       appToast.success(t('auth:register.success'))
       navigate('/login')
@@ -233,11 +270,16 @@ const RegisterPage: React.FC = () => {
     </button>
   )
 
-  const stepMeta = [
-    { title: t('auth:register.stepAccountTitle'), desc: t('auth:register.stepAccountDesc') },
-    { title: t('auth:register.stepVerifyTitle'), desc: t('auth:register.stepVerifyDesc') },
-    { title: t('auth:register.stepSecurityTitle'), desc: t('auth:register.stepSecurityDesc') },
-  ]
+  const stepMeta = emailVerifyRequired
+    ? [
+        { title: t('auth:register.stepAccountTitle'), desc: t('auth:register.stepAccountDesc') },
+        { title: t('auth:register.stepVerifyTitle'), desc: t('auth:register.stepVerifyDesc') },
+        { title: t('auth:register.stepSecurityTitle'), desc: t('auth:register.stepSecurityDesc') },
+      ]
+    : [
+        { title: t('auth:register.stepAccountTitle'), desc: t('auth:register.stepAccountDesc') },
+        { title: t('auth:register.stepSecurityTitle'), desc: t('auth:register.stepSecurityDesc') },
+      ]
 
   return (
     <AuthShell
@@ -290,7 +332,7 @@ const RegisterPage: React.FC = () => {
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* 步骤指示器：3 格 mono 标号，当前格荧光绿 + 黑框 */}
           <div className="flex items-center gap-2">
-            {[1, 2, 3].map((s) => (
+            {Array.from({ length: totalSteps }, (_, i) => i + 1).map((s) => (
               <React.Fragment key={s}>
                 <div
                   className={cn(
@@ -300,7 +342,7 @@ const RegisterPage: React.FC = () => {
                 >
                   <PixelText text={`0${s}`} size="sm" fontWeight={800} presentational />
                 </div>
-                {s < 3 ? <div className="h-0.5 w-3 shrink-0 bg-black/30" aria-hidden /> : null}
+                {s < totalSteps ? <div className="h-0.5 w-3 shrink-0 bg-black/30" aria-hidden /> : null}
               </React.Fragment>
             ))}
           </div>
@@ -321,6 +363,16 @@ const RegisterPage: React.FC = () => {
                 value={formData.username}
                 error={fieldErrors.username}
                 onChange={(e) => handleChange('username', e.target.value)}
+              />
+              <AuthField
+                id="reg-invite"
+                name="inviteCode"
+                label={t('auth:inviteCodeLabel')}
+                autoComplete="off"
+                placeholder={t('auth:inviteCodePlaceholder')}
+                value={formData.inviteCode}
+                error={fieldErrors.inviteCode}
+                onChange={(e) => handleChange('inviteCode', e.target.value)}
               />
               <div className="space-y-1">
                 <label htmlFor="reg-email" className="text-xs font-medium text-foreground">
@@ -343,7 +395,7 @@ const RegisterPage: React.FC = () => {
                       fieldErrors.email && 'border-destructive/60 focus:border-destructive/60',
                     )}
                   />
-                  {sendCodeButton}
+                  {emailVerifyRequired ? sendCodeButton : null}
                 </div>
                 {fieldErrors.email ? (
                   <p id="reg-email-error" className="text-ui-sm leading-snug text-destructive">
@@ -358,7 +410,7 @@ const RegisterPage: React.FC = () => {
           ) : null}
 
           {/* 步骤 2：验证码 */}
-          {step === 2 ? (
+          {verifyStep != null && step === verifyStep ? (
             <div className="space-y-4">
               <AuthCodeField
                 id="reg-email-code"
@@ -389,7 +441,7 @@ const RegisterPage: React.FC = () => {
           ) : null}
 
           {/* 步骤 3：密码 */}
-          {step === 3 ? (
+          {step === passwordStep ? (
             <div className="space-y-4">
               <AuthField
                 id="reg-password"

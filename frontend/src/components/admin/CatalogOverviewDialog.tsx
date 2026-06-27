@@ -17,7 +17,6 @@ import {
   AdminTextInput,
 } from '@/components/admin/AdminFormControls'
 import {
-  PixelBadge,
   PIXEL_INPUT,
   PIXEL_PANEL,
   PixelTableActionBar,
@@ -36,7 +35,6 @@ interface CatalogOverviewDialogProps {
   onRead?: (novel: CatalogNovel) => void
   onUpdated?: () => void
   onDeleted?: () => void
-  onOpenJob?: (jobId: string) => void
 }
 
 export function CatalogOverviewDialog({
@@ -46,7 +44,6 @@ export function CatalogOverviewDialog({
   onRead,
   onUpdated,
   onDeleted,
-  onOpenJob,
 }: CatalogOverviewDialogProps) {
   const { t } = useTranslation(['admin', 'common'])
   const [progress, setProgress] = useState<CatalogNovelProgress | null>(null)
@@ -155,37 +152,11 @@ export function CatalogOverviewDialog({
         {loading ? (
           <PanelLoadingSkeleton rows={3} />
         ) : progress ? (
-          <div
-            className={cn(
-              PIXEL_PANEL,
-              'text-sm',
-              progress.complete
-                ? 'border-success/35 bg-success/8'
-                : 'border-warning/35 bg-warning/8',
-            )}
-          >
-            <div className="flex flex-wrap items-center gap-2">
-              <p className="font-medium">{progress.complete ? t('admin:catalog.crawlComplete') : t('admin:catalog.crawling')}</p>
-              <PixelBadge tone={progress.complete ? 'success' : 'warning'}>
-                {progress.complete ? 'OK' : '…'}
-              </PixelBadge>
-            </div>
+          <div className={cn(PIXEL_PANEL, 'text-sm border-border/60 bg-muted/20')}>
+            <p className="font-medium">{t('admin:catalog.chapterCount', { count: progress.chapterCount })}</p>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              {t('admin:catalog.crawledCount', { count: progress.chapterCount })}
-              {progress.chaptersExpected != null
-                ? t('admin:catalog.crawlProgress', { done: progress.chaptersDone ?? 0, total: progress.chaptersExpected })
-                : ''}
-              {progress.latestJobStatus ? t('admin:catalog.jobStatus', { status: progress.latestJobStatus }) : ''}
+              {progress.complete ? t('admin:catalog.parseReady') : t('admin:catalog.parsePending')}
             </p>
-            {progress.latestJobId && onOpenJob ? (
-              <button
-                type="button"
-                className="mt-1 text-xs text-primary underline-offset-2 hover:underline"
-                onClick={() => onOpenJob(progress.latestJobId!)}
-              >
-                {t('admin:catalog.viewJob')}
-              </button>
-            ) : null}
           </div>
         ) : null}
 

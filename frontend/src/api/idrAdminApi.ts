@@ -1,3 +1,4 @@
+import i18n from '@/i18n'
 import { secureFetch } from '../security/secureFetch'
 import { parseResultResponse } from '../utils/resultApi'
 
@@ -76,7 +77,7 @@ async function parseResponse<T>(res: Response): Promise<T> {
 export async function fetchIdrMerchantBasic(): Promise<IdrMerchantBasic> {
   const res = await secureFetch('/api/billing/crm/idatariver/merchant')
   if (!res.ok) {
-    throw new Error('拉取商户信息失败，请先保存 Merchant Secret')
+    throw new Error(i18n.t('admin:errors.fetchMerchantFail'))
   }
   return parseResponse<IdrMerchantBasic>(res)
 }
@@ -84,7 +85,7 @@ export async function fetchIdrMerchantBasic(): Promise<IdrMerchantBasic> {
 export async function fetchIdrProjects(): Promise<IdrProjectItem[]> {
   const res = await secureFetch('/api/billing/crm/idatariver/projects')
   if (!res.ok) {
-    throw new Error('拉取项目列表失败，请先保存 Merchant Secret')
+    throw new Error(i18n.t('admin:errors.fetchProjectsFail'))
   }
   const data = await parseResponse<{ projects: IdrProjectItem[] }>(res)
   return Array.isArray(data?.projects) ? data.projects : []
@@ -93,7 +94,7 @@ export async function fetchIdrProjects(): Promise<IdrProjectItem[]> {
 export async function fetchIdrProjectDetail(projectId: string): Promise<IdrProjectDetail> {
   const res = await secureFetch(`/api/billing/crm/idatariver/projects/${encodeURIComponent(projectId)}`)
   if (!res.ok) {
-    throw new Error('拉取项目详情失败')
+    throw new Error(i18n.t('admin:errors.fetchProjectDetailFail'))
   }
   const data = await parseResponse<IdrProjectDetail>(res)
   return {
@@ -123,7 +124,7 @@ export function formatIdrSkuLabel(sku: IdrSkuItem): string {
 export async function fetchIdrSkuDetail(skuId: string): Promise<IdrSkuDetail> {
   const res = await secureFetch(`/api/billing/crm/idatariver/skus/${encodeURIComponent(skuId)}`)
   if (!res.ok) {
-    throw new Error('加载 SKU 详情失败')
+    throw new Error(i18n.t('admin:errors.loadSkuDetailFail'))
   }
   const data = await parseResponse<IdrSkuDetail>(res)
   return {
@@ -142,7 +143,7 @@ export async function updateIdrSkuInventory(
     body: JSON.stringify(payload),
   })
   if (!res.ok) {
-    throw new Error('更新库存失败')
+    throw new Error(i18n.t('admin:errors.updateInventoryFail'))
   }
   const data = await parseResponse<IdrSkuDetail>(res)
   return {
@@ -189,7 +190,7 @@ export async function createIdrSku(projectId: string, payload: IdrSkuCreatePaylo
     body: JSON.stringify(payload),
   })
   if (!res.ok) {
-    throw new Error('创建商品失败')
+    throw new Error(i18n.t('admin:errors.createSkuFail'))
   }
   return parseResponse<IdrSkuItem>(res)
 }
@@ -207,7 +208,7 @@ export async function createIdrPricing(
     },
   )
   if (!res.ok) {
-    throw new Error('创建定价失败')
+    throw new Error(i18n.t('admin:errors.createPricingFail'))
   }
   return parseResponse<IdrPricingItem>(res)
 }
@@ -225,7 +226,7 @@ export async function createIdrCoupon(
     },
   )
   if (!res.ok) {
-    throw new Error('创建优惠券失败')
+    throw new Error(i18n.t('admin:errors.createCouponFail'))
   }
   return parseResponse<IdrCouponItem>(res)
 }
@@ -251,7 +252,7 @@ export async function updateIdrSku(skuId: string, payload: IdrSkuUpdatePayload):
     body: JSON.stringify(payload),
   })
   if (!res.ok) {
-    throw new Error('更新商品失败')
+    throw new Error(i18n.t('admin:errors.updateSkuFail'))
   }
   return parseResponse<IdrSkuItem>(res)
 }
@@ -269,7 +270,7 @@ export async function updateIdrPricing(
     },
   )
   if (!res.ok) {
-    throw new Error('更新定价失败')
+    throw new Error(i18n.t('admin:errors.updatePricingFail'))
   }
   return parseResponse<IdrPricingItem>(res)
 }
@@ -287,7 +288,7 @@ export async function updateIdrCoupon(
     },
   )
   if (!res.ok) {
-    throw new Error('更新优惠券失败')
+    throw new Error(i18n.t('admin:errors.updateCouponFail'))
   }
   return parseResponse<IdrCouponItem>(res)
 }

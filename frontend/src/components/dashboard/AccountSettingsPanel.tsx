@@ -84,8 +84,8 @@ export function AccountSettingsPanel({ profile, onVerified, onOpenAvatarEditor }
             <UserPixelAvatar size={44} animated />
           </PixelAvatarFrame>
           <div className="min-w-0 flex-1">
-            <p className="text-[12px] font-semibold text-foreground">{t('editor:avatar.sectionTitle', '头像')}</p>
-            <p className="mt-0.5 text-[10px] text-muted-foreground">{t('editor:avatar.entryHint', '点击更换头像')}</p>
+            <p className="text-[12px] font-semibold text-foreground">{t('editor:avatar.sectionTitle')}</p>
+            <p className="mt-0.5 text-[10px] text-muted-foreground">{t('editor:avatar.entryHint')}</p>
           </div>
         </button>
       )}

@@ -2,7 +2,6 @@ package cn.novelstudio.module.agent.config;
 
 import cn.novelstudio.module.agent.service.RunProxyRegistry;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.scheduling.annotation.Scheduled;
 
 @Configuration
 public class RunProxySchedulingConfig {
@@ -13,8 +12,7 @@ public class RunProxySchedulingConfig {
         this.runProxyRegistry = runProxyRegistry;
     }
 
-    @Scheduled(fixedRate = 15_000)
-    void renewRunProxyLeases() {
+    public void renewRunProxyLeases() {
         for (String runId : runProxyRegistry.localRunIds()) {
             runProxyRegistry.renew(runId);
         }

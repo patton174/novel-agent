@@ -1,63 +1,29 @@
 package cn.novelstudio.module.content.service;
 
-import cn.novelstudio.platform.i18n.ResultLocalizer;
-import cn.novelstudio.platform.i18n.StudioMessages;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.core.ParameterizedTypeReference;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestClient;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 @Service
+@RequiredArgsConstructor
 public class KnowledgeGraphClient {
 
-    private static final Logger log = LoggerFactory.getLogger(KnowledgeGraphClient.class);
-
-    private final RestClient restClient;
-    private final StudioMessages messages;
-    private final ResultLocalizer resultLocalizer;
-
-    public KnowledgeGraphClient(
-        @Qualifier("pythonRestClient") RestClient restClient,
-        StudioMessages messages,
-        ResultLocalizer resultLocalizer
-    ) {
-        this.restClient = restClient;
-        this.messages = messages;
-        this.resultLocalizer = resultLocalizer;
-    }
+    private final KgService kgService;
 
     public Map<String, Object> getNovelGraph(String novelId) {
         if (novelId == null || novelId.isBlank()) {
-            return emptyGraph(false, messages.get("content.kg.missing_novel_id"));
+            Map<String, Object> out = new LinkedHashMap<>();
+            out.put("enabled", false);
+            out.put("status", "empty");
+            out.put("nodes", List.of());
+            out.put("edges", List.of());
+            out.put("errorCount", 0L);
+            out.put("note", "missing novel_id");
+            return out;
         }
-        try {
-            Map<String, Object> body = restClient.get()
-                .uri("/api/kg/novels/{novelId}/graph", novelId)
-                .retrieve()
-                .body(new ParameterizedTypeReference<>() {});
-            return body == null ? emptyGraph(true, null) : body;
-        } catch (Exception ex) {
-            log.debug("knowledge graph fetch skipped novelId={}: {}", novelId, ex.getMessage());
-            String note = ex.getMessage() == null || ex.getMessage().isBlank()
-                ? messages.get("content.kg.fetch_failed")
-                : resultLocalizer.resolveLiteral(ex.getMessage());
-            return emptyGraph(false, note);
-        }
-    }
-
-    private static Map<String, Object> emptyGraph(boolean enabled, String note) {
-        Map<String, Object> out = new LinkedHashMap<>();
-        out.put("enabled", enabled);
-        out.put("nodes", java.util.List.of());
-        out.put("edges", java.util.List.of());
-        if (note != null && !note.isBlank()) {
-            out.put("note", note);
-        }
-        return out;
+        return kgService.getGraph(novelId);
     }
 }

@@ -1,5 +1,6 @@
 package cn.novelstudio.module.auth.service.impl;
 
+import cn.novelstudio.module.auth.client.BillingReferralClient;
 import cn.novelstudio.module.auth.client.BillingSettingsClient;
 import cn.novelstudio.module.auth.client.BillingSubscriptionClient;
 import cn.novelstudio.module.auth.dto.HeartbeatRequest;
@@ -9,12 +10,14 @@ import cn.novelstudio.module.auth.dto.RegisterRequest;
 import cn.novelstudio.module.auth.dto.WsTicketRequest;
 import cn.novelstudio.module.auth.dto.WsTicketResponse;
 import cn.novelstudio.module.auth.entity.AuthUser;
+import cn.novelstudio.module.auth.entity.InviteCodeEntity;
 import cn.novelstudio.module.auth.repository.AuthUserRepository;
 import cn.novelstudio.module.auth.security.DeviceSessionService;
 import cn.novelstudio.module.auth.security.JwtAuthService;
 import cn.novelstudio.module.auth.security.WsTicketService;
 import cn.novelstudio.module.auth.service.AuthService;
 import cn.novelstudio.module.auth.service.EmailVerificationService;
+import cn.novelstudio.module.auth.service.InviteCodeService;
 import cn.novelstudio.module.auth.service.RateLimitService;
 import cn.novelstudio.module.auth.support.PermissionSyncPublisher;
 import cn.novelstudio.kernel.enums.ResultCode;
@@ -41,6 +44,8 @@ public class AuthServiceImpl implements AuthService {
     private final RateLimitService rateLimitService;
     private final BillingSubscriptionClient billingSubscriptionClient;
     private final BillingSettingsClient billingSettingsClient;
+    private final BillingReferralClient billingReferralClient;
+    private final InviteCodeService inviteCodeService;
 
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder(12);
 
@@ -57,7 +62,8 @@ public class AuthServiceImpl implements AuthService {
             throw BizException.of(ResultCode.AUTH_USER_DISABLED);
         }
 
-        if (Boolean.FALSE.equals(user.getEmailVerified())) {
+        if (Boolean.FALSE.equals(user.getEmailVerified())
+            && billingSettingsClient.isRegistrationRequireEmailVerify()) {
             throw BizException.of(ResultCode.AUTH_EMAIL_NOT_VERIFIED);
         }
 
@@ -68,7 +74,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public void register(RegisterRequest request, String ip, String fingerprint) {
+    public void register(RegisterRequest request, String ip, String fingerprint, String referralCode) {
         if (!billingSettingsClient.isRegistrationEnabled()) {
             throw BizException.of(ResultCode.AUTH_REGISTRATION_DISABLED);
         }
@@ -82,7 +88,14 @@ public class AuthServiceImpl implements AuthService {
             throw BizException.of(ResultCode.AUTH_EMAIL_EXISTS);
         }
 
-        emailVerificationService.verifyRegisterCode(request.getEmail(), request.getEmailCode());
+        if (billingSettingsClient.isRegistrationRequireEmailVerify()) {
+            emailVerificationService.verifyRegisterCode(request.getEmail(), request.getEmailCode());
+        }
+
+        InviteCodeEntity invite = null;
+        if (InviteCodeService.normalizeCode(request.getInviteCode()) != null) {
+            invite = inviteCodeService.requireValidForRegistration(request.getInviteCode());
+        }
 
         AuthUser user = new AuthUser();
         user.setId(IdWorker.getId());
@@ -96,6 +109,10 @@ public class AuthServiceImpl implements AuthService {
         authUserRepository.save(user);
         permissionSyncPublisher.publish(user.getId(), user.getRole());
         billingSubscriptionClient.createDefaultSubscription(user.getId());
+        billingReferralClient.recordRegistrationAttribution(user.getId(), referralCode);
+        if (invite != null) {
+            inviteCodeService.redeemAfterRegistration(invite, user.getId());
+        }
     }
 
     @Override

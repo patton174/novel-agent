@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import i18n from '@/i18n'
 import { buildLoginHref, buildReturnPath } from '@/lib/authRedirect'
 import { isLoggedIn } from '../../utils/auth'
 import { useAuthReady } from '../../security/useAuthReady'
@@ -117,7 +118,7 @@ export function useEditorBootstrap({
         remote.forEach((s) => {
           upsertSession({
             id: s.id,
-            title: s.title || '新对话',
+            title: s.title || i18n.t('editor:session.defaultTitle'),
             updatedAt: new Date(s.updatedAt).toISOString(),
             novelId: s.novelId,
           })

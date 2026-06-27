@@ -1,20 +1,35 @@
 package cn.novelstudio.module.billing.service;
 
+import cn.novelstudio.module.billing.client.NotificationClient;
 import cn.novelstudio.module.billing.entity.PaymentOrderEntity;
 import cn.novelstudio.module.billing.integration.idatariver.IDataRiverClient;
+import cn.novelstudio.module.billing.service.biz.ReferralBiz;
 import cn.novelstudio.module.billing.service.biz.SubscriptionBiz;
 import com.fasterxml.jackson.databind.JsonNode;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
 
 @Component
-@RequiredArgsConstructor
 public class PaymentOrderSyncService {
 
     private final IDataRiverClient client;
     private final SubscriptionBiz subscriptionBiz;
+    private final ReferralBiz referralBiz;
+    private final NotificationClient notificationClient;
+
+    public PaymentOrderSyncService(
+        IDataRiverClient client,
+        SubscriptionBiz subscriptionBiz,
+        ReferralBiz referralBiz,
+        @Autowired(required = false) NotificationClient notificationClient
+    ) {
+        this.client = client;
+        this.subscriptionBiz = subscriptionBiz;
+        this.referralBiz = referralBiz;
+        this.notificationClient = notificationClient;
+    }
 
     public void syncFromRemote(PaymentOrderEntity entity, JsonNode remote) {
         String status = normalizeStatus(client.orderStatus(remote));
@@ -33,6 +48,10 @@ public class PaymentOrderSyncService {
             entity.setStatus("DONE");
         }
         subscriptionBiz.changeUserPlanFromOrder(entity, actorId, reason);
+        referralBiz.recordFirstPaidOrder(entity.getUserId(), entity.getId());
+        if (notificationClient != null) {
+            notificationClient.sendPaymentSuccess(entity.getUserId(), entity.getId());
+        }
     }
 
     public static String normalizeStatus(String status) {

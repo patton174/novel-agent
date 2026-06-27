@@ -2,7 +2,6 @@ package cn.novelstudio.platform.i18n;
 
 import cn.novelstudio.kernel.base.Result;
 import cn.novelstudio.kernel.enums.ResultCode;
-import cn.novelstudio.kernel.exception.BizException;
 import cn.novelstudio.kernel.exception.ValidationException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -53,6 +52,13 @@ class ResultLocalizerTest {
             "Title is required",
             localizer.resolveValidationFieldMessage("{validation.content.title_required}")
         );
+    }
+
+    @Test
+    void resolvesMessageKeyLiteralInChinese() {
+        LocaleContext.set(AppLocale.ZH_CN);
+        assertEquals("缺少请求签名", localizer.resolveLiteral("security.client.sign_required"));
+        assertEquals("内部密钥无效", localizer.resolveLiteral("result.internal.key_invalid"));
     }
 
     @Test

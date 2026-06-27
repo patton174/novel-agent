@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { ChevronDown, List, Loader2, Pencil, Save, Search, Trash2, X } from 'lucide-react'
+import { ChevronDown, List, Loader2, Pencil, Save, Trash2, X } from 'lucide-react'
 import {
   deleteCatalogChapter,
   fetchCatalogChapter,
@@ -17,6 +17,7 @@ import {
   DialogDescription,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { AdminSearchInput } from '@/components/admin/AdminFormControls'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { confirmAction } from '@/stores/appDialog'
@@ -222,15 +223,12 @@ export function CatalogReaderModal({
               </Button>
             </div>
             <div className="border-b border-border px-3 py-2">
-              <div className="relative">
-                <Search className="absolute left-2 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder={t('admin:catalog.searchChapter')}
-                  className="h-8 pl-7 text-xs"
-                />
-              </div>
+              <AdminSearchInput
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={t('admin:catalog.searchChapter')}
+                inputClassName="text-xs"
+              />
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto">
               {loadingList ? (

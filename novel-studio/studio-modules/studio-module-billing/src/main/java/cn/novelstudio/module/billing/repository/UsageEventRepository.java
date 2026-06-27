@@ -34,6 +34,17 @@ public interface UsageEventRepository extends JpaRepository<UsageEventEntity, Lo
 
     @Query(value = """
         SELECT CAST(created_at AS date) AS day,
+               COALESCE(model, 'unknown') AS model,
+               SUM(input_tokens + output_tokens + cache_read_tokens + cache_write_tokens)
+        FROM usage_event
+        WHERE user_id = :userId AND created_at >= :since
+        GROUP BY day, model
+        ORDER BY day, model
+        """, nativeQuery = true)
+    List<Object[]> sumDailyByModelSince(@Param("userId") long userId, @Param("since") Instant since);
+
+    @Query(value = """
+        SELECT CAST(created_at AS date) AS day,
                SUM(input_tokens + output_tokens + cache_read_tokens + cache_write_tokens),
                SUM(total_cost_micros)
         FROM usage_event

@@ -22,7 +22,7 @@ export function BookstoreMobile() {
         icon={BookMarked}
         action={
           <Button asChild variant="outline" size="sm">
-            <Link to="/dashboard/novels">{t('dashboard:bookstore.myNovels')}</Link>
+            <Link to="/dashboard/my-library">{t('dashboard:bookstore.myLibrary')}</Link>
           </Button>
         }
       />

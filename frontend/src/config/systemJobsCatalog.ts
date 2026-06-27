@@ -20,13 +20,6 @@ export const EXTERNAL_OPS_JOBS_CATALOG: SystemJobCatalogItem[] = [
     docHintKey: 'admin:jobs.catalog.frontendCrypto.hint',
   },
   {
-    id: 'crawl-orchestrator',
-    labelKey: 'admin:jobs.catalog.crawlOrchestrator.name',
-    descKey: 'admin:jobs.catalog.crawlOrchestrator.desc',
-    kind: 'daemon',
-    docHintKey: 'admin:jobs.catalog.crawlOrchestrator.hint',
-  },
-  {
     id: 'deploy-pipeline',
     labelKey: 'admin:jobs.catalog.deployPipeline.name',
     descKey: 'admin:jobs.catalog.deployPipeline.desc',
@@ -60,6 +53,30 @@ export const SCHEDULED_JOB_I18N: Record<string, { labelKey: string; descKey: str
     labelKey: 'admin:jobs.runtime.agentRunProxy.name',
     descKey: 'admin:jobs.runtime.agentRunProxy.desc',
   },
+  'site-content-translation': {
+    labelKey: 'admin:jobs.runtime.siteContentTranslation.name',
+    descKey: 'admin:jobs.runtime.siteContentTranslation.desc',
+  },
+  'site-danmaku-translation': {
+    labelKey: 'admin:jobs.runtime.siteDanmakuTranslation.name',
+    descKey: 'admin:jobs.runtime.siteDanmakuTranslation.desc',
+  },
+  'notification-inbox-retention-purge': {
+    labelKey: 'admin:jobs.runtime.notificationRetention.name',
+    descKey: 'admin:jobs.runtime.notificationRetention.desc',
+  },
+  'billing-subscription-expiring-notify': {
+    labelKey: 'admin:jobs.runtime.subscriptionExpiringNotify.name',
+    descKey: 'admin:jobs.runtime.subscriptionExpiringNotify.desc',
+  },
+  'worker-monitoring-cpu-alert': {
+    labelKey: 'admin:jobs.runtime.monitoringCpuAlert.name',
+    descKey: 'admin:jobs.runtime.monitoringCpuAlert.desc',
+  },
+  'billing-renewal-monthly': {
+    labelKey: 'admin:jobs.runtime.billingRenewal.name',
+    descKey: 'admin:jobs.runtime.billingRenewal.desc',
+  },
 }
 
 /** MQ consumer id（API 返回小写 enum 名）→ i18n */
@@ -80,10 +97,6 @@ export const MQ_CONSUMER_I18N: Record<string, { labelKey: string; descKey: strin
     labelKey: 'admin:jobs.mq.agentRunEvents.name',
     descKey: 'admin:jobs.mq.agentRunEvents.desc',
   },
-  crawl_dispatch: {
-    labelKey: 'admin:jobs.catalog.crawlDispatch.name',
-    descKey: 'admin:jobs.catalog.crawlDispatch.desc',
-  },
   catalog_index: {
     labelKey: 'admin:jobs.mq.catalogIndex.name',
     descKey: 'admin:jobs.mq.catalogIndex.desc',
@@ -99,6 +112,14 @@ export const MQ_CONSUMER_I18N: Record<string, { labelKey: string; descKey: strin
   batch_job: {
     labelKey: 'admin:jobs.mq.batchJob.name',
     descKey: 'admin:jobs.mq.batchJob.desc',
+  },
+  library_index: {
+    labelKey: 'admin:jobs.mq.libraryIndex.name',
+    descKey: 'admin:jobs.mq.libraryIndex.desc',
+  },
+  kg_backfill: {
+    labelKey: 'admin:jobs.mq.kgBackfill.name',
+    descKey: 'admin:jobs.mq.kgBackfill.desc',
   },
 }
 

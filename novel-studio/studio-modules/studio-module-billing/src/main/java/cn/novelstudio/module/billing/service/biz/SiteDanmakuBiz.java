@@ -10,6 +10,8 @@ import cn.novelstudio.kernel.base.Result;
 import cn.novelstudio.kernel.biz.BaseBiz;
 import cn.novelstudio.kernel.enums.ResultCode;
 import cn.novelstudio.kernel.exception.BizException;
+import cn.novelstudio.platform.i18n.AppLocale;
+import cn.novelstudio.platform.i18n.LocaleContext;
 import cn.novelstudio.platform.i18n.StudioMessages;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -21,6 +23,8 @@ import java.util.List;
 @Component
 @RequiredArgsConstructor
 public class SiteDanmakuBiz extends BaseBiz {
+
+    private static final String SOURCE_LOCALE = AppLocale.ZH_CN.tag();
 
     private final SiteDanmakuRepository siteDanmakuRepository;
     private final IpRegionResolver ipRegionResolver;
@@ -67,6 +71,7 @@ public class SiteDanmakuBiz extends BaseBiz {
         SiteDanmakuEntity entity = new SiteDanmakuEntity();
         entity.setMessage(message);
         entity.setClientIp(clientIp);
+        entity.setAuthorName("");
 
         if (userId != null && userId > 0) {
             entity.setUserId(userId);
@@ -99,17 +104,40 @@ public class SiteDanmakuBiz extends BaseBiz {
             }
             return messages.get("billing.danmaku.user_author", entity.getUserId());
         }
+        String stored = entity.getAuthorName();
+        if (stored != null && !stored.isBlank()) {
+            return stored;
+        }
         return messages.get("billing.danmaku.guest_author");
     }
 
+    private ResolvedMessage resolveMessage(SiteDanmakuEntity entity, String requestedLocale) {
+        if (!AppLocale.EN.tag().equals(requestedLocale)) {
+            return new ResolvedMessage(entity.getMessage(), SOURCE_LOCALE, false);
+        }
+        String english = entity.getMessageEn();
+        if (english != null && !english.isBlank()) {
+            return new ResolvedMessage(english, AppLocale.EN.tag(), false);
+        }
+        return new ResolvedMessage(entity.getMessage(), SOURCE_LOCALE, true);
+    }
+
     private SiteDanmakuResp toResp(SiteDanmakuEntity entity) {
+        String requestedLocale = LocaleContext.get().tag();
+        ResolvedMessage resolved = resolveMessage(entity, requestedLocale);
         return new SiteDanmakuResp(
             entity.getId(),
-            entity.getMessage(),
+            resolved.text(),
             resolveAuthorName(entity),
             entity.getRegion(),
             entity.getUserId(),
-            entity.getCreatedAt()
+            entity.getCreatedAt(),
+            requestedLocale,
+            resolved.resolvedLocale(),
+            resolved.localeFallback()
         );
+    }
+
+    private record ResolvedMessage(String text, String resolvedLocale, boolean localeFallback) {
     }
 }

@@ -1,3 +1,4 @@
+import i18n from '@/i18n'
 import { secureFetch } from '../security/secureFetch'
 import { parseResultResponse } from '../utils/resultApi'
 import type { CatalogNovelPage } from './catalogApi'
@@ -11,7 +12,10 @@ export async function uploadFile(file: File, title?: string): Promise<UploadedFi
   if (title) form.append('title', title)
   const res = await secureFetch(`${BASE}/file`, { method: 'POST', body: form })
   if (!res.ok) {
-    const msg = res.status === 409 ? '上传数量已达套餐上限' : '上传失败'
+    const msg =
+      res.status === 409
+        ? i18n.t('admin:errors.uploadQuotaExceeded')
+        : i18n.t('admin:errors.uploadFail')
     throw new Error(msg)
   }
   return parseResultResponse<UploadedFile>(res)
@@ -22,7 +26,7 @@ export async function listUploadedFiles(
   pageSize = 50,
 ): Promise<{ list: UploadedFile[]; total: number }> {
   const res = await secureFetch(`${BASE}/files?pageCurrent=${pageCurrent}&pageSize=${pageSize}`)
-  if (!res.ok) throw new Error('加载上传列表失败')
+  if (!res.ok) throw new Error(i18n.t('admin:errors.loadUploadListFail'))
   const page = await parseResultResponse<{
     list: UploadedFile[]
     total: number
@@ -34,24 +38,24 @@ export async function listUploadedFiles(
 
 export async function getUploadedFile(fileId: string): Promise<UploadedFile> {
   const res = await secureFetch(`${BASE}/files/${fileId}`)
-  if (!res.ok) throw new Error('查询文件状态失败')
+  if (!res.ok) throw new Error(i18n.t('admin:errors.queryFileStatusFail'))
   return parseResultResponse<UploadedFile>(res)
 }
 
 export async function deleteUploadedFile(fileId: string): Promise<void> {
   const res = await secureFetch(`${BASE}/files/${fileId}`, { method: 'DELETE' })
-  if (!res.ok) throw new Error('删除失败')
+  if (!res.ok) throw new Error(i18n.t('admin:errors.deleteFail'))
 }
 
 export async function retryParse(fileId: string): Promise<UploadedFile> {
   const res = await secureFetch(`${BASE}/files/${fileId}/retry`, { method: 'POST' })
-  if (!res.ok) throw new Error('重试失败')
+  if (!res.ok) throw new Error(i18n.t('admin:errors.retryFail'))
   return parseResultResponse<UploadedFile>(res)
 }
 
 export async function getUploadQuota(): Promise<UploadQuota> {
   const res = await secureFetch(`${BASE}/quota`)
-  if (!res.ok) throw new Error('加载配额失败')
+  if (!res.ok) throw new Error(i18n.t('admin:errors.loadQuotaFail'))
   return parseResultResponse<UploadQuota>(res)
 }
 
@@ -60,7 +64,7 @@ export async function collectToMyLibrary(catalogNovelId: string): Promise<void> 
   const res = await secureFetch(`/api/content/auth/catalog/novels/${catalogNovelId}/collect`, {
     method: 'POST',
   })
-  if (!res.ok) throw new Error('收藏失败')
+  if (!res.ok) throw new Error(i18n.t('admin:errors.collectFail'))
 }
 
 // 我的书库列表（收藏 + 自己上传）
@@ -71,6 +75,6 @@ export async function fetchMyLibrary(
   const res = await secureFetch(
     `/api/content/auth/catalog/my-library?pageCurrent=${pageCurrent}&pageSize=${pageSize}`,
   )
-  if (!res.ok) throw new Error('加载我的书库失败')
+  if (!res.ok) throw new Error(i18n.t('admin:errors.loadMyLibraryFail'))
   return parseResultResponse<CatalogNovelPage>(res)
 }

@@ -1,3 +1,4 @@
+import i18n from '@/i18n'
 import { secureFetch } from '../security/secureFetch'
 import { parseResultResponse } from '../utils/resultApi'
 
@@ -48,19 +49,19 @@ async function parseResponse<T>(res: Response): Promise<T> {
 
 export async function fetchCatalogNovel(id: string): Promise<CatalogNovel> {
   const res = await secureFetch(`/api/content/crm/catalog/novels/${id}`)
-  if (!res.ok) throw new Error('加载书籍失败')
+  if (!res.ok) throw new Error(i18n.t('admin:errors.loadNovelFail'))
   return parseResponse<CatalogNovel>(res)
 }
 
 export async function fetchCatalogProgress(id: string): Promise<CatalogNovelProgress> {
   const res = await secureFetch(`/api/content/crm/catalog/novels/${id}/progress`)
-  if (!res.ok) throw new Error('加载进度失败')
+  if (!res.ok) throw new Error(i18n.t('admin:errors.loadProgressFail'))
   return parseResponse<CatalogNovelProgress>(res)
 }
 
 export async function fetchCatalogChapters(novelId: string): Promise<CatalogChapterSummary[]> {
   const res = await secureFetch(`/api/content/crm/catalog/novels/${novelId}/chapters`)
-  if (!res.ok) throw new Error('加载章节列表失败')
+  if (!res.ok) throw new Error(i18n.t('admin:errors.loadChaptersFail'))
   return parseResponse<CatalogChapterSummary[]>(res)
 }
 
@@ -71,7 +72,7 @@ export async function fetchCatalogChapter(
   const res = await secureFetch(
     `/api/content/crm/catalog/novels/${novelId}/chapters/${chapterId}`,
   )
-  if (!res.ok) throw new Error('加载章节正文失败')
+  if (!res.ok) throw new Error(i18n.t('admin:errors.loadChapterContentFail'))
   return parseResponse<CatalogChapterDetail>(res)
 }
 
@@ -88,7 +89,7 @@ export async function updateCatalogChapter(
       body: JSON.stringify(payload),
     },
   )
-  if (!res.ok) throw new Error('更新章节失败')
+  if (!res.ok) throw new Error(i18n.t('admin:errors.updateChapterFail'))
   return parseResponse<CatalogChapterDetail>(res)
 }
 
@@ -97,14 +98,14 @@ export async function deleteCatalogChapter(novelId: string, chapterId: string): 
     `/api/content/crm/catalog/novels/${novelId}/chapters/${chapterId}`,
     { method: 'DELETE' },
   )
-  if (!res.ok) throw new Error('删除章节失败')
+  if (!res.ok) throw new Error(i18n.t('admin:errors.deleteChapterFail'))
 }
 
 export async function fetchCatalogNovels(page = 1, size = 20): Promise<CatalogNovelPage> {
   const res = await secureFetch(
     `/api/content/crm/catalog/novels/page?pageCurrent=${page}&pageSize=${size}`,
   )
-  if (!res.ok) throw new Error('加载书库失败')
+  if (!res.ok) throw new Error(i18n.t('admin:errors.loadCatalogFail'))
   return parseResponse<CatalogNovelPage>(res)
 }
 
@@ -112,7 +113,7 @@ export async function fetchIncompleteCatalog(limit = 50): Promise<CatalogNovelPr
   const res = await secureFetch(
     `/api/content/crm/catalog/novels/incomplete?limit=${limit}`,
   )
-  if (!res.ok) throw new Error('加载未完成书目失败')
+  if (!res.ok) throw new Error(i18n.t('admin:errors.loadIncompleteCatalogFail'))
   return parseResponse<CatalogNovelProgress[]>(res)
 }
 
@@ -125,7 +126,7 @@ export async function updateCatalogNovel(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   })
-  if (!res.ok) throw new Error('更新书库失败')
+  if (!res.ok) throw new Error(i18n.t('admin:errors.updateCatalogFail'))
   return parseResponse<CatalogNovel>(res)
 }
 
@@ -135,11 +136,11 @@ export async function setCatalogCover(id: string, coverUrl: string): Promise<Cat
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ coverUrl }),
   })
-  if (!res.ok) throw new Error('设置封面失败')
+  if (!res.ok) throw new Error(i18n.t('admin:errors.setCoverFail'))
   return parseResponse<CatalogNovel>(res)
 }
 
 export async function deleteCatalogNovel(id: string): Promise<void> {
   const res = await secureFetch(`/api/content/crm/catalog/novels/${id}`, { method: 'DELETE' })
-  if (!res.ok) throw new Error('删除失败')
+  if (!res.ok) throw new Error(i18n.t('admin:errors.deleteFail'))
 }

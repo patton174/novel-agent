@@ -10,7 +10,6 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.util.LinkedHashMap;
@@ -42,11 +41,6 @@ public class IDataRiverConfigService {
 
     @PostConstruct
     void init() {
-        refresh();
-    }
-
-    @Scheduled(fixedRate = 30_000)
-    public void refreshScheduled() {
         refresh();
     }
 

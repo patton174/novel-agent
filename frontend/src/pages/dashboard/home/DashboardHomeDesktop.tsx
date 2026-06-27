@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
+import { StoredMediaPreview } from '@/components/media/StoredMediaPreview'
 import { ActivityHeatmap } from '@/components/dashboard/ActivityHeatmap'
 import { DashboardActivityTrendChart } from '@/components/dashboard/DashboardActivityTrendChart'
 import { ProAreaChart } from '@/components/pro/charts/ProAreaChart'
@@ -30,6 +31,7 @@ export function DashboardHomeDesktop() {
     primaryNovelId,
     editorEntryHref,
     formatUpdatedAt,
+    dateLocale,
   } = useDashboardHome()
 
   const tokenSeries = (tokenTrends ?? []).map((p) => ({ date: p.date, tokens: p.tokens ?? 0 }))
@@ -59,7 +61,7 @@ export function DashboardHomeDesktop() {
         <div className="flex shrink-0 items-center gap-4">
           <Link
             to="/dashboard/novels"
-            className="inline-flex items-center gap-2 border-2 border-black bg-white px-4 py-2 font-mono text-sm font-bold uppercase tracking-wider text-ink shadow-soft transition-all hover:bg-neon active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
+            className="inline-flex h-11 items-center gap-2 border-2 border-black bg-white px-4 font-mono text-sm font-bold uppercase tracking-wider text-ink shadow-soft transition-all hover:bg-neon active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
           >
             <ProIconLibrary size={18} />
             {t('dashboard:home.manageNovels')}
@@ -115,7 +117,8 @@ export function DashboardHomeDesktop() {
         <KpiTile
           label={t('dashboard:home.trendRange30')}
           value={tokenLoading ? null : tokenSeries.length}
-          suffix="天"
+          suffix={t('dashboard:heatmap.days')}
+          dateLocale={dateLocale}
           index={7}
         />
       </section>
@@ -128,7 +131,7 @@ export function DashboardHomeDesktop() {
             <DashboardActivityTrendChart days={activity?.days ?? []} loading={activityLoading} />
           </div>
           <div className="min-h-[360px] border-2 border-black bg-white shadow-soft">
-            <ActivityHeatmap activity={activity} loading={activityLoading} />
+            <ActivityHeatmap activity={activity} loading={activityLoading} expanded />
           </div>
         </div>
       </section>
@@ -201,13 +204,17 @@ export function DashboardHomeDesktop() {
                 key={novel.novelId}
                 className="group flex items-center gap-4 border-b border-black/20 px-6 py-5 transition-colors last:border-b-0 hover:bg-neon"
               >
-                {novel.coverUrl ? (
-                  <img
-                    src={novel.coverUrl}
-                    alt=""
-                    className="size-11 shrink-0 border-2 border-black object-cover"
-                    loading="lazy"
-                  />
+                {novel.hasCover || novel.coverStorageKey || novel.coverUrl ? (
+                  <div className="size-11 shrink-0 overflow-hidden border-2 border-black">
+                    <StoredMediaPreview
+                      storageKey={novel.coverStorageKey}
+                      fallbackUrl={novel.coverUrl}
+                      alt=""
+                      animateReveal={false}
+                      className="size-full"
+                      loadingClassName="size-11"
+                    />
+                  </div>
                 ) : (
                   <div className="flex size-11 shrink-0 items-center justify-center border-2 border-black bg-muted text-ink">
                     <ProIconNovel size={18} />
@@ -248,15 +255,18 @@ function KpiTile({
   value,
   formatValue,
   suffix,
+  dateLocale,
   index,
 }: {
   label: string
   value: number | null
   formatValue?: (v: number) => string
   suffix?: string
+  dateLocale?: string
   index: number
 }) {
-  const displayValue = value !== null ? (formatValue ? formatValue(value) : value.toLocaleString()) : '—'
+  const displayValue =
+    value !== null ? (formatValue ? formatValue(value) : value.toLocaleString(dateLocale)) : '—'
   return (
     <div className={cnBorder(index)}>
       {value === null ? (

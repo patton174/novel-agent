@@ -1,13 +1,17 @@
 package cn.novelstudio.module.agent.service;
 
 import cn.novelstudio.module.agent.dto.agent.AgentStreamRequest;
+import cn.novelstudio.module.agent.support.AgentLocaleMarkers;
 import cn.novelstudio.module.agent.util.AgentTextSanitizer;
+import cn.novelstudio.module.content.dto.ReferencedBookDTO;
+import cn.novelstudio.module.content.service.catalog.CatalogService;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -26,13 +30,19 @@ public class AgentContextAssembler {
 
     private final AgentSessionMemoryService memoryService;
     private final NovelContextClient novelContextClient;
+    private final AgentLocaleMarkers localeMarkers;
+    private final CatalogService catalogService;
 
     public AgentContextAssembler(
         AgentSessionMemoryService memoryService,
-        NovelContextClient novelContextClient
+        NovelContextClient novelContextClient,
+        AgentLocaleMarkers localeMarkers,
+        CatalogService catalogService
     ) {
         this.memoryService = memoryService;
         this.novelContextClient = novelContextClient;
+        this.localeMarkers = localeMarkers;
+        this.catalogService = catalogService;
     }
 
     /**
@@ -57,10 +67,11 @@ public class AgentContextAssembler {
         ).subscribeOn(Schedulers.boundedElastic());
 
         return Mono.zip(aggregateMono, historyMono)
-            .map(tuple -> buildContext(tuple.getT1(), tuple.getT2(), request));
+            .map(tuple -> buildContext(userId, tuple.getT1(), tuple.getT2(), request));
     }
 
     private Map<String, Object> buildContext(
+        Long userId,
         Map<String, Object> aggregate,
         List<AgentSessionMemoryService.HistoryTurn> persistedHistory,
         AgentStreamRequest request
@@ -101,6 +112,29 @@ public class AgentContextAssembler {
         if (!mergedHistory.isEmpty()) {
             context.put("history", mergedHistory);
         }
+
+        List<Map<String, Object>> referencedBooks = new ArrayList<>();
+        if (request.referencedBooks() != null) {
+            for (AgentStreamRequest.ReferencedBookRef ref : request.referencedBooks()) {
+                if (ref == null || ref.catalogNovelId() == null || ref.catalogNovelId().isBlank()) {
+                    continue;
+                }
+                try {
+                    ReferencedBookDTO rb = catalogService.getReferencedBook(ref.catalogNovelId(), userId);
+                    Map<String, Object> m = new LinkedHashMap<>();
+                    m.put("catalogNovelId", rb.getCatalogNovelId());
+                    m.put("title", rb.getTitle());
+                    m.put("summary", rb.getSummary());
+                    m.put("chapterTitles", rb.getChapterTitles());
+                    m.put("namespace", rb.getNamespace());
+                    m.put("indexStatus", rb.getIndexStatus());
+                    referencedBooks.add(m);
+                } catch (Exception ignored) {
+                    // 不可访问的书跳过（own 校验失败等）
+                }
+            }
+        }
+        context.put("referenced_books", referencedBooks);
 
         Map<String, Object> preferences = new HashMap<>();
         preferences.put("mode", normalizeAgentMode(request.mode()));
@@ -147,7 +181,7 @@ public class AgentContextAssembler {
         if (!"user".equals(normalizedRole) && !"assistant".equals(normalizedRole)) {
             return;
         }
-        if ("assistant".equals(normalizedRole) && AgentTextSanitizer.isOnboardingAssistantText(normalizedContent)) {
+        if ("assistant".equals(normalizedRole) && localeMarkers.isOnboardingAssistantText(normalizedContent)) {
             return;
         }
         Map<String, String> row = Map.of("role", normalizedRole, "content", normalizedContent);
@@ -161,7 +195,7 @@ public class AgentContextAssembler {
         if (raw == null) {
             return null;
         }
-        String clean = AgentTextSanitizer.sanitizeAssistantVisibleText(raw);
+        String clean = AgentTextSanitizer.sanitizeAssistantVisibleText(raw, localeMarkers.uiLineLabelAlternation());
         return clean.isBlank() ? null : clean;
     }
 
@@ -169,7 +203,7 @@ public class AgentContextAssembler {
         return value == null ? null : String.valueOf(value);
     }
 
-    private static String resolveChapterText(
+    private String resolveChapterText(
         String chapterId,
         String novelChapterText,
         String requestText
@@ -179,7 +213,7 @@ public class AgentContextAssembler {
             return novelChapterText.trim();
         }
         if (requestText != null && !requestText.isBlank()
-            && !AgentTextSanitizer.isOnboardingAssistantText(requestText)) {
+            && !localeMarkers.isOnboardingAssistantText(requestText)) {
             return requestText.trim();
         }
         if (novelChapterText != null && !novelChapterText.isBlank()) {

@@ -5,7 +5,9 @@ import cn.novelstudio.kernel.base.PageQuery;
 import cn.novelstudio.kernel.base.Result;
 import cn.novelstudio.kernel.biz.BaseBiz;
 import cn.novelstudio.platform.web.utils.SpringPageSupport;
+import cn.novelstudio.module.content.dto.LibraryReindexResultDTO;
 import cn.novelstudio.module.content.dto.NovelDTO;
+import cn.novelstudio.module.content.dto.ReferencedBookDTO;
 import cn.novelstudio.module.content.service.catalog.CatalogService;
 import cn.novelstudio.module.content.service.crawl.dto.CatalogChapterSummaryDTO;
 import cn.novelstudio.module.content.service.crawl.dto.CatalogNovelDTO;
@@ -54,5 +56,13 @@ public class AuthCatalogBiz extends BaseBiz {
     public Result<Void> collect(Long userId, String catalogNovelId) {
         catalogService.collect(userId, catalogNovelId);
         return ok();
+    }
+
+    public Result<List<ReferencedBookDTO>> myLibrarySelectable(Long userId, String query) {
+        return ok(catalogService.myLibrarySelectable(userId, query));
+    }
+
+    public Result<LibraryReindexResultDTO> reindexLibrary(Long userId, String catalogNovelId) {
+        return ok(catalogService.reindexLibrary(userId, catalogNovelId));
     }
 }

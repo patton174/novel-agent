@@ -10,6 +10,7 @@ import {
   editorPrimaryButtonClass,
   editorSecondaryButtonClass,
 } from '@/lib/editorPixelClasses'
+import { formFocusClass, formInputClass } from '@/components/shared/formControlTokens'
 
 export {
   EDITOR_PIXEL_CARD,
@@ -20,12 +21,7 @@ export {
 }
 
 /** 聚焦环：与 globals `--ring` / `--background` 联动 */
-export const PIXEL_FOCUS_RING = cn(
-  'outline-none',
-  'focus-visible:border-ring',
-  'focus-visible:ring-2 focus-visible:ring-ring/55',
-  'focus-visible:ring-offset-2 focus-visible:ring-offset-background',
-)
+export const PIXEL_FOCUS_RING = formFocusClass
 
 /** 图表容器 */
 export const PIXEL_CHART_CARD = cn(
@@ -110,14 +106,10 @@ export const PIXEL_CELL_SUBTITLE = 'mt-0.5 text-xs leading-snug text-muted-foreg
 
 export const PIXEL_CELL_MONO = 'font-mono text-xs tabular-nums text-foreground/85'
 
-/** 表单控件 */
-export const PIXEL_INPUT = cn(
-  'h-9 w-full rounded-md border border-[var(--pixel-border-strong)] bg-[var(--pixel-surface)] px-3 text-sm text-foreground',
-  'placeholder:text-muted-foreground',
-  PIXEL_FOCUS_RING,
-)
+/** 表单控件 — 与 FormControls 统一 */
+export const PIXEL_INPUT = formInputClass
 
-export const PIXEL_SELECT_NATIVE = cn(PIXEL_INPUT, 'appearance-none pr-9')
+export const PIXEL_SELECT_NATIVE = cn(formInputClass, 'appearance-none pr-9')
 
 /** 管理台按钮叠加（配合 ProButton / PixelButton） */
 export const PIXEL_BTN_ADMIN = cn(

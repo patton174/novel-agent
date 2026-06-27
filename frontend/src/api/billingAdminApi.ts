@@ -1,3 +1,9 @@
+import i18n from '@/i18n'
+import type {
+  RedemptionCodePage,
+  UpgradeRequestPage,
+  UsageOverageRow,
+} from '@/types/billing'
 import { secureFetch } from '../security/secureFetch'
 import { parseResultResponse } from '../utils/resultApi'
 
@@ -118,7 +124,11 @@ async function parseResponse<T>(res: Response): Promise<T> {
 export async function fetchAdminPlans(): Promise<AdminPlan[]> {
   const res = await secureFetch('/api/billing/crm/plans')
   if (!res.ok) {
-    throw new Error(res.status === 403 ? '无管理权限' : '加载套餐失败')
+    throw new Error(
+      res.status === 403
+        ? i18n.t('dashboard:billing.errors.noAdminPermission')
+        : i18n.t('dashboard:billing.errors.loadPlans'),
+    )
   }
   const data = await parseResponse<AdminPlan[]>(res)
   return Array.isArray(data) ? data.map(normalizeAdminPlan) : []
@@ -127,7 +137,7 @@ export async function fetchAdminPlans(): Promise<AdminPlan[]> {
 export async function fetchAdminPlanDetail(id: number, recentLimit = 5): Promise<AdminPlanDetail> {
   const res = await secureFetch(`/api/billing/crm/plans/${id}?recentLimit=${recentLimit}`)
   if (!res.ok) {
-    throw new Error('加载套餐详情失败')
+    throw new Error(i18n.t('dashboard:billing.errors.loadPlanDetail'))
   }
   const data = await parseResponse<AdminPlanDetail>(res)
   return {
@@ -147,7 +157,7 @@ export async function fetchAdminPlanOrders(
   })
   const res = await secureFetch(`/api/billing/crm/plans/${planId}/orders?${search.toString()}`)
   if (!res.ok) {
-    throw new Error('加载套餐订单失败')
+    throw new Error(i18n.t('dashboard:billing.errors.loadPlanOrders'))
   }
   const data = await parseResponse<AdminPaymentOrderPage>(res)
   return {
@@ -173,7 +183,7 @@ export async function createAdminPlan(payload: AdminPlanUpsertPayload): Promise<
     body: JSON.stringify(payload),
   })
   if (!res.ok) {
-    throw new Error('创建套餐失败')
+    throw new Error(i18n.t('dashboard:billing.errors.createPlan'))
   }
   return parseResponse<AdminPlan>(res)
 }
@@ -188,7 +198,7 @@ export async function updateAdminPlan(
     body: JSON.stringify(payload),
   })
   if (!res.ok) {
-    throw new Error('更新套餐失败')
+    throw new Error(i18n.t('dashboard:billing.errors.updatePlan'))
   }
   return parseResponse<AdminPlan>(res)
 }
@@ -203,7 +213,7 @@ export async function updateAdminPlanIdrBinding(
     body: JSON.stringify(payload),
   })
   if (!res.ok) {
-    throw new Error('绑定 iDataRiver 商品失败')
+    throw new Error(i18n.t('dashboard:billing.errors.bindIdrSku'))
   }
   return normalizeAdminPlan(await parseResponse<AdminPlan>(res))
 }
@@ -211,14 +221,14 @@ export async function updateAdminPlanIdrBinding(
 export async function deactivateAdminPlan(id: number): Promise<void> {
   const res = await secureFetch(`/api/billing/crm/plans/${id}`, { method: 'DELETE' })
   if (!res.ok) {
-    throw new Error('停用套餐失败')
+    throw new Error(i18n.t('dashboard:billing.errors.deactivatePlan'))
   }
 }
 
 export async function activateAdminPlan(id: number): Promise<AdminPlan> {
   const res = await secureFetch(`/api/billing/crm/plans/${id}/activate`, { method: 'POST' })
   if (!res.ok) {
-    throw new Error('上架套餐失败')
+    throw new Error(i18n.t('dashboard:billing.errors.activatePlan'))
   }
   return parseResponse<AdminPlan>(res)
 }
@@ -276,7 +286,7 @@ export async function fetchAdminPaymentOrders(params: {
   if (params.orderQuery?.trim()) search.set('orderQuery', params.orderQuery.trim())
   const res = await secureFetch(`/api/billing/crm/payment-orders?${search.toString()}`)
   if (!res.ok) {
-    throw new Error('加载订单失败')
+    throw new Error(i18n.t('dashboard:billing.errors.loadOrders'))
   }
   const data = await parseResponse<AdminPaymentOrderPage>(res)
   return {
@@ -295,7 +305,7 @@ export async function fetchAdminPaymentOrderDetail(
     `/api/billing/crm/payment-orders/${id}?syncRemote=${syncRemote ? 'true' : 'false'}`,
   )
   if (!res.ok) {
-    throw new Error('加载订单详情失败')
+    throw new Error(i18n.t('dashboard:billing.errors.loadOrderDetail'))
   }
   return parseResponse<AdminPaymentOrderDetail>(res)
 }
@@ -303,7 +313,7 @@ export async function fetchAdminPaymentOrderDetail(
 export async function syncAdminPaymentOrder(id: number): Promise<AdminPaymentOrderDetail> {
   const res = await secureFetch(`/api/billing/crm/payment-orders/${id}/sync`, { method: 'POST' })
   if (!res.ok) {
-    throw new Error('同步订单失败')
+    throw new Error(i18n.t('dashboard:billing.errors.syncOrder'))
   }
   return parseResponse<AdminPaymentOrderDetail>(res)
 }
@@ -318,7 +328,7 @@ export async function fulfillAdminPaymentOrder(
     body: JSON.stringify({ reason: reason ?? null }),
   })
   if (!res.ok) {
-    throw new Error('履约失败')
+    throw new Error(i18n.t('dashboard:billing.errors.fulfillOrder'))
   }
   return parseResponse<AdminPaymentOrderDetail>(res)
 }
@@ -333,7 +343,7 @@ export async function expireAdminPaymentOrder(
     body: JSON.stringify({ reason: reason ?? null }),
   })
   if (!res.ok) {
-    throw new Error('关闭订单失败')
+    throw new Error(i18n.t('dashboard:billing.errors.closeOrder'))
   }
   return parseResponse<AdminPaymentOrderDetail>(res)
 }
@@ -376,7 +386,7 @@ export interface AdminPaymentSettingsTest {
 export async function fetchAdminPaymentSettings(): Promise<AdminPaymentSettings> {
   const res = await secureFetch('/api/billing/crm/payment-settings')
   if (!res.ok) {
-    throw new Error('加载支付配置失败')
+    throw new Error(i18n.t('dashboard:billing.errors.loadPaymentSettings'))
   }
   return parseResponse<AdminPaymentSettings>(res)
 }
@@ -390,7 +400,7 @@ export async function updateAdminPaymentSettings(
     body: JSON.stringify(payload),
   })
   if (!res.ok) {
-    throw new Error('保存支付配置失败')
+    throw new Error(i18n.t('dashboard:billing.errors.savePaymentSettings'))
   }
   return parseResponse<AdminPaymentSettings>(res)
 }
@@ -398,7 +408,7 @@ export async function updateAdminPaymentSettings(
 export async function testAdminPaymentSettings(): Promise<AdminPaymentSettingsTest> {
   const res = await secureFetch('/api/billing/crm/payment-settings/test', { method: 'POST' })
   if (!res.ok) {
-    throw new Error('测试连接失败')
+    throw new Error(i18n.t('dashboard:billing.errors.testConnection'))
   }
   return parseResponse<AdminPaymentSettingsTest>(res)
 }
@@ -414,14 +424,14 @@ export async function updateUserSubscription(
     body: JSON.stringify({ planCode, reason }),
   })
   if (!res.ok) {
-    throw new Error('更新用户订阅失败')
+    throw new Error(i18n.t('dashboard:billing.errors.updateUserSubscription'))
   }
 }
 
 export async function fetchAdminUserUsage(userId: string): Promise<AdminUserUsage> {
   const res = await secureFetch(`/api/billing/crm/usage/user/${userId}`)
   if (!res.ok) {
-    throw new Error('加载用户用量失败')
+    throw new Error(i18n.t('dashboard:billing.errors.loadUserUsage'))
   }
   return parseResponse<AdminUserUsage>(res)
 }
@@ -441,14 +451,18 @@ export async function addUserQuotaOverride(
     body: JSON.stringify(payload),
   })
   if (!res.ok) {
-    throw new Error('添加临时配额失败')
+    throw new Error(i18n.t('dashboard:billing.errors.addQuotaOverride'))
   }
 }
 
 export async function fetchPlatformUsageOverview(): Promise<PlatformUsageOverview> {
   const res = await secureFetch('/api/billing/crm/usage/overview')
   if (!res.ok) {
-    throw new Error(res.status === 403 ? '无管理权限' : '加载收入概览失败')
+    throw new Error(
+      res.status === 403
+        ? i18n.t('dashboard:billing.errors.noAdminPermission')
+        : i18n.t('dashboard:billing.errors.loadRevenueOverview'),
+    )
   }
   return parseResponse<PlatformUsageOverview>(res)
 }
@@ -458,7 +472,11 @@ export async function fetchPlatformUsageTrends(
 ): Promise<PlatformUsageTrendPoint[]> {
   const res = await secureFetch(`/api/billing/crm/usage/trends?days=${days}`)
   if (!res.ok) {
-    throw new Error(res.status === 403 ? '无管理权限' : '加载用量趋势失败')
+    throw new Error(
+      res.status === 403
+        ? i18n.t('dashboard:billing.errors.noAdminPermission')
+        : i18n.t('dashboard:billing.errors.loadUsageTrends'),
+    )
   }
   const data = await parseResponse<{ points: PlatformUsageTrendPoint[] }>(res)
   return Array.isArray(data?.points) ? data.points : []
@@ -534,7 +552,7 @@ export const SITE_CONTENT_SCOPE_DEFAULT: Record<SiteContentScope, string> = {
 export async function fetchAdminSiteContent(): Promise<SiteContentItem[]> {
   const res = await secureFetch('/api/billing/crm/site-content')
   if (!res.ok) {
-    throw new Error('加载站点内容失败')
+    throw new Error(i18n.t('dashboard:billing.errors.loadSiteContent'))
   }
   const data = await parseResponse<SiteContentItem[]>(res)
   return Array.isArray(data) ? data : []
@@ -550,7 +568,7 @@ export async function updateAdminSiteContent(
     body: JSON.stringify(payload),
   })
   if (!res.ok) {
-    throw new Error('保存站点内容失败')
+    throw new Error(i18n.t('dashboard:billing.errors.saveSiteContent'))
   }
   return parseResponse<SiteContentItem>(res)
 }
@@ -569,7 +587,7 @@ export async function fetchAuditLogs(params: {
   if (params.actorId != null) search.set('actorId', String(params.actorId))
   const res = await secureFetch(`/api/billing/crm/audit-log?${search.toString()}`)
   if (!res.ok) {
-    throw new Error('加载审计日志失败')
+    throw new Error(i18n.t('dashboard:billing.errors.loadAuditLog'))
   }
   const data = await parseResponse<AuditLogPage>(res)
   return {
@@ -585,7 +603,7 @@ export type SiteSettingsMap = Record<string, boolean | string | number>
 export async function fetchAdminSiteSettings(): Promise<SiteSettingsMap> {
   const res = await secureFetch('/api/billing/crm/settings')
   if (!res.ok) {
-    throw new Error('加载系统参数失败')
+    throw new Error(i18n.t('dashboard:billing.errors.loadSiteSettings'))
   }
   const data = await parseResponse<{ settings: SiteSettingsMap }>(res)
   return data?.settings ?? {}
@@ -598,8 +616,140 @@ export async function updateAdminSiteSettings(settings: SiteSettingsMap): Promis
     body: JSON.stringify({ settings }),
   })
   if (!res.ok) {
-    throw new Error('保存系统参数失败')
+    throw new Error(i18n.t('dashboard:billing.errors.saveSiteSettings'))
   }
   const data = await parseResponse<{ settings: SiteSettingsMap }>(res)
   return data?.settings ?? settings
+}
+
+export async function generateRedemptionCodes(payload: {
+  type: string
+  value: string
+  count: number
+  maxUses?: number
+  expiresAt?: string
+}): Promise<Array<{ id: string; code: string }>> {
+  const res = await secureFetch('/api/billing/crm/redemption-code/generate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!res.ok) {
+    throw new Error(
+      res.status === 403
+        ? i18n.t('dashboard:billing.errors.noAdminPermission')
+        : i18n.t('admin:billing.generateFail'),
+    )
+  }
+  const data = await parseResponse<Array<{ id: string; code: string }>>(res)
+  return Array.isArray(data) ? data : []
+}
+
+export async function fetchRedemptionCodes(pageCurrent = 1, pageSize = 20): Promise<RedemptionCodePage> {
+  const res = await secureFetch(
+    `/api/billing/crm/redemption-code/page?pageCurrent=${pageCurrent}&pageSize=${pageSize}`,
+  )
+  if (!res.ok) {
+    throw new Error(i18n.t('admin:billing.loadFail'))
+  }
+  const data = await parseResponse<RedemptionCodePage>(res)
+  return {
+    list: Array.isArray(data?.list) ? data.list : [],
+    totalCount: data?.totalCount ?? 0,
+    pageCurrent: data?.pageCurrent ?? pageCurrent,
+    pageSize: data?.pageSize ?? pageSize,
+  }
+}
+
+export async function deleteRedemptionCode(id: string): Promise<void> {
+  const res = await secureFetch(`/api/billing/crm/redemption-code/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+  })
+  if (!res.ok) {
+    throw new Error(i18n.t('admin:billing.deleteFail'))
+  }
+}
+
+export async function fetchUpgradeRequests(
+  status?: string,
+  pageCurrent = 1,
+  pageSize = 20,
+): Promise<UpgradeRequestPage> {
+  const s = status?.trim() ? `&status=${encodeURIComponent(status.trim())}` : ''
+  const res = await secureFetch(
+    `/api/billing/crm/upgrade-request/page?pageCurrent=${pageCurrent}&pageSize=${pageSize}${s}`,
+  )
+  if (!res.ok) {
+    throw new Error(i18n.t('admin:billing.loadFail'))
+  }
+  const data = await parseResponse<UpgradeRequestPage>(res)
+  return {
+    list: Array.isArray(data?.list) ? data.list : [],
+    totalCount: data?.totalCount ?? 0,
+    pageCurrent: data?.pageCurrent ?? pageCurrent,
+    pageSize: data?.pageSize ?? pageSize,
+  }
+}
+
+export async function approveUpgradeRequest(id: string, reviewNote?: string): Promise<void> {
+  const res = await secureFetch(
+    `/api/billing/crm/upgrade-request/${encodeURIComponent(id)}/approve`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reviewNote: reviewNote ?? null }),
+    },
+  )
+  if (!res.ok) {
+    throw new Error(i18n.t('admin:billing.approveFail'))
+  }
+}
+
+export async function rejectUpgradeRequest(id: string, reviewNote?: string): Promise<void> {
+  const res = await secureFetch(
+    `/api/billing/crm/upgrade-request/${encodeURIComponent(id)}/reject`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reviewNote: reviewNote ?? null }),
+    },
+  )
+  if (!res.ok) {
+    throw new Error(i18n.t('admin:billing.rejectFail'))
+  }
+}
+
+export async function getAdminBalance(userId: number): Promise<{ balanceMicros: number }> {
+  const res = await secureFetch(`/api/billing/crm/balance/${userId}`)
+  if (!res.ok) {
+    throw new Error(i18n.t('admin:billing.balanceLoadFail'))
+  }
+  const data = await parseResponse<{ balanceMicros: number }>(res)
+  return { balanceMicros: data?.balanceMicros ?? 0 }
+}
+
+export async function adjustAdminBalance(
+  userId: number,
+  deltaMicros: number,
+  reason?: string,
+): Promise<void> {
+  const res = await secureFetch(`/api/billing/crm/balance/${userId}/adjust`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ deltaMicros, reason: reason ?? null }),
+  })
+  if (!res.ok) {
+    throw new Error(i18n.t('admin:billing.adjustFail'))
+  }
+}
+
+export async function fetchOverage(period: string): Promise<UsageOverageRow[]> {
+  const res = await secureFetch(
+    `/api/billing/crm/overage?period=${encodeURIComponent(period.trim())}`,
+  )
+  if (!res.ok) {
+    throw new Error(i18n.t('admin:billing.overageLoadFail'))
+  }
+  const data = await parseResponse<UsageOverageRow[]>(res)
+  return Array.isArray(data) ? data : []
 }

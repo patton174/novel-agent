@@ -20,8 +20,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
@@ -36,8 +38,13 @@ public class SiteContentBiz extends BaseBiz {
     private final StudioMessages messages;
 
     public Result<SiteContentResp> getPublic(String key) {
-        SiteContentEntity entity = requireContent(key, resolveRequestLocale());
-        return ok(toResp(entity));
+        String requestedLocale = resolveRequestLocale();
+        try {
+            ResolvedSiteContent resolved = resolveContent(key, requestedLocale);
+            return ok(toResp(resolved));
+        } catch (NotFoundException ex) {
+            return ok(emptyPublicContent(key, requestedLocale));
+        }
     }
 
     public Result<List<SiteContentResp>> listAll() {
@@ -74,7 +81,7 @@ public class SiteContentBiz extends BaseBiz {
         return ok(toResp(saved));
     }
 
-    private void syncEnglishTranslation(SiteContentEntity source, Long actorId) {
+    void syncEnglishTranslation(SiteContentEntity source, Long actorId) {
         if (!i18nProperties.isAutoTranslateSiteContent()) {
             return;
         }
@@ -87,19 +94,74 @@ public class SiteContentBiz extends BaseBiz {
         siteContentRepository.save(english);
     }
 
-    private SiteContentEntity requireContent(String key, String locale) {
+    private ResolvedSiteContent resolveContent(String key, String requestedLocale) {
         SiteContentKeys.requireAllowed(key);
-        return siteContentRepository.findByIdContentKeyAndIdLocale(key.trim(), locale)
-            .orElseGet(() -> siteContentRepository.findByIdContentKeyAndIdLocale(key.trim(), SOURCE_LOCALE)
-                .orElseThrow(() -> NotFoundException.keyed(
-                    ResultCode.NOT_FOUND,
-                    "result.content.key_not_found",
-                    key
-                )));
+        String trimmedKey = key.trim();
+
+        if (!AppLocale.EN.tag().equals(requestedLocale)) {
+            SiteContentEntity entity = siteContentRepository.findByIdContentKeyAndIdLocale(trimmedKey, requestedLocale)
+                .orElseGet(() -> siteContentRepository.findByIdContentKeyAndIdLocale(trimmedKey, SOURCE_LOCALE)
+                    .orElseThrow(() -> contentNotFound(key)));
+            String resolvedLocale = entity.getLocale();
+            return new ResolvedSiteContent(
+                entity,
+                requestedLocale,
+                resolvedLocale,
+                !requestedLocale.equals(resolvedLocale)
+            );
+        }
+
+        Optional<SiteContentEntity> english = siteContentRepository
+            .findByIdContentKeyAndIdLocale(trimmedKey, AppLocale.EN.tag());
+        Optional<SiteContentEntity> chinese = siteContentRepository
+            .findByIdContentKeyAndIdLocale(trimmedKey, SOURCE_LOCALE);
+
+        if (english.isPresent() && isEnglishUsable(english.get(), chinese.orElse(null))) {
+            return new ResolvedSiteContent(english.get(), requestedLocale, AppLocale.EN.tag(), false);
+        }
+
+        SiteContentEntity fallback = chinese.orElseThrow(() -> contentNotFound(key));
+        return new ResolvedSiteContent(fallback, requestedLocale, SOURCE_LOCALE, true);
+    }
+
+    private static boolean isEnglishUsable(SiteContentEntity english, SiteContentEntity chinese) {
+        if (chinese == null) {
+            return true;
+        }
+        Instant englishUpdatedAt = english.getUpdatedAt();
+        Instant chineseUpdatedAt = chinese.getUpdatedAt();
+        if (chineseUpdatedAt == null) {
+            return true;
+        }
+        if (englishUpdatedAt == null) {
+            return false;
+        }
+        return !englishUpdatedAt.isBefore(chineseUpdatedAt);
+    }
+
+    private static NotFoundException contentNotFound(String key) {
+        return NotFoundException.keyed(
+            ResultCode.NOT_FOUND,
+            "result.content.key_not_found",
+            key
+        );
     }
 
     private static String resolveRequestLocale() {
         return LocaleContext.get().tag();
+    }
+
+    private static SiteContentResp emptyPublicContent(String key, String requestedLocale) {
+        return new SiteContentResp(
+            key,
+            "",
+            "",
+            requestedLocale,
+            null,
+            requestedLocale,
+            requestedLocale,
+            false
+        );
     }
 
     private static SiteContentEntity newEntity(String contentKey, String locale) {
@@ -109,12 +171,42 @@ public class SiteContentBiz extends BaseBiz {
     }
 
     private SiteContentResp toResp(SiteContentEntity entity) {
+        String locale = entity.getLocale();
+        return toResp(entity, locale, locale, false);
+    }
+
+    private SiteContentResp toResp(ResolvedSiteContent resolved) {
+        return toResp(
+            resolved.entity(),
+            resolved.requestedLocale(),
+            resolved.resolvedLocale(),
+            resolved.localeFallback()
+        );
+    }
+
+    private SiteContentResp toResp(
+        SiteContentEntity entity,
+        String requestedLocale,
+        String resolvedLocale,
+        boolean localeResolved
+    ) {
         return new SiteContentResp(
             entity.getContentKey(),
             entity.getTitle(),
             entity.getBodyMd(),
             entity.getLocale(),
-            entity.getUpdatedAt()
+            entity.getUpdatedAt(),
+            requestedLocale,
+            resolvedLocale,
+            localeResolved
         );
+    }
+
+    private record ResolvedSiteContent(
+        SiteContentEntity entity,
+        String requestedLocale,
+        String resolvedLocale,
+        boolean localeFallback
+    ) {
     }
 }

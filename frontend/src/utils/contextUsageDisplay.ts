@@ -1,3 +1,4 @@
+import i18n from '@/i18n'
 import type { AgentContextUsage } from '../types/agent'
 
 /** CC `formatTokens` — compact k/M suffix, drop trailing .0 */
@@ -50,17 +51,31 @@ export function contextUsageTooltipLines(usage: AgentContextUsage): string[] {
   const used = contextUsedPercent(usage)
   const left = contextRemainingPercent(usage)
   const lines = [
-    `上下文 ${formatCcTokens(usage.promptTokens)} / ${formatCcTokens(usage.contextLimit)}（已用 ${used.toFixed(0)}%，剩余 ${left.toFixed(0)}%）`,
-    `本会话 In ${formatCcTokens(usage.runInputTokens)} · Out ${formatCcTokens(usage.runOutputTokens)}${
-      usage.cacheReadTokens > 0
-        ? ` · Cache ${formatCcTokens(usage.cacheReadTokens)}`
-        : usage.cacheCreationTokens > 0
-          ? ` · Cache+ ${formatCcTokens(usage.cacheCreationTokens)}`
-          : ''
-    }`,
+    i18n.t('editor:agent.context.tooltipSummary', {
+      prompt: formatCcTokens(usage.promptTokens),
+      limit: formatCcTokens(usage.contextLimit),
+      used: used.toFixed(0),
+      left: left.toFixed(0),
+    }),
+    i18n.t('editor:agent.context.tooltipRun', {
+      input: formatCcTokens(usage.runInputTokens),
+      output: formatCcTokens(usage.runOutputTokens),
+      cache:
+        usage.cacheReadTokens > 0
+          ? ` · Cache ${formatCcTokens(usage.cacheReadTokens)}`
+          : usage.cacheCreationTokens > 0
+            ? ` · Cache+ ${formatCcTokens(usage.cacheCreationTokens)}`
+            : '',
+    }),
   ]
   if (usage.source) {
-    lines.push(`计量来源：${usage.source === 'api' ? 'API usage' : usage.source === 'estimate' ? '估算' : usage.source}`)
+    const sourceLabel =
+      usage.source === 'api'
+        ? i18n.t('editor:agent.context.sourceApi')
+        : usage.source === 'estimate'
+          ? i18n.t('editor:agent.context.sourceEstimate')
+          : usage.source
+    lines.push(i18n.t('editor:agent.context.tooltipSource', { source: sourceLabel }))
   }
   if (usage.compactNote) {
     lines.push(usage.compactNote)

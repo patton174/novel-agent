@@ -73,6 +73,24 @@ public class UsageCrmBiz extends BaseBiz {
 
     @Transactional
     public Result<Void> addQuotaOverride(long userId, QuotaOverrideReq req, Long actorId) {
+        applyQuotaOverride(userId, req, actorId, "user.quota.override");
+        return ok();
+    }
+
+    @Transactional
+    public void grantQuotaBonusFromGift(
+        long userId,
+        long tokenBonus,
+        int runBonus,
+        Instant expiresAt,
+        String reason,
+        Long actorId
+    ) {
+        QuotaOverrideReq req = new QuotaOverrideReq(tokenBonus, runBonus, expiresAt, reason);
+        applyQuotaOverride(userId, req, actorId, "user.quota.override");
+    }
+
+    private void applyQuotaOverride(long userId, QuotaOverrideReq req, Long actorId, String auditAction) {
         subscriptionBiz.ensureDefaultSubscription(userId);
         UserQuotaOverrideEntity entity = new UserQuotaOverrideEntity();
         entity.setUserId(userId);
@@ -85,7 +103,7 @@ public class UsageCrmBiz extends BaseBiz {
         invalidateUsageCache(userId);
         auditLogService.log(
             actorId,
-            "user.quota.override",
+            auditAction,
             "user",
             String.valueOf(userId),
             null,
@@ -95,7 +113,6 @@ public class UsageCrmBiz extends BaseBiz {
                 "reason", entity.getReason() == null ? "" : entity.getReason()
             )
         );
-        return ok();
     }
 
     public Result<PlatformUsageOverviewResp> platformOverview() {

@@ -50,6 +50,8 @@ const TOOL_ICON_ALIASES: Record<string, string> = {
   DeleteChapter: 'Delete',
   ListChapters: 'Glob',
   SearchKnowledge: 'Grep',
+  memory_read: 'Read',
+  chapter_list: 'Glob',
   choose: 'AskUser',
   ask_user: 'AskUser',
 }
@@ -127,8 +129,11 @@ export function isInventoryListTool(name: string | undefined): boolean {
   return isListChaptersTool(name) || isMemoryListTool(name)
 }
 
-export function isLegacyToolName(_name: string | undefined): boolean {
-  return false
+const LEGACY_WIRE_TOOL_NAMES = new Set(['memory_read', 'chapter_list'])
+
+export function isLegacyToolName(name: string | undefined): boolean {
+  const raw = canonicalToolName(name)
+  return Boolean(raw && LEGACY_WIRE_TOOL_NAMES.has(raw))
 }
 
 export function isAskUserTool(name: string | undefined): boolean {
@@ -154,7 +159,19 @@ export function isVfsReadTool(name: string | undefined): boolean {
 
 export function isCollapsibleReadTool(name: string | undefined): boolean {
   const raw = (name ?? '').trim()
-  return raw === 'ReadMemory' || raw === 'ReadChapter' || raw === 'SearchKnowledge'
+  if (!raw) {
+    return false
+  }
+  if (
+    raw === 'Read' ||
+    raw === 'ReadMemory' ||
+    raw === 'ReadChapter' ||
+    raw === 'SearchKnowledge' ||
+    raw === 'memory_read'
+  ) {
+    return true
+  }
+  return normalizeToolName(raw) === 'Read'
 }
 
 export function isMemoryMutationTool(name: string | undefined): boolean {
@@ -185,7 +202,10 @@ export function isChapterStreamTool(toolName: string | undefined): boolean {
   if (isMemoryApiTool(raw)) {
     return false
   }
-  return raw === 'WriteChapter' || raw === 'EditChapter'
+  if (raw === 'WriteChapter' || raw === 'EditChapter') {
+    return true
+  }
+  return normalizeToolName(raw) === 'Write'
 }
 
 export function shouldRefreshMemoryAfterTool(toolName: string | undefined): boolean {

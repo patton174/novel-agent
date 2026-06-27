@@ -8,6 +8,7 @@ import cn.novelstudio.module.content.repository.ChapterRepository;
 import cn.novelstudio.module.content.repository.NovelRepository;
 import cn.novelstudio.module.content.repository.UserWritingActivityRepository;
 import cn.novelstudio.module.content.repository.agent.AgentRunRepository;
+import cn.novelstudio.module.content.service.NovelCoverService;
 import cn.novelstudio.module.content.service.auth.resp.AuthDashboardActivityDayResp;
 import cn.novelstudio.module.content.service.auth.resp.AuthDashboardActivityResp;
 import cn.novelstudio.module.content.service.auth.resp.AuthDashboardSummaryResp;
@@ -124,6 +125,8 @@ public class AuthDashboardBiz extends BaseBiz {
             novel.getTitle(),
             lastChapterId,
             novel.getCoverUrl(),
+            novel.getCoverStorageKey(),
+            NovelCoverService.hasCover(novel),
             novel.getUpdatedAt().toEpochMilli()
         );
     }

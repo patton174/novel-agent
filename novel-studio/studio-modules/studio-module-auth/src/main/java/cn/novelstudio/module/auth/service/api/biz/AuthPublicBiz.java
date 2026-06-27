@@ -24,8 +24,8 @@ public class AuthPublicBiz extends BaseBiz {
         return authService.login(request);
     }
 
-    public Result<Void> register(RegisterRequest request, String ip, String fingerprint) {
-        authService.register(request, ip, fingerprint);
+    public Result<Void> register(RegisterRequest request, String ip, String fingerprint, String referralCode) {
+        authService.register(request, ip, fingerprint, referralCode);
         return ok(null);
     }
 

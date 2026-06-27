@@ -108,6 +108,11 @@
                 <artifactId>studio-module-upload</artifactId>
                 <version>${studio.version}</version>
             </dependency>
+            <dependency>
+                <groupId>cn.novelstudio</groupId>
+                <artifactId>studio-module-notification</artifactId>
+                <version>${studio.version}</version>
+            </dependency>
 
             <dependency>
                 <groupId>com.nimbusds</groupId>

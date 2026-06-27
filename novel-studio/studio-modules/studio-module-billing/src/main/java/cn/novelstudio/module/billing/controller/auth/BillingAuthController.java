@@ -2,11 +2,15 @@ package cn.novelstudio.module.billing.controller.auth;
 
 import cn.novelstudio.module.billing.service.biz.FeatureGateBiz;
 import cn.novelstudio.module.billing.service.biz.PlanBiz;
+import cn.novelstudio.module.billing.service.biz.RedemptionBiz;
 import cn.novelstudio.module.billing.service.biz.SiteContentBiz;
 import cn.novelstudio.module.billing.service.biz.SiteDanmakuBiz;
 import cn.novelstudio.module.billing.service.biz.SiteSettingsBiz;
 import cn.novelstudio.module.billing.service.biz.SubscriptionBiz;
+import cn.novelstudio.module.billing.service.biz.UpgradeRequestBiz;
 import cn.novelstudio.module.billing.service.biz.UsageQueryBiz;
+import cn.novelstudio.module.billing.service.biz.UserBalanceBiz;
+import cn.novelstudio.module.billing.entity.UpgradeRequestEntity;
 import cn.novelstudio.kernel.base.Page;
 import cn.novelstudio.kernel.base.Result;
 import cn.novelstudio.platform.web.BaseController;
@@ -21,6 +25,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -36,6 +41,9 @@ public class BillingAuthController extends BaseController {
     private final FeatureGateBiz featureGateBiz;
     private final SiteDanmakuBiz siteDanmakuBiz;
     private final JwtCodec jwtCodec;
+    private final UserBalanceBiz userBalanceBiz;
+    private final RedemptionBiz redemptionBiz;
+    private final UpgradeRequestBiz upgradeRequestBiz;
 
     @GetMapping("/settings/public")
     public Result<PublicSiteSettingsResp> publicSettings() {
@@ -65,6 +73,14 @@ public class BillingAuthController extends BaseController {
         return usageQueryBiz.trends(parseUserId(userIdHeader), days);
     }
 
+    @GetMapping("/usage/trends/by-model")
+    public Result<UsageModelTrendsResp> modelTrends(
+        @RequestHeader("X-User-Id") String userIdHeader,
+        @RequestParam(defaultValue = "30") int days
+    ) {
+        return usageQueryBiz.modelTrends(parseUserId(userIdHeader), days);
+    }
+
     @GetMapping("/usage/events")
     public Result<Page<UsageEventResp>> events(
         @RequestHeader("X-User-Id") String userIdHeader,
@@ -83,6 +99,40 @@ public class BillingAuthController extends BaseController {
     @GetMapping("/features")
     public Result<List<String>> features(@RequestHeader("X-User-Id") String userIdHeader) {
         return featureGateBiz.listEnabledFeatures(parseUserId(userIdHeader));
+    }
+
+    @GetMapping("/balance")
+    public Result<Map<String, Object>> balance(@RequestHeader("X-User-Id") String userId) {
+        long balanceMicros = userBalanceBiz.getBalance(parseUserId(userId));
+        return ok(Map.of("balanceMicros", balanceMicros));
+    }
+
+    @PostMapping("/redeem")
+    public Result<Map<String, Object>> redeem(
+        @RequestHeader("X-User-Id") String userId,
+        @RequestBody Map<String, String> body
+    ) {
+        String applied = redemptionBiz.redeem(parseUserId(userId), body.get("code"));
+        return ok(Map.of("applied", applied));
+    }
+
+    @PostMapping("/upgrade-request")
+    public Result<Map<String, Object>> createUpgradeRequest(
+        @RequestHeader("X-User-Id") String userId,
+        @RequestBody Map<String, String> body
+    ) {
+        String id = upgradeRequestBiz.create(
+            parseUserId(userId),
+            body.get("requestType"),
+            body.get("targetValue"),
+            body.get("reason")
+        );
+        return ok(Map.of("id", id));
+    }
+
+    @GetMapping("/upgrade-requests")
+    public Result<List<UpgradeRequestEntity>> myUpgradeRequests(@RequestHeader("X-User-Id") String userId) {
+        return ok(upgradeRequestBiz.listMine(parseUserId(userId)));
     }
 
     @GetMapping("/danmaku")

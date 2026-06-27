@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   Dialog,
   DialogContent,
@@ -59,6 +60,7 @@ export function AppModalShell({
   showCloseButton = true,
   testId,
 }: AppModalShellProps) {
+  const { t } = useTranslation('common')
   const isInsetBody = size === 'memory'
 
   return (
@@ -82,7 +84,7 @@ export function AppModalShell({
             {title ? (
               <DialogTitle>{title}</DialogTitle>
             ) : (
-              <DialogTitle className="sr-only">对话框</DialogTitle>
+              <DialogTitle className="sr-only">{t('a11y.dialog')}</DialogTitle>
             )}
             {description ? <DialogDescription>{description}</DialogDescription> : null}
           </DialogHeader>

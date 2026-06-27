@@ -1,10 +1,12 @@
-/**
- * 编排展示与 python-ai CC 工具集对齐。
- * SSE 事件名仍用 planning.*（表示一轮 bind_tools 执行）。
- */
-
+import i18n from '@/i18n'
 import { toolDisplayName } from './agentLabels'
 import { CC_ORCHESTRATION_TOOLS, normalizeToolName } from './agentToolNames'
+import {
+  formatOrchestrationParallelBatch,
+  formatOrchestrationSerialBatch,
+  orchestrationLabelSeparator,
+  translateOrchestrationBackendTitle,
+} from './orchestrationI18n'
 
 export { CC_ORCHESTRATION_TOOLS as ORCHESTRATION_TOOLS }
 
@@ -30,38 +32,28 @@ export function isHiddenTimelineToolName(name: string): boolean {
 }
 
 /** 执行轮 transition 标题（与 python-ai planning_title / tool_display_name 对齐） */
-export const PLANNING_PREP_TITLES: Record<string, string> = {
-  Read: '读取',
-  Write: '写入',
-  Edit: '编辑',
-  Glob: '列举',
-  Grep: '搜索',
-  Delete: '删除',
-  AskUser: '整理待确认问题',
-  TodoWrite: '更新任务',
-  ToolSearch: '查找工具',
-  WebFetch: '抓取网页',
-  WebSearch: '网页搜索',
-  EnterPlanMode: '计划模式',
-  ExitPlanMode: '退出计划',
-  Brief: '摘要',
-  Skill: '技能',
-  Agent: '子任务',
-  TaskCreate: '创建任务',
-  TaskGet: '查看任务',
-  TaskList: '任务列表',
-  TaskUpdate: '更新任务',
-  TaskStop: '停止任务',
-  NotebookEdit: '编辑笔记本',
-  ListMcpResources: 'MCP 资源',
-  ReadMcpResource: '读取 MCP',
-  think: '分析任务',
-  choose: '整理待确认问题',
-  ask_user: '整理待确认问题',
-  output: '整理回复',
-}
+const PLANNING_PREP_OVERRIDE_KEYS = new Set([
+  'AskUser',
+  'TodoWrite',
+  'think',
+  'choose',
+  'ask_user',
+  'output',
+])
 
-export const PLANNING_GENERIC_TITLES = new Set([
+const PLANNING_GENERIC_I18N_KEYS = [
+  'editor:timeline.orchestrationActive',
+  'editor:timeline.orchestrationDone',
+  'editor:timeline.drafting',
+  'editor:timeline.thinkingActive',
+  'editor:agent.orchestration.nextSteps',
+  'editor:agent.orchestration.afterInteraction',
+  'editor:agent.orchestration.planningFailed',
+  'editor:agent.timeline.executing',
+] as const
+
+/** Legacy SSE / persisted timeline titles (backend may still emit Chinese literals). */
+const LEGACY_PLANNING_GENERIC_TITLES = new Set([
   '',
   '规划中…',
   '规划中',
@@ -76,7 +68,6 @@ export const PLANNING_GENERIC_TITLES = new Set([
   '后续步骤',
   '模型选择工具…',
   '调用模型…',
-  // legacy SSE / persisted timelines
   '编排中…',
   '编排中',
   '编排完成',
@@ -87,84 +78,68 @@ export const PLANNING_GENERIC_TITLES = new Set([
   '调用模型编排…',
 ])
 
-/** CC query_loop 每轮 planning.* 的标题：时间线展平为顶层工具行，不用 PlanningStack */
-export const CC_FLAT_ORCHESTRATION_TITLES = new Set([
-  ...PLANNING_GENERIC_TITLES,
-  ...Object.values(PLANNING_PREP_TITLES),
-  '根据你的选择继续…',
-])
+export function isPlanningGenericTitle(title: string | undefined): boolean {
+  const raw = (title ?? '').trim()
+  if (!raw) {
+    return true
+  }
+  if (LEGACY_PLANNING_GENERIC_TITLES.has(raw)) {
+    return true
+  }
+  return PLANNING_GENERIC_I18N_KEYS.some((key) => matchesAnyLocale(key, raw))
+}
 
+function matchesAnyLocale(i18nKey: string, value: string): boolean {
+  return ['zh', 'en'].some((lng) => i18n.t(i18nKey, { lng }) === value)
+}
+
+/** CC query_loop 每轮 planning.* 的标题：时间线展平为顶层工具行，不用 PlanningStack */
 export function isCcFlatOrchestrationTitle(title: string | undefined): boolean {
   const raw = (title ?? '').trim()
   if (!raw) {
     return true
   }
-  if (CC_FLAT_ORCHESTRATION_TITLES.has(raw)) {
+  if (isPlanningGenericTitle(raw)) {
     return true
   }
-  return Object.values(PLANNING_PREP_TITLES).some(
-    (prep) => raw === prep || raw.startsWith(`${prep}…`),
-  )
+  return CC_ORCHESTRATION_TOOLS.some((tool) => {
+    const prep = planningPrepTitle(tool)
+    return raw === prep || raw.startsWith(`${prep}…`)
+  })
 }
 
 export function planningPrepTitle(toolName: string | undefined): string {
   if (!toolName) {
-    return '后续步骤'
+    return i18n.t('editor:agent.orchestration.nextSteps')
   }
   const key = toolName.trim()
-  return PLANNING_PREP_TITLES[key] ?? toolDisplayName(normalizeToolName(key))
+  if (PLANNING_PREP_OVERRIDE_KEYS.has(key)) {
+    const override = i18n.t(`editor:agent.orchestration.prep.${key}`, { defaultValue: '' })
+    if (override) {
+      return override
+    }
+  }
+  return toolDisplayName(normalizeToolName(key))
 }
 
 export function planningTitleAfterInteraction(): string {
-  return '根据你的选择继续…'
-}
-
-const PLANNING_ACTIVE_LABELS: Record<string, string> = {
-  Read: '读取中…',
-  Write: '写入中…',
-  Edit: '编辑中…',
-  Glob: '列举中…',
-  Grep: '搜索中…',
-  Delete: '删除中…',
-  AskUser: '整理待确认问题…',
-  TodoWrite: '更新任务…',
-  ToolSearch: '查找工具…',
-  WebFetch: '抓取网页…',
-  WebSearch: '搜索网页…',
-  EnterPlanMode: '计划模式…',
-  ExitPlanMode: '退出计划…',
-  think: '分析中…',
-  CreateMemory: '创建记忆…',
-  UpdateMemoryFields: '更新记忆属性…',
-  UpdateMemoryContent: '更新记忆正文…',
-  UpdateMemoryMeta: '更新记忆元数据…',
-  MoveMemory: '移动记忆节点…',
-  GetMemoryTree: '加载记忆树…',
-  ReadMemory: '查阅记忆…',
-  ListMemory: '列举记忆…',
-  DeleteMemory: '删除记忆…',
-  WriteChapter: '写入章节…',
-  ReadChapter: '阅读章节…',
-  EditChapter: '编辑章节…',
-  ListChapters: '列举章节…',
-  ChapterAudit: '审计章节目录…',
-  DeleteChapter: '删除章节…',
-  ReorderChapters: '调整章节顺序…',
-  NarrativeReview: '叙事审查…',
-  SearchKnowledge: '检索设定…',
-  GetCharacterGraph: '分析人物关系…',
-  Agent: '执行子任务…',
-  Skill: '加载技能…',
-  ListMcpResources: '列举 MCP 资源…',
-  ReadMcpResource: '读取 MCP 资源…',
-  choose: '准备创作方向…',
-  ask_user: '整理待确认问题…',
-  output: '整理回复…',
+  return i18n.t('editor:agent.orchestration.afterInteraction')
 }
 
 export function planningActiveLabel(toolName: string): string | undefined {
   const key = toolName.trim()
-  return PLANNING_ACTIVE_LABELS[key] ?? PLANNING_ACTIVE_LABELS[normalizeToolName(key)]
+  const direct = i18n.t(`editor:agent.orchestration.active.${key}`, { defaultValue: '' })
+  if (direct) {
+    return direct
+  }
+  const normalized = normalizeToolName(key)
+  if (normalized !== key) {
+    const viaNorm = i18n.t(`editor:agent.orchestration.active.${normalized}`, { defaultValue: '' })
+    if (viaNorm) {
+      return viaNorm
+    }
+  }
+  return undefined
 }
 
 type ToolCallRow = { tool?: string; tool_call_id?: string; input?: Record<string, unknown> }
@@ -239,8 +214,8 @@ function partitionFromPayload(payload: Record<string, unknown>): PartitionRow[] 
 export function orchestrationCompletedTitle(payload: Record<string, unknown>): string | undefined {
   const backendTitle =
     typeof payload.title === 'string' && payload.title.trim() ? payload.title.trim() : ''
-  if (backendTitle && !PLANNING_GENERIC_TITLES.has(backendTitle)) {
-    return backendTitle
+  if (backendTitle && !isPlanningGenericTitle(backendTitle)) {
+    return translateOrchestrationBackendTitle(backendTitle)
   }
 
   if (payload.after_interaction === true) {
@@ -260,18 +235,18 @@ export function orchestrationCompletedTitle(payload: Record<string, unknown>): s
       }
       const labels = visible.map((t) => planningPrepTitle(t))
       if (batch.parallel && labels.length > 1) {
-        segments.push(`并行 · ${labels.join('、')}`)
+        segments.push(formatOrchestrationParallelBatch(labels))
       } else if (labels.length === 1) {
         segments.push(labels[0])
       } else {
-        segments.push(labels.join('、'))
+        segments.push(labels.join(orchestrationLabelSeparator()))
       }
     }
     if (segments.length === 1) {
       return segments[0]
     }
     if (segments.length > 1) {
-      return segments.join(' → ')
+      return formatOrchestrationSerialBatch(segments)
     }
   }
 
@@ -280,7 +255,7 @@ export function orchestrationCompletedTitle(payload: Record<string, unknown>): s
     return planningPrepTitle(tools[0])
   }
   if (tools.length > 1) {
-    return tools.map((t) => planningPrepTitle(t)).join(' → ')
+    return formatOrchestrationSerialBatch(tools.map((t) => planningPrepTitle(t)))
   }
 
   const nextTool =

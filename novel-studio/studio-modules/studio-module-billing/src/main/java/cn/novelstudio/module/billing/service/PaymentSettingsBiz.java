@@ -220,7 +220,7 @@ public class PaymentSettingsBiz {
 
             if (projectStatus != null && !projectStatus.isBlank()) {
 
-                suffix += "（" + projectStatus + "）";
+                suffix = msg("payment.settings.test.project_with_status", suffix, projectStatus);
 
             }
 

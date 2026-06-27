@@ -4,18 +4,18 @@ import cn.novelstudio.kernel.biz.BaseBiz;
 import cn.novelstudio.module.agent.dto.agent.SessionTitleRequest;
 import cn.novelstudio.module.agent.dto.agent.SessionTitleResponse;
 import cn.novelstudio.module.agent.service.PythonSessionTitleClient;
-import cn.novelstudio.platform.i18n.StudioMessages;
+import cn.novelstudio.module.agent.support.AgentLocaleMarkers;
 import org.springframework.stereotype.Component;
 
 @Component
 public class AgentSessionBiz extends BaseBiz {
 
     private final PythonSessionTitleClient titleClient;
-    private final StudioMessages messages;
+    private final AgentLocaleMarkers localeMarkers;
 
-    public AgentSessionBiz(PythonSessionTitleClient titleClient, StudioMessages messages) {
+    public AgentSessionBiz(PythonSessionTitleClient titleClient, AgentLocaleMarkers localeMarkers) {
         this.titleClient = titleClient;
-        this.messages = messages;
+        this.localeMarkers = localeMarkers;
     }
 
     public SessionTitleResponse generateTitle(SessionTitleRequest request) {
@@ -31,13 +31,6 @@ public class AgentSessionBiz extends BaseBiz {
     }
 
     private String fallbackTitle(String userMessage) {
-        String clean = userMessage == null ? "" : userMessage.trim().replaceAll("\\s+", " ");
-        if (clean.isBlank()) {
-            return messages.get("content.session.default_title");
-        }
-        if (clean.length() > 18) {
-            return clean.substring(0, 18) + "…";
-        }
-        return clean;
+        return localeMarkers.truncateSessionTitle(userMessage);
     }
 }

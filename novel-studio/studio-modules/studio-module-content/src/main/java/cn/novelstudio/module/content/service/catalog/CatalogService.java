@@ -1,21 +1,25 @@
 package cn.novelstudio.module.content.service.catalog;
 
 import cn.novelstudio.kernel.enums.ResultCode;
+import cn.novelstudio.kernel.exception.ForbiddenException;
 import cn.novelstudio.kernel.exception.NotFoundException;
+import cn.novelstudio.kernel.exception.ValidationException;
+import cn.novelstudio.module.content.catalog.IndexStatus;
+import cn.novelstudio.module.content.dto.LibraryReindexResultDTO;
 import cn.novelstudio.platform.messaging.catalog.CatalogIndexMessage;
 import cn.novelstudio.platform.messaging.constant.MqTopic;
+import cn.novelstudio.platform.messaging.library.LibraryIndexMessage;
 import cn.novelstudio.platform.messaging.producer.IMessageProducer;
 import cn.novelstudio.platform.i18n.StudioMessages;
 import cn.novelstudio.module.content.dto.CreateChapterRequest;
 import cn.novelstudio.module.content.dto.CreateNovelRequest;
 import cn.novelstudio.module.content.dto.NovelDTO;
+import cn.novelstudio.module.content.dto.ReferencedBookDTO;
 import cn.novelstudio.module.content.entity.CrawlCatalogChapterEntity;
 import cn.novelstudio.module.content.entity.CrawlCatalogNovelEntity;
-import cn.novelstudio.module.content.entity.CrawlJobEntity;
 import cn.novelstudio.module.content.entity.UserLibraryCollectionEntity;
 import cn.novelstudio.module.content.repository.CrawlCatalogChapterRepository;
 import cn.novelstudio.module.content.repository.CrawlCatalogNovelRepository;
-import cn.novelstudio.module.content.repository.CrawlJobRepository;
 import cn.novelstudio.module.content.repository.UserLibraryCollectionRepository;
 import cn.novelstudio.module.content.service.ChapterService;
 import cn.novelstudio.module.content.service.NovelService;
@@ -36,7 +40,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -46,7 +53,6 @@ public class CatalogService {
 
     private final CrawlCatalogNovelRepository catalogNovelRepository;
     private final CrawlCatalogChapterRepository catalogChapterRepository;
-    private final CrawlJobRepository crawlJobRepository;
     private final UserLibraryCollectionRepository libraryCollectionRepository;
     private final NovelService novelService;
     private final ChapterService chapterService;
@@ -56,8 +62,13 @@ public class CatalogService {
     public Page<CatalogNovelDTO> pageCatalog(int pageCurrent, int pageSize) {
         int page = Math.max(0, pageCurrent - 1);
         int size = Math.max(1, Math.min(pageSize, 50));
-        return catalogNovelRepository.findAllByOrderByUpdatedAtDesc(PageRequest.of(page, size))
+        return catalogNovelRepository.findByOwnerIdIsNullOrderByUpdatedAtDesc(PageRequest.of(page, size))
             .map(this::toDto);
+    }
+
+    /** 管理台：公共书库分页（与用户书城一致，仅 owner_id 为空）。 */
+    public Page<CatalogNovelDTO> pagePublicCatalog(int pageCurrent, int pageSize) {
+        return pageCatalog(pageCurrent, pageSize);
     }
 
     /**
@@ -75,7 +86,10 @@ public class CatalogService {
      */
     @Transactional
     public void collect(Long userId, String catalogNovelId) {
-        findCatalog(catalogNovelId); // 校验存在
+        CrawlCatalogNovelEntity novel = findCatalog(catalogNovelId);
+        if (novel.getOwnerId() != null) {
+            throw ValidationException.keyed(ResultCode.BAD_REQUEST, "content.catalog.collect_public_only");
+        }
         if (!libraryCollectionRepository.existsByUserIdAndCatalogNovelId(userId, catalogNovelId)) {
             UserLibraryCollectionEntity entity = new UserLibraryCollectionEntity();
             entity.setUserId(userId);
@@ -83,6 +97,33 @@ public class CatalogService {
             entity.setCollectedAt(Instant.now());
             libraryCollectionRepository.save(entity);
         }
+    }
+
+    /**
+     * @引用候选：我的书库（上传+收藏），含索引状态，供 picker 搜索。
+     */
+    public List<ReferencedBookDTO> myLibrarySelectable(Long userId, String query) {
+        List<CrawlCatalogNovelEntity> all = new ArrayList<>();
+        all.addAll(catalogNovelRepository.findByOwnerId(userId));
+        all.addAll(libraryCollectionRepository.findCatalogNovelsByUserId(userId));
+        Map<String, CrawlCatalogNovelEntity> uniq = new LinkedHashMap<>();
+        for (CrawlCatalogNovelEntity n : all) {
+            uniq.putIfAbsent(n.getId(), n);
+        }
+        return uniq.values().stream()
+            .filter(n -> query == null || query.isBlank()
+                || (n.getTitle() != null && n.getTitle().contains(query)))
+            .map(n -> {
+                ReferencedBookDTO d = new ReferencedBookDTO();
+                d.setCatalogNovelId(n.getId());
+                d.setTitle(n.getTitle());
+                d.setSummary(n.getDescription());
+                d.setNamespace(n.getIndexNamespace());
+                d.setIndexStatus(normalizeIndexStatus(n.getIndexStatus()));
+                d.setChapterTitles(List.of());
+                return d;
+            })
+            .toList();
     }
 
     public CatalogNovelDTO getCatalog(String catalogNovelId) {
@@ -135,22 +176,27 @@ public class CatalogService {
         catalogNovelRepository.save(novel);
     }
 
-    @Transactional
-    public CrawlCatalogNovelEntity initFromJob(
-        String jobId,
-        String title,
-        String author,
-        String description,
-        String sourceUrl
-    ) {
-        CrawlCatalogNovelEntity entity = new CrawlCatalogNovelEntity();
-        entity.setJobId(jobId);
-        entity.setTitle(title.trim());
-        entity.setAuthor(author);
-        entity.setDescription(description);
-        entity.setSourceUrl(sourceUrl);
-        entity.setChapterCount(0);
-        return catalogNovelRepository.save(entity);
+    public List<CatalogNovelProgressDTO> listMissingCover(int limit) {
+        int size = Math.max(1, Math.min(limit, 100));
+        return catalogNovelRepository.findMissingCover(PageRequest.of(0, size))
+            .stream()
+            .map(this::toProgress)
+            .toList();
+    }
+
+    public CatalogOverviewDTO buildCatalogOverview(int limit) {
+        int size = Math.max(1, Math.min(limit, 50));
+        long total = catalogNovelRepository.count();
+        Page<CrawlCatalogNovelEntity> missingPage = catalogNovelRepository.findMissingCover(PageRequest.of(0, size));
+        List<CatalogNovelProgressDTO> missing = missingPage.stream()
+            .map(this::toProgress)
+            .toList();
+        List<CatalogNovelProgressDTO> recent = catalogNovelRepository
+            .findByOwnerIdIsNullOrderByUpdatedAtDesc(PageRequest.of(0, size))
+            .stream()
+            .map(this::toProgress)
+            .toList();
+        return new CatalogOverviewDTO(total, missingPage.getTotalElements(), missing, List.of(), recent);
     }
 
     @Transactional
@@ -252,36 +298,7 @@ public class CatalogService {
     }
 
     public List<CatalogNovelProgressDTO> listIncomplete(int limit) {
-        int size = Math.max(1, Math.min(limit, 100));
-        return crawlJobRepository.findIncompleteJobs(PageRequest.of(0, size))
-            .stream()
-            .map(this::toProgressFromJob)
-            .distinct()
-            .toList();
-    }
-
-    public List<CatalogNovelProgressDTO> listMissingCover(int limit) {
-        int size = Math.max(1, Math.min(limit, 100));
-        return catalogNovelRepository.findMissingCover(PageRequest.of(0, size))
-            .stream()
-            .map(novel -> toProgress(novel, null))
-            .toList();
-    }
-
-    public CatalogOverviewDTO buildOrchestratorOverview(int limit) {
-        int size = Math.max(1, Math.min(limit, 50));
-        long total = catalogNovelRepository.count();
-        Page<CrawlCatalogNovelEntity> missingPage = catalogNovelRepository.findMissingCover(PageRequest.of(0, size));
-        List<CatalogNovelProgressDTO> missing = missingPage.stream()
-            .map(novel -> toProgress(novel, null))
-            .toList();
-        List<CatalogNovelProgressDTO> incomplete = listIncomplete(size);
-        List<CatalogNovelProgressDTO> recent = catalogNovelRepository
-            .findAllByOrderByUpdatedAtDesc(PageRequest.of(0, size))
-            .stream()
-            .map(novel -> toProgress(novel, null))
-            .toList();
-        return new CatalogOverviewDTO(total, missingPage.getTotalElements(), missing, incomplete, recent);
+        return listMissingCover(limit);
     }
 
     @Transactional
@@ -313,10 +330,7 @@ public class CatalogService {
     }
 
     public CatalogNovelProgressDTO getCatalogProgress(String catalogNovelId) {
-        CrawlCatalogNovelEntity novel = findCatalog(catalogNovelId);
-        List<CrawlJobEntity> jobs = crawlJobRepository.findByCatalogNovelIdOrderByUpdatedAtDesc(catalogNovelId);
-        CrawlJobEntity latest = jobs.isEmpty() ? null : jobs.get(0);
-        return toProgress(novel, latest);
+        return toProgress(findCatalog(catalogNovelId));
     }
 
     @Transactional
@@ -326,39 +340,8 @@ public class CatalogService {
         return toDto(catalogNovelRepository.save(entity));
     }
 
-    private CatalogNovelProgressDTO toProgressFromJob(CrawlJobEntity job) {
-        if (job.getCatalogNovelId() != null && !job.getCatalogNovelId().isBlank()) {
-            try {
-                return getCatalogProgress(job.getCatalogNovelId());
-            } catch (NotFoundException ignored) {
-                // fall through
-            }
-        }
-        int done = job.getChaptersDone() == null ? 0 : job.getChaptersDone();
-        int total = job.getChaptersTotal() == null ? 0 : job.getChaptersTotal();
-        return new CatalogNovelProgressDTO(
-            job.getCatalogNovelId(),
-            job.getTitle() == null ? "" : job.getTitle(),
-            "",
-            "",
-            job.getSourceUrl(),
-            null,
-            done,
-            total > 0 ? total : null,
-            done,
-            total <= 0 || done >= total,
-            job.getId(),
-            job.getStatus().name(),
-            job.getCreatedAt().toEpochMilli(),
-            job.getUpdatedAt().toEpochMilli()
-        );
-    }
-
-    private CatalogNovelProgressDTO toProgress(CrawlCatalogNovelEntity novel, CrawlJobEntity latest) {
+    private CatalogNovelProgressDTO toProgress(CrawlCatalogNovelEntity novel) {
         int saved = novel.getChapterCount() == null ? 0 : novel.getChapterCount();
-        Integer expected = latest != null && latest.getChaptersTotal() != null ? latest.getChaptersTotal() : null;
-        int done = latest != null && latest.getChaptersDone() != null ? latest.getChaptersDone() : saved;
-        boolean complete = expected != null && expected > 0 && done >= expected;
         return new CatalogNovelProgressDTO(
             novel.getId(),
             novel.getTitle(),
@@ -367,11 +350,11 @@ public class CatalogService {
             novel.getSourceUrl(),
             novel.getCoverUrl(),
             saved,
-            expected,
-            done,
-            complete,
-            latest != null ? latest.getId() : null,
-            latest != null ? latest.getStatus().name() : null,
+            null,
+            saved,
+            saved > 0,
+            null,
+            null,
             novel.getCreatedAt().toEpochMilli(),
             novel.getUpdatedAt().toEpochMilli()
         );
@@ -384,6 +367,132 @@ public class CatalogService {
 
     public CrawlCatalogNovelEntity findCatalogEntity(String catalogNovelId) {
         return findCatalog(catalogNovelId);
+    }
+
+    public ReferencedBookDTO getReferencedBook(String catalogNovelId, Long userId) {
+        CrawlCatalogNovelEntity novel = catalogNovelRepository.findById(catalogNovelId)
+            .orElseThrow(() -> new IllegalArgumentException("书库条目不存在"));
+        if (novel.getOwnerId() != null) {
+            boolean owned = novel.getOwnerId().equals(userId);
+            if (!owned) {
+                owned = libraryCollectionRepository.existsByUserIdAndCatalogNovelId(userId, catalogNovelId);
+            }
+            if (!owned) {
+                throw new IllegalArgumentException("无权引用该书");
+            }
+        }
+        ReferencedBookDTO dto = new ReferencedBookDTO();
+        dto.setCatalogNovelId(catalogNovelId);
+        dto.setTitle(novel.getTitle());
+        dto.setSummary(novel.getDescription());
+        dto.setNamespace(novel.getIndexNamespace());
+        dto.setIndexStatus(normalizeIndexStatus(novel.getIndexStatus()));
+        dto.setChapterTitles(catalogChapterRepository
+            .findByCatalogNovelIdOrderBySortOrderAsc(catalogNovelId).stream()
+            .map(CrawlCatalogChapterEntity::getTitle)
+            .toList());
+        return dto;
+    }
+
+    @Transactional
+    public void updateIndexStatus(String catalogNovelId, IndexStatus status) {
+        CrawlCatalogNovelEntity novel = catalogNovelRepository.findById(catalogNovelId)
+            .orElseThrow(() -> new IllegalArgumentException("书库条目不存在"));
+        novel.setIndexStatus(status.wire());
+        catalogNovelRepository.save(novel);
+    }
+
+    /**
+     * 触发私人书库条目 RAG 重索引（owner 或收藏者；仅 pending/indexing/failed）。
+     */
+    @Transactional
+    public LibraryReindexResultDTO reindexLibrary(Long userId, String catalogNovelId) {
+        CrawlCatalogNovelEntity novel = findCatalog(catalogNovelId);
+        assertLibraryAccess(userId, novel, catalogNovelId);
+
+        IndexStatus current = IndexStatus.fromWire(novel.getIndexStatus());
+        if (!current.canReindex()) {
+            throw ValidationException.keyed(
+                ResultCode.BAD_REQUEST,
+                "content.catalog.reindex_not_allowed",
+                current.wire()
+            );
+        }
+
+        int chapters = novel.getChapterCount() == null ? 0 : novel.getChapterCount();
+        if (chapters <= 0) {
+            throw NotFoundException.keyed(ResultCode.NOT_FOUND, "content.catalog.no_chapters");
+        }
+
+        String namespace = resolveIndexNamespace(novel);
+        novel.setIndexStatus(IndexStatus.PENDING.wire());
+        catalogNovelRepository.save(novel);
+        publishLibraryIndexEvent(catalogNovelId, userId, namespace, novel.getOwnerId());
+
+        return new LibraryReindexResultDTO(catalogNovelId, IndexStatus.PENDING.wire());
+    }
+
+    private void assertLibraryAccess(Long userId, CrawlCatalogNovelEntity novel, String catalogNovelId) {
+        boolean allowed = false;
+        if (novel.getOwnerId() != null) {
+            allowed = novel.getOwnerId().equals(userId)
+                || libraryCollectionRepository.existsByUserIdAndCatalogNovelId(userId, catalogNovelId);
+        } else {
+            allowed = libraryCollectionRepository.existsByUserIdAndCatalogNovelId(userId, catalogNovelId);
+        }
+        if (!allowed) {
+            throw ForbiddenException.keyed(ResultCode.FORBIDDEN, "content.catalog.library_access_denied");
+        }
+    }
+
+    private String resolveIndexNamespace(CrawlCatalogNovelEntity novel) {
+        if (novel.getIndexNamespace() != null && !novel.getIndexNamespace().isBlank()) {
+            return novel.getIndexNamespace();
+        }
+        String namespace = novel.getOwnerId() != null
+            ? "library:" + novel.getOwnerId() + ":" + novel.getId()
+            : "catalog:" + novel.getId();
+        novel.setIndexNamespace(namespace);
+        return namespace;
+    }
+
+    private void publishLibraryIndexEvent(
+        String catalogNovelId,
+        Long requestUserId,
+        String namespace,
+        Long ownerId
+    ) {
+        IMessageProducer producer = messageProducerProvider.getIfAvailable();
+        if (producer == null) {
+            log.warn("MQ 未配置，跳过书库索引事件 catalogNovelId={}", catalogNovelId);
+            return;
+        }
+        Long messageUserId = ownerId != null ? ownerId : requestUserId;
+        try {
+            producer.send(
+                MqTopic.LIBRARY_INDEX,
+                new LibraryIndexMessage(catalogNovelId, messageUserId, namespace)
+            );
+            log.debug("已发布书库索引事件 catalogNovelId={} namespace={}", catalogNovelId, namespace);
+        } catch (Exception ex) {
+            log.warn(
+                "发送 LIBRARY_INDEX 消息失败 catalogNovelId={}: {}",
+                catalogNovelId,
+                ex.getMessage()
+            );
+        }
+    }
+
+    private static String normalizeIndexStatus(String raw) {
+        return IndexStatus.normalizeWire(raw);
+    }
+
+    @Transactional
+    public void updateSummary(String catalogNovelId, String summary) {
+        CrawlCatalogNovelEntity novel = catalogNovelRepository.findById(catalogNovelId)
+            .orElseThrow(() -> new IllegalArgumentException("书库条目不存在"));
+        novel.setDescription(summary);
+        catalogNovelRepository.save(novel);
     }
 
     private CatalogNovelDTO toDto(CrawlCatalogNovelEntity entity) {

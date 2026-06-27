@@ -18,23 +18,24 @@ export const MODEL_PIXEL_INPUT = EDITOR_PIXEL_INPUT
 
 export const MODEL_PIXEL_CARD = cn(
   EDITOR_PIXEL_CARD,
-  'flex flex-col gap-3 p-4 md:flex-row md:items-center md:justify-between',
+  'flex flex-col gap-2 p-2.5 md:flex-row md:items-center md:justify-between md:gap-3',
 )
 
-export function modelPixelCardClass(active?: boolean, dragging?: boolean) {
+export function modelPixelCardClass(active?: boolean, dragging?: boolean, compact?: boolean) {
   return cn(
     MODEL_PIXEL_CARD,
     'group transition-colors',
-    dragging && 'scale-[1.01] shadow-[4px_4px_0_0_var(--foreground)]',
+    compact && 'md:py-2',
+    dragging && 'scale-[1.01] shadow-[3px_3px_0_0_var(--foreground)]',
     active
-      ? 'border-foreground bg-neon/15 shadow-[3px_3px_0_0_var(--foreground)]'
+      ? 'border-foreground bg-neon/15 shadow-[2px_2px_0_0_var(--foreground)]'
       : 'hover:bg-muted/20',
   )
 }
 
 export function modelPixelByokCardClass(selected?: boolean) {
   return cn(
-    'group flex items-center gap-3 border-2 border-foreground bg-background p-3 shadow-[2px_2px_0_0_var(--foreground)] transition-colors',
+    'group flex items-center gap-2 border-2 border-foreground bg-background px-2.5 py-2 shadow-[2px_2px_0_0_var(--foreground)] transition-colors',
     selected ? 'bg-neon/20' : 'hover:bg-muted/30',
   )
 }
@@ -74,7 +75,7 @@ export function modelPixelPickerRowClass(selected?: boolean) {
 }
 
 export function modelPixelActionBtnClass(className?: string) {
-  return editorPixelButtonClass(false, cn('h-8 px-2.5 text-[11px] shadow-[2px_2px_0_0_var(--foreground)]', className))
+  return editorPixelButtonClass(false, cn('h-7 px-2 text-[10px] shadow-[1px_1px_0_0_var(--foreground)]', className))
 }
 
 export function modelPixelDestructiveBtnClass(className?: string) {

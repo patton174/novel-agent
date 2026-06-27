@@ -1,5 +1,6 @@
 package cn.novelstudio.module.billing.dto;
 
+import java.time.Instant;
 import java.util.List;
 
 public record PayCheckoutResp(
@@ -13,6 +14,7 @@ public record PayCheckoutResp(
     String currency,
     List<PayMethodOption> payments,
     String alipayHint,
+    Instant expiresAt,
     boolean resumed
 ) {
     public record PayMethodOption(

@@ -4,11 +4,12 @@ from unittest.mock import patch
 
 import pytest
 
-from app.billing.reporter import _model_cost_micros, report_llm_usage
+from app.billing.reporter import _compute_cost, report_llm_usage
 
 
-def test_model_cost_micros_positive():
-    cost = _model_cost_micros("deepseek-chat", {"input_tokens": 1000, "output_tokens": 500})
+def test_compute_cost_positive():
+    pricing = {"input_per_1k_micros": 140, "output_per_1k_micros": 280, "multiplier": 1.0}
+    cost = _compute_cost(1000, 500, pricing)
     assert cost > 0
 
 

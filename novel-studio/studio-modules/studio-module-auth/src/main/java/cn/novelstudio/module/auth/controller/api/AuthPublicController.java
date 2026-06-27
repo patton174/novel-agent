@@ -7,6 +7,7 @@ import cn.novelstudio.module.auth.security.JwtAuthService;
 import cn.novelstudio.module.auth.service.api.biz.AuthPublicBiz;
 import cn.novelstudio.module.auth.service.impl.AuthServiceImpl;
 import cn.novelstudio.module.auth.support.ClientRequestSupport;
+import cn.novelstudio.module.billing.support.ReferralConstants;
 import cn.novelstudio.kernel.base.Result;
 import cn.novelstudio.platform.security.SecurityCookieNames;
 import cn.novelstudio.platform.web.BaseController;
@@ -39,7 +40,7 @@ public class AuthPublicController extends BaseController {
         @Valid @RequestBody LoginRequest request,
         HttpServletRequest httpRequest
     ) {
-        log.info("登录请求: username={}", request.getUsername());
+        log.info("Login request: username={}", request.getUsername());
         String ip = clientRequestSupport.clientIp(httpRequest);
         String fingerprint = request.getFingerprint() != null
             ? request.getFingerprint()
@@ -50,11 +51,12 @@ public class AuthPublicController extends BaseController {
 
     @PostMapping("/register")
     public Result<Void> register(@Valid @RequestBody RegisterRequest request, HttpServletRequest httpRequest) {
-        log.info("注册请求: username={}", request.getUsername());
+        log.info("Register request: username={}", request.getUsername());
         return biz.register(
             request,
             clientRequestSupport.clientIp(httpRequest),
-            clientRequestSupport.fingerprint(httpRequest)
+            clientRequestSupport.fingerprint(httpRequest),
+            readReferralCode(httpRequest)
         );
     }
 
@@ -79,6 +81,15 @@ public class AuthPublicController extends BaseController {
         return ResponseEntity.ok()
             .headers(headers -> jwtAuthService.buildAuthCookies(bundle).forEach(c -> headers.add(HttpHeaders.SET_COOKIE, c.toString())))
             .body(body);
+    }
+
+    private static String readReferralCode(HttpServletRequest request) {
+        String fromCookie = readCookie(request, ReferralConstants.REF_COOKIE_NAME);
+        if (fromCookie != null && !fromCookie.isBlank()) {
+            return fromCookie.trim();
+        }
+        String fromHeader = request.getHeader(ReferralConstants.REF_HEADER_NAME);
+        return fromHeader == null || fromHeader.isBlank() ? null : fromHeader.trim();
     }
 
     private static String readCookie(HttpServletRequest request, String name) {

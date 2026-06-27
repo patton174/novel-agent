@@ -1,7 +1,8 @@
 package cn.novelstudio.module.upload.service;
 
-import cn.novelstudio.kernel.exception.ValidationException;
 import cn.novelstudio.module.upload.bridge.UploadCatalogBridge;
+import cn.novelstudio.module.upload.client.UploadNotificationClient;
+import cn.novelstudio.module.upload.support.UploadExceptions;
 import cn.novelstudio.module.upload.dto.UploadFileDTO;
 import cn.novelstudio.module.upload.entity.UploadedFileEntity;
 import cn.novelstudio.module.upload.repository.UploadedFileRepository;
@@ -13,6 +14,7 @@ import cn.novelstudio.platform.storage.StorageBackend;
 import cn.novelstudio.platform.storage.UploadStorageProperties;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,6 +42,7 @@ public class UploadService {
     private final ObjectProvider<IMessageProducer> producerProvider;
     private final StringRedisTemplate redis;
     private final ResultLocalizer resultLocalizer;
+    private final UploadNotificationClient notificationClient;
 
     public UploadService(UploadedFileRepository fileRepo,
                          UploadCatalogBridge catalogBridge,
@@ -47,7 +50,8 @@ public class UploadService {
                          UploadStorageProperties props,
                          ObjectProvider<IMessageProducer> producerProvider,
                          StringRedisTemplate redis,
-                         ResultLocalizer resultLocalizer) {
+                         ResultLocalizer resultLocalizer,
+                         @Autowired(required = false) UploadNotificationClient notificationClient) {
         this.fileRepo = fileRepo;
         this.catalogBridge = catalogBridge;
         this.storage = storage;
@@ -55,16 +59,17 @@ public class UploadService {
         this.producerProvider = producerProvider;
         this.redis = redis;
         this.resultLocalizer = resultLocalizer;
+        this.notificationClient = notificationClient;
     }
 
     public String resolveFormat(String originalName) {
         int dot = originalName.lastIndexOf('.');
         if (dot < 0) {
-            throw new IllegalArgumentException("upload.missing_extension");
+            throw UploadExceptions.missingExtension();
         }
         String ext = originalName.substring(dot + 1).toLowerCase();
         if (!props.getAllowedFormats().contains(ext)) {
-            throw ValidationException.keyed("upload.format_unsupported", ext);
+            throw UploadExceptions.formatUnsupported(ext);
         }
         return "markdown".equals(ext) ? "md" : ext;
     }
@@ -144,9 +149,9 @@ public class UploadService {
 
     public UploadedFileEntity requireOwned(String fileId, Long ownerId, String ownerType) {
         UploadedFileEntity e = fileRepo.findById(fileId)
-            .orElseThrow(() -> ValidationException.keyed("upload.file_not_found"));
+            .orElseThrow(UploadExceptions::fileNotFound);
         if ("user".equals(ownerType) && !Objects.equals(e.getOwnerId(), ownerId)) {
-            throw ValidationException.keyed("upload.file_forbidden");
+            throw UploadExceptions.fileForbidden();
         }
         return e;
     }
@@ -181,6 +186,7 @@ public class UploadService {
             e.setStatus("ready");
             fileRepo.save(e);
             setProgress(fileId, 100);
+            notifyUploadComplete(e, fileId);
             return;
         }
         String catalogNovelId = catalogBridge.importParsedUpload(fileId, e.getOwnerId(), e.getOriginalName(), result);
@@ -188,6 +194,18 @@ public class UploadService {
         e.setStatus("ready");
         fileRepo.save(e);
         setProgress(fileId, 100);
+        notifyUploadComplete(e, fileId);
+    }
+
+    private void notifyUploadComplete(UploadedFileEntity e, String fileId) {
+        if (notificationClient != null && e.getOwnerId() != null) {
+            notificationClient.sendUploadComplete(
+                e.getOwnerId(),
+                fileId,
+                e.getCatalogNovelId(),
+                e.getOriginalName()
+            );
+        }
     }
 
     @Transactional

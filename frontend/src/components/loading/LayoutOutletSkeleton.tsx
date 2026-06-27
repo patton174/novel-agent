@@ -4,7 +4,6 @@ import { hasRouteBeenSeen } from '@/utils/seenRoutes'
 import {
   AdminCatalogContentSkeleton,
   AdminContentSkeleton,
-  AdminCrawlerContentSkeleton,
   AdminStatsContentSkeleton,
   AdminTableContentSkeleton,
   BillingContentSkeleton,
@@ -43,9 +42,6 @@ export function LayoutOutletSkeleton() {
   ) {
     return <AdminTableContentSkeleton />
   }
-  if (pathname.startsWith('/admin/content/crawler') || pathname.startsWith('/admin/crawler')) {
-    return <AdminCrawlerContentSkeleton />
-  }
   if (pathname.startsWith('/admin/content/catalog') || pathname.startsWith('/admin/catalog')) {
     return <AdminCatalogContentSkeleton />
   }
@@ -59,7 +55,7 @@ export function LayoutOutletSkeleton() {
   if (pathname.startsWith('/dashboard/bookstore')) {
     return <BookstoreContentSkeleton />
   }
-  if (pathname.startsWith('/dashboard/billing')) {
+  if (pathname.startsWith('/dashboard/billing') || pathname.startsWith('/dashboard/usage')) {
     return <BillingContentSkeleton />
   }
   if (pathname.startsWith('/dashboard/settings')) {

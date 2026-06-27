@@ -10,10 +10,10 @@ const groups: ProSidebarGroup[] = [
 ]
 
 describe('ProSidebar', () => {
-  it('renders group titles', () => {
+  it('renders nav item labels', () => {
     render(<MemoryRouter><ProSidebar groups={groups} /></MemoryRouter>)
-    expect(screen.getByText('概览')).toBeInTheDocument()
-    expect(screen.getByText('创作')).toBeInTheDocument()
+    expect(screen.getByText('首页')).toBeInTheDocument()
+    expect(screen.getByText('小说')).toBeInTheDocument()
   })
 
   it('renders item labels as links', () => {

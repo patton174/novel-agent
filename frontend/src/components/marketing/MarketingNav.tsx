@@ -81,11 +81,11 @@ export function MarketingNav() {
           : 'border-b-2 border-transparent bg-background',
       )}
     >
-      <nav className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4 sm:px-6" aria-label="主导航">
+      <nav className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4 sm:px-6" aria-label={t('marketing:demo.nav.main')}>
         <Link
           to="/"
           className="flex shrink-0 items-center gap-2 transition-opacity hover:opacity-80"
-          aria-label={`${t('marketing:brand')} 首页`}
+          aria-label={t('marketing:demo.nav.home', { brand: t('marketing:brand') })}
         >
           <NovelAiPixelWordmark size="sm" className="inline-flex sm:hidden" />
           <NovelAiPixelWordmark size="md" className="hidden sm:inline-flex" />

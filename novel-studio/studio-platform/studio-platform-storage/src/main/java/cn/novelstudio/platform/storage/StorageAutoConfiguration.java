@@ -6,6 +6,6 @@ import org.springframework.context.annotation.ComponentScan;
 
 @AutoConfiguration
 @EnableConfigurationProperties(UploadStorageProperties.class)
-@ComponentScan(basePackageClasses = LocalDiskStorageBackend.class)
+@ComponentScan(basePackages = "cn.novelstudio.platform.storage")
 public class StorageAutoConfiguration {
 }

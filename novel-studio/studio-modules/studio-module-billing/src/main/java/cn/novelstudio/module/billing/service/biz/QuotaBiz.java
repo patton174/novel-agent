@@ -7,6 +7,7 @@ import cn.novelstudio.module.billing.entity.UsagePeriodSummaryId;
 import cn.novelstudio.module.billing.repository.UsagePeriodSummaryRepository;
 import cn.novelstudio.module.billing.support.BillingPeriodSupport;
 import cn.novelstudio.module.billing.support.BillingRedisKeys;
+import cn.novelstudio.module.billing.support.BillingRpmChecker;
 import cn.novelstudio.module.billing.support.EffectiveQuotaSupport;
 import cn.novelstudio.kernel.biz.BaseBiz;
 import cn.novelstudio.kernel.enums.ResultCode;
@@ -14,6 +15,8 @@ import cn.novelstudio.kernel.exception.BizException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
+
+import java.time.Duration;
 
 @Component
 @RequiredArgsConstructor
@@ -24,23 +27,27 @@ public class QuotaBiz extends BaseBiz {
     private final UsageReportBiz usageReportBiz;
     private final StringRedisTemplate redisTemplate;
     private final EffectiveQuotaSupport effectiveQuotaSupport;
+    private final BillingRpmChecker rpmChecker;
 
     public QuotaCheckResp checkAndReserveRun(long userId) {
         ProductPlanEntity plan = subscriptionBiz.resolvePlanForUser(userId);
+        rpmChecker.check(
+            userId,
+            plan.getRateLimitRpm() == null ? 60 : plan.getRateLimitRpm(),
+            Duration.ofSeconds(60)
+        );
         var effective = effectiveQuotaSupport.resolve(userId, plan);
         String period = BillingPeriodSupport.currentPeriodYyyyMm();
         long tokensUsed = readUsageTokens(userId, period);
         int runsUsed = (int) readUsageRuns(userId, period);
 
-        boolean allowed = isWithinQuota(tokensUsed, effective.tokenQuota())
-            && isWithinRunQuota(runsUsed, effective.runQuota());
+        boolean tokenOk = isWithinQuota(tokensUsed, effective.tokenQuota());
+        boolean runOk = isWithinRunQuota(runsUsed, effective.runQuota());
+        assertCanProceed(plan, tokenOk, runOk);
 
-        if (!allowed) {
-            throw BizException.keyed(ResultCode.BILLING_QUOTA_EXCEEDED, "billing.quota.upgrade_hint");
-        }
-
+        boolean allowed = tokenOk && runOk;
         usageReportBiz.recordRunStart(userId);
-        return buildResp(true, tokensUsed, effective.tokenQuota(), runsUsed + 1,
+        return buildResp(allowed, tokensUsed, effective.tokenQuota(), runsUsed + 1,
             effective.runQuota(), plan.getCode());
     }
 
@@ -50,10 +57,29 @@ public class QuotaBiz extends BaseBiz {
         String period = BillingPeriodSupport.currentPeriodYyyyMm();
         long tokensUsed = readUsageTokens(userId, period);
         int runsUsed = (int) readUsageRuns(userId, period);
-        boolean allowed = isWithinQuota(tokensUsed, effective.tokenQuota())
-            && isWithinRunQuota(runsUsed, effective.runQuota());
+        boolean tokenOk = isWithinQuota(tokensUsed, effective.tokenQuota());
+        boolean runOk = isWithinRunQuota(runsUsed, effective.runQuota());
+        boolean allowed = tokenOk && runOk;
+        if (!allowed && runOk && !tokenOk && "overage".equals(plan.getOveragePolicy())) {
+            allowed = true;
+        }
         return buildResp(allowed, tokensUsed, effective.tokenQuota(), runsUsed,
             effective.runQuota(), plan.getCode());
+    }
+
+    private static void assertCanProceed(ProductPlanEntity plan, boolean tokenOk, boolean runOk) {
+        if (!runOk) {
+            throw BizException.of(
+                ResultCode.BILLING_QUOTA_EXCEEDED,
+                "本月运行次数已用尽，请升级套餐或等待下月重置"
+            );
+        }
+        if (!tokenOk && !"overage".equals(plan.getOveragePolicy())) {
+            throw BizException.of(
+                ResultCode.BILLING_QUOTA_EXCEEDED,
+                "本月配额已用尽，请升级套餐或等待下月重置"
+            );
+        }
     }
 
     private static QuotaCheckResp buildResp(

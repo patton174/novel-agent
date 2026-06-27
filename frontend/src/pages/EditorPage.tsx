@@ -167,6 +167,8 @@ const EditorPage: React.FC = () => {
             contextUsage={editor.stream.composerContextUsage}
             spinnerMode={editor.stream.composerSpinnerMode}
             mobileBottomInset={mobileTabBarInset}
+            referencedBooks={editor.stream.referencedBooks}
+            onReferencedBooksChange={editor.stream.setReferencedBooks}
           />
         ) : editor.activeCenterTab === 'story' ? (
           <EditorStoryPanel

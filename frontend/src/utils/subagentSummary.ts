@@ -1,4 +1,13 @@
 /** 去掉与标题重复的「子任务完成」行，避免摘要区重复展示 */
+const SUBAGENT_DONE_HEADING_RE = /^#+\s*(子任务完成|Subtask complete)/i
+const SUBAGENT_STATUS_SKIP = new Set([
+  '**状态**：已完成（子 Agent run）',
+  '**状态**: 已完成（子 Agent run）',
+  '**Status**: Completed (sub-agent run)',
+  '**Status**：Completed (sub-agent run)',
+])
+const SUBAGENT_SUMMARY_HEADING_RE = /^###\s*(摘要|Summary)$/
+
 export function stripSubagentSummaryDuplicate(
   summary: string,
   description: string,
@@ -20,7 +29,7 @@ export function stripSubagentSummaryDuplicate(
       }
       continue
     }
-    if (/^#+\s*子任务完成/.test(t)) {
+    if (SUBAGENT_DONE_HEADING_RE.test(t)) {
       if (desc && t.includes(desc.slice(0, 12))) {
         continue
       }
@@ -28,10 +37,10 @@ export function stripSubagentSummaryDuplicate(
         continue
       }
     }
-    if (t === '**状态**：已完成（子 Agent run）' || t === '**状态**: 已完成（子 Agent run）') {
+    if (SUBAGENT_STATUS_SKIP.has(t)) {
       continue
     }
-    if (t === '### 摘要' && filtered.some((l) => /任务完成总结|优化完成总结/.test(l))) {
+    if (SUBAGENT_SUMMARY_HEADING_RE.test(t) && filtered.some((l) => /任务完成总结|优化完成总结|Task completion summary/i.test(l))) {
       continue
     }
     filtered.push(line)

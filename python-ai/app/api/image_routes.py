@@ -2,11 +2,19 @@
 
 from __future__ import annotations
 
+from collections.abc import AsyncIterator
+
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from app.services.agnes_image import AgnesImageError, image_to_image, is_configured, text_to_image
-from app.services.cover_prompt import CoverPromptRequest, CoverPromptResponse, suggest_cover_prompt
+from app.services.cover_prompt import (
+    CoverPromptRequest,
+    CoverPromptResponse,
+    stream_cover_prompt,
+    suggest_cover_prompt,
+)
 from app.services.novel_description import (
     NovelDescriptionRequest,
     NovelDescriptionResponse,
@@ -60,6 +68,15 @@ async def generate_text_to_image(body: TextToImageRequest):
 @router.post("/cover-prompt", response_model=CoverPromptResponse)
 async def generate_cover_prompt(body: CoverPromptRequest):
     return await suggest_cover_prompt(body)
+
+
+@router.post("/cover-prompt/stream")
+async def generate_cover_prompt_stream(body: CoverPromptRequest):
+    async def _iter():
+        async for line in stream_cover_prompt(body):
+            yield line
+
+    return StreamingResponse(_iter(), media_type="text/event-stream")
 
 
 @router.post("/novel-description", response_model=NovelDescriptionResponse)

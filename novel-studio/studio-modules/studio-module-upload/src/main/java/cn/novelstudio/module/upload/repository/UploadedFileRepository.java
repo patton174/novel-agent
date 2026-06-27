@@ -23,4 +23,6 @@ public interface UploadedFileRepository extends JpaRepository<UploadedFileEntity
     Page<UploadedFileEntity> findByStatusInOrderByUpdatedAtDesc(List<String> statuses, Pageable pageable);
 
     List<UploadedFileEntity> findByStatusInAndUpdatedAtBefore(List<String> statuses, Instant before);
+
+    boolean existsByStorageKeyAndOwnerId(String storageKey, Long ownerId);
 }

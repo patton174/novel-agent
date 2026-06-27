@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import type { AgentContextUsage } from '../../types/agent'
 import {
   contextRemainingPercent,
@@ -22,6 +23,7 @@ export interface ContextUsageMeterProps {
 }
 
 export function ContextUsageMeter({ usage, pending = false, className }: ContextUsageMeterProps) {
+  const { t } = useTranslation('editor')
   if (!usage && !pending) {
     return null
   }
@@ -31,7 +33,7 @@ export function ContextUsageMeter({ usage, pending = false, className }: Context
   const stroke = ringStrokeColor(used)
   const dashOffset = RING_C * (1 - used / 100)
   const label = usage ? `${Math.round(used)}%` : '…'
-  const title = usage ? contextUsageTooltipLines(usage).join('\n') : '等待上下文计量…'
+  const title = usage ? contextUsageTooltipLines(usage).join('\n') : t('agent.context.pending')
 
   return (
     <div
@@ -39,7 +41,9 @@ export function ContextUsageMeter({ usage, pending = false, className }: Context
       data-testid="context-usage-meter"
       title={title}
       aria-label={
-        usage ? `上下文已用 ${Math.round(used)}%，剩余 ${Math.round(left)}%` : '上下文计量加载中'
+        usage
+          ? t('agent.context.usedAria', { used: Math.round(used), left: Math.round(left) })
+          : t('agent.context.loading')
       }
     >
       <svg

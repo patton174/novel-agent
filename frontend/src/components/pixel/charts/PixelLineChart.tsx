@@ -1,4 +1,5 @@
 import { useId, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   Area,
   CartesianGrid,
@@ -55,7 +56,7 @@ export function PixelLineChart<T extends object>({
   xKey,
   series,
   heightClassName = PIXEL_CHART_HEIGHT,
-  emptyText = '暂无数据',
+  emptyText,
   formatX,
   formatY,
   formatYRight,
@@ -66,16 +67,18 @@ export function PixelLineChart<T extends object>({
   compactY = true,
   className,
 }: PixelLineChartProps<T>) {
+  const { t, i18n } = useTranslation('common')
+  const resolvedEmptyText = emptyText ?? t('table.empty')
   const gradientId = useId().replace(/:/g, '')
   const resolved = useMemo(() => resolvePixelChartSeries(series), [series])
   const hasRightAxis = resolved.some((s) => s.yAxisId === 'right')
   const legendVisible = showLegend ?? resolved.length > 1
 
   const defaultFormatY = (value: number) =>
-    compactY ? formatPixelChartCompactNumber(value) : value.toLocaleString('zh-CN')
+    compactY ? formatPixelChartCompactNumber(value) : value.toLocaleString(i18n.language)
 
   if (!data.length) {
-    return <div className={cn(PIXEL_CHART_EMPTY, heightClassName, className)}>{emptyText}</div>
+    return <div className={cn(PIXEL_CHART_EMPTY, heightClassName, className)}>{resolvedEmptyText}</div>
   }
 
   const tooltipFormatter: TooltipProps<number, string>['formatter'] = (value, name) => {
@@ -105,11 +108,7 @@ export function PixelLineChart<T extends object>({
                 .filter((s) => s.fill)
                 .map((s) => (
                   <linearGradient key={s.key} id={`${gradientId}-${s.key}`} x1="0" y1="0" x2="0" y2="1">
-                    <stop
-                      offset="0%"
-                      stopColor={s.color}
-                      stopOpacity={Number(pixelChartFillGradientStops.top)}
-                    />
+                    <stop offset="0%" stopColor={s.color} stopOpacity={pixelChartFillGradientStops.top} />
                     <stop offset="100%" stopColor={s.color} stopOpacity={pixelChartFillGradientStops.bottom} />
                   </linearGradient>
                 ))}

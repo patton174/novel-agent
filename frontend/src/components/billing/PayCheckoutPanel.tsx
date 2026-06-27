@@ -1,11 +1,14 @@
-import { CheckCircle2, Copy, Loader2, Receipt, Wallet } from 'lucide-react'
+import { CheckCircle2, Copy, Loader2, Receipt } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import type { PayCheckoutResult, PayMethodOption } from '@/api/billingApi'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { MKT_SURFACE_CARD_PAD } from '@/lib/marketingSubpageClasses'
+import { PayExpiresCountdown } from './PayExpiresCountdown'
 import {
   PayMethodIcon,
+  resolvePayMethodDesc,
   resolvePayMethodLabel,
   resolvePayOrderStatusLabel,
 } from './payMethodMeta'
@@ -36,7 +39,7 @@ export function PayCheckoutPanel({
 }: PayCheckoutPanelProps) {
   const { t } = useTranslation(['marketing', 'dashboard'])
   const active = enabled && Boolean(planCode || orderId)
-  const { loading, paying, checkout, method, setMethod, handlePay } = usePayCheckout({
+  const { loading, paying, checkout, method, setMethod, couponCode, setCouponCode, applyCoupon, handlePay } = usePayCheckout({
     planCode,
     orderId,
     enabled: active,
@@ -104,12 +107,6 @@ export function PayCheckoutPanel({
 
   return (
     <div className={cn(shellClass, className)}>
-      {checkout.resumed && !isPage ? (
-        <p className="mb-4 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm text-foreground">
-          {t('dashboard:billing.payResumedPending')}
-        </p>
-      ) : null}
-
       <div
         className={cn(
           'min-h-0 flex-1',
@@ -139,11 +136,6 @@ export function PayCheckoutPanel({
               <p className="mt-3 max-w-lg text-sm leading-relaxed text-muted-foreground md:text-base">
                 {t('marketing:pricing.checkout.subtitle')}
               </p>
-              {checkout.resumed ? (
-                <p className="mt-4 rounded-lg border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-foreground">
-                  {t('dashboard:billing.payResumedPending')}
-                </p>
-              ) : null}
             </div>
           ) : (
             <div className="mb-2 flex items-start gap-3">
@@ -213,6 +205,34 @@ export function PayCheckoutPanel({
                 {formatPayPrice(checkout.amountCents, checkout.currency)}
               </dd>
             </div>
+            {!paid && planCode && !orderId ? (
+              <div>
+                <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  {t('marketing:pricing.checkout.couponLabel')}
+                </dt>
+                <dd className="mt-1.5 flex flex-col gap-2 sm:flex-row">
+                  <Input
+                    value={couponCode}
+                    onChange={(e) => setCouponCode(e.target.value)}
+                    placeholder={t('marketing:pricing.checkout.couponPlaceholder')}
+                    disabled={loading || paying}
+                    className="font-mono sm:flex-1"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={applyCoupon}
+                    disabled={loading || paying || !couponCode.trim()}
+                    className="shrink-0"
+                  >
+                    {t('marketing:pricing.checkout.couponApply')}
+                  </Button>
+                </dd>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  {t('marketing:pricing.checkout.couponHint')}
+                </p>
+              </div>
+            ) : null}
             <div>
               <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 {t('marketing:pricing.checkout.statusLabel')}
@@ -230,15 +250,17 @@ export function PayCheckoutPanel({
                 </span>
               </dd>
             </div>
+            {!paid && checkout.expiresAt ? (
+              <div>
+                <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  {t('marketing:pricing.checkout.expiresLabel')}
+                </dt>
+                <dd className="mt-1">
+                  <PayExpiresCountdown expiresAt={checkout.expiresAt} large={isPage} />
+                </dd>
+              </div>
+            ) : null}
           </dl>
-
-          {isPage && onCancel ? (
-            <div className="mt-10 hidden lg:block">
-              <Button variant="ghost" className="px-0 text-muted-foreground" onClick={onCancel}>
-                {t('dashboard:billing.payCancel')}
-              </Button>
-            </div>
-          ) : null}
         </section>
 
         {/* Right: payment */}
@@ -249,27 +271,13 @@ export function PayCheckoutPanel({
           )}
         >
           <div className={cn(isPage && 'mb-8 max-w-xl')}>
-            <div className="flex items-start gap-3">
-              {isPage ? (
-                <div className="flex size-11 items-center justify-center rounded-xl border-2 border-foreground/15 bg-muted/40">
-                  <Wallet className="size-5 text-primary" />
-                </div>
-              ) : null}
-              <div>
-                <h2
-                  className={cn(
-                    'font-bold text-foreground',
-                    isPage
-                      ? 'font-mono text-sm uppercase tracking-wide'
-                      : 'font-mono text-sm uppercase tracking-wide',
-                  )}
-                >
-                  {t('marketing:pricing.checkout.paymentInfo')}
-                </h2>
-                <p className={cn('mt-1 text-muted-foreground', isPage ? 'text-sm md:text-base' : 'text-sm')}>
-                  {t('marketing:pricing.checkout.selectMethod')}
-                </p>
-              </div>
+            <div>
+              <h2 className="font-mono text-sm font-bold uppercase tracking-wide text-foreground">
+                {t('marketing:pricing.checkout.paymentInfo')}
+              </h2>
+              <p className={cn('mt-1 text-muted-foreground', isPage ? 'text-sm md:text-base' : 'text-sm')}>
+                {t('marketing:pricing.checkout.selectMethod')}
+              </p>
             </div>
           </div>
 
@@ -287,6 +295,7 @@ export function PayCheckoutPanel({
                   {checkout.payments.map((p: PayMethodOption) => {
                     const selected = method === p.method
                     const label = resolvePayMethodLabel(p.method, p.name, t)
+                    const desc = resolvePayMethodDesc(p.desc, t)
                     return (
                       <button
                         key={p.method}
@@ -310,9 +319,9 @@ export function PayCheckoutPanel({
                           >
                             {label}
                           </span>
-                          {p.desc ? (
+                          {desc ? (
                             <span className="mt-0.5 block text-xs text-muted-foreground md:text-sm">
-                              {p.desc}
+                              {desc}
                             </span>
                           ) : null}
                         </span>

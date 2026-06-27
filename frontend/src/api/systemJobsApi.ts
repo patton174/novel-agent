@@ -1,4 +1,5 @@
 import type { TFunction } from 'i18next'
+import i18n from '@/i18n'
 import { secureFetch } from '@/security/secureFetch'
 import { parseResultResponse, readApiErrorMessage } from '@/utils/resultApi'
 
@@ -49,10 +50,46 @@ export interface BatchJobHistoryEntry {
   detail?: string | null
 }
 
+export type JobScheduleType = 'fixed_delay' | 'cron'
+
+export interface ScheduledJobConfig {
+  jobId: string
+  enabled: boolean
+  scheduleType: JobScheduleType
+  fixedDelayMs: number
+  cronExpression: string | null
+  initialDelayMs: number
+  updatedBy?: string | null
+  updatedAt?: string | null
+}
+
+export interface UpdateJobConfigPayload {
+  enabled: boolean
+  scheduleType: JobScheduleType
+  fixedDelayMs: number
+  cronExpression: string | null
+  initialDelayMs: number
+}
+
+export interface ManualJobRunResponse {
+  runId: number | string
+}
+
+export interface ScheduledJobRun {
+  id: number
+  jobId: string
+  triggerType: 'scheduled' | 'manual' | string
+  status: 'running' | 'success' | 'failed' | string
+  startedAt: string
+  finishedAt?: string | null
+  errorMessage?: string | null
+  instanceId?: string | null
+}
+
 async function parseResponse<T>(res: Response): Promise<T> {
   if (!res.ok) {
     if (res.status === 403) {
-      throw new Error('无管理权限')
+      throw new Error(i18n.t('admin:errors.noAdminPermission'))
     }
     throw new Error(await readApiErrorMessage(res))
   }
@@ -86,6 +123,60 @@ export async function dispatchBatchJob(payload: BatchDispatchPayload): Promise<v
 export async function fetchBatchJobHistory(limit = 20): Promise<BatchJobHistoryEntry[]> {
   const res = await secureFetch(`/api/worker/crm/jobs/history?limit=${limit}`)
   const list = await parseResponse<BatchJobHistoryEntry[]>(res)
+  return Array.isArray(list) ? list : []
+}
+
+function normalizeJobConfig(raw: ScheduledJobConfig): ScheduledJobConfig {
+  const scheduleType: JobScheduleType =
+    raw.scheduleType === 'cron' ? 'cron' : 'fixed_delay'
+  return {
+    jobId: raw.jobId,
+    enabled: Boolean(raw.enabled),
+    scheduleType,
+    fixedDelayMs: Number(raw.fixedDelayMs) || 0,
+    cronExpression: raw.cronExpression ?? null,
+    initialDelayMs: Number(raw.initialDelayMs) || 0,
+    updatedBy: raw.updatedBy ?? null,
+    updatedAt: raw.updatedAt ?? null,
+  }
+}
+
+export async function getJobConfig(jobId: string): Promise<ScheduledJobConfig> {
+  const res = await secureFetch(`/api/worker/crm/jobs/${encodeURIComponent(jobId)}/config`)
+  return normalizeJobConfig(await parseResponse<ScheduledJobConfig>(res))
+}
+
+export async function updateJobConfig(
+  jobId: string,
+  payload: UpdateJobConfigPayload,
+): Promise<ScheduledJobConfig> {
+  const res = await secureFetch(`/api/worker/crm/jobs/${encodeURIComponent(jobId)}/config`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  return normalizeJobConfig(await parseResponse<ScheduledJobConfig>(res))
+}
+
+export async function reloadJobs(): Promise<void> {
+  const res = await secureFetch('/api/worker/crm/jobs/reload', {
+    method: 'POST',
+  })
+  await parseResponse<void>(res)
+}
+
+export async function runJob(jobId: string): Promise<ManualJobRunResponse> {
+  const res = await secureFetch(`/api/worker/crm/jobs/${encodeURIComponent(jobId)}/run`, {
+    method: 'POST',
+  })
+  return parseResponse<ManualJobRunResponse>(res)
+}
+
+export async function getJobRuns(jobId: string, limit = 20): Promise<ScheduledJobRun[]> {
+  const res = await secureFetch(
+    `/api/worker/crm/jobs/${encodeURIComponent(jobId)}/runs?limit=${limit}`,
+  )
+  const list = await parseResponse<ScheduledJobRun[]>(res)
   return Array.isArray(list) ? list : []
 }
 

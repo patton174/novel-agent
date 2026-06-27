@@ -1,4 +1,5 @@
 import { useId } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { cn } from '@/lib/utils'
 import { PIXEL_CHART_EMPTY, PIXEL_CHART_HEIGHT, PIXEL_CHART_PLOT } from '../pixelTokens'
@@ -27,14 +28,16 @@ export function PixelAreaChart({
   xKey,
   valueKey,
   heightClassName = PIXEL_CHART_HEIGHT,
-  emptyText = '暂无数据',
+  emptyText,
   formatValue,
   stroke = pixelChartNeon.blue,
   className,
 }: PixelAreaChartProps) {
+  const { t } = useTranslation('common')
+  const resolvedEmptyText = emptyText ?? t('table.empty')
   const fillId = `pixelAreaFill-${useId().replace(/:/g, '')}`
   if (!data.length) {
-    return <div className={cn(PIXEL_CHART_EMPTY, heightClassName, className)}>{emptyText}</div>
+    return <div className={cn(PIXEL_CHART_EMPTY, heightClassName, className)}>{resolvedEmptyText}</div>
   }
   return (
     <div className={cn(PIXEL_CHART_PLOT, className)}>
@@ -43,7 +46,7 @@ export function PixelAreaChart({
           <AreaChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id={fillId} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={stroke} stopOpacity={Number(pixelChartFillGradientStops.top)} />
+                <stop offset="0%" stopColor={stroke} stopOpacity={pixelChartFillGradientStops.top} />
                 <stop offset="100%" stopColor={stroke} stopOpacity={pixelChartFillGradientStops.bottom} />
               </linearGradient>
             </defs>

@@ -23,7 +23,7 @@ public class CrmCatalogBiz extends BaseBiz {
     private final CatalogService catalogService;
 
     public Result<Page<CatalogNovelDTO>> pageNovels(int pageCurrent, int pageSize) {
-        return ok(toPage(catalogService.pageCatalog(pageCurrent, pageSize), pageCurrent, pageSize));
+        return ok(toPage(catalogService.pagePublicCatalog(pageCurrent, pageSize), pageCurrent, pageSize));
     }
 
     public Result<CatalogNovelDTO> getNovel(String catalogNovelId) {
@@ -55,8 +55,8 @@ public class CrmCatalogBiz extends BaseBiz {
         return ok(null);
     }
 
-    public Result<List<CatalogNovelProgressDTO>> listIncomplete(int limit) {
-        return ok(catalogService.listIncomplete(limit));
+    public Result<List<CatalogNovelProgressDTO>> listMissingCover(int limit) {
+        return ok(catalogService.listMissingCover(limit));
     }
 
     public Result<CatalogNovelDTO> updateNovel(String catalogNovelId, UpdateCatalogNovelRequest request) {

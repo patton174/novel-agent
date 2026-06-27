@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { CheckCircle2, Loader2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import i18n from '@/i18n'
 import { postDanmaku } from '@/api/billingApi'
 import { Button } from '@/components/ui/button'
 import { APP_BTN_FULL_MD } from '@/lib/appButtonTokens'
@@ -8,6 +9,11 @@ import { cn } from '@/lib/utils'
 import { appToast } from '@/stores/appToastStore'
 import { useUserStore } from '@/stores/userStore'
 
+function isFeedbackAlreadyReviewed(message: string): boolean {
+  return (['zh', 'en'] as const).some((lng) =>
+    message.includes(i18n.t('dashboard:settings.feedbackAlreadyReviewedError', { lng })),
+  )
+}
 const MIN_LEN = 2
 const MAX_LEN = 200
 const STORAGE_PREFIX = 'na:feedback:submitted:'
@@ -55,7 +61,7 @@ export function SettingsFeedbackCard() {
     } catch (err) {
       const msg = err instanceof Error ? err.message : t('dashboard:settings.feedbackError')
       appToast.error(msg)
-      if (msg.includes('已评价')) {
+      if (isFeedbackAlreadyReviewed(msg)) {
         writeSubmitted(userId)
         setSubmitted(true)
       }

@@ -1,4 +1,5 @@
 import { useId } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 
 export interface ProAreaChartProps {
@@ -10,12 +11,14 @@ export interface ProAreaChartProps {
   formatValue?: (v: number) => string
 }
 
-export function ProAreaChart({ data, xKey, valueKey, height = 220, emptyText = '暂无数据', formatValue }: ProAreaChartProps) {
+export function ProAreaChart({ data, xKey, valueKey, height = 220, emptyText, formatValue }: ProAreaChartProps) {
+  const { t } = useTranslation('common')
+  const resolvedEmptyText = emptyText ?? t('table.empty')
   const fillId = `proAreaFill-${useId()}`
   if (!data.length) {
     return (
       <div className="flex items-center justify-center text-sm text-muted-foreground" style={{ height }}>
-        {emptyText}
+        {resolvedEmptyText}
       </div>
     )
   }

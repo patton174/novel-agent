@@ -23,6 +23,12 @@ public class SiteDanmakuEntity {
     @Column(nullable = false, length = 120)
     private String message;
 
+    @Column(name = "message_en", length = 120)
+    private String messageEn;
+
+    @Column(name = "message_en_updated_at")
+    private Instant messageEnUpdatedAt;
+
     @Column(name = "author_name", nullable = false, length = 64)
     private String authorName;
 

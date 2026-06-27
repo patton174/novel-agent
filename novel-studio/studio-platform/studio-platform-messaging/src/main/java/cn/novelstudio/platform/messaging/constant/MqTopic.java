@@ -17,18 +17,22 @@ public enum MqTopic {
 
     AGENT_RUN_EVENTS("agent.run.exchange", "run.events", "agent.run.events.queue"),
 
-    CRAWL_DISPATCH("agent.crawl.exchange", "crawl.dispatch", "agent.crawl.dispatch.queue"),
-
-    // 爬取书库章节向量索引
+    // 书库章节向量索引
     CATALOG_INDEX("agent.catalog-index.exchange", "agent.catalog-index.persist", "agent.catalog-index.queue"),
 
     USAGE_EVENT("agent.usage.exchange", "usage.report", "agent.usage.queue"),
+
+    // 知识图谱回填
+    KG_BACKFILL("agent.kg.exchange", "kg.backfill", "agent.kg.backfill.queue"),
 
     // 文件上传异步解析
     FILE_PARSE("agent.file.parse.exchange", "file.parse", "agent.file.parse.queue"),
 
     // 平台批量任务（定时/异步分片调度）
     BATCH_JOB("studio.batch.exchange", "batch.dispatch", "studio.batch.queue"),
+
+    // 书库书 RAG 索引（私人书）
+    LIBRARY_INDEX("agent.library-index.exchange", "library.index", "agent.library-index.queue"),
 
     ;
 

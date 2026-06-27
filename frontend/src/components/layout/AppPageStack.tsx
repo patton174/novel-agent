@@ -130,21 +130,24 @@ export const APP_CHART_EMPTY =
 export function AppChartCard({
   title,
   description,
+  action,
   children,
   className,
 }: {
   title: string
   description?: string
+  action?: ReactNode
   children: ReactNode
   className?: string
 }) {
   return (
     <div className={cn('flex flex-col gap-4 border-2 border-black bg-white p-6 shadow-soft', className)}>
-      <div className="flex items-start justify-between gap-3 border-b border-black/20 pb-3">
-        <div>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-black/20 pb-3">
+        <div className="min-w-0">
           <p className="font-mono text-xs font-bold uppercase tracking-widest text-primary">{title}</p>
           {description ? <p className="mt-1 font-mono text-sm text-muted-foreground">{description}</p> : null}
         </div>
+        {action ? <div className="shrink-0">{action}</div> : null}
       </div>
       {children}
     </div>

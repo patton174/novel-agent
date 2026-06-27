@@ -5,20 +5,18 @@ import {
   Loader2,
   Pencil,
   RefreshCw,
-  Search,
   Trash2,
 } from 'lucide-react'
 import {
   deleteCatalogNovel,
   fetchCatalogNovels,
-  fetchIncompleteCatalog,
   type CatalogNovel,
-  type CatalogNovelProgress,
 } from '@/api/catalogAdminApi'
+import { uploadPublicCatalogFile } from '@/api/uploadAdminApi'
 import { CatalogOverviewDialog } from '@/components/admin/CatalogOverviewDialog'
 import { CatalogReaderModal } from '@/components/admin/CatalogReaderModal'
 import { AdminResponsivePixelTable } from '@/components/admin/AdminResponsivePixelTable'
-import { AdminTextInput } from '@/components/admin/AdminFormControls'
+import { AdminSearchInput, AdminToolbarButton, AdminToolbarGroup } from '@/components/admin/AdminFormControls'
 import {
   PixelCellStack,
   PIXEL_MOBILE_CARD,
@@ -39,17 +37,13 @@ import { appToast } from '@/stores/appToastStore'
 
 const PAGE_SIZE = 20
 
-interface CatalogAdminPanelProps {
-  onOpenJob?: (jobId: string) => void
-}
-
-export function CatalogAdminPanel({ onOpenJob }: CatalogAdminPanelProps) {
+export function CatalogAdminPanel() {
   const { t } = useTranslation(['admin'])
   const [page, setPage] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
   const [novels, setNovels] = useState<CatalogNovel[]>([])
-  const [incomplete, setIncomplete] = useState<CatalogNovelProgress[]>([])
   const [loading, setLoading] = useState(true)
+  const [uploading, setUploading] = useState(false)
   const [actingId, setActingId] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [selectedNovel, setSelectedNovel] = useState<CatalogNovel | null>(null)
@@ -58,13 +52,9 @@ export function CatalogAdminPanel({ onOpenJob }: CatalogAdminPanelProps) {
 
   const load = useCallback(async () => {
     try {
-      const [catPage, inc] = await Promise.all([
-        fetchCatalogNovels(page, PAGE_SIZE),
-        fetchIncompleteCatalog(50).catch(() => []),
-      ])
+      const catPage = await fetchCatalogNovels(page, PAGE_SIZE)
       setNovels(catPage.list)
       setTotalCount(catPage.totalCount)
-      setIncomplete(inc)
     } catch (err) {
       appToast.error(err instanceof Error ? err.message : t('admin:catalog.loadFail'))
     } finally {
@@ -205,6 +195,23 @@ export function CatalogAdminPanel({ onOpenJob }: CatalogAdminPanelProps) {
     ]
   }, [actingId, handleDeleteNovel, openNovel, openReader, t])
 
+  const handleUpload = async (file: File) => {
+    setUploading(true)
+    try {
+      const uploaded = await uploadPublicCatalogFile(file)
+      appToast.success(t('admin:catalog.uploadStarted'))
+      if (uploaded.status === 'ready') {
+        void load()
+      } else {
+        window.setTimeout(() => void load(), 5000)
+      }
+    } catch (err) {
+      appToast.error(err instanceof Error ? err.message : t('admin:errors.uploadFail'))
+    } finally {
+      setUploading(false)
+    }
+  }
+
   return (
     <>
     <AppShellCard>
@@ -212,48 +219,36 @@ export function CatalogAdminPanel({ onOpenJob }: CatalogAdminPanelProps) {
         title={t('admin:catalog.title')}
         description={t('admin:catalog.desc', { count: totalCount })}
         action={
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="relative">
-              <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-              <AdminTextInput
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder={t('admin:catalog.searchPlaceholder')}
-                className="w-44 pl-8 sm:w-56"
-              />
-            </div>
-            <PixelTableActionButton onClick={() => void load()}>
+          <AdminToolbarGroup>
+            <AdminSearchInput
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={t('admin:catalog.searchPlaceholder')}
+              className="w-44 sm:w-56"
+            />
+            <AdminToolbarButton disabled={uploading} onClick={() => document.getElementById('catalog-admin-upload')?.click()}>
+              {uploading ? <Loader2 className="size-4 animate-spin" /> : null}
+              {t('admin:catalog.uploadBtn')}
+            </AdminToolbarButton>
+            <input
+              id="catalog-admin-upload"
+              type="file"
+              className="hidden"
+              accept=".txt,.md,.epub,.pdf,.docx"
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                e.target.value = ''
+                if (file) void handleUpload(file)
+              }}
+            />
+            <AdminToolbarButton onClick={() => void load()}>
               <RefreshCw className="size-4" />
               {t('admin:catalog.refresh')}
-            </PixelTableActionButton>
-          </div>
+            </AdminToolbarButton>
+          </AdminToolbarGroup>
         }
       />
       <AppShellCardBody className="space-y-4">
-      {incomplete.length > 0 ? (
-        <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-3">
-          <p className="mb-2 text-sm font-medium text-amber-700 dark:text-amber-400">
-            {t('admin:catalog.incomplete', { count: incomplete.length })}
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {incomplete.slice(0, 12).map((n) => (
-              <button
-                key={n.id ?? n.latestJobId ?? n.title}
-                type="button"
-                onClick={() => {
-                  if (n.id) {
-                    openNovel(n)
-                  }
-                }}
-                className="rounded-lg border border-amber-500/20 bg-background/60 px-2.5 py-1 text-xs transition-colors hover:bg-muted/50"
-              >
-                {n.title} — {n.chaptersDone ?? 0}/{n.chaptersExpected ?? '?'} {t('admin:catalog.chapterUnit')}
-              </button>
-            ))}
-          </div>
-        </div>
-      ) : null}
-
       {loading ? (
         <div className="space-y-3">
           {Array.from({ length: 4 }).map((_, i) => (
@@ -347,7 +342,6 @@ export function CatalogAdminPanel({ onOpenJob }: CatalogAdminPanelProps) {
           setSelectedNovel(null)
           void load()
         }}
-        onOpenJob={onOpenJob}
       />
 
       <CatalogReaderModal

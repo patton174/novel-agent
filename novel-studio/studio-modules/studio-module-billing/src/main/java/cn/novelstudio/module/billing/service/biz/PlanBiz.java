@@ -70,7 +70,9 @@ public class PlanBiz extends BaseBiz {
             .toList();
         String priceLabel = plan.getPriceCents() == null
             ? messages.get("plan.price.custom")
-            : (plan.getPriceCents() == 0 ? messages.get("plan.price.free") : "¥" + (plan.getPriceCents() / 100));
+            : (plan.getPriceCents() == 0
+                ? messages.get("plan.price.free")
+                : messages.get("plan.price.amount", plan.getPriceCents() / 100));
         String periodLabel = plan.getPriceCents() != null && plan.getPriceCents() > 0
             ? messages.get("plan.price.per_month")
             : null;
@@ -82,8 +84,8 @@ public class PlanBiz extends BaseBiz {
         };
         return new PlanPublicResp(
             plan.getCode(),
-            planLabel(plan.getCode(), "name", plan.getName()),
-            planLabel(plan.getCode(), "desc", plan.getDescription()),
+            localizedPlanName(plan),
+            localizedPlanDescription(plan),
             plan.getPriceCents(),
             plan.getCurrency(),
             priceLabel,
@@ -95,6 +97,18 @@ public class PlanBiz extends BaseBiz {
             cta,
             paymentSkuId(plan)
         );
+    }
+
+    public String localizedPlanName(ProductPlanEntity plan) {
+        return planLabel(plan.getCode(), "name", plan.getName());
+    }
+
+    public String localizedPlanName(String planCode, String dbFallback) {
+        return planLabel(planCode, "name", dbFallback);
+    }
+
+    public String localizedPlanDescription(ProductPlanEntity plan) {
+        return planLabel(plan.getCode(), "desc", plan.getDescription());
     }
 
     private String paymentSkuId(ProductPlanEntity plan) {

@@ -9,6 +9,7 @@ import type {
   ReindexJobStatus,
   Volume,
 } from '../types/novel'
+import i18n from '@/i18n'
 import { DIRECT_PYTHON, PYTHON_API_BASE } from '../config/runtime'
 import { getAuthHeaders, getUserId } from './auth'
 import { secureFetch } from '../security/secureFetch'
@@ -95,7 +96,12 @@ async function consumeAgentSseResponse(
 ): Promise<void> {
   if (!response.ok || !response.body) {
     if (response.status === 401) {
-      throw new Error('未登录或登录已过期，请重新登录')
+      throw new Error(i18n.t('common:errors.auth.sessionExpired'))
+    }
+    if (response.status === 429) {
+      const { appToast } = await import('../stores/appToastStore')
+      appToast.error(i18n.t('common:errors.rateLimited'))
+      throw new Error(i18n.t('common:errors.rateLimited'))
     }
     await throwOnErrorResponse(response)
     throw new Error(`Agent stream error: ${response.status}`)
@@ -437,10 +443,30 @@ export const api = {
   getKnowledgeGraph(novelId: string) {
     return this.request<{
       enabled?: boolean
-      nodes?: Array<{ id: string; name: string; type?: string }>
+      status?: string
+      nodes?: Array<{ id: string; name: string; type?: string; aliases?: string }>
       edges?: Array<{ source: string; target: string; rel?: string }>
+      errorCount?: number
       note?: string
     }>(`/content/auth/novels/${novelId}/knowledge-graph`)
+  },
+
+  backfillKnowledgeGraph(novelId: string) {
+    return this.request<{ status: string }>(`/content/auth/novels/${novelId}/knowledge-graph/backfill`, {
+      method: 'POST',
+    })
+  },
+
+  getKnowledgeGraphProgress(novelId: string) {
+    return this.request<{ status: string; total: number; done: number; failed: number }>(
+      `/content/auth/novels/${novelId}/knowledge-graph/progress`,
+    )
+  },
+
+  getKnowledgeGraphErrors(novelId: string) {
+    return this.request<Array<{ chapterId?: string | null; reason: string; createdAt: number }>>(
+      `/content/auth/novels/${novelId}/knowledge-graph/errors`,
+    )
   },
 
   listNovelSessions(novelId: string, limit = 50) {

@@ -1,9 +1,10 @@
 import type { AgentChoiceOption, AgentEventEnvelope, AgentStepState, AgentTimelineBlock } from '../types/agent'
+import i18n from '@/i18n'
 import {
   isHiddenTimelineToolName,
   orchestrationCompletedTitle,
   plannedToolCallsFromPayload,
-  PLANNING_GENERIC_TITLES,
+  isPlanningGenericTitle,
   planningActiveLabel,
   planningPrepTitle,
 } from './agentOrchestration'
@@ -17,7 +18,7 @@ import {
   timelineHasExplicitDelivery,
 } from './messageSegment'
 
-export { PLANNING_GENERIC_TITLES } from './agentOrchestration'
+export { isPlanningGenericTitle } from './agentOrchestration'
 
 function planningSegmentEnd(timeline: AgentTimelineBlock[], planStepId: string): number {
   if (!planStepId) {
@@ -93,7 +94,7 @@ export function orchestrationOverviewFromTimeline(
       continue
     }
     const title = block.title?.trim() ?? ''
-    if (title && !PLANNING_GENERIC_TITLES.has(title)) {
+    if (title && !isPlanningGenericTitle(title)) {
       return title
     }
   }
@@ -977,7 +978,7 @@ export function formatPlanningHeadline(
   streamFinished: boolean,
 ): string {
   const raw = transition.title?.trim() ?? ''
-  const generic = PLANNING_GENERIC_TITLES.has(raw)
+  const generic = isPlanningGenericTitle(raw)
   const active =
     transition.status === 'active' && streamLive && !streamFinished
   if (active) {
@@ -1002,21 +1003,17 @@ function headlineForStartedStep(step: AgentStepState): string | null {
   if (step.status !== 'started') {
     return null
   }
+  const title = step.title?.trim()
+  if (title && !isPlanningGenericTitle(title)) {
+    return title.endsWith('…') ? title : `${title}…`
+  }
   const tool = step.toolName ?? ''
-  if (tool === 'ReadMemory' || tool === 'ReadChapter' || tool === 'SearchKnowledge') {
-    const title = step.title?.trim()
-    if (title && !PLANNING_GENERIC_TITLES.has(title)) {
-      return title.endsWith('…') ? title : `${title}…`
-    }
-    return planningActiveLabel(tool) ?? planningActiveLabel('Read') ?? '读取中…'
+  if (tool === 'ReadMemory' || tool === 'ReadChapter' || tool === 'SearchKnowledge' || tool === 'memory_read') {
+    return planningActiveLabel(tool) ?? planningActiveLabel('Read') ?? i18n.t('editor:agent.orchestration.active.Read')
   }
   const activeLabel = tool ? planningActiveLabel(tool) : undefined
   if (activeLabel) {
     return activeLabel
-  }
-  const title = step.title?.trim()
-  if (title && !PLANNING_GENERIC_TITLES.has(title)) {
-    return title.endsWith('…') ? title : `${title}…`
   }
   return null
 }
@@ -1425,7 +1422,7 @@ export function deriveOrchestrationHeadline(
   if (!streaming) {
     if (status === 'done' && !toolsStillRunning) {
       const overview = completedOverview?.trim()
-      if (overview && !PLANNING_GENERIC_TITLES.has(overview)) {
+      if (overview && !isPlanningGenericTitle(overview)) {
         return `执行完成 · ${overview}`
       }
       return '执行完成'
@@ -1675,7 +1672,7 @@ function buildSyntheticExecutionTransition(
   let title = '后续步骤'
   if (toolBlock && stepStates) {
     const step = findStepState(stepStates, toolBlock.stepId)
-    if (step?.title?.trim() && !PLANNING_GENERIC_TITLES.has(step.title.trim())) {
+    if (step?.title?.trim() && !isPlanningGenericTitle(step.title.trim())) {
       title = step.title.trim()
     } else if (step?.toolName && !isHiddenUiTool(step.toolName)) {
       title = planningTitleForToolName(step.toolName)

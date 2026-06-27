@@ -51,6 +51,8 @@ public class RunColdFailoverContextBuilder {
             String lastReason = text(ctx, "last_reason", "");
             Map<String, Object> contextPatch = mergeContextPatch(ctx.path("context_patch"), checkpoint);
             Map<String, Object> selectedChoice = readMap(ctx.path("selected_choice"));
+            List<Map<String, Object>> referencedBooks = readChapterList(ctx.path("referenced_books"));
+            Map<String, Object> modelConfig = readMap(ctx.path("model_config"));
 
             return new AgentRunContextDto(
                 runId,
@@ -70,7 +72,9 @@ public class RunColdFailoverContextBuilder {
                 lastTool,
                 lastReason,
                 contextPatch,
-                selectedChoice
+                selectedChoice,
+                referencedBooks,
+                modelConfig.isEmpty() ? null : modelConfig
             );
         } catch (Exception ignored) {
             return null;

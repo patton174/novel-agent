@@ -1,4 +1,5 @@
 import { type ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
@@ -36,6 +37,8 @@ export interface ProTableProps<T> {
   className?: string
   /** 管理后台表格：更小行高与轻边框 */
   dense?: boolean
+  /** 嵌入 AdminDataPanel 时去掉外边框，避免嵌套双边框 */
+  embedded?: boolean
   /** pixel：清爽多彩管理台皮肤；pro：默认硬边表格 */
   skin?: 'pro' | 'pixel'
 }
@@ -48,23 +51,28 @@ export function ProTable<T>({
   rowKey,
   loading,
   skeletonRows = 5,
-  emptyText = '暂无数据',
+  emptyText,
   onRowClick,
   className,
   dense = false,
+  embedded = false,
   skin = 'pro',
 }: ProTableProps<T>) {
+  const { t } = useTranslation('common')
+  const resolvedEmptyText = emptyText ?? t('table.empty')
   const isPixel = skin === 'pixel'
   const getKey = (row: T, i: number) =>
     typeof rowKey === 'function' ? rowKey(row) : String(row[rowKey as keyof T] ?? i)
 
-  const wrapClass = isPixel
-    ? dense
-      ? PIXEL_TABLE_COMPACT_WRAP
-      : PIXEL_TABLE_WRAP
-    : dense
-      ? 'rounded-lg border border-border'
-      : 'border-2 border-black'
+  const wrapClass = embedded
+    ? 'w-full overflow-x-auto bg-transparent'
+    : isPixel
+      ? dense
+        ? PIXEL_TABLE_COMPACT_WRAP
+        : PIXEL_TABLE_WRAP
+      : dense
+        ? 'rounded-lg border border-border'
+        : 'border-2 border-black'
 
   const headRowClass = isPixel
     ? dense
@@ -117,7 +125,11 @@ export function ProTable<T>({
       : 'py-14 font-mono text-sm'
 
   return (
-    <div className={cn('w-full overflow-x-auto bg-card', wrapClass, className)}>
+    <div
+      className={cn('w-full overflow-x-auto bg-card', wrapClass, className)}
+      aria-busy={loading || undefined}
+      aria-label={loading ? t('a11y.loadingTable') : undefined}
+    >
       <Table>
         <TableHeader>
           <TableRow className={cn('hover:bg-transparent', headRowClass)}>
@@ -148,7 +160,7 @@ export function ProTable<T>({
                 colSpan={columns.length}
                 className={cn('text-center text-muted-foreground', emptyCellClass)}
               >
-                {emptyText}
+                {resolvedEmptyText}
               </TableCell>
             </TableRow>
           ) : (

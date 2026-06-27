@@ -9,7 +9,7 @@ import {
 } from '@/lib/appToastClasses'
 
 export function AppToastHost() {
-  const { t } = useTranslation(['common'])
+  const { t } = useTranslation('common')
   const items = useAppToastStore((s) => s.items)
   const dismiss = useAppToastStore((s) => s.dismiss)
 
@@ -22,7 +22,12 @@ export function AppToastHost() {
   if (items.length === 0) return null
 
   return (
-    <div className={APP_TOAST_HOST} aria-live="polite" aria-relevant="additions">
+    <div
+      className={APP_TOAST_HOST}
+      aria-live="polite"
+      aria-relevant="additions"
+      aria-label={t('a11y.toastNotifications')}
+    >
       {items.map((item) => (
         <div key={item.id} className={appToastCardClass(item.kind)} role="status">
           <span className={appToastKindTagClass(item.kind)}>{KIND_LABEL[item.kind]}</span>
@@ -30,7 +35,7 @@ export function AppToastHost() {
           <button
             type="button"
             className={APP_TOAST_DISMISS}
-            aria-label="关闭"
+            aria-label={t('a11y.close')}
             onClick={() => dismiss(item.id)}
           >
             ×

@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import i18n from '@/i18n'
 import { useEffect, useMemo, useState } from 'react'
 import { ArrowRight, Shield } from 'lucide-react'
 import { fetchUserPage } from '@/api/adminApi'
@@ -26,6 +27,7 @@ const ROLE_LABEL: Record<UserRole, 'admin:users.roleUser' | 'admin:users.roleVip
 
 export default function UserRolesPage() {
   const { t } = useTranslation(['admin'])
+  const dateLocale = i18n.language === 'zh' ? 'zh-CN' : 'en-US'
   useMarkRouteSeen()
   const [counts, setCounts] = useState<Partial<Record<UserRole, number>> | null>(null)
   const [totalUsers, setTotalUsers] = useState<number | null>(null)
@@ -101,7 +103,7 @@ export default function UserRolesPage() {
                   <Skeleton className="h-7 w-20 rounded-md" />
                 ) : (
                   <p className="font-mono text-lg font-bold tabular-nums text-foreground">
-                    {(counts[role] ?? 0).toLocaleString('zh-CN')}
+                    {(counts[role] ?? 0).toLocaleString(dateLocale)}
                     <span className="ml-1 text-xs font-normal text-muted-foreground">{t('admin:roles.userCount')}</span>
                   </p>
                 )}

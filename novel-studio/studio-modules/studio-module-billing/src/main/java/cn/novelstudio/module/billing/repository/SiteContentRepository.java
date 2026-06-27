@@ -12,4 +12,6 @@ public interface SiteContentRepository extends JpaRepository<SiteContentEntity, 
     Optional<SiteContentEntity> findByIdContentKeyAndIdLocale(String contentKey, String locale);
 
     List<SiteContentEntity> findAllByOrderByIdContentKeyAscIdLocaleAsc();
+
+    List<SiteContentEntity> findAllByIdLocaleOrderByUpdatedAtAsc(String locale);
 }

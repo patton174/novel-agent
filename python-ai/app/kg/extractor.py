@@ -74,9 +74,27 @@ async def extract_entities_relations(chapter_text: str) -> dict[str, list[dict[s
     text = (chapter_text or "").strip()
     if not text:
         return {"entities": [], "relations": []}
-    raw = await generate_text(
-        _PROMPT.format(text=text[:8000]),
-        system_message=_SYSTEM,
-        temperature=0.1,
-    )
-    return parse_extraction_json(raw)
+    blocks = _split_chunks(text, 8000, 1000)
+    block_results = []
+    for blk in blocks:
+        raw = await generate_text(
+            _PROMPT.format(text=blk),
+            system_message=_SYSTEM,
+            temperature=0.1,
+        )
+        block_results.append(parse_extraction_json(raw))
+    from app.kg.normalize import merge_extraction
+
+    return merge_extraction(block_results)
+
+
+def _split_chunks(text: str, size: int, overlap: int) -> list[str]:
+    if len(text) <= size:
+        return [text]
+    chunks = []
+    step = size - overlap
+    i = 0
+    while i < len(text):
+        chunks.append(text[i : i + size])
+        i += step
+    return chunks

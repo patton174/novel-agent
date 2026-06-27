@@ -74,7 +74,7 @@ public class BatchJobListener {
             envelope.batchId(),
             envelope.jobType(),
             itemCount,
-            "no handler"
+            "batch.no_handler"
         ));
     }
 }

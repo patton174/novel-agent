@@ -53,6 +53,14 @@ public final class ContentExceptions {
         return ValidationException.keyed(code, messageKey, args);
     }
 
+    public static ValidationException memory(String messageKey, Object... args) {
+        return ValidationException.keyed(messageKey, args);
+    }
+
+    public static NotFoundException memoryNotFound(Object memoryId) {
+        return NotFoundException.keyed("memory.not_found", memoryId);
+    }
+
     private static NotFoundException keyedNotFound(ResultCode code) {
         return NotFoundException.keyed(code, code.getMessageKey());
     }

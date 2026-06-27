@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { FileText } from 'lucide-react'
 
 import { AgentMarkdown } from '../agent/AgentMarkdown'
@@ -156,8 +157,10 @@ export function MemoryTreeView({
   flattenScopeRoot = false,
   emptyContentTitle = '',
   emptyContentDescription = '',
-  subMenuAriaLabel = 'Sub entries',
+  subMenuAriaLabel,
 }: MemoryTreeViewProps) {
+  const { t } = useTranslation(['editor'])
+  const resolvedSubMenuAria = subMenuAriaLabel ?? t('editor:memory.subMenuAria')
   const sorted = useMemo(
     () => [...roots].sort((a, b) => a.sort_order - b.sort_order),
     [roots],
@@ -196,7 +199,7 @@ export function MemoryTreeView({
           nodesById={nodesById}
           emptyContentTitle={emptyContentTitle || emptyLabel}
           emptyContentDescription={emptyContentDescription || emptyLabel}
-          subMenuAriaLabel={subMenuAriaLabel}
+          subMenuAriaLabel={resolvedSubMenuAria}
         />
       </div>
     )

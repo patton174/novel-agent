@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import i18n from '@/i18n'
 import { deleteSessions, listSessionsByNovel } from '../utils/chatSessionStore'
 import { api } from '../utils/api'
 import type { Chapter, ChapterSummary, CreateNovelPayload, Novel, Volume } from '../types/novel'
@@ -111,7 +112,7 @@ export const useNovelStore = create<NovelStoreState>((set, get) => ({
   deleteNovel: async (novelId: string) => {
     const result = await api.deleteNovel(novelId)
     if (result && result.ok === false) {
-      throw new Error('delete novel failed')
+      throw new Error(i18n.t('dashboard:novels.deleteFail'))
     }
     const sessionIds = listSessionsByNovel(novelId).map((s) => s.id)
     if (sessionIds.length > 0) {
@@ -216,13 +217,14 @@ export const useNovelStore = create<NovelStoreState>((set, get) => ({
     return volume
   },
 
-  addChapter: async (title = '新章节', volumeId?: string) => {
+  addChapter: async (title?: string, volumeId?: string) => {
+    const resolvedTitle = title ?? i18n.t('dashboard:novels.defaultChapterTitle')
     const novelId = get().activeNovelId
     if (!novelId) return null
     const { volumes, activeVolumeId } = get()
     const targetVolumeId = volumeId ?? activeVolumeId ?? volumes[0]?.id
     const chapter = await api.createChapter(novelId, {
-      title,
+      title: resolvedTitle,
       content: '',
       volumeId: targetVolumeId,
     })

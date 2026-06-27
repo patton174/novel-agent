@@ -87,7 +87,7 @@ public class AgentRunCoordinator {
                     String type = SseEventCodec.extractEventType(frame, objectMapper);
                     if ("run.failed".equals(type)) {
                         JsonNode payload = SseEventCodec.extractPayload(frame, objectMapper);
-                        streamError.set(payload.path("error").asText("run failed"));
+                        streamError.set(payload.path("error").asText("agent.run.stream_error"));
                     }
                     if ("think.delta".equals(type)) {
                         String text = SseEventCodec.extractPayload(frame, objectMapper).path("text").asText("");
@@ -440,7 +440,7 @@ public class AgentRunCoordinator {
     private String buildRunResumed() {
         ObjectNode event = state.baseEvent(objectMapper, "run.resumed", "step_" + state.getRunId());
         ObjectNode payload = objectMapper.createObjectNode();
-        payload.put("reason", "user resume");
+        payload.put("reason", resolveMessage("agent.run.resumed_user"));
         event.set("payload", payload);
         return SseEventCodec.encode(
             objectMapper,

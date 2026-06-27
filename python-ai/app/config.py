@@ -101,42 +101,11 @@ class Settings(BaseSettings):
     agent_rf_error_protocol: bool = False     # P2.3 结构化 ToolError 回灌
     agent_rf_new_timeline: bool = False       # P4 前端新时间线（后端仅透传标记）
 
-    crawl_request_delay_ms: int = 800
-    crawl_http_proxy: str = ""
-    crawl_proxy_list: str = ""
-    # mihomo 外部控制器：抓取失败时自动切换 selector 组内节点（与 CRAWL_HTTP_PROXY 配合）
-    crawl_mihomo_api: str = ""
-    crawl_mihomo_secret: str = ""
-    crawl_mihomo_proxy_group: str = "🚀 节点选择"
-    crawl_mihomo_max_nodes: int = 12
-    crawl_mihomo_timeout: float = 8.0
-    crawl_mihomo_fail_cooldown_sec: int = 300
-    crawl_orchestrator_enabled: bool = False
-    crawl_orchestrator_poll_sec: int = 30
-    # Scrapling HTTP Fetcher（curl_cffi）
-    crawl_impersonate: str = "chrome124"
-    crawl_http_retries: int = 2
-    crawl_http_timeout: int = 45
-    crawl_fetch_concurrency: int = 3
-    crawl_browser_fetch_enabled: bool = True
-    crawl_prefer_playwright: bool = True
-    crawl_browser_concurrency: int = 1
-    crawl_browser_timeout_ms: int = 60000
-    crawl_tls_retry_direct: bool = True
-
     # Agnes image generation (OpenAI-compatible Images API)
     agnes_image_api_key: str = ""
     agnes_image_base_url: str = "https://apihub.agnes-ai.com"
     agnes_image_model: str = "agnes-image-2.0-flash"
     agnes_image_timeout: int = 120
-
-    # Crawl subtask LLM (OpenAI-compatible Chat Completions, e.g. Agnes-2.0-Flash)
-    crawl_llm_api_key: str = ""
-    crawl_llm_base_url: str = "https://apihub.agnes-ai.com/v1"
-    crawl_llm_model: str = "agnes-2.0-flash"
-    crawl_llm_max_tokens: int = 8192
-    crawl_llm_timeout: int = 120
-    crawl_llm_temperature: float = 0.7
 
     class Config:
         env_file = ".env"
@@ -168,29 +137,9 @@ class Settings(BaseSettings):
             "plan_timeout": self.openai_plan_timeout,
         }
 
-    def get_crawl_llm_config(self) -> dict:
-        api_key = self.crawl_llm_api_key.strip() or self.agnes_image_api_key.strip()
-        base_url = (self.crawl_llm_base_url or "https://apihub.agnes-ai.com/v1").rstrip("/")
-        return {
-            "protocol": "openai",
-            "api_key": api_key,
-            "base_url": base_url,
-            "model": self.crawl_llm_model or "agnes-2.0-flash",
-            "max_tokens": self.crawl_llm_max_tokens,
-            "timeout": self.crawl_llm_timeout,
-            "temperature": self.crawl_llm_temperature,
-            "plan_max_tokens": self.crawl_llm_max_tokens,
-            "plan_timeout": self.crawl_llm_timeout,
-            "extra_body": {},
-        }
-
     @property
     def is_llm_configured(self) -> bool:
         return bool(self.get_active_llm_config()["api_key"])
-
-    @property
-    def is_crawl_llm_configured(self) -> bool:
-        return bool(self.get_crawl_llm_config()["api_key"])
 
     @property
     def max_tokens(self) -> int:

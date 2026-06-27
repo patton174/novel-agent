@@ -1,0 +1,31 @@
+{
+  "bell": {
+    "label": "消息中心",
+    "unread": "{{count}} 条未读"
+  },
+  "drawer": {
+    "title": "消息中心",
+    "markAllRead": "全部已读",
+    "loadMore": "加载更多",
+    "loading": "加载中…",
+    "emptyTitle": "暂无消息",
+    "emptyDesc": "系统通知、支付与 Agent 动态会显示在这里。"
+  },
+  "category": {
+    "system": "系统",
+    "billing": "账单",
+    "agent": "Agent",
+    "marketing": "活动"
+  },
+  "broadcast": {
+    "nav": "消息群发",
+    "title": "站内消息群发",
+    "desc": "向全部用户发送一条站内通知（明文标题与正文）。",
+    "titleLabel": "标题",
+    "bodyLabel": "正文",
+    "categoryLabel": "分类",
+    "submit": "发送",
+    "success": "群发已提交",
+    "fail": "发送失败"
+  }
+}

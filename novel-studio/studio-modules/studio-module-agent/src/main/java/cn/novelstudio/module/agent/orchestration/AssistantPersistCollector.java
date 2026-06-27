@@ -11,8 +11,17 @@ import cn.novelstudio.module.agent.util.AgentTextSanitizer;
  */
 public final class AssistantPersistCollector {
 
+    private final String uiLineLabelAlternation;
     private final StringBuilder segmentBuffer = new StringBuilder();
     private final StringBuilder replyBuffer = new StringBuilder();
+
+    public AssistantPersistCollector() {
+        this(null);
+    }
+
+    public AssistantPersistCollector(String uiLineLabelAlternation) {
+        this.uiLineLabelAlternation = uiLineLabelAlternation;
+    }
 
     public void onFrame(String frame, ObjectMapper objectMapper) {
         if (frame == null || frame.isBlank() || !frame.contains("event: agent-event")) {
@@ -55,6 +64,6 @@ public final class AssistantPersistCollector {
     }
 
     public String buildSanitized() {
-        return AgentTextSanitizer.sanitizeAssistantVisibleText(replyBuffer.toString());
+        return AgentTextSanitizer.sanitizeAssistantVisibleText(replyBuffer.toString(), uiLineLabelAlternation);
     }
 }

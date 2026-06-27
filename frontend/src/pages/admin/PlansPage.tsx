@@ -26,7 +26,11 @@ import { DialogFooter } from '@/components/ui/dialog'
 import {
   AdminButton,
   AdminButtonOutline,
+  AdminFormChip,
+  AdminFormStack,
+  AdminField,
   AdminStatusBadge,
+  adminFormRowClass,
 } from '@/components/admin/AdminFormControls'
 import {
   PixelCellMono,
@@ -48,7 +52,6 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useMarkRouteSeen } from '@/hooks/useMarkRouteSeen'
 import { appToast } from '@/stores/appToastStore'
 import { confirmAction } from '@/stores/appDialog'
-import { cn } from '@/lib/utils'
 import { ProIconAdminPlan } from '@/components/pro/icons/proIcons'
 
 const emptyForm = (): AdminPlanUpsertPayload => ({
@@ -243,11 +246,11 @@ export default function PlansPage() {
       },
       {
         key: 'quota',
-        header: 'Token / Run / RPM',
+        header: `${t('admin:plans.colTokenQuota')} / ${t('admin:plans.colRunQuota')} / ${t('admin:plans.colRpm')}`,
         render: (plan) => (
           <PixelCellText muted>
             {formatTokenQuota(plan.monthlyTokenQuota)} /{' '}
-            {plan.monthlyRunQuota == null ? '∞' : plan.monthlyRunQuota} / {plan.rateLimitRpm}
+            {plan.monthlyRunQuota == null ? t('admin:common.unlimitedSymbol') : plan.monthlyRunQuota} / {plan.rateLimitRpm}
           </PixelCellText>
         ),
       },
@@ -364,33 +367,24 @@ export default function PlansPage() {
         title={editing ? t('admin:plans.editTitle') : t('admin:plans.createTitle')}
         description={t('admin:plans.formDesc')}
       >
-          <div className="grid gap-4 py-2">
-            <div className="grid gap-2">
-              <label htmlFor="plan-code" className="text-sm font-medium">
-                Code
-              </label>
+          <AdminFormStack>
+            <AdminField layout="form" label={t('admin:plans.formCode')} htmlFor="plan-code">
               <Input
                 id="plan-code"
                 value={form.code}
                 onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))}
                 disabled={Boolean(editing)}
               />
-            </div>
-            <div className="grid gap-2">
-              <label htmlFor="plan-name" className="text-sm font-medium">
-                {t('admin:plans.formName')}
-              </label>
+            </AdminField>
+            <AdminField layout="form" label={t('admin:plans.formName')} htmlFor="plan-name">
               <Input
                 id="plan-name"
                 value={form.name}
                 onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
               />
-            </div>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div className="grid gap-2">
-                <label htmlFor="plan-price" className="text-sm font-medium">
-                  {t('admin:plans.formPrice')}
-                </label>
+            </AdminField>
+            <div className={adminFormRowClass}>
+              <AdminField layout="form" label={t('admin:plans.formPrice')} htmlFor="plan-price">
                 <Input
                   id="plan-price"
                   type="number"
@@ -416,24 +410,18 @@ export default function PlansPage() {
                     }))
                   }}
                 />
-              </div>
-              <div className="grid gap-2">
-                <label htmlFor="plan-sort" className="text-sm font-medium">
-                  {t('admin:plans.formSort')}
-                </label>
+              </AdminField>
+              <AdminField layout="form" label={t('admin:plans.formSort')} htmlFor="plan-sort">
                 <Input
                   id="plan-sort"
                   type="number"
                   value={form.sortOrder ?? 0}
                   onChange={(e) => setForm((f) => ({ ...f, sortOrder: Number(e.target.value) }))}
                 />
-              </div>
+              </AdminField>
             </div>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div className="grid gap-2">
-                <label htmlFor="plan-tokens" className="text-sm font-medium">
-                  {t('admin:plans.formTokenQuota')}
-                </label>
+            <div className={adminFormRowClass}>
+              <AdminField layout="form" label={t('admin:plans.formTokenQuota')} htmlFor="plan-tokens">
                 <Input
                   id="plan-tokens"
                   type="number"
@@ -445,11 +433,8 @@ export default function PlansPage() {
                     }))
                   }
                 />
-              </div>
-              <div className="grid gap-2">
-                <label htmlFor="plan-runs" className="text-sm font-medium">
-                  {t('admin:plans.formRunQuota')}
-                </label>
+              </AdminField>
+              <AdminField layout="form" label={t('admin:plans.formRunQuota')} htmlFor="plan-runs">
                 <Input
                   id="plan-runs"
                   type="number"
@@ -461,31 +446,24 @@ export default function PlansPage() {
                     }))
                   }
                 />
-              </div>
+              </AdminField>
             </div>
-            <div className="grid gap-2">
-              <span className="text-sm font-medium">{t('admin:plans.formFeatures')}</span>
+            <AdminField layout="form" label={t('admin:plans.formFeatures')}>
               <div className="flex flex-wrap gap-2">
                 {PLAN_FEATURE_OPTIONS.map((opt) => {
                   const checked = (form.features ?? []).includes(opt.key)
                   return (
-                    <button
+                    <AdminFormChip
                       key={opt.key}
-                      type="button"
+                      selected={checked}
                       onClick={() => toggleFeature(opt.key)}
-                      className={cn(
-                        'rounded-full border px-3.5 py-1.5 text-sm transition-colors',
-                        checked
-                          ? 'border-primary bg-primary/10 text-primary'
-                          : 'border-border text-muted-foreground hover:bg-muted',
-                      )}
                     >
                       {opt.label}
-                    </button>
+                    </AdminFormChip>
                   )
                 })}
               </div>
-            </div>
+            </AdminField>
             <label className="flex items-center gap-2 text-sm">
               <input
                 type="checkbox"
@@ -494,18 +472,16 @@ export default function PlansPage() {
               />
               {t('admin:plans.formFeatured')}
             </label>
-            <div className="grid grid-cols-1 gap-3">
-              <IdrProjectSkuPicker
-                projectId={form.idrProjectId}
-                skuId={form.idrSkuId}
-                onProjectChange={(pid) => setForm((f) => ({ ...f, idrProjectId: pid, idrSkuId: null }))}
-                onSkuChange={(sid) => setForm((f) => ({ ...f, idrSkuId: sid }))}
-              />
-              <p className="text-xs text-muted-foreground">{t('admin:plans.formIdrSkuHint')}</p>
-            </div>
-          </div>
+            <IdrProjectSkuPicker
+              projectId={form.idrProjectId}
+              skuId={form.idrSkuId}
+              onProjectChange={(pid) => setForm((f) => ({ ...f, idrProjectId: pid, idrSkuId: null }))}
+              onSkuChange={(sid) => setForm((f) => ({ ...f, idrSkuId: sid }))}
+            />
+            <p className="text-xs text-muted-foreground">{t('admin:plans.formIdrSkuHint')}</p>
+          </AdminFormStack>
 
-          <DialogFooter className="gap-2 sm:gap-2">
+          <DialogFooter className="gap-2 sm:gap-2 sm:items-center">
             <AdminButtonOutline type="button" onClick={() => setDialogOpen(false)}>
               {t('admin:plans.cancel')}
             </AdminButtonOutline>

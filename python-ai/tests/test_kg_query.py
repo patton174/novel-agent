@@ -35,7 +35,7 @@ def test_get_character_graph_disabled(monkeypatch):
 def test_get_character_graph_returns_subgraph(monkeypatch):
     monkeypatch.setattr(settings, "kg_enabled", True)
 
-    def fake_subgraph(novel_id, character, *, depth=1):
+    async def fake_subgraph(novel_id, character, *, depth=1):
         return {
             "nodes": [{"id": "林动", "name": "林动", "type": "character"}],
             "edges": [{"source": "林动", "target": "师傅", "rel": "师承"}],

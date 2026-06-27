@@ -536,8 +536,8 @@ export function IdrCatalogPanel({ projectId, view = 'all' }: IdrCatalogPanelProp
               </AdminField>
               <AdminField label={t('admin:products.colStatus')}>
                 <AdminSelect value={skuStatus} onChange={(e) => setSkuStatus(e.target.value as 'ONLINE' | 'OFFLINE')}>
-                  <option value="ONLINE">ONLINE</option>
-                  <option value="OFFLINE">OFFLINE</option>
+                  <option value="ONLINE">{t('admin:products.statusOnline')}</option>
+                  <option value="OFFLINE">{t('admin:products.statusOffline')}</option>
                 </AdminSelect>
               </AdminField>
               <AdminField label={t('admin:products.createInitialStock')}>
@@ -607,7 +607,7 @@ export function IdrCatalogPanel({ projectId, view = 'all' }: IdrCatalogPanelProp
                 <AdminTextInput
                   value={pricingPrice}
                   onChange={(e) => setPricingPrice(e.target.value)}
-                  placeholder="9.99"
+                  placeholder={t('admin:products.placeholderPrice')}
                 />
               </AdminField>
             </CreateFormGrid>
@@ -730,8 +730,8 @@ export function IdrCatalogPanel({ projectId, view = 'all' }: IdrCatalogPanelProp
               value={editSkuStatus}
               onChange={(e) => setEditSkuStatus(e.target.value as 'ONLINE' | 'OFFLINE')}
             >
-              <option value="ONLINE">ONLINE</option>
-              <option value="OFFLINE">OFFLINE</option>
+              <option value="ONLINE">{t('admin:products.statusOnline')}</option>
+              <option value="OFFLINE">{t('admin:products.statusOffline')}</option>
             </AdminSelect>
           </AdminField>
         </div>
@@ -761,8 +761,8 @@ export function IdrCatalogPanel({ projectId, view = 'all' }: IdrCatalogPanelProp
               value={editPricingStatus}
               onChange={(e) => setEditPricingStatus(e.target.value as 'ONLINE' | 'OFFLINE')}
             >
-              <option value="ONLINE">ONLINE</option>
-              <option value="OFFLINE">OFFLINE</option>
+              <option value="ONLINE">{t('admin:products.statusOnline')}</option>
+              <option value="OFFLINE">{t('admin:products.statusOffline')}</option>
             </AdminSelect>
           </AdminField>
         </div>

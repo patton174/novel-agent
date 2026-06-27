@@ -3,7 +3,7 @@ import { translateToolDisplayName } from './orchestrationI18n'
 
 /**
  * Lifecycle phase a tool row is rendered in. Drives a phase-specific title
- * (e.g. "正在写入章节…" vs "已写入章节") instead of a generic name + chip.
+ * (e.g. running vs done copy) instead of a generic name + chip.
  */
 export type ToolTitlePhase =
   | 'started'
@@ -13,25 +13,41 @@ export type ToolTitlePhase =
   | 'done'
   | 'failed'
 
-/** Map the timeline's Chinese phase label + active flag onto a stable phase enum. */
+const PHASE_I18N_KEYS = {
+  failed: ['editor:timeline.phaseFailed', 'editor:agent.stream.timeline.phaseFailed'],
+  done: ['editor:timeline.phaseDone', 'editor:agent.stream.timeline.phaseDone'],
+  awaiting: ['editor:timeline.phaseAwaiting', 'editor:agent.stream.timeline.phaseAwaiting'],
+  running: ['editor:timeline.phaseRunning', 'editor:agent.stream.timeline.phaseRunning'],
+} as const
+
+function matchesAnyLocale(i18nKeys: readonly string[], value: string): boolean {
+  return i18nKeys.some((key) =>
+    (['zh', 'en'] as const).some((lng) => i18n.t(key, { lng }) === value),
+  )
+}
+
+/** Map the timeline phase label + active flag onto a stable phase enum. */
 export function inferToolTitlePhase(
   phase: string | undefined,
   options: { active?: boolean; streaming?: boolean } = {},
 ): ToolTitlePhase {
   const raw = (phase ?? '').trim()
-  if (raw === '失败') {
+  if (matchesAnyLocale(PHASE_I18N_KEYS.failed, raw)) {
     return 'failed'
   }
-  if (raw === '已完成') {
+  if (matchesAnyLocale(PHASE_I18N_KEYS.done, raw)) {
     return 'done'
   }
-  if (raw === '等待回答') {
+  if (matchesAnyLocale(PHASE_I18N_KEYS.awaiting, raw)) {
     return 'awaiting'
   }
-  if (options.streaming && (options.active || raw === '运行中' || raw === '进行中')) {
+  if (
+    options.streaming &&
+    (options.active || matchesAnyLocale(PHASE_I18N_KEYS.running, raw))
+  ) {
     return 'runningStream'
   }
-  if (options.active || raw === '运行中' || raw === '进行中') {
+  if (options.active || matchesAnyLocale(PHASE_I18N_KEYS.running, raw)) {
     return 'running'
   }
   return 'started'

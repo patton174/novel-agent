@@ -1,3 +1,4 @@
+import i18n from '@/i18n'
 import type {
   AgentAssistantStreamPhase,
   AgentContextUsage,
@@ -56,7 +57,7 @@ export function upsertSession(session: StoredChatSession): void {
   const existing = listSessions().find((s) => s.id === session.id)
   const merged: StoredChatSession = {
     id: session.id,
-    title: session.title || existing?.title || '新对话',
+    title: session.title || existing?.title || i18n.t('editor:session.defaultTitle'),
     updatedAt: session.updatedAt || existing?.updatedAt || new Date().toISOString(),
     novelId: session.novelId ?? existing?.novelId,
   }
@@ -82,7 +83,11 @@ export function listSessionsByNovel(novelId: string): StoredChatSession[] {
   return listSessions().filter((s) => s.novelId === novelId)
 }
 
-export function ensureSession(sessionId: string, title = '新对话', novelId?: string): StoredChatSession {
+export function ensureSession(
+  sessionId: string,
+  title = i18n.t('editor:session.defaultTitle'),
+  novelId?: string,
+): StoredChatSession {
   const existing = listSessions().find((s) => s.id === sessionId)
   if (existing) {
     if (novelId && !existing.novelId) {

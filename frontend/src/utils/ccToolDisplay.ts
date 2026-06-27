@@ -11,33 +11,65 @@ import {
   vfsPathFromPayload,
 } from './agentToolNames'
 
-const GENERIC_TOOL_LABELS = new Set([
-  '读取',
-  '写入',
-  '编辑',
-  '列举',
-  '搜索',
-  '删除',
-  '工具',
-])
+const GENERIC_TOOL_NAMES = ['Read', 'Write', 'Edit', 'Glob', 'Grep', 'Delete', '_default'] as const
+
+function tTool(labelKey: string): string {
+  return i18n.t(`editor:tools.${labelKey}`, { defaultValue: labelKey })
+}
+
+function tPathAction(actionKey: string): string {
+  return i18n.t(`editor:tools.pathActions.${actionKey}`)
+}
+
+function matchesAnyLocaleExcerpt(key: string, value: string): boolean {
+  return ['zh', 'en'].some((lng) => i18n.t(`editor:sseExcerpts.${key}`, { lng }) === value)
+}
+
+function isGenericToolLabel(title: string): boolean {
+  const trimmed = title.trim()
+  if (!trimmed) {
+    return false
+  }
+  return GENERIC_TOOL_NAMES.some((key) => {
+    const label =
+      key === '_default'
+        ? i18n.t('editor:tools.byName._default')
+        : toolDisplayName(key)
+    return trimmed === label
+  })
+}
 
 const CHAPTER_ID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
-const MEMORY_SCOPE_LABELS: Record<string, string> = {
-  characters: '角色库',
-  character: '角色库',
-  world: '世界观',
-  worldview: '世界观',
-  background: '背景设定',
-  novel: '作品设定',
-  chapter: '章节记忆',
-  chapters: '章节记忆',
-  story: '故事记忆',
-  plot: '情节记忆',
-  style: '文风',
-  outline: '大纲',
+function tCcDisplay(key: string, options?: Record<string, string | number>): string {
+  return i18n.t(`editor:agent.ccDisplay.${key}`, options)
 }
+
+function isIgnoredReadResultLabel(label: string): boolean {
+  const trimmed = label.trim()
+  if (!trimmed) {
+    return true
+  }
+  return (['empty', 'emptyChapter', 'alreadyRead'] as const).some((key) =>
+    matchesAnyLocaleExcerpt(key, trimmed),
+  )
+}
+
+const MEMORY_SCOPE_KEYS = new Set([
+  'characters',
+  'character',
+  'world',
+  'worldview',
+  'background',
+  'novel',
+  'chapter',
+  'chapters',
+  'story',
+  'plot',
+  'style',
+  'outline',
+])
 
 /** Short path for internal/debug only. */
 export function shortenVfsPath(path: string): string {
@@ -76,29 +108,29 @@ function pathFromStep(step: AgentStepState): string {
 function ccToolNameFromPath(tool: string, path: string): string | undefined {
   if (tool === 'Read' && path) {
     if (isMemoryVfsPath(path)) {
-      return '查阅创作记忆'
+      return tPathAction('readStoryMemory')
     }
     if (path.includes('/chapters')) {
-      return '阅读章节'
+      return tPathAction('readChapter')
     }
   }
   if (tool === 'Write' && path.includes('/chapters')) {
     if (path.includes('index.json')) {
-      return '写入章节目录'
+      return tPathAction('writeChapterIndex')
     }
-    return '写入章节'
+    return tPathAction('writeChapter')
   }
   if (tool === 'Write' && isMemoryVfsPath(path)) {
-    return '写入创作记忆'
+    return tPathAction('writeStoryMemory')
   }
   if (tool === 'Edit' && isMemoryVfsPath(path)) {
-    return '编辑创作记忆'
+    return tPathAction('editStoryMemory')
   }
   if (tool === 'Delete' && isMemoryVfsPath(path)) {
-    return '删除创作记忆'
+    return tPathAction('deleteStoryMemory')
   }
   if (tool === 'Glob' && (path.includes('/chapters') || path.includes('chapter'))) {
-    return '查阅章节目录'
+    return tPathAction('browseChapterIndex')
   }
   return undefined
 }
@@ -109,7 +141,10 @@ function pathFromPayload(payload: Record<string, unknown> | undefined): string {
 
 function memoryScopeLabel(scope: string): string {
   const key = scope.toLowerCase()
-  return MEMORY_SCOPE_LABELS[key] ?? `记忆·${scope}`
+  if (MEMORY_SCOPE_KEYS.has(key)) {
+    return i18n.t(`editor:tools.memoryScope.${key}`)
+  }
+  return tCcDisplay('memoryScope', { scope })
 }
 
 function decodeMemoryKeySegment(segment: string): string {
@@ -130,19 +165,19 @@ function memoryPathHint(path: string): string {
   if (chapterMem) {
     const key = decodeMemoryKeySegment(chapterMem[1])
     if (key && !CHAPTER_ID_RE.test(key)) {
-      return `章节记忆：${key}`
+      return tCcDisplay('chapterMemory', { key })
     }
     return ''
   }
   const m = normalized.match(/\/memory\/([^/]+)(?:\/([^/]+?))?(?:\.json)?$/i)
   if (!m) {
-    return '创作记忆'
+    return tTool('hints.storyMemory')
   }
   const scope = m[1] ?? ''
   const key = decodeMemoryKeySegment(m[2] ?? '')
   const scopeLabel = memoryScopeLabel(scope)
   if (key && !CHAPTER_ID_RE.test(key)) {
-    return `${scopeLabel}：${key}`
+    return tCcDisplay('scopeWithKey', { scope: scopeLabel, key })
   }
   if (scope === 'chapter') {
     return ''
@@ -153,62 +188,66 @@ function memoryPathHint(path: string): string {
 function chapterPathHint(path: string): string {
   const normalized = path.replace(/\\/g, '/')
   if (normalized.includes('index.json')) {
-    return '章节目录'
+    return tTool('hints.chapterIndex')
   }
   const m = normalized.match(/\/chapters\/([^/]+?)\.md$/i)
   if (m) {
     const cid = m[1]
     if (cid === '_new') {
-      return '新章节'
+      return tTool('hints.newChapter')
     }
     if (CHAPTER_ID_RE.test(cid)) {
-      return '章节正文'
+      return tTool('hints.chapterBody')
     }
-    return `章节：${cid}`
+    return tCcDisplay('chapterNamed', { id: cid })
   }
   if (/\/chapters\/?$/i.test(normalized)) {
-    return '章节目录'
+    return tTool('hints.chapterIndex')
   }
-  return '章节'
+  return tTool('hints.chapter')
 }
 
 function novelRootHint(path: string): string {
   const normalized = path.replace(/\\/g, '/').trim()
   if (!normalized) {
-    return '本书目录'
+    return tTool('hints.novelCatalog')
   }
   if (/\/novel\/[^/]+\/?$/i.test(normalized)) {
-    return '本书目录'
+    return tTool('hints.novelCatalog')
   }
   if (normalized.endsWith('/meta.json')) {
-    return '作品信息'
+    return tTool('hints.novelInfo')
   }
   if (normalized.includes('/outline/')) {
-    return '创作大纲'
+    return tTool('hints.writingOutline')
   }
-  return '本书目录'
+  return tTool('hints.novelCatalog')
 }
 
 function globPatternHint(pattern: string, path: string): string {
   const p = pattern.trim().toLowerCase()
   const base = path.replace(/\\/g, '/')
   if (p.includes('memory') || base.includes('/memory')) {
-    return '创作记忆库'
+    return tTool('hints.storyMemoryLibrary')
   }
   if (p.includes('chapter') || base.includes('/chapters')) {
-    return '作品库章节'
+    return tTool('hints.novelChapters')
   }
   if (p === '*' || p === '**/*') {
     return novelRootHint(base)
   }
-  return '文件匹配'
+  return tTool('hints.fileMatch')
 }
 
 function grepHint(path: string, pattern?: string): string {
   if (isMemoryVfsPath(path)) {
-    return pattern?.trim() ? `记忆：${pattern.trim().slice(0, 32)}` : '检索创作记忆'
+    return pattern?.trim()
+      ? tCcDisplay('searchPattern', { pattern: pattern.trim().slice(0, 32) })
+      : tCcDisplay('searchMemory')
   }
-  return pattern?.trim() ? `章节：${pattern.trim().slice(0, 32)}` : '检索章节'
+  return pattern?.trim()
+    ? tCcDisplay('searchChapterPattern', { pattern: pattern.trim().slice(0, 32) })
+    : tCcDisplay('searchChapter')
 }
 
 /** 用户可见的工具副标题（中文，不展示 novel UUID） */
@@ -239,14 +278,14 @@ export function ccToolHumanSubtitle(
     }
     if (path) {
       if (isMemoryVfsPath(path)) {
-        return '创作记忆库'
+        return tTool('hints.storyMemoryLibrary')
       }
       if (path.includes('/chapters')) {
-        return '作品库章节'
+        return tTool('hints.novelChapters')
       }
       return novelRootHint(path)
     }
-    return '列举文件'
+    return tTool('hints.listFiles')
   }
 
   if (tool === 'Read') {
@@ -258,43 +297,43 @@ export function ccToolHumanSubtitle(
         return chapterPathHint(path)
       }
       if (path.includes('meta.json')) {
-        return '作品信息'
+        return tTool('hints.novelInfo')
       }
       if (path.includes('/outline/')) {
-        return '创作大纲'
+        return tTool('hints.writingOutline')
       }
     }
-    return '读取内容'
+    return tTool('hints.readContent')
   }
 
   if (tool === 'Write') {
     if (path.includes('/chapters')) {
-      return '写入章节'
+      return tTool('hints.writeChapter')
     }
     if (isMemoryVfsPath(path)) {
       return memoryPathHint(path)
     }
-    return '写入文件'
+    return tTool('hints.writeFile')
   }
 
   if (tool === 'Edit') {
     if (path.includes('/chapters')) {
-      return '编辑章节'
+      return tTool('hints.editChapter')
     }
     if (isMemoryVfsPath(path)) {
       return memoryPathHint(path)
     }
-    return '编辑文件'
+    return tTool('hints.editFile')
   }
 
   if (tool === 'Delete') {
     if (path.includes('/chapters')) {
-      return '删除章节'
+      return tTool('hints.deleteChapter')
     }
     if (isMemoryVfsPath(path)) {
       return memoryPathHint(path)
     }
-    return '删除文件'
+    return tTool('hints.deleteFile')
   }
 
   if (tool === 'Grep') {
@@ -302,7 +341,7 @@ export function ccToolHumanSubtitle(
   }
 
   if (tool === 'AskUser') {
-    return '等待你的回复'
+    return tTool('hints.waitingReply')
   }
 
   if (tool === 'TodoWrite') {
@@ -310,15 +349,17 @@ export function ccToolHumanSubtitle(
   }
 
   if (tool === 'WebFetch') {
-    return '抓取网页'
+    return tTool('hints.fetchPage')
   }
 
   if (tool === 'WebSearch') {
-    return pattern ? `搜索：${pattern.slice(0, 28)}` : '网页搜索'
+    return pattern
+      ? tCcDisplay('searchPattern', { pattern: pattern.slice(0, 28) })
+      : tTool('hints.webSearch')
   }
 
   if (tool === 'Skill') {
-    return '调用技能'
+    return tTool('hints.invokeSkill')
   }
 
   if (tool === 'Agent') {
@@ -326,23 +367,23 @@ export function ccToolHumanSubtitle(
   }
 
   if (tool.startsWith('Task')) {
-    return '任务管理'
+    return tTool('hints.taskManagement')
   }
 
   if (tool === 'ToolSearch') {
-    return '查找工具'
+    return tTool('hints.findTool')
   }
 
   if (tool === 'EnterPlanMode' || tool === 'ExitPlanMode') {
-    return '计划模式'
+    return tTool('hints.planMode')
   }
 
   if (tool === 'NotebookEdit') {
-    return '编辑笔记本'
+    return tTool('hints.editNotebook')
   }
 
   if (tool === 'ListMcpResources' || tool === 'ReadMcpResource') {
-    return 'MCP 资源'
+    return tTool('hints.mcpResources')
   }
 
   const summary = opts?.outputSummary?.trim()
@@ -396,7 +437,7 @@ export function readToolBranchLabels(step: AgentStepState): string[] | null {
   const fromExcerpt = titleFromMemoryReadExcerpt(
     step.outputSummary || step.displayExcerpt || step.detail,
   )
-  if (fromExcerpt && fromExcerpt !== '（空）' && fromExcerpt !== '空章节' && fromExcerpt !== '已读取') {
+  if (fromExcerpt && !isIgnoredReadResultLabel(fromExcerpt)) {
     return [fromExcerpt]
   }
   if (path.includes('/memory/chapter/') && CHAPTER_ID_RE.test(path)) {
@@ -417,7 +458,7 @@ export function ccToolHumanSubtitleFromStep(step: AgentStepState): string {
 /** User-facing tool label (bold segment in CC). */
 export function ccToolNameLabel(step: AgentStepState): string {
   const rawTool = (step.toolName ?? '').trim()
-  const fromWire = rawTool ? toolDisplayName(rawTool) : translateToolDisplayName('工具')
+  const fromWire = rawTool ? toolDisplayName(rawTool) : toolDisplayName('')
   const raw = normalizeToolName(step.toolName) || rawTool
   const generic = raw ? toolDisplayName(raw) : fromWire
   const title = step.title?.trim() ?? ''
@@ -427,7 +468,7 @@ export function ccToolNameLabel(step: AgentStepState): string {
     return fromWire
   }
 
-  if (title && !GENERIC_TOOL_LABELS.has(title) && title !== generic) {
+  if (title && !isGenericToolLabel(title) && title !== generic) {
     const viaTitle = toolDisplayName(title)
     if (viaTitle !== title) {
       return viaTitle
@@ -450,7 +491,7 @@ export function ccToolNameLabel(step: AgentStepState): string {
   if (paren > 0) {
     return translateToolDisplayName(title.slice(0, paren).trim())
   }
-  return title ? translateToolDisplayName(title) : translateToolDisplayName('工具')
+  return title ? translateToolDisplayName(title) : toolDisplayName('')
 }
 
 function isMutationResultInBranch(step: AgentStepState): boolean {
@@ -478,7 +519,7 @@ export function ccToolArgsSubtitle(step: AgentStepState): string {
   }
   if (normalizeToolName(step.toolName) === 'TodoWrite') {
     if (step.todos?.length) {
-      return `${step.todos.length} 项`
+      return tCcDisplay('todoCount', { count: step.todos.length })
     }
     return ''
   }
@@ -593,7 +634,7 @@ export function ccToolInlineResult(
   }
 
   const idleLabel = options.readLabel?.trim() || ''
-  if (idleLabel && idleLabel !== '（空）' && idleLabel !== compact) {
+  if (idleLabel && !isIgnoredReadResultLabel(idleLabel) && idleLabel !== compact) {
     return idleLabel.length > 96 ? `${idleLabel.slice(0, 96)}…` : idleLabel
   }
 
@@ -619,7 +660,7 @@ export function ccToolBranchStatus(
   const { loading, error } = options
 
   if (options.chooseLoading) {
-    return '正在生成选项…'
+    return tTool('generatingOptions')
   }
 
   if (loading) {

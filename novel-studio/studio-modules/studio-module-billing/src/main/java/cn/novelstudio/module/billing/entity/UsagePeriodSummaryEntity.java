@@ -29,6 +29,9 @@ public class UsagePeriodSummaryEntity {
     @Column(name = "cost_micros", nullable = false)
     private Long costMicros = 0L;
 
+    @Column(name = "overage_micros", nullable = false)
+    private Long overageMicros = 0L;
+
     @Column(name = "quota_tokens")
     private Long quotaTokens;
 

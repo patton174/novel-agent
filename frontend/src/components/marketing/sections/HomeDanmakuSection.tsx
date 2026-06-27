@@ -17,10 +17,10 @@ export function HomeDanmakuSection() {
       {/* 小节标签：mono 荧光绿编号 + 标题，粗野主义版头 */}
       <div className="relative z-20 mx-auto mb-2 flex max-w-6xl items-center gap-4 px-6">
         <span className="inline-flex items-center border-2 border-white/40 bg-white/5 px-2 py-1 text-neon">
-          <PixelText text="[ VOICES ]" size="sm" fontWeight={800} />
+          <PixelText text={t('home.danmaku.sectionTag')} size="sm" fontWeight={800} />
         </span>
         <span className="font-mono text-xs font-bold uppercase tracking-widest text-white/50">
-          {t('home.danmaku.loading').replace(/…|...$/, '')}
+          {t('home.danmaku.eyebrow')}
         </span>
       </div>
 

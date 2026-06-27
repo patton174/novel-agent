@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import { motionInteractiveClass } from '@/lib/motionClasses'
 import {
   MOTION_TAB_TRACK,
@@ -24,10 +25,12 @@ export function MotionTabBar<T extends string = string>({
   items,
   activeId,
   onChange,
-  'aria-label': ariaLabel = '标签页',
+  'aria-label': ariaLabel,
 }: MotionTabBarProps<T>) {
+  const { t } = useTranslation('common')
+  const resolvedAriaLabel = ariaLabel ?? t('a11y.tabBar')
   return (
-    <div className={MOTION_TAB_TRACK} role="tablist" aria-label={ariaLabel}>
+    <div className={MOTION_TAB_TRACK} role="tablist" aria-label={resolvedAriaLabel}>
       {items.map((item) => {
         const active = item.id === activeId
         return (

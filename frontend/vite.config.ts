@@ -145,6 +145,13 @@ export default defineConfig(({ mode }) => {
             }
             if (!norm.includes('node_modules')) return
             if (id.includes('recharts') || id.includes('d3-')) return 'recharts'
+            if (
+              id.includes('reagraph') ||
+              id.includes('/three/') ||
+              id.includes('@react-three/')
+            ) {
+              return 'graph3d'
+            }
             if (id.includes('framer-motion')) return 'motion'
             if (id.includes('/gsap')) return 'gsap'
             if (
@@ -179,7 +186,7 @@ export default defineConfig(({ mode }) => {
         '@': path.resolve(__dirname, './src'),
       },
       // streamdown / @streamdown/* 与主应用必须共用同一份 React，否则 Invalid hook call
-      dedupe: ['react', 'react-dom'],
+      dedupe: ['react', 'react-dom', 'three', '@react-three/fiber'],
     },
     optimizeDeps: {
       include: [
@@ -190,7 +197,14 @@ export default defineConfig(({ mode }) => {
         'streamdown',
         '@streamdown/cjk',
         '@streamdown/code',
+        'reagraph',
+        'three',
+        '@react-three/fiber',
+        '@react-spring/three',
       ],
+      esbuildOptions: {
+        target: 'esnext',
+      },
     },
     server: {
       host: true,

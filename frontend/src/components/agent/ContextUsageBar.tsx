@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { palette } from '../../styles/theme'
 import type { AgentContextUsage } from '../../types/agent'
 import {
@@ -29,6 +30,7 @@ export interface ContextUsageBarProps {
 }
 
 export function ContextUsageBar({ usage, compact = false }: ContextUsageBarProps) {
+  const { t } = useTranslation('editor')
   if (!usage) return null
 
   const percent = Math.min(100, Math.max(0, usage.contextPercent))
@@ -38,20 +40,25 @@ export function ContextUsageBar({ usage, compact = false }: ContextUsageBarProps
       : Math.max(0, 100 - percent)
   const color = barColor(percent)
   const sourceLabel =
-    usage.source === 'api' ? 'API' : usage.source === 'estimate' ? '估算' : null
+    usage.source === 'api'
+      ? t('agent.context.sourceApi')
+      : usage.source === 'estimate'
+        ? t('agent.context.sourceEstimate')
+        : null
 
   return (
     <div className={contextUsageBarWrapClass(compact)} data-testid="context-usage-bar">
       <div className={CONTEXT_USAGE_BAR_META}>
         <span className={CONTEXT_USAGE_BAR_LABEL}>
-          上下文{sourceLabel ? ` · ${sourceLabel}` : ''}
+          {t('agent.context.barLabel')}
+          {sourceLabel ? ` · ${sourceLabel}` : ''}
         </span>
         <span className={CONTEXT_USAGE_BAR_STATS}>
           <strong>{formatTokenCount(usage.promptTokens)}</strong>
           <span> / {formatTokenCount(usage.contextLimit)}</span>
           <span>
             {' '}
-            ({percent.toFixed(1)}% · 余 {percentLeft.toFixed(0)}%)
+            ({percent.toFixed(1)}% · {t('agent.context.remaining', { percent: percentLeft.toFixed(0) })})
           </span>
         </span>
         <span className={CONTEXT_USAGE_BAR_RUN_STATS}>

@@ -47,6 +47,9 @@ public abstract class BaseBiz {
 
     protected void require(boolean condition, ResultCode code, String message) {
         if (!condition) {
+            if (looksLikeMessageKey(message)) {
+                throw BizException.keyed(code, message);
+            }
             throw BizException.of(code, message);
         }
     }
@@ -73,48 +76,97 @@ public abstract class BaseBiz {
         }
     }
 
+    /**
+     * @deprecated 使用 {@link #notFoundKeyed(ResultCode, String, Object...)} 或
+     * {@link NotFoundException#keyed(ResultCode, String, Object...)}，以便 i18n 解析 message key。
+     */
+    @Deprecated(forRemoval = true)
     protected void notFound(String message) {
         throw new NotFoundException(message);
     }
 
+    /**
+     * @deprecated 使用 {@link #notFoundKeyed(ResultCode, String, Object...)}。
+     */
+    @Deprecated(forRemoval = true)
     protected void notFound(ResultCode code, String message) {
         throw new NotFoundException(code, message);
     }
 
+    /**
+     * @deprecated 使用 {@link #badRequestKeyed(String, Object...)} 或
+     * {@link ValidationException#keyed(String, Object...)}，以便 i18n 解析 message key。
+     */
+    @Deprecated(forRemoval = true)
     protected void badRequest(String message) {
+        if (looksLikeMessageKey(message)) {
+            throw ValidationException.keyed(message);
+        }
         throw new ValidationException(message);
     }
 
+    /**
+     * @deprecated 使用 {@link #badRequestKeyed(ResultCode, String, Object...)}。
+     */
+    @Deprecated(forRemoval = true)
     protected void badRequest(ResultCode code, String message) {
+        if (looksLikeMessageKey(message)) {
+            throw ValidationException.keyed(code, message);
+        }
         throw new ValidationException(code, message);
     }
 
+    /** @deprecated 使用 {@link UnauthorizedException#keyed(String, Object...)}。 */
+    @Deprecated(forRemoval = true)
     protected void unauthorized(String message) {
         throw new UnauthorizedException(message);
     }
 
+    /** @deprecated 使用 {@link UnauthorizedException#keyed(ResultCode, String, Object...)}。 */
+    @Deprecated(forRemoval = true)
     protected void unauthorized(ResultCode code, String message) {
         throw new UnauthorizedException(code, message);
     }
 
+    /** @deprecated 使用 {@link #forbiddenKeyed(ResultCode, String, Object...)}。 */
+    @Deprecated(forRemoval = true)
     protected void forbidden(String message) {
         throw new ForbiddenException(message);
     }
 
+    /** @deprecated 使用 {@link #forbiddenKeyed(ResultCode, String, Object...)}。 */
+    @Deprecated(forRemoval = true)
     protected void forbidden(ResultCode code, String message) {
         throw new ForbiddenException(code, message);
     }
 
+    /** @deprecated 使用 {@link TooManyRequestsException#keyed(String, Object...)}。 */
+    @Deprecated(forRemoval = true)
     protected void tooManyRequests(String message) {
         throw new TooManyRequestsException(message);
     }
 
+    private static boolean looksLikeMessageKey(String message) {
+        return message != null && message.matches("^[a-z][a-z0-9_.]*$");
+    }
+
+    /**
+     * @deprecated 使用 {@link #requireOwnerKeyed(Long, Long, ResultCode, String, Object...)}。
+     */
+    @Deprecated(forRemoval = true)
     protected void requireOwner(Long userId, Long ownerId, ResultCode forbiddenCode, String message) {
         if (!Objects.equals(userId, ownerId)) {
+            if (looksLikeMessageKey(message)) {
+                throw ForbiddenException.keyed(forbiddenCode, message);
+            }
             throw new ForbiddenException(forbiddenCode, message);
         }
     }
 
+    /**
+     * @deprecated 使用 {@link #requireOwnerKeyed(Long, Long, ResultCode, String, Object...)}。
+     */
+    @Deprecated(forRemoval = true)
     protected void requireOwner(Long userId, Long ownerId, String message) {
         requireOwner(userId, ownerId, ResultCode.FORBIDDEN, message);
     }

@@ -1,13 +1,28 @@
+import i18n from '@/i18n'
+
 export type SessionDateGroup = 'today' | 'yesterday' | 'week' | 'older'
 
-export const SESSION_GROUP_LABELS: Record<SessionDateGroup, string> = {
-  today: '今天',
-  yesterday: '昨天',
-  week: '7天内',
-  older: '更早',
+const GROUP_ORDER: SessionDateGroup[] = ['today', 'yesterday', 'week', 'older']
+
+export function sessionGroupLabel(group: SessionDateGroup): string {
+  return i18n.t(`common:sessionGroups.${group}`)
 }
 
-const GROUP_ORDER: SessionDateGroup[] = ['today', 'yesterday', 'week', 'older']
+/** @deprecated use sessionGroupLabel() */
+export const SESSION_GROUP_LABELS: Record<SessionDateGroup, string> = {
+  get today() {
+    return sessionGroupLabel('today')
+  },
+  get yesterday() {
+    return sessionGroupLabel('yesterday')
+  },
+  get week() {
+    return sessionGroupLabel('week')
+  },
+  get older() {
+    return sessionGroupLabel('older')
+  },
+}
 
 function resolveGroup(date: Date, now: Date): SessionDateGroup {
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate())
@@ -38,11 +53,9 @@ export function groupSessionsByDate<T extends { updatedAt: Date }>(
     buckets.set(group, list)
   }
 
-  return GROUP_ORDER
-    .filter((group) => (buckets.get(group)?.length ?? 0) > 0)
-    .map((group) => ({
-      group,
-      label: SESSION_GROUP_LABELS[group],
-      items: buckets.get(group) ?? [],
-    }))
+  return GROUP_ORDER.filter((group) => (buckets.get(group)?.length ?? 0) > 0).map((group) => ({
+    group,
+    label: sessionGroupLabel(group),
+    items: buckets.get(group) ?? [],
+  }))
 }

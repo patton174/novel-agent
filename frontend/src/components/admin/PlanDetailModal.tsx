@@ -31,7 +31,7 @@ export function PlanDetailModal({ detail, loading, onClose, onOpenOrder }: PlanD
     return [
       {
         key: 'id',
-        header: 'ID',
+        header: t('admin:users.colId'),
         render: (order) => <PixelCellMono>#{order.id}</PixelCellMono>,
       },
       {

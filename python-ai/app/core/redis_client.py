@@ -1,4 +1,4 @@
-"""Redis 单例（解析进度等）。复用 CN 开发中间件 118.89.123.201:16379。"""
+"""Redis 单例（KG 进度 + 爬虫单例锁）。复用 CN 中间件。"""
 
 from __future__ import annotations
 
@@ -35,3 +35,29 @@ def get_parse_progress(file_id: str) -> int | None:
         return int(v) if v is not None else None
     except Exception:
         return None
+
+
+def acquire_lock(key: str, ttl_sec: int) -> tuple[bool, str]:
+    """SETNX + TTL 单例锁。成功返回 (True, token)，失败 (False, "")。"""
+    import secrets
+
+    token = secrets.token_hex(8)
+    ok = get_redis().set(key, token, nx=True, ex=ttl_sec)
+    return bool(ok), token if ok else ""
+
+
+def renew_lock(key: str, token: str, ttl_sec: int) -> bool:
+    """续约（仅持锁者）。用 Lua 防误释放他人锁。"""
+    lua = (
+        "if redis.call('get', KEYS[1]) == ARGV[1] then "
+        "return redis.call('expire', KEYS[1], ARGV[2]) else return 0 end"
+    )
+    return bool(get_redis().eval(lua, 1, key, token, str(ttl_sec)))
+
+
+def release_lock(key: str, token: str) -> None:
+    lua = (
+        "if redis.call('get', KEYS[1]) == ARGV[1] then "
+        "return redis.call('del', KEYS[1]) else return 0 end"
+    )
+    get_redis().eval(lua, 1, key, token)

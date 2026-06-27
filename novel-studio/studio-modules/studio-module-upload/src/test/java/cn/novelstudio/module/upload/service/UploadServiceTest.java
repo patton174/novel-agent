@@ -49,7 +49,9 @@ class UploadServiceTest {
         when(redis.opsForValue()).thenReturn(mock(ValueOperations.class));
         resultLocalizer = mock(ResultLocalizer.class);
         when(resultLocalizer.resolveLiteral(any())).thenAnswer(inv -> inv.getArgument(0));
-        svc = new UploadService(fileRepo, catalogBridge, storage, props, producerProvider, redis, resultLocalizer);
+        svc = new UploadService(
+            fileRepo, catalogBridge, storage, props, producerProvider, redis, resultLocalizer, null
+        );
     }
 
     @Test
@@ -60,6 +62,13 @@ class UploadServiceTest {
     @Test
     void resolveFormat_normalizesMarkdownToMd() {
         assertThat(svc.resolveFormat("notes.markdown")).isEqualTo("md");
+    }
+
+    @Test
+    void resolveFormat_rejectsMissingExtension() {
+        assertThatThrownBy(() -> svc.resolveFormat("noext"))
+            .isInstanceOf(ValidationException.class)
+            .hasMessageContaining("upload.missing_extension");
     }
 
     @Test

@@ -7,11 +7,15 @@ import { useUploadProgress } from '@/hooks/useUploadProgress'
 import { getAuthHeaders } from '@/utils/auth'
 import { parseResultResponse } from '@/utils/resultApi'
 import { useTranslation } from 'react-i18next'
+import { cn } from '@/lib/utils'
 import type { UploadedFile } from '@/types/file'
 
 interface FileUploaderProps {
   onUploaded: (f: UploadedFile) => void
   onResolved: (f: UploadedFile) => void
+  /** 横向紧凑条，适合列表页顶部 */
+  compact?: boolean
+  className?: string
 }
 
 const UPLOAD_URL = '/api/content/auth/upload/file'
@@ -25,7 +29,7 @@ async function parseXhrResult(xhr: XMLHttpRequest): Promise<UploadedFile> {
   return parseResultResponse<UploadedFile>(response)
 }
 
-export function FileUploader({ onUploaded, onResolved }: FileUploaderProps) {
+export function FileUploader({ onUploaded, onResolved, compact = false, className }: FileUploaderProps) {
   const { t } = useTranslation(['dashboard'])
   const inputRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
@@ -59,23 +63,23 @@ export function FileUploader({ onUploaded, onResolved }: FileUploaderProps) {
         }
         xhr.onload = async () => {
           if (xhr.status === 409) {
-            reject(new Error('上传数量已达套餐上限'))
+            reject(new Error(t('myLibrary.uploadQuotaExceeded')))
             return
           }
           if (xhr.status >= 400) {
             try {
               await parseXhrResult(xhr) // 会抛出解析后的错误信息
             } catch (err) {
-              reject(err instanceof Error ? err : new Error('上传失败'))
+              reject(err instanceof Error ? err : new Error(t('myLibrary.uploadFail')))
               return
             }
-            reject(new Error('上传失败'))
+            reject(new Error(t('myLibrary.uploadFail')))
             return
           }
           try {
             resolve(await parseXhrResult(xhr))
           } catch (err) {
-            reject(err instanceof Error ? err : new Error('上传失败'))
+            reject(err instanceof Error ? err : new Error(t('myLibrary.uploadFail')))
           }
         }
         xhr.onerror = () => reject(new Error(t('myLibrary.uploadFail')))
@@ -98,12 +102,21 @@ export function FileUploader({ onUploaded, onResolved }: FileUploaderProps) {
       const r = await retryParse(last.fileId)
       setLast(r)
     } catch (err) {
-      appToast.error(err instanceof Error ? err.message : '重试失败')
+      appToast.error(err instanceof Error ? err.message : t('myLibrary.retryFail'))
     }
   }
 
   return (
-    <div className="rounded-xl border border-dashed border-border p-6 text-center">
+    <div
+      className={
+        compact
+          ? cn(
+              'flex flex-col gap-3 rounded-lg border border-dashed border-border bg-muted/20 px-4 py-3 sm:flex-row sm:items-center sm:justify-between',
+              className,
+            )
+          : cn('rounded-xl border border-dashed border-border p-6 text-center', className)
+      }
+    >
       <input
         ref={inputRef}
         type="file"
@@ -112,13 +125,21 @@ export function FileUploader({ onUploaded, onResolved }: FileUploaderProps) {
         onChange={(e) => void handleChange(e)}
       />
       {uploading ? (
-        <div>
-          <Loader2 className="mx-auto size-6 animate-spin text-muted-foreground" />
-          <div className="mt-2 h-1.5 w-full max-w-xs mx-auto overflow-hidden rounded bg-muted">
+        <div className={compact ? 'w-full' : undefined}>
+          <Loader2 className={cn('size-6 animate-spin text-muted-foreground', !compact && 'mx-auto')} />
+          <div className={cn('mt-2 h-1.5 w-full overflow-hidden rounded bg-muted', !compact && 'max-w-xs mx-auto')}>
             <div className="h-full bg-primary transition-all" style={{ width: `${uploadPct}%` }} />
           </div>
           <p className="mt-1 text-xs text-muted-foreground">{uploadPct}%</p>
         </div>
+      ) : compact ? (
+        <>
+          <p className="text-sm text-muted-foreground">{t('myLibrary.uploadHint')}</p>
+          <Button variant="outline" onClick={handlePick} className="shrink-0">
+            <Upload className="mr-2 size-4" />
+            {t('myLibrary.uploadButton')}
+          </Button>
+        </>
       ) : (
         <Button variant="outline" onClick={handlePick}>
           <Upload className="mr-2 size-4" />
@@ -127,7 +148,7 @@ export function FileUploader({ onUploaded, onResolved }: FileUploaderProps) {
       )}
 
       {tracked && tracked.status !== 'ready' && !uploading ? (
-        <div className="mt-4 text-sm">
+        <div className={cn('text-sm', compact ? 'w-full border-t border-border/60 pt-3' : 'mt-4')}>
           {tracked.status === 'parsing' ? (
             <>
               <Loader2 className="mr-1 inline size-4 animate-spin" />
@@ -156,7 +177,7 @@ export function FileUploader({ onUploaded, onResolved }: FileUploaderProps) {
       ) : null}
 
       {tracked && tracked.status === 'ready' ? (
-        <div className="mt-4 text-sm text-emerald-600">
+        <div className={cn('text-sm text-emerald-600', compact ? 'w-full border-t border-border/60 pt-3' : 'mt-4')}>
           <CheckCircle2 className="mr-1 inline size-4" />
           {t('myLibrary.parseDone')}
         </div>

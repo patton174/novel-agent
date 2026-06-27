@@ -30,6 +30,7 @@ export type PixelTableActionButtonProps = Omit<ComponentProps<typeof Button>, 's
   loading?: boolean
   leftIcon?: ReactNode
   rightIcon?: ReactNode
+  density?: 'compact' | 'form'
 }
 
 export function PixelTableActionButton({

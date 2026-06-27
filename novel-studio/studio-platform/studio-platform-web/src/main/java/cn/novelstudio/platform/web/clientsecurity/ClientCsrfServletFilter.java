@@ -58,7 +58,7 @@ public class ClientCsrfServletFilter extends OncePerRequestFilter {
         }
         log.warn("csrf mismatch path={} enforce={}", path, properties.enforceCsrf());
         if (properties.enforceCsrf()) {
-            securityResponses.forbidden(response, "CSRF_INVALID");
+            securityResponses.forbidden(response, "security.client.csrf_invalid");
             return;
         }
         filterChain.doFilter(request, response);

@@ -89,9 +89,15 @@ app:
     allowed-formats: [txt, md, markdown, epub, pdf, docx]
   i18n:
     enabled: true
+    # LibreTranslate-compatible API base (POST {baseUrl}/translate); empty disables machine translation
     translation-base-url: ${I18N_TRANSLATION_BASE_URL:}
     translation-api-key: ${I18N_TRANSLATION_API_KEY:}
+    # When true, admin site-content saves auto-translate to en (requires translation-base-url)
     auto-translate-site-content: ${I18N_AUTO_TRANSLATE_SITE_CONTENT:true}
+    # Background site-CMS translation sweep interval in ms; 0 disables (default 300000 = 5 min)
+    site-content-sync-interval-ms: ${I18N_SITE_CONTENT_SYNC_INTERVAL_MS:300000}
+    # Max zh-CN rows translated per sweep (default 20)
+    site-content-sync-batch-size: ${I18N_SITE_CONTENT_SYNC_BATCH_SIZE:20}
 
 studio:
   security:
@@ -130,6 +136,11 @@ mailtrap:
   token: ${MAILTRAP_TOKEN:}
   from-email: hello@noreply.novel-agent.cn
   from-name: Novel Agent
+
+notification:
+  enabled: ${NOTIFICATION_ENABLED:true}
+  internal:
+    base-url: ${STUDIO_INTERNAL_BASE_URL:http://127.0.0.1:${server.port:8080}}
 
 billing:
   idatariver:

@@ -1,6 +1,11 @@
 package cn.novelstudio.module.billing.controller.crm;
 
 import cn.novelstudio.module.billing.dto.*;
+import cn.novelstudio.module.billing.entity.RedemptionCodeEntity;
+import cn.novelstudio.module.billing.entity.UpgradeRequestEntity;
+import cn.novelstudio.module.billing.entity.UsagePeriodSummaryEntity;
+import cn.novelstudio.module.billing.repository.RedemptionCodeRepository;
+import cn.novelstudio.module.billing.repository.UsagePeriodSummaryRepository;
 import cn.novelstudio.module.billing.service.biz.AuditLogBiz;
 import cn.novelstudio.module.billing.service.biz.PaymentOrderCrmBiz;
 import cn.novelstudio.module.billing.service.biz.PlanCrmBiz;
@@ -8,15 +13,24 @@ import cn.novelstudio.module.billing.service.biz.SiteContentBiz;
 import cn.novelstudio.module.billing.service.PaymentSettingsBiz;
 import cn.novelstudio.module.billing.service.biz.SiteSettingsBiz;
 import cn.novelstudio.module.billing.service.biz.SubscriptionBiz;
+import cn.novelstudio.module.billing.service.biz.UpgradeRequestBiz;
 import cn.novelstudio.module.billing.service.biz.UsageCrmBiz;
+import cn.novelstudio.module.billing.service.biz.UserBalanceBiz;
+import cn.novelstudio.module.billing.support.RedemptionCodeGenerator;
 import cn.novelstudio.kernel.base.Page;
 import cn.novelstudio.kernel.base.Result;
+import cn.novelstudio.kernel.tools.IdWorker;
+import cn.novelstudio.platform.web.AuthRoleSupport;
 import cn.novelstudio.platform.web.BaseController;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/billing/crm")
@@ -31,6 +45,11 @@ public class BillingCrmController extends BaseController {
     private final SiteSettingsBiz siteSettingsBiz;
     private final PaymentSettingsBiz paymentSettingsBiz;
     private final AuditLogBiz auditLogBiz;
+    private final RedemptionCodeRepository redemptionCodeRepository;
+    private final RedemptionCodeGenerator redemptionCodeGenerator;
+    private final UpgradeRequestBiz upgradeRequestBiz;
+    private final UserBalanceBiz userBalanceBiz;
+    private final UsagePeriodSummaryRepository usagePeriodSummaryRepository;
 
     @GetMapping("/plans")
     public Result<List<PlanCrmResp>> listPlans() {
@@ -227,6 +246,139 @@ public class BillingCrmController extends BaseController {
     @PostMapping("/payment-settings/test")
     public Result<PaymentSettingsTestResp> testPaymentSettings() {
         return ok(paymentSettingsBiz.testConnection());
+    }
+
+    @PostMapping("/redemption-code/generate")
+    public Result<List<Map<String, Object>>> generateCodes(
+        @RequestHeader(value = "X-User-Roles", required = false) String roles,
+        @RequestHeader(value = "X-User-Id", required = false) String actor,
+        @RequestBody Map<String, Object> body
+    ) {
+        AuthRoleSupport.requireAdmin(roles);
+        String type = (String) body.get("type");
+        String value = (String) body.get("value");
+        int count = intValue(body.get("count"), 1);
+        int maxUses = intValue(body.get("maxUses"), 1);
+        Instant expiresAt = body.get("expiresAt") != null
+            ? Instant.parse((String) body.get("expiresAt"))
+            : null;
+        Long adminId = parseOptionalUserId(actor);
+        List<Map<String, Object>> out = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            RedemptionCodeEntity codeEntity = new RedemptionCodeEntity();
+            codeEntity.setId(IdWorker.nextIdStr());
+            codeEntity.setCode(redemptionCodeGenerator.generate(24));
+            codeEntity.setType(type);
+            codeEntity.setValue(value);
+            codeEntity.setMaxUses(maxUses);
+            codeEntity.setUsedCount(0);
+            codeEntity.setExpiresAt(expiresAt);
+            codeEntity.setCreatedBy(adminId);
+            codeEntity.setCreatedAt(Instant.now());
+            redemptionCodeRepository.save(codeEntity);
+            out.add(Map.of("id", codeEntity.getId(), "code", codeEntity.getCode()));
+        }
+        return ok(out);
+    }
+
+    @GetMapping("/redemption-code/page")
+    public Result<Page<RedemptionCodeEntity>> pageCodes(
+        @RequestHeader(value = "X-User-Roles", required = false) String roles,
+        @RequestParam(defaultValue = "1") int pageCurrent,
+        @RequestParam(defaultValue = "20") int pageSize
+    ) {
+        AuthRoleSupport.requireAdmin(roles);
+        var springPage = redemptionCodeRepository.findAllByOrderByCreatedAtDesc(
+            PageRequest.of(Math.max(0, pageCurrent - 1), pageSize)
+        );
+        return ok(Page.of(springPage.getContent(), springPage.getTotalElements(), pageCurrent, pageSize));
+    }
+
+    @DeleteMapping("/redemption-code/{id}")
+    public Result<Void> deleteCode(
+        @RequestHeader(value = "X-User-Roles", required = false) String roles,
+        @PathVariable String id
+    ) {
+        AuthRoleSupport.requireAdmin(roles);
+        redemptionCodeRepository.deleteById(id);
+        return ok();
+    }
+
+    @GetMapping("/upgrade-request/page")
+    public Result<Page<UpgradeRequestEntity>> pageUpgradeRequests(
+        @RequestHeader(value = "X-User-Roles", required = false) String roles,
+        @RequestParam(required = false) String status,
+        @RequestParam(defaultValue = "1") int pageCurrent,
+        @RequestParam(defaultValue = "20") int pageSize
+    ) {
+        AuthRoleSupport.requireAdmin(roles);
+        var springPage = upgradeRequestBiz.list(status, pageCurrent, pageSize);
+        return ok(Page.of(springPage.getContent(), springPage.getTotalElements(), pageCurrent, pageSize));
+    }
+
+    @PostMapping("/upgrade-request/{id}/approve")
+    public Result<Void> approveUpgrade(
+        @RequestHeader(value = "X-User-Roles", required = false) String roles,
+        @RequestHeader(value = "X-User-Id", required = false) String actor,
+        @PathVariable String id,
+        @RequestBody Map<String, String> body
+    ) {
+        AuthRoleSupport.requireAdmin(roles);
+        upgradeRequestBiz.approve(id, parseOptionalUserId(actor), body.get("reviewNote"));
+        return ok();
+    }
+
+    @PostMapping("/upgrade-request/{id}/reject")
+    public Result<Void> rejectUpgrade(
+        @RequestHeader(value = "X-User-Roles", required = false) String roles,
+        @RequestHeader(value = "X-User-Id", required = false) String actor,
+        @PathVariable String id,
+        @RequestBody Map<String, String> body
+    ) {
+        AuthRoleSupport.requireAdmin(roles);
+        upgradeRequestBiz.reject(id, parseOptionalUserId(actor), body.get("reviewNote"));
+        return ok();
+    }
+
+    @GetMapping("/balance/{userId}")
+    public Result<Map<String, Object>> getBalance(
+        @RequestHeader(value = "X-User-Roles", required = false) String roles,
+        @PathVariable Long userId
+    ) {
+        AuthRoleSupport.requireAdmin(roles);
+        return ok(Map.of("balanceMicros", userBalanceBiz.getBalance(userId)));
+    }
+
+    @PostMapping("/balance/{userId}/adjust")
+    public Result<Void> adjustBalance(
+        @RequestHeader(value = "X-User-Roles", required = false) String roles,
+        @RequestHeader(value = "X-User-Id", required = false) String actor,
+        @PathVariable Long userId,
+        @RequestBody Map<String, Object> body
+    ) {
+        AuthRoleSupport.requireAdmin(roles);
+        long delta = ((Number) body.get("deltaMicros")).longValue();
+        userBalanceBiz.adjust(userId, delta);
+        return ok();
+    }
+
+    @GetMapping("/overage")
+    public Result<List<UsagePeriodSummaryEntity>> listOverage(
+        @RequestHeader(value = "X-User-Roles", required = false) String roles,
+        @RequestParam String period
+    ) {
+        AuthRoleSupport.requireAdmin(roles);
+        return ok(usagePeriodSummaryRepository.findByPeriodYyyyMmAndOverageMicrosGreaterThan(period, 0L));
+    }
+
+    private static int intValue(Object value, int defaultValue) {
+        if (value == null) {
+            return defaultValue;
+        }
+        if (value instanceof Number number) {
+            return number.intValue();
+        }
+        return Integer.parseInt(value.toString());
     }
 
     private static Long parseOptionalUserId(String header) {

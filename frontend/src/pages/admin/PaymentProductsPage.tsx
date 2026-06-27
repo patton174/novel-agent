@@ -68,6 +68,8 @@ type PlanBindingDraft = { projectId: string | null; skuId: string | null }
 
 export type PaymentProductsView = 'all' | 'platform' | 'catalog' | 'inventory' | 'bind'
 
+type PaymentFoldKey = 'setup' | 'catalog' | 'bind'
+
 export default function PaymentProductsPage({ view = 'all' }: { view?: PaymentProductsView } = {}) {
 
   const { t } = useTranslation(['admin'])
@@ -102,6 +104,11 @@ export default function PaymentProductsPage({ view = 'all' }: { view?: PaymentPr
   const [planBindings, setPlanBindings] = useState<Record<number, PlanBindingDraft>>({})
 
   const [bindingPlanId, setBindingPlanId] = useState<number | null>(null)
+  const [openFold, setOpenFold] = useState<PaymentFoldKey | null>('setup')
+
+  const setFoldOpen = (key: PaymentFoldKey) => (open: boolean) => {
+    setOpenFold(open ? key : null)
+  }
 
 
 
@@ -418,7 +425,7 @@ export default function PaymentProductsPage({ view = 'all' }: { view?: PaymentPr
       {
         key: 'binding',
         header: `${t('admin:products.pickProject')} / ${t('admin:products.pickSku')}`,
-        className: 'min-w-[280px]',
+        className: 'min-w-[360px]',
         render: (plan) => {
           const draft = planBindings[plan.id] ?? { projectId: null, skuId: null }
           return (
@@ -448,12 +455,15 @@ export default function PaymentProductsPage({ view = 'all' }: { view?: PaymentPr
         key: 'actions',
         header: t('admin:products.colActions'),
         render: (plan) => (
-          <PixelTableActionButton
-            disabled={!canUseCatalog || bindingPlanId === plan.id}
-            onClick={() => void handleBindPlan(plan)}
-          >
-            {bindingPlanId === plan.id ? t('admin:products.binding') : t('admin:products.bindSave')}
-          </PixelTableActionButton>
+          <div className="flex items-center">
+            <PixelTableActionButton
+              density="form"
+              disabled={!canUseCatalog || bindingPlanId === plan.id}
+              onClick={() => void handleBindPlan(plan)}
+            >
+              {bindingPlanId === plan.id ? t('admin:products.binding') : t('admin:products.bindSave')}
+            </PixelTableActionButton>
+          </div>
         ),
       },
     ]
@@ -502,7 +512,8 @@ export default function PaymentProductsPage({ view = 'all' }: { view?: PaymentPr
           <AdminFoldSection
             title={t('admin:products.tab.setup')}
             description={t('admin:products.gatewayDesc')}
-            defaultOpen
+            open={openFold === 'setup'}
+            onOpenChange={setFoldOpen('setup')}
             action={
               settings?.docsUrl ? (
                 <a
@@ -548,7 +559,8 @@ export default function PaymentProductsPage({ view = 'all' }: { view?: PaymentPr
           <AdminFoldSection
             title={catalogTitle}
             description={catalogDesc}
-            defaultOpen={canUseCatalog}
+            open={openFold === 'catalog'}
+            onOpenChange={setFoldOpen('catalog')}
             action={
               <AdminButtonGhost asChild>
                 <Link to="/admin/billing/orders">{t('admin:products.viewOrders')}</Link>
@@ -586,13 +598,20 @@ export default function PaymentProductsPage({ view = 'all' }: { view?: PaymentPr
         ) : null}
 
         {showBind ? (
-          <AdminFoldSection title={t('admin:products.tab.bind')} description={t('admin:products.bindDesc')}>
+          <AdminFoldSection
+            title={t('admin:products.tab.bind')}
+            description={t('admin:products.bindDesc')}
+            open={openFold === 'bind'}
+            onOpenChange={setFoldOpen('bind')}
+          >
             {loading ? (
               <Skeleton className="h-32 w-full rounded-lg" />
             ) : paidPlans.length === 0 ? (
               <p className="font-mono text-sm text-muted-foreground">{t('admin:products.noPaidPlans')}</p>
             ) : (
               <PixelTable
+                embedded
+                compact
                 columns={bindColumns}
                 data={paidPlans}
                 rowKey="id"
@@ -729,13 +748,13 @@ function SetupForm({
 
         <AdminField layout="form" label={t('admin:products.fieldBaseUrl')}>
 
-          <AdminTextInput value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} placeholder="https://open.idatariver.com" />
+          <AdminTextInput value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} placeholder={t('admin:products.placeholderBaseUrl')} />
 
         </AdminField>
 
         <AdminField layout="form" label={t('admin:products.fieldPublicBaseUrl')}>
 
-          <AdminTextInput value={publicBaseUrl} onChange={(e) => setPublicBaseUrl(e.target.value)} placeholder="https://www.novel-agent.cn" />
+          <AdminTextInput value={publicBaseUrl} onChange={(e) => setPublicBaseUrl(e.target.value)} placeholder={t('admin:products.placeholderPublicUrl')} />
 
         </AdminField>
 

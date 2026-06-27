@@ -1,13 +1,9 @@
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { NovelAiPixelWordmark } from '@/components/marketing/pixel/NovelAiPixelWordmark'
-import { ProSidebar, type ProSidebarGroup } from '@/components/pro/ProSidebar'
-import {
-  ProIconBilling,
-  ProIconLibrary,
-  ProIconNovel,
-  ProIconOverview,
-} from '@/components/pro/icons/proIcons'
+import { DASHBOARD_NAV_GROUPS } from '@/config/dashboardNav'
+import { cn } from '@/lib/utils'
+import { ProSidebar } from '@/components/pro/ProSidebar'
 import { DashboardSidebarFooter } from './DashboardSidebarFooter'
 
 interface AppSidebarProps {
@@ -15,35 +11,46 @@ interface AppSidebarProps {
   onNavigate?: () => void
 }
 
-/** 仪表盘侧栏：ProSidebar 薄封装（顶部 wordmark + 创作分组导航 + 底部头像/设置） */
+/** 仪表盘侧栏：按模块分区展示，子项常显；不做整栏折叠（管理台保留）。 */
 export function AppSidebar({ embedded = false, onNavigate }: AppSidebarProps) {
   const { t } = useTranslation(['common'])
 
-  const groups: ProSidebarGroup[] = [
-    {
-      title: t('common:nav.groupCreation'),
-      items: [
-        { label: t('common:nav.dashboardOverview'), to: '/dashboard', icon: ProIconOverview, end: true },
-        { label: t('common:nav.dashboardNovels'), to: '/dashboard/novels', icon: ProIconNovel },
-        { label: t('common:nav.dashboardMyLibrary'), to: '/dashboard/my-library', icon: ProIconLibrary },
-        { label: t('common:nav.dashboardBilling'), to: '/dashboard/billing', icon: ProIconBilling },
-      ],
-    },
-  ]
+  const groups = DASHBOARD_NAV_GROUPS.map((group) => ({
+    id: group.titleKey,
+    title: t(group.titleKey),
+    icon: group.icon,
+    hideTitle: group.hideTitle,
+    items: group.items.map((item) => ({
+      label: t(item.labelKey),
+      to: item.to,
+      icon: item.icon,
+      end: item.end,
+    })),
+  }))
 
   return (
     <ProSidebar
       groups={groups}
       embedded={embedded}
+      collapsed={false}
       onNavigate={onNavigate}
       header={
-        <div className="flex h-12 items-center border-b border-border/60 px-3">
-          <Link to="/" className="flex min-w-0 items-center overflow-hidden transition-opacity hover:opacity-90" aria-label={t('common:nav.backToHome')}>
+        <div
+          className={cn(
+            'flex h-12 items-center gap-2 border-b-2 border-black bg-background px-3 transition-[padding] duration-300 ease-in-out',
+          )}
+        >
+          <Link
+            to="/"
+            className="flex min-w-0 flex-1 items-center overflow-hidden transition-opacity hover:opacity-90"
+            aria-label={t('common:nav.backToHome')}
+            onClick={onNavigate}
+          >
             <NovelAiPixelWordmark size="sm" cursor={false} />
           </Link>
         </div>
       }
-      footer={<DashboardSidebarFooter onNavigate={onNavigate} />}
+      footer={<DashboardSidebarFooter onNavigate={onNavigate} collapsed={false} />}
     />
   )
 }

@@ -28,7 +28,7 @@ describe('DashboardSidebarFooter', () => {
       </MemoryRouter>,
     )
     const link = screen.getByRole('link')
-    expect(link).toHaveAttribute('href', '/dashboard/settings')
+    expect(link).toHaveAttribute('href', '/dashboard/settings/profile')
     expect(screen.getByText('alice')).toBeInTheDocument()
     expect(screen.getByText('alice@example.com')).toBeInTheDocument()
   })

@@ -1,3 +1,5 @@
+import i18n from '@/i18n'
+
 export interface RequestCryptoEnvelope {
   v: number
   kid: string
@@ -55,7 +57,7 @@ export async function encryptFieldPart(
   material: { aesKeyB64: string } | null,
 ): Promise<string> {
   if (!material?.aesKeyB64) {
-    throw new Error('session crypto required for field encryption')
+    throw new Error(i18n.t('common:errors.secureFetch.sessionCryptoRequired'))
   }
   return encryptFieldPartWithKey(plaintext, material.aesKeyB64)
 }

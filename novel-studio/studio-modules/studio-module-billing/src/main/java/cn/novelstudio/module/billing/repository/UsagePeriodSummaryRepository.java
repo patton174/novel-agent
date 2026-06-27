@@ -17,4 +17,6 @@ public interface UsagePeriodSummaryRepository extends JpaRepository<UsagePeriodS
         WHERE s.periodYyyyMm = :period
         """)
     List<Object[]> sumByPeriod(@Param("period") String period);
+
+    List<UsagePeriodSummaryEntity> findByPeriodYyyyMmAndOverageMicrosGreaterThan(String periodYyyyMm, Long overageMicros);
 }

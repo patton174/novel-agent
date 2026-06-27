@@ -14,6 +14,8 @@ describe('agentToolNames', () => {
     expect(normalizeToolName('WriteChapter')).toBe('Write')
     expect(normalizeToolName('choose')).toBe('AskUser')
     expect(normalizeToolName('SearchKnowledge')).toBe('Grep')
+    expect(normalizeToolName('memory_read')).toBe('Read')
+    expect(normalizeToolName('chapter_list')).toBe('Glob')
   })
 
   it('detects AskUser variants', () => {
@@ -32,6 +34,8 @@ describe('agentToolNames', () => {
   it('detects collapsible read tools', () => {
     expect(isCollapsibleReadTool('ReadMemory')).toBe(true)
     expect(isCollapsibleReadTool('ReadChapter')).toBe(true)
+    expect(isCollapsibleReadTool('Read')).toBe(true)
+    expect(isCollapsibleReadTool('memory_read')).toBe(true)
     expect(isCollapsibleReadTool('WriteChapter')).toBe(false)
   })
 

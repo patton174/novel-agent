@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import { ChevronDown } from 'lucide-react'
 import {
   AppShellCard,
@@ -26,6 +27,7 @@ export function AdminCollapsibleCard({
   bodyClassName?: string
   children: ReactNode
 }) {
+  const { t } = useTranslation('common')
   const isMobile = useAppMobile()
   const [mobileOpen, setMobileOpen] = useState(defaultMobileOpen)
   const expanded = !isMobile || mobileOpen
@@ -47,7 +49,7 @@ export function AdminCollapsibleCard({
                 type="button"
                 className="inline-flex size-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted/60 hover:text-foreground"
                 aria-expanded={mobileOpen}
-                aria-label={mobileOpen ? '收起' : '展开'}
+                aria-label={mobileOpen ? t('sidebar.collapseShort') : t('sidebar.expandShort')}
                 onClick={() => setMobileOpen((open) => !open)}
               >
                 <ChevronDown className={cn('size-4 transition-transform', mobileOpen && 'rotate-180')} />
