@@ -9,5 +9,5 @@ import java.util.Map;
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public record ResolveAgentSkillsResponse(
     List<Map<String, Object>> skills,
-    String mergedPrompt
+    String catalog
 ) {}

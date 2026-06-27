@@ -1,5 +1,7 @@
 # 本地 profile：连 MW 线上库时 Flyway 关闭（schema 已在生产维护）
 spring:
+  main:
+    lazy-initialization: true
   datasource:
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:novel_agent}?tcpKeepAlive=true&ApplicationName=novel-studio-local
     username: ${DB_USER:postgres}
@@ -36,6 +38,9 @@ agent:
   runtime:
     mode: ${AGENT_RUNTIME_MODE:queued}
     pg-run-enabled: ${AGENT_PG_RUN_ENABLED:true}
+    warmup-enabled: false
+    warmup-redis-ping: false
+    warmup-python-ping: false
   python:
     base-url: http://127.0.0.1:8000
   internal:

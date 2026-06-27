@@ -1,3 +1,5 @@
+import { isBlogSlug } from '@/content/blog/articles'
+
 /** i18n keys for document title (and optional description). Namespace included, e.g. `common:layout.dashboard.overviewTitle`. */
 export interface RouteDocumentMeta {
   titleKey: string
@@ -175,13 +177,42 @@ const EXACT_ROUTE_META: Record<string, RouteDocumentMeta> = {
   },
 
   // —— Marketing ——
-  '/': { titleKey: 'marketing:brand' },
-  '/guide': { titleKey: 'marketing:nav.guide' },
-  '/pricing': { titleKey: 'marketing:nav.pricing' },
-  '/about': { titleKey: 'marketing:nav.about' },
-  '/privacy': { titleKey: 'marketing:footer.privacy' },
-  '/terms': { titleKey: 'marketing:footer.terms' },
-  '/contact': { titleKey: 'marketing:footer.contact' },
+  '/': {
+    titleKey: 'marketing:seo.homeTitle',
+    descriptionKey: 'marketing:seo.homeDescription',
+  },
+  '/guide': {
+    titleKey: 'marketing:seo.guideTitle',
+    descriptionKey: 'marketing:seo.guideDescription',
+  },
+  '/pricing': {
+    titleKey: 'marketing:seo.pricingTitle',
+    descriptionKey: 'marketing:seo.pricingDescription',
+  },
+  '/about': {
+    titleKey: 'marketing:seo.aboutTitle',
+    descriptionKey: 'marketing:seo.aboutDescription',
+  },
+  '/compare': {
+    titleKey: 'marketing:seo.compareTitle',
+    descriptionKey: 'marketing:seo.compareDescription',
+  },
+  '/blog': {
+    titleKey: 'marketing:seo.blogTitle',
+    descriptionKey: 'marketing:seo.blogDescription',
+  },
+  '/privacy': {
+    titleKey: 'marketing:footer.privacy',
+    descriptionKey: 'marketing:seo.legalDescription',
+  },
+  '/terms': {
+    titleKey: 'marketing:footer.terms',
+    descriptionKey: 'marketing:seo.legalDescription',
+  },
+  '/contact': {
+    titleKey: 'marketing:footer.contact',
+    descriptionKey: 'marketing:seo.contactDescription',
+  },
 
   // —— Checkout ——
   '/checkout': { titleKey: 'marketing:pricing.checkout.pageTitle' },
@@ -257,6 +288,16 @@ export function resolveMetaForPath(pathname: string): RouteDocumentMeta {
   const exact = EXACT_ROUTE_META[path]
   if (exact) {
     return exact
+  }
+
+  if (path.startsWith('/blog/')) {
+    const slug = path.slice('/blog/'.length)
+    if (isBlogSlug(slug)) {
+      return {
+        titleKey: `marketing:blog.articles.${slug}.title`,
+        descriptionKey: `marketing:blog.articles.${slug}.description`,
+      }
+    }
   }
 
   const prefix = resolvePrefixMeta(path)

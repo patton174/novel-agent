@@ -665,3 +665,114 @@ def assistant_message_events(
     )
     sequence += 1
     return events, sequence
+
+
+def emit_crew_started(
+    ctx: AgentRunContext,
+    *,
+    crew_id: str,
+    display_name: str,
+    stage_count: int,
+    sequence: int,
+) -> dict[str, Any]:
+    return build_event(
+        event_type="crew.started",
+        run_id=ctx.run_id,
+        session_id=ctx.session_id,
+        message_id=ctx.message_id,
+        step_id=f"step_crew_{uuid4().hex[:8]}",
+        sequence=sequence,
+        payload={
+            "crew_id": crew_id,
+            "display_name": display_name,
+            "stage_count": stage_count,
+        },
+    )
+
+
+def emit_crew_stage_started(
+    ctx: AgentRunContext,
+    *,
+    stage_key: str,
+    profile_id: str,
+    index: int,
+    sequence: int,
+) -> dict[str, Any]:
+    return build_event(
+        event_type="crew.stage.started",
+        run_id=ctx.run_id,
+        session_id=ctx.session_id,
+        message_id=ctx.message_id,
+        step_id=f"step_crew_stage_{uuid4().hex[:8]}",
+        sequence=sequence,
+        payload={
+            "stage_key": stage_key,
+            "profile_id": profile_id,
+            "index": index,
+        },
+    )
+
+
+def emit_crew_stage_completed(
+    ctx: AgentRunContext,
+    *,
+    stage_key: str,
+    status: str,
+    summary: str,
+    sequence: int,
+) -> dict[str, Any]:
+    return build_event(
+        event_type="crew.stage.completed",
+        run_id=ctx.run_id,
+        session_id=ctx.session_id,
+        message_id=ctx.message_id,
+        step_id=f"step_crew_stage_{uuid4().hex[:8]}",
+        sequence=sequence,
+        payload={
+            "stage_key": stage_key,
+            "status": status,
+            "summary": summary[:2000],
+        },
+    )
+
+
+def emit_crew_completed(
+    ctx: AgentRunContext,
+    *,
+    crew_id: str,
+    stage_outputs: dict[str, Any],
+    sequence: int,
+) -> dict[str, Any]:
+    return build_event(
+        event_type="crew.completed",
+        run_id=ctx.run_id,
+        session_id=ctx.session_id,
+        message_id=ctx.message_id,
+        step_id=f"step_crew_{uuid4().hex[:8]}",
+        sequence=sequence,
+        payload={
+            "crew_id": crew_id,
+            "stage_keys": list(stage_outputs.keys()),
+        },
+    )
+
+
+def emit_crew_failed(
+    ctx: AgentRunContext,
+    *,
+    crew_id: str,
+    report: str,
+    sequence: int,
+) -> dict[str, Any]:
+    return build_event(
+        event_type="crew.failed",
+        run_id=ctx.run_id,
+        session_id=ctx.session_id,
+        message_id=ctx.message_id,
+        step_id=f"step_crew_{uuid4().hex[:8]}",
+        sequence=sequence,
+        payload={
+            "crew_id": crew_id,
+            "report": (report or "")[:2000],
+        },
+    )

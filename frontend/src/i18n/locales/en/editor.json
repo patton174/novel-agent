@@ -95,7 +95,9 @@
       "selected": "Selected",
       "remove": "Remove skill {{name}}",
       "toolbar": "Add skills",
-      "maxReached": "You can attach up to 3 skills"
+      "maxReached": "You can attach up to 3 skills",
+      "pinFail": "Failed to pin skill version",
+      "updateAvailable": "Official skill update available"
     },
     "picker": {
       "unselectedChapter": "No chapter selected",
@@ -344,6 +346,7 @@
         "ListMemory": { "running": "Listing memory…", "done": "Memory listed", "failed": "Failed to list memory" },
         "DeleteMemory": { "running": "Deleting memory…", "done": "Memory deleted", "failed": "Failed to delete memory" },
         "SearchKnowledge": { "running": "Searching notes…", "done": "Search complete", "failed": "Search failed" },
+        "SearchSessionHistory": { "running": "Searching session history…", "done": "Session search complete", "failed": "Session search failed" },
         "GetCharacterGraph": { "running": "Analyzing relationships…", "done": "Relationships ready", "failed": "Failed to analyze relationships" },
         "AskUser": { "running": "Waiting for your reply…", "awaiting": "Waiting for your reply…", "done": "Reply received", "failed": "Question failed" },
         "TodoWrite": { "running": "Updating tasks…", "done": "Tasks updated", "failed": "Failed to update tasks" },
@@ -376,6 +379,7 @@
         "NarrativeReview": "Narrative review",
         "ReorderChapters": "Reorder chapters",
         "SearchKnowledge": "Knowledge search",
+        "SearchSessionHistory": "Session history search",
         "GetCharacterGraph": "Character graph",
         "Write": "Write",
         "Read": "Read",
@@ -773,6 +777,7 @@
           "ReorderChapters": "Reordering chapters…",
           "NarrativeReview": "Narrative review…",
           "SearchKnowledge": "Searching notes…",
+          "SearchSessionHistory": "Searching session history…",
           "GetCharacterGraph": "Analyzing relationships…",
           "Agent": "Running subtask…",
           "Skill": "Loading skill…",
@@ -816,6 +821,13 @@
           "glob": "Listed ×{{count}}",
           "grep": "Searched ×{{count}}",
           "delete": "Deleted {{count}} items"
+        },
+        "profile": {
+          "fallback": "Subagent",
+          "main-editor": "Main editor",
+          "chapter-writer": "Chapter writer",
+          "continuity-reviewer": "Continuity reviewer",
+          "style-editor": "Style editor"
         }
       },
       "timeline": {
@@ -853,5 +865,35 @@
         "submitWithCount": "Submit ({{count}})",
         "nextWithCount": "Next ({{count}})"
       }
+    },
+  "crew": {
+    "pickTitle": "Pick a crew",
+    "empty": "No crews found",
+    "selected": "Selected",
+    "stageCount": "{{count}} stages",
+    "remove": "Remove {{name}}",
+    "toolbar": "Expert crew",
+    "stage": {
+      "pending": "Pending",
+      "running": "Running",
+      "completed": "Done",
+      "failed": "Failed",
+      "skipped": "Skipped"
+    },
+    "failure": {
+      "verdict": {
+        "block": "Blocked",
+        "warn": "Warning",
+        "pass": "Passed"
+      },
+      "openReviewer": "Open reviewer run"
     }
+  },
+  "runTree": {
+    "loadFail": "Failed to load run tree",
+    "loading": "Loading run tree…",
+    "empty": "No child runs",
+    "show": "Run tree",
+    "hide": "Hide"
+  }
 }

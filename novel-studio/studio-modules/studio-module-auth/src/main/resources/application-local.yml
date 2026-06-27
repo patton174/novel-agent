@@ -39,7 +39,8 @@ auth:
     issuer: novel-agent
     secret: ${JWT_SECRET:novel-agent-dev-secret-change-in-production-32}
     access-ttl-seconds: 3600
-    refresh-ttl-seconds: 2592000
+    refresh-idle-ttl-seconds: 604800
+    refresh-absolute-ttl-seconds: 2592000
   cookie:
     secure: false
     domain: ${AUTH_COOKIE_DOMAIN:}
@@ -55,6 +56,8 @@ auth:
     enforce-fingerprint: false
     enforce-heartbeat: false
     enforce-csrf: false
+  risk:
+    enabled: false
   verification:
     email-code-ttl-seconds: 600
     email-cooldown-seconds: 60

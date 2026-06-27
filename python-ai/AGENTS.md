@@ -45,11 +45,15 @@ app/agent/
 
 | SSE 字段 | 来源 | 前端处理 |
 |----------|------|----------|
-| `tool.*.name` | API 工具名（`WriteChapter`） | `resolveToolTitle` → `editor:timeline.toolTitles.*` |
+| `crew.started` / `crew.stage.*` / `crew.completed` / `crew.failed` | `events.py` crew emit helpers | 专家团阶段编排（`AGENT_CREW_ENABLED`） |
 | `tool.*.display_name` | `cc_visibility.TOOL_DISPLAY_NAMES`（中文） | `toolDisplayName` → `editor:tools.*` |
 | `display_excerpt` / `output_summary` | `tool_ui.py` / `tool_display.py` 模板 | **多数直出**（空态、计数、行号等中文） |
 | `tool.progress.message` | `tool_display.*_progress_message`、`chapter_stream_bridge` | 章节流式时写入 `step.detail`；标题行优先 `toolTitles` |
 | `skill.started` / `skill.loaded` / `skill.failed` | `events.emit_skill_*` via `Skill` tool `sse_events` | 前端 skill 时间线条目；payload `skill.id` / `skill.name` |
+| `crew.started` | `events.emit_crew_started` via `CrewOrchestrator` | payload `crew_id`, `display_name`, `stage_count` |
+| `crew.stage.started` | `events.emit_crew_stage_started` | payload `stage_key`, `profile_id`, `index` |
+| `crew.stage.completed` | `events.emit_crew_stage_completed` | payload `stage_key`, `status`, `summary` |
+| `crew.completed` / `crew.failed` | `events.emit_crew_completed` / `emit_crew_failed` | 专家团收尾；failed 含 `error`, 可选 `report` |
 | `interaction.questions` / `options` | 模型 `AskUser` 入参 | 模型语言，不翻译 |
 | `message.delta` / `think.delta` | 模型输出 | 模型语言 |
 | `run.failed.error` | `loop.py` 等 | 直出（常为英文或 `<tool_use_error>`） |

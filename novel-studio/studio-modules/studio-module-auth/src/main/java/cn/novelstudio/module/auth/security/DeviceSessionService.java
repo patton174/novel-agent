@@ -1,8 +1,8 @@
 package cn.novelstudio.module.auth.security;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import cn.novelstudio.module.auth.support.AuthExceptions;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import cn.novelstudio.module.auth.support.AuthExceptions;
 import cn.novelstudio.platform.security.DeviceSessionRecord;
 import cn.novelstudio.platform.security.SecurityRedisKeys;
 import lombok.extern.slf4j.Slf4j;
@@ -23,16 +23,16 @@ public class DeviceSessionService {
 
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
-    private final long sessionTtlSeconds;
+    private final long defaultSessionTtlSeconds;
 
     public DeviceSessionService(
         StringRedisTemplate redisTemplate,
         ObjectMapper objectMapper,
-        @Value("${auth.jwt.refresh-ttl-seconds:2592000}") long sessionTtlSeconds
+        @Value("${auth.jwt.refresh-absolute-ttl-seconds:2592000}") long defaultSessionTtlSeconds
     ) {
         this.redisTemplate = redisTemplate;
         this.objectMapper = objectMapper;
-        this.sessionTtlSeconds = sessionTtlSeconds;
+        this.defaultSessionTtlSeconds = defaultSessionTtlSeconds;
     }
 
     public void bindSession(
@@ -41,21 +41,30 @@ public class DeviceSessionService {
         String fingerprint,
         Map<String, Object> envSnapshot
     ) {
+        bindSession(userId, sessionId, fingerprint, envSnapshot, defaultSessionTtlSeconds);
+    }
+
+    public void bindSession(
+        Long userId,
+        String sessionId,
+        String fingerprint,
+        Map<String, Object> envSnapshot,
+        long ttlSeconds
+    ) {
         if (sessionId == null || sessionId.isBlank()) {
             return;
         }
         long now = Instant.now().toEpochMilli();
-        int riskScore = computeRiskScore(envSnapshot);
         DeviceSessionRecord record = new DeviceSessionRecord(
             userId,
             sessionId,
             blankToNull(fingerprint),
             envSnapshot,
-            riskScore,
+            0,
             now,
             now
         );
-        save(record);
+        save(record, ttlSeconds);
     }
 
     public void touchHeartbeat(
@@ -64,10 +73,20 @@ public class DeviceSessionService {
         String fingerprint,
         Map<String, Object> envDelta
     ) {
+        touchHeartbeat(sessionId, userId, fingerprint, envDelta, defaultSessionTtlSeconds);
+    }
+
+    public void touchHeartbeat(
+        String sessionId,
+        Long userId,
+        String fingerprint,
+        Map<String, Object> envDelta,
+        long ttlSeconds
+    ) {
         DeviceSessionRecord existing = load(sessionId);
         long now = Instant.now().toEpochMilli();
         if (existing == null) {
-            bindSession(userId, sessionId, fingerprint, envDelta);
+            bindSession(userId, sessionId, fingerprint, envDelta, ttlSeconds);
             return;
         }
         if (userId != null && existing.userId() != null && !userId.equals(existing.userId())) {
@@ -88,7 +107,33 @@ public class DeviceSessionService {
             now,
             now
         );
-        save(updated);
+        save(updated, ttlSeconds);
+    }
+
+    public void updateRiskScore(String sessionId, int riskScore) {
+        DeviceSessionRecord existing = load(sessionId);
+        if (existing == null) {
+            return;
+        }
+        int clamped = Math.max(0, Math.min(100, riskScore));
+        DeviceSessionRecord updated = new DeviceSessionRecord(
+            existing.userId(),
+            sessionId,
+            existing.fpHash(),
+            existing.envSnapshot(),
+            clamped,
+            existing.lastHeartbeatAt(),
+            Instant.now().toEpochMilli()
+        );
+        save(updated, defaultSessionTtlSeconds);
+    }
+
+    public void extendSessionTtl(String sessionId, long ttlSeconds) {
+        DeviceSessionRecord existing = load(sessionId);
+        if (existing == null) {
+            return;
+        }
+        save(existing, ttlSeconds);
     }
 
     public void revokeSession(String sessionId) {
@@ -131,27 +176,16 @@ public class DeviceSessionService {
         }
     }
 
-    private void save(DeviceSessionRecord record) {
+    private void save(DeviceSessionRecord record, long ttlSeconds) {
         try {
             redisTemplate.opsForValue().set(
                 DEVICE_PREFIX + record.sessionId(),
                 objectMapper.writeValueAsString(record),
-                Duration.ofSeconds(sessionTtlSeconds)
+                Duration.ofSeconds(Math.max(1L, ttlSeconds))
             );
         } catch (JsonProcessingException ex) {
             throw AuthExceptions.internalError("auth.device.session_store_failed");
         }
-    }
-
-    private static int computeRiskScore(Map<String, Object> envSnapshot) {
-        if (envSnapshot == null) {
-            return 0;
-        }
-        Object webdriver = envSnapshot.get("webdriver");
-        if (Boolean.TRUE.equals(webdriver)) {
-            return 30;
-        }
-        return 0;
     }
 
     @SuppressWarnings("unchecked")

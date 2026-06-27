@@ -7,14 +7,19 @@ from typing import Any, Literal
 
 from app.agent.backend.memory_catalog import (
     extract_scope_root_ids,
-    format_memory_index,
+    format_memory_scope_roots,
     load_all_memory_trees,
 )
-from app.agent.context.compact import (
-    format_chapter_catalog_db,
-    format_chapter_window,
+from app.agent.context.compact import format_current_chapter_row
+
+_CHAPTER_LIST_HINT = (
+    "章表不内联 — 调用 ListChapters 获取 chapter_id / index；ReadChapter 读正文。"
 )
 from app.agent.context.memory_log import memory_ops_for_plan_json
+from app.agent.context.prompting.skills_block import (
+    build_skills_block,
+    resolve_skill_ids_and_prompt,
+)
 from app.agent.context.prompting.blocks import json_block
 from app.agent.harness.intent_message import intent_user_message_for_context
 from app.agent.harness.orchestration_contract import context_decision_hints
@@ -26,17 +31,14 @@ from app.agent.harness.plan_context import (
     think_has_pending_confirm_from_rows,
     think_text_from_rows,
 )
-from app.agent.harness.routing import format_dialogue_history, project_summary_from_ctx
+from app.agent.harness.routing import project_summary_from_ctx
 from app.agent.schemas import AgentRunContext, PlanRequest
 from app.agent.tools.todo_helpers import working_todos_from_patch
 
 ContextProfile = Literal["full", "tool"]
 
 _USER_MESSAGE_MAX = 800
-_DIALOGUE_MAX = 1600
 _THINK_SUMMARY_MAX = 1200
-_CHAPTER_FOCUS_MIN = 12
-_TRANSCRIPT_TAIL = 40
 
 LIBRARY_BLOCK_MAX_CHARS = 6000
 MAX_CHAPTER_TITLES = 80
@@ -99,6 +101,7 @@ def assemble_agent_context(
     retry_feedback: str = "",
     include_dialogue: bool = True,
     profile: ContextProfile = "full",
+    include_user_message_in_intent: bool = False,
 ) -> dict[str, Any]:
     """Single structured context for LLM injection — no duplicate plan/run blocks."""
     patch = ctx.context_patch if isinstance(ctx.context_patch, dict) else {}
@@ -107,12 +110,13 @@ def assemble_agent_context(
     has_interaction = _transcript_has_interaction(rows)
 
     intent: dict[str, Any] = {
-        "user_message": intent_user_message_for_context(
-            str(ctx.user_message or ""),
-            has_run_interaction=has_interaction,
-        )[:_USER_MESSAGE_MAX],
         "mode": ctx.mode,
     }
+    if include_user_message_in_intent:
+        intent["user_message"] = intent_user_message_for_context(
+            str(ctx.user_message or ""),
+            has_run_interaction=has_interaction,
+        )[:_USER_MESSAGE_MAX]
     if ctx.selected_choice and has_interaction:
         intent["selected_choice"] = ctx.selected_choice
     if profile == "full":
@@ -143,13 +147,10 @@ def assemble_agent_context(
 
     chapters = [ch for ch in (ctx.chapters or []) if isinstance(ch, dict) and ch.get("id")]
     if chapters:
-        catalog = format_chapter_catalog_db(ctx)
-        if catalog:
-            novel["chapter_catalog"] = catalog[:6500]
-        if len(chapters) >= _CHAPTER_FOCUS_MIN:
-            focus = format_chapter_window(ctx)
-            if focus:
-                novel["chapter_focus"] = focus[:1200]
+        novel["chapter_list_hint"] = _CHAPTER_LIST_HINT
+        current_row = format_current_chapter_row(ctx)
+        if current_row:
+            novel["current_chapter"] = current_row[:400]
         novel["chapter_count"] = len(chapters)
         written = sum(
             1
@@ -169,12 +170,15 @@ def assemble_agent_context(
     memory: dict[str, Any] = {}
     if novel_id and ctx.user_id > 0:
         mem_trees = load_all_memory_trees(ctx)
-        mem_index = format_memory_index(ctx, trees=mem_trees or None)
-        if mem_index:
-            memory["memory_index"] = mem_index[:5000]
+        scope_index = format_memory_scope_roots(ctx, trees=mem_trees or None)
+        if scope_index:
+            memory["scope_index"] = scope_index[:1200]
         scope_roots = extract_scope_root_ids(mem_trees) if mem_trees else {}
         if scope_roots:
             memory["scope_root_ids"] = scope_roots
+        memory["memory_tree_hint"] = (
+            "Child nodes and bodies are not inlined — use GetMemoryTree or ReadMemory."
+        )
 
     roster = patch.get("character_roster")
     if isinstance(roster, list) and roster:
@@ -208,21 +212,14 @@ def assemble_agent_context(
         )
 
     _patch = ctx.context_patch if isinstance(ctx.context_patch, dict) else {}
-    skill_prompt = (ctx.skill_prompt or "").strip()
-    if not skill_prompt:
-        patch_prompt = _patch.get("skill_prompt")
-        if isinstance(patch_prompt, str):
-            skill_prompt = patch_prompt.strip()
-    skill_ids = list(ctx.skill_ids or [])
-    if not skill_ids:
-        patch_ids = _patch.get("skill_ids")
-        if isinstance(patch_ids, list):
-            skill_ids = [row for row in patch_ids if isinstance(row, dict)]
-    if skill_prompt:
-        out["skills"] = {
-            "active": [str(s.get("name") or "").strip() for s in skill_ids if s.get("name")],
-            "prompt": skill_prompt[:4000],
-        }
+    skill_ids, skill_prompt = resolve_skill_ids_and_prompt(
+        ctx.skill_ids,
+        ctx.skill_prompt,
+        _patch,
+    )
+    skills_block = build_skills_block(skill_ids, skill_prompt)
+    if skills_block:
+        out["skills"] = skills_block
 
     session: dict[str, Any] = {}
     think = think_text_from_rows(
@@ -237,9 +234,6 @@ def assemble_agent_context(
         if think_has_pending_confirm_from_rows(think, rows):
             session["think_has_pending_confirm"] = True
 
-    if profile == "full" and isinstance(rows, list) and rows:
-        session["transcript"] = rows[-_TRANSCRIPT_TAIL:]
-
     relevant = patch.get("relevant_context")
     if isinstance(relevant, list) and relevant:
         session["relevant_context"] = relevant[:5]
@@ -251,17 +245,13 @@ def assemble_agent_context(
             1 for t in todos if str(t.get("status") or "") in ("pending", "in_progress")
         )
         session["todos_open_count"] = open_count
+
+    recalled = patch.get("session_recalled")
+    if isinstance(recalled, dict) and recalled.get("turns"):
+        session["recalled"] = recalled
+
     if session:
         out["session"] = session
-
-    if include_dialogue and profile == "full":
-        dialogue = format_dialogue_history(
-            ctx,
-            max_len=_DIALOGUE_MAX,
-            transcript=rows,
-        )
-        if dialogue:
-            out["dialogue"] = dialogue[:_DIALOGUE_MAX]
 
     run: dict[str, Any] = {
         "step_index": ctx.step_index,
@@ -335,6 +325,8 @@ def format_agent_context_block(
     think_content: str = "",
     retry_feedback: str = "",
     profile: ContextProfile = "full",
+    include_dialogue: bool = False,
+    include_user_message_in_intent: bool = False,
 ) -> str:
     payload = assemble_agent_context(
         ctx,
@@ -342,7 +334,8 @@ def format_agent_context_block(
         transcript_rows=transcript_rows,
         think_content=think_content,
         retry_feedback=retry_feedback,
-        include_dialogue=profile == "full",
+        include_dialogue=include_dialogue,
+        include_user_message_in_intent=include_user_message_in_intent,
         profile=profile,
     )
     return json_block("RUN_CONTEXT_JSON", payload)

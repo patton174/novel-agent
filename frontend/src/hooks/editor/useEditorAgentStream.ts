@@ -61,6 +61,7 @@ import { sessionNeedsGeneratedTitle } from '../../utils/sessionTitle'
 import type { EditorCenterTab } from '../../components/editor/EditorCenterTabs'
 import type { ReferencedBookChip } from '../../components/chat/ChatComposer'
 import type { AgentSkillSummary } from '../../types/agentSkill'
+import type { CrewTemplateSummary } from '../../types/crew'
 import type { Novel } from '../../types/novel'
 import { useNovelStore } from '../../stores/novelStore'
 export interface UseEditorAgentStreamOptions {
@@ -71,6 +72,7 @@ export interface UseEditorAgentStreamOptions {
   activeNovel: Novel | null
   activeNovelId: string | null
   activeChapterId: string | null
+  chapterSortOrder?: number | null
   chapterContent: string
   hostModeEnabled: boolean
   modelOverrideRef: React.MutableRefObject<string | null>
@@ -101,6 +103,7 @@ export function useEditorAgentStream({
   activeNovel,
   activeNovelId,
   activeChapterId,
+  chapterSortOrder,
   chapterContent,
   hostModeEnabled,
   modelOverrideRef,
@@ -135,6 +138,8 @@ export function useEditorAgentStream({
   const referencedBooksRef = useRef<ReferencedBookChip[]>([])
   const [selectedSkills, setSelectedSkills] = useState<AgentSkillSummary[]>([])
   const selectedSkillsRef = useRef<AgentSkillSummary[]>([])
+  const [selectedCrew, setSelectedCrew] = useState<CrewTemplateSummary | null>(null)
+  const selectedCrewRef = useRef<CrewTemplateSummary | null>(null)
   const [activeStreamMessageId, setActiveStreamMessageId] = useState<string | null>(null)
   const [thinkPanelOpen, setThinkPanelOpen] = useState<Record<string, boolean>>({})
 
@@ -175,6 +180,13 @@ export function useEditorAgentStream({
   useEffect(() => {
     selectedSkillsRef.current = selectedSkills
   }, [selectedSkills])
+  useEffect(() => {
+    selectedCrewRef.current = selectedCrew
+  }, [selectedCrew])
+
+  useEffect(() => {
+    selectedCrewRef.current = selectedCrew
+  }, [selectedCrew])
 
   const abortActiveStream = useCallback(() => {
     streamAbortRef.current?.abort()
@@ -508,7 +520,9 @@ export function useEditorAgentStream({
           current.agentAwaitingInteraction === state.awaitingInteraction &&
           current.agentTimeline === nextTimeline &&
           current.agentTodos === nextTodos &&
-          current.agentContextUsage === state.contextUsage
+          current.agentContextUsage === state.contextUsage &&
+          current.agentCrewStage === state.crewStage &&
+          current.agentCrewFailure === state.crewFailure
         if (unchanged) {
           return prev
         }
@@ -529,6 +543,8 @@ export function useEditorAgentStream({
           agentTimeline: nextTimeline,
           agentTodos: nextTodos,
           agentContextUsage: state.contextUsage,
+          agentCrewStage: state.crewStage,
+          agentCrewFailure: state.crewFailure,
           agentStreamingContent: state.segmentOpen ? state.messageContent : undefined,
           agentSegmentOpen: state.segmentOpen,
         }
@@ -937,9 +953,16 @@ export function useEditorAgentStream({
               ? referencedBooksRef.current.map((b) => ({ catalogNovelId: b.catalogNovelId }))
               : undefined,
           skill_ids:
-            selectedSkillsRef.current.length > 0
+            !selectedCrewRef.current && selectedSkillsRef.current.length > 0
               ? selectedSkillsRef.current.map((s) => s.id || s.name).slice(0, 3)
               : undefined,
+          crew_id: selectedCrewRef.current?.id,
+          crew_vars: selectedCrewRef.current
+            ? {
+                target_chapter:
+                  typeof chapterSortOrder === 'number' ? chapterSortOrder : undefined,
+              }
+            : undefined,
         },
         handleAgentEvent,
         { signal: abortController.signal },
@@ -1463,6 +1486,8 @@ export function useEditorAgentStream({
     setReferencedBooks,
     selectedSkills,
     setSelectedSkills,
+    selectedCrew,
+    setSelectedCrew,
     streamAbortRef,
     runWsRef,
   }

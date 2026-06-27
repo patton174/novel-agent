@@ -3,6 +3,7 @@ package cn.novelstudio.module.agent.orchestration;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import cn.novelstudio.module.agent.client.ContentInternalClient;
 import cn.novelstudio.module.agent.service.ChapterSideEffectService;
 import cn.novelstudio.module.agent.service.PythonAgentRunClient;
 import cn.novelstudio.platform.i18n.ResultLocalizer;
@@ -30,6 +31,8 @@ public class AgentRunCoordinator {
     private final ChapterSideEffectService chapterSideEffectService;
     private final Executor sideEffectExecutor;
     private final ResultLocalizer resultLocalizer;
+    private final ContentInternalClient contentInternalClient;
+    private final boolean pgRunEnabled;
     private volatile Consumer<String> emitter;
     private volatile String llmStreamTool;
     private volatile CompletableFuture<Void> pendingSideEffect = CompletableFuture.completedFuture(null);
@@ -52,7 +55,9 @@ public class AgentRunCoordinator {
         ObjectMapper objectMapper,
         ChapterSideEffectService chapterSideEffectService,
         Executor sideEffectExecutor,
-        ResultLocalizer resultLocalizer
+        ResultLocalizer resultLocalizer,
+        ContentInternalClient contentInternalClient,
+        boolean pgRunEnabled
     ) {
         this.state = state;
         this.runClient = runClient;
@@ -60,6 +65,8 @@ public class AgentRunCoordinator {
         this.chapterSideEffectService = chapterSideEffectService;
         this.sideEffectExecutor = sideEffectExecutor;
         this.resultLocalizer = resultLocalizer;
+        this.contentInternalClient = contentInternalClient;
+        this.pgRunEnabled = pgRunEnabled;
     }
 
     public String getRunId() {
@@ -88,6 +95,9 @@ public class AgentRunCoordinator {
                     if ("run.failed".equals(type)) {
                         JsonNode payload = SseEventCodec.extractPayload(frame, objectMapper);
                         streamError.set(payload.path("error").asText("agent.run.stream_error"));
+                    }
+                    if ("subagent.started".equals(type)) {
+                        persistSubRun(SseEventCodec.extractPayload(frame, objectMapper));
                     }
                     if ("think.delta".equals(type)) {
                         String text = SseEventCodec.extractPayload(frame, objectMapper).path("text").asText("");
@@ -512,5 +522,44 @@ public class AgentRunCoordinator {
             listIndex,
             sortOrder
         );
+    }
+
+    private void persistSubRun(JsonNode payload) {
+        if (!pgRunEnabled || contentInternalClient == null || payload == null || payload.isMissingNode()) {
+            return;
+        }
+        String childRunId = payload.path("child_run_id").asText("");
+        if (childRunId.isBlank()) {
+            return;
+        }
+        String profileId = payload.path("profile_id").asText("");
+        if (profileId.isBlank()) {
+            profileId = null;
+        }
+        String roleLabel = payload.path("role_label").asText("");
+        if (roleLabel.isBlank()) {
+            roleLabel = payload.path("description").asText("");
+        }
+        if (roleLabel.isBlank()) {
+            roleLabel = null;
+        }
+        try {
+            contentInternalClient.createSubRun(
+                childRunId,
+                state.getSessionId(),
+                state.getUserId(),
+                state.getRunId(),
+                profileId,
+                roleLabel,
+                state.getMode()
+            );
+        } catch (Exception ex) {
+            log.warn(
+                "sub-run persist failed parentRunId={} childRunId={}: {}",
+                state.getRunId(),
+                childRunId,
+                ex.getMessage()
+            );
+        }
     }
 }

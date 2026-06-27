@@ -1,0 +1,32 @@
+{
+  "id": "three-act-novel",
+  "displayName": "三幕式长篇",
+  "description": "经典三阶段：主编辑制定计划 → 章节写手起草 → 连续性审校 PASS/WARN/FAIL。",
+  "isSystem": true,
+  "stages": [
+    {
+      "key": "plan",
+      "profileId": "main-editor",
+      "promptTemplate": "根据用户需求制定本章写作计划：大纲要点、角色弧线、伏笔与章末悬念。输出结构化计划摘要。",
+      "outputSchema": "PlanResult",
+      "gate": "always",
+      "onFail": "continue"
+    },
+    {
+      "key": "write",
+      "profileId": "chapter-writer",
+      "promptTemplate": "依据上一阶段计划撰写章节正文。计划摘要：{{plan.summary}}",
+      "outputSchema": "none",
+      "gate": "on_plan_success",
+      "onFail": "continue"
+    },
+    {
+      "key": "review",
+      "profileId": "continuity-reviewer",
+      "promptTemplate": "审校刚完成的章节：检查人设、时间线、伏笔与计划一致性，给出 PASS/WARN/FAIL 及修改建议。",
+      "outputSchema": "custom",
+      "gate": "on_write_success",
+      "onFail": "abort_with_report"
+    }
+  ]
+}

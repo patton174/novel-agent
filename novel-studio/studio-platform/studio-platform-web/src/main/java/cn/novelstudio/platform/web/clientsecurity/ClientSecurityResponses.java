@@ -16,6 +16,7 @@ public class ClientSecurityResponses {
         "CSRF_INVALID", "security.client.csrf_invalid",
         "DEVICE_MISMATCH", "security.client.device_mismatch",
         "HEARTBEAT_REQUIRED", "security.client.heartbeat_required",
+        "CHALLENGE_REQUIRED", "security.client.challenge_required",
         "REPLAY_WINDOW", "security.client.replay_window",
         "REPLAY_NONCE", "security.client.replay_nonce"
     );
@@ -41,6 +42,27 @@ public class ClientSecurityResponses {
     public void forbidden(HttpServletResponse response, String messageOrKey) throws IOException {
         response.setStatus(HttpServletResponse.SC_FORBIDDEN);
         writeJson(response, 403, resolve(messageOrKey, "result.forbidden"));
+    }
+
+    public void challengeRequired(HttpServletResponse response, String messageOrKey) throws IOException {
+        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+        response.setHeader("X-Security-Challenge", "1");
+        writeJsonWithProtocol(response, 403, messageOrKey, "CHALLENGE_REQUIRED");
+    }
+
+    private void writeJsonWithProtocol(
+        HttpServletResponse response,
+        int code,
+        String messageOrKey,
+        String protocolCode
+    ) throws IOException {
+        response.setContentType("application/json;charset=UTF-8");
+        String safe = escapeJson(resolve(messageOrKey, "result.forbidden"));
+        String protocol = escapeJson(protocolCode);
+        response.getOutputStream().write(
+            ("{\"code\":" + code + ",\"message\":\"" + safe + "\",\"protocol\":\"" + protocol + "\"}")
+                .getBytes(java.nio.charset.StandardCharsets.UTF_8)
+        );
     }
 
     public void staleCrypto(HttpServletResponse response, String messageOrKey) throws IOException {

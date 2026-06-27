@@ -187,6 +187,7 @@ const ICONS: Record<string, IconPath> = {
   ['ListMemory', 'Glob'],
   ['ListChapters', 'Glob'],
   ['SearchKnowledge', 'Grep'],
+  ['SearchSessionHistory', 'Grep'],
 ] as const).forEach(([alias, base]) => {
   if (!ICONS[alias]) {
     ICONS[alias] = ICONS[base]

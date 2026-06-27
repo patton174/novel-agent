@@ -51,6 +51,14 @@ server {
         try_files /index.html =404;
     }
 
+    # SEO 竞品长尾 URL → 对比页（301）
+    location = /vs/wawa-writing { return 301 /compare; }
+    location = /vs/waqu-pinwen { return 301 /compare; }
+    location = /compare/wawa-writing { return 301 /compare; }
+    location = /compare/waqu-pinwen { return 301 /compare; }
+    location = /compare/yuewen { return 301 /compare; }
+    location = /ai-novel-writing-tools { return 301 /compare; }
+
     location /assets/ {
         add_header Cache-Control "public, max-age=31536000, immutable";
         try_files $uri =404;

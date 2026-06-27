@@ -1,0 +1,6 @@
+"""封面提示词长度与 SSE 分片常量。"""
+
+STYLE_MAX = 600
+SCENE_MAX = 1200
+DOCUMENT_MAX = 4000
+SSE_CHUNK = 16

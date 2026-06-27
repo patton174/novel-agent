@@ -1,6 +1,8 @@
 package cn.novelstudio.module.content.controller.internal;
 
 import cn.novelstudio.platform.web.BaseController;
+import cn.novelstudio.module.content.dto.ContentMessageDTO;
+import cn.novelstudio.module.content.dto.SaveRunTraceRequest;
 import cn.novelstudio.module.content.dto.agent.*;
 import cn.novelstudio.module.content.service.agent.RunLiveLocalEvent;
 import cn.novelstudio.module.content.service.internal.InternalAgentRunBiz;
@@ -101,5 +103,39 @@ public class InternalAgentRunController extends BaseController {
     public ResponseEntity<Void> upsertSession(@PathVariable String sessionId, @RequestBody Map<String, Object> body) {
         biz.upsertSession(sessionId, body);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/sessions/{sessionId}/runs/{runId}/trace")
+    public Map<String, Object> saveRunTrace(
+        @PathVariable String sessionId,
+        @PathVariable String runId,
+        @RequestParam Long userId,
+        @RequestBody SaveRunTraceRequest request
+    ) {
+        biz.saveRunTrace(sessionId, runId, userId, request);
+        return Map.of("ok", true);
+    }
+
+    @GetMapping("/sessions/{sessionId}/messages")
+    public List<ContentMessageDTO> listSessionMessages(
+        @PathVariable String sessionId,
+        @RequestParam Long userId,
+        @RequestParam(name = "limit", defaultValue = "100") int limit,
+        @RequestParam(name = "run_id", required = false) String runId
+    ) {
+        return biz.listSessionMessages(userId, sessionId, limit, runId);
+    }
+
+    @GetMapping("/sessions/{sessionId}/runs/{runId}/trace")
+    public Map<String, Object> getRunTrace(
+        @PathVariable String sessionId,
+        @PathVariable String runId,
+        @RequestParam Long userId
+    ) {
+        String trace = biz.getRunTrace(userId, sessionId, runId);
+        if (trace == null || trace.isBlank()) {
+            return Map.of("trace_json", "");
+        }
+        return Map.of("trace_json", trace);
     }
 }

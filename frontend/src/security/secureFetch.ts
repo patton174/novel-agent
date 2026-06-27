@@ -15,6 +15,7 @@ import {
 } from './requestCrypto'
 import i18n from '@/i18n'
 import { apiLocaleHeaders } from '@/i18n/localeHeader'
+import { runSecurityChallengeFlow } from './challengeGate'
 
 const ENC_CONTENT_TYPE = 'application/vnd.novel-agent.enc+json'
 const TRACE_HEADER = 'X-Trace-Id'
@@ -170,6 +171,20 @@ type SecureFetchInit = RequestInit & {
 const REPLAY_RETRY_MAX = 3
 const REPLAY_RETRY_DELAY_MS = 40
 
+function isChallengeRequiredResponse(status: number, bodyText: string, headers: Headers): boolean {
+  if (status !== 403) {
+    return false
+  }
+  if (headers.get('X-Security-Challenge') === '1') {
+    return true
+  }
+  return bodyText.includes('CHALLENGE_REQUIRED') || bodyText.includes('security.client.challenge_required')
+}
+
+async function handleChallengeRequired(): Promise<boolean> {
+  return runSecurityChallengeFlow()
+}
+
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => {
     setTimeout(resolve, ms)
@@ -242,6 +257,16 @@ export async function secureFetch(input: RequestInfo | URL, init?: SecureFetchIn
     const refreshed = await handleUnauthorized(logicalUrl, retried)
     if (refreshed) {
       return secureFetch(input, { ...init, __authRetried: true })
+    }
+  }
+
+  if (response.status === 403 && !isAuthSelfPath(logicalUrl)) {
+    const bodyText = await response.clone().text().catch(() => '')
+    if (isChallengeRequiredResponse(response.status, bodyText, response.headers)) {
+      const verified = await handleChallengeRequired()
+      if (verified) {
+        return secureFetch(input, { ...init, __authRetried: retried })
+      }
     }
   }
 

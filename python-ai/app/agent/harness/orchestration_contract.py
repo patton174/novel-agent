@@ -191,12 +191,9 @@ def is_tool_concurrency_safe(tool: str, inp: dict | None = None) -> bool:
 
 
 def build_main_loop_system_prompt() -> str:
-    from app.agent.backend.memory_style_presets import memory_style_prompt_block
     from app.agent.harness.tool_contract import tool_contract_prompt_block
     from app.agent.harness.visible_text_channel import visible_text_prompt_block
-    from app.agent.tools.registry import get_all_tools
 
-    names = ", ".join(sorted(t.name for t in get_all_tools()))
     channel_block = visible_text_prompt_block()
     contract_block = tool_contract_prompt_block()
     return f"""You are a novel-writing agent with structured API tools (not file paths).
@@ -205,13 +202,13 @@ def build_main_loop_system_prompt() -> str:
 
 {contract_block}
 
-{memory_style_prompt_block()}
-
 Data lives in **Content API (PostgreSQL)** and **memory_node API** — never construct VFS paths.
-Use RUN_CONTEXT `novel.chapter_catalog` / `memory.memory_index` for IDs when present.
-When RUN_CONTEXT includes `skills.prompt`, follow those loaded skill instructions.
-
-Available tools: {names}"""
+Use RUN_CONTEXT `memory.scope_root_ids` for memory IDs when present.
+Call **ListChapters** for chapter_id / index — chapter tables are not inlined in RUN_CONTEXT.
+Memory UI: scope root = tab label; put readable Markdown on CreateMemory(node_type=child) nodes.
+When RUN_CONTEXT includes `skills.catalog`, use the Skill tool to load matching skills before acting.
+When `skills.loaded` is present, follow those loaded skill instructions.
+Character relations: call GetCharacterGraph(character) when KG is enabled — never pre-inject full graphs."""
 
 
 def context_decision_hints() -> dict[str, str]:
@@ -226,16 +223,12 @@ def context_decision_hints() -> dict[str, str]:
 
     return {
         "catalog": (
-            f"Use RUN_CONTEXT novel.chapter_catalog for `{CHAPTER_ID_FIELD}` / `{CHAPTER_INDEX_FIELD}`. "
-            "Chapter tools accept chapter_id (preferred) or index; call ListChapters when catalog may be stale."
+            f"Call **ListChapters** for `{CHAPTER_ID_FIELD}` / `{CHAPTER_INDEX_FIELD}`. "
+            "Chapter tables are not inlined in RUN_CONTEXT."
         ),
         "memory": (
-            f"Use memory.memory_index for `{MEMORY_ID_FIELD}` per node (each line shows `[{MEMORY_ID_FIELD}=…]`). "
-            f"CreateMemory: `{MEMORY_NODE_TYPE_FIELD}=root` (scope tab, once; short intro only) or "
-            f"`{MEMORY_NODE_TYPE_FIELD}=child` (content blocks under the tab — **prefer several children** "
-            f"by topic instead of one long root/update). "
-            f"Child: `{MEMORY_PARENT_ID_FIELD}` (scope root UUID from memory.scope_root_ids) required. "
-            "UI: left tab = root, sub-menu = children, panel = one child body. ReadMemory(memory_id) for bodies."
+            f"Use memory.scope_root_ids / scope_index for `{MEMORY_ID_FIELD}`. "
+            "Child nodes and bodies: GetMemoryTree(scope) or ReadMemory(memory_id)."
         ),
     }
 

@@ -474,7 +474,11 @@ class TodoWriteInput(BaseModel):
 
 class AgentInput(BaseModel):
     description: str = Field(..., description="Short label for UI.")
-    prompt: str = Field(..., description="Full subtask spec for the child agent.")
+    prompt: str | None = Field(None, description="Full subtask spec for the child agent.")
+    profile_id: str = Field(
+        "chapter-writer",
+        description="Agent profile id (bundled slug or user profile UUID).",
+    )
 
 
 class WebSearchInput(BaseModel):
@@ -495,11 +499,22 @@ class ReadMcpResourceInput(BaseModel):
     uri: str = Field(..., min_length=1)
 
 
+class SearchSessionHistoryInput(BaseModel):
+    query: str | None = Field(None, description="Semantic search over prior session turns.")
+    run_id: str | None = Field(None, description="Fetch full messages + tool trace for this run.")
+    top_k: int = Field(5, ge=1, le=12)
+    include_tool_bodies: bool = Field(
+        True,
+        description="When searching, attach tool bodies from matching runs (lazy fetch).",
+    )
+    max_body_chars: int = Field(12_000, ge=2000, le=80_000)
+
+
 class SkillInput(BaseModel):
     skill: str | None = Field(
         None,
         min_length=1,
-        description="Bundled skill slug (python-ai/skills/bundled/).",
+        description="Platform skill slug (official or user; resolved via novel-studio API).",
     )
     skill_id: str | None = Field(
         None,

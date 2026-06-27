@@ -5,6 +5,7 @@ import type {
   AgentTimelineBlock,
   AgentTodoItem,
 } from './agent'
+import type { CrewFailureReportPayload, CrewStageUiState } from './crew'
 import { buildWelcomeMessage } from '../utils/buildWelcomeMessage'
 import type { Novel } from './novel'
 
@@ -41,6 +42,8 @@ export interface EditorMessage {
   /** TodoWrite 合并后的任务清单（消息顶栏固定展示） */
   agentTodos?: AgentTodoItem[]
   agentContextUsage?: AgentContextUsage
+  agentCrewStage?: CrewStageUiState
+  agentCrewFailure?: CrewFailureReportPayload
   /** 流式段缓冲（message.completed 前；不落盘 sessionStorage） */
   agentStreamingContent?: string
   agentSegmentOpen?: boolean

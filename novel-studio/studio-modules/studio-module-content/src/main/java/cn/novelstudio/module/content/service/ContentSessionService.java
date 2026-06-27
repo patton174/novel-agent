@@ -266,7 +266,24 @@ public class ContentSessionService {
             return;
         }
         String key = RUN_TRACE_KEY_PREFIX + userId + ":" + sessionId + ":" + runId;
-        redisTemplate.opsForValue().set(key, traceJson);
+        String existing = redisTemplate.opsForValue().get(key);
+        String merged = mergeTraceJson(existing, traceJson);
+        redisTemplate.opsForValue().set(key, merged);
+    }
+
+    private String mergeTraceJson(String existing, String incoming) {
+        try {
+            var base = existing != null && !existing.isBlank()
+                ? (com.fasterxml.jackson.databind.node.ObjectNode) objectMapper.readTree(existing)
+                : objectMapper.createObjectNode();
+            var inc = objectMapper.readTree(incoming);
+            if (inc.isObject()) {
+                inc.fields().forEachRemaining(entry -> base.set(entry.getKey(), entry.getValue()));
+            }
+            return objectMapper.writeValueAsString(base);
+        } catch (JsonProcessingException ex) {
+            return incoming;
+        }
     }
 
     public String readRunTrace(String userId, String sessionId, String runId) {
@@ -278,7 +295,16 @@ public class ContentSessionService {
     }
 
     public List<ContentMessageDTO> listMessages(String userId, String sessionId, int limit) {
-        int safeLimit = Math.max(limit, 1);
+        return listMessages(userId, sessionId, limit, null);
+    }
+
+    public List<ContentMessageDTO> listMessages(
+        String userId,
+        String sessionId,
+        int limit,
+        String runIdFilter
+    ) {
+        int safeLimit = Math.max(Math.min(limit, 500), 1);
         String key = MESSAGE_LIST_KEY_PREFIX + userId + ":" + sessionId;
         Long size = redisTemplate.opsForList().size(key);
         if (size == null || size == 0) {
@@ -293,6 +319,7 @@ public class ContentSessionService {
             .map(this::readMessage)
             .filter(m -> m != null)
             .map(m -> enrichMessageTrace(userId, sessionId, m))
+            .filter(m -> runIdFilter == null || runIdFilter.isBlank() || runIdFilter.equals(m.runId()))
             .toList();
     }
 

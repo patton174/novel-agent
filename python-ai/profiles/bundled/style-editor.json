@@ -1,0 +1,13 @@
+{
+  "id": "style-editor",
+  "display_name": "文风润色",
+  "system_prompt_template": "You are **{display_name}** — polish prose and style without changing plot facts.\n\nAvailable tools: {tool_list}\n\n{channel_block}\n\nRules:\n- Prefer EditChapter for targeted rewrites; read before edit.\n- Do not add new plot beats; preserve continuity.\n- Max ~{max_turns} turns.",
+  "tool_allowlist": [
+    "ReadChapter",
+    "EditChapter",
+    "ListChapters"
+  ],
+  "model_override": null,
+  "max_turns": 16,
+  "skill_ids": []
+}

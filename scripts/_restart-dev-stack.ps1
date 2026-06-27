@@ -1,26 +1,17 @@
+param(
+    [switch]$Rebuild
+)
+
 $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $PSScriptRoot
 Set-Location $Root
-
-function Stop-ListenerOnPort([int]$Port) {
-    $conns = Get-NetTCPConnection -State Listen -LocalPort $Port -ErrorAction SilentlyContinue
-    if (-not $conns) {
-        Write-Host "Port ${Port}: free"
-        return
-    }
-    foreach ($procId in ($conns | Select-Object -ExpandProperty OwningProcess -Unique)) {
-        $proc = Get-Process -Id $procId -ErrorAction SilentlyContinue
-        $name = if ($proc) { $proc.ProcessName } else { "?" }
-        Write-Host "Stopping PID $procId ($name) on :$Port"
-        Stop-Process -Id $procId -Force -ErrorAction SilentlyContinue
-    }
-}
+. "$PSScriptRoot\_dev-ports.ps1"
 
 Write-Host "=== Stop existing dev listeners ===" -ForegroundColor Yellow
-Stop-ListenerOnPort 8080
-Stop-ListenerOnPort 8000
-Stop-ListenerOnPort 3000
-Start-Sleep -Seconds 2
+Stop-DevPortListener -Port 8080 -Label "novel-studio"
+Stop-DevPortListener -Port 8000 -Label "python-ai"
+Stop-DevPortListener -Port 3000 -Label "frontend"
+Start-Sleep -Seconds 1
 
 Write-Host "`n=== Apply CN PostgreSQL migrations ===" -ForegroundColor Cyan
 $py = Get-Command python -ErrorAction SilentlyContinue
@@ -34,4 +25,8 @@ if ($py) {
     Write-Warning "Python not found; skip CN schema migrations"
 }
 
-& "$Root\scripts\start-local-dev.ps1" -Cn -Services "novel,pyai,frontend"
+if ($Rebuild) {
+    & "$Root\scripts\start-local-dev.ps1" -Cn -Services "novel,pyai,frontend" -Rebuild
+} else {
+    & "$Root\scripts\start-local-dev.ps1" -Cn -Services "novel,pyai,frontend" -SkipBuild
+}

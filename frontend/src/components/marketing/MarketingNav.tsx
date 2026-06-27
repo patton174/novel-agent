@@ -40,13 +40,24 @@ export function MarketingNav() {
 
   const linkClass = (path: string) =>
     `font-mono text-sm font-bold uppercase tracking-wide transition-colors hover:bg-neon hover:text-foreground ${
-      location.pathname === path ? 'bg-foreground text-background' : 'text-foreground'
+      location.pathname === path || (path === '/blog' && location.pathname.startsWith('/blog'))
+        ? 'bg-foreground text-background'
+        : 'text-foreground'
     } px-3 py-1.5`
 
   const navGlass = scrolled || !isHome
 
   const pageLinks = (
     <>
+      <Link to="/guide" className={linkClass('/guide')}>
+        {t('marketing:nav.guide')}
+      </Link>
+      <Link to="/compare" className={linkClass('/compare')}>
+        {t('marketing:nav.compare')}
+      </Link>
+      <Link to="/blog" className={linkClass('/blog')}>
+        {t('marketing:nav.blog')}
+      </Link>
       <Link to="/pricing" className={linkClass('/pricing')}>
         {t('marketing:nav.pricing')}
       </Link>

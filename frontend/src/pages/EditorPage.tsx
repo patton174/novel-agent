@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react'
+import React, { useMemo, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { logout } from '../utils/authApi'
 import { CreateNovelModal } from '../components/novel/CreateNovelModal'
@@ -24,6 +24,7 @@ import { appToast } from '../stores/appToastStore'
 import { useAppMobile } from '@/hooks/useMediaQuery'
 import { editorLayout } from '@/styles/theme'
 import { cn } from '@/lib/utils'
+import type { RunTreeNode } from '@/types/agentProfile'
 
 import { useTranslation } from 'react-i18next'
 
@@ -36,6 +37,14 @@ const EditorPage: React.FC = () => {
   const [userModalOpen, setUserModalOpen] = useState(false)
   const [avatarModalOpen, setAvatarModalOpen] = useState(false)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
+  const [traceExpanded, setTraceExpanded] = useState(false)
+
+  const handleTraceRunNodeSelect = useCallback((node: RunTreeNode) => {
+    const el = document.querySelector(
+      `[data-subagent-child-run="${node.runId}"]`,
+    ) as HTMLElement | null
+    el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }, [])
 
   const sidebarCenterTab: EditorSidebarTab =
     editor.activeCenterTab === 'story'
@@ -171,6 +180,16 @@ const EditorPage: React.FC = () => {
             onReferencedBooksChange={editor.stream.setReferencedBooks}
             selectedSkills={editor.stream.selectedSkills}
             onSelectedSkillsChange={editor.stream.setSelectedSkills}
+            selectedCrew={editor.stream.selectedCrew}
+            onSelectedCrewChange={editor.stream.setSelectedCrew}
+            crewStage={editor.stream.liveStreamMessage?.agentCrewStage}
+            traceRunId={editor.stream.liveStreamMessage?.agentRunId}
+            traceSteps={editor.stream.liveStreamMessage?.agentSteps ?? []}
+            traceActiveToolCount={editor.stream.liveStreamMessage?.agentActiveToolCount ?? 0}
+            traceStreaming={editor.stream.isLoading}
+            traceExpanded={traceExpanded}
+            onTraceToggle={() => setTraceExpanded((v) => !v)}
+            onTraceRunNodeSelect={handleTraceRunNodeSelect}
           />
         ) : editor.activeCenterTab === 'story' ? (
           <EditorStoryPanel

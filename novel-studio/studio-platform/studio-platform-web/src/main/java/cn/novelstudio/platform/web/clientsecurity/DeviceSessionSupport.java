@@ -22,6 +22,20 @@ public class DeviceSessionSupport {
         this.objectMapper = objectMapper;
     }
 
+    public void save(String sessionId, DeviceSessionRecord record) {
+        if (sessionId == null || sessionId.isBlank() || record == null) {
+            return;
+        }
+        try {
+            redisTemplate.opsForValue().set(
+                SecurityRedisKeys.DEVICE_PREFIX + sessionId,
+                objectMapper.writeValueAsString(record)
+            );
+        } catch (JsonProcessingException ex) {
+            log.warn("device session save failed sid={}: {}", sessionId, ex.getMessage());
+        }
+    }
+
     public Optional<DeviceSessionRecord> load(String sessionId) {
         if (sessionId == null || sessionId.isBlank()) {
             return Optional.empty();

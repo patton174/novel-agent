@@ -3,12 +3,18 @@ import { useTranslation } from 'react-i18next'
 import { useComposerSafeInset } from '../../hooks/editor/useComposerSafeInset'
 import { ChatComposer, type ReferencedBookChip } from '../chat/ChatComposer'
 import type { AgentSkillSummary } from '@/types/agentSkill'
+import type { CrewTemplateSummary } from '@/types/crew'
 import type {
   AgentChoiceOption,
   AgentContextUsage,
   AgentInteractionPayload,
+  AgentStepState,
   AskUserAnswers,
 } from '../../types/agent'
+import type { CrewStageUiState } from '@/types/crew'
+import type { RunTreeNode } from '@/types/agentProfile'
+import { GlobalAgentTracePanel } from '../agent/GlobalAgentTracePanel'
+import { CrewStageProgress } from '../agent/CrewStageProgress'
 import type { ComposerSpinnerMode } from '../../utils/deriveComposerSpinnerMode'
 import type { EditorMessage } from '../../types/editor'
 import { filterVisibleChatMessages, isInitialChatView } from '../../types/editor'
@@ -61,6 +67,16 @@ export interface EditorChatPanelProps {
   onReferencedBooksChange?: (books: ReferencedBookChip[]) => void
   selectedSkills?: AgentSkillSummary[]
   onSelectedSkillsChange?: (skills: AgentSkillSummary[]) => void
+  selectedCrew?: CrewTemplateSummary | null
+  onSelectedCrewChange?: (crew: CrewTemplateSummary | null) => void
+  crewStage?: CrewStageUiState | null
+  traceRunId?: string
+  traceSteps?: AgentStepState[]
+  traceActiveToolCount?: number
+  traceStreaming?: boolean
+  traceExpanded?: boolean
+  onTraceToggle?: () => void
+  onTraceRunNodeSelect?: (node: RunTreeNode) => void
 }
 
 export function EditorChatPanel({
@@ -96,6 +112,16 @@ export function EditorChatPanel({
   onReferencedBooksChange,
   selectedSkills = [],
   onSelectedSkillsChange,
+  selectedCrew = null,
+  onSelectedCrewChange,
+  crewStage,
+  traceRunId,
+  traceSteps = [],
+  traceActiveToolCount = 0,
+  traceStreaming = false,
+  traceExpanded = false,
+  onTraceToggle,
+  onTraceRunNodeSelect,
 }: EditorChatPanelProps) {
   const { t } = useTranslation(['editor'])
   const isInitial = isInitialChatView(messages, activeNovel)
@@ -109,16 +135,19 @@ export function EditorChatPanel({
 
   return (
     <section className="flex min-h-0 flex-1 flex-col bg-background">
-      {!isInitial ? (
-        <div
-          className="shrink-0 bg-background pb-1.5 pt-2"
-          style={{ paddingLeft: editorLayout.mainPaddingX, paddingRight: editorLayout.mainPaddingX }}
-        >
-          <h2 className="m-0 w-full truncate text-left text-[15px] font-semibold text-foreground">
-            {sessionTitle}
-          </h2>
-        </div>
-      ) : null}
+        {!isInitial ? (
+          <div
+            className="shrink-0 space-y-2 bg-background pb-1.5 pt-2"
+            style={{ paddingLeft: editorLayout.mainPaddingX, paddingRight: editorLayout.mainPaddingX }}
+          >
+            <h2 className="m-0 w-full truncate text-left text-[15px] font-semibold text-foreground">
+              {sessionTitle}
+            </h2>
+            {crewStage?.steps?.length ? (
+              <CrewStageProgress state={crewStage} />
+            ) : null}
+          </div>
+        ) : null}
 
       <div
         className={cn(
@@ -153,6 +182,17 @@ export function EditorChatPanel({
             )}
             style={isMobile ? undefined : { maxWidth: editorLayout.contentMaxWidth }}
           >
+            {onTraceToggle ? (
+              <GlobalAgentTracePanel
+                runId={traceRunId}
+                steps={traceSteps}
+                activeToolCount={traceActiveToolCount}
+                isStreaming={traceStreaming}
+                expanded={traceExpanded}
+                onToggle={onTraceToggle}
+                onSelectRunNode={onTraceRunNodeSelect}
+              />
+            ) : null}
             <EditorChatMessageList
               messages={visibleMessages}
               isLoading={isLoading}
@@ -196,6 +236,8 @@ export function EditorChatPanel({
                   onReferencedBooksChange={onReferencedBooksChange}
                   selectedSkills={selectedSkills}
                   onSelectedSkillsChange={onSelectedSkillsChange}
+                  selectedCrew={selectedCrew}
+                  onSelectedCrewChange={onSelectedCrewChange}
                 />
               </div>
             ) : null}
@@ -240,6 +282,8 @@ export function EditorChatPanel({
                 onReferencedBooksChange={onReferencedBooksChange}
                 selectedSkills={selectedSkills}
                 onSelectedSkillsChange={onSelectedSkillsChange}
+                selectedCrew={selectedCrew}
+                onSelectedCrewChange={onSelectedCrewChange}
               />
             </div>
           </div>

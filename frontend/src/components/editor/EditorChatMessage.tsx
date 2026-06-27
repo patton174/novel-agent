@@ -176,6 +176,7 @@ function EditorChatMessageInner({
               pinOrchestrationOpen={marketingPinOrchestration}
               streamingMessageContent={message.agentStreamingContent}
               segmentOpen={message.agentSegmentOpen}
+              crewFailure={message.agentCrewFailure}
             />
             {showPostTimelineDelivery ? (
               <TimelineDeliveryBlock

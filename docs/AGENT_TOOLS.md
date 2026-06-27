@@ -7,7 +7,8 @@
 本文档覆盖 **Python 工具定义**、**下游 HTTP API**、**SSE 调用/完成展示**、**前端时间线/UI**。
 
 已知问题与重构方向见 **[AGENT_TOOLS_REFACTOR_ISSUES.md](./AGENT_TOOLS_REFACTOR_ISSUES.md)**（诊断稿，不含实现）。  
-API/工具/上下文/RAG 合理性深度分析见 **[AGENT_API_TOOLS_CONTEXT_ANALYSIS.md](./AGENT_API_TOOLS_CONTEXT_ANALYSIS.md)**。
+API/工具/上下文/RAG 合理性深度分析见 **[AGENT_API_TOOLS_CONTEXT_ANALYSIS.md](./AGENT_API_TOOLS_CONTEXT_ANALYSIS.md)**。  
+Agent 平台路线图（Skills / Profile / Crew）：[`2026-06-26-agent-platform-roadmap-spec.md`](./superpowers/specs/2026-06-26-agent-platform-roadmap-spec.md)
 
 ---
 
@@ -45,8 +46,23 @@ UI 摘要由 `tool_ui.default_ui_excerpt_registry()` + `events.build_tool_comple
 | 完成 | `tool.completed` | 工具行 phase→已完成；展示 `output_summary` |
 | 完成 | `step.completed` | 编排层状态更新 |
 | 失败 | `step.failed` / `tool.completed{failed:true}` | 红色失败态；静默重试时可能隐藏中间失败 |
+| Skill 加载 | `skill.started` / `skill.loaded` / `skill.failed` | 时间线 Skill 块；payload `skill.id` / `skill.name` |
+| 专家团编排 | `crew.started` / `crew.stage.started` / `crew.stage.completed` / `crew.completed` / `crew.failed` | 专家团步骤条；见 §1.5 |
 
-### 1.3 隐藏 / 内部工具（不在编排时间线展示）
+### 1.3 Stream 上下文字段（Java Assembler → Python `AgentRunContext`）
+
+前端 `POST /api/agent/chat/stream`（`AgentStreamRequest`）经 novel-studio `AgentContextAssembler` 写入 Python run context：
+
+| 字段 | 来源 | 说明 |
+|------|------|------|
+| `skill_ids[]` | 编辑器 Skill 多选 | UUID 或 system slug（如 `fanqie-chapter-hook`）；Assembler 合并 `skill_prompt` |
+| `skill_prompt` | Assembler | 预合并 Skill 正文；运行中 `Skill` 工具可追加 |
+| `crew_id` | 编辑器专家团选择 | Crew 模板 UUID；非空且 `AGENT_CREW_ENABLED=true` 时走 `CrewOrchestrator` |
+| `crew_vars` | 编辑器 | 模板变量键值，渲染各 stage `prompt_template` |
+
+子 Agent / 专家团 stage 另见工具入参 `profile_id`（§6.3）与子 run SSE `profile_id` / `display_name`（P2）。
+
+### 1.4 隐藏 / 内部工具（不在编排时间线展示）
 
 定义：`frontend/src/utils/agentOrchestration.ts`（与 Python `cc_visibility.HIDDEN_UI_TOOLS` 对齐）
 
@@ -58,7 +74,19 @@ UI 摘要由 `tool_ui.default_ui_excerpt_registry()` + `events.build_tool_comple
 | `TodoWrite` | 时间线隐藏，但 `tool.completed` 仍驱动左下待办面板 |
 | `orchestrator` / `plan` / `write_chapter` | 历史回放兼容 |
 
-### 1.4 Content API 约定
+### 1.5 Crew SSE 载荷（`crew.*`）
+
+实现（P3）：`python-ai/app/agent/harness/events.py`、`crew_orchestrator.py`
+
+| 事件 | payload 字段 | 前端行为 |
+|------|--------------|----------|
+| `crew.started` | `crew_id`, `display_name`, `stage_count` | 初始化专家团步骤条 |
+| `crew.stage.started` | `stage_key`, `profile_id`, `index` | 标记当前 stage 运行中 |
+| `crew.stage.completed` | `stage_key`, `status`, `summary` | 更新 stage 完成态 |
+| `crew.completed` | `crew_id`, `summary` | 专家团成功收尾 |
+| `crew.failed` | `crew_id`, `error`, `report?` | 失败态 + 可选 markdown 报告 |
+
+### 1.6 Content API 约定
 
 Python 工具经 `CONTENT_BASE_URL`（默认 `http://127.0.0.1:8080`）访问 novel-studio：
 
@@ -280,6 +308,18 @@ Python 工具经 `CONTENT_BASE_URL`（默认 `http://127.0.0.1:8080`）访问 no
 | **KG 未启用** | 返回空图 + note |
 | **完成后 UI** | 「角色关系图」；图标 `Grep` |
 
+### 5.3 SearchSessionHistory
+
+实现：`python-ai/app/agent/tools/session_history.py`
+
+| 项 | 内容 |
+|----|------|
+| **输入** | `query`（语义检索）或 `run_id`（拉取整轮消息 + tool trace）；`top_k`；`include_tool_bodies` |
+| **索引** | Milvus `agent_session_turns`（`AGENT_SESSION_RECALL_INDEX_ENABLED`）；query rewrite 多路 hybrid |
+| **冷存储** | novel-studio internal `GET /internal/agent/sessions/{id}/messages`、`.../runs/{runId}/trace` |
+| **完成后 UI** | 「会话历史检索」；摘要「N 处」或 `run … · M 条`；图标 `Grep` |
+| **只读** | 是 |
+
 ---
 
 ## 6. 交互与子 Agent（3）
@@ -309,12 +349,13 @@ Python 工具经 `CONTENT_BASE_URL`（默认 `http://127.0.0.1:8080`）访问 no
 
 | 项 | 内容 |
 |----|------|
-| **输入** | `description`（UI 标题）、`prompt`（子任务全文） |
+| **输入** | `description`（UI 标题）、`prompt`（子任务全文）、`profile_id?`（Agent Profile slug，默认 `chapter-writer`） |
 | **API** | 无（进程内 `run_subagent`） |
-| **限制** | 子 Agent 禁止 `Agent` 嵌套；排除 `SUBAGENT_EXCLUDED_TOOLS` |
-| **调用中** | 嵌套 `OrchestrationLayer` + 子时间线 |
+| **profile_id** | 决定 system 模板、工具白名单、`max_turns`；内置：`main-editor`、`chapter-writer`、`continuity-reviewer`、`style-editor`（见 roadmap spec §4.4.4） |
+| **限制** | 子 Agent 禁止 `Agent` 嵌套；排除 `SUBAGENT_EXCLUDED_TOOLS`；工具集 = profile 白名单 ∩ 全局注册表 |
+| **调用中** | 嵌套 `OrchestrationLayer` + 子时间线；SSE 子 run 带 `profile_id` / `display_name` |
 | **完成后 UI** | 「子任务：{description}」；图标 `Agent` |
-| **触发审查** | 批量写章后可触发只读审查子 Agent |
+| **触发审查** | 批量写章后可触发只读审查子 Agent（`profile_id=continuity-reviewer`） |
 
 **审查子 Agent 允许工具**：`ListChapters`、`ReadChapter`、`ListMemory`、`ReadMemory`、`ChapterAudit`、`NarrativeReview`、`SearchKnowledge`、`GetCharacterGraph`（见 `review_agent.py`）。
 
@@ -357,13 +398,17 @@ Python 工具经 `CONTENT_BASE_URL`（默认 `http://127.0.0.1:8080`）访问 no
 ## 9. Skill（1）
 
 实现：`python-ai/app/agent/tools/skill.py`  
-**启用**：`AGENT_SKILLS_DIR` 指向含 `{name}.md` 或 `{name}/SKILL.md` 的目录
+**启用**：bundled `python-ai/skills/bundled/`、novel-studio `/internal/agent/skills`、或 legacy `AGENT_SKILLS_DIR`
 
 | 项 | 内容 |
 |----|------|
-| **输入** | `skill` 名称 |
-| **行为** | 读文件 → `context_patch.skill_prompt` |
+| **输入** | 二选一：`skill`（bundled slug，如 `fanqie-chapter-hook`）或 `skill_id`（UUID / system slug，novel-studio v2） |
+| **行为** | `skill_id` → HTTP 拉取；`skill` → bundled / legacy 文件；正文追加至 `context_patch.skill_prompt` |
+| **SSE** | `skill.started` → `skill.loaded` / `skill.failed`；payload `skill.id`、`skill.name` |
+| **Stream 预载** | 编辑器 `skill_ids[]` 由 Assembler 预合并；运行中 `Skill` 工具可再按需加载 |
 | **完成后 UI** | 「已调用技能：{name}」；图标 `Skill` |
+
+**内置 bundled slugs**：`fanqie-chapter-hook`（章末钩子）、`sweet-romance-beat`（甜宠节拍）、`mystery-cold-open`（悬疑冷开场）。正文见 `python-ai/skills/bundled/` 与 Flyway `V26__agent_skill.sql`。
 
 ---
 

@@ -165,6 +165,33 @@ def _append_tree_lines(
             return
 
 
+def format_memory_scope_roots(
+    ctx: AgentRunContext,
+    *,
+    trees: dict[str, dict[str, Any]] | None = None,
+) -> str:
+    """Scope tab roots only — child nodes via GetMemoryTree / ReadMemory."""
+    nid = _novel_id(ctx)
+    if not nid or ctx.user_id <= 0:
+        return ""
+    scope_trees = trees if trees is not None else load_all_memory_trees(ctx)
+    root_ids = extract_scope_root_ids(scope_trees)
+    if not root_ids:
+        return ""
+    lines = [
+        "【记忆 scope 根节点】",
+        "仅列出 scope tab 根 UUID；子节点与正文请 GetMemoryTree(scope) 或 ReadMemory(memory_id)。",
+    ]
+    for scope in sorted(root_ids.keys()):
+        tree = scope_trees.get(scope) or {}
+        count = int(tree.get("count") or 0)
+        label = SCOPE_LABELS.get(scope, scope)
+        lines.append(
+            f"- scope={scope} ({label}) | {MEMORY_ID_FIELD}={root_ids[scope]} | nodes≈{count}"
+        )
+    return "\n".join(lines)
+
+
 def format_memory_index(
     ctx: AgentRunContext,
     *,

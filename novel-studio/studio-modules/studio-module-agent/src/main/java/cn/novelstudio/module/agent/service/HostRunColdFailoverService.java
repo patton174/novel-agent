@@ -148,6 +148,9 @@ public class HostRunColdFailoverService {
                     null,
                     null,
                     null,
+                    null,
+                    null,
+                    null,
                     null
                 );
                 AgentRunState state = new AgentRunState(
@@ -166,7 +169,9 @@ public class HostRunColdFailoverService {
                     objectMapper,
                     chapterSideEffectService,
                     sideEffectExecutor,
-                    resultLocalizer
+                    resultLocalizer,
+                    contentInternalClient,
+                    runtimeProperties.isPgRunEnabled()
                 );
                 runRegistry.register(coordinator);
                 HostModeEventFanout fanout = new HostModeEventFanout(

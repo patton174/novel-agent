@@ -56,6 +56,8 @@ export function HomeFooterSection({ variant = 'full' }: { variant?: FooterVarian
 
   const productLinks = [
     { label: t('nav.guide'), to: '/guide' },
+    { label: t('nav.compare'), to: '/compare' },
+    { label: t('nav.blog'), to: '/blog' },
     { label: t('nav.pricing'), to: '/pricing' },
     { label: t('nav.about'), to: '/about' },
   ] as const

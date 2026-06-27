@@ -1,0 +1,31 @@
+{
+  "id": "three-act-novel",
+  "display_name": "三幕式长篇",
+  "description": "plan → write → review",
+  "stages": [
+    {
+      "key": "plan",
+      "profile_id": "main-editor",
+      "prompt_template": "为当前小说制定第一章写作计划。用户诉求：{{user_goal}}",
+      "output_schema": "PlanResult",
+      "gate": "always",
+      "on_fail": "abort_with_report"
+    },
+    {
+      "key": "write",
+      "profile_id": "chapter-writer",
+      "prompt_template": "根据计划起草第一章：{{plan.summary}}",
+      "output_schema": "none",
+      "gate": "on_plan_success",
+      "on_fail": "abort_with_report"
+    },
+    {
+      "key": "review",
+      "profile_id": "continuity-reviewer",
+      "prompt_template": "审查刚写章节与全书连贯性。计划摘要：{{plan.summary}}",
+      "output_schema": "none",
+      "gate": "on_write_success",
+      "on_fail": "abort_with_report"
+    }
+  ]
+}

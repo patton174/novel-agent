@@ -20,6 +20,8 @@ import cn.novelstudio.module.auth.service.EmailVerificationService;
 import cn.novelstudio.module.auth.service.InviteCodeService;
 import cn.novelstudio.module.auth.service.RateLimitService;
 import cn.novelstudio.module.auth.support.PermissionSyncPublisher;
+import cn.novelstudio.module.risk.model.RiskEvaluationResult;
+import cn.novelstudio.module.risk.service.RiskSessionHooks;
 import cn.novelstudio.kernel.enums.ResultCode;
 import cn.novelstudio.kernel.exception.BizException;
 import cn.novelstudio.kernel.tools.IdWorker;
@@ -46,11 +48,21 @@ public class AuthServiceImpl implements AuthService {
     private final BillingSettingsClient billingSettingsClient;
     private final BillingReferralClient billingReferralClient;
     private final InviteCodeService inviteCodeService;
+    private final RiskSessionHooks riskSessionHooks;
 
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder(12);
 
     @Override
     public JwtAuthService.AuthSessionBundle login(LoginRequest request) {
+        return login(request, null, null);
+    }
+
+    @Override
+    public JwtAuthService.AuthSessionBundle login(
+        LoginRequest request,
+        String clientIp,
+        String clientCountry
+    ) {
         AuthUser user = authUserRepository.findByUsername(request.getUsername())
             .orElseThrow(() -> BizException.of(ResultCode.AUTH_LOGIN_FAILED));
 
@@ -69,7 +81,20 @@ public class AuthServiceImpl implements AuthService {
 
         permissionSyncPublisher.publish(user.getId(), user.getRole());
 
-        return jwtAuthService.login(user, request.getFingerprint(), request.getEnvSnapshot());
+        JwtAuthService.AuthSessionBundle bundle = jwtAuthService.login(
+            user,
+            request.getFingerprint(),
+            request.getEnvSnapshot()
+        );
+        riskSessionHooks.onLogin(
+            bundle.sessionId(),
+            user.getId(),
+            request.getFingerprint(),
+            clientIp,
+            clientCountry,
+            request.getEnvSnapshot()
+        );
+        return bundle;
     }
 
     @Override
@@ -117,13 +142,16 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public JwtAuthService.AuthSessionBundle refresh(String refreshToken) {
-        return refresh(refreshToken, null, null);
+        return refresh(refreshToken, null, null, null, null);
     }
 
+    @Override
     public JwtAuthService.AuthSessionBundle refresh(
         String refreshToken,
         String fingerprint,
-        java.util.Map<String, Object> envSnapshot
+        java.util.Map<String, Object> envSnapshot,
+        String clientIp,
+        String clientCountry
     ) {
         Long userId = jwtAuthService.userIdFromRefresh(refreshToken);
         if (userId == null) {
@@ -131,7 +159,26 @@ public class AuthServiceImpl implements AuthService {
         }
         AuthUser user = authUserRepository.findById(userId)
             .orElseThrow(() -> BizException.of(ResultCode.AUTH_TOKEN_EXPIRED));
-        return jwtAuthService.refresh(refreshToken, user, fingerprint, envSnapshot);
+        JwtAuthService.AuthSessionBundle bundle = jwtAuthService.refresh(
+            refreshToken,
+            user,
+            fingerprint,
+            envSnapshot
+        );
+        RiskEvaluationResult risk = riskSessionHooks.onRefresh(
+            bundle.sessionId(),
+            user.getId(),
+            fingerprint,
+            clientIp,
+            clientCountry,
+            envSnapshot
+        );
+        if (risk.revokeRecommended()) {
+            jwtAuthService.logout(bundle.refreshToken());
+            deviceSessionService.revokeSession(bundle.sessionId());
+            throw BizException.of(ResultCode.AUTH_TOKEN_EXPIRED);
+        }
+        return bundle;
     }
 
     @Override
@@ -153,6 +200,7 @@ public class AuthServiceImpl implements AuthService {
         String fingerprint = request == null ? null : request.getFingerprint();
         java.util.Map<String, Object> envDelta = request == null ? null : request.getEnvDelta();
         deviceSessionService.touchHeartbeat(sessionId, principal.userId(), fingerprint, envDelta);
+        riskSessionHooks.onHeartbeat(sessionId, principal.userId(), fingerprint, null, null, envDelta);
     }
 
     @Override

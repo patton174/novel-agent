@@ -1,10 +1,11 @@
 import { DIRECT_PYTHON } from '../config/runtime'
-import { hasAuthSessionHint, migrateLegacyAuthStorage } from '../utils/auth'
+import { hasAuthSessionHint, migrateLegacyAuthStorage, isLoggedIn } from '../utils/auth'
 import { commitLoginSession } from './loginSession'
 import {
   hydrateSessionFromStorage,
 } from './sessionStore'
 import { ensureCryptoRuntime } from './cryptoRuntime'
+import { startHeartbeatWorker } from './heartbeat'
 
 let bootstrapPromise: Promise<void> | null = null
 let bootstrapRunning = false
@@ -21,14 +22,10 @@ async function runBootstrap(): Promise<void> {
     // 部署会轮换 apiPathPrefix；已登录用户也必须拉最新 runtime，否则 /g/ 路由 404
     await ensureCryptoRuntime(true)
 
-    // 页面刷新：用 httpOnly refresh cookie 换新 JWT，避免复用过期 sessionStorage token
-    if (hasAuthSessionHint()) {
-      const { refreshSession } = await import('../utils/authApi')
-      await refreshSession()
-      return
+    // 页面刷新：仅从 sessionStorage 恢复 JWT；续期仅在 secureFetch 收到 401 时触发
+    if (hasAuthSessionHint() && isLoggedIn()) {
+      startHeartbeatWorker()
     }
-
-    // 无本地会话迹象 — 访客，不 silent refresh
   } finally {
     bootstrapRunning = false
   }

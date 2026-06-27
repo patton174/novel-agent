@@ -41,6 +41,7 @@ def test_registry_has_api_tools():
         "ListMemory",
         "ReadMemory",
         "SearchKnowledge",
+        "SearchSessionHistory",
         "AskUser",
         "Agent",
     ):

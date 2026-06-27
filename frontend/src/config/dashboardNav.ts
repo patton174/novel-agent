@@ -12,10 +12,10 @@ import {
   ProIconOverview,
   ProIconPencil,
   ProIconSettings,
+  ProIconAdminContent,
 } from '@/components/pro/icons/proIcons'
 import { SETTINGS_SECTIONS } from '@/pages/dashboard/settings/settingsSections'
-import { FEATURE_AGENT_SKILLS } from '@/config/features'
-import { ProIconAdminContent } from '@/components/pro/icons/proIcons'
+import { FEATURE_AGENT_CREW, FEATURE_AGENT_SKILLS } from '@/config/features'
 
 export interface DashboardNavItem {
   labelKey: string
@@ -83,6 +83,16 @@ export const DASHBOARD_NAV_GROUPS: DashboardNavGroup[] = [
               labelKey: 'common:nav.dashboardSkills',
               to: '/dashboard/skills',
               icon: ProIconAdminContent,
+              end: true,
+            },
+          ]
+        : []),
+      ...(FEATURE_AGENT_CREW
+        ? [
+            {
+              labelKey: 'common:nav.dashboardAgentProfiles',
+              to: '/dashboard/agent/profiles',
+              icon: ProIconAdminModels,
               end: true,
             },
           ]

@@ -4,6 +4,9 @@ import cn.novelstudio.kernel.biz.BaseBiz;
 import cn.novelstudio.module.content.dto.agent.*;
 import cn.novelstudio.module.content.service.agent.AgentRunService;
 import cn.novelstudio.module.content.service.agent.AgentSessionPgService;
+import cn.novelstudio.module.content.dto.ContentMessageDTO;
+import cn.novelstudio.module.content.dto.SaveRunTraceRequest;
+import cn.novelstudio.module.content.service.ContentSessionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
@@ -20,6 +23,7 @@ public class InternalAgentRunBiz extends BaseBiz {
 
     private final AgentRunService agentRunService;
     private final AgentSessionPgService agentSessionPgService;
+    private final ContentSessionService contentSessionService;
 
     public AgentRunDTO createRun(CreateAgentRunRequest request) {
         return agentRunService.createRun(request);
@@ -81,6 +85,39 @@ public class InternalAgentRunBiz extends BaseBiz {
         String title = stringVal(body.get("title"));
         String novelId = stringVal(body.get("novelId"));
         agentSessionPgService.upsertSession(userId, sessionId, title, novelId);
+    }
+
+    public void saveRunTrace(String sessionId, String runId, Long userId, SaveRunTraceRequest request) {
+        if (userId == null || sessionId == null || sessionId.isBlank() || runId == null || runId.isBlank()) {
+            return;
+        }
+        String traceJson = request == null || request.traceJson() == null ? "" : request.traceJson();
+        contentSessionService.saveRunTrace(String.valueOf(userId), sessionId, runId, traceJson);
+    }
+
+    public List<ContentMessageDTO> listSessionMessages(
+        Long userId,
+        String sessionId,
+        int limit,
+        String runId
+    ) {
+        if (userId == null || userId <= 0 || sessionId == null || sessionId.isBlank()) {
+            return List.of();
+        }
+        int safeLimit = Math.max(Math.min(limit, 500), 1);
+        String uid = String.valueOf(userId);
+        List<ContentMessageDTO> fromRedis = contentSessionService.listMessages(uid, sessionId, safeLimit, runId);
+        if (!fromRedis.isEmpty()) {
+            return fromRedis;
+        }
+        return agentSessionPgService.listMessagesFromPg(userId, sessionId, safeLimit, runId);
+    }
+
+    public String getRunTrace(Long userId, String sessionId, String runId) {
+        if (userId == null || userId <= 0 || sessionId == null || sessionId.isBlank() || runId == null || runId.isBlank()) {
+            return null;
+        }
+        return contentSessionService.readRunTrace(String.valueOf(userId), sessionId, runId);
     }
 
     private static Long longVal(Object raw) {

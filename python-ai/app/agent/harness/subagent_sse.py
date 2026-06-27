@@ -424,6 +424,7 @@ async def stream_subagent_tool(
 
     description = (parsed.description or "子任务").strip()
     prompt = (parsed.prompt or "").strip()
+    profile_id = (parsed.profile_id or "chapter-writer").strip() or "chapter-writer"
 
     if subagent_depth(ctx) >= settings.agent_subagent_max_depth:
         result = ToolCallResult(
@@ -503,9 +504,21 @@ async def stream_subagent_tool(
         )
         return
 
-    child = build_subagent_context(ctx, description=description, prompt=prompt)
+    from app.agent.harness.profile_loader import fetch_profile, merge_profile_skills
+
+    profile = await fetch_profile(profile_id, ctx.user_id)
+    max_turns = profile.max_turns or settings.agent_subagent_max_turns
+    child = build_subagent_context(
+        ctx,
+        description=description,
+        prompt=prompt,
+        extra_patch={
+            "_subagent_profile_id": profile.id,
+            "_max_turns": max_turns,
+        },
+    )
+    child = await merge_profile_skills(child, profile)
     child_run_id = child.run_id
-    max_turns = settings.agent_subagent_max_turns
 
     yield build_event(
         event_type="subagent.started",
@@ -521,6 +534,8 @@ async def stream_subagent_tool(
             extra={
                 "max_turns": max_turns,
                 "prompt_preview": prompt[:280],
+                "profile_id": profile.id,
+                "display_name": profile.display_name,
             },
         ),
     )
@@ -605,6 +620,8 @@ async def stream_subagent_tool(
                 extra={
                     "turns": turn_counter,
                     "summary_preview": summary_preview[:50_000],
+                    "profile_id": profile.id,
+                    "display_name": profile.display_name,
                 },
             ),
         )
@@ -618,6 +635,7 @@ async def stream_subagent_tool(
                 "parent_run_id": ctx.run_id,
                 "child_run_id": child_run_id,
                 "description": description[:200],
+                "profile_id": profile.id,
                 "ok": not is_error,
             }
         },

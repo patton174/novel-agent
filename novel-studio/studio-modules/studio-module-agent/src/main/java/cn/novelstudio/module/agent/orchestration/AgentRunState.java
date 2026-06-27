@@ -140,6 +140,27 @@ public class AgentRunState {
             ? (Map<String, Object>) modelMap
             : null;
 
+        String defaultProfileId = assembledContext.get("default_profile_id") == null
+            ? null
+            : String.valueOf(assembledContext.get("default_profile_id"));
+        if (defaultProfileId != null && defaultProfileId.isBlank()) {
+            defaultProfileId = null;
+        }
+        String crewId = assembledContext.get("crew_id") == null
+            ? null
+            : String.valueOf(assembledContext.get("crew_id"));
+        if (crewId != null && crewId.isBlank()) {
+            crewId = null;
+        }
+        @SuppressWarnings("unchecked")
+        Map<String, Object> crewVars = assembledContext.get("crew_vars") instanceof Map<?, ?> crewVarsMap
+            ? (Map<String, Object>) crewVarsMap
+            : null;
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> crewTemplate = assembledContext.get("crew_template") instanceof List<?> crewList
+            ? (List<Map<String, Object>>) crewList
+            : null;
+
         return new AgentRunContextDto(
             runId,
             sessionId,
@@ -162,7 +183,11 @@ public class AgentRunState {
             referencedBooks,
             skillIds,
             skillPrompt,
-            modelConfig
+            modelConfig,
+            defaultProfileId,
+            crewId,
+            crewVars,
+            crewTemplate
         );
     }
 

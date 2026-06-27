@@ -14,6 +14,7 @@ import cn.novelstudio.module.auth.service.EmailVerificationService;
 import cn.novelstudio.module.auth.service.InviteCodeService;
 import cn.novelstudio.module.auth.service.RateLimitService;
 import cn.novelstudio.module.auth.support.PermissionSyncPublisher;
+import cn.novelstudio.module.risk.service.RiskSessionHooks;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -54,6 +55,8 @@ class AuthServiceImplRegisterTest {
     private BillingReferralClient billingReferralClient;
     @Mock
     private InviteCodeService inviteCodeService;
+    @Mock
+    private RiskSessionHooks riskSessionHooks;
 
     private AuthServiceImpl authService;
 
@@ -70,7 +73,8 @@ class AuthServiceImplRegisterTest {
             billingSubscriptionClient,
             billingSettingsClient,
             billingReferralClient,
-            inviteCodeService
+            inviteCodeService,
+            riskSessionHooks
         );
     }
 

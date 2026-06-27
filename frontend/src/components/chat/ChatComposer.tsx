@@ -7,9 +7,12 @@ import { EditorButton, EditorSendIconLayer } from '../ui/EditorButton'
 import { ComposerStatusBar } from './ComposerStatusBar'
 import { ReferenceBookPicker } from '../editor/ReferenceBookPicker'
 import { SkillPicker } from '../agent/SkillPicker'
+import { CrewPicker } from '../agent/CrewPicker'
 import type { SelectableBook } from '@/api/libraryApi'
+import { ensureAgentSkillRef } from '@/api/agentSkillApi'
 import type { AgentSkillSummary } from '@/types/agentSkill'
-import { FEATURE_AGENT_SKILLS, FEATURE_LIBRARY_REF } from '@/config/features'
+import type { CrewTemplateSummary } from '@/types/crew'
+import { FEATURE_AGENT_CREW, FEATURE_AGENT_SKILLS, FEATURE_LIBRARY_REF } from '@/config/features'
 import { cn } from '@/lib/utils'
 import { editorPixelIconButtonClass } from '@/lib/editorPixelClasses'
 import { appToast } from '@/stores/appToastStore'
@@ -63,6 +66,8 @@ export interface ChatComposerProps {
   onReferencedBooksChange?: (books: ReferencedBookChip[]) => void
   selectedSkills?: AgentSkillSummary[]
   onSelectedSkillsChange?: (skills: AgentSkillSummary[]) => void
+  selectedCrew?: CrewTemplateSummary | null
+  onSelectedCrewChange?: (crew: CrewTemplateSummary | null) => void
 }
 
 export function ChatComposer({
@@ -81,6 +86,8 @@ export function ChatComposer({
   onReferencedBooksChange,
   selectedSkills = [],
   onSelectedSkillsChange,
+  selectedCrew = null,
+  onSelectedCrewChange,
 }: ChatComposerProps) {
   const { t } = useTranslation(['editor'])
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -88,6 +95,8 @@ export function ChatComposer({
   const [pickerQuery, setPickerQuery] = useState('')
   const [skillPickerOpen, setSkillPickerOpen] = useState(false)
   const [skillPickerQuery, setSkillPickerQuery] = useState('')
+  const [crewPickerOpen, setCrewPickerOpen] = useState(false)
+  const [crewPickerQuery, setCrewPickerQuery] = useState('')
   const streaming = streamActive || isLoading
 
   useEffect(() => {
@@ -138,7 +147,7 @@ export function ChatComposer({
     } else {
       setPickerOpen(false)
     }
-    if (FEATURE_AGENT_SKILLS) {
+    if (FEATURE_AGENT_SKILLS && !selectedCrew) {
       const lastSlash = v.lastIndexOf('/')
       if (lastSlash >= 0 && v.slice(lastSlash + 1).indexOf(' ') < 0) {
         setSkillPickerQuery(v.slice(lastSlash + 1))
@@ -148,6 +157,17 @@ export function ChatComposer({
       }
     } else {
       setSkillPickerOpen(false)
+    }
+    if (FEATURE_AGENT_CREW) {
+      const lastHash = v.lastIndexOf('#')
+      if (lastHash >= 0 && v.slice(lastHash + 1).indexOf(' ') < 0) {
+        setCrewPickerQuery(v.slice(lastHash + 1))
+        setCrewPickerOpen(true)
+      } else {
+        setCrewPickerOpen(false)
+      }
+    } else {
+      setCrewPickerOpen(false)
     }
   }
 
@@ -180,7 +200,36 @@ export function ChatComposer({
         value.slice(0, lastSlash) + value.slice(lastSlash + 1 + skillPickerQuery.length)
       onChange(newVal)
     }
-    onSelectedSkillsChange?.([...selectedSkills, skill])
+    void (async () => {
+      let picked: AgentSkillSummary = skill
+      if (skill.isSystem) {
+        try {
+          picked = await ensureAgentSkillRef(skill.id)
+        } catch {
+          appToast.error(t('editor:skill.pinFail'))
+          return
+        }
+      }
+      onSelectedSkillsChange?.([...selectedSkills, picked])
+      setSkillPickerOpen(false)
+    })()
+  }
+
+  const handleCrewPick = (crew: CrewTemplateSummary) => {
+    onSelectedCrewChange?.(crew)
+    onSelectedSkillsChange?.([])
+    const lastHash = value.lastIndexOf('#')
+    if (lastHash >= 0) {
+      onChange(value.slice(0, lastHash) + value.slice(lastHash + 1 + crewPickerQuery.length))
+    }
+    setCrewPickerOpen(false)
+  }
+
+  const handleCrewToolbarClick = () => {
+    if (streaming) return
+    setCrewPickerQuery('')
+    setCrewPickerOpen((open) => !open)
+    setPickerOpen(false)
     setSkillPickerOpen(false)
   }
 
@@ -216,7 +265,22 @@ export function ChatComposer({
             ))}
           </div>
         ) : null}
-        {FEATURE_AGENT_SKILLS && selectedSkills.length > 0 ? (
+        {FEATURE_AGENT_CREW && selectedCrew ? (
+          <div className="flex flex-wrap gap-1 px-2 py-1">
+            <span className="inline-flex items-center gap-1 rounded bg-indigo-500/10 px-1.5 py-0.5 text-xs text-indigo-700 dark:text-indigo-300">
+              ⚡{selectedCrew.displayName}
+              <button
+                type="button"
+                className="opacity-70 hover:opacity-100"
+                aria-label={t('editor:crew.remove', { name: selectedCrew.displayName })}
+                onClick={() => onSelectedCrewChange?.(null)}
+              >
+                ×
+              </button>
+            </span>
+          </div>
+        ) : null}
+        {FEATURE_AGENT_SKILLS && selectedSkills.length > 0 && !selectedCrew ? (
           <div className="flex flex-wrap gap-1 px-2 py-1">
             {selectedSkills.map((skill, i) => (
               <span
@@ -264,13 +328,22 @@ export function ChatComposer({
               onClose={() => setPickerOpen(false)}
             />
           ) : null}
-          {FEATURE_AGENT_SKILLS ? (
+          {FEATURE_AGENT_SKILLS && !selectedCrew ? (
             <SkillPicker
               open={skillPickerOpen}
               query={skillPickerQuery}
               selected={selectedSkills}
               onPick={handleSkillPick}
               onClose={() => setSkillPickerOpen(false)}
+            />
+          ) : null}
+          {FEATURE_AGENT_CREW ? (
+            <CrewPicker
+              open={crewPickerOpen}
+              query={crewPickerQuery}
+              selected={selectedCrew}
+              onPick={handleCrewPick}
+              onClose={() => setCrewPickerOpen(false)}
             />
           ) : null}
         </div>
@@ -288,7 +361,7 @@ export function ChatComposer({
             >
               <Icons.Plus />
             </button>
-            {FEATURE_AGENT_SKILLS ? (
+            {FEATURE_AGENT_SKILLS && !selectedCrew ? (
               <button
                 type="button"
                 data-testid="composer-skill-btn"
@@ -303,6 +376,23 @@ export function ChatComposer({
                 )}
               >
                 ✦
+              </button>
+            ) : null}
+            {FEATURE_AGENT_CREW ? (
+              <button
+                type="button"
+                data-testid="composer-crew-btn"
+                onClick={handleCrewToolbarClick}
+                disabled={streaming}
+                aria-label={t('editor:crew.toolbar')}
+                title={t('editor:crew.toolbar')}
+                className={cn(
+                  editorPixelIconButtonClass(),
+                  'text-foreground disabled:opacity-45',
+                  crewPickerOpen && 'bg-muted/50',
+                )}
+              >
+                ⚡
               </button>
             ) : null}
             {onModelOverrideChange ? (

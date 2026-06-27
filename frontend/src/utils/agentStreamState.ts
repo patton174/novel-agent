@@ -30,6 +30,7 @@ import {
   promoteTrailingNarrationToDelivery,
 } from './agentStreamTimeline'
 import { applySubagentStepEvent } from './subagentStream'
+import { applyCrewEvent } from './crewStageState'
 import {
   applyMessageSegmentEvent,
   extractDeliveryTextFromTimeline,
@@ -892,6 +893,21 @@ export function applyAgentEvent(
     next = {
       ...next,
       stepStates: applySubagentStepEvent(next.stepStates, event),
+    }
+  }
+
+  if (
+    event.type === 'crew.started' ||
+    event.type === 'crew.stage.started' ||
+    event.type === 'crew.stage.completed' ||
+    event.type === 'crew.completed' ||
+    event.type === 'crew.failed'
+  ) {
+    const crewResult = applyCrewEvent(next.crewStage ?? { steps: [] }, event)
+    next = {
+      ...next,
+      crewStage: crewResult.state,
+      crewFailure: crewResult.failure ?? next.crewFailure,
     }
   }
 

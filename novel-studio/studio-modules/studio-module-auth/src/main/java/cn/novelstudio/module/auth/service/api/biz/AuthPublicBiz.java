@@ -19,9 +19,14 @@ public class AuthPublicBiz extends BaseBiz {
     private final AuthService authService;
     private final RateLimitService rateLimitService;
 
-    public JwtAuthService.AuthSessionBundle login(LoginRequest request, String ip, String fingerprint) {
+    public JwtAuthService.AuthSessionBundle login(
+        LoginRequest request,
+        String ip,
+        String fingerprint,
+        String clientCountry
+    ) {
         rateLimitService.checkComposite("login", ip, fingerprint, 20, Duration.ofMinutes(15));
-        return authService.login(request);
+        return authService.login(request, ip, clientCountry);
     }
 
     public Result<Void> register(RegisterRequest request, String ip, String fingerprint, String referralCode) {
@@ -29,8 +34,13 @@ public class AuthPublicBiz extends BaseBiz {
         return ok(null);
     }
 
-    public JwtAuthService.AuthSessionBundle refresh(String refreshToken) {
-        return authService.refresh(refreshToken);
+    public JwtAuthService.AuthSessionBundle refresh(
+        String refreshToken,
+        String fingerprint,
+        String clientIp,
+        String clientCountry
+    ) {
+        return authService.refresh(refreshToken, fingerprint, null, clientIp, clientCountry);
     }
 
     public Result<Void> logout(String refreshToken) {

@@ -53,6 +53,9 @@ public class AgentSkillEntity {
     @Column(name = "is_system", nullable = false)
     private Boolean isSystem = false;
 
+    @Column(nullable = false)
+    private Boolean enabled = true;
+
     @Column(name = "deleted_at")
     private Instant deletedAt;
 

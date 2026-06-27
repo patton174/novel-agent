@@ -17,6 +17,9 @@ auth:
   cookie:
     secure: true
     domain: ${AUTH_COOKIE_DOMAIN:.novel-agent.cn}
+  jwt:
+    refresh-idle-ttl-seconds: ${AUTH_REFRESH_IDLE_TTL_SECONDS:604800}
+    refresh-absolute-ttl-seconds: ${AUTH_REFRESH_ABSOLUTE_TTL_SECONDS:2592000}
   client-security:
     enabled: ${CLIENT_SECURITY_ENABLED:true}
     aes-required: ${CLIENT_SECURITY_AES_REQUIRED:true}
@@ -26,4 +29,11 @@ auth:
     replay-window-seconds: ${CLIENT_SECURITY_REPLAY_WINDOW_SECONDS:120}
     enforce-csrf: ${CLIENT_SECURITY_ENFORCE_CSRF:false}
     enforce-fingerprint: ${CLIENT_SECURITY_ENFORCE_FINGERPRINT:false}
-    enforce-heartbeat: ${CLIENT_SECURITY_ENFORCE_HEARTBEAT:false}
+    enforce-heartbeat: ${CLIENT_SECURITY_ENFORCE_HEARTBEAT:true}
+    heartbeat-interval-seconds: ${CLIENT_SECURITY_HEARTBEAT_INTERVAL_SECONDS:60}
+    heartbeat-max-silence-seconds: ${CLIENT_SECURITY_HEARTBEAT_MAX_SILENCE_SECONDS:900}
+  risk:
+    enabled: ${AUTH_RISK_ENABLED:true}
+    step-up-threshold: ${AUTH_RISK_STEP_UP_THRESHOLD:80}
+    revoke-threshold: ${AUTH_RISK_REVOKE_THRESHOLD:95}
+    min-signals-for-step-up: ${AUTH_RISK_MIN_SIGNALS:2}

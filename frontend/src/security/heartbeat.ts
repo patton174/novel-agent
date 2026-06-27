@@ -83,9 +83,8 @@ export function stopHeartbeatWorker(): void {
   started = false
 }
 
-/** 页面刷新后 token 在内存丢失时，尝试 silent refresh 再启心跳 */
+/** 页面刷新后恢复心跳；token 续期仅在 API 401 时由 secureFetch 触发 */
 export async function ensureSessionAndHeartbeat(): Promise<void> {
   const { startSessionBootstrap } = await import('./sessionBootstrap')
   await startSessionBootstrap()
-  startHeartbeatWorker()
 }

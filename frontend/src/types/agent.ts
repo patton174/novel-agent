@@ -1,3 +1,5 @@
+import type { CrewFailureReportPayload, CrewStageUiState } from './crew'
+
 export interface AgentContextThresholds {
   contextLimit: number
   compressThresholdTokens: number
@@ -119,6 +121,12 @@ export interface AgentSubagentState {
   description: string
   /** review 等 — 来自 SSE subagent_kind */
   kind?: string
+  /** SSE profile_id */
+  profileId?: string
+  /** SSE profile display_name */
+  profileDisplayName?: string
+  /** Profile 描述（非任务 description） */
+  profileDescription?: string
   childRunId?: string
   status: 'active' | 'done' | 'failed'
   maxTurns?: number
@@ -208,6 +216,10 @@ export interface AgentStreamUiState {
   contextUsage?: AgentContextUsage
   /** 当前 message 段是否已 started 且未 completed */
   segmentOpen?: boolean
+  /** Crew 多阶段进度（crew.* SSE） */
+  crewStage?: CrewStageUiState
+  /** crew.failed 审查报告 */
+  crewFailure?: CrewFailureReportPayload
 }
 
 export type SkillTimelineStatus = 'started' | 'loaded' | 'failed'
@@ -267,4 +279,7 @@ export interface AgentStreamRequestBody {
   referenced_books?: Array<{ catalogNovelId: string }>
   /** 用户选中的 Skill（最多 3 个） */
   skill_ids?: string[]
+  /** Crew 模板（与 skill_ids 互斥时 crew 优先） */
+  crew_id?: string
+  crew_vars?: Record<string, unknown>
 }

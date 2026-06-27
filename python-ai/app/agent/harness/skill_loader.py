@@ -1,18 +1,13 @@
-"""Parse SKILL.md frontmatter and resolve bundled skill paths."""
+"""Parse SKILL.md frontmatter (import/export helper only — runtime skills live in PostgreSQL)."""
 
 from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from pathlib import Path
 
 _FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n?(.*)$", re.DOTALL)
 _LIST_ITEM_RE = re.compile(r"^\s*-\s+(.+)$")
 _INLINE_LIST_RE = re.compile(r"^\[(.*)\]$")
-
-
-def _bundled_root() -> Path:
-    return Path(__file__).resolve().parents[3] / "skills" / "bundled"
 
 
 @dataclass(frozen=True)
@@ -109,23 +104,3 @@ def parse_skill_markdown(text: str) -> ParsedSkill:
         body=body,
         locale=locale,
     )
-
-
-def load_bundled(name: str) -> Path | None:
-    """Resolve ``python-ai/skills/bundled/{name}/SKILL.md`` or ``{name}.md``."""
-    slug = (name or "").strip().replace("/", "").replace("\\", "")
-    if not slug:
-        return None
-    root = _bundled_root()
-    candidates = [root / slug / "SKILL.md", root / f"{slug}.md"]
-    for path in candidates:
-        if path.is_file():
-            return path
-    return None
-
-
-def read_bundled_skill(name: str) -> ParsedSkill | None:
-    path = load_bundled(name)
-    if path is None:
-        return None
-    return parse_skill_markdown(path.read_text(encoding="utf-8"))

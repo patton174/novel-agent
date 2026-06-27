@@ -14,6 +14,17 @@ public record AgentSkillDTO(
     String locale,
     boolean isSystem,
     List<String> tools,
+    /** Latest platform version (official) or owner version (custom). */
     int version,
-    String content
+    String content,
+    /** User's pinned version for official skills; null for custom skills. */
+    Integer pinnedVersion,
+    /** Follow latest official updates when true. */
+    Boolean autoUpdate,
+    /** Official skill has a newer version than the user's pin. */
+    Boolean updateAvailable,
+    /** In user's library (custom skill or referenced official). */
+    Boolean inLibrary,
+    /** Whether the skill is enabled for Agent catalog / picker. */
+    Boolean enabled
 ) {}

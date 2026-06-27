@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Loader2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { fetchAgentSkills } from '@/api/agentSkillApi'
+import { fetchAgentSkillLibrary } from '@/api/agentSkillApi'
 import type { AgentSkillSummary } from '@/types/agentSkill'
 
 interface Props {
@@ -30,9 +30,9 @@ export function SkillPicker({
     if (!open) return
     let cancelled = false
     setLoading(true)
-    fetchAgentSkills()
+    fetchAgentSkillLibrary()
       .then((list) => {
-        if (!cancelled) setSkills(list)
+        if (!cancelled) setSkills(list.filter((s) => s.enabled !== false))
       })
       .catch(() => {
         if (!cancelled) setSkills([])
@@ -89,10 +89,22 @@ export function SkillPicker({
               }}
             >
               <span className="flex items-center justify-between gap-2">
-                <span className="truncate font-medium">{skill.name}</span>
-                {picked ? (
-                  <span className="shrink-0 text-xs text-primary">{t('editor:skill.selected')}</span>
-                ) : null}
+                <span className="truncate font-medium">
+                  {skill.name}
+                  {skill.isSystem ? (
+                    <span className="ml-1.5 font-mono text-[10px] text-muted-foreground">
+                      v{skill.pinnedVersion ?? skill.version}
+                    </span>
+                  ) : null}
+                </span>
+                <span className="flex shrink-0 items-center gap-1.5">
+                  {skill.updateAvailable ? (
+                    <span className="size-1.5 rounded-full bg-amber-500" title={t('editor:skill.updateAvailable')} />
+                  ) : null}
+                  {picked ? (
+                    <span className="text-xs text-primary">{t('editor:skill.selected')}</span>
+                  ) : null}
+                </span>
               </span>
               {skill.description ? (
                 <span className="truncate text-xs text-muted-foreground">{skill.description}</span>

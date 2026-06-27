@@ -43,7 +43,7 @@ class AgentSkillControllerTest {
     void list_returns200() throws Exception {
         UUID id = UUID.randomUUID();
         when(biz.list(7L)).thenReturn(Result.ok(List.of(
-            new AgentSkillDTO(id, "my-hook", "desc", "zh", false, List.of(), 1, null)
+            new AgentSkillDTO(id, "my-hook", "desc", "zh", false, List.of(), 1, null, null, null, null, true, true)
         )));
 
         mockMvc.perform(get("/api/agent/skills").header("X-User-Id", "7"))
@@ -63,7 +63,7 @@ class AgentSkillControllerTest {
             "zh"
         );
         when(biz.create(eq(7L), any(CreateAgentSkillRequest.class))).thenReturn(Result.ok(
-            new AgentSkillDTO(id, "my-hook", "desc", "zh", false, List.of("ReadChapter"), 1, "# body")
+            new AgentSkillDTO(id, "my-hook", "desc", "zh", false, List.of("ReadChapter"), 1, "# body", null, null, null, true, true)
         ));
 
         mockMvc.perform(post("/api/agent/skills")

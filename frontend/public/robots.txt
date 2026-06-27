@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /editor
+Disallow: /dev/
+Disallow: /checkout
+
+Sitemap: https://www.novel-agent.cn/sitemap.xml

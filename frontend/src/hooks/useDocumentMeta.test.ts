@@ -35,8 +35,19 @@ describe('useDocumentMeta', () => {
     renderDocumentMeta('/pricing')
 
     await waitFor(() => {
-      expect(document.title).toBe('产品定价 · 墨言')
+      expect(document.title).toBe('产品定价 · AI创作助手')
       expect(document.documentElement.lang).toBe('zh-CN')
+    })
+  })
+
+  it('sets meta description and canonical for public pages', async () => {
+    renderDocumentMeta('/compare')
+
+    await waitFor(() => {
+      const desc = document.querySelector('meta[name="description"]')
+      expect(desc?.getAttribute('content')).toContain('蛙蛙写作')
+      const canonical = document.querySelector('link[rel="canonical"]')
+      expect(canonical?.getAttribute('href')).toContain('/compare')
     })
   })
 
@@ -44,13 +55,13 @@ describe('useDocumentMeta', () => {
     renderDocumentMeta('/pricing')
 
     await waitFor(() => {
-      expect(document.title).toBe('产品定价 · 墨言')
+      expect(document.title).toBe('产品定价 · AI创作助手')
     })
 
     await i18n.changeLanguage('en')
 
     await waitFor(() => {
-      expect(document.title).toBe('Pricing · Moyan')
+      expect(document.title).toBe('Pricing · AI Writing Assistant')
       expect(document.documentElement.lang).toBe('en')
     })
   })

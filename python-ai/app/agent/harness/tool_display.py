@@ -324,4 +324,6 @@ def read_progress_message(tool: str, tool_input: dict[str, Any] | None) -> str:
         return "正在加载记忆树…"
     if raw == "SearchKnowledge":
         return "正在检索知识库…"
+    if raw == "SearchSessionHistory":
+        return "正在检索会话历史…"
     return f"正在{tool_display_name(tool, tool_input)}…"

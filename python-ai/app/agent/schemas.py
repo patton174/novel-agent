@@ -82,7 +82,7 @@ class AgentRunContext(BaseModel):
     mode: str = "auto"
     user_message: str = ""
     chapter_text: str = ""
-    history: list[dict[str, str]] = Field(default_factory=list)
+    history: list[dict[str, Any]] = Field(default_factory=list)
     preferences: dict[str, Any] = Field(default_factory=dict)
     project: dict[str, Any] = Field(default_factory=dict)
     chapters: list[dict[str, Any]] = Field(default_factory=list)
@@ -96,6 +96,8 @@ class AgentRunContext(BaseModel):
     referenced_books: list[dict[str, Any]] = Field(default_factory=list)
     skill_ids: list[dict[str, Any]] = Field(default_factory=list)
     skill_prompt: str = ""
+    crew_id: str | None = None
+    crew_vars: dict[str, Any] = Field(default_factory=dict)
     resolved_model: dict[str, Any] | None = Field(default=None, alias="model_config")
 
     def merged_patch(self) -> dict[str, Any]:

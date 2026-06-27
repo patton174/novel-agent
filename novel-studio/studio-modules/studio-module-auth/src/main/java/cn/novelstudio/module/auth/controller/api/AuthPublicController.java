@@ -23,6 +23,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import cn.novelstudio.module.risk.service.RiskSessionHooks;
+
 import java.util.Arrays;
 
 @Slf4j
@@ -41,11 +43,12 @@ public class AuthPublicController extends BaseController {
         HttpServletRequest httpRequest
     ) {
         log.info("Login request: username={}", request.getUsername());
-        String ip = clientRequestSupport.clientIp(httpRequest);
-        String fingerprint = request.getFingerprint() != null
-            ? request.getFingerprint()
-            : clientRequestSupport.fingerprint(httpRequest);
-        JwtAuthService.AuthSessionBundle bundle = biz.login(request, ip, fingerprint);
+        JwtAuthService.AuthSessionBundle bundle = biz.login(
+            request,
+            clientRequestSupport.clientIp(httpRequest),
+            clientRequestSupport.fingerprint(httpRequest),
+            RiskSessionHooks.clientCountry(httpRequest)
+        );
         return withAuthCookies(ok(AuthServiceImpl.toResponse(bundle)), bundle);
     }
 
@@ -62,7 +65,13 @@ public class AuthPublicController extends BaseController {
 
     @PostMapping("/refresh")
     public ResponseEntity<Result<LoginResponse>> refresh(HttpServletRequest request) {
-        JwtAuthService.AuthSessionBundle bundle = biz.refresh(readCookie(request, SecurityCookieNames.REFRESH));
+        String fingerprint = clientRequestSupport.fingerprint(request);
+        JwtAuthService.AuthSessionBundle bundle = biz.refresh(
+            readCookie(request, SecurityCookieNames.REFRESH),
+            fingerprint,
+            clientRequestSupport.clientIp(request),
+            RiskSessionHooks.clientCountry(request)
+        );
         return withAuthCookies(ok(AuthServiceImpl.toResponse(bundle)), bundle);
     }
 

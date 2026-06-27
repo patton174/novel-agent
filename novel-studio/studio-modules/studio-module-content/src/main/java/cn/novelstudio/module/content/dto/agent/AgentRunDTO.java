@@ -22,4 +22,7 @@ public class AgentRunDTO {
     private Long completedAt;
     private Long createdAt;
     private Long updatedAt;
+    private String parentRunId;
+    private String profileId;
+    private String roleLabel;
 }

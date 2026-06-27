@@ -9,6 +9,7 @@ from typing import Any
 from app.agent.schemas import AgentRunContext
 
 CHAPTER_WINDOW_RADIUS = 5
+CHAPTER_CATALOG_INLINE_MAX = 40
 # List API only returns word_count — not body; treat as written when count is high enough.
 CHAPTER_WRITTEN_WORD_MIN = 100
 
@@ -159,6 +160,51 @@ def format_chapter_catalog_db(ctx: AgentRunContext, *, max_chars: int = 6500) ->
     if len(text) <= max_chars:
         return text
     return text[: max_chars - 20] + "\n…（章表已截断）"
+
+
+def format_current_chapter_row(ctx: AgentRunContext) -> str:
+    """Single editor-focused chapter row — only when user has a chapter open."""
+    cid = str(ctx.current_chapter_id or "").strip()
+    if not cid:
+        return ""
+    for ch in ctx.chapters or []:
+        if not isinstance(ch, dict):
+            continue
+        if str(ch.get("id") or "").strip() == cid:
+            from app.agent.harness.tool_contract import format_chapter_window_line
+
+            return format_chapter_window_line(ch)
+    return f"- chapter_id={cid} | （未在缓存章表中，请 ListChapters）"
+
+
+_CHAPTER_LIST_HINT = "章表不内联 — 调用 ListChapters 获取 chapter_id / index；ReadChapter 读正文。"
+
+
+def format_chapter_catalog_for_context(
+    ctx: AgentRunContext,
+    *,
+    inline_max: int = CHAPTER_CATALOG_INLINE_MAX,
+    max_chars: int = 6500,
+) -> str:
+    """Small books: inline catalog. Large books: counts + ListChapters hint only."""
+    raw = [ch for ch in (ctx.chapters or []) if isinstance(ch, dict) and ch.get("id")]
+    if not raw:
+        return ""
+    if len(raw) <= inline_max:
+        return format_chapter_catalog_db(ctx, max_chars=max_chars)
+
+    from app.agent.backend.chapter_meta import sorted_chapter_summaries
+
+    ordered = sorted_chapter_summaries([dict(ch) for ch in raw])
+    written = sum(1 for ch in ordered if chapter_has_substantial_body(ch))
+    pending = len(ordered) - written
+    return "\n".join(
+        [
+            CHAPTER_DB_CATALOG_NOTE,
+            f"共 {len(ordered)} 章（已写 {written}，待写/空 {pending}）。",
+            _CHAPTER_CATALOG_LAZY_HINT,
+        ]
+    )
 
 
 def _chapter_line_label(ch: dict[str, Any]) -> str:

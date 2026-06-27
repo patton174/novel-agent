@@ -27,12 +27,10 @@ def context_window_tokens() -> int:
 
 
 def compress_threshold_tokens() -> int:
-    ratio = getattr(settings, "agent_context_compress_ratio", None)
-    try:
-        r = float(ratio) if ratio is not None else _COMPRESS_RATIO
-    except (TypeError, ValueError):
-        r = _COMPRESS_RATIO
-    return int(context_window_tokens() * min(max(r, 0.5), 0.95))
+    """CC autocompact threshold (delegates to policy to avoid drift)."""
+    from app.agent.context.policy import autocompact_threshold_tokens
+
+    return autocompact_threshold_tokens()
 
 
 def estimate_text_tokens(text: str) -> int:

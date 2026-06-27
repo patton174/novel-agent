@@ -62,15 +62,15 @@ def test_run_context_empty_catalog_when_no_chapters():
     assert "chapter_focus" not in bundle.get("novel", {})
 
 
-def test_run_context_includes_chapter_catalog_after_list_tool():
+def test_run_context_stats_and_hint_when_chapters_present():
     ctx = _ctx(
         novel_id="novel-1",
         chapters=[{"id": "c1", "title": "第一章", "sort_order": 1, "word_count": 100}],
     )
     bundle = assemble_agent_context(ctx)
     assert bundle["novel"]["chapter_count"] == 1
-    assert "chapter_catalog" in bundle["novel"]
-    assert "chapter_id=c1" in bundle["novel"]["chapter_catalog"]
+    assert bundle["novel"].get("chapter_list_hint")
+    assert "chapter_catalog" not in bundle["novel"]
     assert "chapter_list_full" not in bundle["novel"]
     assert "capabilities" not in bundle
 
@@ -94,7 +94,7 @@ def test_chapter_window_from_list_metadata_no_body_text():
     assert "x" * 100 not in window
 
 
-def test_chapter_catalog_includes_ids_and_write_status():
+def test_format_chapter_catalog_db_still_available_for_tools():
     chapters = [
         {"id": "uuid-1", "title": "第1章", "sort_order": 1, "list_index": 1, "word_count": 1200},
         {"id": "uuid-2", "title": "第2章", "sort_order": 2, "list_index": 2, "word_count": 0},
@@ -103,11 +103,38 @@ def test_chapter_catalog_includes_ids_and_write_status():
     catalog = format_chapter_catalog_db(ctx)
     assert "作品库" in catalog
     assert "chapter_id=uuid-1" in catalog
-    assert "index=1" in catalog
-    assert "已写" in catalog
-    assert "待写/空" in catalog
     assembled = assemble_agent_context(ctx)
-    assert "chapter_catalog" in (assembled.get("novel") or {})
+    novel = assembled.get("novel") or {}
+    assert novel.get("chapter_count") == 2
+    assert "chapter_catalog" not in novel
+
+
+def test_chapter_stats_only_in_run_context():
+    chapters = [
+        {"id": "uuid-1", "title": "第1章", "sort_order": 1, "list_index": 1, "word_count": 1200},
+        {"id": "uuid-2", "title": "第2章", "sort_order": 2, "list_index": 2, "word_count": 0},
+    ]
+    ctx = _ctx(chapters=chapters)
+    assembled = assemble_agent_context(ctx)
+    novel = assembled.get("novel") or {}
+    assert novel.get("chapter_count") == 2
+    assert novel.get("chapter_list_hint")
+    assert "chapter_catalog" not in novel
+    assert "chapter_id=uuid-1" not in str(assembled)
+
+
+def test_current_chapter_row_when_editor_focus():
+    ctx = _ctx(
+        current_chapter_id="uuid-2",
+        chapters=[
+            {"id": "uuid-1", "title": "第1章", "sort_order": 1, "list_index": 1, "word_count": 1200},
+            {"id": "uuid-2", "title": "第2章", "sort_order": 2, "list_index": 2, "word_count": 0},
+        ],
+    )
+    assembled = assemble_agent_context(ctx)
+    novel = assembled.get("novel") or {}
+    assert "current_chapter" in novel
+    assert "uuid-2" in novel["current_chapter"]
 
 
 def test_chapter_focus_only_for_large_books():
@@ -123,8 +150,10 @@ def test_chapter_focus_only_for_large_books():
     ]
     ctx = _ctx(chapters=chapters)
     bundle = assemble_agent_context(ctx)
-    assert "chapter_catalog" in bundle["novel"]
-    assert "chapter_focus" in bundle["novel"]
+    novel = bundle.get("novel") or {}
+    assert novel.get("chapter_count") == 13
+    assert "chapter_catalog" not in novel
+    assert "chapter_focus" not in novel
 
 
 def test_chapter_window_around_latest_written():

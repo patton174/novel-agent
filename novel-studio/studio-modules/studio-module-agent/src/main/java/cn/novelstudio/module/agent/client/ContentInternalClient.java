@@ -41,6 +41,27 @@ public class ContentInternalClient {
         internalAgentRunBiz.createRun(request);
     }
 
+    public void createSubRun(
+        String runId,
+        String sessionId,
+        Long userId,
+        String parentRunId,
+        String profileId,
+        String roleLabel,
+        String mode
+    ) {
+        CreateAgentRunRequest request = new CreateAgentRunRequest();
+        request.setRunId(runId);
+        request.setSessionId(sessionId);
+        request.setUserId(userId);
+        request.setMode(mode == null ? "auto" : mode);
+        request.setParentRunId(parentRunId);
+        request.setProfileId(profileId);
+        request.setRoleLabel(roleLabel);
+        request.setSubRun(true);
+        internalAgentRunBiz.createRun(request);
+    }
+
     public void transitionRun(String runId, String status, String errorMessage) {
         TransitionAgentRunRequest request = new TransitionAgentRunRequest();
         request.setStatus(cn.novelstudio.module.content.agent.AgentRunStatus.valueOf(status));

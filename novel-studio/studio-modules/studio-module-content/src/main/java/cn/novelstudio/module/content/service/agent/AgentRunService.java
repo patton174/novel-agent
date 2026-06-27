@@ -42,25 +42,27 @@ public class AgentRunService {
         String userMessageId = blankOr(request.getUserMessageId(), IdWorker.prefixed("message_"));
         String assistantMessageId = blankOr(request.getAssistantMessageId(), IdWorker.prefixed("message_"));
 
-        sessionPgService.upsertSession(request.getUserId(), request.getSessionId(), null, null);
-        sessionPgService.appendMessage(
-            request.getUserId(),
-            request.getSessionId(),
-            userMessageId,
-            "user",
-            request.getUserMessageContent(),
-            "completed",
-            runId
-        );
-        sessionPgService.appendMessage(
-            request.getUserId(),
-            request.getSessionId(),
-            assistantMessageId,
-            "assistant",
-            "",
-            "streaming",
-            runId
-        );
+        if (!request.isSubRun()) {
+            sessionPgService.upsertSession(request.getUserId(), request.getSessionId(), null, null);
+            sessionPgService.appendMessage(
+                request.getUserId(),
+                request.getSessionId(),
+                userMessageId,
+                "user",
+                request.getUserMessageContent(),
+                "completed",
+                runId
+            );
+            sessionPgService.appendMessage(
+                request.getUserId(),
+                request.getSessionId(),
+                assistantMessageId,
+                "assistant",
+                "",
+                "streaming",
+                runId
+            );
+        }
 
         AgentRunEntity run = new AgentRunEntity();
         run.setId(runId);
@@ -70,6 +72,9 @@ public class AgentRunService {
         run.setAssistantMessageId(assistantMessageId);
         run.setStatus(AgentRunStatus.QUEUED);
         run.setMode(request.getMode());
+        run.setParentRunId(request.getParentRunId());
+        run.setProfileId(request.getProfileId());
+        run.setRoleLabel(request.getRoleLabel());
         runRepository.save(run);
 
         AgentRunCheckpointEntity checkpoint = new AgentRunCheckpointEntity();
@@ -321,6 +326,9 @@ public class AgentRunService {
             .leaseExpiresAt(toEpochMillis(run.getLeaseExpiresAt()))
             .startedAt(toEpochMillis(run.getStartedAt()))
             .completedAt(toEpochMillis(run.getCompletedAt()))
+            .parentRunId(run.getParentRunId())
+            .profileId(run.getProfileId())
+            .roleLabel(run.getRoleLabel())
             .createdAt(toEpochMillis(run.getCreatedAt()))
             .updatedAt(toEpochMillis(run.getUpdatedAt()))
             .build();

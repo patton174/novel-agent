@@ -14,7 +14,7 @@ from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 from app.agent.backend.memory_catalog import refresh_memory_tree_index_patch
 from app.agent.context.compact import apply_chapter_tool_patch_to_ctx
 from app.agent.context.compact_autocompact import autocompact_conversation
-from app.agent.context.compact_micro import microcompact_messages
+from app.agent.context.compact_micro import maybe_time_based_microcompact, microcompact_messages
 from app.agent.context.enrich import (
     bootstrap_run_context,
     enrich_context as _enrich_context,
@@ -22,10 +22,12 @@ from app.agent.context.enrich import (
 )
 from app.agent.context.memory_log import build_memory_write_batch_ack
 from app.agent.context.meter import measure_agent_context
-from app.agent.context.policy import (
-    should_autocompact_context,
-    should_microcompact_context,
+from app.agent.context.policy import should_autocompact_context
+from app.agent.context.tool_result_budget import (
+    enforce_tool_result_budget,
+    provision_content_replacement_state,
 )
+from app.agent.context.session_idle import session_idle_minutes_from_history
 from app.agent.context.relevance import inject_relevant_context
 from app.agent.context.usage import (
     build_context_usage_event,
@@ -53,7 +55,7 @@ from app.agent.harness.loop_support import (
 )
 from app.agent.harness.main_loop_llm import stream_bind_tools_turn
 from app.agent.harness.message_history import (
-    build_run_context_human,
+    build_initial_messages,
     filter_ai_message_tool_calls,
     is_tool_pairing_llm_error,
     prune_message_tail,
@@ -73,7 +75,6 @@ from app.agent.harness.orchestration_contract import (
 )
 from app.agent.harness.review_agent import (
     build_review_subagent_run_context_human,
-    build_review_subagent_system_prompt,
     is_review_agent,
     mark_batch_needs_review,
     record_chapter_mutation,
@@ -86,7 +87,7 @@ from app.agent.harness.run_session import (
 )
 from app.agent.harness.subagent import (
     build_subagent_run_context_human,
-    build_subagent_system_prompt,
+    build_subagent_system_prompt_for_ctx,
 )
 from app.agent.harness.subagent_policy import is_subagent_run
 from app.agent.harness.tool_batch_errors import (
@@ -288,16 +289,16 @@ def _max_turns_for_ctx(ctx: AgentRunContext) -> int:
 
 def _build_messages(ctx: AgentRunContext, transcript: AgentTranscript) -> list:
     if is_subagent_run(ctx):
+        system = build_subagent_system_prompt_for_ctx(ctx)
         if is_review_agent(ctx):
-            system = build_review_subagent_system_prompt()
             human = build_review_subagent_run_context_human(ctx, transcript)
         else:
-            system = build_subagent_system_prompt()
             human = build_subagent_run_context_human(ctx, transcript)
-    else:
-        system = build_main_loop_system_prompt()
-        human = build_run_context_human(ctx, transcript)
-    return [cached_system_message(system), HumanMessage(content=human)]
+        from langchain_core.messages import HumanMessage
+
+        return [cached_system_message(system), HumanMessage(content=human)]
+    system = build_main_loop_system_prompt()
+    return build_initial_messages(ctx, transcript, system=system)
 
 
 def tool_batch_end_run_for_loop(
@@ -334,7 +335,39 @@ async def run_query_loop(
     base_ctx = _enrich_context(req.context)
     base_ctx = await bootstrap_run_context(base_ctx)
     base_ctx = await inject_relevant_context(base_ctx)
+    from app.agent.context.session_recall_service import inject_session_recall
+
+    base_ctx = await inject_session_recall(base_ctx)
     base_ctx = _fresh_run_context(base_ctx)
+
+    from app.agent.harness.crew_orchestrator import CrewOrchestrator
+    from app.config import settings as app_settings
+
+    if base_ctx.crew_id and not app_settings.agent_crew_enabled:
+        logger.warning(
+            "crew_id=%s ignored — AGENT_CREW_ENABLED=false",
+            base_ctx.crew_id,
+        )
+    crew_orchestrator = CrewOrchestrator()
+    crew_result, crew_events = await crew_orchestrator.run(base_ctx)
+    for ev in crew_events:
+        yield ev
+    if crew_result.handled:
+        if crew_result.failed:
+            yield build_event(
+                event_type="run.failed",
+                run_id=base_ctx.run_id,
+                session_id=base_ctx.session_id,
+                message_id=base_ctx.message_id,
+                step_id=f"step_crew_{uuid4().hex[:8]}",
+                sequence=0,
+                payload={"error": crew_result.report[:2000]},
+            )
+            return
+        patch = dict(base_ctx.context_patch or {})
+        patch["crew_stage_outputs"] = crew_result.stage_outputs
+        base_ctx = base_ctx.model_copy(update={"context_patch": patch})
+
     state = RunLoopState(
         ctx=base_ctx,
         transcript=AgentTranscript(),
@@ -346,6 +379,9 @@ async def run_query_loop(
         messages, _ = repair_tool_message_pairing(list(state.messages))
     else:
         messages = _build_messages(state.ctx, state.transcript)
+
+    state.tool_result_budget = provision_content_replacement_state(messages)
+    state.session_idle_minutes = session_idle_minutes_from_history(state.ctx.history)
 
     llm = (
         llm_provider.get_llm(profile="default", config=base_ctx.resolved_model).bind_tools(
@@ -453,37 +489,99 @@ async def run_query_loop(
             pre_llm_measure = measure_agent_context(
                 messages, req=_context_request(state), source="estimate"
             )
-            if should_microcompact_context(pre_llm_measure):
-                mc = microcompact_messages(messages)
-                if mc.changed:
-                    note = (
-                        f"已微压缩 {mc.cleared_count} 个旧工具结果"
-                        f"（约节省 {mc.tokens_saved} tokens，保留最近 {mc.kept_recent} 个）"
-                    )
-                    yield build_event(
-                        event_type="context.compacted",
-                        run_id=state.ctx.run_id,
-                        session_id=state.ctx.session_id,
-                        message_id=state.ctx.message_id,
-                        step_id=f"step_ctx_{uuid4().hex[:8]}",
-                        sequence=state.sequence,
-                        payload={
-                            "mode": "microcompact",
-                            "message": note,
-                            "cleared_tools": mc.cleared_count,
-                            "tokens_saved": mc.tokens_saved,
-                            "compacted_tool_ids": mc.compacted_tool_ids[:32],
-                        },
-                    )
-                    state.sequence += 1
-                    yield _yield_context_usage(
-                        state,
-                        messages,
-                        source="estimate",
-                        compressed=True,
-                        compact_note=note,
-                        last_compact_mode="microcompact",
-                    )
+
+            budget = enforce_tool_result_budget(messages, state.tool_result_budget)
+            if budget.changed:
+                note = (
+                    f"工具结果预算：{budget.replaced_count} 个超大结果已替换为预览"
+                    f"（约释放 {budget.chars_shed} 字符）"
+                )
+                yield build_event(
+                    event_type="context.compacted",
+                    run_id=state.ctx.run_id,
+                    session_id=state.ctx.session_id,
+                    message_id=state.ctx.message_id,
+                    step_id=f"step_ctx_{uuid4().hex[:8]}",
+                    sequence=state.sequence,
+                    payload={
+                        "mode": "tool_result_budget",
+                        "message": note,
+                        "replaced_tools": budget.replaced_count,
+                        "chars_shed": budget.chars_shed,
+                    },
+                )
+                state.sequence += 1
+                yield _yield_context_usage(
+                    state,
+                    messages,
+                    source="estimate",
+                    compressed=True,
+                    compact_note=note,
+                    last_compact_mode="tool_result_budget",
+                )
+
+            tb_mc = maybe_time_based_microcompact(
+                messages, idle_minutes=state.session_idle_minutes
+            )
+            if tb_mc and tb_mc.changed:
+                note = (
+                    f"空闲微压缩 {tb_mc.cleared_count} 个旧工具结果"
+                    f"（约节省 {tb_mc.tokens_saved} tokens，保留最近 {tb_mc.kept_recent} 个）"
+                )
+                yield build_event(
+                    event_type="context.compacted",
+                    run_id=state.ctx.run_id,
+                    session_id=state.ctx.session_id,
+                    message_id=state.ctx.message_id,
+                    step_id=f"step_ctx_{uuid4().hex[:8]}",
+                    sequence=state.sequence,
+                    payload={
+                        "mode": "microcompact_time",
+                        "message": note,
+                        "cleared_tools": tb_mc.cleared_count,
+                        "tokens_saved": tb_mc.tokens_saved,
+                    },
+                )
+                state.sequence += 1
+                yield _yield_context_usage(
+                    state,
+                    messages,
+                    source="estimate",
+                    compressed=True,
+                    compact_note=note,
+                    last_compact_mode="microcompact_time",
+                )
+
+            mc = microcompact_messages(messages)
+            if mc.changed:
+                note = (
+                    f"已微压缩 {mc.cleared_count} 个旧工具结果"
+                    f"（约节省 {mc.tokens_saved} tokens，保留最近 {mc.kept_recent} 个）"
+                )
+                yield build_event(
+                    event_type="context.compacted",
+                    run_id=state.ctx.run_id,
+                    session_id=state.ctx.session_id,
+                    message_id=state.ctx.message_id,
+                    step_id=f"step_ctx_{uuid4().hex[:8]}",
+                    sequence=state.sequence,
+                    payload={
+                        "mode": "microcompact",
+                        "message": note,
+                        "cleared_tools": mc.cleared_count,
+                        "tokens_saved": mc.tokens_saved,
+                        "compacted_tool_ids": mc.compacted_tool_ids[:32],
+                    },
+                )
+                state.sequence += 1
+                yield _yield_context_usage(
+                    state,
+                    messages,
+                    source="estimate",
+                    compressed=True,
+                    compact_note=note,
+                    last_compact_mode="microcompact",
+                )
 
             ac_ev = await _try_autocompact(state, messages)
             if ac_ev:
@@ -1294,5 +1392,14 @@ async def run_query_loop(
             )
     finally:
         state.messages = list(messages)
+        try:
+            from app.agent.harness.session_trace import persist_run_tool_chain_trace
+
+            await persist_run_tool_chain_trace(state.ctx, messages)
+            from app.agent.context.session_recall_service import index_session_run_recall
+
+            await index_session_run_recall(state.ctx, messages)
+        except Exception:
+            logger.exception("session trace persist failed run_id=%s", state.ctx.run_id)
         session.abort()
         unregister_run_session(state.ctx.run_id)

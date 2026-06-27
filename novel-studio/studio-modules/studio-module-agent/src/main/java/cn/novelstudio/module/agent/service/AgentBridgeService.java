@@ -11,6 +11,7 @@ import cn.novelstudio.module.agent.orchestration.AgentRunEventJournal;
 import cn.novelstudio.module.agent.orchestration.AgentRunRegistry;
 import cn.novelstudio.module.agent.orchestration.AgentRunState;
 import cn.novelstudio.module.agent.client.ContentInternalClient;
+import cn.novelstudio.module.content.service.agent.CrewTemplateService;
 import cn.novelstudio.module.agent.config.AgentRuntimeProperties;
 import cn.novelstudio.module.agent.config.AgentSideEffectExecutorConfig;
 import cn.novelstudio.module.agent.mq.AgentRunMqPublisher;
@@ -59,6 +60,7 @@ public class AgentBridgeService {
     private final cn.novelstudio.platform.i18n.StudioMessages messages;
     private final cn.novelstudio.platform.i18n.ResultLocalizer resultLocalizer;
     private final AgentLocaleMarkers localeMarkers;
+    private final CrewTemplateService crewTemplateService;
 
     public AgentBridgeService(
         PythonAgentRunClient runClient,
@@ -81,7 +83,8 @@ public class AgentBridgeService {
         AgentModelResolver modelResolver,
         cn.novelstudio.platform.i18n.StudioMessages messages,
         cn.novelstudio.platform.i18n.ResultLocalizer resultLocalizer,
-        AgentLocaleMarkers localeMarkers
+        AgentLocaleMarkers localeMarkers,
+        CrewTemplateService crewTemplateService
     ) {
         this.runClient = runClient;
         this.contextAssembler = contextAssembler;
@@ -103,6 +106,7 @@ public class AgentBridgeService {
         this.messages = messages;
         this.resultLocalizer = resultLocalizer;
         this.localeMarkers = localeMarkers;
+        this.crewTemplateService = crewTemplateService;
     }
 
     public Flux<String> stream(Long userId, AgentStreamRequest request) {
@@ -166,9 +170,11 @@ public class AgentBridgeService {
                 state.setInteractionLineFilter(line -> !localeMarkers.isNonPersistableInteractionLine(line));
                 if (pgRun) {
                     bootstrapPgRun(userId, finalSessionId, runId, messageId, request.message(), mode);
+                    bootstrapCrewRun(userId, finalSessionId, runId, context);
                 }
                 coordinator = new AgentRunCoordinator(
-                    state, runClient, objectMapper, chapterSideEffectService, sideEffectExecutor, resultLocalizer
+                    state, runClient, objectMapper, chapterSideEffectService, sideEffectExecutor,
+                    resultLocalizer, contentInternalClient, pgRun
                 );
                 runRegistry.register(coordinator);
                 eventJournal.beginRun(runId, userId, finalSessionId);
@@ -315,6 +321,18 @@ public class AgentBridgeService {
             );
         } catch (Exception ex) {
             log.warn("pg run bootstrap failed runId={}: {}", runId, ex.getMessage());
+        }
+    }
+
+    private void bootstrapCrewRun(Long userId, String sessionId, String runId, Map<String, Object> context) {
+        Object crewIdObj = context.get("crew_id");
+        if (crewIdObj == null || String.valueOf(crewIdObj).isBlank()) {
+            return;
+        }
+        try {
+            crewTemplateService.createCrewRun(userId, String.valueOf(crewIdObj), sessionId, runId);
+        } catch (Exception ex) {
+            log.warn("crew_run bootstrap failed runId={} crewId={}: {}", runId, crewIdObj, ex.getMessage());
         }
     }
 

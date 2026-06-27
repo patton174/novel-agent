@@ -128,14 +128,28 @@ public class AgentSessionMemoryService {
         if (item == null) {
             return null;
         }
-        HistoryTurn turn = new HistoryTurn(item.role(), item.content());
+        HistoryTurn turn = new HistoryTurn(
+            item.role(),
+            item.content(),
+            item.agentTraceJson(),
+            item.createdAt()
+        );
         return turn.isValid() ? turn : null;
     }
 
-    public record HistoryTurn(String role, String content) {
+    public record HistoryTurn(String role, String content, String agentTraceJson, long createdAt) {
         public HistoryTurn {
             role = role == null ? "" : role.trim();
             content = content == null ? "" : content.trim();
+            agentTraceJson = agentTraceJson == null ? "" : agentTraceJson.trim();
+        }
+
+        public HistoryTurn(String role, String content) {
+            this(role, content, "", 0L);
+        }
+
+        public HistoryTurn(String role, String content, String agentTraceJson) {
+            this(role, content, agentTraceJson, 0L);
         }
 
         public boolean isValid() {

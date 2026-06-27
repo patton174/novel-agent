@@ -14,6 +14,10 @@ public interface AgentRunRepository extends JpaRepository<AgentRunEntity, String
 
     List<AgentRunEntity> findBySessionIdOrderByCreatedAtDesc(String sessionId);
 
+    List<AgentRunEntity> findByParentRunIdOrderByCreatedAtAsc(String parentRunId);
+
+    Optional<AgentRunEntity> findByIdAndUserId(String id, Long userId);
+
     Optional<AgentRunEntity> findFirstBySessionIdAndStatusInOrderByCreatedAtDesc(
         String sessionId,
         List<AgentRunStatus> statuses

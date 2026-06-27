@@ -135,6 +135,19 @@ export async function verifyTurnstile(email: string, turnstileToken: string): Pr
   return data.captchaToken
 }
 
+/** 会话 step-up：风控拦截后完成 Turnstile 验证 */
+export async function verifySessionChallenge(turnstileToken: string): Promise<void> {
+  const response = await secureFetch('/api/auth/api/challenge/verify', {
+    method: 'POST',
+    headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ turnstileToken }),
+  })
+  if (!response.ok) {
+    throw new Error(await readApiErrorMessage(response))
+  }
+  await parseResultResponse<null>(response)
+}
+
 
 
 export async function sendEmailCode(

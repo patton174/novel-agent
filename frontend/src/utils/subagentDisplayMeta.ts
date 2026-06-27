@@ -1,4 +1,5 @@
 import type { AgentSubagentState } from '../types/agent'
+import { formatProfileHeadline, resolveProfileLabel } from './profileLabels'
 import { formatSubagentLogLabel, visibleSubagentLogs } from './subagentLogLabel'
 import { resolveSubagentSummaryBody } from './subagentSummary'
 import { formatSubagentToolStats } from './subagentActivity'
@@ -20,13 +21,22 @@ export type SubagentDisplayMeta = {
   toolStats: string | null
 }
 
-function subagentNameFromDescription(description: string, kind?: string): string {
-  if (kind === 'review') {
-    return '审查'
+function subagentNameFromDescription(
+  subagent: AgentSubagentState,
+): string {
+  if (subagent.profileDisplayName?.trim()) {
+    return subagent.profileDisplayName.trim()
   }
-  const line = description.trim().split('\n')[0]?.trim() ?? ''
+  if (subagent.profileId?.trim()) {
+    return resolveProfileLabel(subagent.profileId)
+  }
+  const description = subagent.description.trim()
+  if (subagent.kind === 'review') {
+    return resolveProfileLabel('continuity-reviewer')
+  }
+  const line = description.split('\n')[0]?.trim() ?? ''
   if (!line) {
-    return '子代理'
+    return resolveProfileLabel(undefined)
   }
   return line.length > 48 ? `${line.slice(0, 48)}…` : line
 }
@@ -90,8 +100,9 @@ export function deriveSubagentDisplayMeta(
   runActive: boolean,
 ): SubagentDisplayMeta {
   const description = subagent.description.trim()
-  const name = subagentNameFromDescription(description, subagent.kind)
-  const body = subagentDescriptionBody(description)
+  const name = subagentNameFromDescription(subagent)
+  const profileDesc = subagent.profileDescription?.trim()
+  const body = profileDesc || subagentDescriptionBody(description)
 
   const statusKind: SubagentVisualStatus =
     subagent.status === 'failed'
@@ -127,7 +138,10 @@ export function deriveSubagentDisplayMeta(
       : null
 
   return {
-    name,
+    name:
+      subagent.profileId || subagent.profileDisplayName
+        ? formatProfileHeadline(name, body && body !== name ? body : undefined)
+        : name,
     description: body && body !== name ? body : '',
     statusKind,
     statusLabel,

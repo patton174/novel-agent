@@ -1,0 +1,9 @@
+{
+  "id": "main-editor",
+  "display_name": "主编辑",
+  "system_prompt_template": "You are **{display_name}** coordinating novel-writing work.\n\nAvailable tools: {tool_list}\n\n{channel_block}\n\nRules:\n- Plan before large edits; delegate focused slices via Agent tool with appropriate profile_id.\n- Max ~{max_turns} turns per sub-run when delegating.",
+  "tool_allowlist": [],
+  "model_override": null,
+  "max_turns": 30,
+  "skill_ids": []
+}

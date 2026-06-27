@@ -2,11 +2,14 @@ package cn.novelstudio.module.agent.service;
 
 import cn.novelstudio.module.agent.dto.agent.AgentStreamRequest;
 import cn.novelstudio.module.agent.support.AgentLocaleMarkers;
-import cn.novelstudio.module.agent.support.AgentSkillPromptSupport;
+import cn.novelstudio.module.content.support.AgentSkillPromptSupport;
 import cn.novelstudio.module.agent.util.AgentTextSanitizer;
 import cn.novelstudio.module.content.dto.ReferencedBookDTO;
 import cn.novelstudio.module.content.entity.agent.AgentSkillEntity;
+import cn.novelstudio.module.content.entity.agent.CrewTemplateEntity;
+import cn.novelstudio.module.content.service.agent.AgentProfileService;
 import cn.novelstudio.module.content.service.agent.AgentSkillService;
+import cn.novelstudio.module.content.service.agent.CrewTemplateService;
 import cn.novelstudio.module.content.service.catalog.CatalogService;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
@@ -21,7 +24,7 @@ import java.util.Map;
 @Component
 public class AgentContextAssembler {
 
-    private static final int MAX_HISTORY_TURNS = 24;
+    private static final int MAX_HISTORY_TURNS = 6;
     private static final int SUMMARY_MAX_CHARS = 800;
 
     /** 创作模式由 Agent 根据用户描述自动判断，不再接受前端下拉选择。 */
@@ -37,19 +40,25 @@ public class AgentContextAssembler {
     private final AgentLocaleMarkers localeMarkers;
     private final CatalogService catalogService;
     private final AgentSkillService agentSkillService;
+    private final AgentProfileService agentProfileService;
+    private final CrewTemplateService crewTemplateService;
 
     public AgentContextAssembler(
         AgentSessionMemoryService memoryService,
         NovelContextClient novelContextClient,
         AgentLocaleMarkers localeMarkers,
         CatalogService catalogService,
-        AgentSkillService agentSkillService
+        AgentSkillService agentSkillService,
+        AgentProfileService agentProfileService,
+        CrewTemplateService crewTemplateService
     ) {
         this.memoryService = memoryService;
         this.novelContextClient = novelContextClient;
         this.localeMarkers = localeMarkers;
         this.catalogService = catalogService;
         this.agentSkillService = agentSkillService;
+        this.agentProfileService = agentProfileService;
+        this.crewTemplateService = crewTemplateService;
     }
 
     /**
@@ -115,7 +124,7 @@ public class AgentContextAssembler {
             context.put("current_chapter_id", chapterId);
         }
 
-        List<Map<String, String>> mergedHistory = mergeHistory(persistedHistory, request.history());
+        List<Map<String, Object>> mergedHistory = mergeHistory(persistedHistory, request.history());
         if (!mergedHistory.isEmpty()) {
             context.put("history", mergedHistory);
         }
@@ -151,11 +160,38 @@ public class AgentContextAssembler {
             );
             if (!resolved.isEmpty()) {
                 List<Map<String, Object>> skills = resolved.stream()
-                    .map(AgentSkillPromptSupport::toMetadataMap)
+                    .map(entity -> agentSkillService.toRunMetadata(userId, entity, true))
                     .toList();
-                context.put("skills", skills);
-                context.put("skill_ids", skills.stream().map(row -> row.get("id")).toList());
-                context.put("skill_prompt", AgentSkillPromptSupport.mergePrompt(resolved));
+                AgentSkillPromptSupport.applyRunSkills(
+                    context,
+                    skills,
+                    AgentSkillPromptSupport.mergePrompt(resolved),
+                    true
+                );
+            }
+        } else {
+            List<AgentSkillEntity> catalogSkills = agentSkillService.listEnabledForCatalog(userId);
+            if (!catalogSkills.isEmpty()) {
+                List<Map<String, Object>> skills = catalogSkills.stream()
+                    .map(entity -> agentSkillService.toRunMetadata(userId, entity, false))
+                    .toList();
+                AgentSkillPromptSupport.applyRunSkills(context, skills, null, false);
+            }
+        }
+
+        if (request.defaultProfileId() != null && !request.defaultProfileId().isBlank()) {
+            agentProfileService.findAccessible(userId, request.defaultProfileId().trim())
+                .ifPresent(profile -> context.put("default_profile_id", profile.getId()));
+        }
+
+        String crewId = request.crewId();
+        if (crewId != null && !crewId.isBlank()) {
+            CrewTemplateEntity crew = crewTemplateService.findAccessible(userId, crewId.trim())
+                .orElseThrow(() -> cn.novelstudio.kernel.exception.NotFoundException.keyed("agent.crew.not_found", crewId));
+            context.put("crew_id", crew.getId());
+            context.put("crew_template", crewTemplateService.stagesSummaryForContext(crew));
+            if (request.crewVars() != null && !request.crewVars().isEmpty()) {
+                context.put("crew_vars", request.crewVars());
             }
         }
 
@@ -168,14 +204,20 @@ public class AgentContextAssembler {
         return context;
     }
 
-    private List<Map<String, String>> mergeHistory(
+    private List<Map<String, Object>> mergeHistory(
         List<AgentSessionMemoryService.HistoryTurn> persisted,
         List<AgentStreamRequest.HistoryTurn> requestHistory
     ) {
-        List<Map<String, String>> merged = new ArrayList<>();
+        List<Map<String, Object>> merged = new ArrayList<>();
         if (persisted != null) {
             for (AgentSessionMemoryService.HistoryTurn turn : persisted) {
-                appendHistoryTurn(merged, turn.role(), sanitizeVisibleText(turn.content()));
+                appendHistoryTurn(
+                    merged,
+                    turn.role(),
+                    sanitizeVisibleText(turn.content()),
+                    turn.agentTraceJson(),
+                    turn.createdAt()
+                );
             }
         }
         if (requestHistory != null) {
@@ -183,7 +225,7 @@ public class AgentContextAssembler {
                 if (turn == null) {
                     continue;
                 }
-                appendHistoryTurn(merged, turn.role(), sanitizeVisibleText(turn.content()));
+                appendHistoryTurn(merged, turn.role(), sanitizeVisibleText(turn.content()), null, 0L);
             }
         }
         if (merged.size() > MAX_HISTORY_TURNS) {
@@ -192,7 +234,13 @@ public class AgentContextAssembler {
         return merged;
     }
 
-    private void appendHistoryTurn(List<Map<String, String>> merged, String role, String content) {
+    private void appendHistoryTurn(
+        List<Map<String, Object>> merged,
+        String role,
+        String content,
+        String agentTraceJson,
+        long createdAt
+    ) {
         if (role == null || content == null) {
             return;
         }
@@ -207,11 +255,28 @@ public class AgentContextAssembler {
         if ("assistant".equals(normalizedRole) && localeMarkers.isOnboardingAssistantText(normalizedContent)) {
             return;
         }
-        Map<String, String> row = Map.of("role", normalizedRole, "content", normalizedContent);
-        if (!merged.isEmpty() && merged.get(merged.size() - 1).equals(row)) {
-            return;
+        Map<String, Object> row = new LinkedHashMap<>();
+        row.put("role", normalizedRole);
+        row.put("content", normalizedContent);
+        if (agentTraceJson != null && !agentTraceJson.isBlank()) {
+            row.put("agent_trace_json", agentTraceJson.trim());
+        }
+        if (createdAt > 0L) {
+            row.put("created_at", createdAt);
+        }
+        if (!merged.isEmpty()) {
+            Map<String, Object> last = merged.get(merged.size() - 1);
+            if (last.get("role") != null && last.get("content") != null
+                && normalizedRole.equals(String.valueOf(last.get("role")))
+                && normalizedContent.equals(String.valueOf(last.get("content")))) {
+                return;
+            }
         }
         merged.add(row);
+    }
+
+    private void appendHistoryTurn(List<Map<String, Object>> merged, String role, String content) {
+        appendHistoryTurn(merged, role, content, null, 0L);
     }
 
     private String sanitizeVisibleText(String raw) {

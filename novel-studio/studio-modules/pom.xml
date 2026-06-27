@@ -22,5 +22,6 @@
         <module>studio-module-worker</module>
         <module>studio-module-upload</module>
         <module>studio-module-notification</module>
+        <module>studio-module-risk</module>
     </modules>
 </project>

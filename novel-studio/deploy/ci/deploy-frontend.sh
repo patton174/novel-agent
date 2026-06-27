@@ -62,4 +62,12 @@ if ! bash "$CI_DIR/register-frontend-crypto.sh"; then
   echo "[deploy-frontend] WARN: crypto 注册失败，前端已部署；可稍后执行 register-frontend-crypto.sh"
 fi
 
+if [[ "${SKIP_SEO_VERIFY:-}" != "1" ]]; then
+  echo "[deploy-frontend] SEO 爬虫可达性检查..."
+  SEO_SITE_ORIGIN="${SEO_SITE_ORIGIN:-https://www.novel-agent.cn}" \
+    bash "$CI_DIR/verify-seo-crawl.sh" || {
+    echo "[deploy-frontend] WARN: SEO verify failed — 检查 Cloudflare Bot/WAF 或稍后再试"
+  }
+fi
+
 echo "[deploy-frontend] 完成"

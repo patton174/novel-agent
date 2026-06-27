@@ -175,6 +175,11 @@ TOOL_CONTRACTS: dict[str, ToolContract] = {
         required_summary="`query` required.",
         example_json='{"query": "主角第一次使用魔法", "top_k": 5}',
     ),
+    "SearchSessionHistory": ToolContract(
+        name="SearchSessionHistory",
+        required_summary="`query` or `run_id` required.",
+        example_json='{"query": "上次讨论的第三章大纲", "top_k": 5, "include_tool_bodies": true}',
+    ),
     "GetCharacterGraph": ToolContract(
         name="GetCharacterGraph",
         required_summary="`character` name required.",
@@ -350,15 +355,16 @@ def tool_contract_prompt_block() -> str:
     from app.agent.context.compact import CHAPTER_INFO_CHAIN_FOR_PROMPT
 
     lines = [
-        "## Tool field names (must match RUN_CONTEXT JSON and List* tool outputs)",
-        f"- Chapters: `{CHAPTER_ID_FIELD}`, `{CHAPTER_INDEX_FIELD}`, `{CHAPTER_TITLE_FIELD}` — never `id` or `chapterId` in tool args.",
-        f"- Memory: `{MEMORY_ID_FIELD}`, `{MEMORY_PARENT_ID_FIELD}`, `{MEMORY_SORT_ORDER_FIELD}`; "
-        f"`CreateMemory(node_type=child)` requires `{MEMORY_PARENT_ID_FIELD}` UUID — never legacy scope/key flat patch on Update* tools.",
+        "## Tool field names (must match RUN_CONTEXT JSON and bind_tools schemas)",
+        f"- Chapters: `{CHAPTER_ID_FIELD}`, `{CHAPTER_INDEX_FIELD}`, `{CHAPTER_TITLE_FIELD}` — never `id` or `chapterId`.",
+        f"- Memory: `{MEMORY_ID_FIELD}`, `{MEMORY_PARENT_ID_FIELD}`, `{MEMORY_NODE_TYPE_FIELD}`; "
+        f"child nodes require `{MEMORY_PARENT_ID_FIELD}` UUID from memory.scope_root_ids.",
         CHAPTER_ROW_TARGET_ONE_OF,
         TOOL_USE_EMPTY_FORBIDDEN,
         "",
         CHAPTER_INFO_CHAIN_FOR_PROMPT,
         "",
-        tool_workflow_prompt_block(),
+        "Workflow details live in each tool's schema and RUN_CONTEXT `decision_hints`. "
+        "Never use removed VFS tools (Read/Write/Edit/Glob/Grep/WriteMemory/EditMemory/ToolSearch).",
     ]
     return "\n".join(lines)

@@ -100,6 +100,10 @@ async def stream_review_subagent(
 
     changed_ids = _resolve_changed_ids(parent, changed_chapter_ids)
     prompt = _build_review_prompt(changed_ids)
+    from app.agent.harness.profile_loader import fetch_profile, merge_profile_skills
+
+    profile = await fetch_profile(REVIEW_PROFILE_ID, parent.user_id)
+    max_turns = min(profile.max_turns or settings.agent_subagent_max_turns, 12)
     child = build_subagent_context(
         parent,
         description=description,
@@ -107,11 +111,12 @@ async def stream_review_subagent(
         extra_patch={
             _PATCH_REVIEW_AGENT: True,
             _PATCH_CHANGED_IDS: changed_ids,
-            "_max_turns": min(settings.agent_subagent_max_turns, 12),
+            "_subagent_profile_id": profile.id,
+            "_max_turns": max_turns,
         },
     )
+    child = await merge_profile_skills(child, profile)
     child_run_id = child.run_id
-    max_turns = min(settings.agent_subagent_max_turns, 12)
 
     logger.info(
         "review agent stream start parent=%s child=%s changed=%s",
@@ -135,6 +140,8 @@ async def stream_review_subagent(
                 "max_turns": max_turns,
                 "prompt_preview": prompt[:280],
                 "subagent_kind": "review",
+                "profile_id": profile.id,
+                "display_name": profile.display_name,
             },
         ),
     )
@@ -226,6 +233,8 @@ async def stream_review_subagent(
                 "summary_preview": summary_preview[:50_000],
                 "subagent_kind": "review",
                 "context_patch": review_patch,
+                "profile_id": profile.id,
+                "display_name": profile.display_name,
             },
         ),
     )

@@ -6,26 +6,27 @@ from dataclasses import dataclass, field
 
 from langchain_core.messages import AIMessage, BaseMessage, ToolMessage
 
-from app.agent.context.policy import microcompact_keep_recent
 from app.agent.context.usage import estimate_text_tokens
 from app.agent.harness.message_history import _tool_call_id_and_name
 
 # CC: TIME_BASED_MC_CLEARED_MESSAGE / toolResultStorage.ts
 MICROCOMPACT_CLEARED_MESSAGE = "[Old tool result content cleared]"
 
-# CC microCompact.ts COMPACTABLE_TOOLS (novel-agent names)
+# CC microCompact.ts COMPACTABLE_TOOLS — novel-agent read/search tools (lazy-load bodies)
 COMPACTABLE_TOOLS = frozenset(
     {
-        "Read",
-        "Write",
-        "Edit",
-        "Glob",
-        "Grep",
-        "Delete",
+        "ReadChapter",
+        "ListChapters",
+        "ReadMemory",
+        "GetMemoryTree",
+        "ListMemory",
+        "SearchKnowledge",
+        "SearchSessionHistory",
+        "GetCharacterGraph",
         "WebFetch",
         "WebSearch",
-        "Bash",
-        "Shell",
+        "NarrativeReview",
+        "ChapterAudit",
     }
 )
 
@@ -66,15 +67,20 @@ def microcompact_messages(
     messages: list[BaseMessage],
     *,
     keep_recent: int | None = None,
+    force: bool = False,
 ) -> MicrocompactResult:
     """
     Replace bodies of old compactable ToolMessages with MICROCOMPACT_CLEARED_MESSAGE.
 
-    Keeps the last ``keep_recent`` compactable tool results (default from settings).
-    Mutates ``messages`` in place.
+    CC count-based / time-based MC: clear when compactable count exceeds trigger,
+    keep the last ``keep_recent`` bodies. Mutates ``messages`` in place.
     """
+    from app.agent.context.policy import microcompact_keep_recent, should_microcompact_messages
+
     keep = max(1, keep_recent if keep_recent is not None else microcompact_keep_recent())
     compactable_ids = collect_compactable_tool_ids(messages)
+    if not force and not should_microcompact_messages(messages):
+        return MicrocompactResult(kept_recent=keep)
     if len(compactable_ids) <= keep:
         return MicrocompactResult(kept_recent=keep)
 
@@ -110,3 +116,31 @@ def microcompact_messages(
         compacted_tool_ids=cleared,
         kept_recent=keep,
     )
+
+
+def maybe_time_based_microcompact(
+    messages: list[BaseMessage],
+    *,
+    idle_minutes: float,
+) -> MicrocompactResult | None:
+    """
+    CC ``maybeTimeBasedMicrocompact`` — only when enabled and idle gap exceeded.
+    Returns None when trigger does not fire.
+    """
+    from app.agent.context.policy import (
+        microcompact_idle_minutes,
+        microcompact_keep_recent,
+        microcompact_time_based_enabled,
+    )
+
+    if not microcompact_time_based_enabled():
+        return None
+    threshold = microcompact_idle_minutes()
+    if not idle_minutes or idle_minutes < threshold:
+        return None
+    result = microcompact_messages(
+        messages,
+        keep_recent=microcompact_keep_recent(),
+        force=True,
+    )
+    return result if result.changed else None

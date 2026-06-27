@@ -50,4 +50,9 @@ public class InternalKgController {
     public Map<String, Object> characterGraph(@RequestParam String novelId, @RequestParam String name) {
         return kgService.characterSubgraph(novelId, name);
     }
+
+    @GetMapping("/novel-graph")
+    public Map<String, Object> novelGraph(@RequestParam String novelId) {
+        return kgService.getGraph(novelId);
+    }
 }

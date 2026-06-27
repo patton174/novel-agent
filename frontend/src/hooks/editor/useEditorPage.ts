@@ -140,6 +140,7 @@ export function useEditorPage() {
     activeNovel,
     activeNovelId,
     activeChapterId,
+    chapterSortOrder: activeChapter?.sortOrder ?? null,
     chapterContent,
     hostModeEnabled,
     modelOverrideRef,

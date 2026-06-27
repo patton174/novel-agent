@@ -20,6 +20,8 @@ export interface SkillEditDialogProps {
   skill: AgentSkillDetail | null
   readOnly?: boolean
   saving?: boolean
+  /** i18n namespace for dialog labels — `dashboard` (default) or `admin` */
+  i18nNamespace?: 'dashboard' | 'admin'
   onOpenChange: (open: boolean) => void
   onSave: (values: {
     name: string
@@ -34,10 +36,12 @@ export function SkillEditDialog({
   skill,
   readOnly = false,
   saving = false,
+  i18nNamespace = 'dashboard',
   onOpenChange,
   onSave,
 }: SkillEditDialogProps) {
-  const { t } = useTranslation(['dashboard'])
+  const { t } = useTranslation([i18nNamespace])
+  const skillKey = (key: string) => `${i18nNamespace}:skills.${key}` as const
   const isCreate = !skill
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
@@ -63,58 +67,58 @@ export function SkillEditDialog({
   }
 
   const title = readOnly
-    ? t('dashboard:skills.viewTitle', { name: skill?.name })
+    ? t(skillKey('viewTitle'), { name: skill?.name })
     : isCreate
-      ? t('dashboard:skills.createTitle')
-      : t('dashboard:skills.editTitle', { name: skill?.name })
+      ? t(skillKey('createTitle'))
+      : t(skillKey('editTitle'), { name: skill?.name })
 
   return (
     <AppModalShell open={open} onOpenChange={onOpenChange} size="form" title={title}>
       <div className="space-y-4 overflow-y-auto px-1 py-2">
         <div className="space-y-2">
           <label htmlFor="skill-name" className="text-xs font-medium text-muted-foreground">
-            {t('dashboard:skills.fieldName')}
+            {t(skillKey('fieldName'))}
           </label>
           <Input
             id="skill-name"
             value={name}
             onChange={(e) => setName(e.target.value)}
             disabled={readOnly || !isCreate}
-            placeholder={t('dashboard:skills.fieldNamePlaceholder')}
+            placeholder={t(skillKey('fieldNamePlaceholder'))}
           />
         </div>
 
         <div className="space-y-2">
           <label htmlFor="skill-description" className="text-xs font-medium text-muted-foreground">
-            {t('dashboard:skills.fieldDescription')}
+            {t(skillKey('fieldDescription'))}
           </label>
           <Input
             id="skill-description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             disabled={readOnly}
-            placeholder={t('dashboard:skills.fieldDescriptionPlaceholder')}
+            placeholder={t(skillKey('fieldDescriptionPlaceholder'))}
           />
         </div>
 
         <div className="space-y-2">
           <label htmlFor="skill-locale" className="text-xs font-medium text-muted-foreground">
-            {t('dashboard:skills.fieldLocale')}
+            {t(skillKey('fieldLocale'))}
           </label>
           <Select value={locale} onValueChange={setLocale} disabled={readOnly}>
             <SelectTrigger id="skill-locale">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="zh">{t('dashboard:skills.localeZh')}</SelectItem>
-              <SelectItem value="en">{t('dashboard:skills.localeEn')}</SelectItem>
+              <SelectItem value="zh">{t(skillKey('localeZh'))}</SelectItem>
+              <SelectItem value="en">{t(skillKey('localeEn'))}</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         <div className="space-y-2">
           <label htmlFor="skill-content" className="text-xs font-medium text-muted-foreground">
-            {t('dashboard:skills.fieldContent')}
+            {t(skillKey('fieldContent'))}
           </label>
           <textarea
             id="skill-content"
@@ -127,7 +131,7 @@ export function SkillEditDialog({
               'outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring',
               'disabled:cursor-not-allowed disabled:opacity-60',
             )}
-            placeholder={t('dashboard:skills.fieldContentPlaceholder')}
+            placeholder={t(skillKey('fieldContentPlaceholder'))}
           />
         </div>
       </div>
@@ -139,7 +143,7 @@ export function SkillEditDialog({
           className={APP_BTN_MD}
           onClick={() => onOpenChange(false)}
         >
-          {readOnly ? t('dashboard:skills.close') : t('dashboard:skills.cancel')}
+          {readOnly ? t(skillKey('close')) : t(skillKey('cancel'))}
         </Button>
         {!readOnly ? (
           <Button
@@ -148,7 +152,7 @@ export function SkillEditDialog({
             disabled={saving || !name.trim() || !content.trim()}
             onClick={handleSubmit}
           >
-            {saving ? t('dashboard:skills.saving') : t('dashboard:skills.save')}
+            {saving ? t(skillKey('saving')) : t(skillKey('save'))}
           </Button>
         ) : null}
       </DialogFooter>

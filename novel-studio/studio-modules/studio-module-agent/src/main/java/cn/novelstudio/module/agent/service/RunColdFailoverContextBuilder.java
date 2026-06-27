@@ -61,6 +61,16 @@ public class RunColdFailoverContextBuilder {
                 skillPrompt = null;
             }
             Map<String, Object> modelConfig = readMap(ctx.path("model_config"));
+            String defaultProfileId = text(ctx, "default_profile_id", "");
+            if (defaultProfileId.isBlank()) {
+                defaultProfileId = null;
+            }
+            String crewId = text(ctx, "crew_id", "");
+            if (crewId.isBlank()) {
+                crewId = null;
+            }
+            Map<String, Object> crewVars = readMap(ctx.path("crew_vars"));
+            List<Map<String, Object>> crewTemplate = readChapterList(ctx.path("crew_template"));
 
             return new AgentRunContextDto(
                 runId,
@@ -84,7 +94,11 @@ public class RunColdFailoverContextBuilder {
                 referencedBooks,
                 skillIds,
                 skillPrompt,
-                modelConfig.isEmpty() ? null : modelConfig
+                modelConfig.isEmpty() ? null : modelConfig,
+                defaultProfileId,
+                crewId,
+                crewVars.isEmpty() ? null : crewVars,
+                crewTemplate.isEmpty() ? null : crewTemplate
             );
         } catch (Exception ignored) {
             return null;

@@ -56,6 +56,7 @@ TOOL_DISPLAY_NAMES: dict[str, str] = {
     "MoveMemory": "移动记忆",
     "DeleteMemory": "删除记忆",
     "SearchKnowledge": "知识检索",
+    "SearchSessionHistory": "会话历史检索",
     "GetCharacterGraph": "角色关系图",
     "AskUser": "询问",
     "TodoWrite": "任务",

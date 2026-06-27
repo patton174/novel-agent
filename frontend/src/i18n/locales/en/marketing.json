@@ -1,9 +1,29 @@
 {
   "brand": "Novel Agent",
+  "seo": {
+    "siteName": "AI Writing Assistant",
+    "defaultDescription": "Moyan (Novel Agent) is an AI writing assistant for long-form fiction: chapter continuation, story memory, transparent Agent execution, and streaming drafts. Start free.",
+    "homeTitle": "AI Writing Assistant",
+    "homeDescription": "AI writing assistant for serial fiction: persistent memory, visible Agent tools, streaming drafts, and background runs for daily updates.",
+    "guideTitle": "Creation Guide",
+    "guideDescription": "How the AI writing assistant works from idea to serial publication: setup, tasks, streaming drafts, and iteration.",
+    "pricingTitle": "Pricing",
+    "pricingDescription": "Transparent pricing for the AI writing assistant. Free tier includes the full Agent workflow.",
+    "aboutTitle": "About Us",
+    "aboutDescription": "We build Moyan Novel Agent, an AI writing assistant platform for long-form authors.",
+    "compareTitle": "AI Writing Tool Comparison",
+    "compareDescription": "Compare leading AI novel tools including Wawa Writing and Yuewen Author Assistant vs Moyan AI writing assistant.",
+    "blogTitle": "Writing Blog",
+    "blogDescription": "Guides on AI novel writing, serial fiction workflows, tool comparisons, and long-form memory.",
+    "legalDescription": "Legal and policy pages for Moyan AI writing assistant.",
+    "contactDescription": "Contact the Moyan AI writing assistant team."
+  },
   "nav": {
     "guide": "Creation Guide",
     "pricing": "Pricing",
     "about": "About Us",
+    "compare": "Compare Tools",
+    "blog": "Blog",
     "login": "Log In",
     "register": "Start for Free",
     "feasibility": "Capabilities & Scenarios",
@@ -19,7 +39,7 @@
     "ctaDesc": "Sign up to experience full capabilities like orchestration, memory, and streaming generation, making AI your most reliable co-writer.",
     "ctaRegister": "Sign Up for Free",
     "ctaLogin": "Already have an account? Log in",
-    "tagline": "An intelligent writing assistant built for novel creation, from world-building to chapter continuation, all in one place.",
+    "tagline": "Moyan AI writing assistant for novels and serial fiction—from world-building to chapter continuation, all in one place.",
     "product": "Product",
     "account": "Account",
     "legal": "Legal",
@@ -99,6 +119,134 @@
     },
     "cta": "Experience for Free Now"
   },
+  "compare": {
+    "eyebrow": "Tool Comparison",
+    "title": "Which AI Writing Tool Fits You?",
+    "subtitle": "Wawa Writing, Waqu Pinwen, Yuewen Author Assistant vs Moyan AI writing assistant",
+    "intro": "Searching for the best AI novel writing tool? This table compares leading products on long-form pain points: memory, transparent Agent execution, and online workflow.",
+    "tableCaption": "Comparison of popular AI novel writing tools",
+    "table": {
+      "product": "Product",
+      "focus": "Focus",
+      "memory": "Long-form memory",
+      "agent": "Transparent Agent",
+      "online": "Online SaaS",
+      "bestFor": "Best for"
+    },
+    "ourProduct": "This site",
+    "rows": {
+      "moyan": {
+        "name": "Moyan Novel Agent",
+        "focus": "Long-form Agent workspace",
+        "memory": "yes",
+        "agent": "yes",
+        "online": "yes",
+        "bestFor": "Serial / complex lore"
+      },
+      "wawa": {
+        "name": "Wawa Writing",
+        "focus": "Web novel + comic drama pipeline",
+        "memory": "partial",
+        "agent": "partial",
+        "online": "yes",
+        "bestFor": "Short fiction / drama"
+      },
+      "waqu": {
+        "name": "Waqu Pinwen",
+        "focus": "Desktop long-form settings",
+        "memory": "yes",
+        "agent": "partial",
+        "online": "no",
+        "bestFor": "Desktop authors"
+      },
+      "yuewen": {
+        "name": "Yuewen Author Assistant",
+        "focus": "In-platform helper",
+        "memory": "partial",
+        "agent": "no",
+        "online": "yes",
+        "bestFor": "Yuewen authors"
+      },
+      "general": {
+        "name": "ChatGPT / DeepSeek etc.",
+        "focus": "General chat AI",
+        "memory": "no",
+        "agent": "no",
+        "online": "yes",
+        "bestFor": "Ideas / snippets"
+      }
+    },
+    "disclaimer": "Comparison based on public information and hands-on review. Features change—verify with each vendor.",
+    "pickTitle": "For serial fiction, choose our AI writing assistant",
+    "pickBody": "If you need project memory, visible Agent tool chains, and streaming into an editor, Moyan fits real serialization workflows better than generic chat.",
+    "cta": "Try the AI writing assistant free"
+  },
+  "blog": {
+    "eyebrow": "Writing Blog",
+    "listTitle": "AI Novel Writing & Serial Fiction",
+    "listSubtitle": "Tool selection, serialization workflows, and long-form memory—for working authors.",
+    "readMore": "Read article",
+    "backToList": "Back to blog",
+    "publishedAt": "Published {{date}}",
+    "compareCta": "View comparison table",
+    "registerCta": "Start free",
+    "articles": {
+      "how-to-choose-ai-novel-writing-tool": {
+        "title": "How to Choose an AI Novel Writing Tool (2026 Guide)",
+        "description": "Compare memory, transparent Agent workflows, and online SaaS vs desktop tools—including Wawa Writing, Waqu Pinwen, and Yuewen Author Assistant.",
+        "excerpt": "Don't pick an AI novel tool by hype alone. This guide uses real serial-fiction pain points: memory drift, opaque output, and broken revision loops.",
+        "lead": "If you publish on a schedule, the cost of the wrong tool isn't slower typing—it's inconsistent lore, broken continuity, and revisions you can't trace. This guide is written for serialization, not one-shot demos.",
+        "sections": [
+          {
+            "heading": "Three questions before the feature checklist",
+            "paragraphs": [
+              "General chat AI (ChatGPT, DeepSeek, etc.) is fine for ideas and short passages, but lacks project-level context: chapters don't persist, character graphs don't survive sessions, and by chapter 30 the model won't remember chapter 3 foreshadowing.",
+              "Professional AI novel tools differ on three axes: long-form memory, transparent Agent execution, and an online serialization workflow—not just local files."
+            ],
+            "bullets": [
+              "Long-form memory: structured world-building, characters, and chapters you can retrieve",
+              "Transparent Agent: visible planning and tool steps—not a black-box paste",
+              "Workflow shape: browser SaaS vs desktop; streaming into an editor vs chat-only"
+            ]
+          },
+          {
+            "heading": "What leading products optimize for",
+            "paragraphs": [
+              "Wawa Writing offers a strong web-novel and comic-drama pipeline with fast generation—great for shorter pieces or drama-oriented workflows; long-form consistency still needs author-side discipline.",
+              "Waqu Pinwen focuses on desktop long-form setting management with a mature local workflow, but weaker online collaboration and Agent visibility.",
+              "Yuewen Author Assistant is tightly integrated with the Yuewen platform—ideal for contracted authors inside that ecosystem.",
+              "Moyan (Novel Agent) targets daily serialization: project Story Memory, visible Agent tool chains, streaming chapter writes into the editor, and background run recovery."
+            ]
+          },
+          {
+            "heading": "Why memory beats prose polish",
+            "paragraphs": [
+              "Readers punish lore mistakes quickly: power levels, relationships, timelines. Tools must treat settings plus published chapters as stable context—not a fresh prompt every session.",
+              "Character cards alone aren't enough. Beyond ~500k characters you need chapter indexes, memory trees, volume-aware retrieval, and Agents that ReadChapter / ReadMemory during revisions—not manual copy-paste."
+            ]
+          },
+          {
+            "heading": "Transparent Agent execution is non-negotiable",
+            "paragraphs": [
+              "Black-box generation is risky for serial work: you can't see which setting passage informed a line, or audit a rewrite. Transparent Agents surface planning, tool calls, and streaming output on a timeline—you intervene at checkpoints or let long jobs finish in the background.",
+              "If your workflow is \"4,000 words every day,\" you need delegatable long tasks—not endless chat pastes."
+            ]
+          },
+          {
+            "heading": "Match the tool to your scenario",
+            "paragraphs": [
+              "Platform-native publishing loop → platform tools (e.g. Yuewen Author Assistant).",
+              "Desktop + setting library → Waqu Pinwen-style desktop apps.",
+              "Fast drafts for shorter web fiction / drama → Wawa Writing-style generators.",
+              "Daily long-form serial + memory + visible Agent + online editor → Moyan AI writing assistant."
+            ]
+          }
+        ],
+        "ctaTitle": "Next: compare or try it",
+        "ctaBody": "See our side-by-side table for Wawa Writing, Waqu Pinwen, Yuewen Author Assistant, and Moyan—or register free and run a real Agent continuation in your project."
+      }
+    }
+  },
   "about": {
     "eyebrow": "About Us",
     "title": "A Writing Assistant Platform Built for Long-Form Creators",
@@ -119,7 +267,7 @@
   },
   "home": {
     "hero": {
-      "eyebrow": "Novel Writing Assistant",
+      "eyebrow": "AI Writing Assistant",
       "title": "Built specifically for long-form serialization,",
       "titleAccent": "An Orchestratable Writing Assistant",
       "subtitle": "World-building memory, transparent orchestration, streaming generation, and hosted continuation—from feasibility assessment to daily output, all in one place.",

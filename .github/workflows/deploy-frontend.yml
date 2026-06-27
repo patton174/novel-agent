@@ -5,6 +5,12 @@ on:
     branches: [main, master]
     paths:
       - 'frontend/**'
+      - 'frontend/scripts/prerender-marketing.mjs'
+      - 'frontend/scripts/verify-seo-crawl.mjs'
+      - 'frontend/scripts/ping-search-engines.mjs'
+      - 'frontend/scripts/seo-routes.mjs'
+      - 'frontend/src/content/blog/**'
+      - 'novel-studio/deploy/ci/verify-seo-crawl.sh'
       - 'novel-studio/deploy/ci/build-frontend.sh'
       - 'novel-studio/deploy/ci/deploy-frontend.sh'
       - 'novel-studio/deploy/ci/register-frontend-crypto.sh'
@@ -62,6 +68,9 @@ jobs:
           TURNSTILE_ENABLED: ${{ secrets.TURNSTILE_ENABLED }}
           TURNSTILE_SITE_KEY: ${{ secrets.TURNSTILE_SITE_KEY }}
           TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
+          BAIDU_SITE_TOKEN: ${{ secrets.BAIDU_SITE_TOKEN }}
+          BING_WEBMASTER_API_KEY: ${{ secrets.BING_WEBMASTER_API_KEY }}
+          INDEXNOW_KEY: ${{ secrets.INDEXNOW_KEY }}
           DEPLOY_SSH_OPTS: -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes -o ConnectTimeout=30 -o BatchMode=yes
           DEPLOY_SCP_OPTS: -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes -o ConnectTimeout=30 -o BatchMode=yes
         run: bash novel-studio/deploy/ci/deploy-frontend.sh

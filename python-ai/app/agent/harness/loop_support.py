@@ -10,6 +10,7 @@ from uuid import uuid4
 
 from langchain_core.messages import BaseMessage, HumanMessage
 
+from app.agent.context.tool_result_budget import ContentReplacementState
 from app.agent.context.usage import RunUsageAccumulator
 from app.agent.harness.events import _tool_input_for_sse
 from app.agent.harness.orchestration_contract import (
@@ -329,6 +330,10 @@ class RunLoopState:
     last_run_error: str | None = None
     run_usage: RunUsageAccumulator = field(default_factory=RunUsageAccumulator)
     autocompacted_turn: int = 0
+    tool_result_budget: ContentReplacementState = field(
+        default_factory=ContentReplacementState
+    )
+    session_idle_minutes: float = 0.0
     after_interaction: bool = False
     validation_retries: int = 0
     param_repair_rounds: int = 0

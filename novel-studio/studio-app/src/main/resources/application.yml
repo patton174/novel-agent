@@ -110,6 +110,8 @@ auth:
     issuer: novel-studio
     secret: ${JWT_SECRET:novel-studio-dev-secret-change-in-production-32chars}
     access-ttl-seconds: 3600
+    refresh-idle-ttl-seconds: ${AUTH_REFRESH_IDLE_TTL_SECONDS:604800}
+    refresh-absolute-ttl-seconds: ${AUTH_REFRESH_ABSOLUTE_TTL_SECONDS:2592000}
   verification:
     frontend-base-url: ${AUTH_FRONTEND_BASE_URL:https://novel-agent.cn}
     email-link-secret: ${AUTH_EMAIL_LINK_SECRET:}
@@ -126,8 +128,15 @@ auth:
     enforce-csrf: ${CLIENT_SECURITY_ENFORCE_CSRF:false}
     enforce-fingerprint: ${CLIENT_SECURITY_ENFORCE_FINGERPRINT:false}
     enforce-heartbeat: ${CLIENT_SECURITY_ENFORCE_HEARTBEAT:false}
+    heartbeat-interval-seconds: ${CLIENT_SECURITY_HEARTBEAT_INTERVAL_SECONDS:60}
     heartbeat-max-silence-seconds: ${CLIENT_SECURITY_HEARTBEAT_MAX_SILENCE_SECONDS:180}
     fingerprint-tolerance: ${CLIENT_SECURITY_FINGERPRINT_TOLERANCE:0.15}
+  risk:
+    enabled: ${AUTH_RISK_ENABLED:false}
+    step-up-threshold: ${AUTH_RISK_STEP_UP_THRESHOLD:80}
+    revoke-threshold: ${AUTH_RISK_REVOKE_THRESHOLD:95}
+    min-signals-for-step-up: ${AUTH_RISK_MIN_SIGNALS:2}
+    challenge-ttl-seconds: ${AUTH_RISK_CHALLENGE_TTL_SECONDS:900}
 
 python-ai:
   base-url: ${PYTHON_AI_BASE_URL:http://localhost:8000}

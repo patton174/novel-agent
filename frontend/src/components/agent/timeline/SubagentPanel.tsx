@@ -81,7 +81,11 @@ export function SubagentPanel({
 
   return (
     <>
-      <div className={subagentPanelRootClass(runActive)} data-testid="subagent-panel">
+      <div
+        className={subagentPanelRootClass(runActive)}
+        data-testid="subagent-panel"
+        data-subagent-child-run={subagent.childRunId}
+      >
         <CcToolRow
           testId="subagent-inline-row"
           name={meta.name}

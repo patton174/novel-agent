@@ -36,6 +36,7 @@ import { TimelineDeliveryBlock } from './TimelineDeliveryBlock'
 import { AgentMarkdown } from '../AgentMarkdown'
 import { TimelineToolBlock } from './TimelineToolBlock'
 import { TimelineSkillBlock } from './TimelineSkillBlock'
+import { CrewFailureReport } from '../CrewFailureReport'
 import { PlanReasoningBlock, ThinkBlock } from './ThinkBlocks'
 import { ThinkRoundGroup } from './ThinkRoundGroup'
 import type { AssistantStreamTimelineProps } from './types'
@@ -72,6 +73,7 @@ export function AssistantStreamTimeline({
   pinOrchestrationOpen = false,
   streamingMessageContent,
   segmentOpen = false,
+  crewFailure,
 }: AssistantStreamTimelineProps) {
   const { t } = useTranslation('editor')
   const isMobile = useAppMobile()
@@ -735,6 +737,18 @@ export function AssistantStreamTimeline({
       data-testid="agent-stream-timeline"
     >
       <div className={TIMELINE_SLOT}>
+        {crewFailure ? (
+          <CrewFailureReport
+            report={crewFailure}
+            onOpenReviewerTimeline={(childRunId) => {
+              const el = document.querySelector(
+                `[data-subagent-child-run="${childRunId}"]`,
+              ) as HTMLElement | null
+              el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+            }}
+            className="mb-2"
+          />
+        ) : null}
         {showOrchestrationPending ? <OrchestrationPendingRow /> : null}
         {timelineUnits.map((unit, unitIndex) => (
           <Fragment key={`unit:${unitIndex}`}>

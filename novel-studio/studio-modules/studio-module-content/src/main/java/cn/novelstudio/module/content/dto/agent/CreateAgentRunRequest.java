@@ -11,4 +11,9 @@ public class CreateAgentRunRequest {
     private String assistantMessageId;
     private String userMessageContent;
     private String mode;
+    private String parentRunId;
+    private String profileId;
+    private String roleLabel;
+    /** When true, skip session message append (sub-run bootstrap). */
+    private boolean subRun;
 }

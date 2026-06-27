@@ -1,0 +1,30 @@
+{
+  "id": "three-act-novel",
+  "display_name": "三幕式长篇",
+  "stages": [
+    {
+      "key": "plan",
+      "profile_id": "main-editor",
+      "prompt_template": "plan {{user_goal}}",
+      "output_schema": "PlanResult",
+      "gate": "always",
+      "on_fail": "abort_with_report"
+    },
+    {
+      "key": "write",
+      "profile_id": "chapter-writer",
+      "prompt_template": "write {{plan.summary}}",
+      "output_schema": "none",
+      "gate": "on_plan_success",
+      "on_fail": "abort_with_report"
+    },
+    {
+      "key": "review",
+      "profile_id": "continuity-reviewer",
+      "prompt_template": "review {{plan.summary}}",
+      "output_schema": "none",
+      "gate": "on_write_success",
+      "on_fail": "abort_with_report"
+    }
+  ]
+}

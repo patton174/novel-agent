@@ -16,19 +16,7 @@ REVIEW_DESCRIPTION = "审查：全书连贯性与最近改动"
 
 _PATCH_REVIEW_AGENT = "_review_agent"
 _PATCH_CHANGED_IDS = "_review_changed_chapter_ids"
-
-REVIEW_AGENT_ALLOWED_TOOLS = frozenset(
-    {
-        "ListChapters",
-        "ReadChapter",
-        "ListMemory",
-        "ReadMemory",
-        "ChapterAudit",
-        "NarrativeReview",
-        "SearchKnowledge",
-        "GetCharacterGraph",
-    }
-)
+REVIEW_PROFILE_ID = "continuity-reviewer"
 
 REVIEW_TRIGGER_TOOLS = frozenset(
     {
@@ -51,21 +39,19 @@ CHAPTER_MUTATION_TOOLS = frozenset(
 
 def is_review_agent(ctx: AgentRunContext) -> bool:
     patch = ctx.context_patch if isinstance(ctx.context_patch, dict) else {}
-    return bool(patch.get(_PATCH_REVIEW_AGENT))
+    if patch.get(_PATCH_REVIEW_AGENT):
+        return True
+    return str(patch.get("_subagent_profile_id") or "").strip() == REVIEW_PROFILE_ID
 
 
 def build_review_subagent_system_prompt() -> str:
-    names = ", ".join(sorted(REVIEW_AGENT_ALLOWED_TOOLS))
-    return f"""You are a **read-only narrative QA sub-agent** (editor / continuity checker).
+    """Deprecated — use profile_loader.build_subagent_system_prompt via ctx."""
+    from app.agent.harness.profile_loader import (
+        build_subagent_system_prompt,
+        resolve_profile_sync,
+    )
 
-Available tools: {names}
-
-Rules:
-- **Never** write or mutate chapters/memory (no WriteChapter, EditChapter, DeleteChapter, Agent).
-- Run **ChapterAudit** and **NarrativeReview(scope=full_book)** for the whole book; focus ReadChapter on changed chapters.
-- Check: semantic & literal duplication, chapter-to-chapter continuity, outline drift, worldview, foreshadow payoffs, reader engagement.
-- Use ReadMemory(novel/world/chapter) and SearchKnowledge when needed.
-- Final turn without tools: write the full markdown report (## 必须修 / ## 建议修 / ## 可选优化)."""
+    return build_subagent_system_prompt(resolve_profile_sync(REVIEW_PROFILE_ID))
 
 
 def build_review_subagent_run_context_human(ctx: AgentRunContext, transcript: Any) -> str:

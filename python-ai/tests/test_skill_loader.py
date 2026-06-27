@@ -2,13 +2,7 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-
-from app.agent.harness.skill_loader import (
-    load_bundled,
-    parse_skill_markdown,
-    read_bundled_skill,
-)
+from app.agent.harness.skill_loader import parse_skill_markdown
 
 _SAMPLE = """---
 name: fanqie-chapter-hook
@@ -41,21 +35,3 @@ def test_parse_skill_markdown_without_frontmatter():
     assert parsed.version == "1"
     assert parsed.tools == []
     assert "Plain skill" in parsed.body
-
-
-def test_load_bundled_resolves_directory_skill_md():
-    path = load_bundled("fanqie-chapter-hook")
-    assert path is not None
-    assert path.name == "SKILL.md"
-    assert path.parent.name == "fanqie-chapter-hook"
-
-
-def test_read_bundled_skill_parses_repo_placeholder():
-    parsed = read_bundled_skill("sweet-romance-beat")
-    assert parsed is not None
-    assert parsed.name == "sweet-romance-beat"
-    assert "四节拍" in parsed.body
-
-
-def test_load_bundled_missing_returns_none():
-    assert load_bundled("does-not-exist-skill") is None

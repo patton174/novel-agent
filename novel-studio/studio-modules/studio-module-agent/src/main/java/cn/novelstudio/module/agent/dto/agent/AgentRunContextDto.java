@@ -29,5 +29,9 @@ public record AgentRunContextDto(
     List<Map<String, Object>> referencedBooks,
     List<Map<String, Object>> skillIds,
     String skillPrompt,
-    Map<String, Object> modelConfig
+    Map<String, Object> modelConfig,
+    String defaultProfileId,
+    String crewId,
+    Map<String, Object> crewVars,
+    List<Map<String, Object>> crewTemplate
 ) {}

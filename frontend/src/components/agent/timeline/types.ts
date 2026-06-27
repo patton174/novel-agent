@@ -5,6 +5,7 @@ import type {
   AgentTimelineBlock,
   AskUserAnswers,
 } from '../../../types/agent'
+import type { CrewFailureReportPayload } from '../../../types/crew'
 
 export interface AssistantStreamTimelineProps {
   timeline: AgentTimelineBlock[]
@@ -31,4 +32,5 @@ export interface AssistantStreamTimelineProps {
   /** 未 completed 的 message.delta 缓冲（编排层流式展示） */
   streamingMessageContent?: string
   segmentOpen?: boolean
+  crewFailure?: CrewFailureReportPayload
 }

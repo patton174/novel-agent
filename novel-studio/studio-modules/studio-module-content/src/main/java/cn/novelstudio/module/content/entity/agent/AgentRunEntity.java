@@ -58,6 +58,15 @@ public class AgentRunEntity {
     @Column(name = "completed_at")
     private Instant completedAt;
 
+    @Column(name = "parent_run_id", length = 64)
+    private String parentRunId;
+
+    @Column(name = "profile_id", length = 64)
+    private String profileId;
+
+    @Column(name = "role_label", length = 64)
+    private String roleLabel;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 

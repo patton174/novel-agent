@@ -76,4 +76,21 @@ describe('auth refresh', () => {
     expect(sessionStorage.getItem('na_access_token')).toBe('fresh-jwt-token')
     expect(getAccessToken()).toBe('fresh-jwt-token')
   })
+
+  it('skips refresh retries for a short cooldown after failure', async () => {
+    vi.doMock('./secureFetch', () => ({
+      secureFetch: vi.fn(async () => new Response('', { status: 401 })),
+    }))
+    vi.doMock('./heartbeat', () => ({
+      startHeartbeatWorker: vi.fn(),
+    }))
+
+    const { refreshSessionInternal } = await import('./authRefresh')
+
+    await expect(refreshSessionInternal()).resolves.toBe(false)
+    await expect(refreshSessionInternal()).resolves.toBe(false)
+
+    const { secureFetch } = await import('./secureFetch')
+    expect(secureFetch).toHaveBeenCalledTimes(1)
+  })
 })

@@ -46,6 +46,7 @@ async def run_agent(ctx: AgentRunContext, inp: AgentInput) -> ToolCallResult:
         ctx,
         description=(inp.description or "").strip() or "子任务",
         prompt=(inp.prompt or "").strip(),
+        profile_id=(inp.profile_id or "chapter-writer").strip() or "chapter-writer",
     )
 
 
@@ -69,6 +70,7 @@ INTERACTION_TOOLS = [
         name="Agent",
         description=(
             "Spawn a sub-agent for ONE focused slice (≤4 chapters or ≤6 heavy steps). "
+            "Set profile_id (e.g. chapter-writer, continuity-reviewer) for role/tool allowlist. "
             "Parent splits work via TodoWrite; never delegate the whole book in one call."
         ),
         input_model=AgentInput,

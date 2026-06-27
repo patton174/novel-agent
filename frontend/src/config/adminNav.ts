@@ -1,4 +1,5 @@
 import type { ProIconType } from '@/components/pro/IconStroke'
+import { FEATURE_AGENT_CREW, FEATURE_AGENT_SKILLS } from '@/config/features'
 import {
   ProIconAdminAnalytics,
   ProIconAdminAnnouncement,
@@ -106,6 +107,26 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
     icon: ProIconAdminSystem,
     items: [
       { labelKey: 'common:nav.adminModels', to: '/admin/system/models', icon: ProIconAdminModels, end: true },
+      ...(FEATURE_AGENT_SKILLS
+        ? [
+            {
+              labelKey: 'common:nav.adminAgentSkills',
+              to: '/admin/system/agent-skills',
+              icon: ProIconAdminJobs,
+              end: true,
+            },
+          ]
+        : []),
+      ...(FEATURE_AGENT_CREW
+        ? [
+            {
+              labelKey: 'common:nav.adminCrewTemplates',
+              to: '/admin/system/crews',
+              icon: ProIconAdminJobs,
+              end: true,
+            },
+          ]
+        : []),
       { labelKey: 'common:nav.adminSystemMonitoring', to: '/admin/system/monitoring', icon: ProIconAdminMonitoring, end: true },
       { labelKey: 'common:nav.adminSystemJobs', to: '/admin/system/jobs', icon: ProIconAdminJobs, end: true },
       { labelKey: 'common:nav.adminSystemSettings', to: '/admin/system/settings', icon: ProIconAdminSettings, end: true },

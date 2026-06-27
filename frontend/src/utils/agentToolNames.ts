@@ -50,6 +50,7 @@ const TOOL_ICON_ALIASES: Record<string, string> = {
   DeleteChapter: 'Delete',
   ListChapters: 'Glob',
   SearchKnowledge: 'Grep',
+  SearchSessionHistory: 'Grep',
   memory_read: 'Read',
   chapter_list: 'Glob',
   choose: 'AskUser',
@@ -154,7 +155,7 @@ export function isChapterWriteTool(name: string | undefined): boolean {
 
 export function isVfsReadTool(name: string | undefined): boolean {
   const raw = (name ?? '').trim()
-  return raw === 'ReadMemory' || raw === 'ReadChapter' || raw === 'SearchKnowledge'
+  return raw === 'ReadMemory' || raw === 'ReadChapter' || raw === 'SearchKnowledge' || raw === 'SearchSessionHistory'
 }
 
 export function isCollapsibleReadTool(name: string | undefined): boolean {
@@ -167,6 +168,7 @@ export function isCollapsibleReadTool(name: string | undefined): boolean {
     raw === 'ReadMemory' ||
     raw === 'ReadChapter' ||
     raw === 'SearchKnowledge' ||
+    raw === 'SearchSessionHistory' ||
     raw === 'memory_read'
   ) {
     return true

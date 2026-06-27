@@ -1,0 +1,32 @@
+/** Known agent API tools — mirrors AgentProfileService.KNOWN_AGENT_TOOLS (novel-studio). */
+export const AGENT_TOOLS = [
+  'ListChapters',
+  'ChapterAudit',
+  'ReadChapter',
+  'WriteChapter',
+  'EditChapter',
+  'DeleteChapter',
+  'ReorderChapters',
+  'NarrativeReview',
+  'ListMemory',
+  'GetMemoryTree',
+  'ReadMemory',
+  'CreateMemory',
+  'UpdateMemoryFields',
+  'UpdateMemoryContent',
+  'UpdateMemoryMeta',
+  'MoveMemory',
+  'DeleteMemory',
+  'SearchKnowledge',
+  'GetCharacterGraph',
+  'AskUser',
+  'TodoWrite',
+  'Agent',
+  'WebSearch',
+  'WebFetch',
+  'ListMcpResources',
+  'ReadMcpResource',
+  'Skill',
+] as const
+
+export type AgentToolName = (typeof AGENT_TOOLS)[number]

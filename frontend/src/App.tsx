@@ -13,7 +13,6 @@ const DashboardLayout = lazy(() => import('./layouts/DashboardLayout'))
 import { fetchUserInfo } from './api/userApi'
 import { migrateLegacyAuthStorage, isLoggedIn } from './utils/auth'
 import { primeFingerprint } from './security/fingerprint'
-import { ensureSessionAndHeartbeat } from './security/heartbeat'
 import { startSessionBootstrap } from './security/sessionBootstrap'
 import { useUserStore } from './stores/userStore'
 import { useAppSessionRestore } from './hooks/useAppSessionRestore'
@@ -21,7 +20,8 @@ import { useReferralCapture } from './hooks/useReferralCapture'
 import { useDocumentMeta } from './hooks/useDocumentMeta'
 import { PageTransition } from './components/PageTransition'
 import { initializeTheme } from './stores/themeStore'
-import { FEATURE_AGENT_SKILLS } from './config/features'
+import { TurnstileChallengeGate } from './components/auth/TurnstileChallengeGate'
+import { FEATURE_AGENT_CREW, FEATURE_AGENT_SKILLS } from './config/features'
 
 const HomePage = lazy(() => import('./pages/HomePage'))
 const LoginPage = lazy(() => import('./pages/LoginPage'))
@@ -29,6 +29,9 @@ const RegisterPage = lazy(() => import('./pages/RegisterPage'))
 const PricingPage = lazy(() => import('./pages/PricingPage'))
 const PayCheckoutPage = lazy(() => import('./pages/PayCheckoutPage'))
 const GuidePage = lazy(() => import('./pages/GuidePage'))
+const ComparePage = lazy(() => import('./pages/ComparePage'))
+const BlogListPage = lazy(() => import('./pages/BlogListPage'))
+const BlogArticlePage = lazy(() => import('./pages/BlogArticlePage'))
 const AboutPage = lazy(() => import('./pages/AboutPage'))
 const GenericContentPage = lazy(() => import('./pages/GenericContentPage'))
 const EditorPage = lazy(() => import('./pages/EditorPage'))
@@ -40,6 +43,9 @@ const UsagePage = lazy(() => import('./pages/dashboard/UsagePage'))
 const BillingPage = lazy(() => import('./pages/dashboard/BillingPage'))
 const SettingsPage = lazy(() => import('./pages/dashboard/SettingsPage'))
 const SkillsPage = lazy(() => import('./pages/dashboard/skills/SkillsPage'))
+const ProfileManagementPage = lazy(() => import('./pages/dashboard/agent/ProfileManagementPage'))
+const CrewTemplateAdminPage = lazy(() => import('./pages/admin/CrewTemplateAdminPage'))
+const AdminAgentSkillsPage = lazy(() => import('./pages/admin/AdminAgentSkillsPage'))
 const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'))
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'))
 const VerifyEmailPage = lazy(() => import('./pages/VerifyEmailPage'))
@@ -91,9 +97,18 @@ function AppRouteTree() {
       <Routes location={location}>
         <Route path="/" element={<HomePage />} />
         <Route path="/guide" element={<GuidePage />} />
+        <Route path="/compare" element={<ComparePage />} />
+        <Route path="/vs/wawa-writing" element={<Navigate to="/compare#compare-wawa" replace />} />
+        <Route path="/vs/waqu-pinwen" element={<Navigate to="/compare#compare-waqu" replace />} />
+        <Route path="/compare/wawa-writing" element={<Navigate to="/compare#compare-wawa" replace />} />
+        <Route path="/compare/waqu-pinwen" element={<Navigate to="/compare#compare-waqu" replace />} />
+        <Route path="/compare/yuewen" element={<Navigate to="/compare#compare-yuewen" replace />} />
+        <Route path="/ai-novel-writing-tools" element={<Navigate to="/compare" replace />} />
         <Route path="/pricing" element={<PricingPage />} />
         <Route path="/checkout" element={<PayCheckoutPage />} />
         <Route path="/about" element={<AboutPage />} />
+        <Route path="/blog" element={<BlogListPage />} />
+        <Route path="/blog/:slug" element={<BlogArticlePage />} />
         <Route path="/features" element={<Navigate to="/guide" replace />} />
         <Route path="/testimonials" element={<Navigate to="/about" replace />} />
         <Route path="/privacy" element={<GenericContentPage contentKey="privacy" />} />
@@ -122,6 +137,7 @@ function AppRouteTree() {
           <Route path="bookstore" element={<BookstorePage />} />
           <Route path="my-library" element={<MyLibraryPage />} />
           {FEATURE_AGENT_SKILLS ? <Route path="skills" element={<SkillsPage />} /> : null}
+          <Route path="agent/profiles" element={<ProfileManagementPage />} />
           <Route path="billing" element={<BillingPage />} />
           <Route path="usage" element={<UsagePage />} />
           <Route path="settings" element={<Navigate to="/dashboard/settings/profile" replace />} />
@@ -163,6 +179,10 @@ function AppRouteTree() {
           <Route path="content/catalog" element={<CatalogPage />} />
           <Route path="content/uploads" element={<AdminUploadOpsPage />} />
           <Route path="system/models" element={<AdminModelsPage />} />
+          {FEATURE_AGENT_SKILLS ? (
+            <Route path="system/agent-skills" element={<AdminAgentSkillsPage />} />
+          ) : null}
+          {FEATURE_AGENT_CREW ? <Route path="system/crews" element={<CrewTemplateAdminPage />} /> : null}
           <Route path="system/monitoring" element={<SystemMonitoringPage />} />
           <Route path="system/jobs" element={<AdminSystemJobsPage />} />
           <Route path="system/settings" element={<SystemSettingsPage />} />
@@ -213,7 +233,6 @@ function App() {
     migrateLegacyAuthStorage()
     initializeTheme()
     primeFingerprint()
-    void ensureSessionAndHeartbeat()
     void startSessionBootstrap().then(() => {
       if (isLoggedIn() && !useUserStore.getState().profile) {
         void fetchUserInfo()
@@ -229,6 +248,7 @@ function App() {
     <>
       <AppToastHost />
       <ConfirmDialogHost />
+      <TurnstileChallengeGate />
       <BrowserRouter>
         <RouteProgressBar />
         <AppRoutes />

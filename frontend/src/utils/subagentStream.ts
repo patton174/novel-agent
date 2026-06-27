@@ -123,12 +123,35 @@ export function applySubagentStepEvent(
     typeof p.subagent_kind === 'string' ? p.subagent_kind.trim() : undefined
 
   if (event.type === 'subagent.started') {
+    const profileId =
+      typeof p.profile_id === 'string'
+        ? p.profile_id
+        : typeof p.profileId === 'string'
+          ? p.profileId
+          : undefined
+    const profileDisplayName =
+      typeof p.profile_display_name === 'string'
+        ? p.profile_display_name
+        : typeof p.display_name === 'string'
+          ? p.display_name
+          : typeof p.profileDisplayName === 'string'
+            ? p.profileDisplayName
+            : undefined
+    const profileDescription =
+      typeof p.profile_description === 'string'
+        ? p.profile_description
+        : typeof p.profileDescription === 'string'
+          ? p.profileDescription
+          : undefined
     return upsertStepSubagent(
       stepStates,
       parentId,
       () => ({
         kind: subagentKind,
         description,
+        profileId,
+        profileDisplayName,
+        profileDescription,
         childRunId:
           typeof p.child_run_id === 'string' ? p.child_run_id : undefined,
         status: 'active',

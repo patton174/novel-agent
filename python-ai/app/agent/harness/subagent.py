@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 
 _PATCH_DEPTH = "_subagent_depth"
 _PATCH_MAX_TURNS = "_max_turns"
+_PATCH_PROFILE_ID = "_subagent_profile_id"
 _PATCH_PARENT_RUN = "_parent_run_id"
 _PATCH_DISABLE_DEFER = "_subagent_disable_defer"
 _PATCH_DESCRIPTION = "_subagent_description"
@@ -57,27 +58,16 @@ def build_subagent_context(
     )
 
 
-def build_subagent_system_prompt() -> str:
-    from app.agent.tools.registry import get_all_tools
-    from app.agent.harness.visible_text_channel import visible_text_prompt_block
-
-    names = ", ".join(
-        sorted(t.name for t in get_all_tools() if t.name not in SUBAGENT_EXCLUDED_TOOLS)
+def build_subagent_system_prompt_for_ctx(ctx: AgentRunContext) -> str:
+    from app.agent.harness.profile_loader import (
+        build_subagent_system_prompt,
+        resolve_profile_sync,
     )
-    max_turns = settings.agent_subagent_max_turns
-    channel_block = visible_text_prompt_block()
-    return f"""You are a **sub-agent** for a novel-writing task. The parent agent delegated one focused slice.
 
-Available tools: {names}
-
-{channel_block}
-
-Rules:
-- Complete **only** the delegated task in the user message. Do not expand scope.
-- **Batch size**: at most 3–4 chapters (or 3–4 memory writes) per turn; use multiple turns if needed (max ~{max_turns} turns).
-- Use RUN_CONTEXT `novel.chapter_catalog` / `memory.memory_index` for UUIDs.
-- Glob/Grep are paths only → must Read for bodies. Do not call removed tools.
-- **No** AskUser, **no** Agent/subagent, **no** plan mode — work autonomously."""
+    patch = ctx.context_patch if isinstance(ctx.context_patch, dict) else {}
+    profile_id = str(patch.get(_PATCH_PROFILE_ID) or "chapter-writer").strip()
+    profile = resolve_profile_sync(profile_id)
+    return build_subagent_system_prompt(profile)
 
 
 def build_subagent_run_context_human(
@@ -215,6 +205,7 @@ async def run_subagent(
     *,
     description: str,
     prompt: str,
+    profile_id: str = "chapter-writer",
 ) -> ToolCallResult:
     """Execute delegated work via nested query_loop; blocks until sub-run ends."""
     if subagent_depth(parent) >= settings.agent_subagent_max_depth:
@@ -233,9 +224,20 @@ async def run_subagent(
             is_error=True,
         )
 
+    from app.agent.harness.profile_loader import fetch_profile, merge_profile_skills
+
+    profile = await fetch_profile(profile_id, parent.user_id)
+    max_turns = profile.max_turns or settings.agent_subagent_max_turns
     child = build_subagent_context(
-        parent, description=(description or "子任务").strip(), prompt=task_prompt
+        parent,
+        description=(description or "子任务").strip(),
+        prompt=task_prompt,
+        extra_patch={
+            _PATCH_PROFILE_ID: profile.id,
+            _PATCH_MAX_TURNS: max_turns,
+        },
     )
+    child = await merge_profile_skills(child, profile)
     logger.info(
         "subagent start parent=%s child=%s desc=%s",
         parent.run_id,
@@ -256,6 +258,7 @@ async def run_subagent(
             "parent_run_id": parent.run_id,
             "child_run_id": child.run_id,
             "description": (description or "")[:200],
+            "profile_id": profile.id,
             "ok": not is_error,
         }
     }

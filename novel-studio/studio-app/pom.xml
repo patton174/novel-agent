@@ -44,6 +44,10 @@
             <artifactId>studio-module-worker</artifactId>
         </dependency>
         <dependency>
+            <groupId>cn.novelstudio</groupId>
+            <artifactId>studio-module-risk</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>

@@ -1,43 +1,32 @@
-"""Skill loader tool — HTTP fetch, bundled fallback, legacy AGENT_SKILLS_DIR."""
+"""Skill loader — novel-studio API is the only production source."""
 
 from __future__ import annotations
 
 import json
-from pathlib import Path
 from uuid import uuid4
 
 from app.agent.backend import skill_api
+from app.agent.context.skill_metadata import merge_skill_metadata, skill_metadata_from_api
 from app.agent.harness.events import (
     emit_skill_failed,
     emit_skill_loaded,
     emit_skill_started,
 )
-from app.agent.harness.skill_loader import ParsedSkill, parse_skill_markdown, read_bundled_skill
 from app.agent.schemas import AgentRunContext
 from app.agent.tools.schemas import SkillInput
 from app.agent.tools.tool import ToolCallResult, build_tool
 from app.config import settings
 
 
-def _skills_dir() -> Path | None:
-    raw = (settings.agent_skills_dir or "").strip()
-    if not raw:
-        return None
-    path = Path(raw)
-    return path if path.is_dir() else None
-
-
-def _skill_sources_available() -> bool:
-    from app.agent.harness.skill_loader import load_bundled
-
-    if load_bundled("fanqie-chapter-hook") is not None:
-        return True
-    if _skills_dir() is not None:
-        return True
+def _api_configured() -> bool:
     return bool(
         (settings.content_base_url or "").strip()
         and (settings.internal_service_key or "").strip()
     )
+
+
+def _skill_sources_available() -> bool:
+    return _api_configured()
 
 
 def _existing_skill_prompt(ctx: AgentRunContext) -> str:
@@ -62,51 +51,23 @@ def _append_skill_prompt(ctx: AgentRunContext, body: str) -> str:
     return new_body
 
 
-def _read_legacy_skill(name: str) -> ParsedSkill | None:
-    base = _skills_dir()
-    if base is None:
-        return None
-    slug = (name or "").strip().replace("/", "").replace("\\", "")
-    if not slug:
-        return None
-    candidates = [base / f"{slug}.md", base / slug / "SKILL.md"]
-    for path in candidates:
-        if path.is_file():
-            return parse_skill_markdown(path.read_text(encoding="utf-8"))
-    return None
-
-
-def _parsed_from_api(data: dict) -> ParsedSkill:
+def _parsed_from_api(data: dict) -> tuple[str, str, str]:
     content = str(data.get("content") or "").strip()
-    if content.startswith("---"):
-        parsed = parse_skill_markdown(content)
-        if parsed.name != "unknown":
-            return parsed
     name = str(data.get("name") or data.get("slug") or "unknown").strip() or "unknown"
-    tools_raw = data.get("tools")
-    tools: list[str] = []
-    if isinstance(tools_raw, list):
-        tools = [str(item).strip() for item in tools_raw if str(item).strip()]
-    return ParsedSkill(
-        name=name,
-        version=str(data.get("version") or "1"),
-        description=str(data.get("description") or "").strip(),
-        tools=tools,
-        body=content,
-        locale=str(data.get("locale") or "zh").strip() or "zh",
-    )
+    version = str(data.get("version") or "1")
+    return name, content, version
 
 
-def _skill_ref(inp: SkillInput) -> tuple[str, str, str]:
+def _skill_ref(inp: SkillInput) -> str:
     skill_id = (inp.skill_id or "").strip()
     if skill_id:
-        return skill_id, skill_id, "api"
-    name = (inp.skill or "").strip().replace("/", "").replace("\\", "")
-    return name, name, "bundled"
+        return skill_id
+    return (inp.skill or "").strip().replace("/", "").replace("\\", "")
 
 
 async def invoke_skill(ctx: AgentRunContext, inp: SkillInput) -> ToolCallResult:
-    ref_id, display_name, source = _skill_ref(inp)
+    ref_id = _skill_ref(inp)
+    display_name = ref_id or "skill"
     step_id = f"step_{uuid4().hex}"
     seq = 0
     events = [
@@ -120,16 +81,29 @@ async def invoke_skill(ctx: AgentRunContext, inp: SkillInput) -> ToolCallResult:
     ]
     seq += 1
 
-    parsed: ParsedSkill | None = None
-    api_id = str(ref_id)
+    if not _api_configured():
+        err = "skill API not configured (CONTENT_BASE_URL + INTERNAL_SERVICE_KEY required)"
+        events.append(
+            emit_skill_failed(
+                ctx,
+                skill_id=ref_id,
+                name=display_name,
+                error=err,
+                sequence=seq,
+                step_id=step_id,
+            )
+        )
+        return ToolCallResult(
+            content=f"<tool_use_error>{err}</tool_use_error>",
+            is_error=True,
+            sse_events=events,
+        )
+
     try:
-        if source == "api":
-            data = await skill_api.fetch_skill(ref_id, ctx.user_id)
-            parsed = _parsed_from_api(data)
-            api_id = str(data.get("id") or ref_id)
-            display_name = parsed.name or display_name
-        else:
-            parsed = read_bundled_skill(ref_id) or _read_legacy_skill(ref_id)
+        data = await skill_api.fetch_skill(ref_id, ctx.user_id)
+        parsed_name, body, version = _parsed_from_api(data)
+        api_id = str(data.get("id") or ref_id)
+        display_name = parsed_name or display_name
     except Exception as exc:
         err = str(exc).strip() or "skill fetch failed"
         events.append(
@@ -148,8 +122,9 @@ async def invoke_skill(ctx: AgentRunContext, inp: SkillInput) -> ToolCallResult:
             sse_events=events,
         )
 
-    if parsed is None:
-        err = f"skill not found: {display_name}"
+    body = body[:8000]
+    if not body:
+        err = f"skill content empty: {display_name}"
         events.append(
             emit_skill_failed(
                 ctx,
@@ -166,23 +141,31 @@ async def invoke_skill(ctx: AgentRunContext, inp: SkillInput) -> ToolCallResult:
             sse_events=events,
         )
 
-    body = (parsed.body or "")[:8000]
     merged_prompt = _append_skill_prompt(ctx, body)
+    meta = skill_metadata_from_api(data, fallback_id=ref_id)
+    patch: dict = {
+        "skill_prompt": merged_prompt,
+        "last_skill": display_name,
+    }
+    existing_ids = [row for row in (ctx.skill_ids or []) if isinstance(row, dict)]
+    merged_ids = merge_skill_metadata(existing_ids, meta)
+    if merged_ids is not None:
+        patch["skill_ids"] = merged_ids
     events.append(
         emit_skill_loaded(
             ctx,
             skill_id=api_id,
-            name=parsed.name,
+            name=display_name,
             sequence=seq,
             step_id=step_id,
         )
     )
     return ToolCallResult(
-        content=json.dumps({"skill": parsed.name, "loaded": True}, ensure_ascii=False),
-        context_patch={
-            "skill_prompt": merged_prompt,
-            "last_skill": parsed.name,
-        },
+        content=json.dumps(
+            {"skill": display_name, "loaded": True, "version": version},
+            ensure_ascii=False,
+        ),
+        context_patch=patch,
         sse_events=events,
     )
 
@@ -191,9 +174,10 @@ SKILL_TOOLS = [
     build_tool(
         name="Skill",
         description=(
-            "Load a skill prompt fragment into context. "
-            "Use skill_id for user/system skills from novel-studio, "
-            "or skill for bundled slugs under python-ai/skills/bundled/."
+            "Load a skill from the platform library (official or user) by skill_id or slug. "
+            "Available skills are listed in RUN_CONTEXT.skills.catalog — metadata only. "
+            "When a skill matches the user's task, invoke this tool BEFORE generating task output "
+            "to load full instructions. Do not mention a skill without calling this tool."
         ),
         input_model=SkillInput,
         call=invoke_skill,

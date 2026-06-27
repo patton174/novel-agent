@@ -40,8 +40,8 @@ describe('session bootstrap', () => {
     expect(refreshSession).not.toHaveBeenCalled()
   })
 
-  it('refreshes token when a stored session exists', async () => {
-    sessionStorage.setItem('na_access_token', 'stale-token')
+  it('does not refresh token on page load when a stored session exists', async () => {
+    sessionStorage.setItem('na_access_token', 'stored-token')
     sessionStorage.setItem('na_user_id', '42')
     sessionStorage.setItem(
       'na_session_crypto',
@@ -54,17 +54,22 @@ describe('session bootstrap', () => {
     )
 
     const refreshSession = vi.fn(async () => true)
+    const startHeartbeatWorker = vi.fn(() => () => undefined)
     vi.doMock('./cryptoRuntime', () => ({
       ensureCryptoRuntime: vi.fn(async () => undefined),
     }))
     vi.doMock('../utils/authApi', () => ({
       refreshSession,
     }))
+    vi.doMock('./heartbeat', () => ({
+      startHeartbeatWorker,
+    }))
 
     const { startSessionBootstrap } = await import('./sessionBootstrap')
 
     await startSessionBootstrap()
 
-    expect(refreshSession).toHaveBeenCalledTimes(1)
+    expect(refreshSession).not.toHaveBeenCalled()
+    expect(startHeartbeatWorker).toHaveBeenCalledTimes(1)
   })
 })

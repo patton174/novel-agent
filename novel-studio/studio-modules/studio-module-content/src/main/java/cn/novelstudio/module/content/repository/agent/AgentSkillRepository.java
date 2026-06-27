@@ -11,6 +11,8 @@ public interface AgentSkillRepository extends JpaRepository<AgentSkillEntity, UU
 
     List<AgentSkillEntity> findByUserIdOrIsSystemTrueOrderByNameAsc(Long userId);
 
+    List<AgentSkillEntity> findByUserIdOrderByNameAsc(Long userId);
+
     Optional<AgentSkillEntity> findByIdAndUserId(UUID id, Long userId);
 
     Optional<AgentSkillEntity> findByNameAndUserId(String name, Long userId);

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 
 import java.util.List;
+import java.util.Map;
 
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public record AgentStreamRequest(
@@ -22,7 +23,10 @@ public record AgentStreamRequest(
     /** 临时模型覆盖：user_model id 或 pub:ai_model id */
     String modelOverride,
     List<ReferencedBookRef> referencedBooks,
-    List<String> skillIds
+    List<String> skillIds,
+    String defaultProfileId,
+    String crewId,
+    Map<String, Object> crewVars
 ) {
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     public record HistoryTurn(String role, String content) {}

@@ -95,7 +95,9 @@
       "selected": "已选",
       "remove": "移除技能 {{name}}",
       "toolbar": "添加技能",
-      "maxReached": "最多可附加 3 个技能"
+      "maxReached": "最多可附加 3 个技能",
+      "pinFail": "引用官方技能失败",
+      "updateAvailable": "官方技能有更新"
     },
     "picker": {
       "unselectedChapter": "未选章节",
@@ -344,6 +346,7 @@
         "ListMemory": { "running": "正在列举记忆…", "done": "已列举记忆", "failed": "列举记忆失败" },
         "DeleteMemory": { "running": "正在删除记忆…", "done": "已删除记忆", "failed": "删除记忆失败" },
         "SearchKnowledge": { "running": "正在检索设定…", "done": "检索完成", "failed": "检索失败" },
+        "SearchSessionHistory": { "running": "正在检索会话历史…", "done": "会话检索完成", "failed": "会话检索失败" },
         "GetCharacterGraph": { "running": "正在分析人物关系…", "done": "人物关系已就绪", "failed": "分析人物关系失败" },
         "AskUser": { "running": "等待你的回复…", "awaiting": "等待你的回复…", "done": "已收到回复", "failed": "提问失败" },
         "TodoWrite": { "running": "正在更新待办…", "done": "已更新待办", "failed": "更新待办失败" },
@@ -376,6 +379,7 @@
         "NarrativeReview": "叙事审查",
         "ReorderChapters": "调整章节顺序",
         "SearchKnowledge": "知识检索",
+        "SearchSessionHistory": "会话历史检索",
         "GetCharacterGraph": "角色关系图",
         "Write": "写入",
         "Read": "读取",
@@ -773,6 +777,7 @@
           "ReorderChapters": "调整章节顺序…",
           "NarrativeReview": "叙事审查…",
           "SearchKnowledge": "检索设定…",
+          "SearchSessionHistory": "检索会话历史…",
           "GetCharacterGraph": "分析人物关系…",
           "Agent": "执行子任务…",
           "Skill": "加载技能…",
@@ -816,6 +821,13 @@
           "glob": "列举 {{count}} 次",
           "grep": "搜索 {{count}} 次",
           "delete": "删除 {{count}} 项"
+        },
+        "profile": {
+          "fallback": "子代理",
+          "main-editor": "主编辑",
+          "chapter-writer": "章节写手",
+          "continuity-reviewer": "连贯审校",
+          "style-editor": "文风编辑"
         }
       },
       "timeline": {
@@ -853,5 +865,35 @@
         "submitWithCount": "提交 ({{count}})",
         "nextWithCount": "下一题 ({{count}})"
       }
+    },
+  "crew": {
+    "pickTitle": "选择专家团",
+    "empty": "未找到专家团",
+    "selected": "已选",
+    "stageCount": "{{count}} 个阶段",
+    "remove": "移除 {{name}}",
+    "toolbar": "专家团",
+    "stage": {
+      "pending": "等待",
+      "running": "进行中",
+      "completed": "完成",
+      "failed": "失败",
+      "skipped": "跳过"
+    },
+    "failure": {
+      "verdict": {
+        "block": "阻断",
+        "warn": "警告",
+        "pass": "通过"
+      },
+      "openReviewer": "打开审查 Run"
     }
+  },
+  "runTree": {
+    "loadFail": "加载 Run 树失败",
+    "loading": "加载 Run 树…",
+    "empty": "暂无子 Run",
+    "show": "Run 树",
+    "hide": "收起"
+  }
 }

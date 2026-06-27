@@ -23,6 +23,10 @@ public final class SecurityRedisKeys {
     public static final String CAPTCHA_POOL_USAGE_KEY = "auth:captcha:pool:usage";
     public static final String CAPTCHA_POOL_BATCH_KEY = "auth:captcha:pool:batch";
     public static final String RATE_LIMIT_PREFIX = "auth:ratelimit:";
+    /** 会话风控快照 {@code auth:risk:{sessionId}} */
+    public static final String RISK_SESSION_PREFIX = "auth:risk:";
+    /** step-up 挑战待完成标记 {@code auth:challenge:{sessionId}} */
+    public static final String CHALLENGE_PREFIX = "auth:challenge:";
     public static final String USER_ROLE_PREFIX = "user:role:";
 
     private SecurityRedisKeys() {

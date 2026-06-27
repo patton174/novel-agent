@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from app.agent.harness.review_agent import REVIEW_AGENT_ALLOWED_TOOLS, is_review_agent
 from app.agent.harness.subagent_policy import SUBAGENT_EXCLUDED_TOOLS, is_subagent_run
 from app.agent.schemas import AgentRunContext
 from app.agent.tools.chapter import CHAPTER_TOOLS
@@ -11,6 +10,7 @@ from app.agent.tools.knowledge import KNOWLEDGE_TOOLS
 from app.agent.tools.mcp import MCP_TOOLS
 from app.agent.tools.memory import MEMORY_TOOLS
 from app.agent.tools.narrative_review import NARRATIVE_REVIEW_TOOL
+from app.agent.tools.session_history import SESSION_HISTORY_TOOLS
 from app.agent.tools.skill import SKILL_TOOLS
 from app.agent.tools.tool import AgentTool
 from app.agent.tools.web import WEB_TOOLS
@@ -24,6 +24,7 @@ def build_agent_tools() -> list[AgentTool]:
         NARRATIVE_REVIEW_TOOL,
         *MEMORY_TOOLS,
         *KNOWLEDGE_TOOLS,
+        *SESSION_HISTORY_TOOLS,
         *INTERACTION_TOOLS,
         *WEB_TOOLS,
         *MCP_TOOLS,
@@ -38,11 +39,31 @@ def _load_tools() -> list[AgentTool]:
     return _TOOLS
 
 
+def tools_for_profile(profile, all_tools: list[AgentTool]) -> list[AgentTool]:
+    if not profile.tool_allowlist:
+        return [t for t in all_tools if t.name not in SUBAGENT_EXCLUDED_TOOLS]
+    allowed = set(profile.tool_allowlist)
+    return [t for t in all_tools if t.name in allowed]
+
+
+def _subagent_profile_id(ctx: AgentRunContext) -> str | None:
+    patch = ctx.context_patch if isinstance(ctx.context_patch, dict) else {}
+    raw = patch.get("_subagent_profile_id")
+    return str(raw).strip() if raw else None
+
+
 def get_all_tools(ctx: AgentRunContext | None = None) -> list[AgentTool]:
     tools = [t for t in _load_tools() if ctx is None or t.is_enabled(ctx)]
     if ctx is not None and is_subagent_run(ctx):
-        if is_review_agent(ctx):
-            return [t for t in tools if t.name in REVIEW_AGENT_ALLOWED_TOOLS]
+        profile_id = _subagent_profile_id(ctx)
+        if profile_id:
+            from app.agent.harness.profile_loader import resolve_profile_sync
+
+            try:
+                profile = resolve_profile_sync(profile_id)
+                return tools_for_profile(profile, tools)
+            except Exception:
+                pass
         tools = [t for t in tools if t.name not in SUBAGENT_EXCLUDED_TOOLS]
     return tools
 

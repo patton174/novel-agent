@@ -137,6 +137,28 @@ def get_memory_tree_ui_excerpt(content: str, tool_input: dict[str, Any]) -> str:
     return f"{count} 项" if count else "（空）"
 
 
+def search_session_history_ui_excerpt(content: str, tool_input: dict[str, Any]) -> str:
+    query = str(tool_input.get("query") or "").strip()
+    run_id = str(tool_input.get("run_id") or "").strip()
+    try:
+        data = json.loads(content or "")
+        if isinstance(data, dict):
+            if data.get("mode") == "run_fetch":
+                hit = data.get("hit") if isinstance(data.get("hit"), dict) else {}
+                turns = hit.get("turns") if isinstance(hit.get("turns"), list) else []
+                rid = run_id or str(hit.get("run_id") or "?")
+                return f"run {rid} · {len(turns)} 条"
+            hits = data.get("hits")
+            count = len(hits) if isinstance(hits, list) else 0
+            if query:
+                q = query if len(query) <= 24 else query[:23] + "…"
+                return f"「{q}」· {count} 处" if count else f"「{q}」· 无匹配"
+            return f"{count} 处" if count else "（无匹配）"
+    except (json.JSONDecodeError, TypeError):
+        pass
+    return "会话检索"
+
+
 def search_knowledge_ui_excerpt(content: str, tool_input: dict[str, Any]) -> str:
     query = str(tool_input.get("query") or "").strip()
     try:
@@ -518,6 +540,7 @@ def default_ui_excerpt_registry() -> dict[str, UiExcerptFn]:
         "ListMemory": list_memory_ui_excerpt,
         "GetMemoryTree": get_memory_tree_ui_excerpt,
         "SearchKnowledge": search_knowledge_ui_excerpt,
+        "SearchSessionHistory": search_session_history_ui_excerpt,
         "GetCharacterGraph": get_character_graph_ui_excerpt,
         "WriteChapter": write_chapter_ui_excerpt,
         "EditChapter": edit_chapter_ui_excerpt,

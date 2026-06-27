@@ -19,10 +19,20 @@ export VITE_TURNSTILE_SITE_KEY="${VITE_TURNSTILE_SITE_KEY:-}"
 corepack enable 2>/dev/null || true
 if command -v pnpm >/dev/null 2>&1; then
   pnpm install --frozen-lockfile
+  node scripts/generate-sitemap.mjs
   pnpm exec vite build
+  if [[ "${SKIP_PRERENDER:-}" != "1" ]]; then
+    pnpm exec playwright install chromium
+    node scripts/prerender-marketing.mjs
+  fi
 else
   npm ci
+  node scripts/generate-sitemap.mjs
   npx vite build
+  if [[ "${SKIP_PRERENDER:-}" != "1" ]]; then
+    npx playwright install chromium
+    node scripts/prerender-marketing.mjs
+  fi
 fi
 [[ -d dist ]] || { echo "缺少 frontend/dist"; exit 1; }
 echo "BUILT_DIST=$REPO_ROOT/frontend/dist"

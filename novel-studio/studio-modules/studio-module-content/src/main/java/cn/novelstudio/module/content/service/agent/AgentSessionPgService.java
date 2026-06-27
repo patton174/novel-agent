@@ -1,5 +1,6 @@
 package cn.novelstudio.module.content.service.agent;
 
+import cn.novelstudio.module.content.dto.ContentMessageDTO;
 import cn.novelstudio.module.content.dto.SessionDTO;
 import cn.novelstudio.module.content.entity.agent.AgentMessageEntity;
 import cn.novelstudio.module.content.entity.agent.AgentSessionEntity;
@@ -172,6 +173,46 @@ public class AgentSessionPgService {
             session.setUpdatedAt(Instant.now());
             sessionRepository.save(session);
         });
+    }
+
+    @Transactional(readOnly = true)
+    public List<ContentMessageDTO> listMessagesFromPg(
+        Long userId,
+        String sessionId,
+        int limit,
+        String runIdFilter
+    ) {
+        if (userId == null || userId <= 0 || sessionId == null || sessionId.isBlank()) {
+            return List.of();
+        }
+        if (!isSessionOwnedByUser(userId, sessionId)) {
+            return List.of();
+        }
+        int safeLimit = Math.max(Math.min(limit, 500), 1);
+        List<AgentMessageEntity> rows = messageRepository.findBySessionIdOrderByCreatedAtAsc(sessionId);
+        if (rows.isEmpty()) {
+            return List.of();
+        }
+        int start = Math.max(0, rows.size() - safeLimit);
+        return rows.subList(start, rows.size()).stream()
+            .filter(row -> runIdFilter == null || runIdFilter.isBlank() || runIdFilter.equals(row.getRunId()))
+            .map(this::toContentMessageDto)
+            .toList();
+    }
+
+    private ContentMessageDTO toContentMessageDto(AgentMessageEntity entity) {
+        long createdAt = entity.getCreatedAt() == null ? 0L : entity.getCreatedAt().toEpochMilli();
+        return new ContentMessageDTO(
+            entity.getId(),
+            entity.getSessionId(),
+            entity.getRole(),
+            entity.getContent(),
+            entity.getRunId(),
+            entity.getId(),
+            "auto",
+            createdAt,
+            null
+        );
     }
 
     private SessionDTO toDto(AgentSessionEntity entity) {

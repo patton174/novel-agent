@@ -643,6 +643,16 @@ export function applyTimelineEvent(
   }
 
   if (
+    type === 'crew.started' ||
+    type === 'crew.stage.started' ||
+    type === 'crew.stage.completed' ||
+    type === 'crew.completed' ||
+    type === 'crew.failed'
+  ) {
+    return timeline
+  }
+
+  if (
     type === 'skill.started' ||
     type === 'skill.loaded' ||
     type === 'skill.completed' ||

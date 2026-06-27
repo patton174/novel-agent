@@ -3,6 +3,7 @@
 from app.agent.backend.memory_catalog import (
     extract_scope_root_ids,
     format_memory_index,
+    format_memory_scope_roots,
     load_all_memory_trees,
 )
 from app.agent.context.memory_log import build_memory_write_batch_ack
@@ -161,7 +162,9 @@ def test_assemble_run_context_includes_scope_root_ids(monkeypatch):
     bundle = assemble_run_context(ctx)
     memory = bundle.get("memory") or {}
     assert memory.get("scope_root_ids") == {"世界观": "root-world-uuid"}
-    assert "parent_id=root-world-uuid" in (memory.get("memory_index") or "")
+    assert "root-world-uuid" in (memory.get("scope_index") or "")
+    assert "memory_index" not in memory
+    assert memory.get("memory_tree_hint")
 
 
 def test_memory_mutation_patch_does_not_wipe_tree_index():
