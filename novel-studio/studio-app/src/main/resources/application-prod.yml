@@ -1,5 +1,8 @@
 # 生产：客户端安全（与前端 VITE_* / GET /api/auth/crypto-config 对齐）
 spring:
+  flyway:
+    # 单体 classpath 聚合 auth/billing/content 等同版本号迁移会冲突；schema 由 deploy CI 脚本维护
+    enabled: false
   mvc:
     async:
       request-timeout: ${SPRING_MVC_ASYNC_REQUEST_TIMEOUT:3600000}
