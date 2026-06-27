@@ -44,7 +44,7 @@ jobs:
       - name: Build novel-studio
         run: bash novel-studio/deploy/ci/build-studio.sh
 
-      - name: Apply billing PG migrations (V22–V23)
+      - name: Apply billing PG migrations (V21–V28)
         env:
           MW_HOST: ${{ secrets.MW_HOST }}
           WORKER_HOST: ${{ secrets.WORKER_HOST }}
@@ -52,7 +52,7 @@ jobs:
           DEPLOY_SCP_OPTS: -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes -o ConnectTimeout=60 -o BatchMode=yes
         run: bash novel-studio/deploy/ci/apply-billing-migrations-remote.sh
 
-      - name: Apply content PG migrations (V26–V30)
+      - name: Apply content PG migrations (V21–V30)
         env:
           MW_HOST: ${{ secrets.MW_HOST }}
           WORKER_HOST: ${{ secrets.WORKER_HOST }}
