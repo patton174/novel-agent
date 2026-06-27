@@ -496,4 +496,19 @@ class ReadMcpResourceInput(BaseModel):
 
 
 class SkillInput(BaseModel):
-    skill: str = Field(..., min_length=1, description="Skill name to load.")
+    skill: str | None = Field(
+        None,
+        min_length=1,
+        description="Bundled skill slug (python-ai/skills/bundled/).",
+    )
+    skill_id: str | None = Field(
+        None,
+        min_length=1,
+        description="Skill UUID or system slug from novel-studio.",
+    )
+
+    @model_validator(mode="after")
+    def require_skill_ref(self) -> "SkillInput":
+        if not (self.skill or "").strip() and not (self.skill_id or "").strip():
+            raise ValueError("Provide skill or skill_id.")
+        return self

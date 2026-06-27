@@ -94,6 +94,8 @@ class AgentRunContext(BaseModel):
     context_patch: dict[str, Any] = Field(default_factory=dict)
     selected_choice: dict[str, Any] | None = None
     referenced_books: list[dict[str, Any]] = Field(default_factory=list)
+    skill_ids: list[dict[str, Any]] = Field(default_factory=list)
+    skill_prompt: str = ""
     resolved_model: dict[str, Any] | None = Field(default=None, alias="model_config")
 
     def merged_patch(self) -> dict[str, Any]:

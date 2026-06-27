@@ -102,6 +102,13 @@ public class AgentSkillService {
         repository.save(entity);
     }
 
+    public Optional<AgentSkillEntity> findAccessible(Long userId, String idOrSlug) {
+        if (idOrSlug == null || idOrSlug.isBlank()) {
+            return Optional.empty();
+        }
+        return resolveForRun(userId, idOrSlug.trim());
+    }
+
     public List<AgentSkillEntity> getForRun(Long userId, List<String> skillIds) {
         if (skillIds == null || skillIds.isEmpty()) {
             return List.of();

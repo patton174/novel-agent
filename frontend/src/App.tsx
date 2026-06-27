@@ -21,6 +21,7 @@ import { useReferralCapture } from './hooks/useReferralCapture'
 import { useDocumentMeta } from './hooks/useDocumentMeta'
 import { PageTransition } from './components/PageTransition'
 import { initializeTheme } from './stores/themeStore'
+import { FEATURE_AGENT_SKILLS } from './config/features'
 
 const HomePage = lazy(() => import('./pages/HomePage'))
 const LoginPage = lazy(() => import('./pages/LoginPage'))
@@ -38,6 +39,7 @@ const MyLibraryPage = lazy(() => import('./pages/dashboard/MyLibraryPage'))
 const UsagePage = lazy(() => import('./pages/dashboard/UsagePage'))
 const BillingPage = lazy(() => import('./pages/dashboard/BillingPage'))
 const SettingsPage = lazy(() => import('./pages/dashboard/SettingsPage'))
+const SkillsPage = lazy(() => import('./pages/dashboard/skills/SkillsPage'))
 const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'))
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'))
 const VerifyEmailPage = lazy(() => import('./pages/VerifyEmailPage'))
@@ -119,6 +121,7 @@ function AppRouteTree() {
           <Route path="novels" element={<NovelsPage />} />
           <Route path="bookstore" element={<BookstorePage />} />
           <Route path="my-library" element={<MyLibraryPage />} />
+          {FEATURE_AGENT_SKILLS ? <Route path="skills" element={<SkillsPage />} /> : null}
           <Route path="billing" element={<BillingPage />} />
           <Route path="usage" element={<UsagePage />} />
           <Route path="settings" element={<Navigate to="/dashboard/settings/profile" replace />} />

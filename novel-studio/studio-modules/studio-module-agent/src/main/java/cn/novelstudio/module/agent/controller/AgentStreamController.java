@@ -72,6 +72,7 @@ public class AgentStreamController {
             runId,
             afterSequence,
             null,
+            null,
             null
         );
         AgentStreamBiz.StreamFrames session = biz.streamFrames(userId, resume, contentOnly);

@@ -125,6 +125,17 @@ public class AgentRunState {
         }
 
         @SuppressWarnings("unchecked")
+        List<Map<String, Object>> skillIds = assembledContext.get("skills") instanceof List<?> skillList
+            ? (List<Map<String, Object>>) skillList
+            : List.of();
+        String skillPrompt = assembledContext.get("skill_prompt") == null
+            ? null
+            : String.valueOf(assembledContext.get("skill_prompt"));
+        if (skillPrompt != null && skillPrompt.isBlank()) {
+            skillPrompt = null;
+        }
+
+        @SuppressWarnings("unchecked")
         Map<String, Object> modelConfig = assembledContext.get("model_config") instanceof Map<?, ?> modelMap
             ? (Map<String, Object>) modelMap
             : null;
@@ -149,6 +160,8 @@ public class AgentRunState {
             patchForPython,
             selectedChoice,
             referencedBooks,
+            skillIds,
+            skillPrompt,
             modelConfig
         );
     }

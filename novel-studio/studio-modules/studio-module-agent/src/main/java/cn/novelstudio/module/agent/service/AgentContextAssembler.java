@@ -2,8 +2,11 @@ package cn.novelstudio.module.agent.service;
 
 import cn.novelstudio.module.agent.dto.agent.AgentStreamRequest;
 import cn.novelstudio.module.agent.support.AgentLocaleMarkers;
+import cn.novelstudio.module.agent.support.AgentSkillPromptSupport;
 import cn.novelstudio.module.agent.util.AgentTextSanitizer;
 import cn.novelstudio.module.content.dto.ReferencedBookDTO;
+import cn.novelstudio.module.content.entity.agent.AgentSkillEntity;
+import cn.novelstudio.module.content.service.agent.AgentSkillService;
 import cn.novelstudio.module.content.service.catalog.CatalogService;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
@@ -19,6 +22,7 @@ import java.util.Map;
 public class AgentContextAssembler {
 
     private static final int MAX_HISTORY_TURNS = 24;
+    private static final int SUMMARY_MAX_CHARS = 800;
 
     /** 创作模式由 Agent 根据用户描述自动判断，不再接受前端下拉选择。 */
     public static String normalizeAgentMode(String mode) {
@@ -32,17 +36,20 @@ public class AgentContextAssembler {
     private final NovelContextClient novelContextClient;
     private final AgentLocaleMarkers localeMarkers;
     private final CatalogService catalogService;
+    private final AgentSkillService agentSkillService;
 
     public AgentContextAssembler(
         AgentSessionMemoryService memoryService,
         NovelContextClient novelContextClient,
         AgentLocaleMarkers localeMarkers,
-        CatalogService catalogService
+        CatalogService catalogService,
+        AgentSkillService agentSkillService
     ) {
         this.memoryService = memoryService;
         this.novelContextClient = novelContextClient;
         this.localeMarkers = localeMarkers;
         this.catalogService = catalogService;
+        this.agentSkillService = agentSkillService;
     }
 
     /**
@@ -124,7 +131,7 @@ public class AgentContextAssembler {
                     Map<String, Object> m = new LinkedHashMap<>();
                     m.put("catalogNovelId", rb.getCatalogNovelId());
                     m.put("title", rb.getTitle());
-                    m.put("summary", rb.getSummary());
+                    m.put("summary", AgentSkillPromptSupport.truncate(rb.getSummary(), SUMMARY_MAX_CHARS));
                     m.put("chapterTitles", rb.getChapterTitles());
                     m.put("namespace", rb.getNamespace());
                     m.put("indexStatus", rb.getIndexStatus());
@@ -135,6 +142,22 @@ public class AgentContextAssembler {
             }
         }
         context.put("referenced_books", referencedBooks);
+
+        List<String> skillIdList = request.skillIds();
+        if (skillIdList != null && !skillIdList.isEmpty()) {
+            List<AgentSkillEntity> resolved = agentSkillService.getForRun(
+                userId,
+                skillIdList.stream().limit(3).toList()
+            );
+            if (!resolved.isEmpty()) {
+                List<Map<String, Object>> skills = resolved.stream()
+                    .map(AgentSkillPromptSupport::toMetadataMap)
+                    .toList();
+                context.put("skills", skills);
+                context.put("skill_ids", skills.stream().map(row -> row.get("id")).toList());
+                context.put("skill_prompt", AgentSkillPromptSupport.mergePrompt(resolved));
+            }
+        }
 
         Map<String, Object> preferences = new HashMap<>();
         preferences.put("mode", normalizeAgentMode(request.mode()));

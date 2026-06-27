@@ -147,6 +147,7 @@ public class HostRunColdFailoverService {
                     runId,
                     null,
                     null,
+                    null,
                     null
                 );
                 AgentRunState state = new AgentRunState(

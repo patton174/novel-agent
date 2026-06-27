@@ -35,6 +35,7 @@ import { StaggeredChoices } from './StaggeredChoices'
 import { TimelineDeliveryBlock } from './TimelineDeliveryBlock'
 import { AgentMarkdown } from '../AgentMarkdown'
 import { TimelineToolBlock } from './TimelineToolBlock'
+import { TimelineSkillBlock } from './TimelineSkillBlock'
 import { PlanReasoningBlock, ThinkBlock } from './ThinkBlocks'
 import { ThinkRoundGroup } from './ThinkRoundGroup'
 import type { AssistantStreamTimelineProps } from './types'
@@ -429,6 +430,14 @@ export function AssistantStreamTimeline({
         return null
       }
       return <SelectedChoiceSummary key={blockKey} selection={block} />
+    }
+
+    if (block.kind === 'skill') {
+      return (
+        <TimelineBlockEnter key={blockKey}>
+          <TimelineSkillBlock name={block.name} status={block.status} />
+        </TimelineBlockEnter>
+      )
     }
 
     if (block.kind === 'tool') {

@@ -27,5 +27,7 @@ public record AgentRunContextDto(
     Map<String, Object> contextPatch,
     Map<String, Object> selectedChoice,
     List<Map<String, Object>> referencedBooks,
+    List<Map<String, Object>> skillIds,
+    String skillPrompt,
     Map<String, Object> modelConfig
 ) {}

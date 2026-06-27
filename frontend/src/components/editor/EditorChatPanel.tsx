@@ -2,6 +2,7 @@ import { useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useComposerSafeInset } from '../../hooks/editor/useComposerSafeInset'
 import { ChatComposer, type ReferencedBookChip } from '../chat/ChatComposer'
+import type { AgentSkillSummary } from '@/types/agentSkill'
 import type {
   AgentChoiceOption,
   AgentContextUsage,
@@ -58,6 +59,8 @@ export interface EditorChatPanelProps {
   mobileBottomInset?: number
   referencedBooks?: ReferencedBookChip[]
   onReferencedBooksChange?: (books: ReferencedBookChip[]) => void
+  selectedSkills?: AgentSkillSummary[]
+  onSelectedSkillsChange?: (skills: AgentSkillSummary[]) => void
 }
 
 export function EditorChatPanel({
@@ -91,6 +94,8 @@ export function EditorChatPanel({
   mobileBottomInset = 0,
   referencedBooks = [],
   onReferencedBooksChange,
+  selectedSkills = [],
+  onSelectedSkillsChange,
 }: EditorChatPanelProps) {
   const { t } = useTranslation(['editor'])
   const isInitial = isInitialChatView(messages, activeNovel)
@@ -189,6 +194,8 @@ export function EditorChatPanel({
                   contextUsage={contextUsage}
                   referencedBooks={referencedBooks}
                   onReferencedBooksChange={onReferencedBooksChange}
+                  selectedSkills={selectedSkills}
+                  onSelectedSkillsChange={onSelectedSkillsChange}
                 />
               </div>
             ) : null}
@@ -231,6 +238,8 @@ export function EditorChatPanel({
                 contextUsage={contextUsage}
                 referencedBooks={referencedBooks}
                 onReferencedBooksChange={onReferencedBooksChange}
+                selectedSkills={selectedSkills}
+                onSelectedSkillsChange={onSelectedSkillsChange}
               />
             </div>
           </div>

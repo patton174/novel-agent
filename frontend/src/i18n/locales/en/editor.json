@@ -89,6 +89,14 @@
       "empty": "No matching book in library",
       "remove": "Remove reference {{title}}"
     },
+    "skill": {
+      "pickTitle": "Select skill ({{count}}/{{max}})",
+      "empty": "No matching skills",
+      "selected": "Selected",
+      "remove": "Remove skill {{name}}",
+      "toolbar": "Add skills",
+      "maxReached": "You can attach up to 3 skills"
+    },
     "picker": {
       "unselectedChapter": "No chapter selected",
       "fullscreenHint": "Fullscreen editing · Click to expand chapter selection",
@@ -288,6 +296,11 @@
       "toolStatusSuccess": "Success",
       "toolStatusFailed": "Failed",
       "phaseAwaiting": "Awaiting reply",
+      "skill": {
+        "started": "Loading skill: {{name}}",
+        "loaded": "Skill ready: {{name}}",
+        "failed": "Skill failed: {{name}}"
+      },
       "durationSec": "{{count}}s",
       "toolStats": {
         "readChapters": "Read {{count}} ch.",

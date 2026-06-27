@@ -52,6 +52,14 @@ public class RunColdFailoverContextBuilder {
             Map<String, Object> contextPatch = mergeContextPatch(ctx.path("context_patch"), checkpoint);
             Map<String, Object> selectedChoice = readMap(ctx.path("selected_choice"));
             List<Map<String, Object>> referencedBooks = readChapterList(ctx.path("referenced_books"));
+            List<Map<String, Object>> skillIds = readChapterList(ctx.path("skills"));
+            if (skillIds.isEmpty()) {
+                skillIds = readChapterList(ctx.path("skill_ids"));
+            }
+            String skillPrompt = text(ctx, "skill_prompt", "");
+            if (skillPrompt.isBlank()) {
+                skillPrompt = null;
+            }
             Map<String, Object> modelConfig = readMap(ctx.path("model_config"));
 
             return new AgentRunContextDto(
@@ -74,6 +82,8 @@ public class RunColdFailoverContextBuilder {
                 contextPatch,
                 selectedChoice,
                 referencedBooks,
+                skillIds,
+                skillPrompt,
                 modelConfig.isEmpty() ? null : modelConfig
             );
         } catch (Exception ignored) {

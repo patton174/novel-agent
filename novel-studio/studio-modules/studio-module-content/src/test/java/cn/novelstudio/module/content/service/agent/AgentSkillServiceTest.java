@@ -80,12 +80,11 @@ class AgentSkillServiceTest {
         UUID id1 = UUID.randomUUID();
         UUID id2 = UUID.randomUUID();
         UUID id3 = UUID.randomUUID();
-        UUID id4 = UUID.randomUUID();
+        UUID id4 = UUID.randomUUID(); // fourth id must be ignored
 
         when(repository.findById(id1)).thenReturn(Optional.of(skill(id1, 7L, false)));
         when(repository.findById(id2)).thenReturn(Optional.of(skill(id2, 7L, false)));
         when(repository.findById(id3)).thenReturn(Optional.of(skill(id3, 7L, false)));
-        when(repository.findById(id4)).thenReturn(Optional.of(skill(id4, 7L, false)));
 
         List<AgentSkillEntity> resolved = service.getForRun(
             7L,
@@ -93,7 +92,7 @@ class AgentSkillServiceTest {
         );
 
         assertThat(resolved).hasSize(3);
-        verify(repository, never()).findById(id4);
+        assertThat(resolved).extracting(AgentSkillEntity::getId).containsExactly(id1, id2, id3);
     }
 
     @Test

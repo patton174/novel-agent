@@ -207,6 +207,23 @@ def assemble_agent_context(
             [b for b in ctx.referenced_books if isinstance(b, dict)]
         )
 
+    _patch = ctx.context_patch if isinstance(ctx.context_patch, dict) else {}
+    skill_prompt = (ctx.skill_prompt or "").strip()
+    if not skill_prompt:
+        patch_prompt = _patch.get("skill_prompt")
+        if isinstance(patch_prompt, str):
+            skill_prompt = patch_prompt.strip()
+    skill_ids = list(ctx.skill_ids or [])
+    if not skill_ids:
+        patch_ids = _patch.get("skill_ids")
+        if isinstance(patch_ids, list):
+            skill_ids = [row for row in patch_ids if isinstance(row, dict)]
+    if skill_prompt:
+        out["skills"] = {
+            "active": [str(s.get("name") or "").strip() for s in skill_ids if s.get("name")],
+            "prompt": skill_prompt[:4000],
+        }
+
     session: dict[str, Any] = {}
     think = think_text_from_rows(
         rows,

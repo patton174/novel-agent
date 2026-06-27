@@ -6,8 +6,10 @@ import { ModelSelector } from '@/components/model/ModelSelector'
 import { EditorButton, EditorSendIconLayer } from '../ui/EditorButton'
 import { ComposerStatusBar } from './ComposerStatusBar'
 import { ReferenceBookPicker } from '../editor/ReferenceBookPicker'
+import { SkillPicker } from '../agent/SkillPicker'
 import type { SelectableBook } from '@/api/libraryApi'
-import { FEATURE_LIBRARY_REF } from '@/config/features'
+import type { AgentSkillSummary } from '@/types/agentSkill'
+import { FEATURE_AGENT_SKILLS, FEATURE_LIBRARY_REF } from '@/config/features'
 import { cn } from '@/lib/utils'
 import { editorPixelIconButtonClass } from '@/lib/editorPixelClasses'
 import { appToast } from '@/stores/appToastStore'
@@ -59,6 +61,8 @@ export interface ChatComposerProps {
   contextUsage?: AgentContextUsage | null
   referencedBooks?: ReferencedBookChip[]
   onReferencedBooksChange?: (books: ReferencedBookChip[]) => void
+  selectedSkills?: AgentSkillSummary[]
+  onSelectedSkillsChange?: (skills: AgentSkillSummary[]) => void
 }
 
 export function ChatComposer({
@@ -75,11 +79,15 @@ export function ChatComposer({
   contextUsage,
   referencedBooks = [],
   onReferencedBooksChange,
+  selectedSkills = [],
+  onSelectedSkillsChange,
 }: ChatComposerProps) {
   const { t } = useTranslation(['editor'])
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const [pickerOpen, setPickerOpen] = useState(false)
   const [pickerQuery, setPickerQuery] = useState('')
+  const [skillPickerOpen, setSkillPickerOpen] = useState(false)
+  const [skillPickerQuery, setSkillPickerQuery] = useState('')
   const streaming = streamActive || isLoading
 
   useEffect(() => {
@@ -119,16 +127,27 @@ export function ChatComposer({
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const v = e.target.value
     onChange(v)
-    if (!FEATURE_LIBRARY_REF) {
-      setPickerOpen(false)
-      return
-    }
-    const lastAt = v.lastIndexOf('@')
-    if (lastAt >= 0 && v.slice(lastAt + 1).indexOf(' ') < 0) {
-      setPickerQuery(v.slice(lastAt + 1))
-      setPickerOpen(true)
+    if (FEATURE_LIBRARY_REF) {
+      const lastAt = v.lastIndexOf('@')
+      if (lastAt >= 0 && v.slice(lastAt + 1).indexOf(' ') < 0) {
+        setPickerQuery(v.slice(lastAt + 1))
+        setPickerOpen(true)
+      } else {
+        setPickerOpen(false)
+      }
     } else {
       setPickerOpen(false)
+    }
+    if (FEATURE_AGENT_SKILLS) {
+      const lastSlash = v.lastIndexOf('/')
+      if (lastSlash >= 0 && v.slice(lastSlash + 1).indexOf(' ') < 0) {
+        setSkillPickerQuery(v.slice(lastSlash + 1))
+        setSkillPickerOpen(true)
+      } else {
+        setSkillPickerOpen(false)
+      }
+    } else {
+      setSkillPickerOpen(false)
     }
   }
 
@@ -142,6 +161,33 @@ export function ChatComposer({
       ...referencedBooks.filter((b) => b.catalogNovelId !== book.catalogNovelId),
       { catalogNovelId: book.catalogNovelId, title: book.title },
     ])
+    setPickerOpen(false)
+  }
+
+  const handleSkillPick = (skill: AgentSkillSummary) => {
+    if (selectedSkills.some((s) => s.id === skill.id)) {
+      setSkillPickerOpen(false)
+      return
+    }
+    if (selectedSkills.length >= 3) {
+      appToast.info(t('editor:skill.maxReached'))
+      setSkillPickerOpen(false)
+      return
+    }
+    const lastSlash = value.lastIndexOf('/')
+    if (lastSlash >= 0) {
+      const newVal =
+        value.slice(0, lastSlash) + value.slice(lastSlash + 1 + skillPickerQuery.length)
+      onChange(newVal)
+    }
+    onSelectedSkillsChange?.([...selectedSkills, skill])
+    setSkillPickerOpen(false)
+  }
+
+  const handleSkillToolbarClick = () => {
+    if (streaming) return
+    setSkillPickerQuery('')
+    setSkillPickerOpen((open) => !open)
     setPickerOpen(false)
   }
 
@@ -162,6 +208,28 @@ export function ChatComposer({
                   aria-label={t('editor:reference.remove', { title: b.title })}
                   onClick={() =>
                     onReferencedBooksChange?.(referencedBooks.filter((_, j) => j !== i))
+                  }
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          </div>
+        ) : null}
+        {FEATURE_AGENT_SKILLS && selectedSkills.length > 0 ? (
+          <div className="flex flex-wrap gap-1 px-2 py-1">
+            {selectedSkills.map((skill, i) => (
+              <span
+                key={skill.id}
+                className="inline-flex items-center gap-1 rounded bg-primary/10 px-1.5 py-0.5 text-xs text-primary"
+              >
+                ✦{skill.name}
+                <button
+                  type="button"
+                  className="text-primary/70 hover:text-primary"
+                  aria-label={t('editor:skill.remove', { name: skill.name })}
+                  onClick={() =>
+                    onSelectedSkillsChange?.(selectedSkills.filter((_, j) => j !== i))
                   }
                 >
                   ×
@@ -196,6 +264,15 @@ export function ChatComposer({
               onClose={() => setPickerOpen(false)}
             />
           ) : null}
+          {FEATURE_AGENT_SKILLS ? (
+            <SkillPicker
+              open={skillPickerOpen}
+              query={skillPickerQuery}
+              selected={selectedSkills}
+              onPick={handleSkillPick}
+              onClose={() => setSkillPickerOpen(false)}
+            />
+          ) : null}
         </div>
 
         <div className="flex w-full min-w-0 items-center justify-between gap-2 max-md:gap-1.5">
@@ -211,6 +288,23 @@ export function ChatComposer({
             >
               <Icons.Plus />
             </button>
+            {FEATURE_AGENT_SKILLS ? (
+              <button
+                type="button"
+                data-testid="composer-skill-btn"
+                onClick={handleSkillToolbarClick}
+                disabled={streaming}
+                aria-label={t('editor:skill.toolbar')}
+                title={t('editor:skill.toolbar')}
+                className={cn(
+                  editorPixelIconButtonClass(),
+                  'text-foreground disabled:opacity-45',
+                  skillPickerOpen && 'bg-muted/50',
+                )}
+              >
+                ✦
+              </button>
+            ) : null}
             {onModelOverrideChange ? (
               <ModelSelector
                 compact

@@ -1,4 +1,10 @@
-import type { AgentChoiceOption, AgentEventEnvelope, AgentStepState, AgentTimelineBlock } from '../types/agent'
+import type {
+  AgentChoiceOption,
+  AgentEventEnvelope,
+  AgentStepState,
+  AgentTimelineBlock,
+  SkillTimelineStatus,
+} from '../types/agent'
 import i18n from '@/i18n'
 import {
   isHiddenTimelineToolName,
@@ -149,10 +155,66 @@ function blockSeedId(block: AgentTimelineBlock, index: number): string {
   if (block.kind === 'tool') {
     return block.stepId
   }
+  if (block.kind === 'skill') {
+    return block.skillId
+  }
   if (block.id && block.id !== 'think-pending') {
     return block.id.replace(/^(transition|think|tool):/, '')
   }
   return `${block.kind}-${index}`
+}
+
+function parseSkillFromPayload(payload: Record<string, unknown>): { skillId: string; name: string } {
+  const skill = payload.skill
+  if (skill && typeof skill === 'object') {
+    const s = skill as Record<string, unknown>
+    const id = typeof s.id === 'string' ? s.id : typeof s.name === 'string' ? s.name : ''
+    const name =
+      typeof s.name === 'string'
+        ? s.name
+        : typeof s.display_name === 'string'
+          ? s.display_name
+          : id || 'Skill'
+    return { skillId: id || name, name }
+  }
+  const name =
+    typeof payload.name === 'string'
+      ? payload.name
+      : typeof payload.display_name === 'string'
+        ? payload.display_name
+        : 'Skill'
+  return { skillId: name, name }
+}
+
+function upsertSkillBlock(
+  timeline: AgentTimelineBlock[],
+  stepId: string,
+  skillId: string,
+  name: string,
+  status: SkillTimelineStatus,
+): AgentTimelineBlock[] {
+  const blockId = uniqueBlockId(timeline, 'skill', stepId || skillId)
+  const existingIdx = timeline.findIndex(
+    (b) => b.kind === 'skill' && (b.skillId === skillId || b.id === blockId),
+  )
+  if (existingIdx >= 0) {
+    const block = timeline[existingIdx]
+    if (block.kind === 'skill') {
+      const next = [...timeline]
+      next[existingIdx] = { ...block, name, status }
+      return next
+    }
+  }
+  return [
+    ...timeline,
+    {
+      kind: 'skill',
+      id: blockId,
+      skillId,
+      name,
+      status,
+    },
+  ]
 }
 
 /** 修复旧持久化数据或 run 级 step_id 复用导致的重复 block.id */
@@ -578,6 +640,22 @@ export function applyTimelineEvent(
 
   if (type === 'think.transition') {
     return timeline
+  }
+
+  if (
+    type === 'skill.started' ||
+    type === 'skill.loaded' ||
+    type === 'skill.completed' ||
+    type === 'skill.failed'
+  ) {
+    const payload =
+      event.payload && typeof event.payload === 'object'
+        ? (event.payload as Record<string, unknown>)
+        : {}
+    const { skillId, name } = parseSkillFromPayload(payload)
+    const status: SkillTimelineStatus =
+      type === 'skill.failed' ? 'failed' : type === 'skill.started' ? 'started' : 'loaded'
+    return upsertSkillBlock(timeline, stepId, skillId, name, status)
   }
 
   if (type === 'planning.next_step') {

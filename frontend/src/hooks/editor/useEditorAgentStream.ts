@@ -60,6 +60,7 @@ import { listSessions, listSessionsByNovel, loadSessionMessages } from '../../ut
 import { sessionNeedsGeneratedTitle } from '../../utils/sessionTitle'
 import type { EditorCenterTab } from '../../components/editor/EditorCenterTabs'
 import type { ReferencedBookChip } from '../../components/chat/ChatComposer'
+import type { AgentSkillSummary } from '../../types/agentSkill'
 import type { Novel } from '../../types/novel'
 import { useNovelStore } from '../../stores/novelStore'
 export interface UseEditorAgentStreamOptions {
@@ -132,6 +133,8 @@ export function useEditorAgentStream({
   const [isSseRecovering, setIsSseRecovering] = useState(false)
   const [referencedBooks, setReferencedBooks] = useState<ReferencedBookChip[]>([])
   const referencedBooksRef = useRef<ReferencedBookChip[]>([])
+  const [selectedSkills, setSelectedSkills] = useState<AgentSkillSummary[]>([])
+  const selectedSkillsRef = useRef<AgentSkillSummary[]>([])
   const [activeStreamMessageId, setActiveStreamMessageId] = useState<string | null>(null)
   const [thinkPanelOpen, setThinkPanelOpen] = useState<Record<string, boolean>>({})
 
@@ -168,6 +171,10 @@ export function useEditorAgentStream({
   useEffect(() => {
     referencedBooksRef.current = referencedBooks
   }, [referencedBooks])
+
+  useEffect(() => {
+    selectedSkillsRef.current = selectedSkills
+  }, [selectedSkills])
 
   const abortActiveStream = useCallback(() => {
     streamAbortRef.current?.abort()
@@ -929,6 +936,10 @@ export function useEditorAgentStream({
             referencedBooksRef.current.length > 0
               ? referencedBooksRef.current.map((b) => ({ catalogNovelId: b.catalogNovelId }))
               : undefined,
+          skill_ids:
+            selectedSkillsRef.current.length > 0
+              ? selectedSkillsRef.current.map((s) => s.id || s.name).slice(0, 3)
+              : undefined,
         },
         handleAgentEvent,
         { signal: abortController.signal },
@@ -1450,6 +1461,8 @@ export function useEditorAgentStream({
     composerSpinnerMode,
     referencedBooks,
     setReferencedBooks,
+    selectedSkills,
+    setSelectedSkills,
     streamAbortRef,
     runWsRef,
   }

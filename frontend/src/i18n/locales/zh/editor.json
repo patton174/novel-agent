@@ -89,6 +89,14 @@
       "empty": "书库无匹配书目",
       "remove": "移除引用 {{title}}"
     },
+    "skill": {
+      "pickTitle": "选择技能（{{count}}/{{max}}）",
+      "empty": "无匹配技能",
+      "selected": "已选",
+      "remove": "移除技能 {{name}}",
+      "toolbar": "添加技能",
+      "maxReached": "最多可附加 3 个技能"
+    },
     "picker": {
       "unselectedChapter": "未选章节",
       "fullscreenHint": "全屏编辑中 · 点击展开选章",
@@ -288,6 +296,11 @@
       "toolStatusSuccess": "成功",
       "toolStatusFailed": "失败",
       "phaseAwaiting": "等待回答",
+      "skill": {
+        "started": "加载技能：{{name}}",
+        "loaded": "技能就绪：{{name}}",
+        "failed": "技能失败：{{name}}"
+      },
       "durationSec": "{{count}} 秒",
       "toolStats": {
         "readChapters": "阅读 {{count}} 章",

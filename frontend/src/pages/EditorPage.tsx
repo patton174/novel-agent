@@ -169,6 +169,8 @@ const EditorPage: React.FC = () => {
             mobileBottomInset={mobileTabBarInset}
             referencedBooks={editor.stream.referencedBooks}
             onReferencedBooksChange={editor.stream.setReferencedBooks}
+            selectedSkills={editor.stream.selectedSkills}
+            onSelectedSkillsChange={editor.stream.setSelectedSkills}
           />
         ) : editor.activeCenterTab === 'story' ? (
           <EditorStoryPanel

@@ -172,6 +172,10 @@ async def stream_cc_tool_step(
 
         result = await run_tool_use(tool, inp, ctx, tool_use_id=step_id)
 
+        for skill_ev in result.sse_events or []:
+            if isinstance(skill_ev, dict):
+                yield skill_ev
+
         if tool == "AskUser" and result.action == "wait":
             yield build_event(
                 event_type="run.waiting",

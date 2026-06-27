@@ -209,6 +209,7 @@ def build_main_loop_system_prompt() -> str:
 
 Data lives in **Content API (PostgreSQL)** and **memory_node API** — never construct VFS paths.
 Use RUN_CONTEXT `novel.chapter_catalog` / `memory.memory_index` for IDs when present.
+When RUN_CONTEXT includes `skills.prompt`, follow those loaded skill instructions.
 
 Available tools: {names}"""
 

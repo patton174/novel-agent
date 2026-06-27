@@ -14,7 +14,7 @@ from app.agent.harness.cc_visibility import (
 from app.agent.harness.cc_visibility import (
     tool_display_name as cc_tool_display_name,
 )
-from app.agent.schemas import DisplayPayload, StepResult
+from app.agent.schemas import AgentRunContext, DisplayPayload, StepResult
 from app.runtime.events import build_event
 from app.runtime.streaming import emit_sse_text_chunks
 
@@ -546,6 +546,67 @@ def _tool_events(
     )
     sequence += 1
     return events, sequence
+
+
+def emit_skill_started(
+    ctx: AgentRunContext,
+    *,
+    skill_id: str,
+    name: str,
+    sequence: int,
+    step_id: str,
+) -> dict[str, Any]:
+    return build_event(
+        event_type="skill.started",
+        run_id=ctx.run_id,
+        session_id=ctx.session_id,
+        message_id=ctx.message_id,
+        step_id=step_id,
+        sequence=sequence,
+        payload={"skill": {"id": skill_id, "name": name}},
+    )
+
+
+def emit_skill_loaded(
+    ctx: AgentRunContext,
+    *,
+    skill_id: str,
+    name: str,
+    sequence: int,
+    step_id: str,
+) -> dict[str, Any]:
+    return build_event(
+        event_type="skill.loaded",
+        run_id=ctx.run_id,
+        session_id=ctx.session_id,
+        message_id=ctx.message_id,
+        step_id=step_id,
+        sequence=sequence,
+        payload={"skill": {"id": skill_id, "name": name}},
+    )
+
+
+def emit_skill_failed(
+    ctx: AgentRunContext,
+    *,
+    skill_id: str,
+    name: str,
+    error: str,
+    sequence: int,
+    step_id: str,
+) -> dict[str, Any]:
+    return build_event(
+        event_type="skill.failed",
+        run_id=ctx.run_id,
+        session_id=ctx.session_id,
+        message_id=ctx.message_id,
+        step_id=step_id,
+        sequence=sequence,
+        payload={
+            "skill": {"id": skill_id, "name": name},
+            "error": (error or "skill load failed")[:500],
+        },
+    )
 
 
 def assistant_message_events(

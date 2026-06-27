@@ -210,10 +210,19 @@ export interface AgentStreamUiState {
   segmentOpen?: boolean
 }
 
+export type SkillTimelineStatus = 'started' | 'loaded' | 'failed'
+
 export type AgentTimelineBlock =
   | { kind: 'reasoning'; id: string; text: string; status: 'active' | 'done' }
   | { kind: 'think'; id: string; text: string; status: 'active' | 'done' }
   | { kind: 'transition'; id: string; title: string; status?: 'active' | 'done' }
+  | {
+      kind: 'skill'
+      id: string
+      skillId: string
+      name: string
+      status: SkillTimelineStatus
+    }
   | { kind: 'tool'; id: string; stepId: string }
   | {
       kind: 'choice_selected'
@@ -256,4 +265,6 @@ export interface AgentStreamRequestBody {
   after_sequence?: number
   /** @引用参考书目（catalogNovelId 列表） */
   referenced_books?: Array<{ catalogNovelId: string }>
+  /** 用户选中的 Skill（最多 3 个） */
+  skill_ids?: string[]
 }

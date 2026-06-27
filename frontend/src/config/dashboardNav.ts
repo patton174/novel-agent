@@ -14,6 +14,8 @@ import {
   ProIconSettings,
 } from '@/components/pro/icons/proIcons'
 import { SETTINGS_SECTIONS } from '@/pages/dashboard/settings/settingsSections'
+import { FEATURE_AGENT_SKILLS } from '@/config/features'
+import { ProIconAdminContent } from '@/components/pro/icons/proIcons'
 
 export interface DashboardNavItem {
   labelKey: string
@@ -75,6 +77,16 @@ export const DASHBOARD_NAV_GROUPS: DashboardNavGroup[] = [
     items: [
       { labelKey: 'common:nav.dashboardNovels', to: '/dashboard/novels', icon: ProIconNovel, end: true },
       { labelKey: 'common:nav.dashboardMyLibrary', to: '/dashboard/my-library', icon: ProIconLibrary, end: true },
+      ...(FEATURE_AGENT_SKILLS
+        ? [
+            {
+              labelKey: 'common:nav.dashboardSkills',
+              to: '/dashboard/skills',
+              icon: ProIconAdminContent,
+              end: true,
+            },
+          ]
+        : []),
     ],
   },
   {

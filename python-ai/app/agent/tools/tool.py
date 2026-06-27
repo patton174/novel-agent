@@ -43,6 +43,7 @@ class ToolCallResult:
     wait_for: str | None = None
     interaction: dict[str, Any] | None = None
     end_run: bool = False
+    sse_events: list[dict[str, Any]] = field(default_factory=list)
     # Structured failure (AGENT_REFACTOR_PLAN P0.2). Populated by tools in
     # Phase 2 behind ``settings.agent_rf_error_protocol``; ``None`` keeps the
     # legacy free-form ``content`` error path.

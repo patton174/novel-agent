@@ -21,7 +21,8 @@ public record AgentStreamRequest(
     Integer afterSequence,
     /** 临时模型覆盖：user_model id 或 pub:ai_model id */
     String modelOverride,
-    List<ReferencedBookRef> referencedBooks
+    List<ReferencedBookRef> referencedBooks,
+    List<String> skillIds
 ) {
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     public record HistoryTurn(String role, String content) {}
