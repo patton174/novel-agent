@@ -92,8 +92,8 @@ public class AgentRunState {
             chapterText = String.valueOf(text);
         }
         @SuppressWarnings("unchecked")
-        List<Map<String, String>> history = assembledContext.get("history") instanceof List<?> list
-            ? (List<Map<String, String>>) list
+        List<Map<String, Object>> history = assembledContext.get("history") instanceof List<?> list
+            ? (List<Map<String, Object>>) list
             : List.of();
         @SuppressWarnings("unchecked")
         Map<String, Object> preferences = assembledContext.get("preferences") instanceof Map<?, ?> map

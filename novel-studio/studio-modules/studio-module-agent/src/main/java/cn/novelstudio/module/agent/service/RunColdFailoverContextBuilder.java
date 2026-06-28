@@ -40,7 +40,7 @@ public class RunColdFailoverContextBuilder {
             String messageId = text(ctx, "message_id", "");
             String userMessage = text(ctx, "user_message", "");
             String chapterText = text(ctx, "chapter_text", "");
-            List<Map<String, String>> history = readHistory(ctx.path("history"));
+            List<Map<String, Object>> history = readHistory(ctx.path("history"));
             Map<String, Object> preferences = readMap(ctx.path("preferences"));
             Map<String, Object> project = readMap(ctx.path("project"));
             List<Map<String, Object>> chapters = readChapterList(ctx.path("chapters"));
@@ -138,7 +138,7 @@ public class RunColdFailoverContextBuilder {
         }
     }
 
-    private List<Map<String, String>> readHistory(JsonNode node) {
+    private List<Map<String, Object>> readHistory(JsonNode node) {
         if (node == null || !node.isArray()) {
             return List.of();
         }
