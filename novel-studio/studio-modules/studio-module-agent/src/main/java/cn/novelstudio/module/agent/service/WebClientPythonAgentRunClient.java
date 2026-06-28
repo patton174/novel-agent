@@ -12,13 +12,19 @@ import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
+import org.springframework.http.codec.json.Jackson2JsonDecoder;
+import org.springframework.http.codec.json.Jackson2JsonEncoder;
 import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.BodyInserters;
+import org.springframework.web.reactive.function.client.ClientResponse;
+import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.netty.http.HttpProtocol;
 import reactor.netty.http.client.HttpClient;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Map;
 
@@ -40,24 +46,37 @@ public class WebClientPythonAgentRunClient implements PythonAgentRunClient {
             .protocol(HttpProtocol.HTTP11)
             .responseTimeout(Duration.ZERO)
             .compress(false);
+        ExchangeStrategies strategies = ExchangeStrategies.builder()
+            .codecs(configurer -> {
+                configurer.defaultCodecs().jackson2JsonEncoder(
+                    new Jackson2JsonEncoder(objectMapper, MediaType.APPLICATION_JSON));
+                configurer.defaultCodecs().jackson2JsonDecoder(
+                    new Jackson2JsonDecoder(objectMapper, MediaType.APPLICATION_JSON));
+            })
+            .build();
         this.objectMapper = objectMapper;
         this.webClient = WebClient.builder()
             .clientConnector(new ReactorClientHttpConnector(httpClient))
             .baseUrl(baseUrl)
+            .exchangeStrategies(strategies)
             .build();
         this.internalServiceKey = internalServiceKey;
     }
 
     @Override
     public Flux<String> runStream(PythonAgentRunRequest request) {
-        String json = serializeRunRequest(request);
+        byte[] body = encodeRunRequest(request);
         Flux<String> chunks = webClient.post()
             .uri("/internal/agent/run/stream")
             .header("X-Internal-Service-Key", internalServiceKey)
             .contentType(MediaType.APPLICATION_JSON)
             .accept(MediaType.TEXT_EVENT_STREAM)
-            .bodyValue(json)
+            .body(BodyInserters.fromValue(body))
             .retrieve()
+            .onStatus(
+                status -> status.value() == 422,
+                this::logAndWrapClientError
+            )
             .bodyToFlux(DataBuffer.class)
             .transform(Utf8StreamingDecoder::decode)
             .doOnDiscard(DataBuffer.class, DataBufferUtils::release);
@@ -65,18 +84,28 @@ public class WebClientPythonAgentRunClient implements PythonAgentRunClient {
         return SseFrameAggregator.aggregate(chunks);
     }
 
-    private String serializeRunRequest(PythonAgentRunRequest request) {
+    private byte[] encodeRunRequest(PythonAgentRunRequest request) {
         try {
-            String json = objectMapper.writeValueAsString(request);
-            if (json == null || json.length() < 16 || !json.contains("\"context\"")) {
-                log.error("agent run stream payload invalid: bytes={} preview={}", json == null ? 0 : json.length(), json);
+            byte[] body = objectMapper.writeValueAsBytes(request);
+            String preview = new String(body, StandardCharsets.UTF_8);
+            if (body.length < 16 || !preview.contains("\"context\"")) {
+                log.error("agent run stream payload invalid: bytes={} preview={}", body.length, preview);
                 throw new IllegalStateException("agent.run.stream_payload_invalid");
             }
-            return json;
+            return body;
         } catch (JsonProcessingException ex) {
             log.error("agent run stream payload serialize failed: {}", ex.getMessage());
             throw new IllegalStateException("agent.run.stream_payload_invalid", ex);
         }
+    }
+
+    private Mono<? extends Throwable> logAndWrapClientError(ClientResponse response) {
+        return response.bodyToMono(String.class)
+            .defaultIfEmpty("")
+            .flatMap(body -> {
+                log.error("python agent run stream 422: {}", body);
+                return response.createException();
+            });
     }
 
     @Override
