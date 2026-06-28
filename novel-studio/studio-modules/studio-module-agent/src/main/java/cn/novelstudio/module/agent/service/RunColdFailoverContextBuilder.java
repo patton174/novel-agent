@@ -57,9 +57,6 @@ public class RunColdFailoverContextBuilder {
                 skillIds = readChapterList(ctx.path("skill_ids"));
             }
             String skillPrompt = text(ctx, "skill_prompt", "");
-            if (skillPrompt.isBlank()) {
-                skillPrompt = null;
-            }
             Map<String, Object> modelConfig = readMap(ctx.path("model_config"));
             String defaultProfileId = text(ctx, "default_profile_id", "");
             if (defaultProfileId.isBlank()) {
@@ -97,7 +94,7 @@ public class RunColdFailoverContextBuilder {
                 modelConfig.isEmpty() ? null : modelConfig,
                 defaultProfileId,
                 crewId,
-                crewVars.isEmpty() ? null : crewVars,
+                crewVars,
                 crewTemplate.isEmpty() ? null : crewTemplate
             );
         } catch (Exception ignored) {

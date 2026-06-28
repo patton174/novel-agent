@@ -129,11 +129,8 @@ public class AgentRunState {
             ? (List<Map<String, Object>>) skillList
             : List.of();
         String skillPrompt = assembledContext.get("skill_prompt") == null
-            ? null
+            ? ""
             : String.valueOf(assembledContext.get("skill_prompt"));
-        if (skillPrompt != null && skillPrompt.isBlank()) {
-            skillPrompt = null;
-        }
 
         @SuppressWarnings("unchecked")
         Map<String, Object> modelConfig = assembledContext.get("model_config") instanceof Map<?, ?> modelMap
@@ -155,7 +152,7 @@ public class AgentRunState {
         @SuppressWarnings("unchecked")
         Map<String, Object> crewVars = assembledContext.get("crew_vars") instanceof Map<?, ?> crewVarsMap
             ? (Map<String, Object>) crewVarsMap
-            : null;
+            : Map.of();
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> crewTemplate = assembledContext.get("crew_template") instanceof List<?> crewList
             ? (List<Map<String, Object>>) crewList

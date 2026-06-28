@@ -72,8 +72,31 @@ class StepResult(BaseModel):
         return self
 
 
+def _coerce_agent_run_context_nulls(data: Any) -> Any:
+    """Java owner may send explicit null for fields with Python defaults."""
+    if not isinstance(data, dict):
+        return data
+    for key in ("skill_prompt", "user_message", "chapter_text"):
+        if data.get(key) is None:
+            data[key] = ""
+    if data.get("mode") is None:
+        data["mode"] = "auto"
+    for key in ("crew_vars", "preferences", "project", "context_patch"):
+        if data.get(key) is None:
+            data[key] = {}
+    for key in ("history", "chapters", "referenced_books", "skill_ids"):
+        if data.get(key) is None:
+            data[key] = []
+    return data
+
+
 class AgentRunContext(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _normalize_null_defaults(cls, data: Any) -> Any:
+        return _coerce_agent_run_context_nulls(data)
 
     run_id: str
     session_id: str
